@@ -22,8 +22,8 @@ package org.neo4j.server.database;
 import java.io.File;
 
 import org.neo4j.graphdb.Result;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.server.configuration.ServerSettings;
@@ -39,19 +39,12 @@ public class LifecycleManagingDatabase implements Database
 
     public interface GraphFactory
     {
-        GraphDatabaseAPI newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies );
+        GraphDatabaseFacade newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies );
     }
 
     public static Database.Factory lifecycleManagingDatabase( final GraphFactory graphDbFactory )
     {
-        return new Factory()
-        {
-            @Override
-            public Database newDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
-            {
-                return new LifecycleManagingDatabase( config, graphDbFactory, dependencies );
-            }
-        };
+        return ( config, dependencies ) -> new LifecycleManagingDatabase( config, graphDbFactory, dependencies );
     }
 
     private final Config config;
@@ -60,7 +53,7 @@ public class LifecycleManagingDatabase implements Database
     private final Log log;
 
     private boolean isRunning = false;
-    private GraphDatabaseAPI graph;
+    private GraphDatabaseFacade graph;
 
     public LifecycleManagingDatabase( Config config, GraphFactory dbFactory,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
@@ -79,7 +72,7 @@ public class LifecycleManagingDatabase implements Database
     }
 
     @Override
-    public GraphDatabaseAPI getGraph()
+    public GraphDatabaseFacade getGraph()
     {
         return graph;
     }

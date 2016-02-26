@@ -23,11 +23,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
-import org.neo4j.server.rest.web.QuerySessionProvider;
 import org.neo4j.server.rest.web.TransactionUriScheme;
+
+import static org.neo4j.server.rest.web.QuerySessionProvider.provider;
 
 /**
  * Transactional actions contains the business logic for executing statements against Neo4j across long-running
@@ -65,9 +67,10 @@ public class TransactionFacade
         this.logProvider = logProvider;
     }
 
-    public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme ) throws TransactionLifecycleException
+    public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction, AccessMode mode )
+            throws TransactionLifecycleException
     {
-        return new TransactionHandle( kernel, engine, registry, uriScheme, logProvider, QuerySessionProvider.provider );
+        return new TransactionHandle( kernel, engine, registry, uriScheme, implicitTransaction, mode, logProvider, provider );
     }
 
     public TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException

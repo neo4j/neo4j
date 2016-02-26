@@ -40,11 +40,11 @@ public class TestTransactionEventDeadlocks
 {
     @Rule
     public DatabaseRule database = new ImpermanentDatabaseRule();
-    
+
     @Test
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData() throws Exception
     {
-        GraphDatabaseService graphdb = database.getGraphDatabaseService();
+        GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
         Node node = null;
         try ( Transaction tx = graphdb.beginTx() )
         {

@@ -39,16 +39,16 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
 
 public class TestSessions implements TestRule, Sessions
 {
-    private GraphDatabaseAPI gdb;
+    private GraphDatabaseFacade gdb;
     private Sessions actual;
     private LinkedList<Session> startedSessions = new LinkedList<>();
     private final LifeSupport life = new LifeSupport();
@@ -63,16 +63,14 @@ public class TestSessions implements TestRule, Sessions
             {
                 Map<Setting<?>,String> config = new HashMap<>();
                 config.put( GraphDatabaseSettings.auth_enabled, "false" );
-                gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
+                gdb = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
                 Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
                 DependencyResolver resolver = gdb.getDependencyResolver();
-                StandardSessions sessions = life.add(
-                        new StandardSessions( gdb, new UsageData(), NullLogService.getInstance(),
-                                resolver.resolveDependency( ThreadToStatementContextBridge.class ))
-                );
-                actual = new ThreadedSessions(
-                        sessions,
-                        scheduler, NullLogService.getInstance() );
+                ThreadToStatementContextBridge txBridge =
+                        resolver.resolveDependency( ThreadToStatementContextBridge.class );
+                StandardSessions sessions = life.add( new StandardSessions( gdb, new UsageData(),
+                        NullLogService.getInstance(), txBridge ) );
+                actual = new ThreadedSessions( sessions, scheduler, NullLogService.getInstance() );
 
                 life.start();
                 try

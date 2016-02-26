@@ -73,6 +73,11 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  */
 public interface KernelTransaction extends AutoCloseable
 {
+    enum Type {
+        implicit,
+        explicit
+    }
+
     interface CloseListener
     {
         void notify( boolean success );
@@ -117,12 +122,6 @@ public interface KernelTransaction extends AutoCloseable
     AccessMode mode();
 
     /**
-     * Set the mode this transaction should execute in. This controls which capabilities the transaction has.
-     * @param mode mode to use.
-     */
-    void setMode( AccessMode mode );
-
-    /**
      * @return {@code true} if {@link #markForTermination()} has been invoked, otherwise {@code false}.
      */
     boolean shouldBeTerminated();
@@ -140,4 +139,22 @@ public interface KernelTransaction extends AutoCloseable
      * @param listener {@link CloseListener} to get these notifications.
      */
     void registerCloseListener( CloseListener listener );
+
+    /**
+     * Kernel transaction type
+     *
+     * Implicit if created internally in the database
+     * Explicit if created by the end user
+     *
+     * @return the transaction type: implicit or explicit
+     */
+    Type transactionType();
+
+    Revertable restrict( AccessMode read );
+
+    interface Revertable extends AutoCloseable
+    {
+        @Override
+        void close();
+    }
 }

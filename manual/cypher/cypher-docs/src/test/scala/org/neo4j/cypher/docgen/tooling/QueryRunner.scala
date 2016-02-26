@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 import scala.collection.immutable.Iterable
 import scala.util.{Failure, Success, Try}
@@ -38,7 +39,7 @@ import scala.util.{Failure, Success, Try}
  * we drop the database and create a new one. This way we can make sure that two queries don't affect each other more than
  * necessary.
  */
-class QueryRunner(formatter: (GraphDatabaseQueryService, Transaction) => InternalExecutionResult => Content) extends GraphIcing {
+class QueryRunner(formatter: (GraphDatabaseQueryService, InternalTransaction) => InternalExecutionResult => Content) extends GraphIcing {
 
   def runQueries(contentsWithInit: Seq[ContentWithInit], title: String): TestRunResult = {
 
@@ -90,9 +91,9 @@ class QueryRunner(formatter: (GraphDatabaseQueryService, Transaction) => Interna
   }
 
   private def runSingleQuery(database: RestartableDatabase, queryText: String, assertions: QueryAssertions, content: TablePlaceHolder): QueryRunResult = {
-    val format: (Transaction) => (InternalExecutionResult) => Content = (tx: Transaction) => formatter(database.getInnerDb, tx)(_)
+    val format: (InternalTransaction) => (InternalExecutionResult) => Content = (tx: InternalTransaction) => formatter(database.getInnerDb, tx)(_)
 
-      val result: Either[Throwable, Transaction => Content] =
+      val result: Either[Throwable, InternalTransaction => Content] =
         try {
           val resultTry = Try(database.execute(queryText))
           (assertions, resultTry) match {

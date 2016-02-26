@@ -53,11 +53,11 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigValues;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -189,7 +189,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     {
         final Config config = dependencies.config();
         final GraphDatabaseService gdb = dependencies.db();
-        final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
+        final GraphDatabaseFacade api = (GraphDatabaseFacade) gdb;
         final LogService logging = dependencies.logService();
         final Log log = logging.getInternalLog( Sessions.class );
 

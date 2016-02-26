@@ -29,24 +29,26 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.{ExecutionResult, ExecutionEngine, ExecutionPlan}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{GreaterThan, True}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CountingIterator, Counter}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{Counter, CountingIterator}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTInteger
 import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
+import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, ExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
-import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.api.{AccessMode, KernelTransaction, ReadOperations, Statement}
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.OperationsFacade
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, ThreadToStatementContextBridge}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
+import org.neo4j.kernel.impl.query.QueryEngineProvider.embeddedSession
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
-import org.neo4j.kernel.internal.GraphDatabaseAPI
 
 // TODO: this test is horribly broken, it relies on mocking the core API for verification, but the internals don't use the core API
 class LazyTest extends ExecutionEngineFunSuite {
@@ -88,7 +90,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("traversal matcher is lazy") {
     //Given:
-    val tx = graph.beginTx()
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.READ )
     val limiter = Counter().values.limit(2) { _ => fail("Limit reached!") }
     val monitoredNode = new MonitoredNode(aNode, limiter.tick)
 
@@ -116,7 +118,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter: ExecutionResult = engine.execute("match (n)-->(x) where n = {foo} return x", Map("foo" -> monitoredNode))
+    val iter: ExecutionResult =
+      engine.execute("match (n)-->(x) where n = {foo} return x", Map("foo" -> monitoredNode), embeddedSession())
 
     //Then:
     assert(limiter.counted === 0)
@@ -141,7 +144,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter = engine.execute("match (n) where n IN {foo} return distinct n.name", Map("foo" -> Seq(a, b, c)))
+    val iter =
+      engine.execute("match (n) where n IN {foo} return distinct n.name", Map("foo" -> Seq(a, b, c)), embeddedSession())
 
     //Then, no Runtime exception is thrown
     iter.next()
@@ -161,7 +165,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter = engine.execute("match (n) where n = {a} return n.name UNION ALL match (n) where n IN {b} return n.name", Map("a" -> a, "b" -> Seq(b, c)))
+    val iter = engine.execute("match (n) where n = {a} return n.name UNION ALL match (n) where n IN {b} return n.name",
+      Map("a" -> a, "b" -> Seq(b, c)), embeddedSession())
 
     //Then, no Runtime exception is thrown
     iter.next()
@@ -176,7 +181,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter: ExecutionResult = engine.execute("start n=node({foo}) match (n)-->(x) create n-[:FOO]->x", Map("foo" -> monitoredNode))
+    val iter: ExecutionResult =
+      engine.execute("start n=node({foo}) match (n)-->(x) create n-[:FOO]->x", Map("foo" -> monitoredNode), embeddedSession())
 
     //Then:
     assert(touched, "Query should have been executed")
@@ -184,8 +190,8 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("graph global queries are lazy") {
     //Given:
-    val fakeGraph = mock[GraphDatabaseAPI]
-    val tx = mock[Transaction]
+    val fakeGraph = mock[GraphDatabaseFacade]
+    val tx = mock[InternalTransaction]
     val nodeManager = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
@@ -210,7 +216,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(dependencies.resolveDependency(classOf[TransactionIdStore])).thenReturn(idStore)
     when(dependencies.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])).thenReturn(monitors)
     when(dependencies.resolveDependency(classOf[Config])).thenReturn(config)
-    when(fakeGraph.beginTx()).thenReturn(tx)
+    when(fakeGraph.beginTransaction(any(classOf[KernelTransaction.Type]), any(classOf[AccessMode]) )).thenReturn(tx)
     val n0 = mock[Node]
     val n1 = mock[Node]
     val n2 = mock[Node]
@@ -221,7 +227,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val nodesIterator = List( n0, n1, n2, n3, n4, n5, n6 ).iterator
     val allNodeIdsIterator = new PrimitiveLongIterator {
       override def hasNext = nodesIterator.hasNext
-      override def next() = nodesIterator.next().getId()
+      override def next() = nodesIterator.next().getId
     }
     when(fakeReadStatement.nodesGetAll).thenReturn(allNodeIdsIterator)
 
@@ -235,7 +241,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
     //When:
     graph.inTx {
-      engine.execute("match (n) return n limit 4", Map.empty[String,Any]).toList
+      engine.execute("match (n) return n limit 4", Map.empty[String,Any], embeddedSession()).toList
     }
 
     //Then:
@@ -245,7 +251,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("traversalmatcherpipe is lazy") {
     //Given:
-    val tx = graph.beginTx()
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL )
     val limiter = Counter().values.limit(2) { _ => fail("Limit reached") }
     val traversalMatchPipe = createTraversalMatcherPipe(limiter)
 

@@ -41,7 +41,7 @@ public class TestTransactionEventsWithIndexes extends TestTransactionEvents
     public void nodeCanBeLegacyIndexedInBeforeCommit() throws Exception
     {
         // Given we have a legacy index...
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final Index<Node> index;
         try ( Transaction tx = db.beginTx() )
         {

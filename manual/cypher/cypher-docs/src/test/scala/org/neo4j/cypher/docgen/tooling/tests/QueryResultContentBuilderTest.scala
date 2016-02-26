@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.docgen.tooling.tests
 
+import org.neo4j.cypher.TestFriendlyExecutionEngine
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.docgen.tooling._
 import org.neo4j.cypher.internal.RewindableExecutionResult
@@ -26,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.test.TestGraphDatabaseFactory
 
-class QueryResultContentBuilderTest extends CypherFunSuite {
+class QueryResultContentBuilderTest extends CypherFunSuite with TestFriendlyExecutionEngine {
 
   test("should handle query with result table output and empty results") {
     val result = runQuery("match (n) return n")

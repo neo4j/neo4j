@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.function.Supplier;
 
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -60,7 +61,7 @@ public class ConstraintIndexCreator
     public long createUniquenessConstraintIndex( KernelStatement state, SchemaReadOperations schema,
             int labelId, int propertyKeyId )
             throws ConstraintVerificationFailedKernelException, TransactionFailureException,
-                   CreateConstraintFailureException, DropIndexFailureException
+            CreateConstraintFailureException, DropIndexFailureException
     {
         IndexDescriptor descriptor = createConstraintIndex( labelId, propertyKeyId );
         UniquenessConstraint constraint = new UniquenessConstraint( labelId, propertyKeyId );
@@ -97,8 +98,9 @@ public class ConstraintIndexCreator
     public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
             throws TransactionFailureException, DropIndexFailureException
     {
-        try ( KernelTransaction transaction = kernelSupplier.get().newTransaction();
-             Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction =
+                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+              Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
             // write lock. It is assumed that the transaction that invoked this "inner" transaction
@@ -141,7 +143,8 @@ public class ConstraintIndexCreator
 
     public IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
     {
-        try ( KernelTransaction transaction = kernelSupplier.get().newTransaction();
+        try ( KernelTransaction transaction =
+                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
               Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema

@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -78,16 +79,17 @@ public class KernelTransactionTestBase
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
     }
 
-    public KernelTransactionImplementation newTransaction()
+    public KernelTransactionImplementation newTransaction( AccessMode accessMode )
     {
-        return newTransaction( 0 );
+        return newTransaction( 0, accessMode );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted )
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, AccessMode accessMode )
     {
         return new KernelTransactionImplementation( null, schemaWriteGuard, hooks, null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, legacyIndexStateSupplier, txPool, clock, TransactionTracer.NULL,
-                storageEngine ).initialize( lastTransactionIdWhenStarted, new NoOpClient() );
+                storageEngine ).initialize( lastTransactionIdWhenStarted, new NoOpClient(), Type.implicit,
+                accessMode );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

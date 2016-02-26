@@ -46,6 +46,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -743,7 +744,7 @@ public class NeoStoresTest
 
     private void startTx() throws TransactionFailureException
     {
-        tx = ds.getKernel().newTransaction();
+        tx = ds.getKernel().newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
         transaction = ((KernelTransactionImplementation) tx).txState();
     }
 

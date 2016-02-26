@@ -162,7 +162,7 @@ public class IndexingAcceptanceTest
     public void searchingForNodeByPropertyShouldWorkWithoutIndex() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Node myNode = createNode( beansAPI, map( "name", "Hawking" ), LABEL1 );
 
         // When
@@ -173,7 +173,7 @@ public class IndexingAcceptanceTest
     public void searchingUsesIndexWhenItExists() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Node myNode = createNode( beansAPI, map( "name", "Hawking" ), LABEL1 );
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
 
@@ -185,7 +185,7 @@ public class IndexingAcceptanceTest
     public void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyAtTheSameTime() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Node myNode = createNode( beansAPI, map( "name", "Hawking" ), LABEL1, LABEL2 );
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
         Neo4jMatchers.createIndex( beansAPI, LABEL2, "name" );
@@ -218,7 +218,7 @@ public class IndexingAcceptanceTest
     public void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyMultipleTimesAllAtOnce() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Node myNode = createNode( beansAPI, map( "name", "Hawking" ), LABEL1, LABEL2 );
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
         Neo4jMatchers.createIndex( beansAPI, LABEL2, "name" );
@@ -255,7 +255,7 @@ public class IndexingAcceptanceTest
     public void searchingByLabelAndPropertyReturnsEmptyWhenMissingLabelOrProperty() throws Exception
     {
         // Given
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
 
         // When/Then
         assertThat( findNodesByLabelAndProperty( LABEL1, "name", "Hawking", beansAPI ), isEmpty() );
@@ -265,7 +265,7 @@ public class IndexingAcceptanceTest
     public void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
         Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
 
@@ -279,7 +279,7 @@ public class IndexingAcceptanceTest
     public void createdNodeShouldShowUpWithinTransaction() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
 
         // WHEN
@@ -301,7 +301,7 @@ public class IndexingAcceptanceTest
     public void deletedNodeShouldShowUpWithinTransaction() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
         Node firstNode = createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
 
@@ -323,7 +323,7 @@ public class IndexingAcceptanceTest
     public void createdNodeShouldShowUpInIndexQuery() throws Exception
     {
         // GIVEN
-        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseService();
+        GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( beansAPI, LABEL1, "name" );
         createNode( beansAPI, map( "name", "Mattias" ), LABEL1 );
 
@@ -346,7 +346,7 @@ public class IndexingAcceptanceTest
     {
         // GIVEN
         String property = "name";
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( db, LABEL1, property );
 
         // WHEN & THEN
@@ -386,7 +386,7 @@ public class IndexingAcceptanceTest
         // this test was included here for now as a precondition for the following test
 
         // given
-        GraphDatabaseService graph = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( graph, LABEL1, "name" );
 
         Node node1, node2;
@@ -413,7 +413,7 @@ public class IndexingAcceptanceTest
     public void shouldThrowWhenMulitpleResultsForSingleNode() throws Exception
     {
         // given
-        GraphDatabaseService graph = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();
         Neo4jMatchers.createIndex( graph, LABEL1, "name" );
 
         Node node1, node2;
@@ -441,7 +441,7 @@ public class IndexingAcceptanceTest
         String labelPrefix = "foo";
         String propertyKeyPrefix = "bar";
         String propertyValuePrefix = "baz";
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         for ( int i = 0; i < indexesCount; i++ )
         {
@@ -488,7 +488,7 @@ public class IndexingAcceptanceTest
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         IndexDefinition index = createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias", "Mats", "Carla" );
         PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl", "Karlsson" );
@@ -512,7 +512,7 @@ public class IndexingAcceptanceTest
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         IndexDefinition index = createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias", "Mats" );
         PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Carl", "Carlsson" );
@@ -536,7 +536,7 @@ public class IndexingAcceptanceTest
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         IndexDefinition index = createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias" );
         PrimitiveLongSet toDelete = createNodes( db, LABEL1, "name", "Karlsson", "Mats" );
@@ -566,7 +566,7 @@ public class IndexingAcceptanceTest
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
         // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         IndexDefinition index = createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias" );
         PrimitiveLongSet toChangeToMatch = createNodes( db, LABEL1, "name", "Mats" );
@@ -682,7 +682,7 @@ public class IndexingAcceptanceTest
 
     private Neo4jMatchers.Deferred<Label> labels( final Node myNode )
     {
-        return new Neo4jMatchers.Deferred<Label>( dbRule.getGraphDatabaseService() )
+        return new Neo4jMatchers.Deferred<Label>( dbRule.getGraphDatabaseAPI() )
         {
             @Override
             protected Iterable<Label> manifest()

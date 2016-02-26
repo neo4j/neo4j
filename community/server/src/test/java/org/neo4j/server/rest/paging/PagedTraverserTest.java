@@ -51,7 +51,7 @@ public class PagedTraverserTest
     @Before
     public void clearDb() throws Throwable
     {
-        createLinkedList( LIST_LENGTH, dbRule.getGraphDatabaseService() );
+        createLinkedList( LIST_LENGTH, dbRule.getGraphDatabaseAPI() );
     }
 
     private void createLinkedList( int listLength, GraphDatabaseService db )
@@ -94,7 +94,7 @@ public class PagedTraverserTest
     @SuppressWarnings( "unused" )
     private int iterateThroughPagedTraverser( PagedTraverser traversalPager )
     {
-        try ( Transaction transaction = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction transaction = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             int count = 0;
             for ( List<Path> paths : traversalPager )

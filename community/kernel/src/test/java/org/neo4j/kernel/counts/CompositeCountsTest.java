@@ -348,7 +348,7 @@ public class CompositeCountsTest
      */
     private MatchingRelationships numberOfRelationshipsMatching( Label lhs, RelationshipType type, Label rhs )
     {
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
         {
             long nodeCount = countsForRelationship( lhs, type, rhs );
             tx.success();

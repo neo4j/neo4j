@@ -205,7 +205,7 @@ public class IndexTxStateLookupTest
     @Before
     public void given()
     {
-        graphDb = db.getGraphDatabaseService();
+        graphDb = db.getGraphDatabaseAPI();
         // database with an index on `(:Node).prop`
         try ( Transaction tx = graphDb.beginTx() )
         {

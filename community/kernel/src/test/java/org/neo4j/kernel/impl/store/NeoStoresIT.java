@@ -113,7 +113,7 @@ public class NeoStoresIT
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
-                Node node = db.getGraphDatabaseService().getNodeById( latestNodeId[0] );
+                Node node = db.getGraphDatabaseAPI().getNodeById( latestNodeId[0] );
 
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
@@ -162,7 +162,7 @@ public class NeoStoresIT
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
-                Node node = db.getGraphDatabaseService().getNodeById( latestNodeId[0] );
+                Node node = db.getGraphDatabaseAPI().getNodeById( latestNodeId[0] );
 
                 for ( String propertyKey : node.getPropertyKeys() )
                 {
@@ -213,8 +213,8 @@ public class NeoStoresIT
                 {
                     try ( Transaction tx = db.beginTx() )
                     {
-                        Node node1 = db.getGraphDatabaseService().getNodeById( node1Id );
-                        Node node2 = db.getGraphDatabaseService().getNodeById( node2Id );
+                        Node node1 = db.getGraphDatabaseAPI().getNodeById( node1Id );
+                        Node node2 = db.getGraphDatabaseAPI().getNodeById( node2Id );
 
                         Relationship rel = node1.createRelationshipTo( node2, FRIEND );
                         latestRelationshipId[0] = rel.getId();
@@ -230,7 +230,7 @@ public class NeoStoresIT
         {
             try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
             {
-                Relationship rel = db.getGraphDatabaseService().getRelationshipById( latestRelationshipId[0] );
+                Relationship rel = db.getGraphDatabaseAPI().getRelationshipById( latestRelationshipId[0] );
 
                 for ( String propertyKey : rel.getPropertyKeys() )
                 {

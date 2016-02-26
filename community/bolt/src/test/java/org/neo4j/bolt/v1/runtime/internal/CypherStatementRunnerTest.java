@@ -20,14 +20,16 @@
 package org.neo4j.bolt.v1.runtime.internal;
 
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
+
+import org.neo4j.bolt.v1.runtime.internal.CypherStatementRunner.BoltQuerySession;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 
 import static java.util.Collections.EMPTY_MAP;
-
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -35,7 +37,6 @@ import static org.mockito.Mockito.when;
 
 public class CypherStatementRunnerTest
 {
-    private final GraphDatabaseService db = mock( GraphDatabaseService.class );
     private final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
     private final SessionStateMachine ctx = mock( SessionStateMachine.class );
 
@@ -44,41 +45,18 @@ public class CypherStatementRunnerTest
     public void shouldCreateImplicitTxIfNoneExists() throws Exception
     {
         // Given
-        when( db.execute( anyString(), anyMap() ) ).thenReturn( mock( Result.class ) );
-        when( engine.isPeriodicCommit( anyString() ) ).thenReturn( false );
+        when( engine.executeQuery( anyString(), anyMap(), any( BoltQuerySession.class ) ) ).thenReturn( mock( Result.class ) );
         when( ctx.hasTransaction() ).thenReturn( false );
 
-        CypherStatementRunner cypherRunner = new CypherStatementRunner( db, engine );
+        CypherStatementRunner cypherRunner = new CypherStatementRunner( engine );
 
         // When
         cypherRunner.run( ctx, "<query>", EMPTY_MAP );
 
         // Then
         verify( ctx ).hasTransaction();
-        verify( engine ).isPeriodicCommit( "<query>" );
         verify( ctx ).beginImplicitTransaction();
-        verify( db ).execute( "<query>", EMPTY_MAP );
-        verifyNoMoreInteractions( db, engine, ctx );
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void shouldNotCreateImplicitTxIfUsingPeriodicCommit() throws Exception
-    {
-        // Given
-        when( db.execute( anyString(), anyMap() ) ).thenReturn( mock( Result.class ) );
-        when( engine.isPeriodicCommit( anyString() ) ).thenReturn( true );
-        when( ctx.hasTransaction() ).thenReturn( false );
-
-        CypherStatementRunner cypherRunner = new CypherStatementRunner( db, engine );
-
-        // When
-        cypherRunner.run( ctx, "<query>", EMPTY_MAP );
-
-        // Then
-        verify( ctx ).hasTransaction();
-        verify( engine ).isPeriodicCommit( "<query>" );
-        verify( db ).execute( "<query>", EMPTY_MAP );
-        verifyNoMoreInteractions( db, engine, ctx );
+        verify( engine ).executeQuery( eq( "<query>" ), eq( EMPTY_MAP ), any( BoltQuerySession.class ) );
+        verifyNoMoreInteractions( engine, ctx );
     }
 }

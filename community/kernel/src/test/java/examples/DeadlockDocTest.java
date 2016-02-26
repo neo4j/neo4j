@@ -45,7 +45,7 @@ public class DeadlockDocTest
     @Test
     public void transactionWithTemplate() throws InterruptedException
     {
-        GraphDatabaseService graphDatabaseService = rule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = rule.getGraphDatabaseAPI();
 
         // START SNIPPET: template
         TransactionTemplate template = new TransactionTemplate(  ).retries( 5 ).backoff( 3, TimeUnit.SECONDS );
@@ -61,7 +61,7 @@ public class DeadlockDocTest
 
     private Object transactionWithRetry()
     {
-        GraphDatabaseService graphDatabaseService = rule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = rule.getGraphDatabaseAPI();
 
         // START SNIPPET: retry
         Throwable txEx = null;

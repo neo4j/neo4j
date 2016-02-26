@@ -179,7 +179,7 @@ public class LabelScanStoreIT
 
     private void removeLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             for ( Label label : labels )
             {
@@ -191,7 +191,7 @@ public class LabelScanStoreIT
 
     private void deleteNode( Node node )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             node.delete();
             tx.success();
@@ -200,17 +200,17 @@ public class LabelScanStoreIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            return asSet( dbRule.getGraphDatabaseService().findNodes( label ) );
+            return asSet( dbRule.getGraphDatabaseAPI().findNodes( label ) );
         }
     }
 
     private Node createLabeledNode( Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
-            Node node = dbRule.getGraphDatabaseService().createNode( labels );
+            Node node = dbRule.getGraphDatabaseAPI().createNode( labels );
             tx.success();
             return node;
         }
@@ -218,7 +218,7 @@ public class LabelScanStoreIT
 
     private void addLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             for ( Label label : labels )
             {

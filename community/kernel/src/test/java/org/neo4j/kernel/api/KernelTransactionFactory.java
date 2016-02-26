@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.collection.pool.Pool;
 import java.util.function.Supplier;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 
 public class KernelTransactionFactory
 {
-    static KernelTransaction kernelTransaction()
+    static KernelTransaction kernelTransaction( AccessMode accessMode )
     {
         TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
         TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
@@ -64,6 +64,6 @@ public class KernelTransactionFactory
                 mock( Pool.class ),
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL,
-                storageEngine ).initialize( 0, new NoOpClient() );
+                storageEngine ).initialize( 0, new NoOpClient(), KernelTransaction.Type.implicit, accessMode );
     }
 }

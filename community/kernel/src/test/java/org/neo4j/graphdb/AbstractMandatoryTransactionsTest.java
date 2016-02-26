@@ -34,7 +34,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
 
     public T obtainEntity()
     {
-        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseAPI();
 
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {
@@ -47,7 +47,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
 
     public void obtainEntityInTerminatedTransaction( Consumer<T> f )
     {
-        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
+        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseAPI();
 
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {

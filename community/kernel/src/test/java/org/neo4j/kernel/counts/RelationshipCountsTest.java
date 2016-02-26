@@ -64,7 +64,7 @@ public class RelationshipCountsTest
     public void shouldReportTotalNumberOfRelationships() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         long before = numberOfRelationships();
         long during;
         try ( Transaction tx = graphDb.beginTx() )
@@ -90,7 +90,7 @@ public class RelationshipCountsTest
     public void shouldAccountForDeletedRelationships() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         Relationship rel;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -121,7 +121,7 @@ public class RelationshipCountsTest
     public void shouldNotCountRelationshipsCreatedInOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         final Barrier.Control barrier = new Barrier.Control();
         long before = numberOfRelationships();
         Future<Long> tx = threading.execute( new NamedFunction<GraphDatabaseService, Long>( "create-relationships" )
@@ -160,7 +160,7 @@ public class RelationshipCountsTest
     public void shouldNotCountRelationshipsDeletedInOtherTransaction() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         final Relationship rel;
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -206,7 +206,7 @@ public class RelationshipCountsTest
     public void shouldCountRelationshipsByType() throws Exception
     {
         // given
-        final GraphDatabaseService graphDb = db.getGraphDatabaseService();
+        final GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.createNode().createRelationshipTo( graphDb.createNode(), withName( "FOO" ) );
@@ -310,7 +310,7 @@ public class RelationshipCountsTest
     /** Transactional version of {@link #countsForRelationship(Label, RelationshipType, Label)} */
     private long numberOfRelationshipsMatching( Label lhs, RelationshipType type, Label rhs )
     {
-        try ( Transaction tx = db.getGraphDatabaseService().beginTx() )
+        try ( Transaction tx = db.getGraphDatabaseAPI().beginTx() )
         {
             long nodeCount = countsForRelationship( lhs, type, rhs );
             tx.success();

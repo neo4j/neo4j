@@ -140,6 +140,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
     private TransactionEvent transactionEvent;
+    private Type type;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
@@ -173,8 +174,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
-    public KernelTransactionImplementation initialize( long lastCommittedTx, Locks.Client locks )
+    public KernelTransactionImplementation initialize(
+            long lastCommittedTx, Locks.Client locks, Type type, AccessMode accessMode )
     {
+        this.type = type;
         this.locks = locks;
         this.closing = closed = failure = success = terminated = beforeHookInvoked = false;
         this.transactionType = TransactionType.READ;
@@ -182,7 +185,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.transactionEvent = tracer.beginTransaction();
         assert transactionEvent != null : "transactionEvent was null!";
-        this.accessMode = AccessMode.FULL;
+        this.accessMode = accessMode;
         return this;
     }
 
@@ -228,12 +231,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public AccessMode mode()
     {
         return accessMode;
-    }
-
-    @Override
-    public void setMode( AccessMode mode )
-    {
-        this.accessMode = mode;
     }
 
     @Override
@@ -591,6 +588,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void release()
     {
         locks.close();
+        type = null;
+        accessMode = null;
         transactionEvent = null;
         legacyIndexTransactionState = null;
         txState = null;
@@ -604,6 +603,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assert closeListener == null;
         closeListener = listener;
+    }
+
+    @Override
+    public Type transactionType()
+    {
+        return type;
+    }
+
+    @Override
+    public Revertable restrict( AccessMode read )
+    {
+        AccessMode oldMode = this.accessMode;
+        this.accessMode = read;
+        return () -> this.accessMode = oldMode;
     }
 
     @Override

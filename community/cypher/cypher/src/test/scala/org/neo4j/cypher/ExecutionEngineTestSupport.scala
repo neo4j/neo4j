@@ -23,20 +23,20 @@ import java.util.concurrent.TimeUnit
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
+import org.neo4j.cypher.internal.{ExtendedExecutionResult, ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.kernel.impl.query.{QuerySession, QueryEngineProvider}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-
 case class ExpectedException[T <: Throwable](e: T) {
   def messageContains(s: String) = assertThat(e.getMessage, containsString(s))
 }
 
-trait ExecutionEngineTestSupport extends CypherTestSupport {
+trait ExecutionEngineTestSupport extends CypherTestSupport with TestFriendlyExecutionEngine {
   self: CypherFunSuite with GraphDatabaseTestSupport =>
 
   var eengine: ExecutionEngine = null
@@ -47,15 +47,16 @@ trait ExecutionEngineTestSupport extends CypherTestSupport {
   }
 
   def execute(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.execute(q, params.toMap))
+    RewindableExecutionResult(eengine.execute(q, params.toMap, QueryEngineProvider.embeddedSession()))
 
   def profile(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.profile(q, params.toMap))
+    RewindableExecutionResult(eengine.profile(q, params.toMap, QueryEngineProvider.embeddedSession()))
 
   def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
     ExpectedException(intercept[T](execute(q)))
 
-  def executeScalar[T](q: String, params: (String, Any)*): T = scalar(eengine.execute(q, params.toMap).toList)
+  def executeScalar[T](q: String, params: (String, Any)*): T =
+    scalar(eengine.execute(q, params.toMap, QueryEngineProvider.embeddedSession()).toList)
 
   def scalar[T](input: List[Map[String, Any]]) = input match {
     case m :: Nil =>
@@ -73,4 +74,27 @@ trait ExecutionEngineTestSupport extends CypherTestSupport {
 
     Await.result(future, Duration.apply(length, timeUnit))
   }
+}
+
+trait TestFriendlyExecutionEngine {
+
+  implicit class RighExecutionEngine(engine: ExecutionEngine) {
+
+    def execute(query: String): ExtendedExecutionResult = {
+      engine.execute(query, Map.empty[String, Any], QueryEngineProvider.embeddedSession)
+    }
+
+    def execute(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
+      engine.execute(query, params, QueryEngineProvider.embeddedSession)
+    }
+
+    def profile(query: String): ExtendedExecutionResult = {
+      engine.profile(query, Map.empty[String, Any], QueryEngineProvider.embeddedSession)
+    }
+
+    def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
+      engine.profile(query, params, QueryEngineProvider.embeddedSession)
+    }
+  }
+
 }

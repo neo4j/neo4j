@@ -29,6 +29,7 @@ import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
@@ -54,7 +55,7 @@ import static java.util.Collections.newSetFromMap;
  * for enumerating all running transactions. During normal operation, acquiring new transactions and enumerating live
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
-public class KernelTransactions extends LifecycleAdapter implements Factory<KernelTransaction>
+public class KernelTransactions extends LifecycleAdapter
 {
     // Transaction dependencies
 
@@ -86,8 +87,7 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
      * As such, it provides a good mechanism for listing all transactions without requiring synchronization when
      * starting and committing transactions.
      */
-    private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap(
-            new ConcurrentHashMap<>() );
+    private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap( new ConcurrentHashMap<>() );
 
     public KernelTransactions( Locks locks,
                                ConstraintIndexCreator constraintIndexCreator,
@@ -141,11 +141,11 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         }
     };
 
-    @Override
-    public KernelTransaction newInstance()
+    public KernelTransaction newInstance( KernelTransaction.Type type, AccessMode accessMode )
     {
         assertDatabaseIsRunning();
-        return localTxPool.acquire().initialize( transactionIdStore.getLastCommittedTransactionId(), locks.newClient() );
+        return localTxPool.acquire()
+                .initialize( transactionIdStore.getLastCommittedTransactionId(), locks.newClient(), type, accessMode );
     }
 
     /**

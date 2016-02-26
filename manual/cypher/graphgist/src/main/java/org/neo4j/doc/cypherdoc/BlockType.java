@@ -19,6 +19,10 @@
  */
 package org.neo4j.doc.cypherdoc;
 
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -34,11 +38,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
-
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
 import org.neo4j.visualization.graphviz.GraphvizWriter;
@@ -52,8 +54,8 @@ enum BlockType
         boolean isA( List<String> block )
         {
             int size = block.size();
-            return size > 0 && 
-                ( ( block.get( 0 ).startsWith( "=" ) 
+            return size > 0 &&
+                ( ( block.get( 0 ).startsWith( "=" )
                  && !block.get( 0 ).startsWith( "==" )));
         }
 
@@ -302,7 +304,7 @@ enum BlockType
                     state.latestResult =
                             new Result( fileQuery, state.engine.profile( fileQuery, state.parameters ), state.database );
                     prettifiedStatements.add( state.engine.prettify( webQuery ) );
-                    try (Transaction tx = state.database.beginTx())
+                    try (Transaction tx = state.database.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ))
                     {
                         state.database.getGraphDatabaseService().schema().awaitIndexesOnline( 10000, TimeUnit.SECONDS );
                         tx.success();
@@ -449,7 +451,7 @@ enum BlockType
         GraphvizWriter writer = new GraphvizWriter(
                 AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors() );
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (Transaction tx = state.database.beginTx())
+        try (Transaction tx = state.database.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ))
         {
             if ( resultOnly )
             {

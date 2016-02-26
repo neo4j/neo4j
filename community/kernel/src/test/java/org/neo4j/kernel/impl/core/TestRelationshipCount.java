@@ -590,6 +590,6 @@ public class TestRelationshipCount
 
     private GraphDatabaseService getGraphDb()
     {
-        return dbRule.getGraphDatabaseService();
+        return dbRule.getGraphDatabaseAPI();
     }
 }

@@ -70,9 +70,9 @@ public class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
 
         when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
-                .thenReturn( 2468l );
+                .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( 2468l ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
 
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService );
 
@@ -80,7 +80,7 @@ public class ConstraintIndexCreatorTest
         long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
 
         // then
-        assertEquals( 2468l, indexId );
+        assertEquals( 2468L, indexId );
         assertEquals( 1, kernel.statements.size() );
         verify( kernel.statements.get( 0 ).txState() ).constraintIndexRuleDoAdd( descriptor );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
@@ -102,9 +102,9 @@ public class ConstraintIndexCreatorTest
         StubKernel kernel = new StubKernel();
 
         when( constraintCreationContext.schemaReadOperations().indexGetCommittedId( state, descriptor, CONSTRAINT ) )
-                .thenReturn( 2468l );
+                .thenReturn( 2468L );
         IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexingService.getIndexProxy( 2468l ) ).thenReturn( indexProxy );
+        when( indexingService.getIndexProxy( 2468L ) ).thenReturn( indexProxy );
         PreexistingIndexEntryConflictException cause = new PreexistingIndexEntryConflictException("a", 2, 1);
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause) )
                 .when(indexProxy).awaitStoreScanCompleted();
@@ -160,7 +160,7 @@ public class ConstraintIndexCreatorTest
         private final List<KernelStatement> statements = new ArrayList<>();
 
         @Override
-        public KernelTransaction newTransaction()
+        public KernelTransaction newTransaction( KernelTransaction.Type type, AccessMode accessMode )
         {
             return new KernelTransaction()
             {
@@ -204,12 +204,6 @@ public class ConstraintIndexCreatorTest
                 }
 
                 @Override
-                public void setMode( AccessMode mode )
-                {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
                 public boolean shouldBeTerminated()
                 {
                     return false;
@@ -223,6 +217,18 @@ public class ConstraintIndexCreatorTest
                 @Override
                 public void registerCloseListener( CloseListener listener )
                 {
+                }
+
+                @Override
+                public Type transactionType()
+                {
+                    return null;
+                }
+
+                @Override
+                public Revertable restrict( AccessMode read )
+                {
+                    return null;
                 }
             };
         }

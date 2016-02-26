@@ -26,18 +26,20 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public class GraphDatabaseCypherService implements GraphDatabaseQueryService
 {
-    private GraphDatabaseAPI graph;
+    private GraphDatabaseFacade graph;
 
     public GraphDatabaseCypherService( GraphDatabaseService graph )
     {
-        this.graph = (GraphDatabaseAPI) graph;
+        this.graph = (GraphDatabaseFacade) graph;
     }
 
     @Override
@@ -71,9 +73,9 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     }
 
     @Override
-    public Transaction beginTx()
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
     {
-        return graph.beginTx();
+        return graph.beginTransaction( type, accessMode );
     }
 
     @Override
@@ -84,7 +86,7 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
 
     // This provides backwards compatibility to the older API for places that cannot (yet) stop using it.
     // TODO: Remove this when possible (remove RULE, remove older compilers)
-    public GraphDatabaseAPI getGraphDatabaseService()
+    public GraphDatabaseFacade getGraphDatabaseService()
     {
         return graph;
     }

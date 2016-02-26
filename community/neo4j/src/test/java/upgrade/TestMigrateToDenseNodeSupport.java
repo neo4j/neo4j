@@ -36,11 +36,12 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -49,7 +50,6 @@ import org.neo4j.test.Unzip;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.Label.label;
@@ -222,9 +222,9 @@ public class TestMigrateToDenseNodeSupport
 
     private void verifyDenseRepresentation( GraphDatabaseService db, Node node, boolean dense )
     {
-        try ( KernelTransaction tx = ((GraphDatabaseAPI)db).getDependencyResolver()
-                .resolveDependency( KernelAPI.class ).newTransaction();
-                Statement statement = tx.acquireStatement() )
+        KernelAPI kernelAPI = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( KernelAPI.class );
+        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AccessMode.READ );
+              Statement statement = tx.acquireStatement() )
         {
             Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursor( node.getId() );
             assertTrue( nodeCursor.next() );

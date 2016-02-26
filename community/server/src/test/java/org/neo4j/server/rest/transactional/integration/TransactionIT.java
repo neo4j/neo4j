@@ -29,7 +29,6 @@ import java.io.Reader;
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -145,8 +144,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         long nodesInDatabaseBeforeTransaction = countNodes();
 
         // begin and execute
-        Response begin = http.POST( "/db/data/transaction", quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' " +
-                                                                        "} ] }" ) );
+        Response begin = http.POST( "/db/data/transaction",
+                quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
 
         String commitResource = begin.stringFromContent( "commit" );
 
@@ -257,104 +256,84 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     @Test
     public void begin_and_execute_periodic_commit_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url )
-            {
-                long nodesInDatabaseBeforeTransaction = countNodes();
+        ServerTestUtils.withCSVFile( 1, url -> {
+            long nodesInDatabaseBeforeTransaction = countNodes();
 
-                // begin and execute and commit
-                Response response = http.POST(
-                        "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                    url + "\\\" AS line CREATE ()' } ] }" )
-                );
+            // begin and execute and commit
+            Response response = http.POST(
+                    "/db/data/transaction/commit",
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
+                                url + "\\\" AS line CREATE ()' } ] }" )
+            );
 
-                assertThat( response.status(), equalTo( 200 ) );
-                assertThat( response, containsNoErrors() );
-                assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
-            }
+            assertThat( response.status(), equalTo( 200 ) );
+            assertThat( response, containsNoErrors() );
+            assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
         } );
     }
 
     @Test
     public void begin_and_execute_periodic_commit_that_returns_data_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url ) throws Exception
-            {
-                long nodesInDatabaseBeforeTransaction = countNodes();
+        ServerTestUtils.withCSVFile( 1, url -> {
+            long nodesInDatabaseBeforeTransaction = countNodes();
 
-                // begin and execute and commit
-                Response response = http.POST(
-                        "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                    url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
-                );
+            // begin and execute and commit
+            Response response = http.POST(
+                    "/db/data/transaction/commit",
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
+                                url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
+            );
 
-                assertThat( response.status(), equalTo( 200 ) );
+            assertThat( response.status(), equalTo( 200 ) );
 
-                assertThat( response, containsNoErrors() );
+            assertThat( response, containsNoErrors() );
 
-                JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
-                assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
+            JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
+            assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
 
-                assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
-            }
+            assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
         } );
     }
 
     @Test
     public void begin_and_execute_cypher_23_periodic_commit_that_returns_data_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url ) throws Exception
-            {
-                long nodesInDatabaseBeforeTransaction = countNodes();
+        ServerTestUtils.withCSVFile( 1, url -> {
+            long nodesInDatabaseBeforeTransaction = countNodes();
 
-                // begin and execute and commit
-                Response response = http.POST(
-                        "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.3 USING PERIODIC COMMIT LOAD CSV FROM" +
-                                    " \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
-                );
+            // begin and execute and commit
+            Response response = http.POST(
+                    "/db/data/transaction/commit",
+                    quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.3 USING PERIODIC COMMIT LOAD CSV FROM" +
+                                " \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
+            );
 
-                assertThat( response.status(), equalTo( 200 ) );
+            assertThat( response.status(), equalTo( 200 ) );
 
-                assertThat( response, containsNoErrors() );
+            assertThat( response, containsNoErrors() );
 
-                JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
-                assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
+            JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
+            assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
 
-                assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
-            }
+            assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
         } );
     }
 
     @Test
     public void begin_and_execute_periodic_commit_followed_by_another_statement_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url )
-            {
-                // begin and execute and commit
-                Response response = http.POST(
-                        "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                    url +
-                                    "\\\" AS line CREATE (n {id: 23}) RETURN n' }, { 'statement': 'RETURN 1' } ] }" )
-                );
+        ServerTestUtils.withCSVFile( 1, url -> {
+            // begin and execute and commit
+            Response response = http.POST(
+                    "/db/data/transaction/commit",
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
+                                url +
+                                "\\\" AS line CREATE (n {id: 23}) RETURN n' }, { 'statement': 'RETURN 1' } ] }" )
+            );
 
-                assertThat( response.status(), equalTo( 200 ) );
-                assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
-            }
+            assertThat( response.status(), equalTo( 200 ) );
+            assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
         } );
     }
 
@@ -374,65 +353,50 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     @Test
     public void begin_and_execute_multiple_periodic_commit_last_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url )
-            {
-                // begin and execute and commit
-                Response response = http.POST(
-                        "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' }, " +
-                                    "{ 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" + url + "\\\" AS line " +
-                                    "CREATE ()' } ] }" )
-                );
+        ServerTestUtils.withCSVFile( 1, url -> {
+            // begin and execute and commit
+            Response response = http.POST(
+                    "/db/data/transaction/commit",
+                    quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' }, " +
+                                "{ 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" + url + "\\\" AS line " +
+                                "CREATE ()' } ] }" )
+            );
 
-                assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
-            }
+            assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
         } );
     }
 
     @Test
     public void begin__execute__execute_and_periodic_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url )
-            {
-                // begin
-                Response begin = http.POST( "/db/data/transaction" );
+        ServerTestUtils.withCSVFile( 1, url -> {
+            // begin
+            Response begin = http.POST( "/db/data/transaction" );
 
-                // execute
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) );
+            // execute
+            http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE ()' } ] }" ) );
 
-                // execute
-                Response response = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'USING" +
-                                                                             " PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                                                             url + "\\\" AS line CREATE ()' } ] }" ) );
+            // execute
+            Response response = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'USING" +
+                                                                         " PERIODIC COMMIT LOAD CSV FROM \\\"" +
+                                                                         url + "\\\" AS line CREATE ()' } ] }" ) );
 
-                assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
-            }
+            assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
         } );
     }
 
     @Test
     public void begin_and_execute_periodic_commit__commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
-        {
-            @Override
-            public void execute( String url )
-            {
-                // begin and execute
-                Response begin = http.POST(
-                        "/db/data/transaction",
-                        quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
-                                    url + "\\\" AS line CREATE ()' } ] }" )
-                );
+        ServerTestUtils.withCSVFile( 1, url -> {
+            // begin and execute
+            Response begin = http.POST(
+                    "/db/data/transaction",
+                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT LOAD CSV FROM \\\"" +
+                                url + "\\\" AS line CREATE ()' } ] }" )
+            );
 
-                assertThat( begin, hasErrors( Status.Statement.InvalidSemantics ) );
-            }
+            assertThat( begin, hasErrors( Status.Statement.InvalidSemantics ) );
         } );
     }
 
@@ -570,39 +534,29 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         final CountDownLatch latch = new CountDownLatch( 1 );
 
-        final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( new Callable<Response>()
-        {
-            @Override
-            public Response call()
-            {
-                latch.countDown();
-                Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
-                                                                            statement + "' } ] }" ) );
-                assertThat( response.status(), equalTo( 200 ) );
-                return response;
+        final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( () -> {
+            latch.countDown();
+            Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
+                                                                        statement + "' } ] }" ) );
+            assertThat( response.status(), equalTo( 200 ) );
+            return response;
 
-            }
         } );
 
         // terminate
-        final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( new Callable<Response>()
-        {
-            @Override
-            public Response call()
+        final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( () -> {
+            try
             {
-                try
-                {
-                    latch.await();
-                    Thread.sleep( 100 );
-                }
-                catch ( InterruptedException ignored )
-                {
-                    // go
-                }
-                Response response = http.DELETE( begin.location() );
-                assertThat( response.status(), equalTo( 200 ) );
-                return response;
+                latch.await();
+                Thread.sleep( 100 );
             }
+            catch ( InterruptedException ignored )
+            {
+                // go
+            }
+            Response response = http.DELETE( begin.location() );
+            assertThat( response.status(), equalTo( 200 ) );
+            return response;
         } );
 
         interruptFuture.get();

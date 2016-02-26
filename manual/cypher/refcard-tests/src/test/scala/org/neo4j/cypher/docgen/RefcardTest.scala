@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionResult, RewindableEx
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.index.Index
+import org.neo4j.kernel.impl.query.QueryEngineProvider
 import org.neo4j.test.{GraphDescription, GraphDatabaseServiceCleaner, TestGraphDatabaseFactory}
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.scalatest.Assertions
@@ -76,7 +77,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(docQuery), true)
     allQueriesWriter.append(fullQuerySnippet).append("\n\n")
 
-    val result = engine.execute(testQuery, params)
+    val result = engine.execute(testQuery, params,QueryEngineProvider.embeddedSession())
     result
   } catch {
     case e: CypherException => throw new InternalException(queryText, e)
