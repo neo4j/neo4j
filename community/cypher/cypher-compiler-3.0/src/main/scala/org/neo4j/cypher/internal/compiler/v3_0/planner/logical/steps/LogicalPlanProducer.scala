@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyType, LazyTypes, _}

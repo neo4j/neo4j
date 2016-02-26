@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression._
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{QualifiedProcedureName, ProcedureSignature}
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec, _}
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_0._
-import SemanticCheckResult._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec, _}
 
 import scala.collection.immutable.Stack
 

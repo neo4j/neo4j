@@ -34,11 +34,9 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
-import org.neo4j.cypher.internal.frontend.v3_0.{spi => frontend}
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{QualifiedProcedureName, ProcedureSignature}
-import org.neo4j.cypher.internal.frontend.v3_0.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
-import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.frontend.v3_0.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection, spi => frontend}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapper}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -549,18 +547,16 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
-  override def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, transactionalContext.statement.readOperations().procedureCallRead )
+  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
+    callProcedure(name, args, transactionalContext.statement.readOperations().procedureCallRead)
 
-  override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]) =
-    callProcedure(name, args, transactionalContext.statement.dataWriteOperations().procedureCallWrite )
+  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
+    callProcedure(name, args, transactionalContext.statement.dataWriteOperations().procedureCallWrite)
 
-  override def callDbmsProcedure(name: ProcedureName, args: Seq[Any]) =
-    callProcedure(name, args,
-                  (kn: proc.ProcedureSignature.ProcedureName, input: Array[AnyRef]) =>
-                    transactionalContext.dbmsOperations.procedureCallDbms(kn, input, transactionalContext.accessMode))
+  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
+    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_, _, transactionalContext.accessMode))
 
-  private def callProcedure(name: ProcedureName, args: Seq[Any],
+  private def callProcedure(name: QualifiedProcedureName, args: Seq[Any],
                             call: (proc.ProcedureSignature.ProcedureName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]) = {
     val kn = new proc.ProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 case class rewriteProcedureCalls(signatureLookup: QualifiedProcedureName => ProcedureSignature)
@@ -37,7 +38,7 @@ case class rewriteProcedureCalls(signatureLookup: QualifiedProcedureName => Proc
 
   private def resolveCalls = bottomUp(Rewriter.lift {
     case unresolved: UnresolvedCall =>
-      val resolved = unresolved.resolve(signatureLookup)
+      val resolved = ResolvedCall(signatureLookup)(unresolved)
       // We coerce here to ensure that the semantic check run after this rewriter assigns a type
       // to the coercion expression
       val coerced = resolved.coerceArguments

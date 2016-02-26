@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0.ast
+package org.neo4j.cypher.internal.compiler.v3_0.ast
 
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedProcedureName}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedProcedureName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticCheckResult, SemanticState}
@@ -38,7 +39,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val callArguments = Seq(Parameter("a")(pos))
     val callResults = Seq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
 
-    val resolved = unresolved.resolve(_ => signature)
+    val resolved = ResolvedCall(_ => signature)(unresolved)
 
     resolved should equal(
       ResolvedCall(
@@ -50,7 +51,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       )(pos)
     )
 
-    unresolved.qualifiedName should equal(resolved.qualifiedName)
+    QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
     resolved.callResultIndices should equal(Seq(0 -> "x", 1 -> "y"))
 
@@ -64,7 +65,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val callResults = Seq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
     val unresolved = UnresolvedCall(ns, name, None, Some(callResults))(pos)
 
-    val resolved = unresolved.resolve(_ => signature)
+    val resolved = ResolvedCall(_ => signature)(unresolved)
 
     resolved should equal(
       ResolvedCall(
@@ -76,7 +77,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       )(pos)
     )
 
-    unresolved.qualifiedName should equal(resolved.qualifiedName)
+    QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
     resolved.callResultIndices should equal(Seq(0 -> "x", 1 -> "y"))
   }
@@ -89,7 +90,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val callResults = Seq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), None)(pos)
 
-    val resolved = unresolved.resolve(_ => signature)
+    val resolved = ResolvedCall(_ => signature)(unresolved)
 
     resolved should equal(
       ResolvedCall(
@@ -101,7 +102,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       )(pos)
     )
 
-    unresolved.qualifiedName should equal(resolved.qualifiedName)
+    QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
     resolved.callResultIndices should equal(Seq(0 -> "x", 1 -> "y"))
   }
@@ -117,7 +118,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(callResults))(pos)
 
-    val resolved = unresolved.resolve(_ => signature)
+    val resolved = ResolvedCall(_ => signature)(unresolved)
 
     resolved should equal(
       ResolvedCall(
@@ -150,7 +151,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureResultItem(ProcedureOutput("y")(pos), varFor("z"))(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(callResults))(pos)
-    val resolved = unresolved.resolve(_ => signature)
+    val resolved = ResolvedCall(_ => signature)(unresolved)
 
     val coerced = resolved.coerceArguments
 
@@ -177,7 +178,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureResultItem(ProcedureOutput("y")(pos), varFor("z"))(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(callResults))(pos)
-    val resolved = unresolved.resolve(_ => signature).coerceArguments
+    val resolved = ResolvedCall(_ => signature)(unresolved)
 
     errorTexts(resolved.semanticCheck(SemanticState.clean)).toList should equal(List(
       "Procedure call does not provide the required number of arguments (1) (line 1, column 0 (offset: 0))"
@@ -194,7 +195,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureResultItem(ProcedureOutput("y")(pos), varFor("x"))(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(callResults))(pos)
-    val resolved = unresolved.resolve(_ => signature).coerceArguments
+    val resolved = ResolvedCall(_ => signature)(unresolved)
 
     errorTexts(resolved.semanticCheck(SemanticState.clean)) should equal(Seq(
       "Variable `x` already declared (line 1, column 0 (offset: 0))"
@@ -211,7 +212,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureResultItem(ProcedureOutput("p")(pos), varFor("y"))(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(callResults))(pos)
-    val resolved = unresolved.resolve(_ => signature).coerceArguments
+    val resolved = ResolvedCall(_ => signature)(unresolved)
 
     errorTexts(resolved.semanticCheck(SemanticState.clean)) should equal(Seq(
       "Unknown procedure output: `p` (line 1, column 0 (offset: 0))"
@@ -228,7 +229,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureResultItem(ProcedureOutput("y")(pos), varFor("z"))(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(callResults))(pos)
-    val resolved = unresolved.resolve(_ => signature).coerceArguments
+    val resolved = ResolvedCall(_ => signature)(unresolved)
 
     errorTexts(resolved.semanticCheck(SemanticState.clean)) should equal(Seq(
       "Type mismatch: expected Integer but was String (line 1, column 0 (offset: 0))"

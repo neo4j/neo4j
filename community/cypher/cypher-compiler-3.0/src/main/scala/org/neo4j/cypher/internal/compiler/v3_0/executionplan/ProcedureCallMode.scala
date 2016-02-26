@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureName, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_0.spi._
+import org.neo4j.cypher.internal.compiler.v3_0.spi._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -34,20 +33,20 @@ object ProcedureCallMode {
 sealed trait ProcedureCallMode {
   val queryType: InternalQueryType
 
-  def call(ctx: QueryContext, name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 }
 
 case object LazyReadOnlyCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_ONLY
 
-  override def call(ctx: QueryContext, name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
+  override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
     ctx.callReadOnlyProcedure(name, args)
 }
 
 case object EagerReadWriteCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = READ_WRITE
 
-  override def call(ctx: QueryContext, name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
+  override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
     val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
     val iterator = ctx.callReadWriteProcedure(name, args)
     while (iterator.hasNext) {
@@ -60,7 +59,7 @@ case object EagerReadWriteCallMode extends ProcedureCallMode {
 case object DbmsCallMode extends ProcedureCallMode {
   override val queryType: InternalQueryType = DBMS
 
-  override def call(ctx: QueryContext, name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
+  override def call(ctx: QueryContext, name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
     val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
     val iterator = ctx.callDbmsProcedure(name, args)
     while (iterator.hasNext) {

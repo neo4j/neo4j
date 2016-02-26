@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planDescription
 import org.neo4j.cypher.internal.compiler.v3_0.commands
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{LazyLabel, LazyTypes, SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v3_0.spi.ProcedureName
-import org.neo4j.cypher.internal.frontend.v3_0.spi.QualifiedProcedureName
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QualifiedProcedureName
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, ast}
 

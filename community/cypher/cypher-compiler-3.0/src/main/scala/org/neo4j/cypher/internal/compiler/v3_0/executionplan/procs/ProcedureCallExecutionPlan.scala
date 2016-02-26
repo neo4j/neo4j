@@ -25,11 +25,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.{Counter, JavaResultValue
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureName, GraphStatistics, PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, GraphStatistics, PlanContext, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ParameterNotFoundException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{FieldSignature, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
 /**
@@ -68,8 +67,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     val descriptionGenerator = () => createNormalPlan
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
     val columns = signature.outputSignature.toList.map(_.name)
-    val procedureName = ProcedureName(signature.name.namespace, signature.name.name)
-    new ProcedureExecutionResult(ctx, taskCloser, procedureName, callMode, input, resultIndices, descriptionGenerator, planType)
+    new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, resultIndices, descriptionGenerator, planType)
   }
 
   private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any]) = {
@@ -85,8 +83,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     val descriptionGenerator = createProfilePlanGenerator(rowCounter)
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
     val columns = signature.outputSignature.toList.map(_.name)
-    val procedureName = ProcedureName(signature.name.namespace, signature.name.name)
-    new ProcedureExecutionResult(ctx, taskCloser, procedureName, callMode, input, resultIndices, descriptionGenerator, planType) {
+    new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, resultIndices, descriptionGenerator, planType) {
       override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
     }
   }

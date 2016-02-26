@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.execution
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.StatementConverters
@@ -31,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.Ke
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantHandleQueryException, PeriodicCommit, logical}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureName, InstrumentedGraphStatistics, PlanContext, ProcedureSignature}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst, pipes}
 import org.neo4j.cypher.internal.frontend.v3_0._
@@ -312,8 +313,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case ProcedureCall(_, call@ResolvedCall(signature, callArguments, callResults, _, _)) =>
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
       val callArgumentCommands = callArguments.map(toCommandExpression)
-      val procedureName = ProcedureName(signature.name.namespace, signature.name.name)
-      ProcedureCallPipe(source, procedureName, callMode, callArgumentCommands, call.callResultTypes, call.callResultIndices)()
+      ProcedureCallPipe(source, signature.name, callMode, callArgumentCommands, call.callResultTypes, call.callResultIndices)()
 
     case LoadCSVPlan(_, url, variableName, format, fieldTerminator) =>
       LoadCSVPipe(source, format, toCommandExpression(url), variableName.name, fieldTerminator)()
