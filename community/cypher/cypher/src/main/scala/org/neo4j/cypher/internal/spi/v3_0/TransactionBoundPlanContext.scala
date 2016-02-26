@@ -24,9 +24,8 @@ import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{QualifiedProcedureName, ProcedureDbmsAccess, ProcedureReadOnlyAccess, ProcedureReadWriteAccess}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, spi => frontend, symbols}
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, symbols}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
@@ -131,14 +130,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
   override def procedureSignature(name: QualifiedProcedureName) = {
     val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
-    val input = ks.inputSignature().asScala.map(s => frontend.FieldSignature(s.name(), asCypherType(s.neo4jType())))
-    val output = ks.outputSignature().asScala.map(s => frontend.FieldSignature(s.name(), asCypherType(s.neo4jType())))
+    val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
+    val output = ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
     val mode = asCypherProcMode(ks.mode())
 
-    frontend.ProcedureSignature(name, input, output, mode)
+    ProcedureSignature(name, input, output, mode)
   }
 
-  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): frontend.ProcedureAccessMode = mode match {
+  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureAccessMode = mode match {
     case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess
     case KernelProcedureSignature.Mode.READ_WRITE => ProcedureReadWriteAccess
     case KernelProcedureSignature.Mode.DBMS => ProcedureDbmsAccess

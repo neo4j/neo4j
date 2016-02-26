@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -41,7 +42,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     val rewritten = rewriteProcedureCalls(lookup)(original)
 
     rewritten should equal(
-      Query(None, SingleQuery(Seq(unresolved.resolve(lookup).coerceArguments.fakeDeclarations))_)(pos)
+      Query(None, SingleQuery(Seq(ResolvedCall(lookup)(unresolved).coerceArguments.fakeDeclarations))_)(pos)
     )
   }
 
@@ -53,7 +54,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     val rewritten = rewriteProcedureCalls(lookup)(original)
 
     rewritten should equal(
-      Query(None, SingleQuery(Seq(headClause, unresolved.resolve(lookup).coerceArguments))_)(pos)
+      Query(None, SingleQuery(Seq(headClause, ResolvedCall(lookup)(unresolved).coerceArguments))_)(pos)
     )
   }
 }

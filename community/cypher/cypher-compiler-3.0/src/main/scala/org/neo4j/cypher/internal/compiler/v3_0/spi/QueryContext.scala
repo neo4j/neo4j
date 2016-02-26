@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.spi.QualifiedProcedureName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -155,11 +154,11 @@ trait QueryContext extends TokenContext {
 
   def lockRelationships(relIds: Long*)
 
-  def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
-  def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
-  def callDbmsProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
   // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database

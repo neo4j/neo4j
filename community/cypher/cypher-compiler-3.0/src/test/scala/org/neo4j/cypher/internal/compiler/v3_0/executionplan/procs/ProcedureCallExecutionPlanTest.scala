@@ -26,11 +26,9 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_0.NormalMode
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, spi => frontend, symbols}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.ProcedureName
+import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, symbols}
 
 class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
@@ -81,17 +79,17 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   def string(s: String): Expression = StringLiteral(s)(pos)
 
-  private val readSignature = frontend.ProcedureSignature(
+  private val readSignature = ProcedureSignature(
     QualifiedProcedureName(Seq.empty, "foo"),
-    Seq(frontend.FieldSignature("a", symbols.CTInteger)),
-    Seq(frontend.FieldSignature("b", symbols.CTInteger)),
+    Seq(FieldSignature("a", symbols.CTInteger)),
+    Seq(FieldSignature("b", symbols.CTInteger)),
     ProcedureReadOnlyAccess
   )
 
-  private val writeSignature =  frontend.ProcedureSignature(
+  private val writeSignature =  ProcedureSignature(
     QualifiedProcedureName(Seq.empty, "foo"),
-    Seq(frontend.FieldSignature("a", symbols.CTInteger)),
-    Seq(frontend.FieldSignature("b", symbols.CTInteger)),
+    Seq(FieldSignature("a", symbols.CTInteger)),
+    Seq(FieldSignature("b", symbols.CTInteger)),
     ProcedureReadWriteAccess
   )
 
@@ -113,6 +111,6 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   }
 
   when(ctx.transactionalContext).thenReturn(mock[QueryTransactionalContext])
-  when(ctx.callReadOnlyProcedure(any[ProcedureName], any[Seq[Any]])).thenAnswer(procedureResult)
-  when(ctx.callReadWriteProcedure(any[ProcedureName], any[Seq[Any]])).thenAnswer(procedureResult)
+  when(ctx.callReadOnlyProcedure(any[QualifiedProcedureName], any[Seq[Any]])).thenAnswer(procedureResult)
+  when(ctx.callReadWriteProcedure(any[QualifiedProcedureName], any[Seq[Any]])).thenAnswer(procedureResult)
 }
