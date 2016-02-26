@@ -106,6 +106,24 @@ public class ChunkedOutputTest
                 equalTo( "00 0E 00 00 00 00 00 00    00 00 00 00 00 00 00 00    00 02 00 00 00 00" ) );
     }
 
+    @Test
+    public void shouldNotThrowIfOutOfSyncFlush() throws Throwable
+    {
+        // When
+        out.writeLong( 1 ).writeLong( 2 ).writeLong( 3 );
+        out.onMessageComplete();
+        out.flush();
+        out.close();
+        //this flush comes in to late but should not cause ChunkedOutput to choke.
+        out.flush();
+
+        // Then
+        assertThat( writtenData.limit(), equalTo( 32 ) );
+        assertThat( HexPrinter.hex( writtenData, 0, 32 ),
+                equalTo( "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
+                         "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
+    }
+
     @Before
     public void setup()
     {
