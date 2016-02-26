@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransactionTestBase;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.KernelException;
 
@@ -34,6 +35,20 @@ import static org.junit.Assert.assertNotNull;
 public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
 {
     @Rule public ExpectedException exception = ExpectedException.none();
+
+    @Test
+    public void shouldAllowReadsInReadMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction();
+        tx.setMode( AccessMode.READ );
+
+        // When
+        ReadOperations reads = tx.acquireStatement().readOperations();
+
+        // Then
+        assertNotNull( reads );
+    }
 
     @Test
     public void shouldNotAllowWriteAccessInReadMode() throws Throwable
@@ -64,17 +79,59 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     }
 
     @Test
-    public void shouldNotAllowSchemaWriteAccessInWriteMode() throws Throwable
+    public void shouldNotAllowReadAccessInWriteOnlyMode() throws Throwable
     {
         // Given
         KernelTransactionImplementation tx = newTransaction();
-        tx.setMode( AccessMode.WRITE );
+        tx.setMode( AccessMode.WRITE_ONLY );
+
+        // Expect
+        exception.expect( IllegalStateException.class );
+
+        // When
+        tx.acquireStatement().readOperations();
+    }
+
+    @Test
+    public void shouldAllowWriteAccessInWriteOnlyMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction();
+        tx.setMode( AccessMode.WRITE_ONLY );
+
+        // When
+        DataWriteOperations writes = tx.acquireStatement().dataWriteOperations();
+
+        // Then
+        assertNotNull( writes );
+    }
+
+    @Test
+    public void shouldNotAllowSchemaWriteAccessInWriteOnlyMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction();
+        tx.setMode( AccessMode.WRITE_ONLY );
 
         // Expect
         exception.expect( KernelException.class );
 
         // When
         tx.acquireStatement().schemaWriteOperations();
+    }
+
+    @Test
+    public void shouldAllowReadsInWriteMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction();
+        tx.setMode( AccessMode.WRITE );
+
+        // When
+        ReadOperations reads = tx.acquireStatement().readOperations();
+
+        // Then
+        assertNotNull( reads );
     }
 
     @Test
@@ -89,6 +146,34 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
 
         // Then
         assertNotNull( writes );
+    }
+
+    @Test
+    public void shouldNotAllowSchemaWriteAccessInWriteMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction();
+        tx.setMode( AccessMode.WRITE );
+
+        // Expect
+        exception.expect( KernelException.class );
+
+        // When
+        tx.acquireStatement().schemaWriteOperations();
+    }
+
+    @Test
+    public void shouldAllowReadsInFullMode() throws Throwable
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction();
+        tx.setMode( AccessMode.FULL );
+
+        // When
+        ReadOperations reads = tx.acquireStatement().readOperations();
+
+        // Then
+        assertNotNull( reads );
     }
 
     @Test

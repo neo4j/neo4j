@@ -66,7 +66,29 @@ public enum AccessMode
                 }
             },
 
-    /** Allows reading data and schema, but not writing. */
+    /** Allows writing data */
+    WRITE_ONLY
+            {
+                @Override
+                public boolean allowsReads()
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean allowsWrites()
+                {
+                    return true;
+                }
+
+                @Override
+                public boolean allowsSchemaWrites()
+                {
+                    return false;
+                }
+            },
+
+    /** Allows reading and writing data, but not schema. */
     WRITE
             {
                 @Override
