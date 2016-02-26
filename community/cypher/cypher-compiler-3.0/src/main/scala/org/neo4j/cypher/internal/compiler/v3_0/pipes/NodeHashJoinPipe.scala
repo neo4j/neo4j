@@ -95,7 +95,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
   private def computeKey(context: ExecutionContext): Option[Vector[Long]] = {
     val key = new Array[Long](cachedVariables.length)
 
-    for (idx <- 0 until cachedVariables.length) {
+    for (idx <- cachedVariables.indices) {
       key(idx) = context(cachedVariables(idx)) match {
         case n: Node => n.getId
         case null => return None
