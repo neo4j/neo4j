@@ -24,30 +24,33 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureSignature, Qualifie
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
-case class rewriteProcedureCalls(signatureLookup: QualifiedProcedureName => ProcedureSignature)
-  extends Rewriter {
+// Given a way to lookup procedure signatures, this factory returns a rewriter that
+// turns unresolved calls into resolved calls
+object rewriteProcedureCalls {
 
-  import rewriteProcedureCalls.fakeStandaloneCallDeclarations
+  def apply(signatureLookup: QualifiedProcedureName => ProcedureSignature) = {
 
-  def apply(in: AnyRef): AnyRef = in match {
-    case statement: Statement =>
-      statement.endoRewrite(resolveCalls andThen fakeStandaloneCallDeclarations)
-    case other =>
-      other
+    // rewriter that amends unresolved procedure calls with procedure signature information
+    val resolveCalls = bottomUp(Rewriter.lift {
+      case unresolved: UnresolvedCall =>
+        val resolved = ResolvedCall(signatureLookup)(unresolved)
+        // We coerce here to ensure that the semantic check run after this rewriter assigns a type
+        // to the coercion expression
+        val coerced = resolved.coerceArguments
+        coerced
+    })
+
+    resolveCalls andThen fakeStandaloneCallDeclarations
   }
 
-  private def resolveCalls = bottomUp(Rewriter.lift {
-    case unresolved: UnresolvedCall =>
-      val resolved = ResolvedCall(signatureLookup)(unresolved)
-      // We coerce here to ensure that the semantic check run after this rewriter assigns a type
-      // to the coercion expression
-      val coerced = resolved.coerceArguments
-      coerced
-  })
-}
-
-object rewriteProcedureCalls {
-  val fakeStandaloneCallDeclarations = Rewriter.lift {
+  // Current procedure calling syntax allows simplified short-hand syntax for queries
+  // that only consist of a standalone procedure call. In all other cases attempts to
+  // use the simplified syntax lead to errors during semantic checking.
+  //
+  // This rewriter rewrites standalone calls in simplified syntax to calls in standard
+  // syntax to prevent them from being rejected during semantic checking.
+  //
+  private val fakeStandaloneCallDeclarations = Rewriter.lift {
     case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(_, _, _, _, _)))) if !resolved.fullyDeclared =>
       val result = q.copy(part = part.copy(clauses = Seq(resolved.fakeDeclarations))(part.position))(q.position)
       result
