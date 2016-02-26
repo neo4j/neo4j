@@ -70,8 +70,8 @@ public class PhysicalLogFileInformation implements LogFileInformation
     @Override
     public long getFirstEntryId( long version ) throws IOException
     {
-        long logHeader = logHeaderCache.getLogHeader( version );
-        if ( logHeader != -1 )
+        Long logHeader = logHeaderCache.getLogHeader( version );
+        if ( logHeader != null )
         {   // It existed in cache
             return logHeader + 1;
         }
