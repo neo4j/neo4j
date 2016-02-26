@@ -279,6 +279,12 @@ public class RecordBoundaryCheckingPagedFile implements PagedFile
         }
 
         @Override
+        public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
+        {
+            return actual.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
+        }
+
+        @Override
         public void setOffset( int offset )
         {
             if ( offset < start || offset >= start + recordSize )

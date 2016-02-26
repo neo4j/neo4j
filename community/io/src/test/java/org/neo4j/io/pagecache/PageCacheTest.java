@@ -3610,6 +3610,209 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             pageCache.map( file( "a" ), filePageSize + 1, PageCacheOpenOptions.ANY_PAGE_SIZE ).close();
         }
     }
-    // TODO must copy into write page cursor
 
+    @Test
+    public void mustCopyIntoSameSizedWritePageCursor() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        int bytes = 200;
+
+        // Put some data into the file
+        try ( PagedFile pf = pageCache.map( file( "a" ), 32 );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            for ( int i = 0; i < bytes; i++ )
+            {
+                if ( (i & 31) == 0 )
+                {
+                    assertTrue( cursor.next() );
+                }
+                cursor.putByte( (byte) i );
+            }
+        }
+
+        // Then copy all the pages into another file, with a larger file page size
+        int pageSize = 16;
+        try ( PagedFile pfA = pageCache.map( file( "a" ), pageSize );
+              PagedFile pfB = pageCache.map( existingFile( "b" ), pageSize );
+              PageCursor cursorA = pfA.io( 0, PF_SHARED_READ_LOCK );
+              PageCursor cursorB = pfB.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            while ( cursorA.next() )
+            {
+                assertTrue( cursorB.next() );
+                assertThat( cursorA.copyTo( 0, cursorB, 0, cursorA.getCurrentPageSize() ), is( pageSize ) );
+            }
+        }
+
+        // Finally, verify the contents of file 'b'
+        try ( PagedFile pf = pageCache.map( file( "b" ), 32 );
+              PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            for ( int i = 0; i < bytes; i++ )
+            {
+                if ( (i & 31) ==0 )
+                {
+                    assertTrue( cursor.next() );
+                }
+                assertThat( cursor.getByte(), is( (byte) i ) );
+            }
+        }
+    }
+
+    @Test
+    public void mustCopyIntoLargerPageCursor() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        int smallPageSize = 16;
+        int largePageSize = 17;
+        try ( PagedFile pfA = pageCache.map( file( "a" ), smallPageSize );
+              PagedFile pfB = pageCache.map( existingFile( "b" ), largePageSize );
+              PageCursor cursorA = pfA.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor cursorB = pfB.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursorA.next() );
+            for ( int i = 0; i < smallPageSize; i++ )
+            {
+                cursorA.putByte( (byte) (i + 1) );
+            }
+            assertTrue( cursorB.next() );
+            assertThat( cursorA.copyTo( 0, cursorB, 0, smallPageSize ), is( smallPageSize ) );
+            for ( int i = 0; i < smallPageSize; i++ )
+            {
+                assertThat( cursorB.getByte(), is( (byte) (i + 1) ) );
+            }
+            assertThat( cursorB.getByte(), is( (byte) 0 ) );
+        }
+    }
+
+    @Test
+    public void mustCopyIntoSmallerPageCursor() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        int smallPageSize = 16;
+        int largePageSize = 17;
+        try ( PagedFile pfA = pageCache.map( file( "a" ), largePageSize );
+              PagedFile pfB = pageCache.map( existingFile( "b" ), smallPageSize );
+              PageCursor cursorA = pfA.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor cursorB = pfB.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursorA.next() );
+            for ( int i = 0; i < largePageSize; i++ )
+            {
+                cursorA.putByte( (byte) (i + 1) );
+            }
+            assertTrue( cursorB.next() );
+            assertThat( cursorA.copyTo( 0, cursorB, 0, largePageSize ), is( smallPageSize ) );
+            for ( int i = 0; i < smallPageSize; i++ )
+            {
+                assertThat( cursorB.getByte(), is( (byte) (i + 1) ) );
+            }
+        }
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void mustThrowOnCopyIntoReadPageCursor() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        int pageSize = 17;
+        try ( PagedFile pfA = pageCache.map( file( "a" ), pageSize );
+              PagedFile pfB = pageCache.map( existingFile( "b" ), pageSize ) )
+        {
+            // Create data
+            try ( PageCursor cursorA = pfA.io( 0, PF_SHARED_WRITE_LOCK );
+                  PageCursor cursorB = pfB.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursorA.next() );
+                assertTrue( cursorB.next() );
+            }
+
+            // Try copying
+            try ( PageCursor cursorA = pfA.io( 0, PF_SHARED_WRITE_LOCK );
+                  PageCursor cursorB = pfB.io( 0, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursorA.next() );
+                assertTrue( cursorB.next() );
+                cursorA.copyTo( 0, cursorB, 0, pageSize );
+            }
+        }
+    }
+
+    @Test
+    public void copyToMustCheckBounds() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        int pageSize = 16;
+        try ( PagedFile pf = pageCache.map( file( "a" ), pageSize );
+              PageCursor cursorA = pf.io( 0, PF_SHARED_READ_LOCK );
+              PageCursor cursorB = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursorB.next() );
+            assertTrue( cursorB.next() );
+            assertTrue( cursorA.next() );
+
+            // source buffer underflow
+            try
+            {
+                cursorA.copyTo( -1, cursorB, 0, 1 );
+                fail( "should have thrown on source buffer underflow" );
+            }
+            catch ( IndexOutOfBoundsException ignore )
+            {
+                // expected
+            }
+
+            // target buffer underflow
+            try
+            {
+                cursorA.copyTo( 0, cursorB, -1, 1 );
+                fail( "should have thrown on target buffer underflow" );
+            }
+            catch ( IndexOutOfBoundsException ignore )
+            {
+                // expected
+            }
+
+            // source buffer offset overflow
+            try
+            {
+                cursorA.copyTo( pageSize, cursorB, 0, 1 );
+                fail( "should have thrown on source buffer overflow" );
+            }
+            catch ( IndexOutOfBoundsException ignore )
+            {
+                // expected
+            }
+
+            // target buffer offset overflow
+            try
+            {
+                cursorA.copyTo( 0, cursorB, pageSize, 1 );
+                fail( "should have thrown on target buffer overflow" );
+            }
+            catch ( IndexOutOfBoundsException ignore )
+            {
+                // expected
+            }
+
+            // source buffer length overflow
+            assertThat( cursorA.copyTo( 1, cursorB, 0, pageSize ), is( pageSize - 1 ) );
+
+            // target buffer length overflow
+            assertThat( cursorA.copyTo( 0, cursorB, 1, pageSize ), is( pageSize - 1 ) );
+
+            // negative length
+            try
+            {
+                cursorA.copyTo( 1, cursorB, 1, -1 );
+                fail( "should have thrown on negative length" );
+            }
+            catch ( IllegalArgumentException ignore )
+            {
+                // expected
+            }
+        }
+    }
+
+    // TODO paged file must be able to present itself as a ReadableByteChannel
 }

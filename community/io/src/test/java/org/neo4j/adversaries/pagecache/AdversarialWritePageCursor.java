@@ -269,4 +269,11 @@ class AdversarialWritePageCursor implements PageCursor
                 IllegalStateException.class );
         return delegate.shouldRetry();
     }
+
+    @Override
+    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
+    {
+        adversary.injectFailure( IndexOutOfBoundsException.class );
+        return delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
+    }
 }

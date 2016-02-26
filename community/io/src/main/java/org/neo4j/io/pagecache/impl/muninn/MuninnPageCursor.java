@@ -623,6 +623,52 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
+    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
+    {
+        int sourcePageSize = getCurrentPageSize();
+        int targetPageSize = targetCursor.getCurrentPageSize();
+        if ( targetCursor.getClass() == MuninnWritePageCursor.class
+                & sourceOffset >= 0 & targetOffset >= 0
+                & sourceOffset < sourcePageSize & targetOffset < targetPageSize
+                & lengthInBytes > 0 )
+        {
+            MuninnPageCursor cursor = (MuninnPageCursor) targetCursor;
+            int remainingSource = sourcePageSize - sourceOffset;
+            int remainingTarget = targetPageSize - targetOffset;
+            int bytes = Math.min( lengthInBytes, Math.min( remainingSource, remainingTarget ) );
+            UnsafeUtil.copyMemory( pointer + sourceOffset, cursor.pointer + targetOffset, bytes );
+            return bytes;
+        }
+        return illegalCopyToArgs( sourceOffset, sourcePageSize, targetOffset, targetPageSize, lengthInBytes );
+    }
+
+    private int illegalCopyToArgs(
+            int sourceOffset, int sourcePageSize, int targetOffset, int targetPageSize, int lengthInBytes )
+    {
+        if ( sourceOffset < 0 )
+        {
+            throw new IndexOutOfBoundsException( "Negative source offset: " + sourceOffset );
+        }
+        if ( targetOffset < 0 )
+        {
+            throw new IndexOutOfBoundsException( "Negative target offset: " + targetOffset );
+        }
+        if ( sourceOffset >= sourcePageSize )
+        {
+            throw new IndexOutOfBoundsException( "Source offset beyond page bounds: " + sourceOffset );
+        }
+        if ( targetOffset >= targetPageSize )
+        {
+            throw new IndexOutOfBoundsException( "Target offset beyond page bounds: " + sourceOffset );
+        }
+        if ( lengthInBytes < 0 )
+        {
+            throw new IllegalArgumentException( "Cannot copy a negative number of bytes: " + lengthInBytes );
+        }
+        throw new IllegalArgumentException( "Target cursor must be writable" );
+    }
+
+    @Override
     public void setOffset( int offset )
     {
         if ( offset < 0 )

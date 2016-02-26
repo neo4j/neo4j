@@ -269,4 +269,15 @@ class AdversarialReadPageCursor implements PageCursor
         }
         return delegate.shouldRetry();
     }
+
+    @Override
+    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
+    {
+        adversary.injectFailure( IndexOutOfBoundsException.class );
+        if ( !currentReadIsInconsistent )
+        {
+            delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
+        }
+        return lengthInBytes;
+    }
 }
