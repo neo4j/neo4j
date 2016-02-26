@@ -29,7 +29,7 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.convert.DecorateAsJava
 
-class ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava {
+trait ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava with Accepters {
 
   def node(labels: Seq[String] = Seq.empty, properties: Map[String, AnyRef] = Map.empty): Node = {
     val node = mock(classOf[Node])
@@ -90,6 +90,10 @@ class ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava {
     result
   }
 
+}
+
+trait Accepters extends DecorateAsJava {
+
   case class accept(value: Any) extends Matcher[ValueMatcher] {
 
     override def apply(matcher: ValueMatcher): MatchResult = {
@@ -117,4 +121,12 @@ class ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava {
     }
   }
 
+  case class acceptOrderedResult(value: Result) extends Matcher[ResultMatcher] {
+
+    override def apply(matcher: ResultMatcher): MatchResult = {
+      MatchResult(matches = matcher.matchesOrdered(value),
+                  s"$matcher did not match $value",
+                  s"$matcher unexpectedly matched $value")
+    }
+  }
 }

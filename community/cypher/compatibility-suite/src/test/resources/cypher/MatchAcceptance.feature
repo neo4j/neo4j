@@ -25,17 +25,17 @@ Feature: MatchAcceptanceTest
     Given an empty graph
       And having executed: CREATE (:label1)<-[:TYPE]-(:label2);
     When executing query: MATCH (a:label1) RETURN (a)<--(:label2) AS p;
-    Then result:
-      | p                              |
-      | [(:label1)<-[:TYPE]-(:label2)] |
+    Then the result should be:
+      | p                                |
+      | [<(:label1)<-[:TYPE]-(:label2)>] |
 
   Scenario: longer path query should return results in written order
     Given an empty graph
       And having executed: CREATE (:label1)<-[:T1]-(:label2)-[:T2]->(:label3);
     When executing query: MATCH (a:label1) RETURN (a)<--(:label2)--() AS p;
-    Then result:
-      | p                                             |
-      | [(:label1)<-[:T1]-(:label2)-[:T2]->(:label3)] |
+    Then the result should be:
+      | p                                               |
+      | [<(:label1)<-[:T1]-(:label2)-[:T2]->(:label3)>] |
 
   Scenario: Get node degree via length of pattern expression
     Given an empty graph
@@ -209,17 +209,17 @@ Feature: MatchAcceptanceTest
     Given an empty graph
       And having executed: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})
     When executing query: MATCH p=(a {name:'A'})-->(b) RETURN p
-    Then result:
-      | p                                           |
-      | (:A {name: "A"})-[:KNOWS]->(:B {name: "B"}) |
+    Then the result should be:
+      | p                                             |
+      | <(:A {name: 'A'})-[:KNOWS]->(:B {name: 'B'})> |
 
   Scenario: should return a three node path
     Given an empty graph
       And having executed: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})-[:KNOWS]->(c:C {name: "C"})
     When executing query: MATCH p = (a {name:'A'})-[rel1]->(b)-[rel2]->(c) RETURN p
-    Then result:
-      | p                                                                      |
-      | (:A {name: "A"})-[:KNOWS]->(:B {name: "B"})-[:KNOWS]->(:C {name: "C"}) |
+    Then the result should be:
+      | p                                                                        |
+      | <(:A {name: 'A'})-[:KNOWS]->(:B {name: 'B'})-[:KNOWS]->(:C {name: 'C'})> |
 
   Scenario: should not return anything because path length does not match
     Given an empty graph
@@ -289,10 +289,10 @@ Feature: MatchAcceptanceTest
     Given an empty graph
       And having executed: CREATE (a:A {name: "A"})-[:KNOWS {value: 1}]->(b:B {name: "B"})-[:KNOWS {value: 2}]->(c:C {name: "C"})
     When executing query: MATCH p=(n {name:'A'})-[:KNOWS*1..2]->(x) RETURN p
-    Then result:
-      | p                                                                                            |
-      | (:A {name: "A"})-[:KNOWS {value: 1}]->(:B {name: "B"})                                       |
-      | (:A {name: "A"})-[:KNOWS {value: 1}]->(:B {name: "B"})-[:KNOWS {value: 2}]->(:C {name: "C"}) |
+    Then the result should be:
+      | p                                                                                              |
+      | <(:A {name: 'A'})-[:KNOWS {value: 1}]->(:B {name: 'B'})>                                       |
+      | <(:A {name: 'A'})-[:KNOWS {value: 1}]->(:B {name: 'B'})-[:KNOWS {value: 2}]->(:C {name: 'C'})> |
 
   Scenario: a var length path of length zero
     Given an empty graph
@@ -308,8 +308,8 @@ Feature: MatchAcceptanceTest
     Given an empty graph
       And having executed: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})-[:FRIEND]->(c:C {name: "C"})
     When executing query: MATCH p=(a {name:'A'})-[:KNOWS*0..1]->(b)-[:FRIEND*0..1]->(c) RETURN p
-    Then result:
-      | p                                                                       |
-      | (:A {name: "A"})                                                        |
-      | (:A {name: "A"})-[:KNOWS]->(:B {name: "B"})                             |
-      | (:A {name: "A"})-[:KNOWS]->(:B {name: "B"})-[:FRIEND]->(:C {name: "C"}) |
+    Then the result should be:
+      | p                                                                         |
+      | <(:A {name: 'A'})>                                                        |
+      | <(:A {name: 'A'})-[:KNOWS]->(:B {name: 'B'})>                             |
+      | <(:A {name: 'A'})-[:KNOWS]->(:B {name: 'B'})-[:FRIEND]->(:C {name: 'C'})> |

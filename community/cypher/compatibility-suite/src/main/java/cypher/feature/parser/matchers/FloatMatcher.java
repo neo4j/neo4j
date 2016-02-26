@@ -37,6 +37,6 @@ public class FloatMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "FloatMatcher for " + value;
+        return "FloatMatcher(" + value + ")";
     }
 }

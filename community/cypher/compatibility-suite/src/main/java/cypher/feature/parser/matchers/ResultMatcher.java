@@ -19,11 +19,13 @@
  */
 package cypher.feature.parser.matchers;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.Result;
 
-public class ResultMatcher implements Matcher<Result>
+public class ResultMatcher implements Matcher<Result>, Matcher.OrderedMatcher<Result>
 {
     private final List<RowMatcher> rowMatchers;
 
@@ -34,6 +36,33 @@ public class ResultMatcher implements Matcher<Result>
 
     @Override
     public boolean matches( Result value )
+    {
+        List<RowMatcher> mutableCopy = new ArrayList<>( rowMatchers );
+        while ( value.hasNext() && !mutableCopy.isEmpty() )
+        {
+            Map<String,Object> nextRow = value.next();
+            for ( int i = 0; i < mutableCopy.size(); ++i )
+            {
+                if ( mutableCopy.get( i ).matches( nextRow ) )
+                {
+                    mutableCopy.remove( i );
+                    break;
+                }
+                else if ( i == mutableCopy.size() - 1 )
+                {
+                    // no row matcher did match
+                    return false;
+                }
+            }
+        }
+
+        boolean nothingLeftInReal = !value.hasNext();
+        boolean nothingLeftInMatcher = mutableCopy.isEmpty();
+        return nothingLeftInMatcher && nothingLeftInReal;
+    }
+
+    @Override
+    public boolean matchesOrdered( Result value )
     {
         boolean matches = true;
         int counter = 0;

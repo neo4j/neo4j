@@ -62,4 +62,14 @@ class ResultMatcherTest extends ParsingTestSupport {
     matcher shouldNot acceptResult(result(Map("count" -> valueOf(10)), Map("count" -> valueOf(100))))
   }
 
+  test("should consider order properly") {
+    val row1 = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(100)).asJava)
+    val row2 = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(10)).asJava)
+    val matcher = new ResultMatcher(asList(row1, row2))
+
+    matcher should acceptResult(result(Map("count" -> valueOf(10)), Map("count" -> valueOf(100))))
+    matcher shouldNot acceptOrderedResult(result(Map("count" -> valueOf(10)), Map("count" -> valueOf(100))))
+    matcher should acceptOrderedResult(result(Map("count" -> valueOf(100)), Map("count" -> valueOf(10))))
+  }
+
 }
