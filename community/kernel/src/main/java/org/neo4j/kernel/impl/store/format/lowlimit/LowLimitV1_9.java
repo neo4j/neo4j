@@ -20,21 +20,27 @@
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public class LowLimitV1_9 extends LowLimitV2_0
+public class LowLimitV1_9 extends BaseRecordFormats
 {
     public static final RecordFormats RECORD_FORMATS = new LowLimitV1_9();
     private static final String STORE_VERSION = "v0.A.0";
 
-    @Override
-    public String storeVersion()
+    public LowLimitV1_9()
     {
-        return STORE_VERSION;
+        super( STORE_VERSION, 1, Capability.LUCENE_3, Capability.VERSION_TRAILERS );
     }
 
     @Override
@@ -44,26 +50,53 @@ public class LowLimitV1_9 extends LowLimitV2_0
     }
 
     @Override
+    public RecordFormat<RelationshipRecord> relationship()
+    {
+        return new RelationshipRecordFormatV1_9();
+    }
+
+    @Override
     public RecordFormat<DynamicRecord> dynamic()
     {
         return new DynamicRecordFormatV1_9();
     }
 
     @Override
-    public boolean hasStore( StoreType store )
+    public RecordFormat<RelationshipGroupRecord> relationshipGroup()
     {
-        boolean excluded =
-                !super.hasStore( store ) ||
-                store == StoreType.LABEL_TOKEN ||
-                store == StoreType.LABEL_TOKEN_NAME ||
-                store == StoreType.NODE_LABEL ||
-                store == StoreType.SCHEMA;
-        return excluded;
+        return new NoRecordFormat<>();
     }
 
     @Override
-    public Capability[] capabilities()
+    public RecordFormat<PropertyRecord> property()
     {
-        return new Capability[] { Capability.LUCENE_3, Capability.VERSION_TRAILERS };
+        return new PropertyRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<LabelTokenRecord> labelToken()
+    {
+        return new LabelTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
+    {
+        return new PropertyKeyTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
+    {
+        return new RelationshipTypeTokenRecordFormat();
+    }
+
+    @Override
+    public boolean hasStore( StoreType store )
+    {
+        return  store != StoreType.LABEL_TOKEN &&
+                store != StoreType.LABEL_TOKEN_NAME &&
+                store != StoreType.NODE_LABEL &&
+                store != StoreType.SCHEMA;
     }
 }

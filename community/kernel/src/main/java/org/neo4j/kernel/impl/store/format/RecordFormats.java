@@ -30,6 +30,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
+/**
+ * The record formats that a store version uses. Contains all formats for all different stores as well as
+ * accessors for which {@link Capability capabilities} a format has as to be able to compare between formats.
+ */
 public interface RecordFormats
 {
     abstract class Factory extends Service
@@ -43,6 +47,12 @@ public interface RecordFormats
     }
 
     String storeVersion();
+
+    /**
+     * @return format generation, with the intent of usage being that a store can migrate to a newer or
+     * same generation, but not to an older generation.
+     */
+    int generation();
 
     RecordFormat<NodeRecord> node();
 

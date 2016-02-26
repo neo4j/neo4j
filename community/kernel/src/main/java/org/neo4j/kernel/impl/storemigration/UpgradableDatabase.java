@@ -89,12 +89,21 @@ public class UpgradableDatabase
         try
         {
             fromFormat = InternalRecordFormatSelector.fromVersion( result.actualVersion );
-            result = fromFormat.hasCapability( Capability.VERSION_TRAILERS )
-                    ? checkCleanShutDownByVersionTrailer( storeDirectory, fromFormat )
-                    : checkCleanShutDownByCheckPoint( storeDirectory );
-            if ( result.outcome.isSuccessful() )
+            if ( fromFormat.generation() > format.generation() )
             {
-                return fromFormat;
+                // Tried to downgrade, that isn't supported
+                result = new Result( Outcome.unexpectedUpgradingStoreVersion, fromFormat.storeVersion(),
+                        new File( storeDirectory, MetaDataStore.DEFAULT_NAME ).getAbsolutePath() );
+            }
+            else
+            {
+                result = fromFormat.hasCapability( Capability.VERSION_TRAILERS )
+                        ? checkCleanShutDownByVersionTrailer( storeDirectory, fromFormat )
+                        : checkCleanShutDownByCheckPoint( storeDirectory );
+                if ( result.outcome.isSuccessful() )
+                {
+                    return fromFormat;
+                }
             }
         }
         catch ( IllegalArgumentException e )

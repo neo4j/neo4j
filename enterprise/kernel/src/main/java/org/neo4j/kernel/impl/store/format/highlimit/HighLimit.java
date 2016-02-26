@@ -46,10 +46,9 @@ public class HighLimit extends BaseRecordFormats
     // Enterprise.HighLimit.Zero
     public static final String STORE_VERSION = "vE.H.0";
 
-    @Override
-    public String storeVersion()
+    public HighLimit()
     {
-        return STORE_VERSION;
+        super( STORE_VERSION, 6, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
     }
 
     @Override
@@ -98,11 +97,5 @@ public class HighLimit extends BaseRecordFormats
     public RecordFormat<DynamicRecord> dynamic()
     {
         return new DynamicRecordFormat();
-    }
-
-    @Override
-    public Capability[] capabilities()
-    {
-        return new Capability[] { Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 };
     }
 }

@@ -19,24 +19,75 @@
  */
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
+import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public class LowLimitV2_2 extends LowLimitV2_3
+public class LowLimitV2_2 extends BaseRecordFormats
 {
     public static final RecordFormats RECORD_FORMATS = new LowLimitV2_2();
     public static final String STORE_VERSION = "v0.A.5";
 
-    @Override
-    public String storeVersion()
+    public LowLimitV2_2()
     {
-        return STORE_VERSION;
+        super( STORE_VERSION, 5, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_3,
+                Capability.VERSION_TRAILERS );
     }
 
     @Override
-    public Capability[] capabilities()
+    public RecordFormat<NodeRecord> node()
     {
-        return new Capability[] { Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_3,
-                Capability.VERSION_TRAILERS };
+        return new NodeRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<RelationshipGroupRecord> relationshipGroup()
+    {
+        return new RelationshipGroupRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<RelationshipRecord> relationship()
+    {
+        return new RelationshipRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<PropertyRecord> property()
+    {
+        return new PropertyRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<LabelTokenRecord> labelToken()
+    {
+        return new LabelTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
+    {
+        return new PropertyKeyTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
+    {
+        return new RelationshipTypeTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<DynamicRecord> dynamic()
+    {
+        return new DynamicRecordFormat();
     }
 }

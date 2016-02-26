@@ -20,22 +20,27 @@
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public class LowLimitV2_0 extends LowLimitV2_1
+public class LowLimitV2_0 extends BaseRecordFormats
 {
     public static final RecordFormats RECORD_FORMATS = new LowLimitV2_0();
     public static final String STORE_VERSION = "v0.A.1";
 
-    @Override
-    public String storeVersion()
+    public LowLimitV2_0()
     {
-        return STORE_VERSION;
+        super( STORE_VERSION, 2, Capability.SCHEMA, Capability.LUCENE_3, Capability.VERSION_TRAILERS );
     }
 
     @Override
@@ -47,7 +52,8 @@ public class LowLimitV2_0 extends LowLimitV2_1
     @Override
     public RecordFormat<RelationshipRecord> relationship()
     {
-        return new RelationshipRecordFormatV2_0();
+        // Yes, uses the same relationship record format as 1.9
+        return new RelationshipRecordFormatV1_9();
     }
 
     @Override
@@ -57,17 +63,38 @@ public class LowLimitV2_0 extends LowLimitV2_1
     }
 
     @Override
-    public boolean hasStore( StoreType store )
+    public RecordFormat<PropertyRecord> property()
     {
-        boolean excluded =
-                !super.hasStore( store ) ||
-                store == StoreType.RELATIONSHIP_GROUP;
-        return !excluded;
+        return new PropertyRecordFormat();
     }
 
     @Override
-    public Capability[] capabilities()
+    public RecordFormat<LabelTokenRecord> labelToken()
     {
-        return new Capability[] { Capability.SCHEMA, Capability.LUCENE_3, Capability.VERSION_TRAILERS };
+        return new LabelTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
+    {
+        return new PropertyKeyTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
+    {
+        return new RelationshipTypeTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<DynamicRecord> dynamic()
+    {
+        return new DynamicRecordFormat();
+    }
+
+    @Override
+    public boolean hasStore( StoreType store )
+    {
+        return store != StoreType.RELATIONSHIP_GROUP;
     }
 }

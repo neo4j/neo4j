@@ -30,6 +30,23 @@ import static org.neo4j.helpers.ArrayUtil.filter;
  */
 public abstract class BaseRecordFormats implements RecordFormats
 {
+    private final int generation;
+    private final Capability[] capabilities;
+    private final String storeVersion;
+
+    protected BaseRecordFormats( String storeVersion, int generation, Capability... capabilities )
+    {
+        this.storeVersion = storeVersion;
+        this.generation = generation;
+        this.capabilities = capabilities;
+    }
+
+    @Override
+    public String storeVersion()
+    {
+        return storeVersion;
+    }
+
     @Override
     public boolean equals( Object obj )
     {
@@ -71,9 +88,21 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
+    public int generation()
+    {
+        return generation;
+    }
+
+    @Override
     public boolean hasStore( StoreType store )
     {
         return true;
+    }
+
+    @Override
+    public Capability[] capabilities()
+    {
+        return capabilities;
     }
 
     @Override

@@ -125,6 +125,12 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
+    public int generation()
+    {
+        return actual.generation();
+    }
+
+    @Override
     public boolean hasCapability( Capability capability )
     {
         return actual.hasCapability( capability );

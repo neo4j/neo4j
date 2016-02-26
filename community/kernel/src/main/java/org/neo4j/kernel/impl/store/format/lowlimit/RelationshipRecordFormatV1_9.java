@@ -25,9 +25,12 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-class RelationshipRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<RelationshipRecord>
+/**
+ * Used in 1.9 and 2.0
+ */
+class RelationshipRecordFormatV1_9 extends BaseOneByteHeaderRecordFormat<RelationshipRecord>
 {
-    RelationshipRecordFormatV2_0()
+    RelationshipRecordFormatV1_9()
     {
         super( fixedRecordSize( 33 ), 0, IN_USE_BIT );
     }

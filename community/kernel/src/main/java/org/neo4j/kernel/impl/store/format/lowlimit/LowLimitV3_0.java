@@ -37,10 +37,9 @@ public class LowLimitV3_0 extends BaseRecordFormats
     public static final RecordFormats RECORD_FORMATS = new LowLimitV3_0();
     public static final String STORE_VERSION = "v0.A.7";
 
-    @Override
-    public String storeVersion()
+    public LowLimitV3_0()
     {
-        return STORE_VERSION;
+        super( STORE_VERSION, 5, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_5 );
     }
 
     @Override
@@ -89,11 +88,5 @@ public class LowLimitV3_0 extends BaseRecordFormats
     public RecordFormat<DynamicRecord> dynamic()
     {
         return new DynamicRecordFormat();
-    }
-
-    @Override
-    public Capability[] capabilities()
-    {
-        return new Capability[] { Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_5 };
     }
 }
