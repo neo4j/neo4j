@@ -25,12 +25,18 @@ import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.RecordFormats.Factory;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV1_9;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+
+import static java.util.Arrays.asList;
+
+import static org.neo4j.helpers.collection.Iterables.concat;
+import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * Selects format to use for databases in this JVM, using a system property. By default uses the safest
@@ -39,16 +45,21 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
  */
 public class InternalRecordFormatSelector
 {
+    private static final String COMMUNITY_KEY = "community";
     private static final RecordFormats FALLBACK = LowLimitV3_0.RECORD_FORMATS;
-
-    private static final RecordFormats[] KNOWN_FORMATS = new RecordFormats[] {
+    private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
             LowLimitV1_9.RECORD_FORMATS,
             LowLimitV2_0.RECORD_FORMATS,
             LowLimitV2_1.RECORD_FORMATS,
             LowLimitV2_2.RECORD_FORMATS,
             LowLimitV2_3.RECORD_FORMATS,
             LowLimitV3_0.RECORD_FORMATS
-    };
+    );
+
+    private static Iterable<Factory> loadAdditionalFormats()
+    {
+        return Service.load( RecordFormats.Factory.class );
+    }
 
     public static RecordFormats select()
     {
@@ -58,42 +69,47 @@ public class InternalRecordFormatSelector
     public static RecordFormats select( Config config, LogService logging )
     {
         String key = config.get( GraphDatabaseFacadeFactory.Configuration.record_format );
-        for ( RecordFormats.Factory candidate : Service.load( RecordFormats.Factory.class ) )
+        for ( RecordFormats.Factory candidate : loadAdditionalFormats() )
         {
             String candidateId = candidate.getKeys().iterator().next();
             if ( candidateId.equals( key ) )
             {
-                return FALLBACK;
-                //todo: uncomment and return correct format after migration PR is merged.
-                //return candidate.newInstance();
+                // We specified config to select this format specifically and we found it
+                return candidate.newInstance();
             }
             else if ( key.equals( "" ) )
             {
-                logging.getInternalLog( CommunityFacadeFactory.class )
-                        .info( "No record format specified, defaulting to '" + candidateId + "'" );
-                return FALLBACK;
-                //todo: uncomment and return correct format after migration PR is merged.
-                //return candidate.newInstance();
+                // No specific config, just return the first format we found from service loading
+                return loggedSelection( candidate.newInstance(), candidateId, logging );
             }
         }
 
-        if ( key.equals( "" ) )
+        if ( key.equals( COMMUNITY_KEY ) )
         {
-            logging.getInternalLog( CommunityFacadeFactory.class )
-                    .info( "No record format specified, defaulting to 'community'" );
+            // We specified config to select the community format
             return FALLBACK;
         }
-        else if ( key.equals( "community" ) )
+        if ( key.equals( "" ) )
         {
-            return FALLBACK;
+            // No specific config, just return the community fallback
+            return loggedSelection( FALLBACK, COMMUNITY_KEY, logging );
         }
 
         throw new IllegalArgumentException( "No record format found with the name '" + key + "'." );
     }
 
+    private static RecordFormats loggedSelection( RecordFormats format, String candidateId, LogService logging )
+    {
+        logging.getInternalLog( CommunityFacadeFactory.class )
+                .info( "No record format specified, defaulting to '" + candidateId + "'" );
+        return format;
+    }
+
     public static RecordFormats fromVersion( String storeVersion )
     {
-        for ( RecordFormats format : KNOWN_FORMATS )
+        Iterable<RecordFormats> additionalFormats = map( factory -> factory.newInstance(),
+                loadAdditionalFormats() );
+        for ( RecordFormats format : concat( KNOWN_FORMATS, additionalFormats ) )
         {
             if ( format.storeVersion().equals( storeVersion ) )
             {
