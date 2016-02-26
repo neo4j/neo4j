@@ -92,7 +92,7 @@ public class IndexDescriptor
      */
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return format( "INDEX ON :%s(%s)",
+        return format( ":%s(%s)",
                 tokenNameLookup.labelGetName( labelId ), tokenNameLookup.propertyKeyGetName( propertyKeyId ) );
     }
 }

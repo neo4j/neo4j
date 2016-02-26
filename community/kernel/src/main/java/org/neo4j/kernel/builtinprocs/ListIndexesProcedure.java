@@ -58,7 +58,7 @@ public class ListIndexesProcedure extends CallableProcedure.BasicProcedure
 
         indexes.sort( (a,b) -> a.userDescription(tokens).compareTo( b.userDescription(tokens) ) );
 
-        return map( ( index ) -> new Object[]{ index.userDescription(tokens) },
+        return map( ( index ) -> new Object[]{ "INDEX ON " + index.userDescription(tokens) },
                 asRawIterator( indexes.iterator() ) );
     }
 }

@@ -62,7 +62,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createLabeledNode("Person")
     createLabeledNode("Animal")
 
-    val result = legacyProfile("CALL sys.db.labels")
+    val result = legacyProfile("CALL db.labels")
 
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
@@ -138,7 +138,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("unfinished profiler complains [using CALL]") {
     //GIVEN
     createLabeledNode("Person")
-    val result: ExecutionResult = eengine.profile("CALL sys.db.labels")
+    val result: ExecutionResult = eengine.profile("CALL db.labels")
 
     //WHEN THEN
     intercept[ProfilerStatisticsNotReadyException](result.executionPlanDescription())
