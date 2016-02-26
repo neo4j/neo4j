@@ -24,8 +24,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -45,6 +45,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileUtils;
 
@@ -67,7 +69,7 @@ public class LucenePartitionedIndexStressTesting
             String.valueOf( 10000 ) ) );
 
     private static final long NUMBER_OF_NODES = Long.valueOf( getEnvVariable(
-            "LUCENE_PARTITIONED_INDEX_NUMBER_OF_NODES", String.valueOf( 1000000 ) ) );
+            "LUCENE_PARTITIONED_INDEX_NUMBER_OF_NODES", String.valueOf( 100000 ) ) );
     private static final String WORK_DIRECTORY =
             getEnvVariable( "LUCENE_PARTITIONED_INDEX_WORKING_DIRECTORY", JAVA_IO_TMPDIR );
     private static final int WAIT_DURATION_MINUTES = Integer.valueOf( getEnvVariable(
@@ -75,17 +77,16 @@ public class LucenePartitionedIndexStressTesting
 
     private ExecutorService populators;
     private GraphDatabaseService db;
-    private Path storeDir;
+    private File storeDir;
 
     @Before
     public void setUp() throws IOException
     {
-        storeDir = getStorePath();
-        FileUtils.deletePathRecursively( storeDir );
+        storeDir = prepareStoreDir();
         System.out.println( String.format( "Starting database at: %s", storeDir ) );
 
         populators = Executors.newFixedThreadPool( NUMBER_OF_POPULATORS );
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.toFile() )
+        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .newGraphDatabase();
     }
 
@@ -94,19 +95,33 @@ public class LucenePartitionedIndexStressTesting
     {
         db.shutdown();
         populators.shutdown();
-        FileUtils.deletePathRecursively( storeDir );
+        FileUtils.deleteRecursively( storeDir );
     }
 
     @Test
     public void indexCreationStressTest() throws Exception
     {
+        createIndexes();
+        createUniqueIndexes();
         PopulationResult populationResult = populateDatabase();
+        findLastTrackedNodesByLabelAndProperties( db, populationResult );
+        dropAllIndexes();
 
         createUniqueIndexes();
         createIndexes();
         findLastTrackedNodesByLabelAndProperties( db, populationResult );
     }
 
+    private void dropAllIndexes()
+    {
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Schema schema = db.schema();
+            schema.getConstraints().forEach( ConstraintDefinition::drop );
+            schema.getIndexes().forEach( IndexDefinition::drop );
+            transaction.success();
+        }
+    }
 
     private void createIndexes()
     {
@@ -163,10 +178,13 @@ public class LucenePartitionedIndexStressTesting
         }
     }
 
-
-    private Path getStorePath() throws IOException
+    private File prepareStoreDir() throws IOException
     {
-        return Files.createTempDirectory( Paths.get( WORK_DIRECTORY ), "storeDir" );
+        Path storeDirPath = Paths.get( WORK_DIRECTORY ).resolve( Paths.get( "storeDir" ) );
+        File storeDirectory = storeDirPath.toFile();
+        FileUtils.deleteRecursively( storeDirectory );
+        storeDirectory.deleteOnExit();
+        return storeDirectory;
     }
 
     private PopulationResult populateDb( GraphDatabaseService db ) throws ExecutionException, InterruptedException
