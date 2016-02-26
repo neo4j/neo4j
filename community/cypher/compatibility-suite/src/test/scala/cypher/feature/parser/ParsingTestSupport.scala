@@ -20,16 +20,19 @@
 package cypher.feature.parser
 
 import cypher.feature.parser.matchers.{ResultMatcher, RowMatcher, ValueMatcher}
+import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.graphdb._
-import org.scalatest.{Matchers, FunSuite}
+import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.convert.DecorateAsJava
 
-trait ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava with Accepters {
+@RunWith(classOf[JUnitRunner])
+abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava with Accepters {
 
   def node(labels: Seq[String] = Seq.empty, properties: Map[String, AnyRef] = Map.empty): Node = {
     val node = mock(classOf[Node])
