@@ -89,15 +89,18 @@ public class TransactionIT
     public void shouldFailNicelyWhenOutOfOrderRollback() throws Throwable
     {
         // Given
-        RecordingCallback<RecordStream, Object> responses = new RecordingCallback<>();
+        RecordingCallback<StatementMetadata, ?> runResponse = new RecordingCallback<>();
+        RecordingCallback<RecordStream, Object> pullResponse = new RecordingCallback<>();
         Session session = env.newSession();
         session.init( "TestClient",  Collections.<String, Object>emptyMap(), null, null );
 
         // When
-        session.run( "ROLLBACK", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata,Object>noop());
-        session.pullAll( null, responses );
+        session.run( "ROLLBACK", EMPTY_PARAMS, null, runResponse );
+        session.pullAll( null, pullResponse );
 
         // Then
-        MatcherAssert.assertThat( responses.next(), SessionMatchers.ignored());
+        MatcherAssert.assertThat( runResponse.next(),
+                SessionMatchers.failedWith( "rollback cannot be done when there is no open transaction in the session."));
+        MatcherAssert.assertThat( pullResponse.next(), SessionMatchers.ignored());
     }
 }

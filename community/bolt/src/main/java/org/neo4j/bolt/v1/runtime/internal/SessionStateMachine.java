@@ -134,6 +134,12 @@ public class SessionStateMachine implements Session, SessionState
                         return IDLE;
                     }
 
+                    @Override
+                    public State rollbackTransaction( SessionStateMachine ctx )
+                    {
+                        return error( ctx, new Neo4jError( Status.Request.Invalid,
+                                "rollback cannot be done when there is no open transaction in the session." ) );
+                    }
                 },
 
         /**
