@@ -28,6 +28,7 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
+import org.neo4j.concurrent.DecayingFlags;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -45,7 +46,6 @@ import org.neo4j.udc.UsageDataKeys;
  */
 public class SessionStateMachine implements Session, SessionState
 {
-
     /**
      * The session state machine, this is the heart of how a session operates. This enumerates the various discrete
      * states a session can be in, and describes how it behaves in those states.
@@ -100,6 +100,7 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         try
                         {
+                            ctx.featureUsage.flag( UsageDataKeys.Features.bolt );
                             ctx.currentResult = ctx.statementRunner.run( ctx, statement, params );
                             ctx.result( ctx.currentStatementMetadata );
                             //if the call to run failed we must remain in state ERROR
@@ -424,6 +425,7 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     private final UsageData usageData;
+    private final DecayingFlags featureUsage;
     private final GraphDatabaseFacade db;
     private final StatementRunner statementRunner;
     private final ErrorReporter errorReporter;
@@ -464,6 +466,7 @@ public class SessionStateMachine implements Session, SessionState
             StatementRunner engine, LogService logging, Authentication authentication )
     {
         this.usageData = usageData;
+        this.featureUsage = usageData.get(UsageDataKeys.features);
         this.db = db;
         this.txBridge = txBridge;
         this.statementRunner = engine;

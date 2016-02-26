@@ -30,6 +30,8 @@ public class UdcConstants
     public static final String DATABASE_MODE = "databasemode";
     public static final String SERVER_ID = "serverid";
 
+    public static final String FEATURES = "features";
+
     public static final String USER_AGENTS = "ua";
     public static final String VERSION = "v";
     public static final String REVISION = "revision";

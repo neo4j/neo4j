@@ -23,10 +23,12 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class ErrorReporterTest
@@ -37,7 +39,7 @@ public class ErrorReporterTest
         // Given
         AssertableLogProvider provider = new AssertableLogProvider();
         ErrorReporter reporter =
-                new ErrorReporter( provider.getLog( "userlog" ), new UsageData() );
+                new ErrorReporter( provider.getLog( "userlog" ), new UsageData( mock( JobScheduler.class ) ) );
 
         Throwable cause = new Throwable( "This is not an error we know how to handle." );
         Neo4jError error = Neo4jError.from( cause );

@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -41,10 +42,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.udc.UsageDataKeys.Features.bolt;
 
 public class DefaultUdcInformationCollectorTest
 {
-    private final UsageData usageData = new UsageData();
+    private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
     private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector(
             new Config(), null,
             new StubIdGeneratorFactory(), mock( StartupStatistics.class ), usageData );
@@ -126,6 +128,16 @@ public class DefaultUdcInformationCollectorTest
             fail("Expected \"SteveBrookClient/1.0,MayorClient/1.0\" or \"MayorClient/1.0,SteveBrookClient/1.0\", " +
                  "got \""+userAgents+"\"");
         }
+    }
+
+    @Test
+    public void shouldIncludePopularFeatures() throws Throwable
+    {
+        // Given
+        usageData.get( UsageDataKeys.features ).flag( bolt );
+
+        // When & Then
+        assertEquals( "1000", collector.getUdcParams().get( UdcConstants.FEATURES ) );
     }
 
     private static class StubIdGeneratorFactory implements IdGeneratorFactory
