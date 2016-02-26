@@ -19,9 +19,11 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import java.io.IOException;
+
 import org.neo4j.cursor.IOCursor;
 
 public interface RaftEntryStore
 {
-    IOCursor<RaftLogAppendRecord> getEntriesFrom( long logIndex ) throws RaftStorageException;
+    IOCursor<RaftLogAppendRecord> getEntriesFrom( long logIndex ) throws IOException;
 }

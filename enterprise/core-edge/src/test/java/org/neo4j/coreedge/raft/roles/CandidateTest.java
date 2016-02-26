@@ -26,7 +26,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.Outcome;
@@ -46,6 +45,8 @@ import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
+
+import java.io.IOException;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CandidateTest
@@ -133,7 +134,7 @@ public class CandidateTest
         assertEquals( CANDIDATE, outcome.getNewRole() );
     }
 
-    public RaftState<RaftTestMember> newState() throws RaftStorageException
+    public RaftState<RaftTestMember> newState() throws IOException
     {
         return raftState().myself( myself ).build();
     }

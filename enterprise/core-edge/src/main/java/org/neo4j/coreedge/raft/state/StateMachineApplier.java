@@ -21,13 +21,12 @@ package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.ConsensusListener;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -91,28 +90,28 @@ public class StateMachineApplier extends LifecycleAdapter implements ConsensusLi
         }
     }
 
-    private void applyUpTo( long commitIndex ) throws IOException, RaftStorageException
+    private void applyUpTo( long commitIndex ) throws IOException
     {
-
-        while ( lastApplied < commitIndex )
+        try ( IOCursor<RaftLogEntry> cursor = raftLog.getEntryCursor( lastApplied + 1 ) )
         {
-            long indexToApply = lastApplied + 1;
-
-            RaftLogEntry logEntry = raftLog.readLogEntry( indexToApply );
-            stateMachine.applyCommand( logEntry.content(), indexToApply );
-
-            lastApplied = indexToApply;
-
-            if ( indexToApply % this.flushEvery == 0 )
+            while ( cursor.next() && lastApplied < commitIndex )
             {
-                stateMachine.flush();
-                lastAppliedStorage.persistStoreData( new LastAppliedState( lastApplied ) );
+                long indexToApply = lastApplied + 1;
+                stateMachine.applyCommand( cursor.get().content(), indexToApply );
+
+                lastApplied = indexToApply;
+
+                if ( indexToApply % this.flushEvery == 0 )
+                {
+                    stateMachine.flush();
+                    lastAppliedStorage.persistStoreData( new LastAppliedState( lastApplied ) );
+                }
             }
         }
     }
 
     @Override
-    public synchronized void start() throws IOException, RaftStorageException
+    public synchronized void start() throws IOException
     {
         lastApplied = lastAppliedStorage.getInitialState().get();
         log.info( "Replaying commands from index %d to index %d", lastApplied, raftLog.commitIndex() );

@@ -29,7 +29,6 @@ import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Election;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
@@ -49,6 +48,8 @@ import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
+import java.io.IOException;
 
 
 @RunWith(MockitoJUnitRunner.class)
@@ -224,8 +225,8 @@ public class FollowerTest
         assertFalse( outcome.electionTimeoutRenewed() );
     }
 
-    private void appendSomeEntriesToLog( RaftState<RaftTestMember> raft, Follower follower, int numberOfEntriesToAppend, int
-            term ) throws RaftStorageException
+    private void appendSomeEntriesToLog( RaftState<RaftTestMember> raft, Follower follower, int numberOfEntriesToAppend,
+                                         int term ) throws IOException
     {
         for ( int i = 0; i < numberOfEntriesToAppend; i++ )
         {

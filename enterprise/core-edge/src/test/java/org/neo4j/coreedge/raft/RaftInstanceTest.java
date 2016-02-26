@@ -26,12 +26,12 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.kernel.internal.KernelEventHandlers;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -54,6 +54,8 @@ import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterables.last;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+
+import java.io.IOException;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RaftInstanceTest
@@ -294,7 +296,7 @@ public class RaftInstanceTest
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
 
         // Then
-        assertEquals( new NewLeaderBarrier(), raftLog.readEntryContent( raftLog.appendIndex() ) );
+        assertEquals( new NewLeaderBarrier(), raftLog.readLogEntry( raftLog.appendIndex() ).content() );
     }
 
     @Test
@@ -367,7 +369,7 @@ public class RaftInstanceTest
 
         // then
         assertEquals( 1, raftLog.appendIndex() );
-        assertEquals( data1, raftLog.readEntryContent( 1 ) );
+        assertEquals( data1, raftLog.readLogEntry( 1 ).content() );
     }
 
     @Test
@@ -494,11 +496,11 @@ public class RaftInstanceTest
         private boolean startExploding = false;
 
         @Override
-        public long append( RaftLogEntry entry ) throws RaftStorageException
+        public long append( RaftLogEntry entry ) throws IOException
         {
             if ( startExploding )
             {
-                throw new RaftStorageException( "Boom! append" );
+                throw new IOException( "Boom! append" );
             }
             else
             {
@@ -507,17 +509,17 @@ public class RaftInstanceTest
         }
 
         @Override
-        public void truncate( long fromIndex ) throws RaftStorageException
+        public void truncate( long fromIndex ) throws IOException
         {
-            throw new RaftStorageException( "Boom! truncate" );
+            throw new IOException( "Boom! truncate" );
         }
 
         @Override
-        public void commit( long commitIndex ) throws RaftStorageException
+        public void commit( long commitIndex ) throws IOException
         {
             if ( startExploding )
             {
-                throw new RaftStorageException( "Boom! commit" );
+                throw new IOException( "Boom! commit" );
             }
         }
 
@@ -534,19 +536,13 @@ public class RaftInstanceTest
         }
 
         @Override
-        public RaftLogEntry readLogEntry( long logIndex ) throws RaftStorageException
+        public RaftLogEntry readLogEntry( long logIndex ) throws IOException
         {
-            throw new RaftStorageException( "Boom! readLogEntry" );
+            throw new IOException( "Boom! readLogEntry" );
         }
 
         @Override
-        public ReplicatedContent readEntryContent( long logIndex ) throws RaftStorageException
-        {
-            throw new RaftStorageException( "Boom! readEntryContent" );
-        }
-
-        @Override
-        public long readEntryTerm( long logIndex ) throws RaftStorageException
+        public long readEntryTerm( long logIndex ) throws IOException
         {
             return -1;
         }
@@ -555,6 +551,19 @@ public class RaftInstanceTest
         public boolean entryExists( long logIndex )
         {
             return false;
+        }
+
+        @Override
+        public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+        {
+            if ( startExploding )
+            {
+                throw new IOException( "Boom! entry cursor" );
+            }
+            else
+            {
+                return IOCursor.getEmpty();
+            }
         }
 
         public void startExploding()

@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
+import java.io.IOException;
 import java.util.Collection;
 
 import org.junit.Test;
@@ -26,7 +27,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.server.RaftTestMember;
@@ -91,7 +91,7 @@ public class NonFollowerVoteRequestTest
         assertEquals( role, outcome.getNewRole() );
     }
 
-    public RaftState<RaftTestMember> newState() throws RaftStorageException
+    public RaftState<RaftTestMember> newState() throws IOException
     {
         return raftState().myself( myself ).build();
     }

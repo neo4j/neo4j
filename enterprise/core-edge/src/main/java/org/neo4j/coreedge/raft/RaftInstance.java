@@ -32,7 +32,6 @@ import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
 import org.neo4j.coreedge.raft.net.Inbound;
@@ -48,6 +47,7 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -187,7 +187,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
             }
             membershipManager.processLog( logCommands );
         }
-        catch ( RaftStorageException e )
+        catch ( IOException e )
         {
             databaseHealthSupplier.get().panic( e );
             throw new BootstrapException( e );
@@ -250,7 +250,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         return raftState;
     }
 
-    private void handleOutcome( Outcome<MEMBER> outcome ) throws RaftStorageException, IOException
+    private void handleOutcome( Outcome<MEMBER> outcome ) throws IOException
     {
         adjustLogShipping( outcome );
         notifyLeaderChanges( outcome );
@@ -258,7 +258,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         raftState.update( outcome );
         membershipManager.processLog( outcome.getLogCommands() );
         consensusListener.notifyCommitted();
-
         volatileLeader.set( outcome.getLeader() );
     }
 
@@ -273,7 +272,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         }
     }
 
-    private void adjustLogShipping( Outcome<MEMBER> outcome ) throws RaftStorageException
+    private void adjustLogShipping( Outcome<MEMBER> outcome ) throws IOException
     {
         MEMBER oldLeader = raftState.leader();
 
@@ -342,7 +341,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
                 membershipManager.onFollowerStateChange( raftState.followerStates() );
             }
         }
-        catch ( RaftStorageException | IOException e )
+        catch ( IOException e )
         {
             log.error( "Failed to process RAFT message " + incomingMessage, e );
             databaseHealthSupplier.get().panic( e );

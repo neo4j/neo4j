@@ -19,7 +19,8 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.raft.log.RaftStorageException;
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.logging.Log;
@@ -27,5 +28,5 @@ import org.neo4j.logging.Log;
 public interface RaftMessageHandler
 {
     <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> context, Log log )
-            throws RaftStorageException;
+            throws IOException;
 }

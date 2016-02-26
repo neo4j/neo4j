@@ -19,10 +19,10 @@
  */
 package org.neo4j.coreedge.raft.log.debug;
 
+import java.io.IOException;
 import java.io.PrintStream;
 
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 
 public class LogPrinter
@@ -34,7 +34,7 @@ public class LogPrinter
         this.raftLog = raftLog;
     }
 
-    public void print( PrintStream out ) throws RaftStorageException
+    public void print( PrintStream out ) throws IOException
     {
         out.println( String.format( "%1$8s %2$5s  %3$2s %4$s", "Index", "Term", "C?", "Content"));
         for ( int i = 0; i <= raftLog.appendIndex(); i++ )

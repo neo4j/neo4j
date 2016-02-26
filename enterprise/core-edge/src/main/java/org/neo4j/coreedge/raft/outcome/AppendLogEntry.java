@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.raft.outcome;
 
+import java.io.IOException;
 import java.util.Objects;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 
 public class AppendLogEntry implements LogCommand
 {
@@ -37,7 +37,7 @@ public class AppendLogEntry implements LogCommand
     }
 
     @Override
-    public void applyTo( RaftLog raftLog ) throws RaftStorageException
+    public void applyTo( RaftLog raftLog ) throws IOException
     {
         if ( raftLog.entryExists( index ) )
         {

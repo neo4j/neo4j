@@ -23,7 +23,6 @@ import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
@@ -33,10 +32,12 @@ import static java.lang.Long.min;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 
+import java.io.IOException;
+
 public class Follower implements RaftMessageHandler
 {
     public static <MEMBER> boolean logHistoryMatches( ReadableRaftState<MEMBER> ctx, long prevLogIndex, long prevLogTerm )
-            throws RaftStorageException
+            throws IOException
     {
         // NOTE: A previous log index of -1 means no history,
         //       so it always matches.
@@ -61,7 +62,7 @@ public class Follower implements RaftMessageHandler
 
     @Override
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> ctx, Log log )
-            throws RaftStorageException
+            throws IOException
     {
         Outcome<MEMBER> outcome = new Outcome<>( FOLLOWER, ctx );
 

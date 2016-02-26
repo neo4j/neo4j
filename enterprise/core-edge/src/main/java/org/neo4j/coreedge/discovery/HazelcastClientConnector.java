@@ -27,8 +27,6 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class HazelcastClientConnector implements HazelcastConnector
 {

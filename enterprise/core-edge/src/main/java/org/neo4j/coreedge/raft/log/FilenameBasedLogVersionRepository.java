@@ -19,11 +19,8 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.file.Files;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 

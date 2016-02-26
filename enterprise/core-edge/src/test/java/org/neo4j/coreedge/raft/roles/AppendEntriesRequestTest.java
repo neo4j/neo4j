@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -30,7 +31,6 @@ import org.neo4j.coreedge.raft.RaftMessages.AppendEntries.Response;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
@@ -290,7 +290,7 @@ public class AppendEntriesRequestTest
         assertThat( outcome.getLogCommands(), empty() );
     }
 
-    public RaftState<RaftTestMember> newState() throws RaftStorageException
+    public RaftState<RaftTestMember> newState() throws IOException
     {
         return raftState().myself( myself ).build();
     }

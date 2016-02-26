@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
@@ -40,6 +39,7 @@ import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -88,7 +88,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
                 logProvider, catchupTimeout, raftMembershipState );
     }
 
-    public void processLog( Collection<LogCommand> logCommands ) throws RaftStorageException
+    public void processLog( Collection<LogCommand> logCommands ) throws IOException
     {
         for ( LogCommand logCommand : logCommands )
         {
@@ -111,10 +111,18 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
             }
             if ( logCommand instanceof CommitCommand )
             {
-                for ( long index = lastApplied + 1; index <= entryLog.commitIndex(); index++ )
+                long index = lastApplied + 1;
+                try ( IOCursor<RaftLogEntry> entryCursor = entryLog.getEntryCursor( index ) )
                 {
-                    ReplicatedContent content = entryLog.readEntryContent( index );
-                    onCommitted( content, index );
+                    while ( entryCursor.next() )
+                    {
+                        if ( index == entryLog.commitIndex() + 1 )
+                        {
+                            break;
+                        }
+                        ReplicatedContent content = entryCursor.get().content();
+                        onCommitted( content, index );
+                    }
                 }
                 lastApplied = entryLog.commitIndex();
             }
@@ -142,7 +150,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         }
     }
 
-    private void onCommitted( ReplicatedContent content, long logIndex ) throws RaftStorageException
+    private void onCommitted( ReplicatedContent content, long logIndex ) throws IOException
     {
         if ( content instanceof RaftGroup )
         {
@@ -157,14 +165,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
                     membershipStateMachine.onRaftGroupCommitted();
                 }
                 raftMembershipState.logIndex( logIndex );
-                try
-                {
-                    stateStorage.persistStoreData( raftMembershipState );
-                }
-                catch ( IOException e )
-                {
-                    throw new RaftStorageException( e );
-                }
+                stateStorage.persistStoreData( raftMembershipState );
             }
             else
             {
@@ -174,23 +175,16 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         }
     }
 
-    private void onTruncated() throws RaftStorageException
+    private void onTruncated() throws IOException
     {
         Long logIndex = findLastMembershipEntry();
 
         if ( logIndex != null )
         {
-            RaftGroup<MEMBER> lastMembershipEntry = (RaftGroup<MEMBER>) entryLog.readEntryContent( logIndex );
+            RaftGroup<MEMBER> lastMembershipEntry = (RaftGroup<MEMBER>) entryLog.readLogEntry( logIndex ).content();
             raftMembershipState.setVotingMembers( lastMembershipEntry.getMembers() );
             raftMembershipState.logIndex( logIndex );
-            try
-            {
-                stateStorage.persistStoreData( raftMembershipState );
-            }
-            catch ( IOException e )
-            {
-                throw new RaftStorageException( e );
-            }
+            stateStorage.persistStoreData( raftMembershipState );
         }
         else
         {
@@ -200,7 +194,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         uncommittedMemberChanges = 0;
         for ( long i = entryLog.commitIndex() + 1; i <= entryLog.appendIndex(); i++ )
         {
-            ReplicatedContent content = entryLog.readEntryContent( i );
+            ReplicatedContent content = entryLog.readLogEntry( i ).content();
             if ( content instanceof RaftGroup )
             {
                 uncommittedMemberChanges++;
@@ -208,7 +202,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         }
     }
 
-    private Long findLastMembershipEntry() throws RaftStorageException
+    private Long findLastMembershipEntry() throws IOException
     {
         for ( long logIndex = entryLog.appendIndex(); logIndex >= 0; logIndex-- )
         {

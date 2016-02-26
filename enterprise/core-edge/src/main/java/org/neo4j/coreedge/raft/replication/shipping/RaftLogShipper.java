@@ -22,11 +22,9 @@ package org.neo4j.coreedge.raft.replication.shipping;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
-import org.neo4j.coreedge.raft.RenewableTimeoutService.TimeoutName;
 import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -35,6 +33,8 @@ import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static java.lang.String.format;
 import static org.neo4j.coreedge.raft.RenewableTimeoutService.*;
+
+import java.io.IOException;
 
 /// Optimizations
 // TODO: Have several outstanding batches in catchup mode, to bridge the latency gap.
@@ -154,7 +154,7 @@ public class RaftLogShipper<MEMBER>
         {
             sendSingle( raftLog.appendIndex(), lastLeaderContext );
         }
-        catch ( RaftStorageException e )
+        catch ( IOException e )
         {
             log.error( "Exception during send: " + follower, e );
         }
@@ -176,7 +176,7 @@ public class RaftLogShipper<MEMBER>
         abortTimeout();
     }
 
-    public synchronized void onMismatch( long lastRemoteAppendIndex, LeaderContext leaderContext ) throws RaftStorageException
+    public synchronized void onMismatch( long lastRemoteAppendIndex, LeaderContext leaderContext ) throws IOException
     {
         switch ( mode )
         {
@@ -195,7 +195,7 @@ public class RaftLogShipper<MEMBER>
         lastLeaderContext = leaderContext;
     }
 
-    public synchronized void onMatch( long newMatchIndex, LeaderContext leaderContext ) throws RaftStorageException
+    public synchronized void onMatch( long newMatchIndex, LeaderContext leaderContext ) throws IOException
     {
         boolean progress = newMatchIndex > matchIndex;
         matchIndex = max ( newMatchIndex, matchIndex );
@@ -239,7 +239,7 @@ public class RaftLogShipper<MEMBER>
         lastLeaderContext = leaderContext;
     }
 
-    public synchronized void onNewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newLogEntry, LeaderContext leaderContext ) throws RaftStorageException
+    public synchronized void onNewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newLogEntry, LeaderContext leaderContext ) throws IOException
     {
         switch ( mode )
         {
@@ -265,7 +265,7 @@ public class RaftLogShipper<MEMBER>
         lastLeaderContext = leaderContext;
     }
 
-    public synchronized void onCommitUpdate( LeaderContext leaderContext ) throws RaftStorageException
+    public synchronized void onCommitUpdate( LeaderContext leaderContext ) throws IOException
     {
         switch ( mode )
         {
@@ -299,13 +299,13 @@ public class RaftLogShipper<MEMBER>
                 }
             }
         }
-        catch ( RaftStorageException e )
+        catch ( IOException e )
         {
             log.error( "Exception during timeout handling: " + follower, e );
         }
     }
 
-    private void onTimeout() throws RaftStorageException
+    private void onTimeout() throws IOException
     {
         switch ( mode )
         {
@@ -352,7 +352,7 @@ public class RaftLogShipper<MEMBER>
     }
 
     /** Returns true if this sent the last batch. */
-    private boolean sendNextBatchAfterMatch( LeaderContext leaderContext ) throws RaftStorageException
+    private boolean sendNextBatchAfterMatch( LeaderContext leaderContext ) throws IOException
     {
         long lastIndex = raftLog.appendIndex();
 
@@ -370,7 +370,7 @@ public class RaftLogShipper<MEMBER>
         }
     }
 
-    private void sendCommitUpdate( LeaderContext leaderContext ) throws RaftStorageException
+    private void sendCommitUpdate( LeaderContext leaderContext ) throws IOException
     {
         /*
          * This is a commit update. That means that we just received enough success responses to an append
@@ -383,7 +383,7 @@ public class RaftLogShipper<MEMBER>
         outbound.send( follower, appendRequest );
     }
 
-    private void sendSingle( long logIndex, LeaderContext leaderContext ) throws RaftStorageException
+    private void sendSingle( long logIndex, LeaderContext leaderContext ) throws IOException
     {
         scheduleTimeout( retryTimeMillis );
 
@@ -415,7 +415,7 @@ public class RaftLogShipper<MEMBER>
 
     }
 
-    private void sendNewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newEntry, LeaderContext leaderContext ) throws RaftStorageException
+    private void sendNewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newEntry, LeaderContext leaderContext ) throws IOException
     {
         scheduleTimeout( retryTimeMillis );
 
@@ -428,7 +428,7 @@ public class RaftLogShipper<MEMBER>
 
     }
 
-    private void sendRange( long startIndex, long endIndex, LeaderContext leaderContext ) throws RaftStorageException
+    private void sendRange( long startIndex, long endIndex, LeaderContext leaderContext ) throws IOException
     {
         if ( startIndex > endIndex )
             return;

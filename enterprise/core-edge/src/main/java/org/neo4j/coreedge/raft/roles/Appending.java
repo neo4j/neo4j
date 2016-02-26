@@ -19,9 +19,10 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
 import org.neo4j.coreedge.raft.outcome.Outcome;
@@ -34,7 +35,7 @@ public class Appending
 {
     public static <MEMBER> void handleAppendEntriesRequest(
             ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome, RaftMessages.AppendEntries.Request<MEMBER> request )
-            throws RaftStorageException
+            throws IOException
     {
         if ( request.leaderTerm() < state.term() )
         {
@@ -97,13 +98,13 @@ public class Appending
     }
 
     public static <MEMBER> void appendNewEntry( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome, ReplicatedContent
-            content ) throws RaftStorageException
+            content ) throws IOException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();
         long prevLogTerm = prevLogIndex == -1 ? -1 :
                 prevLogIndex > ctx.lastLogIndexBeforeWeBecameLeader() ?
                         ctx.term() :
-                        ctx.entryLog().readLogEntry( prevLogIndex ).term();
+                        ctx.entryLog().readEntryTerm( prevLogIndex );
 
         RaftLogEntry newLogEntry = new RaftLogEntry( ctx.term(), content );
 

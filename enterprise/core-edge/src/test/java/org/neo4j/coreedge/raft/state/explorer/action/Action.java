@@ -19,10 +19,11 @@
  */
 package org.neo4j.coreedge.raft.state.explorer.action;
 
-import org.neo4j.coreedge.raft.log.RaftStorageException;
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
 
 public interface Action
 {
-    ClusterState advance( ClusterState clusterState ) throws RaftStorageException;
+    ClusterState advance( ClusterState clusterState ) throws IOException;
 }

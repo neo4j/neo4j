@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.raft.state.explorer.action;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
 import org.neo4j.coreedge.raft.state.explorer.ComparableRaftState;
@@ -42,7 +42,7 @@ public class ProcessMessage implements Action
     }
 
     @Override
-    public ClusterState advance( ClusterState previous ) throws RaftStorageException
+    public ClusterState advance( ClusterState previous ) throws IOException
     {
         ClusterState newClusterState = new ClusterState( previous );
         Queue<RaftMessages.RaftMessage<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );

@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
@@ -36,7 +35,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 public class ReplayRaftLog
 {
-    public static void main( String[] args ) throws RaftStorageException, IOException
+    public static void main( String[] args ) throws IOException
     {
         Args arg = Args.parse( args );
 

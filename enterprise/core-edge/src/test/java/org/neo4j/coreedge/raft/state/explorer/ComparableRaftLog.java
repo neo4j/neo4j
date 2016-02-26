@@ -19,13 +19,14 @@
  */
 package org.neo4j.coreedge.raft.state.explorer;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 
 public class ComparableRaftLog extends InMemoryRaftLog
 {
-    public ComparableRaftLog( ReadableRaftLog raftLog ) throws RaftStorageException
+    public ComparableRaftLog( ReadableRaftLog raftLog ) throws IOException
     {
         for ( int i = 0; i < raftLog.appendIndex(); i++ )
         {

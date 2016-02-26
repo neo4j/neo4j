@@ -45,6 +45,11 @@ public class PhysicalRaftLogEntryCursor implements IOCursor<RaftLogAppendRecord>
     @Override
     public boolean next() throws IOException
     {
+        if ( !logicallyNext.isEmpty() )
+        {
+            currentEntry = logicallyNext.poll();
+            return true;
+        }
         while ( recordCursor.next() )
         {
             RaftLogRecord record = recordCursor.get();

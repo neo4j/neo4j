@@ -19,11 +19,6 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.coreedge.discovery.Cluster.start;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 public class HazelcastClientLifeCycleIT
 {
 //    public final

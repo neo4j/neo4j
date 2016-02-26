@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.state.explorer;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -28,7 +29,6 @@ import java.util.Set;
 
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.RaftState;
 
@@ -40,7 +40,7 @@ public class ClusterState
     public final Map<RaftTestMember, ComparableRaftState> states;
     public final Map<RaftTestMember, Queue<RaftMessages.RaftMessage<RaftTestMember>>> queues;
 
-    public ClusterState( Set<RaftTestMember> members ) throws RaftStorageException
+    public ClusterState( Set<RaftTestMember> members ) throws IOException
     {
         this.roles = new HashMap<>();
         this.states = new HashMap<>();

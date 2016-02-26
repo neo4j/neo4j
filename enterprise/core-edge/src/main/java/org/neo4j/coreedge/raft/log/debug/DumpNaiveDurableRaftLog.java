@@ -20,16 +20,16 @@
 package org.neo4j.coreedge.raft.log.debug;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
 public class DumpNaiveDurableRaftLog
 {
-    public static void main( String[] args ) throws RaftStorageException
+    public static void main( String[] args ) throws IOException
     {
         for ( String arg : args )
         {

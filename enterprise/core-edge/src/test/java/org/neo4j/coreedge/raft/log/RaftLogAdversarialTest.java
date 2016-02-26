@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.log;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.Test;
 
@@ -27,7 +28,6 @@ import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.SelectiveFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -110,7 +110,7 @@ public class RaftLogAdversarialTest
     }
 
     private void verifyCurrentLogAndNewLogLoadedFromFileSystem(
-            ReadableRaftLog log, FileSystemAbstraction fileSystem, LogVerifier logVerifier ) throws RaftStorageException
+            ReadableRaftLog log, FileSystemAbstraction fileSystem, LogVerifier logVerifier ) throws IOException
     {
         logVerifier.verifyLog( log );
         logVerifier.verifyLog( createRaftLog( fileSystem ) );
@@ -118,6 +118,6 @@ public class RaftLogAdversarialTest
 
     private interface LogVerifier
     {
-        void verifyLog( ReadableRaftLog log ) throws RaftStorageException;
+        void verifyLog( ReadableRaftLog log ) throws IOException;
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.state.explorer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,13 +29,12 @@ import java.util.Set;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.RaftStorageException;
 import org.neo4j.coreedge.raft.roles.Leader;
 import org.neo4j.coreedge.raft.roles.Role;
 
 public class ClusterSafetyViolations
 {
-    public static List<Violation> violations( ClusterState state ) throws RaftStorageException
+    public static List<Violation> violations( ClusterState state ) throws IOException
     {
         List<Violation> invariantsViolated = new ArrayList<>();
 
@@ -51,7 +51,7 @@ public class ClusterSafetyViolations
         return invariantsViolated;
     }
 
-    public static boolean inconsistentCommittedLogEntries( ClusterState state ) throws RaftStorageException
+    public static boolean inconsistentCommittedLogEntries( ClusterState state ) throws IOException
     {
         int index = 0;
         boolean moreLog = true;

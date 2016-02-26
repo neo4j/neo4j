@@ -72,7 +72,7 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 0, testEntryLog.appendIndex() );
-        assertEquals( content, testEntryLog.readEntryContent( 0 ) );
+        assertEquals( content, testEntryLog.readLogEntry( 0 ).content() );
     }
 
     @Test
@@ -86,7 +86,7 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 0, testEntryLog.appendIndex() );
-        assertEquals( content, testEntryLog.readEntryContent( 0 ) );
+        assertEquals( content, testEntryLog.readLogEntry( 0 ).content() );
     }
 
     @Test
@@ -102,7 +102,7 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 0, testEntryLog.appendIndex() );
-        assertEquals( newData, testEntryLog.readEntryContent( 0 ) );
+        assertEquals( newData, testEntryLog.readLogEntry( 0 ).content() );
     }
 
     @Test
@@ -119,7 +119,7 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 2, testEntryLog.appendIndex() );
-        assertEquals( newData, testEntryLog.readEntryContent( 2 ) );
+        assertEquals( newData, testEntryLog.readLogEntry( 2 ).content() );
     }
 
     @Test

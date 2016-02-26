@@ -35,7 +35,6 @@ import java.util.function.Supplier;
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
-import org.neo4j.coreedge.raft.log.debug.DumpPhysicalRaftLog;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogVersions;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
@@ -99,7 +97,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
 
         // Then
         assertTrue( raftLog.entryExists( entryIndex ) );
-        assertEquals( content, raftLog.readEntryContent( entryIndex ) );
+        assertEquals( content, raftLog.readLogEntry( entryIndex ).content() );
         assertEquals( term, raftLog.readEntryTerm( entryIndex ) );
     }
 
@@ -120,12 +118,12 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         // Then
         // entry 1 should be there
         assertTrue( raftLog.entryExists( entryIndex1 ) );
-        assertEquals( content1, raftLog.readEntryContent( entryIndex1 ) );
+        assertEquals( content1, raftLog.readLogEntry( entryIndex1 ).content() );
         assertEquals( term, raftLog.readEntryTerm( entryIndex1 ) );
 
         // entry 2 should be there also
         assertTrue( raftLog.entryExists( entryIndex2 ) );
-        assertEquals( content2, raftLog.readEntryContent( entryIndex2 ) );
+        assertEquals( content2, raftLog.readLogEntry( entryIndex2 ).content() );
         assertEquals( term, raftLog.readEntryTerm( entryIndex2 ) );
     }
 

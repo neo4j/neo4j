@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.log;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.junit.Test;
 
@@ -175,7 +176,7 @@ public class RaftLogDurabilityTest
     }
 
     private void verifyCurrentLogAndNewLogLoadedFromFileSystem(
-            RaftLog log, EphemeralFileSystemAbstraction fileSystem, LogVerifier logVerifier ) throws RaftStorageException
+            RaftLog log, EphemeralFileSystemAbstraction fileSystem, LogVerifier logVerifier ) throws IOException
     {
         logVerifier.verifyLog( log );
         logVerifier.verifyLog( createRaftLog( fileSystem ) );
@@ -185,6 +186,6 @@ public class RaftLogDurabilityTest
 
     private interface LogVerifier
     {
-        void verifyLog( RaftLog log ) throws RaftStorageException;
+        void verifyLog( RaftLog log ) throws IOException;
     }
 }
