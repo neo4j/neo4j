@@ -22,14 +22,13 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 import org.neo4j.kernel.impl.store.format.LimitedRecordGenerators;
 import org.neo4j.kernel.impl.store.format.RecordFormatTest;
 import org.neo4j.kernel.impl.store.format.RecordGenerators;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 
 public class HighLimitRecordFormatTest extends RecordFormatTest
 {
-    protected static final RecordGenerators _50_BIT_LIMITS = new LimitedRecordGenerators( random, 50, 50, 50, 16, NULL );
+    private static final RecordGenerators HIGH_LIMITS = new LimitedRecordGenerators( random, 50, 50, 50, 16, NULL );
 
     public HighLimitRecordFormatTest()
     {
-        super( HighLimit.RECORD_FORMATS, _50_BIT_LIMITS );
+        super( HighLimit.RECORD_FORMATS, HIGH_LIMITS );
     }
 }

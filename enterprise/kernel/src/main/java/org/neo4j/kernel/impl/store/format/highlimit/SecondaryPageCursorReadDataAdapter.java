@@ -23,8 +23,8 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat;
 import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
+import org.neo4j.kernel.impl.util.Bits;
 
 /**
  * {@link DataAdapter} able to acquire a secondary {@link PageCursor} on potentially a different page
@@ -38,6 +38,7 @@ class SecondaryPageCursorReadDataAdapter implements DataAdapter<PageCursor>, Sec
     private final PageCursor secondaryCursor;
     private final int secondaryOffset;
     private boolean switched;
+    private byte secondaryHeaderByte;
 
     SecondaryPageCursorReadDataAdapter( PageCursor cursor, PagedFile storeFile,
             long secondaryPageId, int secondaryOffset, int primaryEndOffset, int pfFlags ) throws IOException
@@ -58,12 +59,9 @@ class SecondaryPageCursorReadDataAdapter implements DataAdapter<PageCursor>, Sec
             // We've come to the end of the primary cursor, use the secondary cursor instead
             if ( !switched )
             {
-                // Just read out the header, get it out of the way and verify that this secondary record
-                // is in fact a secondary record.
-                // TODO can we do this in BaseHighLimitRecordFormat (the place where this adapter is created) instead?
-                byte secondaryHeaderByte = secondaryCursor.getByte();
-                assert (secondaryHeaderByte & BaseHighLimitRecordFormat.HEADER_BIT_RECORD_UNIT) != 0;
-                assert (secondaryHeaderByte & BaseHighLimitRecordFormat.HEADER_BIT_FIRST_RECORD_UNIT) == 0;
+                // Just read out the header, get it out of the way. Verification of the header byte happens in #close()
+                // because it is the only place where we surely read the consistent value
+                secondaryHeaderByte = secondaryCursor.getByte();
                 switched = true;
             }
             return secondaryCursor.getByte();
@@ -99,5 +97,13 @@ class SecondaryPageCursorReadDataAdapter implements DataAdapter<PageCursor>, Sec
     public void close()
     {
         secondaryCursor.close();
+
+        assert (secondaryHeaderByte & BaseHighLimitRecordFormat.HEADER_BIT_RECORD_UNIT) != 0 : illegalHeader();
+        assert (secondaryHeaderByte & BaseHighLimitRecordFormat.HEADER_BIT_FIRST_RECORD_UNIT) == 0 : illegalHeader();
+    }
+
+    private String illegalHeader()
+    {
+        return "Read illegal secondary record unit header: " + Bits.numberToString( secondaryHeaderByte, Byte.BYTES );
     }
 }

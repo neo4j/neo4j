@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.format.LimitedRecordGenerators;
-import org.neo4j.kernel.impl.store.format.RecordFormatTest;
-import org.neo4j.kernel.impl.store.format.RecordGenerators;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 
 public class LowLimitRecordFormatTest extends RecordFormatTest
