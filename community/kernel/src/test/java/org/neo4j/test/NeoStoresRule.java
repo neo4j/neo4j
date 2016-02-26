@@ -59,11 +59,16 @@ public class NeoStoresRule extends ExternalResource
 
     public NeoStores open( String... config )
     {
+        Config conf = new Config( stringMap( config ) );
+        return open( InternalRecordFormatSelector.select( conf, NullLogService.getInstance() ), config );
+    }
+
+    public NeoStores open( RecordFormats format, String... config )
+    {
         efs = new EphemeralFileSystemAbstraction();
         Config conf = new Config( stringMap( config ) );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( efs, conf, NULL,
                 NullLog.getInstance() );
-        RecordFormats format = InternalRecordFormatSelector.select( conf, NullLogService.getInstance() );
         pageCache = pageCacheFactory.getOrCreatePageCache();
         return open( efs, pageCache, format, config );
     }

@@ -23,7 +23,6 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 
@@ -42,23 +41,28 @@ public class InternalRecordFormatSelector
             String candidateId = candidate.getKeys().iterator().next();
             if ( candidateId.equals( key ) )
             {
-                return candidate.newInstance();
+                return LowLimit.RECORD_FORMATS;
+                //todo: uncomment and return correct format after migration PR is merged.
+                //return candidate.newInstance();
             }
             else if ( key.equals( "" ) )
             {
                 logging.getInternalLog( CommunityFacadeFactory.class )
-                        .info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
+                        .info( "No record format specified, defaulting to '" + candidateId + "'" );
+                return LowLimit.RECORD_FORMATS;
+                //todo: uncomment and return correct format after migration PR is merged.
+                //return candidate.newInstance();
             }
         }
 
-        if ( key.equals( "community" ) )
-        {
-            return LowLimit.RECORD_FORMATS;
-        }
-        else if ( key.equals( "" ) )
+        if ( key.equals( "" ) )
         {
             logging.getInternalLog( CommunityFacadeFactory.class )
                     .info( "No record format specified, defaulting to 'community'" );
+            return LowLimit.RECORD_FORMATS;
+        }
+        else if ( key.equals( "community" ) )
+        {
             return LowLimit.RECORD_FORMATS;
         }
 

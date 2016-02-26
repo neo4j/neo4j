@@ -45,12 +45,12 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class LabelTokenStoreTest
 {
     private final File file = mock( File.class );
-    private final Config config = mock( Config.class );
     private final IdGeneratorFactory generatorFactory = mock( IdGeneratorFactory.class );
     private final PageCache cache = mock( PageCache.class );
     private final LogProvider logProvider = mock( LogProvider.class );
     private final DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
     private final PageCursor pageCursor = mock( PageCursor.class );
+    private final Config config = new Config();
 
     @Test
     public void forceGetRecordSkipInUsecheck() throws IOException
