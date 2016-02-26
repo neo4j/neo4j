@@ -45,6 +45,8 @@ import scala.collection.Iterator
  */
 trait QueryContext extends TokenContext {
 
+  // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
+
   type EntityAccessor
 
   def entityAccessor: EntityAccessor
@@ -203,3 +205,4 @@ trait QueryTransactionalContext {
 
   def commitAndRestartTx()
 }
+
