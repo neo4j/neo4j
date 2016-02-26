@@ -19,22 +19,10 @@
  */
 package cypher.feature.parser
 
-import java.util
-
 import cucumber.api.DataTable
-import cypher.feature.parser.matchers.{RowMatcher, ResultMatcher, ValueMatcher}
+import cypher.feature.parser.matchers.{ResultMatcher, RowMatcher, ValueMatcher}
 
 import scala.collection.JavaConverters._
-
-object scalaResultsParser {
-
-  private def parser = new ResultsParser
-  private val listener = new CypherValuesCreator
-
-  def apply(input: String): AnyRef = {
-    parser.parse(input, listener)
-  }
-}
 
 object matcherParser extends (String => ValueMatcher) {
 
@@ -43,25 +31,6 @@ object matcherParser extends (String => ValueMatcher) {
 
   def apply(input: String): ValueMatcher = {
     parser.matcherParse(input, listener)
-  }
-}
-
-object parseFullTable extends (DataTable => util.List[util.Map[String, AnyRef]]) {
-
-  override def apply(table: DataTable): util.List[util.Map[String, AnyRef]] = {
-    val keys = table.topCells().asScala
-    val cells = table.cells(1).asScala
-
-    val output = new util.ArrayList[util.Map[String, AnyRef]]
-    cells.foreach { case list =>
-      val map = new util.HashMap[String, AnyRef]()
-      list.asScala.zipWithIndex.foreach { case (value, index) =>
-        val parsed = scalaResultsParser(value)
-        map.put(keys(index), parsed)
-      }
-      output.add(map)
-    }
-    output
   }
 }
 

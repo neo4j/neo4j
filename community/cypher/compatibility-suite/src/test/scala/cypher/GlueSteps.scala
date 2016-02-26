@@ -29,11 +29,9 @@ import cypher.GlueSteps._
 import cypher.cucumber.DataTableConverter._
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
-import cypher.cucumber.prettifier.prettifier
 import cypher.feature.parser.{Accepters, constructResultMatcher}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
-import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{FunSuiteLike, Matchers}
 
@@ -112,22 +110,6 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
     result.hasNext shouldBe false
   }
 
-  Then(RESULT) { (sorted: Boolean, names: DataTable) =>
-    val expected = names.asScala[String]
-    val actual = IteratorUtil.asList(result).asScala.map(_.asScala).toList.map {
-      _.map { case (k, v) => (k, prettifier.prettify(graph, v)) }
-    }
-
-    if (sorted) {
-      actual should equal(expected)
-    } else {
-      // if it is not sorted let's sort the result before checking equality
-      actual.sortWith(sorter) should equal(expected.sortWith(sorter))
-    }
-
-    result.close()
-  }
-
   private def castParameters(map: java.util.Map[String, Object]) = {
     map.asScala.map { case (k, v) =>
       k -> Try(Integer.valueOf(v.toString)).getOrElse(v)
@@ -173,7 +155,6 @@ object GlueSteps {
 
   val USING_DB = """^using: (.*)$"""
   val RUNNING_PARAMETRIZED_QUERY = """^running parametrized: (.*)$"""
-  val RESULT = """^(sorted )?result:$"""
 
   // new constants:
 

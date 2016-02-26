@@ -39,13 +39,6 @@ public class ResultsParser
         this.walker = new ParseTreeWalker();
     }
 
-    Object parse( String value, CypherValuesCreator listener )
-    {
-        lexer.setInputStream( new ANTLRInputStream( value ) );
-        walker.walk( listener, parser.value() );
-        return listener.parsed();
-    }
-
     ValueMatcher matcherParse( String value, CypherMatchersCreator listener )
     {
         lexer.setInputStream( new ANTLRInputStream( value ) );
