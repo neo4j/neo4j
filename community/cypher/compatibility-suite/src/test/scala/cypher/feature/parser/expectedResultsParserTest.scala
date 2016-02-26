@@ -25,7 +25,7 @@ import java.util.Collections.emptyList
 import java.{lang, util}
 
 import cypher.feature.parser.matchers.ValueMatcher
-
+import org.neo4j.graphdb.Relationship
 
 class expectedResultsParserTest extends ParsingTestSupport {
 
@@ -133,33 +133,45 @@ class expectedResultsParserTest extends ParsingTestSupport {
     parse("[:T {k:0}]") should accept(relationship("T", Map("k" -> Long.valueOf(0L))))
   }
 
-  //  test("should parse the zero-length path") {
-  //    parse("<()>") should equal(parsedPath(Seq(parsedNode())))
-  //  }
-  //
-  //  test("should parse simple paths") {
-  //    val startNode = parsedNode(Seq("Start"))
-  //    val endNode = parsedNode(Seq("End"))
-  //
-  //    parse("<(:Start)-[:T]->(:End)>") should equal(parsedPath(Seq(startNode, endNode), Seq(parsedRelationship("T", startNode = Some(startNode), endNode = Some(endNode)))))
-  //    parse("<(:End)<-[:T]-(:Start)>") should equal(parsedPath(Seq(endNode, startNode), Seq(parsedRelationship("T", startNode = Some(startNode), endNode = Some(endNode)))))
-  //  }
-  //
-  //  test("should parse paths with mixed directions") {
-  //    val s = parsedNode(Seq("S"))
-  //    val middle = parsedNode()
-  //    val e = parsedNode(Seq("E"))
-  //    parse("<(:S)-[:R1]->()<-[:R2]-(:E)>") should equal(parsedPath(Seq(s, middle, e), Seq(parsedRelationship("R1", startNode = Some(s), endNode = Some(middle)), parsedRelationship("R2", startNode = Some(middle), endNode = Some(e)))))
-  //  }
-  //
-  //  test("should parse path with more complex elements") {
-  //    val value = "<(:T {k:0})-[:T {k:'s'}]->({k:true})-[:type]->()>"
-  //
-  //    val nodes = Seq(parsedNode(Seq("T"), Map("k" -> Long.valueOf(0))), parsedNode(properties = Map("k" -> TRUE)), parsedNode())
-  //    val relationships = Seq(parsedRelationship("T", Map("k" -> "s")), parsedRelationship("type"))
-  //
-  //    parse(value) should equal(parsedPath(nodes, relationships))
-  //  }
+  test("should parse the zero-length path") {
+    parse("<()>") should accept(singleNodePath(node()))
+
+    val path = singleNodePath(node(Seq("Person", "Director"), Map("key" -> "value")))
+    parse("<(:Person:Director {key: 'value'})>") should accept(path)
+  }
+
+  test("should parse simple outgoing path") {
+    val startNode = node(Seq("Start"))
+    val endNode = node(Seq("End"))
+
+    parse("<(:Start)-[:T]->(:End)>") should accept(path(pathLink(startNode, relationship("T"), endNode)))
+  }
+
+  test("should parse simple incoming path") {
+    val startNode = node(Seq("Start"))
+    val endNode = node(Seq("End"))
+
+    parse("<(:End)<-[:T]-(:Start)>") should accept(path(pathLink(startNode, relationship("T"), endNode)))
+  }
+
+  test("should parse path with mixed directions") {
+    val middle = node()
+    val link1: Relationship = pathLink(node(Seq("S")), relationship("R1"), middle)
+    val link2: Relationship = pathLink(node(Seq("E")), relationship("R2"), middle)
+
+    parse("<(:S)-[:R1]->()<-[:R2]-(:E)>") should accept(path(link1, link2))
+  }
+
+  test("should parse path with more complex elements") {
+    val value = "<(:T {k:0})-[:T {k:'s'}]->({k:true})-[:type]->()>"
+
+    val middle = node(properties = Map("k" -> TRUE))
+    val link1 = pathLink(node(Seq("T"), Map("k" -> java.lang.Long.valueOf(0))), relationship("T", Map("k" -> "s")),
+                         middle)
+    val link2 = pathLink(middle, relationship("type"), node())
+
+    parse(value) should accept(path(link1, link2))
+  }
 
   private def parse(value: String): ValueMatcher = {
     matcherParser(value)

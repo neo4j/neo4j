@@ -47,6 +47,36 @@ class ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava {
     rel
   }
 
+  def singleNodePath(node: Node): Path = {
+    val path = mock(classOf[Path])
+    when(path.startNode()).thenReturn(node)
+    when(path.endNode()).thenReturn(node)
+    when(path.length()).thenReturn(0)
+    // Mockito bug makes mocks unable to refer to other mocks in stubs; can't inline this
+    val pathString = s"<$node>"
+    when(path.toString).thenReturn(pathString)
+    path
+  }
+
+  def path(relationships: Relationship*): Path = {
+    val path = mock(classOf[Path])
+    when(path.length()).thenReturn(relationships.length)
+    when(path.relationships()).thenReturn(relationships.toIterable.asJava)
+    // Mockito bug makes mocks unable to refer to other mocks in stubs; can't inline this
+    val pathString = s"<${relationships.mkString}>"
+    when(path.toString).thenReturn(pathString)
+    path
+  }
+
+  def pathLink(startNode: Node, relationship: Relationship, endNode: Node): Relationship = {
+    when(relationship.getStartNode).thenReturn(startNode)
+    when(relationship.getEndNode).thenReturn(endNode)
+    // Mockito bug makes mocks unable to refer to other mocks in stubs; can't inline this
+    val pathString = s"$startNode-$relationship->$endNode"
+    when(relationship.toString).thenReturn(pathString)
+    relationship
+  }
+
   def result(maps: Map[String, AnyRef]*): Result = {
     val result = mock(classOf[Result])
     val itr = maps.map(_.asJava).iterator
@@ -86,4 +116,5 @@ class ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava {
                   s"$matcher unexpectedly matched $value")
     }
   }
+
 }

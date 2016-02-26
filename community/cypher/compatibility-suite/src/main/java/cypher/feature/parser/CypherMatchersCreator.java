@@ -21,8 +21,19 @@ package cypher.feature.parser;
 
 import cypher.feature.parser.generated.FeatureResultsBaseListener;
 import cypher.feature.parser.generated.FeatureResultsParser;
-import cypher.feature.parser.matchers.*;
+import cypher.feature.parser.matchers.BooleanMatcher;
+import cypher.feature.parser.matchers.FloatMatcher;
+import cypher.feature.parser.matchers.IntegerMatcher;
+import cypher.feature.parser.matchers.ListMatcher;
+import cypher.feature.parser.matchers.MapMatcher;
+import cypher.feature.parser.matchers.NodeMatcher;
+import cypher.feature.parser.matchers.PathLinkMatcher;
+import cypher.feature.parser.matchers.PathMatcher;
+import cypher.feature.parser.matchers.RelationshipMatcher;
+import cypher.feature.parser.matchers.StringMatcher;
+import cypher.feature.parser.matchers.ValueMatcher;
 
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,11 +43,12 @@ import java.util.Set;
 
 class CypherMatchersCreator extends FeatureResultsBaseListener
 {
-    private Deque<ValueMatcher> workload;
-    private Deque<Integer> listCounters;
-    private Deque<Integer> mapCounters;
-    private Deque<String> keys;
-    private Deque<String> names;
+    private final Deque<ValueMatcher> workload;
+    private final Deque<Integer> listCounters;
+    private final Deque<Integer> mapCounters;
+    private final Deque<String> keys;
+    private final Deque<String> names;
+    private final Deque<PathLinkMatcher> pathElements;
 
     private static final String INFINITY = "Inf";
 
@@ -47,6 +59,7 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
         this.listCounters = new LinkedList<>();
         this.mapCounters = new LinkedList<>();
         this.names = new LinkedList<>();
+        this.pathElements = new LinkedList<>();
     }
 
     ValueMatcher parsed()
@@ -160,7 +173,7 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
     }
 
     @Override
-    public void exitNode( FeatureResultsParser.NodeContext ctx )
+    public void exitNodeDesc( FeatureResultsParser.NodeDescContext ctx )
     {
         MapMatcher properties = getMapMatcher();
 
@@ -174,13 +187,13 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
 
     private MapMatcher getMapMatcher()
     {
-        if ( workload.isEmpty() )
+        if ( workload.peek() instanceof MapMatcher )
         {
-            return MapMatcher.EMPTY;
+            return (MapMatcher) workload.pop();
         }
         else
         {
-            return (MapMatcher) workload.pop();
+            return MapMatcher.EMPTY;
         }
     }
 
@@ -191,10 +204,59 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
     }
 
     @Override
-    public void exitRelationship( FeatureResultsParser.RelationshipContext ctx )
+    public void exitRelationshipDesc( FeatureResultsParser.RelationshipDescContext ctx )
     {
         MapMatcher properties = getMapMatcher();
         String relTypeName = names.pop();
         workload.push( new RelationshipMatcher( relTypeName, properties ) );
+    }
+
+    @Override
+    public void exitForwardsRelationship( FeatureResultsParser.ForwardsRelationshipContext ctx )
+    {
+        constructPartialPathLink( true );
+    }
+
+    @Override
+    public void exitBackwardsRelationship( FeatureResultsParser.BackwardsRelationshipContext ctx )
+    {
+        constructPartialPathLink( false );
+    }
+
+    private void constructPartialPathLink( boolean outgoing )
+    {
+        // On the workload there is a RelationshipMatcher
+        RelationshipMatcher relMatcher = (RelationshipMatcher) workload.pop();
+
+        // On the workload there is now a NodeMatcher, which is the start node for this relationship
+        NodeMatcher startNode = (NodeMatcher) workload.pop();
+
+        pathElements.push( new PathLinkMatcher( relMatcher, startNode, outgoing ) );
+    }
+
+    @Override
+    public void exitPathLink( FeatureResultsParser.PathLinkContext ctx )
+    {
+        // On the workload there is a NodeMatcher, which is the end node of the last pathLink in pathElements
+
+        NodeMatcher nodeMatcher = (NodeMatcher) workload.peek();
+        pathElements.peek().setRightNode( nodeMatcher );
+    }
+
+    @Override
+    public void exitPath( FeatureResultsParser.PathContext ctx )
+    {
+        // On the workload there is a NodeMatcher, and then zero or more (pathLength) PathLinkMatchers
+
+        NodeMatcher singleNodePath = (NodeMatcher) workload.pop();
+        if ( pathElements.isEmpty() )
+        {
+            workload.push( new PathMatcher( singleNodePath ) );
+        }
+        else
+        {
+            workload.push( new PathMatcher( new ArrayList<>( pathElements ) ) );
+            pathElements.clear();
+        }
     }
 }
