@@ -19,13 +19,13 @@
  */
 package org.neo4j.com;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+
+import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.MadeUpServer.MadeUpRequestType;
 import org.neo4j.com.monitor.RequestMonitor;
@@ -46,7 +46,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     public MadeUpClient( int port, StoreId storeIdToExpect, byte internalProtocolVersion,
                          byte applicationProtocolVersion, int chunkSize, ResponseUnpacker responseUnpacker )
     {
-        super( localhost(), port, new DevNullLoggingService(), storeIdToExpect, FRAME_LENGTH,
+        super( localhost(), port, null, new DevNullLoggingService(), storeIdToExpect, FRAME_LENGTH,
                 new ProtocolVersion( applicationProtocolVersion, internalProtocolVersion ),
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,

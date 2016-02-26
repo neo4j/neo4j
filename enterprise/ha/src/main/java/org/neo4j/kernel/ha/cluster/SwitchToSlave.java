@@ -192,7 +192,7 @@ public class SwitchToSlave
 
             idGeneratorFactory.switchToSlave();
 
-            copyStoreFromMasterIfNeeded( masterUri, cancellationRequest );
+            copyStoreFromMasterIfNeeded( masterUri, me, cancellationRequest );
 
             /*
              * The following check is mandatory, since the store copy can be cancelled and if it was actually
@@ -213,7 +213,7 @@ public class SwitchToSlave
             neoDataSource.afterModeSwitch();
             StoreId myStoreId = neoDataSource.getStoreId();
 
-            boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks( masterUri, neoDataSource,
+            boolean consistencyChecksExecutedSuccessfully = executeConsistencyChecks( masterUri, me, neoDataSource,
                     cancellationRequest );
 
             if ( !consistencyChecksExecutedSuccessfully )
@@ -247,7 +247,8 @@ public class SwitchToSlave
         return slaveUri;
     }
 
-    private void copyStoreFromMasterIfNeeded( URI masterUri, CancellationRequest cancellationRequest ) throws Throwable
+    private void copyStoreFromMasterIfNeeded( URI masterUri, URI me, CancellationRequest cancellationRequest )
+            throws Throwable
     {
         if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
         {
@@ -256,7 +257,7 @@ public class SwitchToSlave
             LifeSupport copyLife = new LifeSupport();
             try
             {
-                MasterClient masterClient = newMasterClient( masterUri, null, copyLife );
+                MasterClient masterClient = newMasterClient( masterUri, me, null, copyLife );
                 copyLife.start();
 
                 boolean masterIsOld = MasterClient.CURRENT.compareTo( masterClient.getProtocolVersion() ) > 0;
@@ -279,7 +280,7 @@ public class SwitchToSlave
         }
     }
 
-    private boolean executeConsistencyChecks( URI masterUri, NeoStoreDataSource neoDataSource,
+    private boolean executeConsistencyChecks( URI masterUri, URI me, NeoStoreDataSource neoDataSource,
                                               CancellationRequest cancellationRequest ) throws Throwable
     {
         LifeSupport consistencyCheckLife = new LifeSupport();
@@ -287,7 +288,7 @@ public class SwitchToSlave
         {
             StoreId myStoreId = neoDataSource.getStoreId();
 
-            MasterClient masterClient = newMasterClient( masterUri, myStoreId, consistencyCheckLife );
+            MasterClient masterClient = newMasterClient( masterUri, me, myStoreId, consistencyCheckLife );
             consistencyCheckLife.start();
 
             if ( cancellationRequest.cancellationRequested() )
@@ -372,7 +373,7 @@ public class SwitchToSlave
             URI me, URI masterUri, StoreId storeId, CancellationRequest cancellationRequest )
             throws IllegalArgumentException, InterruptedException
     {
-        MasterClient master = newMasterClient( masterUri, neoDataSource.getStoreId(), haCommunicationLife );
+        MasterClient master = newMasterClient( masterUri, me, neoDataSource.getStoreId(), haCommunicationLife );
 
         TransactionObligationFulfiller obligationFulfiller = resolver.resolveDependency(
                 TransactionObligationFulfiller.class );
@@ -494,10 +495,10 @@ public class SwitchToSlave
         console.log( "Finished copying store from master" );
     }
 
-    private MasterClient newMasterClient( URI masterUri, StoreId storeId, LifeSupport life )
+    private MasterClient newMasterClient( URI masterUri, URI me, StoreId storeId, LifeSupport life )
     {
         MasterClient masterClient = masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
-                resolver.resolveDependency( Monitors.class ), storeId, life );
+                me.getHost(), resolver.resolveDependency( Monitors.class ), storeId, life );
         if ( masterClient.getProtocolVersion().compareTo( MasterClient210.PROTOCOL_VERSION ) < 0 )
         {
             idGeneratorFactory.enableCompatibilityMode();

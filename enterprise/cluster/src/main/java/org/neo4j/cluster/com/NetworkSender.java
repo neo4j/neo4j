@@ -394,32 +394,27 @@ public class NetworkSender
 
     private Channel openChannel( URI clusterUri )
     {
-        // TODO refactor the creation of InetSocketAddress'es into HostnamePort, so we can be rid of this defaultPort
-        // method and simplify code a couple of places
-        SocketAddress address = new InetSocketAddress( clusterUri.getHost(), clusterUri.getPort() == -1 ? config
-                .defaultPort() : clusterUri.getPort() );
+        SocketAddress destination = new InetSocketAddress( clusterUri.getHost(),
+                clusterUri.getPort() == -1 ? config.defaultPort() : clusterUri.getPort() );
+        // We must specify the origin address in case the server has multiple IPs per interface
+        SocketAddress origin = new InetSocketAddress( me.getHost(), 0 );
 
-        ChannelFuture channelFuture = clientBootstrap.connect( address );
+        msgLog.info( "Attempting to connect from " + origin + " to " + destination );
+        ChannelFuture channelFuture = clientBootstrap.connect( destination, origin );
+        channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
 
-        try
+        if ( channelFuture.isSuccess() )
         {
-            if ( channelFuture.await( 5, TimeUnit.SECONDS ) && channelFuture.getChannel().isConnected() )
-            {
-                msgLog.info( me + " opened a new channel to " + address );
-                return channelFuture.getChannel();
-            }
+            Channel channel = channelFuture.getChannel();
+            msgLog.info( "Connected from " + channel.getLocalAddress() + " to " + channel.getRemoteAddress() );
+            return channel;
 
-            String msg = "Client could not connect to " + address;
-            throw new ChannelOpenFailedException( msg );
         }
-        catch ( InterruptedException e )
-        {
-            msgLog.warn( "Interrupted", e );
-            // Restore the interrupt status since we are not rethrowing InterruptedException
-            // We may be running in an executor and we could fail to be terminated
-            Thread.currentThread().interrupt();
-            throw new ChannelOpenFailedException( e );
-        }
+
+        Throwable cause = channelFuture.getCause();
+        msgLog.info( "Failed to connect to " + destination + " due to: " + cause );
+
+        throw new ChannelOpenFailedException( cause );
     }
 
     private class NetworkNodePipelineFactory

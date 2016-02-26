@@ -73,7 +73,7 @@ public class BackupProtocolTest
         int port = BackupServer.DEFAULT_PORT;
         LifeSupport life = new LifeSupport();
 
-        BackupClient client = life.add( new BackupClient( host, port, logging, storeId, 1000,
+        BackupClient client = life.add( new BackupClient( host, port, null, logging, storeId, 1000,
                 mock( ResponseUnpacker.class ), mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ) ) );
         ControlledBackupInterface backup = new ControlledBackupInterface();
         life.add( new BackupServer( backup, new HostnamePort( host, port ), logging, mock( ByteCounterMonitor.class ),

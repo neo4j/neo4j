@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import java.io.IOException;
+
 import org.jboss.netty.buffer.ChannelBuffer;
 
 import org.neo4j.com.Client;
@@ -42,21 +44,20 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
 import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
 
-import java.io.IOException;
-
 
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
 {
 
     static final long BIG_READ_TIMEOUT = 40 * 1000;
 
-    public BackupClient( String hostNameOrIp, int port, Logging logging, StoreId storeId, long timeout,
-                         ResponseUnpacker unpacker, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
+    public BackupClient( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+            Logging logging, StoreId storeId, long timeout, ResponseUnpacker unpacker,
+            ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logging, storeId, FRAME_LENGTH,
+        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logging, storeId, FRAME_LENGTH,
                 new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), timeout,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, unpacker,
-                byteCounterMonitor, requestMonitor );
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, unpacker, byteCounterMonitor,
+                requestMonitor );
     }
 
     public Response<Void> fullBackup( StoreWriter storeWriter, final boolean forensics )

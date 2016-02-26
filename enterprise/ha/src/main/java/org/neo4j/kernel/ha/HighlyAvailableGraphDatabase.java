@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.jboss.netty.logging.InternalLoggerFactory;
-
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Map;
+
+import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -48,6 +48,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Provider;
@@ -424,8 +425,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency( new DefaultSlaveFactory( logging, monitors,
                 config.get( HaSettings.com_chunk_size ).intValue() ) );
 
+        HostnamePort me = config.get( ClusterSettings.cluster_server );
         Slaves slaves = dependencies.satisfyDependency(
-                life.add( new HighAvailabilitySlaves( members, clusterClient, slaveFactory ) ) );
+                life.add( new HighAvailabilitySlaves( members, clusterClient, slaveFactory, me ) ) );
 
         final TransactionPropagator pusher = life.add( new TransactionPropagator( TransactionPropagator.from( config ),
                 msgLog, slaves, new CommitPusher( jobScheduler ) ) );
