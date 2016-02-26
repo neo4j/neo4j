@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -274,7 +275,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if( !accessMode.allowsReads() )
         {
-            throw new IllegalStateException(
+            throw new AuthorizationViolationException(
                     String.format( "Read operations are not allowed for `%s` transactions.", accessMode.name() ) );
         }
 
@@ -285,7 +286,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if( !accessMode.allowsWrites() )
         {
-            throw new InvalidTransactionTypeKernelException(
+            throw new AuthorizationViolationException(
                     String.format( "Write operations are not allowed for `%s` transactions.", accessMode.name() ) );
         }
         transactionType = transactionType.enableDataWriteTransaction();
@@ -295,7 +296,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if( !accessMode.allowsSchemaWrites() )
         {
-            throw new InvalidTransactionTypeKernelException(
+            throw new AuthorizationViolationException(
                     String.format( "Schema write operations are not allowed for `%s` transactions.", accessMode.name() ) );
         }
         doUpgradeToSchemaTransaction();

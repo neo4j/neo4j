@@ -23,12 +23,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransactionTestBase;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.exceptions.KernelException;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -56,7 +56,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
         KernelTransactionImplementation tx = newTransaction( AccessMode.READ );
 
         // Expect
-        exception.expect( KernelException.class );
+        exception.expect( AuthorizationViolationException.class );
 
         // When
         tx.acquireStatement().dataWriteOperations();
@@ -69,7 +69,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
         KernelTransactionImplementation tx = newTransaction( AccessMode.READ );
 
         // Expect
-        exception.expect( KernelException.class );
+        exception.expect( AuthorizationViolationException.class );
 
         // When
         tx.acquireStatement().schemaWriteOperations();
@@ -82,7 +82,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
         KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE_ONLY );
 
         // Expect
-        exception.expect( IllegalStateException.class );
+        exception.expect( AuthorizationViolationException.class );
 
         // When
         tx.acquireStatement().readOperations();
@@ -108,7 +108,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
         KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE_ONLY );
 
         // Expect
-        exception.expect( KernelException.class );
+        exception.expect( AuthorizationViolationException.class );
 
         // When
         tx.acquireStatement().schemaWriteOperations();
@@ -147,7 +147,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
         KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE );
 
         // Expect
-        exception.expect( KernelException.class );
+        exception.expect( AuthorizationViolationException.class );
 
         // When
         tx.acquireStatement().schemaWriteOperations();
