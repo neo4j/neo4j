@@ -20,79 +20,38 @@
 package org.neo4j.coreedge.raft.replication.id;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.coreedge.server.core.locks.PendingIdAllocationRequest;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static java.util.Optional.ofNullable;
 
 /**
- * This state machine keeps a track of all id-allocations for all id-types and allows a local
- * user to wait for any changes to the state.
- * <p>
- * The responsibilities of the state machine are to:
- * - keep state
- * - update state on events
- * - support waiting for changes to the state
- * <p>
- * Users of this state machine should in general act in accordance with the following formula:
- * 1) trigger update of replicated state
- * 2) wait for change to propagate
- * 3) if state is not sufficient goto 1)
- * 4) state sufficient => done
+ * Keeps track of global id allocations for all members.
+ * Notifies local id allocation requests via {@link PendingIdAllocationRequests}.
  */
 public class ReplicatedIdAllocationStateMachine implements StateMachine
 {
-    private final CoreMember me;
     private final StateStorage<IdAllocationState> storage;
+    private final PendingIdAllocationRequests pendingRequests;
     private IdAllocationState idAllocationState;
     private final Log log;
 
-    public ReplicatedIdAllocationStateMachine( CoreMember me, StateStorage<IdAllocationState> storage,
-                                               LogProvider logProvider )
+    public ReplicatedIdAllocationStateMachine( StateStorage<IdAllocationState> storage,
+                                               PendingIdAllocationRequests pendingRequests, LogProvider logProvider )
     {
-        this.me = me;
         this.storage = storage;
+        this.pendingRequests = pendingRequests;
         this.idAllocationState = storage.getInitialState();
         this.log = logProvider.getLog( getClass() );
-    }
-
-    public synchronized long getFirstNotAllocated( IdType idType )
-    {
-        return idAllocationState.firstUnallocated( idType );
-    }
-
-    public synchronized IdRange getHighestIdRange( CoreMember owner, IdType idType )
-    {
-        if ( owner != me )
-        {
-            /* We just keep our own latest id-range for simplicity and efficiency. */
-            throw new UnsupportedOperationException();
-        }
-
-        int idRangeLength = idAllocationState.lastIdRangeLength( idType );
-
-        if ( idRangeLength > 0 )
-        {
-            return new IdRange( EMPTY_LONG_ARRAY, idAllocationState.lastIdRangeStart( idType ), idRangeLength );
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    private void updateFirstNotAllocated( IdType idType, long idRangeEnd )
-    {
-        idAllocationState.firstUnallocated( idType, idRangeEnd );
-        notifyAll();
+        pendingRequests.setUnallocatedIds( idAllocationState );
     }
 
     @Override
@@ -103,20 +62,20 @@ public class ReplicatedIdAllocationStateMachine implements StateMachine
             if ( logIndex > idAllocationState.logIndex() )
             {
                 ReplicatedIdAllocationRequest request = (ReplicatedIdAllocationRequest) content;
-
                 IdType idType = request.idType();
 
+                Optional<PendingIdAllocationRequest> future = ofNullable( pendingRequests.retrieve( request ) );
                 if ( request.idRangeStart() == idAllocationState.firstUnallocated( idType ) )
                 {
-                    if ( request.owner().equals( me ) )
-                    {
-                        idAllocationState.lastIdRangeStart( idType, request.idRangeStart() );
-                        idAllocationState.lastIdRangeLength( idType, request.idRangeLength() );
-                    }
-                    updateFirstNotAllocated( idType, request.idRangeStart() + request.idRangeLength() );
-
+                    idAllocationState.firstUnallocated( idType, request.idRangeStart() + request.idRangeLength() );
+                    future.ifPresent( PendingIdAllocationRequest::notifyAcquired );
+                }
+                else
+                {
+                    future.ifPresent( PendingIdAllocationRequest::notifyLost );
                 }
                 idAllocationState.logIndex( logIndex );
+                pendingRequests.setUnallocatedIds( idAllocationState );
             }
             else
             {
@@ -126,14 +85,9 @@ public class ReplicatedIdAllocationStateMachine implements StateMachine
         }
     }
 
-    public synchronized void waitForAnyChange( long timeoutMillis ) throws InterruptedException
-    {
-        wait( timeoutMillis );
-    }
-
     @Override
     public void flush() throws IOException
     {
-        storage.persistStoreData( new IdAllocationState( idAllocationState ) );
+        storage.persistStoreData( idAllocationState );
     }
 }

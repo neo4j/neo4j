@@ -19,251 +19,129 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
+import java.io.IOException;
+
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 public class ReplicatedIdAllocationStateMachineTest
 {
-    CoreMember me = new CoreMember( new AdvertisedSocketAddress( "a:1" ), new AdvertisedSocketAddress( "a:2" ) );
-    CoreMember someoneElse = new CoreMember( new AdvertisedSocketAddress( "b:1" ),
-            new AdvertisedSocketAddress( "b:2" ) );
+    CoreMember me =
+            new CoreMember( new AdvertisedSocketAddress( "a:1" ), new AdvertisedSocketAddress( "a:2" ) );
 
     IdType someType = IdType.NODE;
     IdType someOtherType = IdType.RELATIONSHIP;
 
     @Test
-    public void shouldNotHaveAnyIdsInitially()
+    public void shouldNotHaveAnyIdsInitially() throws IOException
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
-
-        // when
-        IdRange myHighestIdRange = idAllocationStateMachine.getHighestIdRange( me, someType );
-        long firstNotAllocated = idAllocationStateMachine.getFirstNotAllocated( someType );
+        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
+        new ReplicatedIdAllocationStateMachine(
+                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
 
         // then
-        assertEquals( null, myHighestIdRange );
-        assertEquals( 0, firstNotAllocated );
+        assertEquals( 0, pendingRequests.firstUnallocated( someType ) );
     }
 
     @Test
-    public void shouldUpdateStateOnlyForTypeRequested()
+    public void shouldUpdateStateOnlyForTypeRequested() throws Exception
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
+        ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
+                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
         ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
 
         // when
-        idAllocationStateMachine.applyCommand( idAllocationRequest, 0 );
+        stateMachine.applyCommand( idAllocationRequest, 0 );
 
         // then
-        assertEquals( 1024, idAllocationStateMachine.getFirstNotAllocated( someType ) );
-        assertEquals( 0, idAllocationStateMachine.getFirstNotAllocated( someOtherType ) );
+        assertEquals( 1024, pendingRequests.firstUnallocated( someType ) );
+        assertEquals( 0, pendingRequests.firstUnallocated( someOtherType ) );
     }
 
     @Test
-    public void shouldUpdateHighestIdRangeForSelf()
+    public void severalDistinctRequestsShouldIncrementallyUpdate() throws IOException
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
-        ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
-
-        // when
-        idAllocationStateMachine.applyCommand( idAllocationRequest, 0 );
-        IdRange highestIdRange = idAllocationStateMachine.getHighestIdRange( me, someType );
-
-        // then
-        assertEquals( 0, highestIdRange.getRangeStart() );
-        assertEquals( 1024, highestIdRange.getRangeLength() );
-    }
-
-    @Test
-    public void severalDistinctRequestsShouldIncrementallyUpdate()
-    {
-        // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
+        ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
+                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
         long index = 0;
 
         // when
-        idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), index++ );
-        idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 1024, 1024 ), index++ );
-        idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), index );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), index++ );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 1024, 1024 ), index++ );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), index );
 
         // then
-        assertEquals( 3072, idAllocationStateMachine.getFirstNotAllocated( someType ) );
+        assertEquals( 3072, pendingRequests.firstUnallocated( someType ) );
     }
 
     @Test
-    public void severalEqualRequestsShouldOnlyUpdateOnce()
+    public void severalEqualRequestsShouldOnlyUpdateOnce() throws IOException
     {
         // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
+        ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
+                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
 
         // when
-        idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
-        idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
-        idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
 
         // then
-        assertEquals( 1024, idAllocationStateMachine.getFirstNotAllocated( someType ) );
+        assertEquals( 1024, pendingRequests.firstUnallocated( someType ) );
+    }
+
+
+    @Test
+    public void outOfOrderRequestShouldBeIgnored() throws IOException
+    {
+        // given
+        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
+        ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
+                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
+
+        // when
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
+        // apply command that doesn't consume ids because the requested range is non-contiguous
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), 0 );
+
+        // then
+        assertEquals( 1024, pendingRequests.firstUnallocated( someType ) );
     }
 
     @Test
-    public void outOfOrderRequestShouldBeIgnored()
+    public void shouldIgnoreNotContiguousRequestAndAlreadySeenIndex() throws Exception
     {
-        // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
+        ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
+                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
 
-        // when
-        idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
-        idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), 0 ); //
-        // should be ignored - not adjacent to previous
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0L, 10 ), 0L );
+        assertEquals( 10L, pendingRequests.firstUnallocated( someType ) );
 
-        // then
-        assertEquals( 1024, idAllocationStateMachine.getFirstNotAllocated( someType ) );
-    }
+        // apply command that doesn't consume ids because the requested range is non-contiguous
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 20L, 10 ), 1L );
+        assertEquals( 10L, pendingRequests.firstUnallocated( someType ) );
 
-    @Test
-    public void requestLosingRaceShouldBeIgnored()
-    {
-        // given
-        ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine( me,
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 10L, 10 ), 2L );
+        assertEquals( 20L, pendingRequests.firstUnallocated( someType ) );
 
-        // when
-        idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( someoneElse, someType, 0, 1024 ), 0 );
-        idAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 ); //
-        // should be ignored - someone else took it first
-
-        IdRange highestIdRange = idAllocationStateMachine.getHighestIdRange( me, someType );
-
-        // then
-        assertEquals( null, highestIdRange );
-    }
-
-    @Test
-    public void shouldCorrectlyRestartWithPreviousState() throws Exception
-    {
-        // given
-        IdAllocationState idAllocationState = new IdAllocationState();
-
-        ReplicatedIdAllocationStateMachine firstIdAllocationStateMachine =
-                new ReplicatedIdAllocationStateMachine( me, new InMemoryStateStorage<>( idAllocationState ), NullLogProvider.getInstance() );
-
-        firstIdAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
-        firstIdAllocationStateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 1024, 1024 ), 1 );
-
-        // when
-        ReplicatedIdAllocationStateMachine secondIdAllocationStateMachine =
-                new ReplicatedIdAllocationStateMachine( me, new InMemoryStateStorage<>( idAllocationState ), NullLogProvider.getInstance() );
-
-        // then
-        assertEquals( firstIdAllocationStateMachine.getHighestIdRange( me, someType ),
-                secondIdAllocationStateMachine.getHighestIdRange( me, someType ) );
-
-        assertEquals( firstIdAllocationStateMachine.getFirstNotAllocated( someType ),
-                secondIdAllocationStateMachine.getFirstNotAllocated( someType ) );
-
-        assertEquals( firstIdAllocationStateMachine.getFirstNotAllocated( someType ),
-                secondIdAllocationStateMachine.getFirstNotAllocated( someType ) );
-    }
-
-    @Test
-    public void shouldIgnoreAlreadySeenIndex() throws Exception
-    {
-        /*
-         * This test essentially verifies that the ReplicatedIdAllocationStateMachine is idempotent. It checks that
-         * if an onReplicated() request comes in with an index already seen by the state machine, then it will be
-         * promptly ignored. We check that by ensuring that no interactions happen with the mock request, which means
-         * that the state it carried was not read and therefor the state machine state was not updated.
-         * The state store is chosen to not be a mock because the last seen index is expected to be stored there. This
-         * does not imply the index storage details leak from the API, since a mock that only stores the index could
-         * be used instead - this is merely a convenience.
-         */
-        // given
-        // a state machine
-        final long AN_INDEX = 24;
-        StateStorage<IdAllocationState> stateStorage = new InMemoryStateStorage<>( new IdAllocationState() );
-        ReplicatedIdAllocationStateMachine stateMachine =
-                new ReplicatedIdAllocationStateMachine( me, stateStorage, NullLogProvider.getInstance() );
-
-        // which has seen a replicated content at a specific index
-        ReplicatedIdAllocationRequest mockRequest = mock( ReplicatedIdAllocationRequest.class );
-        when( mockRequest.owner() ).thenReturn( someoneElse );
-        when( mockRequest.idType() ).thenReturn( someType );
-        stateMachine.applyCommand( mockRequest, AN_INDEX );
-
-        // when
-        // we see content at an index before and content at the above index
-        ReplicatedIdAllocationRequest replicatedMockRequest = mock( ReplicatedIdAllocationRequest.class );
-        when( replicatedMockRequest.owner() ).thenReturn( someoneElse );
-        stateMachine.applyCommand( replicatedMockRequest, AN_INDEX - 3 ); // random already seen index
-
-        ReplicatedIdAllocationRequest anotherReplicatedMockRequest = mock( ReplicatedIdAllocationRequest.class );
-        when( anotherReplicatedMockRequest.owner() ).thenReturn( someoneElse );
-        stateMachine.applyCommand( anotherReplicatedMockRequest, AN_INDEX );
-
-        // then
-        // there should be only one interaction with the mock, the one for the first time onReplicated() was called
-        verifyZeroInteractions( replicatedMockRequest );
-        verifyZeroInteractions( anotherReplicatedMockRequest );
-    }
-
-    @Test
-    public void shouldContinueAcceptingRequestsAfterIgnoreAlreadySeenIndex() throws Exception
-    {
-        /*
-         * This test completes the previous one (shouldIgnoreAlreadySeenIndex), ensuring that while past indexes are
-         * ignored, future indexes will continue to be applied against the state machine.
-         */
-        // given
-        // a state machine
-        final long AN_INDEX = 24;
-        StateStorage<IdAllocationState> stateStorage = new InMemoryStateStorage<>( new IdAllocationState() );
-        ReplicatedIdAllocationStateMachine stateMachine =
-                new ReplicatedIdAllocationStateMachine( me, stateStorage, NullLogProvider.getInstance() );
-
-        // which has seen a replicated content at a specific index
-        ReplicatedIdAllocationRequest mockRequest = mock( ReplicatedIdAllocationRequest.class );
-        when( mockRequest.owner() ).thenReturn( someoneElse );
-        when( mockRequest.idType() ).thenReturn( someType );
-        stateMachine.applyCommand( mockRequest, AN_INDEX );
-
-        // we see content at an index before the last seen one
-        ReplicatedIdAllocationRequest replicatedMockRequest = mock( ReplicatedIdAllocationRequest.class );
-        when( replicatedMockRequest.owner() ).thenReturn( someoneElse );
-        when( replicatedMockRequest.idType() ).thenReturn( someType );
-        stateMachine.applyCommand( replicatedMockRequest, AN_INDEX - 3 ); // random already seen index
-
-        // when
-        // we receive value for an index larger than the one seen
-        ReplicatedIdAllocationRequest newReplicatedRequest = mock( ReplicatedIdAllocationRequest.class );
-        when( newReplicatedRequest.owner() ).thenReturn( someoneElse );
-        when( newReplicatedRequest.idType() ).thenReturn( someType );
-        stateMachine.applyCommand( newReplicatedRequest, AN_INDEX + 12 ); // random future index
-
-        // then
-        // there should be two interactions with the mock, the one for the first time onReplicated() was called and
-        // another for the index seen after the duplication
-        verifyZeroInteractions( replicatedMockRequest );
+        // try applying the same command again. The requested range is now contiguous, but the log index
+        // has already been exceeded
+        stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 20L, 10 ), 1L );
+        assertEquals( 20L, pendingRequests.firstUnallocated( someType ) );
     }
 }

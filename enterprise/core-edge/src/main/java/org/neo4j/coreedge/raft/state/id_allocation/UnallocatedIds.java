@@ -17,36 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.raft.state.id_allocation;
 
-import java.io.IOException;
+import org.neo4j.kernel.impl.store.id.IdType;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-
-public class StateMachines implements StateMachine
+public interface UnallocatedIds
 {
-    private StateMachine[] machines;
-
-    public StateMachines( StateMachine... machines )
-    {
-        this.machines = machines;
-    }
-
-    @Override
-    public void applyCommand( ReplicatedContent content, long logIndex )
-    {
-        for ( StateMachine machine : machines )
-        {
-            machine.applyCommand( content, logIndex );
-        }
-    }
-
-    @Override
-    public void flush() throws IOException
-    {
-        for ( StateMachine machine : machines )
-        {
-            machine.flush();
-        }
-    }
+    /**
+     * @param idType the type of graph object whose ID is under allocation
+     * @return the first unallocated entry for idType
+     */
+    long firstUnallocated( IdType idType );
 }

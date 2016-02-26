@@ -19,20 +19,30 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
-import org.neo4j.coreedge.server.CoreMember;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.core.locks.PendingIdAllocationRequest;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+
+/**
+ * Replicates commands to assign next available id range to this member.
+ * Waits for those commands to be applied via {@link PendingIdAllocationRequests}.
+ */
 public class ReplicatedIdRangeAcquirer
 {
     private final Replicator replicator;
-    private final ReplicatedIdAllocationStateMachine idAllocationStateMachine;
+    private final PendingIdAllocationRequests pendingIdAllocationRequests;
 
     private final int allocationChunk;
     private final long retryTimeoutMillis;
@@ -40,49 +50,53 @@ public class ReplicatedIdRangeAcquirer
     private final CoreMember me;
     private final Log log;
 
-    public ReplicatedIdRangeAcquirer( Replicator replicator, ReplicatedIdAllocationStateMachine idAllocationStateMachine, int allocationChunk, long retryTimeoutMillis, CoreMember me, LogProvider logProvider )
+    public ReplicatedIdRangeAcquirer(
+            Replicator replicator, PendingIdAllocationRequests pendingIdAllocationRequests,
+            int allocationChunk, long retryTimeoutMillis, CoreMember me, LogProvider logProvider )
     {
         this.replicator = replicator;
-        this.idAllocationStateMachine = idAllocationStateMachine;
+        this.pendingIdAllocationRequests = pendingIdAllocationRequests;
         this.allocationChunk = allocationChunk;
         this.retryTimeoutMillis = retryTimeoutMillis;
         this.me = me;
         this.log = logProvider.getLog( getClass() );
     }
 
+
     public IdAllocation acquireIds( IdType idType )
     {
         while ( true )
         {
-            long firstNotAllocated = idAllocationStateMachine.getFirstNotAllocated( idType );
-            ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, idType, firstNotAllocated, allocationChunk );
+            long firstNotAllocated = pendingIdAllocationRequests.firstUnallocated( idType );
+            ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, idType,
+                    firstNotAllocated, allocationChunk );
 
-            try
+            try ( PendingIdAllocationRequest pendingIdAllocationRequest =
+                          pendingIdAllocationRequests.register( idAllocationRequest ) )
             {
-                replicator.replicate( idAllocationRequest );
-            }
-            catch ( Replicator.ReplicationFailedException e )
-            {
-                log.error( format( "Failed to acquire id range for idType %s", idType ), e );
-                throw new IdGenerationException( e );
-            }
+                try
+                {
+                    replicator.replicate( idAllocationRequest );
+                }
+                catch ( Replicator.ReplicationFailedException e )
+                {
+                    log.error( format( "Failed to acquire id range for idType %s", idType ), e );
+                    throw new IdGenerationException( e );
+                }
 
-            try
-            {
-                idAllocationStateMachine.waitForAnyChange( retryTimeoutMillis );
-            }
-            catch ( InterruptedException e )
-            {
-                log.error( format( "Failed to acquire id range for idType %s", idType ), e );
-                throw new IdGenerationException( e );
-            }
-
-            IdRange myHighestIdRange = idAllocationStateMachine.getHighestIdRange( me, idType );
-
-            if ( myHighestIdRange != null && myHighestIdRange.getRangeStart() == idAllocationRequest.idRangeStart() )
-            {
-                // TODO why are we subtracting 1?
-                return new IdAllocation( myHighestIdRange, myHighestIdRange.getRangeStart() - 1, 0 );
+                try
+                {
+                    if ( pendingIdAllocationRequest.waitUntilAcquired( retryTimeoutMillis, TimeUnit.MILLISECONDS ) )
+                    {
+                        IdRange idRange = new IdRange( EMPTY_LONG_ARRAY, firstNotAllocated, allocationChunk );
+                        return new IdAllocation( idRange, -1, 0 );
+                    }
+                }
+                catch ( InterruptedException | TimeoutException e )
+                {
+                    log.error( format( "Failed to acquire id range for idType %s", idType ), e );
+                    throw new IdGenerationException( e );
+                }
             }
         }
     }

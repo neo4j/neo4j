@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.server.core.locks;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.StateMachine;
@@ -29,15 +30,18 @@ import org.neo4j.coreedge.raft.state.StateStorage;
  * Listens for {@link ReplicatedLockTokenRequest}. Keeps track of the current holder of the replicated token,
  * which is identified by a monotonically increasing id, and an owning member.
  */
-public class ReplicatedLockTokenStateMachine<MEMBER> extends LockTokenManager implements StateMachine
+public class ReplicatedLockTokenStateMachine<MEMBER> implements StateMachine
 {
     private ReplicatedLockTokenState<MEMBER> state;
     private final StateStorage<ReplicatedLockTokenState<MEMBER>> storage;
+    private final PendingLockTokensRequests<MEMBER> pendingLockTokensRequests;
 
-    public ReplicatedLockTokenStateMachine( StateStorage<ReplicatedLockTokenState<MEMBER>> storage )
+    public ReplicatedLockTokenStateMachine( StateStorage<ReplicatedLockTokenState<MEMBER>> storage,
+                                            PendingLockTokensRequests<MEMBER> pendingLockTokensRequests )
     {
         this.storage = storage;
         this.state = storage.getInitialState();
+        this.pendingLockTokensRequests = pendingLockTokensRequests;
     }
 
     @Override
@@ -47,12 +51,17 @@ public class ReplicatedLockTokenStateMachine<MEMBER> extends LockTokenManager im
         {
             ReplicatedLockTokenRequest<MEMBER> tokenRequest = (ReplicatedLockTokenRequest<MEMBER>) content;
 
-            if ( tokenRequest.id() == nextCandidateId() )
+            Optional<PendingLockTokenRequest> future = Optional.ofNullable( pendingLockTokensRequests.retrieve( tokenRequest ) );
+            if ( tokenRequest.id() == LockToken.nextCandidateId( currentToken().id() ) )
             {
                 state.set( tokenRequest, logIndex );
+                pendingLockTokensRequests.setCurrentToken( tokenRequest );
+                future.ifPresent( PendingLockTokenRequest::notifyAcquired );
             }
-
-            notifyAll();
+            else
+            {
+                future.ifPresent( PendingLockTokenRequest::notifyLost );
+            }
         }
     }
 
@@ -62,29 +71,11 @@ public class ReplicatedLockTokenStateMachine<MEMBER> extends LockTokenManager im
         storage.persistStoreData( state );
     }
 
-    @Override
+    /**
+     * @return The currently valid token.
+     */
     public synchronized ReplicatedLockTokenRequest<MEMBER> currentToken()
     {
         return state.get();
-    }
-
-    @Override
-    public synchronized void waitForTokenId( int awaitedId, long waitTimeMillis ) throws InterruptedException
-    {
-        long endTime = System.currentTimeMillis() + waitTimeMillis;
-
-        while ( currentToken().id() != awaitedId )
-        {
-            long timeLeft = endTime - System.currentTimeMillis();
-
-            if ( timeLeft > 0 )
-            {
-                wait( timeLeft );
-            }
-            else
-            {
-                return;
-            }
-        }
     }
 }

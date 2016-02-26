@@ -19,29 +19,24 @@
  */
 package org.neo4j.coreedge.raft.replication.token;
 
-import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.coreedge.raft.replication.RaftReplicator;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
 
-public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder<Token,LabelTokenRecord> implements LabelTokenHolder
+public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder<Token> implements LabelTokenHolder
 {
-    public ReplicatedLabelTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory,
-                                       Dependencies dependencies, long timeoutMillis, LogProvider logProvider )
+    public ReplicatedLabelTokenHolder(
+            TokenRegistry<Token> registry,
+            RaftReplicator<CoreMember> replicator,
+            IdGeneratorFactory idGeneratorFactory, Dependencies dependencies, Long timeoutMillis )
     {
-        super( replicator, idGeneratorFactory, IdType.LABEL_TOKEN,
-                dependencies, new Token.Factory(), TokenType.LABEL, timeoutMillis, logProvider );
-    }
-
-    @Override
-    protected String tokenType()
-    {
-        return "Label";
+        super( registry, replicator, idGeneratorFactory, IdType.LABEL_TOKEN, dependencies, TokenType.LABEL,
+                timeoutMillis );
     }
 
     @Override
@@ -49,5 +44,4 @@ public class ReplicatedLabelTokenHolder extends ReplicatedTokenHolder<Token,Labe
     {
         txState.labelDoCreateForName( tokenName, tokenId );
     }
-
 }

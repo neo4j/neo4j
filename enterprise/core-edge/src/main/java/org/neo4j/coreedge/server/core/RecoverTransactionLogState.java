@@ -19,9 +19,7 @@
  */
 package org.neo4j.coreedge.server.core;
 
-import org.neo4j.coreedge.raft.replication.token.ReplicatedLabelTokenHolder;
-import org.neo4j.coreedge.raft.replication.token.ReplicatedPropertyKeyTokenHolder;
-import org.neo4j.coreedge.raft.replication.token.ReplicatedRelationshipTypeTokenHolder;
+import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenStateMachine;
 import org.neo4j.coreedge.raft.replication.tx.LastCommittedIndexFinder;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -34,42 +32,23 @@ import org.neo4j.logging.LogProvider;
  * Retrieves last raft log index that was appended to the transaction log, so that raft log replay can recover while
  * preserving idempotency (avoid appending the same transaction twice).
  */
-public class RecoverTransactionLogState extends LifecycleAdapter
+public class RecoverTransactionLogState
 {
     private final Dependencies dependencies;
     private final LogProvider logProvider;
-    private final ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder;
-    private final ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder;
-    private final ReplicatedLabelTokenHolder labelTokenHolder;
 
-    public RecoverTransactionLogState( Dependencies dependencies, LogProvider logProvider,
-                                       ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder,
-                                       ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder,
-                                       ReplicatedLabelTokenHolder labelTokenHolder )
+    public RecoverTransactionLogState( Dependencies dependencies, LogProvider logProvider )
     {
         this.dependencies = dependencies;
         this.logProvider = logProvider;
-        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.labelTokenHolder = labelTokenHolder;
     }
 
-    @Override
-    public void start() throws Throwable
+    public long findLastCommittedIndex()
     {
         TransactionIdStore transactionIdStore = dependencies.resolveDependency( TransactionIdStore.class );
         LogicalTransactionStore transactionStore = dependencies.resolveDependency( LogicalTransactionStore.class );
 
-        long lastCommittedIndex = new LastCommittedIndexFinder( transactionIdStore, transactionStore, logProvider )
+        return new LastCommittedIndexFinder( transactionIdStore, transactionStore, logProvider )
                 .getLastCommittedIndex();
-
-        ReplicatedTransactionStateMachine replicatedTransactionStateMachine =
-                dependencies.resolveDependency( ReplicatedTransactionStateMachine.class );
-
-        replicatedTransactionStateMachine.setLastCommittedIndex( lastCommittedIndex );
-        relationshipTypeTokenHolder.setLastCommittedIndex( lastCommittedIndex );
-        propertyKeyTokenHolder.setLastCommittedIndex( lastCommittedIndex );
-        labelTokenHolder.setLastCommittedIndex( lastCommittedIndex );
     }
-
 }

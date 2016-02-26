@@ -17,36 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.state;
+package org.neo4j.coreedge.server.core.locks;
 
-import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-
-public class StateMachines implements StateMachine
+public interface PendingIdAllocationRequest extends AutoCloseable
 {
-    private StateMachine[] machines;
+    boolean waitUntilAcquired( long timeout, TimeUnit unit ) throws InterruptedException, TimeoutException;
 
-    public StateMachines( StateMachine... machines )
-    {
-        this.machines = machines;
-    }
+    void notifyAcquired();
 
-    @Override
-    public void applyCommand( ReplicatedContent content, long logIndex )
-    {
-        for ( StateMachine machine : machines )
-        {
-            machine.applyCommand( content, logIndex );
-        }
-    }
+    void notifyLost();
 
     @Override
-    public void flush() throws IOException
-    {
-        for ( StateMachine machine : machines )
-        {
-            machine.flush();
-        }
-    }
+    void close();
 }

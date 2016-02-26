@@ -98,6 +98,12 @@ public class CoreServerReplicationIT
             tx.success();
         }
 
+        try ( Transaction tx = coreDB.beginTx() )
+        {
+            coreDB.schema().indexFor( label( "boo" )).on( "foobar" ).create();
+            tx.success();
+        }
+
         // then
         for ( final CoreGraphDatabase db : cluster.coreServers() )
         {
