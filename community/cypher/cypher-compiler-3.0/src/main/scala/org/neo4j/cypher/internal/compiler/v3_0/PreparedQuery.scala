@@ -25,7 +25,19 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterConditi
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, Rewriter, Scope, SemanticTable}
 
+// A Cypher query goes through various stages of pre-processing before planning
+//
+// A prepared query captures all information that has been derived so far as part
+// of this processing
+//
+// Currently there are two types of prepared queries:
+//
+// - PreparedQuerySyntax (can be constructed without db access)
+// - PreparedQuerySemantics (construction may requires db access for resolving procedure signatures)
+//
 sealed trait PreparedQuery {
+  type SELF <: PreparedQuery
+
   def statement: Statement
   def queryText: String
   def extractedParams: Map[String, Any]
@@ -35,12 +47,20 @@ sealed trait PreparedQuery {
 
   def abstractQuery: AbstractQuery = statement.asQuery(notificationLogger, plannerName).setQueryText(queryText)
 
+  def rewrite(rewriter: Rewriter): SELF
+
   def isPeriodicCommit = statement match {
     case Query(Some(_), _) => true
     case _ => false
   }
 }
 
+// Result of syntactical analysis of a Cypher query
+//
+// The contained statement is known to be syntactically correct, have correctly bound names
+// (i.e. does not contain variables that hasn't been declared in an accessible scope before)
+// and has passed limited type checking (without correct procedure signatures)
+//
 case class PreparedQuerySyntax(statement: Statement,
                                queryText: String,
                                offset: Option[InputPosition],
@@ -50,7 +70,9 @@ case class PreparedQuerySyntax(statement: Statement,
 
   extends PreparedQuery {
 
-  def rewrite(rewriter: Rewriter): PreparedQuerySyntax =
+  override type SELF = PreparedQuerySyntax
+
+  override def rewrite(rewriter: Rewriter): PreparedQuerySyntax =
     copy(statement = statement.endoRewrite(rewriter))(notificationLogger, plannerName, conditions)
 
   def withSemantics(semanticTable: SemanticTable,
@@ -58,6 +80,11 @@ case class PreparedQuerySyntax(statement: Statement,
     PreparedQuerySemantics(statement, queryText, offset, extractedParams, semanticTable, scopeTree)(notificationLogger, plannerName, conditions)
 }
 
+// Result of semantic analysis of a Cypher query
+//
+// The contained statement has passed all syntactic checks as well as full type checking
+// (taking into account correct procedure signatures).
+//
 case class PreparedQuerySemantics(statement: Statement,
                                   queryText: String,
                                   offset: Option[InputPosition],
@@ -69,8 +96,9 @@ case class PreparedQuerySemantics(statement: Statement,
 
   extends PreparedQuery {
 
-  // TODO: Get rid of this variant
-  def rewrite(rewriter: Rewriter): PreparedQuerySemantics =
+  override type SELF = PreparedQuerySemantics
+
+  override def rewrite(rewriter: Rewriter): PreparedQuerySemantics =
     rewrite(rewriter, identity)
 
   def rewrite(rewriter: Rewriter, tableTransformer: SemanticTable => SemanticTable): PreparedQuerySemantics =
