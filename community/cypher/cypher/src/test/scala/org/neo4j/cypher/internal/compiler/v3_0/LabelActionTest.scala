@@ -19,18 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
-import java.net.URL
-
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate, Literal}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{LabelAction, LabelSetOp}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{QualifiedProcedureName, IdempotentResult, QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
-import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, _}
 
 import scala.collection.Iterator
 
@@ -69,7 +62,7 @@ class LabelActionTest extends GraphDatabaseFunSuite {
   }
 }
 
-class SnitchingQueryContext extends QueryContext {
+class SnitchingQueryContext extends QueryContext with QueryContextAdaptation {
 
   var node: Long = -666
   var ids: Seq[Int] = null
@@ -83,124 +76,7 @@ class SnitchingQueryContext extends QueryContext {
     ids.size
   }
 
-  override def transactionalContext: QueryTransactionalContext = ???
-
-  override def getOrCreateRelTypeId(relTypeName: String) = ???
-
   override def getOrCreateLabelId(labelName: String) = labels(labelName)
 
-  override def createNode() = ???
-
-  override def createRelationship(start: Node, end: Node, relType: String) = ???
-
-  override def getLabelName(id: Int) = ???
-
-  override def getLabelsForNode(node: Long) = ???
-
-  override def nodeOps = ???
-
-  override def relationshipOps = ???
-
-  override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = {???}
-
-  override def getPropertiesForNode(node: Long) = ???
-
-  override def getPropertiesForRelationship(relId: Long) = ???
-
-  override def getOrCreatePropertyKeyId(propertyKey: String) = ???
-
-  override def getOptPropertyKeyId(propertyKey: String): Option[Int] = ???
-
-  override def getPropertyKeyId(propertyKey: String) = ???
-
-  override def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor] = ???
-
-  override def dropIndexRule(labelId: Int, propertyKeyId: Int) = ???
-
-  override def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] = ???
-
-  override def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node] = ???
-
-  override def indexScan(index: IndexDescriptor): Iterator[Node] = ???
-
-  override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = ???
-
-  override def getNodesByLabel(id: Int): Iterator[Node] = ???
-
-  override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
-
   override def getOptLabelId(labelName: String): Option[Int] = labels.get(labelName)
-
-  override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = ???
-
-  override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) = ???
-
-  override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[NodePropertyExistenceConstraint] = ???
-
-  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) = ???
-
-  override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = ???
-
-  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) = ???
-
-  override def getLabelId(labelName: String): Int = ???
-
-  override def getPropertyKeyName(id: Int): String = ???
-
-  override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
-
-  override def getRelTypeId(relType: String): Int = ???
-
-  override def getOptRelTypeId(relType: String): Option[Int] = ???
-
-  override def getRelTypeName(id: Int): String = ???
-
-  override def relationshipStartNode(rel: Relationship) = ???
-
-  override def relationshipEndNode(rel: Relationship) = ???
-
-  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = ???
-
-  override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = ???
-
-  override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = ???
-
-  override def nodeIsDense(node: Long): Boolean = ???
-
-  // Legacy dependency between kernel and compiler
-  override def variableLengthPathExpand(node: PatternNode, realNode: Node, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] = ???
-
-  override def getImportURL(url: URL): Either[String,URL] = ???
-
-  override def createRelationship(start: Long, end: Long, relType: Int) = ???
-
-  override def isLabelSetOnNode(label: Int, node: Long): Boolean = ???
-
-  override def nodeCountByCountStore(labelId: Int): Long = ???
-
-  override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long = ???
-
-  override def lockNodes(nodeIds: Long*): Unit = ???
-
-  override def lockRelationships(relIds: Long*): Unit = ???
-
-  override type EntityAccessor = this.type
-
-  override def entityAccessor: EntityAccessor = ???
-
-  override def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = ???
-
-  override def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] = ???
-
-  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
-
-  override def indexScanByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] = ???
-
-  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
-
-  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
-
-  override def isGraphKernelResultValue(v: Any): Boolean = ???
-
-  override def indexScanByEndsWith(index: IndexDescriptor, value: String) = ???
 }
