@@ -26,6 +26,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 
 import static org.neo4j.helpers.collection.Iterables.asRawIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -33,7 +34,7 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 
 public class ListProceduresProcedure extends CallableProcedure.BasicProcedure
 {
-    public ListProceduresProcedure( ProcedureSignature.ProcedureName procedureName )
+    public ListProceduresProcedure( ProcedureName procedureName )
     {
         super( ProcedureSignature.procedureSignature( procedureName )
                 .out( "name", NTString )

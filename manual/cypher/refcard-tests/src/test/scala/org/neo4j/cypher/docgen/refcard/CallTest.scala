@@ -74,10 +74,10 @@ class CallTest extends RefcardTest with QueryStatisticsTestSupport {
 ### assertion=labels
 //
 
-CALL sys.db.labels
+CALL db.labels
 ###
 
-This invokes the built-in procedure sys.db.labels, which lists all in-use labels in the database.
+This invokes the built-in procedure db.labels, which lists all in-use labels in the database.
 
 ### assertion=arg
 //

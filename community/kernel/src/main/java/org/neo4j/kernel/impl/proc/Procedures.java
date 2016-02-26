@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -43,16 +44,18 @@ public class Procedures extends LifecycleAdapter
     private final TypeMappers typeMappers = new TypeMappers();
     private final ComponentRegistry components = new ComponentRegistry();
     private final ReflectiveProcedureCompiler compiler = new ReflectiveProcedureCompiler(typeMappers, components);
+    private final ThrowingConsumer<Procedures, ProcedureException> builtin;
     private final File pluginDir;
     private final Log log;
 
     public Procedures()
     {
-        this( null, NullLog.getInstance() );
+        this( new BuiltInProcedures( "N/A" ), null, NullLog.getInstance() );
     }
 
-    public Procedures(  File pluginDir, Log log )
+    public Procedures( ThrowingConsumer<Procedures, ProcedureException> builtin, File pluginDir, Log log )
     {
+        this.builtin = builtin;
         this.pluginDir = pluginDir;
         this.log = log;
     }
@@ -125,6 +128,6 @@ public class Procedures extends LifecycleAdapter
         }
 
         // And register built-in procedures
-        BuiltInProcedures.addTo( this );
+        builtin.accept( this );
     }
 }

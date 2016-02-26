@@ -45,8 +45,8 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure() {
     testQuery(
       title = "Call a procedure",
-      text = "This invokes the built-in procedure 'sys.db.labels', which lists all in-use labels in the database.",
-      queryText = "CALL sys.db.labels",
+      text = "This invokes the built-in procedure 'db.labels', which lists all in-use labels in the database.",
+      queryText = "CALL db.labels",
       optionalResultExplanation = "",
       assertions = (p) => assert(p.hasNext) )
   }

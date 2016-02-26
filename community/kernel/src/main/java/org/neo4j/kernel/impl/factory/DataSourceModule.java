@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
+import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
@@ -70,6 +71,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -317,7 +319,9 @@ public class DataSourceModule
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
 
-        Procedures procedures = new Procedures( pluginDir, internalLog );
+        Procedures procedures = new Procedures(
+                new BuiltInProcedures( Version.getKernel().getReleaseVersion() ),
+                pluginDir,  internalLog );
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
