@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -32,24 +33,34 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+
 import static org.apache.lucene.document.Field.Store.YES;
 
 public class LuceneDocumentStructure
 {
+    private static final boolean USE_LUCENE_STANDARD_PREFIX_QUERY =
+            FeatureToggles.flag( LuceneDocumentStructure.class, "lucene.standard.prefix.query", false );
+
     public static final String NODE_ID_KEY = "id";
 
     //  Absolute hard maximum length for a term, in bytes once
@@ -139,7 +150,7 @@ public class LuceneDocumentStructure
             builder.add( termRangeQuery, BooleanClause.Occur.SHOULD );
             return builder.build();
         }
-        return termRangeQuery;
+        return new ConstantScoreQuery( termRangeQuery );
     }
 
     public static Query newWildCardStringQuery( String searchFor )
@@ -150,9 +161,12 @@ public class LuceneDocumentStructure
         return new WildcardQuery( term );
     }
 
-    public static PrefixQuery newRangeSeekByPrefixQuery( String prefix )
+    public static Query newRangeSeekByPrefixQuery( String prefix )
     {
-        return new PrefixQuery( new Term( ValueEncoding.String.key(), prefix ) );
+        Term term = new Term( ValueEncoding.String.key(), prefix );
+        MultiTermQuery prefixQuery = USE_LUCENE_STANDARD_PREFIX_QUERY ? new PrefixQuery( term ) :
+                                     new PrefixMultiTermsQuery( term );
+        return new ConstantScoreQuery( prefixQuery );
     }
 
     public static Term newTermForChangeOrRemove( long nodeId )
@@ -186,6 +200,54 @@ public class LuceneDocumentStructure
         return ValueEncoding.forKey( fieldKey ) == ValueEncoding.Number
                ? NumericUtils.filterPrefixCodedLongs( termsEnum )
                : termsEnum;
+    }
+
+    /**
+     * Simple implementation of prefix query that mimics old lucene way of handling prefix queries.
+     * According to benchmarks this implementation is faster then
+     * {@link org.apache.lucene.search.PhraseQuery} because we do not construct automaton  which is
+     * extremely expensive.
+     */
+    private static class PrefixMultiTermsQuery extends MultiTermQuery
+    {
+        private Term term;
+
+        PrefixMultiTermsQuery( Term term )
+        {
+            super(term.field());
+            this.term = term;
+        }
+
+        @Override
+        protected TermsEnum getTermsEnum( Terms terms, AttributeSource atts ) throws IOException
+        {
+            return term.bytes().length == 0 ? terms.iterator() : new PrefixTermsEnum( terms.iterator(), term.bytes() );
+        }
+
+
+        @Override
+        public String toString( String field )
+        {
+            return getClass().getSimpleName() + ", term:" + term + ", field:" + field;
+        }
+
+        private class PrefixTermsEnum extends FilteredTermsEnum
+        {
+            private BytesRef prefix;
+
+            PrefixTermsEnum( TermsEnum termEnum, BytesRef prefix )
+            {
+                super( termEnum );
+                this.prefix = prefix;
+                setInitialSeekTerm( this.prefix );
+            }
+
+            @Override
+            protected AcceptStatus accept( BytesRef term ) throws IOException
+            {
+                return StringHelper.startsWith( term, prefix ) ? AcceptStatus.YES : AcceptStatus.END;
+            }
+        }
     }
 
     private static class DocWithId

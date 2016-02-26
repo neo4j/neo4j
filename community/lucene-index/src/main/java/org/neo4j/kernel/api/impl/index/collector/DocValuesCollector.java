@@ -560,28 +560,17 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         @Override
+        public DocIdSetIterator iterator()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public int docID()
         {
             throw new UnsupportedOperationException();
         }
 
-        @Override
-        public int nextDoc() throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int advance( int target ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long cost()
-        {
-            return scores.length;
-        }
     }
 
     private static final class DocsInIndexOrderIterator extends AbstractIndexHits<Document>

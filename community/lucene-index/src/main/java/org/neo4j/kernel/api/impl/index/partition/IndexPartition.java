@@ -51,7 +51,7 @@ public class IndexPartition implements Closeable
         this.indexFolder = partitionFolder;
         this.directory = directory;
         this.indexWriter = new IndexWriter( directory, writerConfig );
-        this.searcherManager = new SearcherManager( indexWriter, true, new SearcherFactory() );
+        this.searcherManager = new SearcherManager( indexWriter, new SearcherFactory() );
     }
 
     public IndexWriter getIndexWriter()
