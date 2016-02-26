@@ -33,6 +33,18 @@ class MathFunctionsTest extends CypherFunSuite with NumericHelper {
     intercept[CypherTypeException](calc(AbsFunction(Literal("wut"))))
   }
 
+  test("abs should give only longs back on integral input") {
+    calc(AbsFunction(Literal(Byte.box(-1)))) should equal(1L)
+    calc(AbsFunction(Literal(Short.box(-1)))) should equal(1L)
+    calc(AbsFunction(Literal(Int.box(-1)))) should equal(1L)
+    calc(AbsFunction(Literal(Long.box(-1)))) should equal(1L)
+  }
+
+  test("abs should give only doubles back on integral input") {
+    calc(AbsFunction(Literal(Float.box(-1.5f)))) should equal(1.5)
+    calc(AbsFunction(Literal(Double.box(-1.5)))) should equal(1.5)
+  }
+
   test("acosTests") {
     asDouble(calc(AcosFunction(Literal(.7)))) should equal(0.795398830184144 +- 0.00001)
     intercept[CypherTypeException](calc(AcosFunction(Literal("wut"))))

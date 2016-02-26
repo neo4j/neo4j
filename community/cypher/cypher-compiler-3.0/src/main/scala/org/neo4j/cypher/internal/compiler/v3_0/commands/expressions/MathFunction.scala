@@ -63,10 +63,23 @@ trait NumericHelper {
   }
 }
 
-case class AbsFunction(argument: Expression) extends NullSafeMathFunction(argument) {
-  def apply(value: Double): Double = Math.abs(value)
+case class AbsFunction(argument: Expression) extends MathFunction(argument) {
 
-  def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+    val value = argument(ctx)
+    if (null == value) null
+    else value match {
+      case f: java.lang.Float => Math.abs(f).toDouble
+      case d: java.lang.Double => Math.abs(d)
+      case b: java.lang.Byte => Math.abs(b.toLong)
+      case s: java.lang.Short => Math.abs(s.toLong)
+      case i: java.lang.Integer => Math.abs(i).toLong
+      case l: java.lang.Long => Math.abs(l)
+      case x => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + x.toString)
+    }
+  }
+
+  override def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
 }
 
 case class AcosFunction(argument: Expression) extends NullSafeMathFunction(argument) {
