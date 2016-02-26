@@ -613,7 +613,9 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     private long nodesInDatabase()
     {
         Result r = graphdb().execute( "MATCH (n) RETURN count(n) AS c" );
-        return (Long) r.columnAs( "c" ).next();
+        Long nodes = (Long) r.columnAs( "c" ).next();
+        r.close();
+        return nodes;
     }
 
     private void assertHasTxLocation( Response begin )
