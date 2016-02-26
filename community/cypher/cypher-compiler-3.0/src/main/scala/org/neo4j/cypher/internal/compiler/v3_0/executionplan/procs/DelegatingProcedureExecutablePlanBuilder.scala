@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, ExecutionPlan, PlanFingerprint, PlanFingerprintReference, SCHEMA_WRITE}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, PlanContext, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuerySemantics, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{FieldSignature, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
 
 /**

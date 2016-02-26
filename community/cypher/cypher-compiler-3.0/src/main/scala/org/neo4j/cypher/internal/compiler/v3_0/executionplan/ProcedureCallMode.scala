@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
-import org.neo4j.cypher.internal.frontend.v3_0.spi._
+import org.neo4j.cypher.internal.compiler.v3_0.spi._
 
 import scala.collection.mutable.ArrayBuffer
 

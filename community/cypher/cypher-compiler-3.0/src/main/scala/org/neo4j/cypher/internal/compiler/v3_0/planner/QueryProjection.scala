@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.CSVFormat
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{EagerMode, IdName, LazyMode, StrictnessMode}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureReadOnlyAccess
 
 sealed trait QueryHorizon {
 

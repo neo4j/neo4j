@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, K
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{IdempotentResult, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{IdempotentResult, QualifiedProcedureName, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_0.spi.QualifiedProcedureName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.index.IndexDescriptor

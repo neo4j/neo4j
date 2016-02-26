@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands
 
 import org.neo4j.cypher.internal.compiler.v3_0._
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{And, Predicate, True}
@@ -117,7 +118,7 @@ object StatementConverters {
             case _: ast.Return         => b
             case c: ast.UnresolvedCall =>
               throw new IllegalArgumentException("Unsupported clause while grouping: unresolved call")
-            case c: ast.ResolvedCall   => c.addToQueryBuilder(b)
+            case c: ResolvedCall       => c.addToQueryBuilder(b)
             case _                     => throw new IllegalArgumentException("Unknown clause while grouping")
           })
 
@@ -173,7 +174,7 @@ object StatementConverters {
     }
   }
 
-  implicit class ResolvedCallConverter(inner: ast.ResolvedCall) {
+  implicit class ResolvedCallConverter(inner: ResolvedCall) {
     def addToQueryBuilder(builder: commands.QueryBuilder) =
       throw new InternalException("RULE planner does not support calling procedures")
   }

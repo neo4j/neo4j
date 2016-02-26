@@ -17,14 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.frontend.v3_0.spi
+package org.neo4j.cypher.internal.compiler.v3_0.spi
 
+import org.neo4j.cypher.internal.frontend.v3_0.ast.UnresolvedCall
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
 case class ProcedureSignature(name: QualifiedProcedureName,
                               inputSignature: Seq[FieldSignature] = Seq.empty,
                               outputSignature: Seq[FieldSignature] = Seq.empty,
                               accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess)
+
+object QualifiedProcedureName {
+  def apply(unresolved: UnresolvedCall): QualifiedProcedureName =
+    QualifiedProcedureName(unresolved.procedureNamespace.parts, unresolved.procedureName.name)
+}
 
 case class QualifiedProcedureName(namespace: Seq[String], name: String) {
   override def toString = s"""${namespace.mkString(".")}.$name"""

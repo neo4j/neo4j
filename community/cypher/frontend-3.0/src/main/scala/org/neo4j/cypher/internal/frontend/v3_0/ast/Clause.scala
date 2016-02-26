@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v3_0.spi.{ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
@@ -297,9 +296,6 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
 
 abstract class CallClause extends Clause {
   override def name = "CALL"
-
-  def qualifiedName: QualifiedProcedureName
-
   def returnColumns: List[String]
 }
 
@@ -311,15 +307,6 @@ case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
                           declaredResults: Option[Seq[ProcedureResultItem]] = None
                          )(val position: InputPosition) extends CallClause {
 
-  def qualifiedName = QualifiedProcedureName(procedureNamespace.parts, procedureName.name)
-
-  def resolve(signatureLookup: QualifiedProcedureName => ProcedureSignature) = {
-    val signature = signatureLookup(qualifiedName)
-    val callArguments = declaredArguments.getOrElse(signature.inputSignature.map { field => Parameter(field.name)(position) })
-    val callResults = declaredResults.getOrElse(signature.outputSignature.map { field => ProcedureResultItem(Variable(field.name)(position))(position) })
-    ResolvedCall(signature, callArguments, callResults, declaredArguments.nonEmpty, declaredResults.nonEmpty)(position)
-  }
-
   override def returnColumns =
     declaredResults.map(_.map(_.variable.name).toList).getOrElse(List.empty)
 
@@ -329,81 +316,6 @@ case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
 
     argumentCheck chain resultsCheck
   }
-}
-
-
-case class ResolvedCall(signature: ProcedureSignature,
-                        callArguments: Seq[Expression],
-                        callResults: Seq[ProcedureResultItem],
-                        // as given by the user originally
-                        val declaredArguments: Boolean = true,
-                        val declaredResults: Boolean = true)
-                       (val position: InputPosition)
-  extends CallClause {
-
-  def qualifiedName = signature.name
-
-  def fullyDeclared = declaredArguments && declaredResults
-
-  def fakeDeclarations =
-    copy(declaredArguments = true, declaredResults = true)(position)
-
-  def coerceArguments = {
-    val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
-    val coercedArguments=
-      callArguments
-        .zip(optInputFields)
-        .map {
-          case (arg, optField) =>
-            optField.map { field => CoerceTo(arg, field.typ) }.getOrElse(arg)
-        }
-    copy(callArguments = coercedArguments)(position)
-  }
-
-  override def returnColumns =
-    callResults.map(_.variable.name).toList
-
-  override def semanticCheck: SemanticCheck = {
-    val expectedNumArgs = signature.inputSignature.length
-    val actualNumArgs = callArguments.length
-
-    val argumentCheck = {
-      if (declaredArguments) {
-        if (expectedNumArgs == actualNumArgs) {
-          signature.inputSignature.zip(callArguments).map {
-            case (field, arg) =>
-              arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
-          }.foldLeft(success)(_ chain _)
-        } else {
-          error(_: SemanticState, SemanticError(s"Procedure call does not provide the required number of arguments ($expectedNumArgs)", position))
-        }
-      } else {
-        error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)", position))
-      }
-    }
-
-    val resultCheck =
-      if (declaredResults) {
-        callResults.foldSemanticCheck(_.semanticCheck(callOutputTypes))
-      } else {
-        error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)", position))
-      }
-
-    argumentCheck chain resultCheck
-  }
-
-  def callResultIndices: Seq[(Int, String)] = {
-    val outputIndices: Map[String, Int] = signature.outputSignature.map(_.name).zip(signature.outputSignature.indices).toMap
-    callResults.map(result => outputIndices(result.outputName) -> result.variable.name)
-  }
-
-  def callResultTypes: Seq[(String, CypherType)] = {
-    val outputTypes = callOutputTypes
-    callResults.map(result => result.variable.name -> outputTypes(result.outputName)).toSeq
-  }
-
-  private val callOutputTypes: Map[String, CypherType] =
-    signature.outputSignature.map { field => field.name -> field.typ }.toMap
 }
 
 sealed trait HorizonClause extends Clause with SemanticChecking {

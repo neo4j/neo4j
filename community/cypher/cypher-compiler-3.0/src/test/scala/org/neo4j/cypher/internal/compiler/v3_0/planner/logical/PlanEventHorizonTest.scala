@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{ProcedureCall, Projection, SingleRow}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, ProcedureCallProjection, RegularPlannerQuery, RegularQueryProjection}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{ResolvedCall, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{DummyPosition, SemanticTable}
 

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_0.spi
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, READ_ONLY, READ_WRITE}
-import org.neo4j.cypher.internal.frontend.v3_0.spi.ProcedureSignature
 
 import scala.collection.mutable.ArrayBuffer
 

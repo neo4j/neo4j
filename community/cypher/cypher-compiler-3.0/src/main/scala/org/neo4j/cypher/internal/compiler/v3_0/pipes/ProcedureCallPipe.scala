@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.ScalaCompatibility.asScal
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, JavaResultValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.Signature
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
-import org.neo4j.cypher.internal.frontend.v3_0.spi.QualifiedProcedureName
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QualifiedProcedureName
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
 case class ProcedureCallPipe(source: Pipe,
@@ -56,8 +56,8 @@ case class ProcedureCallPipe(source: Pipe,
         val results = callMode.call(qtx, name, argValues)
 
         results map { resultValues =>
-          resultIndices foreach { entry =>
-            builder += entry._2 -> asScalaCompatible(resultValues(entry._1))
+          resultIndices foreach { case (k, v) =>
+            builder += v -> asScalaCompatible(resultValues(k))
           }
           val rowEntries = builder.result()
           val output = input.newWith(rowEntries)
