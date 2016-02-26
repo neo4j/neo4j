@@ -23,13 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.CSVFormat
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LazyMode, StrictnessMode}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.perty._
 
-sealed trait QueryHorizon extends PageDocFormatting { // with ToPrettyString[QueryHorizon] {
-
-  //  def toDefaultPrettyString(formatter: DocFormatter) =
-  //    toPrettyString(formatter)(InternalDocHandler.docGen)
-
+sealed trait QueryHorizon {
   def exposedSymbols(qg: QueryGraph): Set[IdName]
 
   def dependingExpressions: Seq[Expression]
@@ -42,7 +37,7 @@ sealed trait QueryHorizon extends PageDocFormatting { // with ToPrettyString[Que
   }
 }
 
-sealed abstract class QueryProjection extends QueryHorizon { // with internalDocBuilder.GeneratorToString[Any]{
+sealed abstract class QueryProjection extends QueryHorizon {
   def projections: Map[String, Expression]
   def shuffle: QueryShuffle
   def keySet: Set[String]
@@ -75,10 +70,7 @@ object QueryProjection {
 final case class QueryShuffle(sortItems: Seq[SortItem] = Seq.empty,
                               skip: Option[Expression] = None,
                               limit: Option[Expression] = None)
-  extends PageDocFormatting { // with ToPrettyString[QueryShuffle] {
-
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
+  extends {
 
   def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
   def withSkip(skip: Option[Skip]) = copy(skip = skip.map(_.expression))

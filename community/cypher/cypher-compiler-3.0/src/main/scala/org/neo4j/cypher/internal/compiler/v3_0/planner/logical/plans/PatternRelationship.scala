@@ -21,14 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, ast}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.RelTypeName
-import org.neo4j.cypher.internal.frontend.v3_0.perty.PageDocFormatting
 
 final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: SemanticDirection,
-                                     types: Seq[RelTypeName], length: PatternLength)
-  extends PageDocFormatting { // with ToPrettyString[PatternRelationship] {
-
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
+                                     types: Seq[RelTypeName], length: PatternLength) {
 
   def directionRelativeTo(node: IdName): SemanticDirection = if (node == left) dir else dir.reversed
 
@@ -51,11 +46,8 @@ object PatternRelationship {
 }
 
 // TODO: Remove ast representation
-final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)(val expr: ast.ShortestPaths)
-  extends PageDocFormatting { // with ToPrettyString[ShortestPathPattern] {
-
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
+final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)
+                                    (val expr: ast.ShortestPaths) {
 
   def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
 
@@ -66,11 +58,7 @@ object ShortestPathPattern {
   implicit val byRelName = Ordering.by { (sp: ShortestPathPattern) => sp.rel }
 }
 
-trait PatternLength extends PageDocFormatting { // with ToPrettyString[PatternLength] {
-
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
-
+trait PatternLength {
   def implicitPatternNodeCount: Int
   def isSimple: Boolean
 }
