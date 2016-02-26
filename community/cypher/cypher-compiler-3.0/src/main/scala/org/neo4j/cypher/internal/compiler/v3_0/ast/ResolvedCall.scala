@@ -48,7 +48,6 @@ case class ResolvedCall(signature: ProcedureSignature,
   extends CallClause {
 
   def qualifiedName = signature.name
-
   def fullyDeclared = declaredArguments && declaredResults
 
   def fakeDeclarations =
@@ -69,35 +68,6 @@ case class ResolvedCall(signature: ProcedureSignature,
   override def returnColumns =
     callResults.map(_.variable.name).toList
 
-  override def semanticCheck: SemanticCheck = {
-    val expectedNumArgs = signature.inputSignature.length
-    val actualNumArgs = callArguments.length
-
-    val argumentCheck = {
-      if (declaredArguments) {
-        if (expectedNumArgs == actualNumArgs) {
-          signature.inputSignature.zip(callArguments).map {
-            case (field, arg) =>
-              arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
-          }.foldLeft(success)(_ chain _)
-        } else {
-          error(_: SemanticState, SemanticError(s"Procedure call does not provide the required number of arguments ($expectedNumArgs)", position))
-        }
-      } else {
-        error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)", position))
-      }
-    }
-
-    val resultCheck =
-      if (declaredResults) {
-        callResults.foldSemanticCheck(_.semanticCheck(callOutputTypes))
-      } else {
-        error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)", position))
-      }
-
-    argumentCheck chain resultCheck
-  }
-
   def callResultIndices: Seq[(Int, String)] = {
     val outputIndices: Map[String, Int] = signature.outputSignature.map(_.name).zip(signature.outputSignature.indices).toMap
     callResults.map(result => outputIndices(result.outputName) -> result.variable.name)
@@ -107,6 +77,33 @@ case class ResolvedCall(signature: ProcedureSignature,
     val outputTypes = callOutputTypes
     callResults.map(result => result.variable.name -> outputTypes(result.outputName)).toSeq
   }
+
+  override def semanticCheck: SemanticCheck =
+    argumentCheck chain resultCheck
+
+  private def argumentCheck: SemanticCheck = {
+    val expectedNumArgs = signature.inputSignature.length
+    val actualNumArgs = callArguments.length
+
+    if (declaredArguments) {
+      if (expectedNumArgs == actualNumArgs) {
+        signature.inputSignature.zip(callArguments).map {
+          case (field, arg) =>
+            arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
+        }.foldLeft(success)(_ chain _)
+      } else {
+        error(_: SemanticState, SemanticError(s"Procedure call does not provide the required number of arguments ($expectedNumArgs)", position))
+      }
+    } else {
+      error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)", position))
+    }
+  }
+
+  private def resultCheck: SemanticCheck =
+    if (declaredResults)
+      callResults.foldSemanticCheck(_.semanticCheck(callOutputTypes))
+    else
+      error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)", position))
 
   private val callOutputTypes: Map[String, CypherType] =
     signature.outputSignature.map { field => field.name -> field.typ }.toMap
