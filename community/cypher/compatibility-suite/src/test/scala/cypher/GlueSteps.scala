@@ -108,6 +108,10 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
     matcher should acceptOrderedResult(result)
   }
 
+  Then(EXPECT_EMPTY_RESULT) {
+    result.hasNext shouldBe false
+  }
+
   Then(RESULT) { (sorted: Boolean, names: DataTable) =>
     val expected = names.asScala[String]
     val actual = IteratorUtil.asList(result).asScala.map(_.asScala).toList.map {
@@ -188,5 +192,6 @@ object GlueSteps {
   // for Then
   val EXPECT_RESULT = "^the result should be:$"
   val EXPECT_SORTED_RESULT = "^the result should be, in order:$"
+  val EXPECT_EMPTY_RESULT = "^the result should be empty$"
 
 }

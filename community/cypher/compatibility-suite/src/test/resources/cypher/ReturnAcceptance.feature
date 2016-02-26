@@ -31,8 +31,7 @@ Feature: ReturnAcceptanceTest
   Scenario: should accept skip zero
     Given using: cineast
     When executing query: MATCH (n) WHERE 1 = 0 RETURN n SKIP 0;
-    Then result:
-      |  |
+    Then the result should be empty
 
   Scenario: should limit to two hits
     Given an empty graph
@@ -145,8 +144,7 @@ Feature: ReturnAcceptanceTest
   Scenario: should allow ordering on aggregate function
     Given using: cineast
     When executing query: MATCH (n)-[:KNOWS]-(c) WHERE id(n) = 0 RETURN n, count(c) AS cnt ORDER BY cnt;
-    Then result:
-      |  |
+    Then the result should be empty
 
   Scenario: arithmetic precedence test
     Given any graph

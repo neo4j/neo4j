@@ -225,8 +225,7 @@ Feature: MatchAcceptanceTest
     Given an empty graph
       And having executed: CREATE (a:A {name: "A"})-[:KNOWS]->(b:B {name: "B"})
     When executing query: MATCH p = (n)-->(x) WHERE length(p) = 10 RETURN x
-    Then result:
-      |  |
+    Then the result should be empty
 
   Scenario: should pass the path length test
     Given an empty graph
