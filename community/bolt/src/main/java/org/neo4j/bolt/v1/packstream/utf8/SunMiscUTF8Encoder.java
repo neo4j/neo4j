@@ -77,7 +77,7 @@ public class SunMiscUTF8Encoder implements UTF8Encoder
             }
 
             char[] rawChars = (char[]) getCharArray.invoke( input );
-            int len = (int)arrayEncode.invoke( charsetEncoder, rawChars, 0, rawChars.length, out );
+            int len = (int)arrayEncode.invoke( charsetEncoder, rawChars, 0, input.length(), out );
 
             if( len == -1 )
             {
