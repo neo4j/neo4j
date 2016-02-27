@@ -24,15 +24,14 @@ import org.neo4j.cypher.internal.frontend.v3_0.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
-
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, _}
 
 object ResolvedCall {
   def apply(signatureLookup: QualifiedProcedureName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
     val UnresolvedCall(_, _, declaredArguments, declaredResults) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(QualifiedProcedureName(unresolved))
-    val callArguments = declaredArguments.getOrElse(signature.inputSignature.map { field => Parameter(field.name)(position) })
+    val callArguments = declaredArguments.getOrElse(signature.inputSignature.map { field => Parameter(field.name, CTAny)(position) })
     val callResults = declaredResults.getOrElse(signature.outputSignature.map { field => ProcedureResultItem(Variable(field.name)(position))(position) })
     ResolvedCall(signature, callArguments, callResults, declaredArguments.nonEmpty, declaredResults.nonEmpty)(position)
   }
