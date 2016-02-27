@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
 import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
@@ -97,6 +96,7 @@ import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.format.Capability.VERSION_TRAILERS;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -626,7 +626,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 true, // allow to overwrite target files
                 StoreFileType.values() );
 
-        if ( !LowLimitV2_3.STORE_VERSION.equals( versionToUpgradeFrom ) )
+        RecordFormats oldFormat = InternalRecordFormatSelector.fromVersion( versionToUpgradeFrom );
+        RecordFormats newFormat = InternalRecordFormatSelector.fromVersion( versionToUpgradeTo );
+        boolean movingAwayFromVersionTrailers =
+                oldFormat.hasCapability( VERSION_TRAILERS ) && !newFormat.hasCapability( VERSION_TRAILERS );
+
+        if ( movingAwayFromVersionTrailers )
         {
             StoreFile.removeTrailers( versionToUpgradeFrom, fileSystem, storeDir, pageCache.pageSize() );
         }
@@ -641,7 +646,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         // delete old logs
         legacyLogs.deleteUnusedLogFiles( storeDir );
 
-        if ( !LowLimitV2_3.STORE_VERSION.equals( versionToUpgradeFrom ) )
+        if ( movingAwayFromVersionTrailers )
         {
             // write a check point in the log in order to make recovery work in the newer version
             new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx );
