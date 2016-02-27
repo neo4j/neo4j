@@ -52,7 +52,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     super.beforeEach()
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
     outerTx = mock[InternalTransaction]
-    statement = new KernelStatement(mock[KernelTransactionImplementation], null, null, null, null, new Procedures())
+    val kernelTransaction = mock[KernelTransactionImplementation]
+    when(kernelTransaction.mode()).thenReturn(AccessMode.FULL)
+    statement = new KernelStatement(kernelTransaction, null, null, null, null, new Procedures())
   }
 
   override def afterEach() {
