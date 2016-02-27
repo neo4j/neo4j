@@ -98,7 +98,7 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgFailure( Status.Security.CredentialsExpired,
-                "The credentials have expired and needs to be updated." ) ) );
+                "The credentials have expired and need to be updated." ) ) );
     }
 
     @Test

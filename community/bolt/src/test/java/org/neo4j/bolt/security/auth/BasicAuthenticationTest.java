@@ -93,7 +93,7 @@ public class BasicAuthenticationTest
         // Expect
         exception.expect( AuthenticationException.class );
         exception.expect( hasStatus( Status.Security.CredentialsExpired ) );
-        exception.expectMessage( "The credentials have expired and needs to be updated." );
+        exception.expectMessage( "The credentials have expired and need to be updated." );
 
         // When
         authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
