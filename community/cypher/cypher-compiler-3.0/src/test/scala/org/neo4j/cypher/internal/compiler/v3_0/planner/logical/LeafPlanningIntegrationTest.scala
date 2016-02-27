@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{ManyQueryExpression, RangeQueryExpression, SingleQueryExpression}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v3_0.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{ExclusiveBound, InclusiveBound, LabelId, PropertyKeyId}
 
@@ -352,7 +352,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) IN {param} RETURN n").plan should equal (
       Selection(
         List(HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", ManySeekableArgs(Parameter("param")_), Set.empty)(solved)
+        NodeByIdSeek("n", ManySeekableArgs(Parameter("param", CTAny)_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -360,14 +360,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan directed rel by ID lookup based on an IN predicate with a param as the rhs") {
     (new given {
     } planFor "MATCH (a)-[r]->(b) WHERE id(r) IN {param} RETURN a, r, b").plan should equal (
-      DirectedRelationshipByIdSeek("r", ManySeekableArgs(Parameter("param")_), "a", "b", Set.empty)(solved)
+      DirectedRelationshipByIdSeek("r", ManySeekableArgs(Parameter("param", CTAny)_), "a", "b", Set.empty)(solved)
     )
   }
 
   test("should plan undirected rel by ID lookup based on an IN predicate with a param as the rhs") {
     (new given {
     } planFor "MATCH (a)-[r]-(b) WHERE id(r) IN {param} RETURN a, r, b").plan should equal (
-      UndirectedRelationshipByIdSeek("r", ManySeekableArgs(Parameter("param")_), "a", "b", Set.empty)(solved)
+      UndirectedRelationshipByIdSeek("r", ManySeekableArgs(Parameter("param", CTAny)_), "a", "b", Set.empty)(solved)
     )
   }
 
