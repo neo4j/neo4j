@@ -228,7 +228,6 @@ enum Reference
                 + " as a reference" );
     }
 
-
     /**
      * Convert provided reference to be relative to basisReference
      * @param reference reference that will be converter to relative
