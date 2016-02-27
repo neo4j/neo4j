@@ -25,9 +25,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
-import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
-
 class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
 {
     private static final int RECORD_SIZE = 32;
@@ -53,16 +50,15 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
             boolean inUse, DataAdapter<PageCursor> adapter )
     {
         int type = cursor.getShort() & 0xFFFF;
-        long recordId = record.getId();
         record.initialize( inUse,
                 decode( cursor, adapter, headerByte, HAS_PROPERTY_BIT, NULL  ),
                 decode( cursor, adapter  ),
                 decode( cursor, adapter  ),
                 type,
-                toAbsolute( decode( cursor, adapter ), recordId ),
-                toAbsolute( decode( cursor, adapter, headerByte, HAS_START_NEXT_BIT, NULL ), recordId ),
-                toAbsolute( decode( cursor, adapter ), recordId ),
-                toAbsolute( decode( cursor, adapter, headerByte, HAS_END_NEXT_BIT, NULL ), recordId ),
+                decode( cursor, adapter ),
+                decode( cursor, adapter, headerByte, HAS_START_NEXT_BIT, NULL ),
+                decode( cursor, adapter ),
+                decode( cursor, adapter, headerByte, HAS_END_NEXT_BIT, NULL ),
                 has( headerByte, FIRST_IN_START_BIT ),
                 has( headerByte, FIRST_IN_END_BIT ) );
     }
@@ -82,15 +78,14 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     @Override
     protected int requiredDataLength( RelationshipRecord record )
     {
-        long id = record.getId();
         return Short.BYTES + // type
                length( record.getNextProp(), NULL ) +
                length( record.getFirstNode() ) +
                length( record.getSecondNode() ) +
-               length( toRelative( record.getFirstPrevRel(), id ) ) +
-               length( toRelative( record.getFirstNextRel(), id ), NULL ) +
-               length( toRelative( record.getSecondPrevRel(), id ) ) +
-               length( toRelative( record.getSecondNextRel(), id ), NULL );
+               length( record.getFirstPrevRel() ) +
+               length( record.getFirstNextRel(), NULL ) +
+               length( record.getSecondPrevRel() ) +
+               length( record.getSecondNextRel(), NULL );
     }
 
     @Override
@@ -98,13 +93,12 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
             throws IOException
     {
         cursor.putShort( (short) record.getType() );
-        long recordId = record.getId();
         encode( cursor, adapter, record.getNextProp(), NULL );
         encode( cursor, adapter, record.getFirstNode() );
         encode( cursor, adapter, record.getSecondNode() );
-        encode( cursor, adapter, toRelative( record.getFirstPrevRel(), recordId ) );
-        encode( cursor, adapter, toRelative( record.getFirstNextRel(), recordId ), NULL );
-        encode( cursor, adapter, toRelative( record.getSecondPrevRel(), recordId ) );
-        encode( cursor, adapter, toRelative( record.getSecondNextRel(), recordId ), NULL );
+        encode( cursor, adapter, record.getFirstPrevRel() );
+        encode( cursor, adapter, record.getFirstNextRel(), NULL );
+        encode( cursor, adapter, record.getSecondPrevRel() );
+        encode( cursor, adapter, record.getSecondNextRel(), NULL );
     }
 }

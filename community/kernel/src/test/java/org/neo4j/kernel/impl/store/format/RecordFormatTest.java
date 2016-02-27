@@ -158,6 +158,7 @@ public abstract class RecordFormatTest
             for ( ; i < TEST_ITERATIONS && currentTimeMillis() < endTime; i++ )
             {
                 R written = generator.get( recordSize, format );
+                R read = format.newRecord();
                 try
                 {
                     writeRecord( written, format, storeFile, recordSize, idSequence );
@@ -166,7 +167,7 @@ public abstract class RecordFormatTest
                     long unusedBytes = storeFile.unusedBytes();
                     storeFile.resetMeasurements();
 
-                    readAndVerifyRecord( written, format, key, storeFile, recordSize );
+                    readAndVerifyRecord( written, read, format, key, storeFile, recordSize );
 
                     if ( written.inUse() )
                     {
@@ -193,7 +194,8 @@ public abstract class RecordFormatTest
                 }
                 catch ( Throwable t )
                 {
-                    Exceptions.setMessage( t, t.getMessage() + " : " + written );
+                    Exceptions.setMessage( t, t.getMessage() + " : written:" + written + ", read:" + read +
+                            ", seed:" + random.seed() );
                     throw t;
                 }
             }
@@ -215,13 +217,12 @@ public abstract class RecordFormatTest
         }
     }
 
-    private <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, RecordFormat<R> format,
+    private <R extends AbstractBaseRecord> void readAndVerifyRecord( R written, R read, RecordFormat<R> format,
             RecordKey<R> key, PagedFile storeFile, int recordSize ) throws IOException
     {
         try ( PageCursor cursor = storeFile.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             assertedNext( cursor );
-            R read = format.newRecord();
             read.setId( written.getId() );
 
             /**
