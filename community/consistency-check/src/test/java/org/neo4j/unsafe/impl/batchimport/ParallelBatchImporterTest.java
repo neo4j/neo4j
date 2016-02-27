@@ -221,7 +221,7 @@ public class ParallelBatchImporterTest
                 result.isSuccessful() );
     }
 
-    private static abstract class InputIdGenerator
+    public static abstract class InputIdGenerator
     {
         abstract void reset();
 
