@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class ConstantExpressionTest extends CypherFunSuite {
   test("tests") {
     assertIsConstant(SignedDecimalIntegerLiteral("42")(null))
-    assertIsConstant(Parameter("42")(null))
+    assertIsConstant(Parameter("42", CTAny)(null))
     assertIsConstant(Collection(Seq(SignedDecimalIntegerLiteral("42")(null)))(null))
   }
 

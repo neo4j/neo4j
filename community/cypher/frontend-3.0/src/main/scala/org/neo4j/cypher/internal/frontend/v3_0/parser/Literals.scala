@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_0.parser
 
 import org.neo4j.cypher.internal.frontend.v3_0.ast
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.parboiled.scala._
 
 trait Literals extends Parser
@@ -59,7 +60,7 @@ trait Literals extends Parser
   }
 
   def Parameter: Rule1[ast.Parameter] = rule("a parameter") {
-    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_))
+    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
   }
 
   def NumberLiteral: Rule1[ast.Literal] = rule("a number") (
