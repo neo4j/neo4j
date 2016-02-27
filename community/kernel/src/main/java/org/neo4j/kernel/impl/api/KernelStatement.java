@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -58,7 +59,11 @@ public class KernelStatement implements TxStateHolder, Statement
     @Override
     public ReadOperations readOperations()
     {
-        transaction.verifyReadTransaction();
+        if( !transaction.mode().allowsReads() )
+        {
+            throw new AuthorizationViolationException(
+                    String.format( "Read operations are not allowed for `%s` transactions.", transaction.mode().name() ) );
+        }
         return facade;
     }
 
@@ -72,7 +77,12 @@ public class KernelStatement implements TxStateHolder, Statement
     public DataWriteOperations dataWriteOperations()
             throws InvalidTransactionTypeKernelException
     {
-        transaction.verifyDataWriteTransaction();
+        if( !transaction.mode().allowsWrites() )
+        {
+            throw new AuthorizationViolationException(
+                    String.format( "Write operations are not allowed for `%s` transactions.", transaction.mode().name() ) );
+        }
+        transaction.upgradeToDataTransaction();
         return facade;
     }
 
@@ -80,7 +90,12 @@ public class KernelStatement implements TxStateHolder, Statement
     public SchemaWriteOperations schemaWriteOperations()
             throws InvalidTransactionTypeKernelException
     {
-        transaction.verifySchemaWriteTransaction();
+        if( !transaction.mode().allowsSchemaWrites() )
+        {
+            throw new AuthorizationViolationException(
+                    String.format( "Schema operations are not allowed for `%s` transactions.", transaction.mode().name() ) );
+        }
+        transaction.upgradeToSchemaTransaction();
         return facade;
     }
 
