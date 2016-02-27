@@ -27,10 +27,9 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -73,10 +72,10 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     {
         // When
         ProcedureSignature found = readOperationsInNewTransaction()
-                .procedureGet( procedureName( "sys", "db", "labels" ) );
+                .procedureGet( procedureName( "db", "labels" ) );
 
         // Then
-        assertThat( found, equalTo( procedureSignature( procedureName( "sys", "db", "labels" ) )
+        assertThat( found, equalTo( procedureSignature( procedureName( "db", "labels" ) )
                 .out(  "label", Neo4jTypes.NTString ).build() ) );
     }
 

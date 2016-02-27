@@ -27,28 +27,34 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 
 /**
- * Tracks components that can be injected into user-defined procedures.
+ * Tracks components that can be injected into compiled procedures.
  */
 public class ComponentRegistry
 {
-    private final Map<Class<?>, ThrowingFunction<CallableProcedure.Context, ?,ProcedureException>> suppliers;
+    /** Given the context of a procedure call, provide some component. */
+    public interface Provider<T> extends ThrowingFunction<CallableProcedure.Context, T,ProcedureException>
+    {
+        // This interface intentionally empty, alias for the Function generic above
+    }
+
+    private final Map<Class<?>, Provider<?>> suppliers;
 
     public ComponentRegistry()
     {
         this( new HashMap<>() );
     }
 
-    public ComponentRegistry( Map<Class<?>,ThrowingFunction<CallableProcedure.Context, ?,ProcedureException>> suppliers )
+    public ComponentRegistry( Map<Class<?>, Provider<?>> suppliers )
     {
         this.suppliers = suppliers;
     }
 
-    public ThrowingFunction<CallableProcedure.Context, ?,ProcedureException> supplierFor( Class<?> type )
+    public Provider<?> providerFor( Class<?> type )
     {
         return suppliers.get( type );
     }
 
-    public <T> void register( Class<T> cls, ThrowingFunction<CallableProcedure.Context, ?,ProcedureException> supplier )
+    public <T> void register( Class<T> cls, Provider<T> supplier )
     {
         suppliers.put( cls, supplier );
     }

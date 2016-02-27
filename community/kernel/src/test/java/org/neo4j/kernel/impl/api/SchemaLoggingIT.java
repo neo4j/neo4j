@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.test.ImpermanentDatabaseRule;

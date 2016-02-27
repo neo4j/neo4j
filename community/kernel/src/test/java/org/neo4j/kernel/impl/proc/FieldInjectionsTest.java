@@ -42,8 +42,10 @@ public class FieldInjectionsTest
 
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( "Field `someState` on `ProcedureWithNonInjectedMemberFields` is not annotated as a @Resource and is not static. " +
-                                 "If you want to store state along with your procedure, please use a static field." );
+        exception.expectMessage( "Field `someState` on `ProcedureWithNonInjectedMemberFields` " +
+                                 "is not annotated as a @Context and is not static. " +
+                                 "If you want to store state along with your procedure, " +
+                                 "please use a static field." );
 
         // When
         injections.setters( ProcedureWithNonInjectedMemberFields.class );

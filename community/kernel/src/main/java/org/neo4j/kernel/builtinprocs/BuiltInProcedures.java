@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.impl.proc.Procedures;
 
@@ -27,13 +28,29 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 /**
  * This registers procedures that are expected to be available by default in Neo4j.
  */
-public class BuiltInProcedures
+public class BuiltInProcedures implements ThrowingConsumer<Procedures, ProcedureException>
 {
-    public static void addTo( Procedures procs ) throws ProcedureException
+    private final String neo4jVersion;
+
+    public BuiltInProcedures( String neo4jVersion )
     {
-        procs.register( new ListLabelsProcedure( procedureName( "sys", "db", "labels" ) ) );
-        procs.register( new ListPropertyKeysProcedure( procedureName( "sys", "db", "propertyKeys" ) ) );
-        procs.register( new ListRelationshipTypesProcedure( procedureName( "sys", "db", "relationshipTypes" ) ) );
-        procs.register( new ListProceduresProcedure( procedureName( "sys", "db", "procedures" ) ) );
+        this.neo4jVersion = neo4jVersion;
+    }
+
+    @Override
+    public void accept( Procedures procs ) throws ProcedureException
+    {
+        // These are 'db'-namespaced procedures. They deal with database-level
+        // functionality - eg. things that differ across databases
+        procs.register( new ListLabelsProcedure( procedureName( "db", "labels" ) ) );
+        procs.register( new ListPropertyKeysProcedure( procedureName( "db", "propertyKeys" ) ) );
+        procs.register( new ListRelationshipTypesProcedure( procedureName( "db", "relationshipTypes" ) ) );
+        procs.register( new ListIndexesProcedure( procedureName( "db", "indexes" ) ) );
+        procs.register( new ListConstraintsProcedure( procedureName( "db", "constraints" ) ) );
+
+        // These are 'sys'-namespaced procedures, they deal with DBMS-level
+        // functionality - eg. things that apply across databases.
+        procs.register( new ListProceduresProcedure( procedureName( "sys", "procedures" ) ) );
+        procs.register( new ListComponentsProcedure( procedureName( "sys", "components" ), neo4jVersion ) );
     }
 }

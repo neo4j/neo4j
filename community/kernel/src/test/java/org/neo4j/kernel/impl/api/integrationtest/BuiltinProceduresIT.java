@@ -27,12 +27,12 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
 public class BuiltinProceduresIT extends KernelIntegrationTest
 {
@@ -51,7 +51,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[],ProcedureException> stream = readOperationsInNewTransaction().procedureCallRead( procedureName( "sys", "db", "labels" ), new Object[0] );
+        RawIterator<Object[],ProcedureException> stream = readOperationsInNewTransaction().procedureCallRead( procedureName( "db", "labels" ), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyLabel"} ) ) );
@@ -66,7 +66,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[],ProcedureException> stream = readOperationsInNewTransaction().procedureCallRead( procedureName( "sys", "db", "propertyKeys" ), new Object[0] );
+        RawIterator<Object[],ProcedureException> stream = readOperationsInNewTransaction().procedureCallRead( procedureName( "db", "propertyKeys" ), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyProp"} ) ) );
@@ -82,7 +82,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[],ProcedureException> stream = readOperationsInNewTransaction().procedureCallRead( procedureName( "sys", "db", "relationshipTypes" ), new Object[0] );
+        RawIterator<Object[],ProcedureException> stream = readOperationsInNewTransaction().procedureCallRead( procedureName( "db", "relationshipTypes" ), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyRelType"} ) ) );
@@ -93,14 +93,17 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
     {
         // When
         RawIterator<Object[],ProcedureException> stream =
-                readOperationsInNewTransaction().procedureCallRead( procedureName( "sys", "db", "procedures" ), new Object[0] );
+                readOperationsInNewTransaction().procedureCallRead( procedureName( "sys", "procedures" ), new Object[0] );
 
         // Then
-        assertThat( asList( stream ), contains(
-                equalTo( new Object[]{"sys.db.labels", "sys.db.labels() :: (label :: STRING?)"} ),
-                equalTo( new Object[]{"sys.db.procedures", "sys.db.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
-                equalTo( new Object[]{"sys.db.propertyKeys", "sys.db.propertyKeys() :: (propertyKey :: STRING?)"}),
-                equalTo( new Object[]{"sys.db.relationshipTypes", "sys.db.relationshipTypes() :: (relationshipType :: STRING?)"})
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)"} ),
+                equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?)"} ),
+                equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)"}),
+                equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)"} ),
+                equalTo( new Object[]{"sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
+                equalTo( new Object[]{"sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?)"} ),
+                equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)"})
         ));
     }
 }

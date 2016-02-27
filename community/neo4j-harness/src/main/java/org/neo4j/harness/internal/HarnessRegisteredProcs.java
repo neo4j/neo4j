@@ -22,11 +22,10 @@ package org.neo4j.harness.internal;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
 
-public class Procs
+public class HarnessRegisteredProcs
 {
     private final List<Class<?>> procs = new LinkedList<>();
 
@@ -36,9 +35,8 @@ public class Procs
     }
 
     @SuppressWarnings( "deprecation" )
-    public void applyTo( GraphDatabaseAPI graph ) throws KernelException
+    public void applyTo( Procedures procedures ) throws KernelException
     {
-        Procedures procedures = graph.getDependencyResolver().resolveDependency( Procedures.class );
         for ( Class<?> cls : procs )
         {
             procedures.register( cls );

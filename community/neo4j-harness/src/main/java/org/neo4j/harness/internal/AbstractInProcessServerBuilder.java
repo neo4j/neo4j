@@ -40,7 +40,12 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.ServerTestUtils;
@@ -50,6 +55,7 @@ import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
 import static org.neo4j.bolt.BoltKernelExtension.Settings.enabled;
 import static org.neo4j.bolt.BoltKernelExtension.Settings.socket_address;
+import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.test.Digests.md5Hex;
 
@@ -58,7 +64,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     private File serverFolder;
     private final Extensions extensions = new Extensions();
-    private final Procs procedures = new Procs();
+    private final HarnessRegisteredProcs procedures = new HarnessRegisteredProcs();
     private final Fixtures fixtures = new Fixtures();
 
     /**
@@ -121,8 +127,11 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
                 toStringForThirdPartyPackageProperty( extensions.toList() ) );
 
         final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
-        GraphDatabaseFacadeFactory.Dependencies dependencies =
-                GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
+        GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
+        dependencies = dependencies.kernelExtensions(
+                append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() ) )
+                .userLogProvider( userLogProvider );
+
         AbstractNeoServer neoServer = createNeoServer( config, dependencies, userLogProvider );
         InProcessServerControls controls = new InProcessServerControls( serverFolder, neoServer, logOutputStream );
         controls.start();
@@ -130,7 +139,6 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
         try
         {
-            procedures.applyTo( neoServer.getDatabase().getGraph() );
             fixtures.applyTo( controls );
         }
         catch ( Exception e )
@@ -241,5 +249,41 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             propertyString += jaxRsPackage.getPackageName() + "=" + jaxRsPackage.getMountPoint();
             return propertyString;
         }
+    }
+
+    /**
+     * A kernel extension used to ensure we load user-registered procedures
+     * after other kernel extensions have initialized, since kernel extensions
+     * can add custom injectables that procedures need.
+     */
+    private static class Neo4jHarnessExtensions extends KernelExtensionFactory<Neo4jHarnessExtensions.Dependencies>
+    {
+        interface Dependencies
+        {
+            Procedures procedures();
+        }
+
+        private HarnessRegisteredProcs userProcs;
+
+        public Neo4jHarnessExtensions( HarnessRegisteredProcs userProcs )
+        {
+            super("harness");
+            this.userProcs = userProcs;
+        }
+
+        @Override
+        public Lifecycle newInstance( KernelContext context,
+                Dependencies dependencies ) throws Throwable
+        {
+            return new LifecycleAdapter()
+            {
+                @Override
+                public void start() throws Throwable
+                {
+                    userProcs.applyTo( dependencies.procedures() );
+                }
+            };
+        }
+
     }
 }

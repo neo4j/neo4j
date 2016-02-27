@@ -23,11 +23,9 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.proc.{CallableProcedure, Neo4jTypes}
-import CallableProcedure.Context
-import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
+import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
 import org.neo4j.kernel.api.proc.Neo4jTypes
-import CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 
 class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -38,7 +36,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     createLabeledNode("C")
 
     //When
-    val result = execute("CALL sys.db.labels")
+    val result = execute("CALL db.labels")
 
     // Then
     result.toList should equal(
@@ -48,34 +46,34 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
         Map("label" -> "C")))
   }
 
-  test("sys.db.labels work on an empty database") {
+  test("db.labels work on an empty database") {
     // Given an empty database
     //When
-    val result = execute("CALL sys.db.labels")
+    val result = execute("CALL db.labels")
 
     // Then
     result.toList shouldBe empty
   }
 
-  test("sys.db.labels should be empty when all labels are removed") {
+  test("db.labels should be empty when all labels are removed") {
     // Given
     createLabeledNode("A")
     execute("MATCH (a:A) REMOVE a:A")
 
     //When
-    val result = execute("CALL sys.db.labels")
+    val result = execute("CALL db.labels")
 
     // Then
     result shouldBe empty
   }
 
-  test("sys.db.labels should be empty when all nodes are removed") {
+  test("db.labels should be empty when all nodes are removed") {
     // Given
     createLabeledNode("A")
     execute("MATCH (a) DETACH DELETE a")
 
     //When
-    val result = execute("CALL sys.db.labels")
+    val result = execute("CALL db.labels")
 
     // Then
     result shouldBe empty
@@ -88,7 +86,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     relate(createNode(), createNode(), "C")
 
     // When
-    val result = execute("CALL sys.db.relationshipTypes")
+    val result = execute("CALL db.relationshipTypes")
 
     // Then
     result.toList should equal(
@@ -98,16 +96,16 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
         Map("relationshipType" -> "C")))
   }
 
-  test("sys.db.relationshipType work on an empty database") {
+  test("db.relationshipType work on an empty database") {
     // Given an empty database
     //When
-    val result = execute("CALL sys.db.relationshipTypes")
+    val result = execute("CALL db.relationshipTypes")
 
     // Then
     result shouldBe empty
   }
 
-  test("sys.db.relationshipTypes should be empty when all relationships are removed") {
+  test("db.relationshipTypes should be empty when all relationships are removed") {
     // Given
     // Given
     relate(createNode(), createNode(), "A")
@@ -116,7 +114,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     execute("MATCH (a) DETACH DELETE a")
 
     //When
-    val result = execute("CALL sys.db.relationshipTypes")
+    val result = execute("CALL db.relationshipTypes")
 
     // Then
     result shouldBe empty
@@ -127,7 +125,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     createNode("A" -> 1, "B" -> 2, "C" -> 3)
 
     // When
-    val result = execute("CALL sys.db.propertyKeys")
+    val result = execute("CALL db.propertyKeys")
 
     // Then
     result.toList should equal(
@@ -137,11 +135,11 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
         Map("propertyKey" -> "C")))
   }
 
-  test("sys.db.propertyKeys works on an empty database") {
+  test("db.propertyKeys works on an empty database") {
     // Given an empty database
 
     // When
-    val result = execute("CALL sys.db.propertyKeys")
+    val result = execute("CALL db.propertyKeys")
 
     // Then
     result shouldBe empty
@@ -153,7 +151,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     execute("MATCH (a)-[r]-(b) REMOVE a.A, r.R, b.B")
 
     // When
-    val result = execute("CALL sys.db.propertyKeys")
+    val result = execute("CALL db.propertyKeys")
 
     // Then
     result.toList should equal(
@@ -169,7 +167,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
     execute("MATCH (a) DETACH DELETE a")
 
     // When
-    val result = execute("CALL sys.db.propertyKeys")
+    val result = execute("CALL db.propertyKeys")
 
     // Then
     result.toList should equal(

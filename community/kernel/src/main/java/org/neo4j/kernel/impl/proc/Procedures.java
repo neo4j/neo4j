@@ -23,7 +23,7 @@ import java.io.File;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.function.ThrowingFunction;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -44,16 +44,18 @@ public class Procedures extends LifecycleAdapter
     private final TypeMappers typeMappers = new TypeMappers();
     private final ComponentRegistry components = new ComponentRegistry();
     private final ReflectiveProcedureCompiler compiler = new ReflectiveProcedureCompiler(typeMappers, components);
+    private final ThrowingConsumer<Procedures, ProcedureException> builtin;
     private final File pluginDir;
     private final Log log;
 
     public Procedures()
     {
-        this( null, NullLog.getInstance() );
+        this( new BuiltInProcedures( "N/A" ), null, NullLog.getInstance() );
     }
 
-    public Procedures(  File pluginDir, Log log )
+    public Procedures( ThrowingConsumer<Procedures, ProcedureException> builtin, File pluginDir, Log log )
     {
+        this.builtin = builtin;
         this.pluginDir = pluginDir;
         this.log = log;
     }
@@ -93,11 +95,11 @@ public class Procedures extends LifecycleAdapter
      * Registers a component, these become available in reflective procedures for injection.
      *
      * @param cls the type of component to be registered (this is what users 'ask' for in their field declaration)
-     * @param supplier a function that supplies the actual component, given the context of a procedure invocation
+     * @param provider a function that supplies the component, given the context of a procedure invocation
      */
-    public <T> void registerComponent( Class<T> cls, ThrowingFunction<CallableProcedure.Context, ?,ProcedureException> supplier )
+    public <T> void registerComponent( Class<T> cls, ComponentRegistry.Provider<T> provider )
     {
-        components.register( cls, supplier );
+        components.register( cls, provider );
     }
 
     public ProcedureSignature get( ProcedureSignature.ProcedureName name ) throws ProcedureException
@@ -126,6 +128,6 @@ public class Procedures extends LifecycleAdapter
         }
 
         // And register built-in procedures
-        BuiltInProcedures.addTo( this );
+        builtin.accept( this );
     }
 }

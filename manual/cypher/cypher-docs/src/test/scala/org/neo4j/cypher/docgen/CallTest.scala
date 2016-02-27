@@ -21,8 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
-import org.neo4j.graphdb.{Label, Node}
-import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.graphdb.Label
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.example.IndexingProcedure
 
@@ -45,8 +44,8 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure() {
     testQuery(
       title = "Call a procedure",
-      text = "This invokes the built-in procedure 'sys.db.labels', which lists all in-use labels in the database.",
-      queryText = "CALL sys.db.labels",
+      text = "This invokes the built-in procedure 'db.labels', which lists all in-use labels in the database.",
+      queryText = "CALL db.labels",
       optionalResultExplanation = "",
       assertions = (p) => assert(p.hasNext) )
   }

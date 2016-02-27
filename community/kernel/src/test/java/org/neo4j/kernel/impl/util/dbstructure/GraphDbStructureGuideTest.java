@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -39,6 +38,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.mockito.Mockito.mock;
@@ -145,7 +145,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitUniqueIndex( descriptor, ":Person(name)", 1.0d, 0l );
+        verify( visitor ).visitUniqueIndex( descriptor, ":Person(name)", 1.0d, 0L );
         verify( visitor ).visitUniqueConstraint( constraint, "CONSTRAINT ON ( person:Person ) ASSERT person.name IS " +
                 "UNIQUE" );
     }
