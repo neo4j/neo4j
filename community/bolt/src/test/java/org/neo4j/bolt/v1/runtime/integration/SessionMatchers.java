@@ -136,4 +136,37 @@ public class SessionMatchers
             }
         };
     }
+
+    public static Matcher<RecordingCallback> recorded( Matcher<? super RecordingCallback.Call> ... messages )
+    {
+        return new TypeSafeMatcher<RecordingCallback>()
+        {
+            @Override
+            protected boolean matchesSafely( RecordingCallback recordingCallback )
+            {
+                for ( Matcher<? super RecordingCallback.Call> message : messages )
+                {
+                    try
+                    {
+                        if(!message.matches( recordingCallback.next() ))
+                        {
+                            return false;
+                        }
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
+
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendList( "[", "\n", "]", asList(messages) );
+            }
+        };
+    }
 }

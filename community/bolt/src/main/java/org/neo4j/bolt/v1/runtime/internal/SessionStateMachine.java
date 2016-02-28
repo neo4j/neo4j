@@ -28,10 +28,11 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
-import org.neo4j.concurrent.DecayingFlags;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -40,9 +41,11 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QuerySession;
-import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKeys;
+
+import static org.neo4j.kernel.api.AccessMode.FULL;
+import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
 /**
  * State-machine based implementation of {@link Session}. With this approach,
@@ -67,8 +70,8 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         try
                         {
-                            ctx.authentication.authenticate( authToken );
-                            ctx.usageData.get( UsageDataKeys.clientNames ).add( clientName );
+                            ctx.spi.authenticate( authToken );
+                            ctx.spi.udcRegisterClient( clientName );
                             return IDLE;
                         }
                         catch ( AuthenticationException e )
@@ -95,8 +98,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL );
-                        ctx.currentTransaction = ctx.txBridge.getKernelTransactionBoundToThisThread( false );
+                        ctx.currentTransaction = ctx.spi.beginTransaction( explicit, FULL );
                         return IN_TRANSACTION;
                     }
 
@@ -105,8 +107,7 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         try
                         {
-                            ctx.featureUsage.flag( UsageDataKeys.Features.bolt );
-                            ctx.currentResult = ctx.statementRunner.run( ctx, statement, params );
+                            ctx.currentResult = ctx.spi.run( ctx, statement, params );
                             ctx.result( ctx.currentStatementMetadata );
                             //if the call to run failed we must remain in state ERROR
                             if ( ctx.state == ERROR )
@@ -128,8 +129,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginImplicitTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.db.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
-                        ctx.currentTransaction = ctx.txBridge.getKernelTransactionBoundToThisThread( false );
+                        ctx.currentTransaction = ctx.spi.beginTransaction( implicit, FULL );
                         return IN_TRANSACTION;
                     }
 
@@ -235,7 +235,7 @@ public class SessionStateMachine implements Session, SessionState
                             {
                                 return IDLE;
                             }
-                            else if ( ctx.currentTransaction.transactionType() == KernelTransaction.Type.implicit )
+                            else if ( ctx.currentTransaction.transactionType() == implicit )
                             {
                                 return IN_TRANSACTION.commitTransaction( ctx );
                             }
@@ -395,14 +395,14 @@ public class SessionStateMachine implements Session, SessionState
 
         State error( SessionStateMachine ctx, Neo4jError err )
         {
-            ctx.errorReporter.report( err );
+            ctx.spi.reportError( err );
             State outcome = ERROR;
             if ( ctx.hasTransaction() )
             {
                 // Is this error bad enough that we should roll back, or did the failure occur in an implicit
                 // transaction?
-                if ( err.status().code().classification().rollbackTransaction() ||
-                     ctx.currentTransaction.transactionType() == KernelTransaction.Type.implicit )
+                if(  err.status().code().classification().rollbackTransaction() ||
+                     ctx.currentTransaction.transactionType() == implicit )
                 {
                     try
                     {
@@ -411,8 +411,8 @@ public class SessionStateMachine implements Session, SessionState
                     }
                     catch ( Throwable t )
                     {
-                        ctx.log.error( "While handling '" + err.status() + "', a second failure occurred when " +
-                                       "rolling back transaction: " + t.getMessage(), t );
+                        ctx.spi.reportError( "While handling '" + err.status() + "', a second failure occurred when " +
+                                             "rolling back transaction: " + t.getMessage(), t );
                     }
                     finally
                     {
@@ -434,14 +434,7 @@ public class SessionStateMachine implements Session, SessionState
         }
     }
 
-    private final UsageData usageData;
-    private final DecayingFlags featureUsage;
-    private final GraphDatabaseFacade db;
-    private final StatementRunner statementRunner;
-    private final ErrorReporter errorReporter;
-    private final Log log;
-    private final String id;
-    private final Authentication authentication;
+    private final String id = UUID.randomUUID().toString();
 
     /** A re-usable statement metadata instance that always represents the currently running statement */
     private final StatementMetadata currentStatementMetadata = new StatementMetadata()
@@ -468,22 +461,46 @@ public class SessionStateMachine implements Session, SessionState
     /** Callback attachment */
     private Object currentAttachment;
 
-    private ThreadToStatementContextBridge txBridge;
+    /** These are the "external" actions the state machine can take */
+    private final SPI spi;
 
-    // Note: We shouldn't depend on GDB like this, I think. Better to define an SPI that we can shape into a spec
-    // for exactly the kind of underlying support the state machine needs.
+    /**
+     * This SPI encapsulates the "external" actions the state machine can take.
+     * It exists for three reasons:
+     * 1) It makes it very clear what side-effects the SSM can have
+     * 2) It decouples the SSM from the actual components performing these operations
+     * 3) It makes it *much* easier to test the SSM without having to re-implement
+     *    the whole database as mocks.
+     *
+     * If you are adding new functionality to the SSM where the new function needs
+     * to reach out to some component outside the SSM, please add it here. And when
+     * you do, please consider the law of demeter - if you are simply adding
+     * "getQueryEngine" to the SPI, you're doing it wrong, then we might as well
+     * have the full components as fields.
+     */
+    interface SPI
+    {
+        void reportError( Neo4jError err );
+        void reportError( String message, Throwable cause );
+        KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode );
+        void bindTransactionToCurrentThread( KernelTransaction tx );
+        void unbindTransactionFromCurrentThread();
+        RecordStream run( SessionStateMachine ctx, String statement, Map<String, Object> params )
+                throws KernelException;
+        void authenticate( Map<String, Object> authToken ) throws AuthenticationException;
+        void udcRegisterClient( String clientName );
+        Statement currentStatement();
+    }
+
     public SessionStateMachine( UsageData usageData, GraphDatabaseFacade db, ThreadToStatementContextBridge txBridge,
             StatementRunner engine, LogService logging, Authentication authentication )
     {
-        this.usageData = usageData;
-        this.featureUsage = usageData.get(UsageDataKeys.features);
-        this.db = db;
-        this.txBridge = txBridge;
-        this.statementRunner = engine;
-        this.errorReporter = new ErrorReporter( logging, this.usageData );
-        this.log = logging.getInternalLog( getClass() );
-        this.id = UUID.randomUUID().toString();
-        this.authentication = authentication;
+        this( new StandardStateMachineSPI( usageData, db, engine, logging, authentication, txBridge ));
+    }
+
+    public SessionStateMachine( SPI spi )
+    {
+        this.spi = spi;
     }
 
     @Override
@@ -597,11 +614,10 @@ public class SessionStateMachine implements Session, SessionState
         InternalTransaction transaction =
                 service.beginTransaction( currentTransaction.transactionType(), currentTransaction.mode() );
         Neo4jTransactionalContext transactionalContext =
-                new Neo4jTransactionalContext( service, transaction, txBridge.get(), locker );
+                new Neo4jTransactionalContext( service, transaction, spi.currentStatement(), locker );
 
         return new QuerySession( transactionalContext )
         {
-
             @Override
             public String toString()
             {
@@ -635,7 +651,7 @@ public class SessionStateMachine implements Session, SessionState
 
         if ( hasTransaction() )
         {
-            txBridge.bindTransactionToCurrentThread( currentTransaction );
+            spi.bindTransactionToCurrentThread( currentTransaction );
         }
         assert this.currentCallback == null;
         assert this.currentAttachment == null;
@@ -665,7 +681,7 @@ public class SessionStateMachine implements Session, SessionState
         {
             if ( hasTransaction() )
             {
-                txBridge.unbindTransactionFromCurrentThread();
+                spi.unbindTransactionFromCurrentThread();
             }
         }
     }
@@ -675,7 +691,7 @@ public class SessionStateMachine implements Session, SessionState
     {
         if ( err.status().code().classification() == Status.Classification.DatabaseError )
         {
-            log.error( "A database error occurred while servicing a user request: " + err );
+            spi.reportError( err );
         }
 
         if ( currentCallback != null )
