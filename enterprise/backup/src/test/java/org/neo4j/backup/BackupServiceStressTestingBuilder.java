@@ -215,7 +215,7 @@ public class BackupServiceStressTestingBuilder
                         {
                             fileSystem.deleteRecursively( backupDir );
                             BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( backupHostname,
-                                    backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, Config.empty(),
+                                    backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.FULL, Config.empty(),
                                     BackupClient.BIG_READ_TIMEOUT, false );
 
                             if ( !backupOutcome.isConsistent() )

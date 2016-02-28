@@ -161,8 +161,8 @@ public class BackupTool
         boolean verify = args.getBoolean( VERIFY, true, true );
         if ( verify )
         {
-            String consistencyCheckerName = args.get( CONSISTENCY_CHECKER, ConsistencyCheck.DEFAULT.toString(),
-                    ConsistencyCheck.DEFAULT.toString() );
+            String consistencyCheckerName = args.get( CONSISTENCY_CHECKER, ConsistencyCheck.FULL.toString(),
+                    ConsistencyCheck.FULL.toString() );
             return ConsistencyCheck.fromString( consistencyCheckerName );
         }
         return ConsistencyCheck.NONE;

@@ -399,6 +399,6 @@ public class OnlineBackup
 
     private static ConsistencyCheck getConsistencyCheck( boolean verification )
     {
-        return verification ? ConsistencyCheck.DEFAULT : ConsistencyCheck.NONE;
+        return verification ? ConsistencyCheck.FULL : ConsistencyCheck.NONE;
     }
 }

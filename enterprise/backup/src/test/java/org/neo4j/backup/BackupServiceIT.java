@@ -166,7 +166,7 @@ public class BackupServiceIT
         {
             // when
             backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
-                    ConsistencyCheck.DEFAULT, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+                    ConsistencyCheck.FULL, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
             fail( "Should have thrown an exception" );
         }
         catch ( RuntimeException ex )
@@ -195,7 +195,7 @@ public class BackupServiceIT
         {
             // when
             backupService().doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsoluteFile(),
-                    ConsistencyCheck.DEFAULT, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
+                    ConsistencyCheck.FULL, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT, false );
             fail( "Should have thrown an exception" );
         }
         catch ( RuntimeException ex )
@@ -389,7 +389,7 @@ public class BackupServiceIT
         // when
         BackupService backupService = backupService();
         BackupService.BackupOutcome outcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
-                backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, dbRule.getConfigCopy(),
+                backupDir.getAbsoluteFile(), ConsistencyCheck.FULL, dbRule.getConfigCopy(),
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         db.shutdown();
@@ -681,7 +681,7 @@ public class BackupServiceIT
         } );
 
         BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
-                backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, withOnlineBackupEnabled,
+                backupDir.getAbsoluteFile(), ConsistencyCheck.FULL, withOnlineBackupEnabled,
                 BackupClient.BIG_READ_TIMEOUT, false );
 
         backup.stop();

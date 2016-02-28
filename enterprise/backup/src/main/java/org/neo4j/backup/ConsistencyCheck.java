@@ -41,20 +41,7 @@ enum ConsistencyCheck
                     return true;
                 }
             },
-    DEFAULT
-            {
-                @Override
-                public boolean runFull( File storeDir, Config tuningConfiguration,
-                        ProgressMonitorFactory progressFactory, LogProvider logProvider,
-                        FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
-                        throws ConsistencyCheckFailedException
-                {
-                    ConsistencyCheck checker = ConsistencyCheckTool.USE_LEGACY_BY_DEFAULT ? LEGACY : EXPERIMENTAL;
-                    return checker.runFull( storeDir, tuningConfiguration, progressFactory, logProvider,
-                            fileSystem, pageCache, verbose );
-                }
-            },
-    EXPERIMENTAL
+    FULL
             {
                 @Override
                 public boolean runFull( File storeDir, Config tuningConfiguration,
@@ -69,26 +56,6 @@ enum ConsistencyCheck
                                 .isSuccessful();
                     }
                     catch ( org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException e )
-                    {
-                        throw new ConsistencyCheckFailedException( e );
-                    }
-                }
-            },
-    LEGACY
-            {
-                @Override
-                public boolean runFull( File storeDir, Config tuningConfiguration,
-                        ProgressMonitorFactory progressFactory, LogProvider logProvider,
-                        FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose )
-                        throws ConsistencyCheckFailedException
-                {
-                    try
-                    {
-                        return new org.neo4j.legacy.consistency.ConsistencyCheckService().runFullConsistencyCheck(
-                                storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache )
-                                .isSuccessful();
-                    }
-                    catch ( org.neo4j.legacy.consistency.checking.full.ConsistencyCheckIncompleteException e )
                     {
                         throw new ConsistencyCheckFailedException( e );
                     }
