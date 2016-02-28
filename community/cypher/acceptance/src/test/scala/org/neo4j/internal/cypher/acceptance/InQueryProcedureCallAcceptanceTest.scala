@@ -63,7 +63,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
         Map("name" -> "Toc", "label" -> "C")))
   }
 
-  test("sys.db.labels works on an empty database") {
+  test("db.labels works on an empty database") {
     // Given an empty database
     //When
     val result = execute("CALL db.labels() YIELD label RETURN *")
