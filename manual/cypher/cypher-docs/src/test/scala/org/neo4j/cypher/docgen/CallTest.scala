@@ -53,7 +53,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
   @Test def call_a_procedure_within_a_complex_query() {
     testQuery(
       title = "Call a procedure within a complex query",
-      text = "This invokes the built-in procedure 'sys.db.labels' to count all in-use labels in the database",
+      text = "This invokes the built-in procedure 'db.labels' to count all in-use labels in the database",
       planners = Seq(""),
       queryText = "CALL db.labels() YIELD label RETURN count(label) AS numLabels",
       optionalResultExplanation =
@@ -65,7 +65,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
     testQuery(
       title = "Call a procedure within a complex query and rename its outputs",
       text =
-        "This invokes the built-in procedure 'sys.db.propertyKeys' as part of counting " +
+        "This invokes the built-in procedure 'db.propertyKeys' as part of counting " +
         "the number of nodes per property key in-use in the database",
       planners = Seq(""),
       queryText = "CALL db.propertyKeys() YIELD propertyKey AS prop " +
