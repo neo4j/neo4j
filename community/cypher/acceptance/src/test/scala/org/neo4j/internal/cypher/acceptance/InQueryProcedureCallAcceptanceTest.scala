@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.util
+
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
 import org.neo4j.kernel.api.KernelAPI
@@ -27,7 +29,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
 import org.neo4j.kernel.api.proc.Neo4jTypes
 import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 
-class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
+class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should be able to find labels from built-in-procedure") {
     // Given
@@ -74,7 +76,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("should be able to call procedure with explicit arguments") {
     // Given
-    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyProc(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // When
     val result = execute("CALL my.first.proc('42', 42) YIELD out0, out1 RETURN *")
@@ -97,7 +99,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("should fail if input type is wrong") {
     // Given
-    register(Neo4jTypes.NTNumber)
+    registerDummyProc(Neo4jTypes.NTNumber)
 
     // Then
     a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten') YIELD x RETURN x"))
@@ -105,7 +107,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("if signature declares number all number types are valid") {
     // Given
-    register(Neo4jTypes.NTNumber)
+    registerDummyProc(Neo4jTypes.NTNumber)
 
     // Then
     execute("CALL my.first.proc(42) YIELD out0 AS x RETURN *").toList should equal(List(Map("x" -> 42)))
@@ -114,7 +116,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("arguments are nullable") {
     // Given
-    register(Neo4jTypes.NTNumber)
+    registerDummyProc(Neo4jTypes.NTNumber)
 
     // Then
     execute("CALL my.first.proc(NULL) YIELD out0 AS x RETURN *").toList should equal(List(Map("x" -> null)))
@@ -122,7 +124,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("should not fail if a procedure declares a float but gets an integer") {
     // Given
-    register(Neo4jTypes.NTFloat)
+    registerDummyProc(Neo4jTypes.NTFloat)
 
     // Then
     a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42) YIELD out0 RETURN *")))
@@ -130,7 +132,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("should not fail if a procedure declares a float but gets called with an integer") {
     // Given
-    register(Neo4jTypes.NTFloat)
+    registerDummyProc(Neo4jTypes.NTFloat)
 
     // Then
     a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc({param}) YIELD out0 RETURN *", "param" -> 42)))
@@ -138,7 +140,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("should fail if too many arguments") {
     // Given
-    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyProc(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
     an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42) YIELD x, y, z RETURN *"))
@@ -146,7 +148,7 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("should be able to call a procedure with explain") {
     // Given
-    register(Neo4jTypes.NTNumber)
+    registerDummyProc(Neo4jTypes.NTNumber)
 
     // When
     val result = execute("EXPLAIN CALL my.first.proc(42) YIELD out0 RETURN *")
@@ -178,7 +180,47 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
     ))
   }
 
-  private def register(types: Neo4jTypes.AnyType*) = {
+  test("should return correctly typed map result (even if converting to and from scala representation internally)") {
+    val value = new util.HashMap[String, Any]()
+    value.put("name", "Cypher")
+    value.put("level", 9001)
+
+    registerValueProc(value)
+
+    // Using graph execute to get a Java value
+    graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
+      java.util.Collections.singletonMap("out", value)
+    ))
+  }
+
+  test("should return correctly typed list result (even if converting to and from scala representation internally)") {
+    val value = new util.ArrayList[Any]()
+    value.add("Norris")
+    value.add("Strange")
+
+    registerValueProc(value)
+
+    // Using graph execute to get a Java value
+    graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
+      java.util.Collections.singletonMap("out", value)
+    ))
+  }
+
+  test("should return correctly typed stream result (even if converting to and from scala representation internally)") {
+    val value = new util.ArrayList[Any]()
+    value.add("Norris")
+    value.add("Strange")
+    val stream = value.stream()
+
+    registerValueProc(stream)
+
+    // Using graph execute to get a Java value
+    graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
+      java.util.Collections.singletonMap("out", stream)
+    ))
+  }
+
+  private def registerDummyProc(types: Neo4jTypes.AnyType*) = {
 
     val builder = procedureSignature(Array("my", "first"), "proc")
 
@@ -192,6 +234,17 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite{
     val proc = new BasicProcedure(builder.build) {
       override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
         RawIterator.of[Array[AnyRef], ProcedureException](input)
+    }
+    kernel.registerProcedure(proc)
+  }
+
+  private def registerValueProc(value: AnyRef) = {
+    val builder = procedureSignature(Array("my", "first"), "value")
+    builder.out("out", Neo4jTypes.NTAny)
+
+    val proc = new BasicProcedure(builder.build) {
+      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+        RawIterator.of[Array[AnyRef], ProcedureException](Array(value))
     }
     kernel.registerProcedure(proc)
   }

@@ -57,7 +57,9 @@ case class ProcedureCallPipe(source: Pipe,
 
         results map { resultValues =>
           resultIndices foreach { case (k, v) =>
-            builder += v -> asScalaCompatible(resultValues(k))
+            val javaValue= resultValues(k)
+            val scalaValue = asScalaCompatible(javaValue)
+            builder += v -> scalaValue
           }
           val rowEntries = builder.result()
           val output = input.newWith(rowEntries)
