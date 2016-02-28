@@ -205,7 +205,7 @@ public class LuceneDocumentStructure
     /**
      * Simple implementation of prefix query that mimics old lucene way of handling prefix queries.
      * According to benchmarks this implementation is faster then
-     * {@link org.apache.lucene.search.PhraseQuery} because we do not construct automaton  which is
+     * {@link org.apache.lucene.search.PrefixQuery} because we do not construct automaton  which is
      * extremely expensive.
      */
     private static class PrefixMultiTermsQuery extends MultiTermQuery
