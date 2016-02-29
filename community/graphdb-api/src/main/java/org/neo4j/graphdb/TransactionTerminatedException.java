@@ -27,6 +27,10 @@ public class TransactionTerminatedException extends TransactionFailureException
 {
     public TransactionTerminatedException()
     {
-        super( "The transaction has been terminated." );
+        super( "The transaction has been terminated, no new operations in it " +
+               "are allowed. This normally happens because a client explicitly asks to terminate the transaction, " +
+               "for instance to stop a long-running operation. It may also happen because an operator has asked the " +
+               "database to be shut down, or because the current instance is about to perform a cluster role change. " +
+               "Simply retry your operation in a new transaction, and you should see a successful result." );
     }
 }
