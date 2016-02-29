@@ -87,7 +87,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     }
 
     /**
-     * Sets a secondary record unit ID for this record. If this is set to something other than {@code -1}
+     * Sets a secondary record unit ID for this record. If this is set to something other than {@link #NO_ID}
      * then {@link #requiresSecondaryUnit()} will return {@code true}.
      * Setting this id is separate from setting {@link #requiresSecondaryUnit()} since this secondary unit id
      * may be used to just free that id at the time of updating in the store if a record goes from two to one unit.

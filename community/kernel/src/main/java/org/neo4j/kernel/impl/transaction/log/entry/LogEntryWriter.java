@@ -42,16 +42,7 @@ public class LogEntryWriter
     public LogEntryWriter( FlushableChannel channel )
     {
         this.channel = channel;
-        this.serializer = new Visitor<StorageCommand,IOException>()
-        {
-            @Override
-            public boolean visit( StorageCommand command ) throws IOException
-            {
-                writeLogEntryHeader( COMMAND );
-                command.serialize( channel );
-                return false;
-            }
-        };
+        this.serializer = new StorageCommandSerializer( channel );
     }
 
     private void writeLogEntryHeader( byte type ) throws IOException
@@ -91,5 +82,23 @@ public class LogEntryWriter
         writeLogEntryHeader( CHECK_POINT );
         channel.putLong( logPosition.getLogVersion() ).
                 putLong( logPosition.getByteOffset() );
+    }
+
+    private class StorageCommandSerializer implements Visitor<StorageCommand,IOException>
+    {
+        private final FlushableChannel channel;
+
+        public StorageCommandSerializer( FlushableChannel channel )
+        {
+            this.channel = channel;
+        }
+
+        @Override
+        public boolean visit( StorageCommand command ) throws IOException
+        {
+            writeLogEntryHeader( COMMAND );
+            command.serialize( channel );
+            return false;
+        }
     }
 }

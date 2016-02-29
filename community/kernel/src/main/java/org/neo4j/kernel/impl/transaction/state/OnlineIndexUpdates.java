@@ -64,19 +64,16 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 public class OnlineIndexUpdates implements IndexUpdates
 {
     private final NodeStore nodeStore;
-    private final PropertyStore propertyStore;
     private final PropertyLoader propertyLoader;
     private final PropertyPhysicalToLogicalConverter converter;
     private final Collection<NodePropertyUpdate> updates = new ArrayList<>();
     private NodeRecord nodeRecord;
 
     public OnlineIndexUpdates( NodeStore nodeStore,
-                             PropertyStore propertyStore,
                              PropertyLoader propertyLoader,
                              PropertyPhysicalToLogicalConverter converter )
     {
         this.nodeStore = nodeStore;
-        this.propertyStore = propertyStore;
         this.propertyLoader = propertyLoader;
         this.converter = converter;
     }

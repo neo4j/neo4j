@@ -58,7 +58,6 @@ import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.util.Bits.bitFlag;
-import static org.neo4j.kernel.impl.util.Bits.notFlag;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
@@ -206,12 +205,11 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
     private RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
             throws IOException
     {
-        byte inUseByte = channel.get();
-        boolean inUse = inUseByte == Record.IN_USE.byteValue();
-        if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
-        {
-            throw new IOException( "Illegal in use flag: " + inUseByte );
-        }
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+
         int type = channel.getShort();
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
         record.setInUse( inUse );
@@ -220,6 +218,11 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         record.setFirstIn( channel.getLong() );
         record.setFirstLoop( channel.getLong() );
         record.setOwningNode( channel.getLong() );
+        record.setRequiresSecondaryUnit( requireSecondaryUnit );
+        if ( hasSecondaryUnit )
+        {
+            record.setSecondaryUnitId( channel.getLong() );
+        }
         return record;
     }
 
@@ -430,20 +433,15 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
     private RelationshipRecord readRelationshipRecord( long id, ReadableChannel channel ) throws IOException
     {
         byte flags = channel.get();
-        boolean inUse = false;
-        if ( notFlag( notFlag( flags, Record.IN_USE.byteValue() ), Record.CREATED_IN_TX ) != 0 )
-        {
-            throw new IOException( "Illegal in use flag: " + flags );
-        }
-        if ( bitFlag( flags, Record.IN_USE.byteValue() ) )
-        {
-            inUse = true;
-        }
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean requiresSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
         RelationshipRecord record;
         if ( inUse )
         {
             record = new RelationshipRecord( id, channel.getLong(), channel.getLong(), channel.getInt() );
             record.setInUse( true );
+            record.setRequiresSecondaryUnit( requiresSecondaryUnit );
             record.setFirstPrevRel( channel.getLong() );
             record.setFirstNextRel( channel.getLong() );
             record.setSecondPrevRel( channel.getLong() );
@@ -452,6 +450,10 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             byte extraByte = channel.get();
             record.setFirstInFirstChain( (extraByte & 0x1) > 0 );
             record.setFirstInSecondChain( (extraByte & 0x2) > 0 );
+            if (hasSecondaryUnit)
+            {
+                record.setSecondaryUnitId( channel.getLong() );
+            }
         }
         else
         {
@@ -517,21 +519,20 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
         // prev_prop_id(long)+next_prop_id(long)
         PropertyRecord record = new PropertyRecord( id );
-        byte inUseFlag = channel.get(); // 1
+        byte flags = channel.get(); // 1
+
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean nodeProperty = !bitFlag( flags, Record.REL_PROPERTY.byteValue() );
+        boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+
+        record.setRequiresSecondaryUnit( requireSecondaryUnit );
+
         long nextProp = channel.getLong(); // 8
         long prevProp = channel.getLong(); // 8
         record.setNextProp( nextProp );
         record.setPrevProp( prevProp );
-        boolean inUse = false;
-        if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
-        {
-            inUse = true;
-        }
-        boolean nodeProperty = true;
-        if ( (inUseFlag & Record.REL_PROPERTY.byteValue()) == Record.REL_PROPERTY.byteValue() )
-        {
-            nodeProperty = false;
-        }
+
         long primitiveId = channel.getLong(); // 8
         if ( primitiveId != -1 && nodeProperty )
         {
@@ -540,6 +541,10 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         else if ( primitiveId != -1 )
         {
             record.setRelId( primitiveId );
+        }
+        if (hasSecondaryUnit)
+        {
+            record.setSecondaryUnitId( channel.getLong() );
         }
         int nrPropBlocks = channel.get();
         assert nrPropBlocks >= 0;

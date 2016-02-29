@@ -68,6 +68,30 @@ import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.un
 
 public class SchemaRuleCommandTest
 {
+
+    private final int labelId = 2;
+    private final int propertyKey = 8;
+    private final long id = 0;
+    private final long txId = 1337l;
+    private final NeoStores neoStores = mock( NeoStores.class );
+    private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
+    private final SchemaStore schemaStore = mock( SchemaStore.class );
+    private final IndexingService indexes = mock( IndexingService.class );
+    @SuppressWarnings( "unchecked" )
+    private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
+    private final NeoStoreBatchTransactionApplier storeApplier = new NeoStoreBatchTransactionApplier( neoStores,
+            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
+    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
+            new WorkSync<>( labelScanStore );
+    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexes );
+    private final PropertyStore propertyStore = mock( PropertyStore.class );
+    private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
+            labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
+            mock( PropertyLoader.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
+            TransactionApplicationMode.INTERNAL );
+    private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
+    private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
+
     @Test
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception
     {
@@ -195,28 +219,7 @@ public class SchemaRuleCommandTest
         assertSchemaRule( (SchemaRuleCommand)readCommand );
     }
 
-    private final int labelId = 2;
-    private final int propertyKey = 8;
-    private final long id = 0;
-    private final long txId = 1337l;
-    private final NeoStores neoStores = mock( NeoStores.class );
-    private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
-    private final SchemaStore schemaStore = mock( SchemaStore.class );
-    private final IndexingService indexes = mock( IndexingService.class );
-    @SuppressWarnings( "unchecked" )
-    private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
-    private final NeoStoreBatchTransactionApplier storeApplier = new NeoStoreBatchTransactionApplier( neoStores,
-            mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
-    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
-            new WorkSync<>( labelScanStore );
-    private final WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexes );
-    private final PropertyStore propertyStore = mock( PropertyStore.class );
-    private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
-            labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), propertyStore,
-            mock( PropertyLoader.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
-            TransactionApplicationMode.INTERNAL );
-    private final PhysicalLogCommandReaderV2_2 reader = new PhysicalLogCommandReaderV2_2();
-    private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
+
 
     private SchemaRecord serialize( AbstractSchemaRule rule, long id, boolean inUse, boolean created )
     {

@@ -68,7 +68,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     public IndexBatchTransactionApplier( IndexingService indexingService,
             WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
             WorkSync<IndexingService,IndexUpdatesWork> indexUpdatesSync,
-            NodeStore nodeStore, PropertyStore propertyStore, PropertyLoader propertyLoader,
+            NodeStore nodeStore, PropertyLoader propertyLoader,
             PropertyPhysicalToLogicalConverter indexUpdateConverter,
             TransactionApplicationMode mode )
     {
@@ -76,7 +76,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         this.labelScanStoreSync = labelScanStoreSync;
         this.indexUpdatesSync = indexUpdatesSync;
         this.indexUpdateConverter = indexUpdateConverter;
-        this.transactionApplier = new SingleTransactionApplier( nodeStore, propertyStore, propertyLoader, mode );
+        this.transactionApplier = new SingleTransactionApplier( nodeStore, propertyLoader, mode );
     }
 
     @Override
@@ -117,17 +117,15 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private class SingleTransactionApplier extends TransactionApplier.Adapter
     {
         private final NodeStore nodeStore;
-        private final PropertyStore propertyStore;
         private final PropertyLoader propertyLoader;
         private final TransactionApplicationMode mode;
         private final NodePropertyCommandsExtractor indexUpdatesExtractor = new NodePropertyCommandsExtractor();
         private List<IndexRule> createdIndexes;
 
-        public SingleTransactionApplier( NodeStore nodeStore, PropertyStore propertyStore,
-                PropertyLoader propertyLoader, TransactionApplicationMode mode )
+        public SingleTransactionApplier( NodeStore nodeStore, PropertyLoader propertyLoader,
+                TransactionApplicationMode mode )
         {
             this.nodeStore = nodeStore;
-            this.propertyStore = propertyStore;
             this.propertyLoader = propertyLoader;
             this.mode = mode;
         }
@@ -164,7 +162,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         private IndexUpdates createIndexUpdates()
         {
             return mode == TransactionApplicationMode.RECOVERY ? new RecoveryIndexUpdates() :
-                new OnlineIndexUpdates( nodeStore, propertyStore, propertyLoader, indexUpdateConverter );
+                new OnlineIndexUpdates( nodeStore, propertyLoader, indexUpdateConverter );
         }
 
         @Override

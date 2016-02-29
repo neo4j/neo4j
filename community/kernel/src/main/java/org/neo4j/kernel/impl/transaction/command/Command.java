@@ -156,7 +156,10 @@ public abstract class Command implements StorageCommand
             {
                 inUse |= Record.FIRST_IN_CHAIN.byteValue();
             }
-            channel.putLong( record.getId() ).putInt( record.getType() ).put( inUse ).putInt( record.getLength() )
+            channel.putLong( record.getId() )
+                   .putInt( record.getType() )
+                   .put( inUse )
+                   .putInt( record.getLength() )
                    .putLong( record.getNextBlock() );
             byte[] data = record.getData();
             assert data != null;
@@ -165,7 +168,9 @@ public abstract class Command implements StorageCommand
         else
         {
             byte inUse = Record.NOT_IN_USE.byteValue();
-            channel.putLong( record.getId() ).putInt( record.getType() ).put( inUse );
+            channel.putLong( record.getId() )
+                   .putInt( record.getType() )
+                   .put( inUse );
         }
     }
 
@@ -262,7 +267,9 @@ public abstract class Command implements StorageCommand
         private void writeRelationshipRecord( WritableChannel channel, RelationshipRecord record ) throws IOException
         {
             byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
-                    bitFlag( record.isCreated(), Record.CREATED_IN_TX ) );
+                                   bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
+                                   bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
+                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ));
             channel.put( flags );
             if ( record.inUse() )
             {
@@ -271,6 +278,10 @@ public abstract class Command implements StorageCommand
                        .putLong( record.getSecondPrevRel() ).putLong( record.getSecondNextRel() )
                        .putLong( record.getNextProp() )
                        .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) );
+                if ( record.hasSecondaryUnitId() )
+                {
+                    channel.putLong( record.getSecondaryUnitId() );
+                }
             }
             else
             {
@@ -304,13 +315,20 @@ public abstract class Command implements StorageCommand
         private void writeRelationshipGroupRecord( WritableChannel channel, RelationshipGroupRecord record )
                 throws IOException
         {
-            channel.put( (byte) (record.inUse() ? Record.IN_USE.intValue() : Record.NOT_IN_USE.intValue()) );
+            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                                   bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
+                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ) );
+            channel.put( flags );
             channel.putShort( (short) record.getType() );
             channel.putLong( record.getNext() );
             channel.putLong( record.getFirstOut() );
             channel.putLong( record.getFirstIn() );
             channel.putLong( record.getFirstLoop() );
             channel.putLong( record.getOwningNode() );
+            if ( record.hasSecondaryUnitId() )
+            {
+                channel.putLong( record.getSecondaryUnitId() );
+            }
         }
     }
 
@@ -375,13 +393,12 @@ public abstract class Command implements StorageCommand
 
         private void writePropertyRecord( WritableChannel channel, PropertyRecord record ) throws IOException
         {
-            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-            if ( record.getRelId() != -1 )
-            {
-                // Here we add 2, i.e. set the second lsb.
-                inUse += Record.REL_PROPERTY.byteValue();
-            }
-            channel.put( inUse ); // 1
+            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                                   bitFlag( record.getRelId() != -1, Record.REL_PROPERTY.byteValue() ),
+                                   bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
+                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ) );
+
+            channel.put( flags ); // 1
             channel.putLong( record.getNextProp() ).putLong( record.getPrevProp() ); // 8 + 8
             long nodeId = record.getNodeId();
             long relId = record.getRelId();
@@ -398,6 +415,10 @@ public abstract class Command implements StorageCommand
                 // means this records value has not changed, only place in
                 // prop chain
                 channel.putLong( -1 ); // 8
+            }
+            if ( record.hasSecondaryUnitId() )
+            {
+                channel.putLong( record.getSecondaryUnitId() );
             }
             channel.put( (byte) record.numberOfProperties() ); // 1
             for ( PropertyBlock block : record )
