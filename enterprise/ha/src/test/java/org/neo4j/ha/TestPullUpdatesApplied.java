@@ -60,7 +60,7 @@ import static org.junit.Assert.assertTrue;
  * txid and that will lead to branching. The exception is thrown during startup,
  * before the constructor returns, so we cannot test from userland. Instead we
  * check for the symptom, which is the branched store. This is not nice, just a
- * bit better than checking messages.log for certain entries. Another, more
+ * bit better than checking debug.log for certain entries. Another, more
  * direct, test is present in community.
  */
 public class TestPullUpdatesApplied
