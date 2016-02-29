@@ -55,6 +55,7 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
         relsReadDeleteNodeConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
         relsCreateReadConflict(from, toWithoutLeafInfo) ||
         relsDeleteMergeConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
+        relsDeleteReadConflict(fromWithoutLeafInfo, toWithoutLeafInfo) ||
         relationshipPropertiesConflict(fromWithoutLeafInfo, toWithoutLeafInfo)
     }
   }
@@ -115,6 +116,10 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
 
   def nodesReadWriteConflict(from: Effects, to: Effects) = {
     readsCreatesSameNode(from.regardlessOfOptionalEffects, to) || readsDeletesSameNode(from, to)
+  }
+
+  private def relsDeleteReadConflict(from: Effects, to: Effects) = {
+    from.contains(DeletesRelationship) && to.containsRelationshipReads
   }
 
   private def relsDeleteMergeConflict(from: Effects, to: Effects) = {

@@ -2323,6 +2323,39 @@ class EagerizationAcceptanceTest
     assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
+  test("should always be eager after deleted relationships if there are any subsequent expands that might load them") {
+    val device = createLabeledNode("Device")
+    val cookies = (0 until 2).foldLeft(Map.empty[String, Node]) { (nodes, index) =>
+      val name = s"c$index"
+      val cookie = createLabeledNode(Map("name" -> name), "Cookie")
+      relate(device, cookie)
+      relate(cookie, createNode())
+      nodes + (name -> cookie)
+    }
+
+    val query =
+      """
+        |MATCH (c:Cookie {name: {cookie}})<-[r2]-(d:Device)
+        |WITH c, d
+        |MATCH (c)-[r]-()
+        |DELETE c, r
+        |WITH d
+        |MATCH (d)-->(c2:Cookie)
+        |RETURN d, c2""".stripMargin
+
+    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
+
+    val expectedStats = Map(
+      "c0" -> Map("nodes" -> 1, "relationships" -> 2),
+      "c1" -> Map("nodes" -> 1, "relationships" -> 2)
+    )
+    cookies.foreach { case (name, node)  =>
+      val result = updateWithBothPlanners(query, ("cookie" -> name))
+      val expected = expectedStats(name)
+      assertStats(result, nodesDeleted = expected("nodes"), relationshipsDeleted = expected("relationships"))
+    }
+  }
+
   private def assertNumberOfEagerness(query: String, expectedEagerCount: Int, optimalEagerCount: Int = -1) {
     withClue("The optimum must be smaller than the expected, otherwise just use expected") {
       expectedEagerCount shouldBe >=(optimalEagerCount)
