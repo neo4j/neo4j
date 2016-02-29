@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
+import org.neo4j.kernel.impl.transaction.log.TransactionHeaders;
+
 /**
  * Log index is encoded in the header of transactions in the transaction log.
  */
@@ -33,11 +35,15 @@ public class LogIndexTxHeaderEncoding
             logIndex >>>= Byte.SIZE;
         }
         b[0] = (byte) logIndex;
-        return b;
+        TransactionHeaders.TransactionHeadersArrayBuilder builder = new TransactionHeaders
+                .TransactionHeadersArrayBuilder();
+        return builder.withHeader( ReplicatedTransactionStateMachine.HEADER_ID, b ).build();
     }
 
-    public static long decodeLogIndexFromTxHeader( byte[] bytes )
+    public static long decodeLogIndexFromTxHeader( byte[] txHeaderBytes )
     {
+        TransactionHeaders headers = new TransactionHeaders( txHeaderBytes );
+        byte[] bytes = headers.forIdentifier( ReplicatedTransactionStateMachine.HEADER_ID );
         if ( bytes.length < Long.BYTES )
         {
             throw new IllegalArgumentException( "Unable to decode RAFT log index from transaction header" );

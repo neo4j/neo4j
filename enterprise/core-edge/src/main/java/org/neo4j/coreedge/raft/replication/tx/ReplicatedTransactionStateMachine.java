@@ -45,6 +45,7 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionInva
 
 public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
 {
+    static final byte HEADER_ID = 0;
     private final GlobalSessionTrackerState<MEMBER> sessionTracker;
     private final GlobalSession myGlobalSession;
     private final LockTokenManager lockTokenManager;
