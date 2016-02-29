@@ -129,7 +129,6 @@ public abstract class Bootstrapper
             {
                 server.stop();
             }
-            log.info( "Successfully shutdown Neo Server on port [%s], database [%s]", serverPort, location );
 
             removeShutdownHook();
 

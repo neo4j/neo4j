@@ -71,15 +71,11 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         //       This should be changed in 3.0.0.
         assertThat( captured, containsAtLeastTheseLines(
                 warn( "Config file \\[config.neo4j\\.conf\\] does not exist." ),
-                info( "Successfully started database" ),
-                info( "Starting HTTP on port 7474 \\(.+ threads available\\)" ),
-                info( "Mounting static content at /webadmin" ),
-                info( "Mounting static content at /browser" ),
-                info( "Remote interface ready and available at http://.+:7474/" ),
-
-                info( "Successfully stopped database" ),
-                info( "Successfully shutdown database" ),
-                info( "Successfully shutdown Neo Server on port \\[.+\\], database \\[.+\\]")
+                info( "Starting..." ),
+                info( "Started." ),
+                info( "Remote interface available at http://.+:7474/" ),
+                info( "Stopping..." ),
+                info( "Stopped." )
         ) );
     }
 

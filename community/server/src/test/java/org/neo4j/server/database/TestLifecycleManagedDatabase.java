@@ -110,7 +110,7 @@ public class TestLifecycleManagedDatabase
         theDatabase.start();
 
         logProvider.assertAtLeastOnce(
-                inLog( LifecycleManagingDatabase.class ).info( "Successfully started database" )
+                inLog( LifecycleManagingDatabase.class ).info( "Started." )
         );
     }
 
@@ -121,7 +121,7 @@ public class TestLifecycleManagedDatabase
         theDatabase.stop();
 
         logProvider.assertAtLeastOnce(
-                inLog( LifecycleManagingDatabase.class ).info( "Successfully stopped database" )
+                inLog( LifecycleManagingDatabase.class ).info( "Stopped." )
         );
     }
 
