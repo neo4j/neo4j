@@ -63,7 +63,7 @@ trait GraphIcing {
 
     def execute(query: String) = graph.execute(query)
 
-    def execute(query: String, params: util.HashMap[String, Object]) = graph.execute(query, params)
+    def execute(query: String, params: util.Map[String, Object]) = graph.execute(query, params)
 
     def indexPropsForLabel(label: String): List[List[String]] = {
       val indexDefs = graph.schema.getIndexes(Label.label(label)).asScala.toList
