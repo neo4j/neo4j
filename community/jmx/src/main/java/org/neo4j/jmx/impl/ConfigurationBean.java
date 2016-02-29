@@ -39,10 +39,8 @@ import javax.management.ReflectionException;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.jmx.Description;
-import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationChange;
-import org.neo4j.kernel.configuration.ConfigurationChangeListener;
+import org.neo4j.kernel.internal.KernelData;
 
 @Description( "The configuration parameters used to configure Neo4j" )
 public final class ConfigurationBean extends Neo4jMBean
@@ -57,7 +55,6 @@ public final class ConfigurationBean extends Neo4jMBean
         super( CONFIGURATION_MBEAN_NAME, kernel, support );
         this.config = new HashMap<>( kernel.getConfig().getParams() );
         Config configuration = kernel.getConfig();
-        configuration.addConfigurationChangeListener( new UpdatedConfigurationListener() );
 
         Map<String, String> descriptions = new HashMap<>();
 
@@ -170,19 +167,6 @@ public final class ConfigurationBean extends Neo4jMBean
         catch( Exception e )
         {
             throw new MBeanException( e );
-        }
-    }
-
-    private class UpdatedConfigurationListener
-        implements ConfigurationChangeListener
-    {
-        @Override
-        public void notifyConfigurationChanges( Iterable<ConfigurationChange> change )
-        {
-            for( ConfigurationChange configurationChange : change )
-            {
-                config.put( configurationChange.getName(), configurationChange.getNewValue() );
-            }
         }
     }
 }

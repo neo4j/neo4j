@@ -25,9 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.config.Configuration;
@@ -39,21 +37,17 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.concat;
 
 /**
  * This class holds the overall configuration of a Neo4j database instance. Use the accessors to convert the internal
  * key-value settings to other types.
- * <p/>
- * Users can assume that old settings have been migrated to their new counterparts, and that defaults have been applied.
- * <p/>
- * UI's can change configuration by calling augment(). Any listener, such as services that use this configuration, can
- * be notified of changes by implementing the {@link ConfigurationChangeListener} interface.
+ * <p>
+ * Users can assume that old settings have been migrated to their new counterparts, and that defaults have been
+ * applied.
  */
 public class Config implements DiagnosticsProvider, Configuration
 {
-    private final List<ConfigurationChangeListener> listeners = new CopyOnWriteArrayList<>();
     private final Map<String, String> params = new ConcurrentHashMap<>();
     private final Iterable<Class<?>> settingsClasses;
     private final ConfigurationMigrator migrator;
@@ -165,16 +159,6 @@ public class Config implements DiagnosticsProvider, Configuration
         this.log = log;
     }
 
-    public void addConfigurationChangeListener( ConfigurationChangeListener listener )
-    {
-        listeners.add( listener );
-    }
-
-    public void removeConfigurationChangeListener( ConfigurationChangeListener listener )
-    {
-        listeners.remove( listener );
-    }
-
     @Override
     public String getDiagnosticsIdentifier()
     {
@@ -216,36 +200,10 @@ public class Config implements DiagnosticsProvider, Configuration
 
     private synchronized void replaceSettings( Map<String, String> newSettings )
     {
-        HashMap<String, String> oldSettings = new HashMap<>( params );
-
-        newSettings = migrator.apply( newSettings, log );
-        validator.validate( newSettings );
+        Map<String,String> migratedSettings = migrator.apply( newSettings, log );
+        validator.validate( migratedSettings );
         params.clear();
-        params.putAll( newSettings );
+        params.putAll( migratedSettings );
         settingsFunction = new ConfigValues( params );
-
-        notifyListeners( newSettings, oldSettings );
-    }
-
-    private void notifyListeners( Map<String, String> newSettings, HashMap<String, String> oldSettings )
-    {
-        List<ConfigurationChange> configurationChanges = new ArrayList<>();
-        for ( Map.Entry<String, String> setting : newSettings.entrySet() )
-        {
-            String oldValue = oldSettings.get( setting.getKey() );
-            String newValue = setting.getValue();
-            if ( !Objects.equals( oldValue, newValue ) )
-            {
-                configurationChanges.add( new ConfigurationChange( setting.getKey(), oldValue, newValue ) );
-            }
-        }
-
-        if ( !configurationChanges.isEmpty() )
-        {
-            for ( ConfigurationChangeListener listener : listeners )
-            {
-                listener.notifyConfigurationChanges( configurationChanges );
-            }
-        }
     }
 }
