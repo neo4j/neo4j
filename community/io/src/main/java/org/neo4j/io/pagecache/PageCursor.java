@@ -334,4 +334,18 @@ public interface PageCursor extends AutoCloseable
      *                     This may throw an IOException.
      */
     boolean shouldRetry() throws IOException;
+
+    /**
+     * Copy the specified number of bytes from the given offset of this page, to the given offset of the target page.
+     * <p>
+     * If the length reaches beyond the end of either cursor, then only as many bytes as are available in this cursor,
+     * or can fit in the target cursor, are actually copied.
+     *
+     * @param sourceOffset The offset into this page to copy from.
+     * @param targetCursor The cursor the data will be copied to.
+     * @param targetOffset The offset into the target cursor to copy to.
+     * @param lengthInBytes The number of bytes to copy.
+     * @return The number of bytes actually copied.
+     */
+    int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes );
 }

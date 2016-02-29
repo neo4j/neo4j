@@ -311,6 +311,7 @@ public class MuninnPageCache implements PageCache
         boolean truncateExisting = false;
         boolean deleteOnClose = false;
         boolean exclusiveMapping = false;
+        boolean anyPageSize = false;
         for ( OpenOption option : openOptions )
         {
             if ( option.equals( StandardOpenOption.CREATE ) )
@@ -329,6 +330,10 @@ public class MuninnPageCache implements PageCache
             {
                 exclusiveMapping = true;
             }
+            else if ( option.equals( PageCacheOpenOptions.ANY_PAGE_SIZE ) )
+            {
+                anyPageSize = true;
+            }
             else if ( !ignoredOpenOptions.contains( option ) )
             {
                 throw new UnsupportedOperationException( "Unsupported OpenOption: " + option );
@@ -343,7 +348,7 @@ public class MuninnPageCache implements PageCache
             if ( current.file.equals( file ) )
             {
                 MuninnPagedFile pagedFile = current.pagedFile;
-                if ( pagedFile.pageSize() != filePageSize )
+                if ( pagedFile.pageSize() != filePageSize && !anyPageSize )
                 {
                     String msg = "Cannot map file " + file + " with " +
                             "filePageSize " + filePageSize + " bytes, " +

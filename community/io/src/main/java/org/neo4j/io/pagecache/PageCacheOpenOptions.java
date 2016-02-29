@@ -31,5 +31,11 @@ public enum PageCacheOpenOptions implements OpenOption
     /**
      * Only allow a single mapping of the given file.
      */
-    EXCLUSIVE
+    EXCLUSIVE,
+    /**
+     * Map the file even if the specified file page size conflicts with an existing mapping of that file.
+     * If so, the given file page size will be ignored and a {@link PagedFile} will be returned that uses the
+     * file page size of the existing mapping.
+     */
+    ANY_PAGE_SIZE
 }

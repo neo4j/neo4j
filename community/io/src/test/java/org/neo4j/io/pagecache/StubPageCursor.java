@@ -100,6 +100,12 @@ public class StubPageCursor implements PageCursor
     }
 
     @Override
+    public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
+    {
+        return 0;
+    }
+
+    @Override
     public byte getByte()
     {
         byte value = getByte( currentOffset );
