@@ -155,7 +155,7 @@ class PropertyExistenceEnforcer extends TxStateVisitor.Delegator
 
     private StorageStatement storeStatement()
     {
-        return storageStatement == null ? storageStatement = storeLayer.acquireStatement() : storageStatement;
+        return storageStatement == null ? storageStatement = storeLayer.newStatement() : storageStatement;
     }
 
     @Override

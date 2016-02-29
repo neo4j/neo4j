@@ -74,7 +74,7 @@ public class KernelTransactionTestBase
     {
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
-        when( readLayer.acquireStatement() ).thenReturn( mock( StoreStatement.class ) );
+        when( readLayer.newStatement() ).thenReturn( mock( StoreStatement.class ) );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
     }

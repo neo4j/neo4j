@@ -196,7 +196,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                     noNodeProperty( nodeId, propertyKeyId ),
                     property( propertyKeyId, propertyValue( id, progress ) ) );
             Collection<StorageCommand> commands = new ArrayList<>();
-            try ( StorageStatement statement = storageEngine.storeReadLayer().acquireStatement() )
+            try ( StorageStatement statement = storageEngine.storeReadLayer().newStatement() )
             {
                 storageEngine.createCommands( commands, txState, statement, null, 0 );
             }

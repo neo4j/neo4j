@@ -186,7 +186,7 @@ public class KernelTransactionsTest
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
-        when( readLayer.acquireStatement() ).thenAnswer( invocation -> mock( StorageStatement.class ) );
+        when( readLayer.newStatement() ).thenAnswer( invocation -> mock( StorageStatement.class ) );
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );

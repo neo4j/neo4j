@@ -137,7 +137,9 @@ public class KernelStatement implements TxStateHolder, Statement
     @Override
     public void close()
     {
-        if ( referenceCount > 0 && release() )
+        // Check referenceCount > 0 since we allow multiple close calls,
+        // i.e. ignore closing already closed statements
+        if ( referenceCount > 0 && (--referenceCount == 0) )
         {
             cleanupResources();
         }
@@ -171,11 +173,6 @@ public class KernelStatement implements TxStateHolder, Statement
         {
             storeStatement.acquire();
         }
-    }
-
-    private boolean release()
-    {
-        return (--referenceCount == 0);
     }
 
     final void forceClose()

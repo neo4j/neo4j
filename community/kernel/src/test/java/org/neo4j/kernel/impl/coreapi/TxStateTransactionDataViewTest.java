@@ -68,7 +68,7 @@ public class TxStateTransactionDataViewTest
     public void setup()
     {
         when( bridge.get() ).thenReturn( stmt );
-        when( ops.acquireStatement() ).thenReturn( storeStatement );
+        when( ops.newStatement() ).thenReturn( storeStatement );
     }
 
     @Test

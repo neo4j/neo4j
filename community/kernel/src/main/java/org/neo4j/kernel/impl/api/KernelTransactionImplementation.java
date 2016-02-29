@@ -168,7 +168,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.pool = pool;
         this.clock = clock;
         this.tracer = tracer;
-        this.storageStatement = storeLayer.acquireStatement();
+        this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, operations, storageStatement, procedures );
     }
 

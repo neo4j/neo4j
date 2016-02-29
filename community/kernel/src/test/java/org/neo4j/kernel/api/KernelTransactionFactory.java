@@ -70,7 +70,7 @@ public class KernelTransactionFactory
         StorageEngine storageEngine = mock( StorageEngine.class );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         StorageStatement storageStatement = mock( StorageStatement.class );
-        when( storeReadLayer.acquireStatement() ).thenReturn( storageStatement );
+        when( storeReadLayer.newStatement() ).thenReturn( storageStatement );
         when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
 
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(

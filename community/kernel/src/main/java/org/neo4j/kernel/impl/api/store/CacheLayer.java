@@ -97,9 +97,9 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public StorageStatement acquireStatement()
+    public StorageStatement newStatement()
     {
-        return diskLayer.acquireStatement();
+        return diskLayer.newStatement();
     }
 
     @Override

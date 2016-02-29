@@ -119,7 +119,7 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token> implements Toke
         TransactionState txState = new TxState();
         int tokenId = Math.toIntExact( idGeneratorFactory.get( tokenIdType ).nextId() );
         createToken( txState, tokenName, tokenId );
-        try ( StorageStatement statement = storageEngine.storeReadLayer().acquireStatement() )
+        try ( StorageStatement statement = storageEngine.storeReadLayer().newStatement() )
         {
             storageEngine.createCommands( commands, txState, statement, ResourceLocker.NONE, Long.MAX_VALUE );
         }

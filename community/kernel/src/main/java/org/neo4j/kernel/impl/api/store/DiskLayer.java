@@ -129,7 +129,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public StorageStatement acquireStatement()
+    public StorageStatement newStatement()
     {
         return statementProvider.get();
     }
