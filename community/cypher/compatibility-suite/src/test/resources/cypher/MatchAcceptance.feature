@@ -18,7 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-@db:cineast
 Feature: MatchAcceptanceTest
 
   Scenario: path query should return results in written order
@@ -87,13 +86,6 @@ Feature: MatchAcceptanceTest
     Then the result should be:
       | b                  |
       | (:b {name: 'me'})  |
-
-  Scenario: should make query from existing database
-    Given using: cineast
-    When executing query: MATCH (n) RETURN count(n)
-    Then the result should be:
-      | count(n) |
-      | 63084    |
 
   Scenario: should filter out based on node prop name
     Given an empty graph

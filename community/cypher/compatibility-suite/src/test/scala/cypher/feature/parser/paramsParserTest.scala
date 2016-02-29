@@ -99,5 +99,4 @@ class paramsParserTest extends ParsingTestSupport {
       Map("key" -> Map("key" -> "value", "key2" -> Map.empty.asJava).asJava, "key2" -> List.empty.asJava).asJava)
   }
 
-
 }
