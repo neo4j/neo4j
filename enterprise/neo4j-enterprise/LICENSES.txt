@@ -7,6 +7,7 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Graphite Integration for Metrics
   hazelcast-all
+  Lucene codecs
   Lucene Common Analyzers
   Lucene Core
   Lucene Memory

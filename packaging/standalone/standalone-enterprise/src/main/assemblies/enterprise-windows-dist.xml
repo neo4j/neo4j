@@ -95,6 +95,7 @@
         <include>org.apache.lucene:lucene-core</include>
         <include>org.apache.lucene:lucene-analyzers-common</include>
         <include>org.apache.lucene:lucene-queryparser</include>
+        <include>org.apache.lucene:lucene-codecs</include>
         <include>io.netty:netty</include>
         <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
         <include>org.scala-lang:*</include>

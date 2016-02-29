@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
+import org.apache.lucene.codecs.lucene54.Lucene54Codec;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 
@@ -39,6 +42,8 @@ public final class IndexWriterConfigs
             FeatureToggles.getDouble( IndexWriterConfigs.class, "nocfs.ratio", 1.0 );
     private static final double MERGE_POLICY_MIN_MERGE_MB =
             FeatureToggles.getDouble( IndexWriterConfigs.class, "min.merge", 0.1 );
+    private static final boolean CODEC_BLOCK_TREE_ORDS_POSTING_FORMAT =
+            FeatureToggles.flag( IndexWriterConfigs.class, "block.tree.ords.posting.format", true );
 
     private static final int POPULATION_RAM_BUFFER_SIZE_MB =
             FeatureToggles.getInteger( IndexWriterConfigs.class, "population.ram.buffer.size", 50 );
@@ -55,6 +60,16 @@ public final class IndexWriterConfigs
         writerConfig.setMaxBufferedDocs( MAX_BUFFERED_DOCS );
         writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
         writerConfig.setUseCompoundFile( true );
+        writerConfig.setCodec(new Lucene54Codec()
+        {
+            @Override
+            public PostingsFormat getPostingsFormatForField( String field )
+            {
+                PostingsFormat postingFormat = super.getPostingsFormatForField( field );
+                return CODEC_BLOCK_TREE_ORDS_POSTING_FORMAT ? new BlockTreeOrdsPostingsFormat() :
+                       postingFormat;
+            }
+        });
 
         LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
         mergePolicy.setNoCFSRatio( MERGE_POLICY_NO_CFS_RATIO );

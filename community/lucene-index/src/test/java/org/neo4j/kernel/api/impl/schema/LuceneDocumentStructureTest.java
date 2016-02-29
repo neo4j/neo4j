@@ -23,8 +23,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
@@ -32,6 +32,8 @@ import org.junit.Test;
 
 import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.newSeekQuery;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Array;
@@ -173,8 +175,9 @@ public class LuceneDocumentStructureTest
     public void shouldBuildRangeSeekByStringQueryForStrings() throws Exception
     {
         // given
-        TermRangeQuery query =
-                (TermRangeQuery) LuceneDocumentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
+        ConstantScoreQuery constantQuery =
+                (ConstantScoreQuery) LuceneDocumentStructure.newRangeSeekByStringQuery( "foo", false, null, true );
+        TermRangeQuery query = (TermRangeQuery) constantQuery.getQuery();
 
         // then
         assertEquals( "string", query.getField() );
@@ -198,9 +201,10 @@ public class LuceneDocumentStructureTest
     public void shouldBuildRangeSeekByPrefixQueryForStrings() throws Exception
     {
         // given
-        PrefixQuery query = LuceneDocumentStructure.newRangeSeekByPrefixQuery( "Prefix" );
+        ConstantScoreQuery query = (ConstantScoreQuery) LuceneDocumentStructure.newRangeSeekByPrefixQuery( "Prefix" );
+        MultiTermQuery prefixQuery = (MultiTermQuery) query.getQuery();
 
         // then
-        assertEquals( "Prefix", query.getPrefix().text() );
+        assertThat("Should contain term value", prefixQuery.toString(), containsString( "Prefix" ) );
     }
 }

@@ -42,8 +42,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
 
-import static com.sun.corba.se.spi.activation.IIOP_CLEAR_TEXT.value;
-
 public class IndexReaderStub extends LeafReader
 {
 

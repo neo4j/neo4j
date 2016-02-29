@@ -226,7 +226,7 @@ public class LuceneDataSource extends LifecycleAdapter
             // TODO: this cast should always succeed, maybe check nonetheless?
             DirectoryReader reader = (DirectoryReader) searcher.getSearcher().getIndexReader();
             IndexWriter writer = searcher.getWriter();
-            IndexReader reopened = DirectoryReader.openIfChanged( reader, writer, true );
+            IndexReader reopened = DirectoryReader.openIfChanged( reader, writer );
             if ( reopened != null )
             {
                 IndexSearcher newSearcher = newIndexSearcher( searcher.getIdentifier(), reopened );
@@ -305,7 +305,7 @@ public class LuceneDataSource extends LifecycleAdapter
             if ( searcher == null )
             {
                 IndexWriter writer = newIndexWriter( identifier );
-                IndexReader reader = DirectoryReader.open( writer, true );
+                IndexReader reader = DirectoryReader.open( writer );
                 IndexSearcher indexSearcher = newIndexSearcher( identifier, reader );
                 searcher = new IndexReference( identifier, indexSearcher, writer );
                 indexSearchers.put( identifier, searcher );
