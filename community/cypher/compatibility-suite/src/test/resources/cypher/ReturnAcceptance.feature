@@ -55,9 +55,10 @@ Feature: ReturnAcceptanceTest
   Scenario: should start the result from second row by param
     Given an empty graph
       And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"})
-    When running parametrized: MATCH (n) RETURN n ORDER BY n.name ASC SKIP { skipAmount }
-      | skipAmount |
-      | 2          |
+      And parameters are:
+        | skipAmount |
+        | 2          |
+    When executing query: MATCH (n) RETURN n ORDER BY n.name ASC SKIP { skipAmount }
     Then the result should be, in order:
       | n             |
       | ({name: 'C'}) |
@@ -76,9 +77,10 @@ Feature: ReturnAcceptanceTest
   Scenario: should get stuff in the middle by param
     Given an empty graph
       And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"})
-    When running parametrized: MATCH (n) WHERE id(n) IN [0,1,2,3,4] RETURN n ORDER BY n.name ASC SKIP { s } LIMIT { l }
-      | s | l |
-      | 2 | 2 |
+      And parameters are:
+        | s | l |
+        | 2 | 2 |
+    When executing query: MATCH (n) WHERE id(n) IN [0,1,2,3,4] RETURN n ORDER BY n.name ASC SKIP { s } LIMIT { l }
     Then the result should be, in order:
       | n             |
       | ({name: 'C'}) |

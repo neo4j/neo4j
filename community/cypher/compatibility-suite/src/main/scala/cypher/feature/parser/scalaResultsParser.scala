@@ -19,6 +19,8 @@
  */
 package cypher.feature.parser
 
+import java.util
+
 import cucumber.api.DataTable
 import cypher.feature.parser.matchers.{ResultMatcher, RowMatcher, ValueMatcher}
 
@@ -26,6 +28,7 @@ import scala.collection.JavaConverters._
 
 object matcherParser extends (String => ValueMatcher) {
 
+  // has to be a def to renew the instance
   private def parser = new ResultsParser
   private val listener = new CypherMatchersCreator
 
@@ -45,5 +48,28 @@ object constructResultMatcher extends (DataTable => ResultMatcher) {
         (keys(index), matcherParser(value))
       }.toMap.asJava)
     }.toList.asJava)
+  }
+}
+
+object parseParameters extends (DataTable => java.util.Map[String, AnyRef]) {
+
+  override def apply(input: DataTable): util.Map[String, AnyRef] = {
+    val keys = input.topCells().asScala
+    val values = input.cells(1).asScala.head
+
+    keys.zipWithIndex.map { case (key, index) =>
+      key -> paramsParser(values.get(index))
+    }.toMap.asJava
+  }
+}
+
+object paramsParser extends (String => AnyRef) {
+
+  // has to be a def to renew the instance
+  private def parser = new ResultsParser
+  private val listener = new CypherParametersCreator
+
+  def apply(input: String): AnyRef = {
+    parser.parseParameter(input, listener)
   }
 }

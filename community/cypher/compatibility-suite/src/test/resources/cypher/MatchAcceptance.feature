@@ -80,9 +80,10 @@ Feature: MatchAcceptanceTest
   Scenario: should be able to use params in pattern matching predicates
     Given an empty graph
       And having executed: CREATE (:a)-[:A {foo: "bar"}]->(:b {name: 'me'})
-    When running parametrized: match (a)-[r]->(b) where r.foo =~ {param} return b
-      | param |
-      | bar   |
+      And parameters are:
+        | param |
+        | 'bar' |
+    When executing query: MATCH (a)-[r]->(b) WHERE r.foo =~ {param} RETURN b
     Then the result should be:
       | b                  |
       | (:b {name: 'me'})  |

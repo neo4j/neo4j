@@ -29,7 +29,7 @@ import cypher.GlueSteps._
 import cypher.cucumber.DataTableConverter._
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
-import cypher.feature.parser.{Accepters, constructResultMatcher}
+import cypher.feature.parser.{parseParameters, Accepters, constructResultMatcher}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -43,8 +43,9 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
 
   val Background = new Step("Background")
 
-  var result: Result = null
   var graph: GraphDatabaseService = null
+  var result: Result = null
+  var params: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
 
   private def initEmpty() =
     if (graph == null || !graph.isAvailable(1L)) {
@@ -83,15 +84,12 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
     graph.execute(query)
   }
 
-  When(EXECUTING_QUERY) { (query: String) =>
-    result = graph.execute(query)
+  And(PARAMETERS) { (values: DataTable) =>
+    params = parseParameters(values)
   }
 
-  When(RUNNING_PARAMETRIZED_QUERY) { (query: String, params: DataTable) =>
-    assert(!query.contains("cypher"), "init query should do specify pre parser options")
-    val p = params.toList[AnyRef]
-    assert(p.size == 1)
-    result = graph.execute(query, castParameters(p.head))
+  When(EXECUTING_QUERY) { (query: String) =>
+    result = graph.execute(query, params)
   }
 
   Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
@@ -153,11 +151,10 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
 
 object GlueSteps {
 
+  // to be replaced
   val USING_DB = """^using: (.*)$"""
-  val RUNNING_PARAMETRIZED_QUERY = """^running parametrized: (.*)$"""
 
-  // new constants:
-
+  // for Background
   val BACKGROUND = "^$"
 
   // for Given
@@ -166,6 +163,7 @@ object GlueSteps {
 
   // for And
   val INIT_QUERY = "^having executed: (.*)$"
+  val PARAMETERS = "^parameters are:$"
 
   // for When
   val EXECUTING_QUERY = "^executing query: (.*)$"
