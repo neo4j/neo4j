@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +26,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -97,6 +97,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -1089,7 +1090,7 @@ public class TransactionRecordStateTest
     {
         // GIVEN
         PrepareTrackingRecordFormats format = new PrepareTrackingRecordFormats(
-                InternalRecordFormatSelector.select( new Config(), NullLogService.getInstance() ) );
+                InternalRecordFormatSelector.select( Config.empty(), NullLogService.getInstance() ) );
         NeoStores neoStores = neoStoresRule.open( format,
                 GraphDatabaseSettings.dense_node_threshold.name(), "1" );
 

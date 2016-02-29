@@ -202,7 +202,7 @@ public class ConcurrentChangesOnEntitiesTest
         try
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    testDirectory.graphDbDir(), new Config(), ProgressMonitorFactory.textual( System.err ),
+                    testDirectory.graphDbDir(), Config.defaults(), ProgressMonitorFactory.textual( System.err ),
                     logProvider, false );
             assertTrue( result.isSuccessful() );
         }

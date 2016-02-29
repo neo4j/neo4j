@@ -93,20 +93,14 @@ public class BatchingNeoStores implements AutoCloseable
         this.fileSystem = fileSystem;
         this.logProvider = logService.getInternalLogProvider();
         this.storeDir = storeDir;
-        this.neo4jConfig = new Config( stringMap( dbConfig.getParams(),
-                dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
-                pagecache_memory.name(), valueOf( config.writeBufferSize() ) ),
+        this.neo4jConfig = dbConfig.with(
+                stringMap(
+                        dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
+                        pagecache_memory.name(), valueOf( config.writeBufferSize() ) ),
                 GraphDatabaseSettings.class );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         this.pageCache = createPageCache( fileSystem, neo4jConfig, logProvider, tracer );
-        this.ioTracer = new IoTracer()
-        {
-            @Override
-            public long countBytesWritten()
-            {
-                return tracer.bytesWritten();
-            }
-        };
+        this.ioTracer = tracer::bytesWritten;
         this.neoStores = newNeoStores( pageCache );
         if ( alreadyContainsData( neoStores ) )
         {
@@ -131,7 +125,7 @@ public class BatchingNeoStores implements AutoCloseable
         this.relationshipTypeRepository = new BatchingRelationshipTypeTokenRepository(
                 neoStores.getRelationshipTypeTokenStore(), initialIds.highRelationshipTypeTokenId() );
 
-        // Initialze kernel extensions
+        // Initialize kernel extensions
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( neo4jConfig );
         dependencies.satisfyDependency( fileSystem );

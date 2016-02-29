@@ -19,19 +19,18 @@
  */
 package upgrade;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -49,7 +48,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
@@ -66,6 +64,7 @@ import static org.junit.Assert.assertTrue;
 import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
 
@@ -76,7 +75,7 @@ public class StoreMigratorFrom20IT
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 
-    private final Config config = MigrationTestUtils.defaultConfig();
+    private final Config config = new Config( stringMap(), GraphDatabaseSettings.class );
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private StoreFactory storeFactory;
@@ -195,7 +194,7 @@ public class StoreMigratorFrom20IT
 
     private StoreUpgrader upgrader( SchemaIndexMigrator indexMigrator, StoreMigrator storeMigrator )
     {
-        Config allowUpgrade = new Config( MapUtil.stringMap( GraphDatabaseSettings
+        Config allowUpgrade = new Config( stringMap( GraphDatabaseSettings
                 .allow_store_upgrade.name(), "true" ) );
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, monitor, allowUpgrade, fs,
                 NullLogProvider.getInstance() );

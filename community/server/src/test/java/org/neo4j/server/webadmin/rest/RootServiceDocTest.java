@@ -50,7 +50,7 @@ public class RootServiceDocTest
         URI uri = new URI( "http://example.org:7474/" );
         when( uriInfo.getBaseUri() ).thenReturn( uri );
 
-        RootService svc = new RootService( new CommunityNeoServer( new Config(),
+        RootService svc = new RootService( new CommunityNeoServer( Config.empty(),
                 GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ).monitors( new Monitors() ),
                 NullLogProvider.getInstance() ) );
 

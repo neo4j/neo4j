@@ -178,7 +178,7 @@ public class BackupServiceStressTestingBuilder
 
                 // when
                 Dependencies dependencies = new Dependencies( db.getDependencyResolver() );
-                dependencies.satisfyDependencies( new Config(), NullLogProvider.getInstance(), new Monitors() );
+                dependencies.satisfyDependencies( Config.empty(), NullLogProvider.getInstance(), new Monitors() );
 
                 LifeSupport life = new LifeSupport();
                 try
@@ -215,7 +215,7 @@ public class BackupServiceStressTestingBuilder
                         {
                             fileSystem.deleteRecursively( backupDir );
                             BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( backupHostname,
-                                    backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, new Config(),
+                                    backupPort, backupDir.getAbsoluteFile(), ConsistencyCheck.DEFAULT, Config.empty(),
                                     BackupClient.BIG_READ_TIMEOUT, false );
 
                             if ( !backupOutcome.isConsistent() )

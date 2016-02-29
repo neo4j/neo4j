@@ -19,10 +19,6 @@
  */
 package schema;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -31,6 +27,10 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
@@ -48,6 +48,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -74,8 +75,10 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -126,7 +129,7 @@ public class MultipleIndexPopulationStressIT
     private void readConfigAndRunTest( boolean multiThreaded ) throws Exception
     {
         // GIVEN a database with random data in it
-        int nodeCount = (int) Config.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "1m" ) );
+        int nodeCount = (int) Settings.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "1m" ) );
         long duration = TimeUtil.parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "5s" ) );
         createRandomData( nodeCount );
         long endTime = currentTimeMillis() + duration;
@@ -274,7 +277,7 @@ public class MultipleIndexPopulationStressIT
     private void createRandomData( int count ) throws IOException
     {
         BatchImporter importer = new ParallelBatchImporter( directory.directory(), fs,
-                DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, new Config() );
+                DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, Config.empty() );
         importer.doImport( new Input()
         {
             @Override

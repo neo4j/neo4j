@@ -22,17 +22,12 @@ package org.neo4j.kernel.api.impl.schema;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 
-import java.util.Map;
-
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Helper builder class to simplify construction and instantiation of lucene schema indexes.
@@ -44,7 +39,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneSchemaIndexBuilder>
 {
-    private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+    private IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
     private IndexConfiguration indexConfig = IndexConfiguration.NON_UNIQUE;
     private Factory<IndexWriterConfig> writerConfigFactory = IndexWriterConfigs::standard;
 
@@ -71,20 +66,6 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
     public LuceneSchemaIndexBuilder withSamplingConfig( IndexSamplingConfig samplingConfig )
     {
         this.samplingConfig = samplingConfig;
-        return this;
-    }
-
-    /**
-     * Specify lucene schema index sampling buffer size
-     *
-     * @param size sampling buffer size
-     * @return index builder
-     */
-    public LuceneSchemaIndexBuilder withSamplingBufferSize( int size )
-    {
-        Map<String,String> params = stringMap( GraphDatabaseSettings.index_sampling_buffer_size.name(), size + "" );
-        Config config = new Config( params );
-        this.samplingConfig = new IndexSamplingConfig( config );
         return this;
     }
 

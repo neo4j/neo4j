@@ -39,7 +39,7 @@ public class LifecycleManagingDatabaseTest
     {
         // Given a lifecycled database that'll try to warm up Cypher when it starts
         final GraphDatabaseFacade mockDb = mock( GraphDatabaseFacade.class );
-        Config config = new Config();
+        Config config = Config.empty();
         GraphDatabaseFacadeFactory.Dependencies deps =
                 GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() );
         LifecycleManagingDatabase.GraphFactory factory = ( conf, dependencies ) -> mockDb;

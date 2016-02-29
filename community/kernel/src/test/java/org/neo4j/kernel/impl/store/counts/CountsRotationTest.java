@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,6 +28,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
@@ -71,6 +71,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.impl.store.counts.FileVersion.INITIAL_MINOR_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -257,7 +258,7 @@ public class CountsRotationTest
 
     private CountsTracker createCountsTracker( PageCache pageCache )
     {
-        return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, emptyConfig,
+        return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, Config.empty(),
                 new File( dir.getPath(), COUNTS_STORE_BASE ) );
     }
 
@@ -283,7 +284,6 @@ public class CountsRotationTest
     private File dir;
     private GraphDatabaseBuilder dbBuilder;
     private PageCache pageCache;
-    private Config emptyConfig;
 
     @Before
     public void setup()
@@ -292,7 +292,6 @@ public class CountsRotationTest
         dir = testDir.directory( "dir" ).getAbsoluteFile();
         dbBuilder = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabaseBuilder( dir );
         pageCache = pcRule.getPageCache( fs );
-        emptyConfig = new Config();
     }
 
     private static final String COUNTS_STORE_BASE = MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE;
