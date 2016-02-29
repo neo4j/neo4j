@@ -48,22 +48,13 @@ public class RaftRecordCursor<T extends ReadableClosablePositionAwareChannel> im
             switch ( PhysicalRaftLog.RecordType.forValue( type ) )
             {
                 case APPEND:
-                    long appendIndex = channel.getLong();
-                    long term = channel.getLong();
-                    ReplicatedContent content = marshal.unmarshal( channel );
-                    if ( content == null )
-                    {
-                        return false;
-                    }
-                    lastFoundRecord = new RaftLogAppendRecord( appendIndex, new RaftLogEntry( term, content ) );
+                    lastFoundRecord = RaftLogAppendRecord.read( channel, marshal );
                     return true;
                 case COMMIT:
-                    long commitIndex = channel.getLong();
-                    lastFoundRecord = new RaftLogCommitRecord( commitIndex );
+                    lastFoundRecord = RaftLogCommitRecord.read( channel );
                     return true;
-                case TRUNCATE:
-                    long truncateFromIndex = channel.getLong();
-                    lastFoundRecord = new RaftLogTruncateRecord( truncateFromIndex );
+                case CONTINUATION:
+                    lastFoundRecord = RaftLogContinuationRecord.read( channel );
                     return true;
                 default:
                     throw new IllegalStateException( "Not really sure how we got here. Read type value was " + type );

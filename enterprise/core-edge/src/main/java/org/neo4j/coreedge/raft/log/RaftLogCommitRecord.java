@@ -19,11 +19,30 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import java.io.IOException;
+
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
+
+import static org.neo4j.coreedge.raft.log.PhysicalRaftLog.RecordType.COMMIT;
+
 public class RaftLogCommitRecord extends RaftLogRecord
 {
     public RaftLogCommitRecord( long logIndex )
     {
-        super( PhysicalRaftLog.RecordType.COMMIT, logIndex );
+        super( COMMIT, logIndex );
+    }
+
+    public static RaftLogCommitRecord read( ReadableChannel channel ) throws IOException
+    {
+        long commitIndex = channel.getLong();
+        return new RaftLogCommitRecord( commitIndex );
+    }
+
+    public static void write( WritableChannel channel, long commitIndex ) throws IOException
+    {
+        channel.put( COMMIT.value() );
+        channel.putLong( commitIndex );
     }
 
     @Override

@@ -31,6 +31,7 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Stack;
 import java.util.TreeSet;
 
 import org.neo4j.coreedge.raft.log.PhysicalRaftLogEntryCursor;
@@ -90,7 +91,8 @@ public class DumpPhysicalRaftLog
             ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
 
 
-            try ( PhysicalRaftLogEntryCursor cursor = new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( logChannel, marshal ) ) )
+            try ( PhysicalRaftLogEntryCursor cursor = new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( logChannel, marshal ),
+                    new Stack<>(), 0 ) )
             {
                 while ( cursor.next() )
                 {

@@ -39,10 +39,11 @@ public class PhysicalRaftLogVerificationIT extends RaftLogVerificationIT
         fsa.mkdir( directory );
 
         long rotateAtSizeBytes = 128;
-        int entryCacheSize = 8;
+        int entryCacheSize = 4;
+        int metadataCacheSize = 8;
         int fileHeaderCacheSize = 2;
 
-        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fsa, directory, rotateAtSizeBytes, entryCacheSize, fileHeaderCacheSize,
+        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fsa, directory, rotateAtSizeBytes, entryCacheSize, metadataCacheSize, fileHeaderCacheSize,
                 new PhysicalLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(), () -> mock( DatabaseHealth.class ),
                 NullLogProvider.getInstance() );
 
