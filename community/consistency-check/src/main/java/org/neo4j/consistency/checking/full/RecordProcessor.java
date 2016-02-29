@@ -21,7 +21,25 @@ package org.neo4j.consistency.checking.full;
 
 public interface RecordProcessor<RECORD>
 {
+    /**
+     * Must be called by the thread executing {@link #process(Object)}.
+     */
+    void init( int id );
+
     void process( RECORD record );
 
     void close();
+
+    public static abstract class Adapter<RECORD> implements RecordProcessor<RECORD>
+    {
+        @Override
+        public void init( int id )
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    }
 }

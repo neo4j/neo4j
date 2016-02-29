@@ -22,7 +22,9 @@ package org.neo4j.consistency.checking.full;
 import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
@@ -36,70 +38,61 @@ public class RecordDistributor
             String workerNames,
             int queueSize,
             Iterable<RECORD> records,
-            ProgressListener progress,
-            RecordProcessor<RECORD> processor )
+            final ProgressListener progress,
+            RecordProcessor<RECORD> processor,
+            QueueDistributor<RECORD> idDistributor )
     {
         Iterator<RECORD> iterator = records.iterator();
-
-        // Run the first record in the main thread since there are filters in some
-        // checkers that change state on first and last record, state that may affect other concurrent
-        // processors.
-        if ( iterator.hasNext() )
+        if ( !iterator.hasNext() )
         {
-            processor.process( iterator.next() );
-            progress.add( 1 );
-        }
-        else
-        {
-            // No need to set up a bunch of threads if there are no records to process anyway
             return;
         }
 
-        ArrayBlockingQueue<RECORD>[] recordQ = new ArrayBlockingQueue[numberOfThreads];
-        Workers<Worker<RECORD>> workers = new Workers<>( workerNames );
+        @SuppressWarnings( "unchecked" )
+        final ArrayBlockingQueue<RECORD>[] recordQ = new ArrayBlockingQueue[numberOfThreads];
+        final Workers<RecordCheckWorker<RECORD>> workers = new Workers<>( workerNames );
+        final AtomicInteger idGroup = new AtomicInteger( -1 );
         for ( int threadId = 0; threadId < numberOfThreads; threadId++ )
         {
             recordQ[threadId] = new ArrayBlockingQueue<>( queueSize );
-            workers.start( new Worker<>( recordQ[threadId], processor ) );
+            workers.start( new RecordCheckWorker<>( threadId, idGroup, recordQ[threadId], processor ) );
         }
 
-        int[] recsProcessed = new int[numberOfThreads];
-        int qIndex = 0;
-
-        RECORD last = null;
-        while ( iterator.hasNext() )
+        final int[] recsProcessed = new int[numberOfThreads];
+        RecordConsumer<RECORD> recordConsumer = new RecordConsumer<RECORD>()
         {
-            try
+            @Override
+            public void accept( RECORD record, int qIndex ) throws InterruptedException
             {
-                // Put records round-robin style into the queue of each thread, where a Worker
-                // will sit and pull from and process.
-                RECORD record = iterator.next();
-
-                // Detect the last record and defer processing that until after all the others
-                // since there are filters in some checkers that change state on first and last record,
-                // state that may affect other concurrent processors.
-                if ( !iterator.hasNext() )
-                {
-                    last = record;
-                    break;
-                }
-                qIndex = (qIndex + 1)%numberOfThreads;
                 recordQ[qIndex].put( record );
                 recsProcessed[qIndex]++;
             }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-                break;
-            }
-            progress.add( 1 );
-        }
-        for ( Worker<RECORD> worker : workers )
-        {
-            worker.done();
-        }
+        };
+
         try
         {
+            while ( iterator.hasNext() )
+            {
+                try
+                {
+                    // Put records into the queues using the queue distributor. Each Worker will pull and process.
+                    RECORD record = iterator.next();
+                    idDistributor.distribute( record, recordConsumer );
+                    progress.add( 1 );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+
+            // No more records to distribute, mark as done so that the workers will exit when no more records in queue.
+            for ( RecordCheckWorker<RECORD> worker : workers )
+            {
+                worker.done();
+            }
+
             workers.awaitAndThrowOnError( RuntimeException.class );
         }
         catch ( InterruptedException e )
@@ -107,29 +100,24 @@ public class RecordDistributor
             Thread.currentThread().interrupt();
             throw new RuntimeException( "Was interrupted while awaiting completion" );
         }
-
-        // Here we process the last record. Why? See comments above
-        if ( last != null )
-        {
-            processor.process( last );
-            progress.add( 1 );
-        }
     }
 
-    private static class Worker<RECORD> extends RecordCheckWorker<RECORD>
+    /**
+     * Consumers records from a {@link QueueDistribution}, feeding into correct queue.
+     */
+    interface RecordConsumer<RECORD>
     {
-        private final RecordProcessor<RECORD> processor;
+        void accept( RECORD record, int qIndex ) throws InterruptedException;
+    }
 
-        Worker( BlockingQueue<RECORD> recordsQ, RecordProcessor<RECORD> processor )
+    public static long calculateRecodsPerCpu( long highId, int numberOfThreads )
+    {
+        boolean hasRest = highId % numberOfThreads > 0;
+        long result = highId / numberOfThreads;
+        if ( hasRest )
         {
-            super( recordsQ );
-            this.processor = processor;
+            result++;
         }
-
-        @Override
-        protected void process( RECORD record )
-        {
-            processor.process( record );
-        }
+        return result;
     }
 }

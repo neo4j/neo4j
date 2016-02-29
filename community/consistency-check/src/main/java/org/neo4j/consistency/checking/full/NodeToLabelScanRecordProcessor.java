@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
-public class NodeToLabelScanRecordProcessor implements RecordProcessor<NodeRecord>
+public class NodeToLabelScanRecordProcessor extends RecordProcessor.Adapter<NodeRecord>
 {
     private final ConsistencyReporter reporter;
     private final RecordCheck<NodeRecord, ConsistencyReport.LabelsMatchReport> nodeLabelCheck;

@@ -182,4 +182,22 @@ public class RelationshipRecord extends PrimitiveRecord
     {
         property.setRelId( getId() );
     }
+
+    @Override
+    public RelationshipRecord clone()
+    {
+        RelationshipRecord record = new RelationshipRecord( getId() );
+        record.setInUse( inUse() );
+        record.setType( type );
+        record.setFirstInFirstChain( firstInFirstChain );
+        record.setFirstInSecondChain( firstInSecondChain );
+        record.setFirstNextRel( firstNextRel );
+        record.setFirstNode( firstNode );
+        record.setFirstPrevRel( firstPrevRel );
+        record.setNextProp( getNextProp() );
+        record.setSecondNextRel( secondNextRel );
+        record.setSecondNode( secondNode );
+        record.setSecondPrevRel( secondPrevRel );
+        return record;
+    }
 }
