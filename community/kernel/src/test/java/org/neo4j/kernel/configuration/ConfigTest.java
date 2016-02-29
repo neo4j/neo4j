@@ -32,8 +32,6 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 
-import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
@@ -52,6 +50,7 @@ public class ConfigTest
 {
     public static class MyMigratingSettings
     {
+        @SuppressWarnings("unused") // accessed by reflection
         @Migrator
         public static ConfigurationMigrator migrator = new BaseConfigurationMigrator()
         {
@@ -103,7 +102,7 @@ public class ConfigTest
     @Test
     public void shouldApplyDefaults()
     {
-        Config config = new Config( new HashMap<String, String>(), MySettingsWithDefaults.class );
+        Config config = new Config( new HashMap<>(), MySettingsWithDefaults.class );
 
         assertThat( config.get( MySettingsWithDefaults.hello ), is( "Hello, World!" ) );
     }
@@ -112,43 +111,44 @@ public class ConfigTest
     public void shouldApplyMigrations()
     {
         // When
-        Config config = new Config( stringMap("old", "hello!"), MyMigratingSettings.class );
+        Config config = new Config( stringMap( "old", "hello!" ), MyMigratingSettings.class );
 
         // Then
         assertThat( config.get( MyMigratingSettings.newer ), is( "hello!" ) );
     }
 
-    @Test( expected = InvalidSettingException.class )
+    @Test(expected = InvalidSettingException.class)
     public void shouldNotAllowSettingInvalidValues()
     {
-        Config config = new Config( new HashMap<String, String>(), MySettingsWithDefaults.class );
-
-        Map<String, String> params = config.getParams();
-        params.put( MySettingsWithDefaults.boolSetting.name(), "asd" );
-
-        config.applyChanges( params );
-
+        new Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ), MySettingsWithDefaults.class );
         fail( "Expected validation to fail." );
     }
 
-    @Test( expected = InvalidSettingException.class )
-    public void shouldNotAllowInvalidValuesInConstructor()
+    @Test
+    public void shouldBeAbleToAugmentConfig() throws Exception
     {
-        new Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ), MySettingsWithDefaults.class );
+        // Given
+        Config config = new Config( stringMap( "newer", "old", "non-overlapping", "huzzah" ) );
 
-        fail( "Expected validation to fail." );
+        // When
+        config.augment( stringMap( "newer", "new", "unrelated", "hello" ) );
+
+        // Then
+        assertThat( config.get( setting( "newer", STRING, "" ) ), equalTo( "new" ) );
+        assertThat( config.get( setting( "non-overlapping", STRING, "" ) ), equalTo( "huzzah" ) );
+        assertThat( config.get( setting( "unrelated", STRING, "" ) ), equalTo( "hello" ) );
     }
 
     @Test
     public void shouldNotifyChangeListenersWhenNewSettingsAreApplied()
     {
         // Given
-        Config config = new Config( stringMap("setting", "old"), MyMigratingSettings.class );
+        Config config = new Config( stringMap( "setting", "old" ), MyMigratingSettings.class );
         ChangeCaptureListener listener = new ChangeCaptureListener();
         config.addConfigurationChangeListener( listener );
 
         // When
-        config.applyChanges( stringMap( "setting", "new" ) );
+        config.augment( stringMap( "setting", "new" ) );
 
         // Then
         assertThat( listener.lastChangeSet,
@@ -159,44 +159,15 @@ public class ConfigTest
     public void shouldNotNotifyChangeListenerWhenNothingChanged()
     {
         // Given
-        Config config = new Config( stringMap("setting", "old"), MyMigratingSettings.class );
+        Config config = new Config( stringMap( "setting", "old" ), MyMigratingSettings.class );
         ChangeCaptureListener listener = new ChangeCaptureListener();
         config.addConfigurationChangeListener( listener );
 
         // When
-        config.applyChanges( stringMap( "setting", "old" ) ); // nothing really changed here
+        config.augment( stringMap( "setting", "old" ) ); // nothing really changed here
 
         // Then
         assertThat( listener.lastChangeSet, nullValue() );
-    }
-
-    @Test
-    public void shouldBeAbleToRegisterSettingsClassesAfterInstantiation() throws Exception
-    {
-        // Given
-        Config config = new Config( stringMap(  "old", "hello!" ) );
-
-        // When
-        config.registerSettingsClasses( asList( MySettingsWithDefaults.class, MyMigratingSettings.class ) );
-
-        // Then
-        assertThat( config.get( MyMigratingSettings.newer ), equalTo( "hello!" ) );
-        assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Hello, World!" ) );
-    }
-
-    @Test
-    public void shouldBeAbleToAgumentConfig() throws Exception
-    {
-        // Given
-        Config config = new Config( stringMap( "newer", "old", "non-overlapping", "huzzah" ) );
-
-        // When
-        config.augment( stringMap( "newer", "new", "unrelated", "hello" ) );
-
-        // Then
-        assertThat( config.get( setting("newer", STRING, "") ), equalTo( "new" ) );
-        assertThat( config.get( setting("non-overlapping", STRING, "") ), equalTo( "huzzah" ) );
-        assertThat( config.get( setting("unrelated", STRING, "") ), equalTo( "hello" ) );
     }
 
     @Test
@@ -213,7 +184,7 @@ public class ConfigTest
         Setting<Integer> age = setting( "user.age", INTEGER, NO_DEFAULT );
 
         // When
-        List<Configuration> views = config.view( Config.groups( "my.users" ) );
+        List<Configuration> views = config.view( ConfigGroups.groups( "my.users" ) );
 
         // Then
         assertThat( views.size(), equalTo( 2 ) );
@@ -246,8 +217,8 @@ public class ConfigTest
         Setting<Integer> age = setting( "user.age", INTEGER, NO_DEFAULT );
 
         // When
-        List<Configuration> emptyStrViews = config.view( Config.groups( "" ) );
-        List<Configuration> numViews = config.view( Config.groups( "0" ) );
+        List<Configuration> emptyStrViews = config.view( ConfigGroups.groups( "" ) );
+        List<Configuration> numViews = config.view( ConfigGroups.groups( "0" ) );
 
         // Then
         assertThat( emptyStrViews.size(), equalTo( 0 ) );
@@ -266,7 +237,7 @@ public class ConfigTest
                 "my.users.1.age", "82" ) );
 
         // When
-        List<Configuration> views = config.view( Config.groups( "my" ) );
+        List<Configuration> views = config.view( ConfigGroups.groups( "my" ) );
 
         // Then
         assertThat( views.size(), equalTo( 0 ) );
@@ -287,7 +258,7 @@ public class ConfigTest
         Setting<Integer> age = setting( "age", INTEGER, NO_DEFAULT );
 
         // When
-        List<Configuration> views = config.view( Config.groups( "my.users" ) );
+        List<Configuration> views = config.view( ConfigGroups.groups( "my.users" ) );
 
         // Then
         assertThat( views.size(), equalTo( 2 ) );

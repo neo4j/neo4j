@@ -33,6 +33,6 @@ public class LowLimitTest
     public void shouldResolveLowLimitsRecordFormat() throws Exception
     {
         assertEquals( LowLimit.RECORD_FORMATS.storeVersion(),
-                select( new Config(), NullLogService.getInstance() ).storeVersion() );
+                select( Config.empty(), NullLogService.getInstance() ).storeVersion() );
     }
 }

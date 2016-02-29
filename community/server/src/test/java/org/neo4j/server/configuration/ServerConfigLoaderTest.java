@@ -37,6 +37,10 @@ import org.neo4j.server.ServerTestUtils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.setting;
+
 public class ServerConfigLoaderTest
 {
     @Rule
@@ -72,7 +76,7 @@ public class ServerConfigLoaderTest
 
         // then
         final String EXPECTED_VALUE = "bar";
-        assertEquals( EXPECTED_VALUE, testConf.getParams().get( "foo" ) );
+        assertEquals( EXPECTED_VALUE, testConf.get( setting( "foo", STRING, NO_DEFAULT ) ) );
     }
 
     @Test
@@ -90,7 +94,7 @@ public class ServerConfigLoaderTest
         // then
         assertNotNull( testConf );
         final String EXPECTED_VALUE = "bar";
-        assertEquals( EXPECTED_VALUE, testConf.getParams().get( "foo" ) );
+        assertEquals( EXPECTED_VALUE, testConf.get( setting( "foo", STRING, NO_DEFAULT ) ) );
     }
 
     @Test

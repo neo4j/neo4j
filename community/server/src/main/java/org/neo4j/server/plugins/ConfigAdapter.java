@@ -29,10 +29,12 @@ import java.util.Set;
 import org.apache.commons.configuration.AbstractConfiguration;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.AnnotatedFieldHarvester;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConfigAdapter extends AbstractConfiguration
 {
@@ -59,8 +61,7 @@ public class ConfigAdapter extends AbstractConfiguration
     @Override
     public Object getProperty( String key )
     {
-        Setting<?> setting = getSettingForKey( key );
-        return setting == null ? config.getParams().get( key ) : config.get( setting );
+        return config.get( getSettingForKey( key ) );
     }
 
     @Override
@@ -81,12 +82,17 @@ public class ConfigAdapter extends AbstractConfiguration
     @Override
     protected void addPropertyDirect( String key, Object value )
     {
-        config.applyChanges( MapUtil.stringMap( config.getParams(), key, value.toString() ) );
+        config.augment( stringMap( key, value.toString() ) );
     }
 
     private Setting<?> getSettingForKey( String key )
     {
-        return getRegisteredSettings().get( key );
+        Setting<?> setting = getRegisteredSettings().get( key );
+        if ( setting != null )
+        {
+            return setting;
+        }
+        return Settings.setting( key, Settings.STRING, Settings.NO_DEFAULT );
     }
 
     private Map<String,Setting<?>> getRegisteredSettings()

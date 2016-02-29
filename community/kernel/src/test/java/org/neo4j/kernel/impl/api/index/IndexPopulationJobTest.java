@@ -583,7 +583,7 @@ public class IndexPopulationJobTest
     private IndexPopulator inMemoryPopulator( boolean constraint ) throws TransactionFailureException
     {
         IndexConfiguration indexConfig = IndexConfiguration.of( constraint );
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexDescriptor descriptor = indexDescriptor( FIRST, name );
         return new InMemoryIndexProvider().getPopulator( 21, descriptor, indexConfig, samplingConfig );
     }

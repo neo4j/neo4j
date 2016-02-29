@@ -95,7 +95,7 @@ public class RecordStorageEngineRule extends ExternalResource
         when( legacyIndexProviderLookup.all() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
         JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
-        Config config = new Config();
+        Config config = Config.defaults();
         return life.add( new RecordStorageEngine( storeDirectory, config, idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
                 mock( RelationshipTypeTokenHolder.class ), () -> {}, new StandardConstraintSemantics(),

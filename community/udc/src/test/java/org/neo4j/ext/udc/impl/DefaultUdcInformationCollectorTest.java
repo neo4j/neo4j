@@ -19,11 +19,11 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import org.junit.Test;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.Test;
 
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.kernel.configuration.Config;
@@ -46,7 +46,7 @@ public class DefaultUdcInformationCollectorTest
 {
     private final UsageData usageData = new UsageData();
     private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector(
-            new Config(), null,
+            Config.empty(), null,
             new StubIdGeneratorFactory(), mock( StartupStatistics.class ), usageData );
 
     @Test

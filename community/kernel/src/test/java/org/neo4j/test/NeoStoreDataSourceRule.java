@@ -75,8 +75,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
             dataSource.stop();
             dataSource.shutdown();
         }
-        final Config config = new Config( stringMap( additionalConfig ),
-                GraphDatabaseSettings.class );
+        final Config config = new Config( stringMap( additionalConfig ), GraphDatabaseSettings.class );
 
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );

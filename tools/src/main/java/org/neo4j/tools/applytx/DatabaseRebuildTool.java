@@ -206,7 +206,7 @@ public class DatabaseRebuildTool
                 try
                 {
                     Result result = new ConsistencyCheckService().runFullConsistencyCheck( storeDir,
-                            new Config(), ProgressMonitorFactory.textual( out ),
+                            Config.defaults(), ProgressMonitorFactory.textual( out ),
                             FormattedLogProvider.toOutputStream( System.out ), false );
                     out.println( (result.isSuccessful() ? "consistent" : "INCONSISTENT") );
                 }

@@ -57,7 +57,7 @@ public class HTTPLoggingPreparednessRuleTest
     public void shouldPassWhenImplicitlyDisabled()
     {
         // given
-        Config config = new Config();
+        Config config = Config.empty();
 
         // when
         config.get( http_log_config_file );

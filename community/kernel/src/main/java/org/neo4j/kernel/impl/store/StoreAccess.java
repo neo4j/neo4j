@@ -79,7 +79,7 @@ public class StoreAccess
 
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir )
     {
-        this( fileSystem, pageCache, storeDir, new Config() );
+        this( fileSystem, pageCache, storeDir, Config.defaults() );
     }
 
     private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )

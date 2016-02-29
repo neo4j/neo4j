@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -38,6 +38,7 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -50,7 +51,7 @@ public class LabelTokenStoreTest
     private final LogProvider logProvider = mock( LogProvider.class );
     private final DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
     private final PageCursor pageCursor = mock( PageCursor.class );
-    private final Config config = new Config();
+    private final Config config = Config.empty();
 
     @Test
     public void forceGetRecordSkipInUsecheck() throws IOException

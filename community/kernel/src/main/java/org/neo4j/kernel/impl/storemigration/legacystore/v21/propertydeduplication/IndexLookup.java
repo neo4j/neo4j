@@ -52,7 +52,7 @@ class IndexLookup implements AutoCloseable
         indexAccessors = new ArrayList<>();
         readerCache = new HashMap<>();
         indexRuleIndex = buildIndexRuleIndex( store );
-        samplingConfig = new IndexSamplingConfig( new Config() );
+        samplingConfig = new IndexSamplingConfig( Config.defaults() );
     }
 
     private PrimitiveIntObjectMap<List<IndexRule>> buildIndexRuleIndex( SchemaStore schemaStore )

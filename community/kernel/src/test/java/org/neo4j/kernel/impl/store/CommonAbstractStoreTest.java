@@ -51,7 +51,7 @@ public class CommonAbstractStoreTest
     private static final NullLogProvider LOG = NullLogProvider.getInstance();
     private final IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
     private final PageCache pageCache = mock( PageCache.class );
-    private final Config config = new Config();
+    private final Config config = Config.empty();
     private final File storeFile = new File( "store" );
     private final IdType idType = IdType.RELATIONSHIP; // whatever
 
