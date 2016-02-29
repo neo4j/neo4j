@@ -75,7 +75,14 @@ public class SessionWorkerFacade implements Session
     @Override
     public <A> void reset( final A attachment, final Callback<Void,A> callback )
     {
+        worker.interrupt();
         queue( session -> session.reset( attachment, callback ) );
+    }
+
+    @Override
+    public void interrupt()
+    {
+        worker.interrupt();
     }
 
     @Override

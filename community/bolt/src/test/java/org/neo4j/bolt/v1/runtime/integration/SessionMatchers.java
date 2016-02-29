@@ -43,7 +43,7 @@ public class SessionMatchers
             @Override
             public void describeTo( Description description )
             {
-
+                description.appendText( "SUCCESS" );
             }
         };
     }
@@ -132,7 +132,7 @@ public class SessionMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "ignored" );
+                description.appendText( "IGNORED" );
             }
         };
     }
@@ -165,7 +165,7 @@ public class SessionMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendList( "[", "\n", "]", asList(messages) );
+                description.appendList( "[", ", ", "]", asList(messages) );
             }
         };
     }

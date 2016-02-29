@@ -165,6 +165,12 @@ public class MonitoredSessionsTest
         }
 
         @Override
+        public void interrupt()
+        {
+
+        }
+
+        @Override
         public void close()
         {
 

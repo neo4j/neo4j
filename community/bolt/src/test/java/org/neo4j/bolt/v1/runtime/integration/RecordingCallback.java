@@ -33,10 +33,18 @@ import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
+import org.neo4j.helpers.collection.Iterables;
 
 public class RecordingCallback<V, A> implements Session.Callback<V,A>
 {
     private final BlockingQueue<Call> calls = new ArrayBlockingQueue<>( 64 );
+
+    /** Used for toString etc. to help debugging */
+    private final List<Call> seenCalls = new LinkedList<>();
+
+    private List<Call> results = new LinkedList<>();
+    private List<Neo4jError> errors = new LinkedList<>();
+    private boolean ignored;
 
     public Call next() throws InterruptedException
     {
@@ -45,12 +53,9 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
         {
             throw new RuntimeException( "Waited 10 seconds for message, but no message arrived." );
         }
+        seenCalls.add( msg );
         return msg;
     }
-
-    private List<Call> results = new LinkedList<>();
-    private List<Neo4jError> errors = new LinkedList<>();
-    private boolean ignored;
 
     @Override
     public void started( A attachment )
@@ -146,6 +151,12 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
         {
             return false;
         }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName();
+        }
     }
 
     public static class Success extends Call
@@ -154,6 +165,12 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
         public boolean isSuccess()
         {
             return true;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "SUCCESS";
         }
     }
 
@@ -193,6 +210,12 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
         {
             return meta;
         }
+
+        @Override
+        public String toString()
+        {
+            return "SUCCESS " + meta;
+        }
     }
 
     public static class Ignored extends Call
@@ -201,6 +224,12 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
         public boolean isIgnored()
         {
             return true;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "IGNORED";
         }
     }
 
@@ -244,5 +273,11 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
             }
         } );
         return values.toArray( new Record[values.size()] );
+    }
+
+    @Override
+    public String toString()
+    {
+        return Iterables.toString( seenCalls, ", " );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime.internal;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
@@ -129,6 +130,9 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginImplicitTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
+                        // NOTE: If we move away from doing implicit transactions this
+                        // way, we need a different way to kill statements running in implicit
+                        // transactions, because we do that by calling #terminate() on this tx.
                         ctx.currentTransaction = ctx.spi.beginTransaction( implicit, FULL );
                         return IN_TRANSACTION;
                     }
@@ -301,6 +305,49 @@ public class SessionStateMachine implements Session, SessionState
                     }
                 },
 
+        /**
+         * The state machine is in a temporary INTERRUPT state, and will ignore
+         * all messages until a RESET is received.
+         */
+        INTERRUPTED
+                {
+                    /**
+                     * When we are in the interrupted state, we need RESET messages
+                     * to clear that state.
+                     */
+                    @Override
+                    public State reset( SessionStateMachine ctx )
+                    {
+                        // If > 0 to guard against bugs making the counter negative
+                        if( ctx.interruptCounter.get() > 0 )
+                        {
+                            if( ctx.interruptCounter.decrementAndGet() > 0 )
+                            {
+                                // This happens when the user sends multiple
+                                // interrupts at the same time, we now demand
+                                // an equivalent number of RESET until we go back
+                                // to IDLE.
+                                ctx.ignored();
+                                return INTERRUPTED;
+                            }
+                        }
+                        return IDLE;
+                    }
+
+
+                    @Override
+                    public State interrupt( SessionStateMachine ctx )
+                    {
+                        return INTERRUPTED;
+                    }
+
+                    @Override
+                    protected State onNoImplementation( SessionStateMachine ctx, String command )
+                    {
+                        ctx.ignored();
+                        return INTERRUPTED;
+                    }
+                },
 
         /** The state machine is permanently stopped. */
         STOPPED
@@ -364,6 +411,18 @@ public class SessionStateMachine implements Session, SessionState
         public State reset( SessionStateMachine ctx )
         {
             return onNoImplementation( ctx, "resetting the current session" );
+        }
+
+        /**
+         * If the session has been interrupted, this will be invoked before *each*
+         * message that is processed after interruption, until the interrupt counter
+         * is reset back to 0. This exists to ensure we cleanly reset any current
+         * state, meaning the default implementation is the same as reset.
+         */
+        public State interrupt( SessionStateMachine ctx )
+        {
+            reset( ctx );
+            return INTERRUPTED;
         }
 
         protected State onNoImplementation( SessionStateMachine ctx, String command )
@@ -445,6 +504,15 @@ public class SessionStateMachine implements Session, SessionState
             return currentResult.fieldNames();
         }
     };
+
+    /**
+     * This is incremented each time {@link #interrupt()} is called,
+     * and decremented each time a {@link #reset(Object, Callback)} message
+     * arrives. When this is above 0, all messages will be ignored.
+     * This way, when a reset message arrives on the network, interrupt
+     * can be called to "purge" all the messages ahead of the reset message.
+     */
+    private final AtomicInteger interruptCounter = new AtomicInteger();
 
     /** The current session state */
     private State state = State.UNINITIALIZED;
@@ -566,6 +634,25 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
+    public void interrupt()
+    {
+        // NOTE: This is a side-channel method call. You *cannot*
+        //       mutate any of the regular state in the state machine
+        //       from inside this method, it WILL lead to race conditions.
+        //       Imagine this is always called from a separate thread, while
+        //       the main session worker thread is actively working on mutating
+        //       fields on the session.
+        interruptCounter.incrementAndGet();
+
+        // If there is currently a transaction running, terminate it
+        KernelTransaction tx = this.currentTransaction;
+        if(tx != null)
+        {
+            tx.markForTermination();
+        }
+    }
+
+    @Override
     public void close()
     {
         before( null, null );
@@ -647,6 +734,14 @@ public class SessionStateMachine implements Session, SessionState
         if ( cb != null )
         {
             cb.started( attachment );
+        }
+
+        if( interruptCounter.get() > 0 )
+        {
+            // Force into interrupted state. This is how we 'discover'
+            // that `interrupt` has been called.
+            // First reset, so we clean up any open resources
+            state = state.interrupt( this );
         }
 
         if ( hasTransaction() )

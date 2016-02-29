@@ -116,4 +116,14 @@ public class SessionWorker implements Runnable
             work.accept( session );
         }
     }
+
+    /**
+     * Interrupt this worker, making it cancel any currently active message
+     * processing, and then ignore all inbound messages until a RESET message
+     * is recieved.
+     */
+    public void interrupt()
+    {
+        session.interrupt();
+    }
 }

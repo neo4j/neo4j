@@ -114,8 +114,15 @@ B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30 A3
 ==== RESET
 
 The `RESET` message is a client message used to return the current session to a "clean" state.
+It will cause the session to `IGNORE` any message it is currently processing, as well as any message before `RESET` that had not yet begun processing.
+This allows `RESET` to abort long-running operations.
+It also means clients must be careful about pipelining `RESET`.
+Only send this if you are not currently waiting for a result from a prior message, or if you want to explicitly abort any prior message.
+
 The following actions are performed by `RESET`:
 
+- force any currently processing message to abort with `IGNORE`
+- force any pending messages that have not yet started processing to be `IGNORED`
 - clear any outstanding `FAILURE` state
 - dispose of any outstanding result records
 - rollback the current transaction (if any)
