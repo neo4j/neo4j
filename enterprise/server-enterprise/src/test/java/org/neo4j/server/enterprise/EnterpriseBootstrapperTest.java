@@ -24,13 +24,12 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.server.BaseBootstrapperTest;
 import org.neo4j.server.Bootstrapper;
-import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
 import static org.neo4j.server.CommunityBootstrapper.start;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
@@ -83,24 +82,5 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         // Then
         assertEquals( Bootstrapper.OK, resultCode );
         assertNotNull( bootstrapper.getServer() );
-    }
-
-    @Test
-    public void shouldMigrateFixedPushStrategyInHA() throws Exception
-    {
-        // When
-        start( bootstrapper, commandLineConfig(
-                "-c", configOption( EnterpriseServerSettings.mode.name(), "HA" ),
-                "-c", configOption( ClusterSettings.server_id.name(), "1" ),
-                "-c", configOption( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ),
-                "-c", configOption( HaSettings.tx_push_strategy.name(), "fixed" ),
-                "-c", configOption( data_directory.name(), getRelativePath( folder.getRoot(), data_directory ) ),
-                "-c", configOption( auth_store.name(), getRelativePath( folder.getRoot(), auth_store ) ),
-                "-c", configOption( tls_key_file.name(), getRelativePath( folder.getRoot(), tls_key_file ) ),
-                "-c", configOption( tls_certificate_file.name(), getRelativePath( folder.getRoot(), tls_certificate_file ) )
-        ));
-
-        // Then
-        assertEquals( HaSettings.TxPushStrategy.fixed_descending, bootstrapper.getServer().getConfig().get( HaSettings.tx_push_strategy ) );
     }
 }

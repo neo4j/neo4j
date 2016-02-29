@@ -26,7 +26,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.ConfigWrappingConfiguration;
+import org.neo4j.server.plugins.ConfigAdapter;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginLifecycle;
 import org.neo4j.server.plugins.SPIPluginLifecycle;
@@ -62,7 +62,7 @@ public class ExtensionInitializer
                 }
                 else
                 {
-                    injectables.addAll( lifecycle.start( graphDatabaseService, new ConfigWrappingConfiguration( configuration ) ) );
+                    injectables.addAll( lifecycle.start( graphDatabaseService, new ConfigAdapter( configuration ) ) );
                 }
             }
         }

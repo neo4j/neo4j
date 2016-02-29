@@ -93,7 +93,7 @@ goto endInit
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath %CLASSPATH_PREFIX%;%CLASSPATH% -Dapp.name="neo4j-backup" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.neo4j.backup.BackupTool %CMD_LINE_ARGS%
+%JAVACMD% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath %CLASSPATH_PREFIX%;%CLASSPATH% org.neo4j.backup.BackupTool %CMD_LINE_ARGS%
 if ERRORLEVEL 1 goto error
 goto end
 

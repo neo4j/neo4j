@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
@@ -56,9 +55,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     protected String[] commandLineConfig( String... params )
     {
         ArrayList<String> config = new ArrayList<>();
-
         Collections.addAll( config, params );
-
         return config.toArray( new String[config.size()] );
     }
 
@@ -129,18 +126,6 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "mycustomvalue" ) );
-    }
-
-    private String[] getDefaultPropertiesArray() throws IOException
-    {
-        Map<String,String> properties = ServerTestUtils.getDefaultRelativeProperties();
-        List<String> values = new ArrayList<>();
-        for ( Map.Entry<String,String> entry : properties.entrySet() )
-        {
-            values.add( "-c" );
-            values.add( configOption( entry.getKey(), entry.getValue() ) );
-        }
-        return values.toArray( new String[values.size()] );
     }
 
     protected String configOption( String key, String value )

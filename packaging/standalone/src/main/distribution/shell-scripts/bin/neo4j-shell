@@ -102,10 +102,6 @@ cd "$RUN_FROM"
 exec "$JAVACMD" $JAVA_OPTS \
   $EXTRA_JVM_ARGUMENTS \
   -classpath "$CLASSPATH" \
-  -Dapp.name="neo4j-shell" \
-  -Dapp.pid="$$" \
-  -Dapp.repo="$REPO" \
-  -Dbasedir="$BASEDIR" \
   -Dfile.encoding=UTF-8 \
   org.neo4j.shell.StartClient \
   "$@"

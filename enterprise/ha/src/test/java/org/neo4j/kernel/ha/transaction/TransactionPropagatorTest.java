@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
+import java.util.Collections;
+
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.Collections;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.Response;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
@@ -39,6 +38,7 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.Log;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyString;
@@ -46,6 +46,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
@@ -117,20 +118,6 @@ public class TransactionPropagatorTest
     {
         // GIVEN
         Configuration propagator = TransactionPropagator.from( new Config( stringMap( tx_push_strategy.name(), fixed_descending.name() )));
-        SlavePriority strategy = propagator.getReplicationStrategy();
-
-        // WHEN
-        Iterable<Slave> prioritize = strategy.prioritize( asList( slave( 1 ), slave( 0 ), slave( 2 ) ) );
-
-        // THEN
-        assertThat( Iterables.toList(prioritize), equalTo( asList( slave( 2 ), slave( 1 ), slave( 0 ) ) ) );
-    }
-
-    @Test
-    public void shouldWorkWithOldFixedKeyword() throws Exception
-    {
-        // GIVEN
-        Configuration propagator = TransactionPropagator.from( new Config( stringMap( tx_push_strategy.name(), "fixed" ), HaSettings.class ));
         SlavePriority strategy = propagator.getReplicationStrategy();
 
         // WHEN

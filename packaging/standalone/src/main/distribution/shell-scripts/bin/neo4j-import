@@ -102,9 +102,5 @@ cd "$RUN_FROM"
 exec "$JAVACMD" $JAVA_OPTS \
   $EXTRA_JVM_ARGUMENTS \
   -classpath "$CLASSPATH" \
-  -Dapp.name="neo4j-import" \
-  -Dapp.pid="$$" \
-  -Dapp.repo="$REPO" \
-  -Dbasedir="$BASEDIR" \
   org.neo4j.tooling.ImportTool \
   "$@"
