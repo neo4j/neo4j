@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.DirectRecordStoreMigrator;
+import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.StoreMigratorCheckPointer;
@@ -169,16 +170,10 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                         progressMonitor, oldFormat, newFormat );
             }
         }
-        else
+
+        if ( versionToMigrateFrom.equals( LowLimitV2_1.STORE_VERSION ) )
         {
-            // This means that the formats are the same, not that the store versions are the same.
-            // Store version may change between versions to signal other things, so we may still have
-            // to do some amount of migration here.
-            if ( versionToMigrateFrom.equals( LowLimitV2_1.STORE_VERSION ) )
-            {
-                removeDuplicateEntityProperties(
-                        storeDir, migrationDir, pageCache, schemaIndexProvider, oldFormat );
-            }
+            removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider, oldFormat );
         }
 
         // DO NOT migrate logs. LegacyLogs is able to migrate logs, but only changes its format, not any
@@ -310,14 +305,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 StoreFile.PROPERTY_STRING_STORE,
                 StoreFile.NODE_STORE,
                 StoreFile.NODE_LABEL_STORE,
-                StoreFile.SCHEMA_STORE ), false, false, StoreFileType.STORE );
+                StoreFile.SCHEMA_STORE ), false, ExistingTargetStrategy.SKIP, StoreFileType.STORE );
 
         // copy ids only if present
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.<StoreFile,StoreFile>iterable(
                 StoreFile.PROPERTY_STORE,
                 StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
                 StoreFile.PROPERTY_KEY_TOKEN_STORE,
-                StoreFile.NODE_STORE ), true, false, StoreFileType.ID );
+                StoreFile.NODE_STORE ), true, ExistingTargetStrategy.SKIP, StoreFileType.ID );
 
         // let's remove trailers here on the copied files since the new code doesn't remove them since in 2.3
         // there are no store trailers
@@ -379,23 +374,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true,
                             Collectors.badCollector( badOutput, 0 ) ) );
 
-            // During migration the batch importer only writes node, relationship, relationship group and counts stores.
-            // Delete the property store files from the batch import migration so that even if we won't
-            // migrate property stores as part of deduplicating property key tokens or properties then
-            // we won't move these empty property store files to the store directory, overwriting the old ones.
+            // During migration the batch importer doesn't necessarily writes all entities, depending on
+            // which stores needs migration. Node, relationship, relationship group stores are always written
+            // anyways and cannot be avoided with the importer, but delete the store files that weren't written
+            // (left empty) so that we don't overwrite those in the real store directory later.
             Collection<StoreFile> storesToDeleteFromMigratedDirectory = new ArrayList<>();
-            if ( oldFormat.node().equals( newFormat.node() ) )
-            {
-                storesToDeleteFromMigratedDirectory.add( StoreFile.NODE_STORE );
-            }
-            if ( oldFormat.relationship().equals( newFormat.relationship() ) )
-            {
-                storesToDeleteFromMigratedDirectory.add( StoreFile.RELATIONSHIP_STORE );
-            }
-            if ( oldFormat.relationshipGroup().equals( newFormat.relationshipGroup() ) )
-            {
-                storesToDeleteFromMigratedDirectory.add( StoreFile.RELATIONSHIP_GROUP_STORE );
-            }
+            storesToDeleteFromMigratedDirectory.add( StoreFile.NEO_STORE );
             if ( !requiresPropertyMigration )
             {
                 // We didn't migrate properties, so the property stores in the migrated store are just empty/bogus
@@ -406,7 +390,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             }
             if ( !requiresDynamicStoreMigration )
             {
-                // We didn't migrate labels (dynamic node labels)
+                // We didn't migrate labels (dynamic node labels) or any other dynamic store
                 storesToDeleteFromMigratedDirectory.addAll( asList(
                         StoreFile.NODE_LABEL_STORE,
                         StoreFile.LABEL_TOKEN_STORE,
@@ -418,7 +402,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                         StoreFile.SCHEMA_STORE ) );
             }
             StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null, storesToDeleteFromMigratedDirectory,
-                    true, false, StoreFileType.values() );
+                    true, null, StoreFileType.values() );
         }
 
         // The batch importer will create a whole store. so
@@ -426,7 +410,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null,
                 StoreFile.currentStoreFiles(),
                 true, // allow to skip non existent source files
-                false, // not allow to overwrite target files
+                null,
                 StoreFileType.ID );
     }
 
@@ -454,7 +438,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             Iterable<StoreFile> storeFiles = iterable( StoreFile.NODE_LABEL_STORE );
             StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, storeFiles,
                     true, // OK if it's not there (1.9)
-                    false, StoreFileType.values() );
+                    ExistingTargetStrategy.FAIL, StoreFileType.values() );
         }
         else
         {
@@ -623,7 +607,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         // Move the migrated ones into the store directory
         StoreFile.fileOperation( MOVE, fileSystem, migrationDir, storeDir, StoreFile.currentStoreFiles(),
                 true, // allow to skip non existent source files
-                true, // allow to overwrite target files
+                ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
                 StoreFileType.values() );
 
         RecordFormats oldFormat = InternalRecordFormatSelector.fromVersion( versionToUpgradeFrom );
@@ -664,7 +648,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             Iterable<StoreFile> countsStoreFiles =
                     Iterables.iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
             StoreFile.fileOperation( DELETE, fileSystem, storeDir, storeDir,
-                    countsStoreFiles, true, false, StoreFileType.STORE );
+                    countsStoreFiles, true, null, StoreFileType.STORE );
             File neoStore = new File( storeDir, DEFAULT_NAME );
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
             rebuildCountsFromScratch( storeDir, lastTxId, pageCache );

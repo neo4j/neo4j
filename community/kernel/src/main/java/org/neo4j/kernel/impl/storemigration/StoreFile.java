@@ -222,15 +222,16 @@ public enum StoreFile
     public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
             File toDirectory, StoreFile... files ) throws IOException
     {
-        fileOperation( operation, fs, fromDirectory, toDirectory, storeFiles( files ), false, false );
+        fileOperation( operation, fs, fromDirectory, toDirectory, storeFiles( files ), false,
+                ExistingTargetStrategy.FAIL );
     }
 
     public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
             File toDirectory, Iterable<StoreFile> files,
-            boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget ) throws IOException
+            boolean allowSkipNonExistentFiles, ExistingTargetStrategy existingTargetStrategy ) throws IOException
     {
         fileOperation( operation, fs, fromDirectory, toDirectory, files, allowSkipNonExistentFiles,
-                allowOverwriteTarget, StoreFileType.values() );
+                existingTargetStrategy, StoreFileType.values() );
     }
 
     /**
@@ -244,7 +245,7 @@ public enum StoreFile
      */
     public static void fileOperation( FileOperation operation, FileSystemAbstraction fs, File fromDirectory,
             File toDirectory, Iterable<StoreFile> files,
-            boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget,
+            boolean allowSkipNonExistentFiles, ExistingTargetStrategy existingTargetStrategy,
             StoreFileType... types ) throws IOException
     {
         // TODO: change the order of files to handle failure conditions properly
@@ -254,7 +255,7 @@ public enum StoreFile
             {
                 String fileName = storeFile.fileName( type );
                 operation.perform( fs, fileName,
-                        fromDirectory, allowSkipNonExistentFiles, toDirectory, allowOverwriteTarget );
+                        fromDirectory, allowSkipNonExistentFiles, toDirectory, existingTargetStrategy );
             }
         }
     }
