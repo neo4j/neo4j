@@ -19,6 +19,10 @@
  */
 package org.neo4j.server;
 
+import com.sun.jersey.api.core.HttpContext;
+import org.apache.commons.configuration.Configuration;
+import org.bouncycastle.operator.OperatorCreationException;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -31,10 +35,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
-
-import com.sun.jersey.api.core.HttpContext;
-import org.apache.commons.configuration.Configuration;
-import org.bouncycastle.operator.OperatorCreationException;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -53,7 +53,6 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.plugins.ConfigAdapter;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.CypherExecutorProvider;
@@ -64,6 +63,7 @@ import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
+import org.neo4j.server.plugins.ConfigAdapter;
 import org.neo4j.server.plugins.PluginInvocatorProvider;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.paging.LeaseManager;
@@ -76,7 +76,7 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.security.auth.BasicAuthManager;
+import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
@@ -84,7 +84,6 @@ import org.neo4j.server.web.WebServerProvider;
 import static java.lang.Math.round;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
@@ -123,7 +122,7 @@ public abstract class AbstractNeoServer implements NeoServer
     protected CypherExecutor cypherExecutor;
     protected WebServer webServer;
 
-    protected Supplier<BasicAuthManager> authManagerSupplier;
+    protected Supplier<AuthManager> authManagerSupplier;
     protected Optional<KeyStoreInformation> keyStoreInfo;
 
     private DatabaseActions databaseActions;
@@ -157,7 +156,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( config, dependencies)) );
 
-        this.authManagerSupplier = dependencyResolver.provideDependency( BasicAuthManager.class );
+        this.authManagerSupplier = dependencyResolver.provideDependency( AuthManager.class );
         this.webServer = createWebServer();
 
         this.keyStoreInfo = createKeyStore();
@@ -554,17 +553,17 @@ public abstract class AbstractNeoServer implements NeoServer
         return singletons;
     }
 
-    private static class AuthManagerProvider extends InjectableProvider<BasicAuthManager>
+    private static class AuthManagerProvider extends InjectableProvider<AuthManager>
     {
-        private final Supplier<BasicAuthManager> authManagerSupplier;
-        private AuthManagerProvider( Supplier<BasicAuthManager> authManagerSupplier )
+        private final Supplier<AuthManager> authManagerSupplier;
+        private AuthManagerProvider( Supplier<AuthManager> authManagerSupplier )
         {
-            super(BasicAuthManager.class);
+            super(AuthManager.class);
             this.authManagerSupplier = authManagerSupplier;
         }
 
         @Override
-        public BasicAuthManager getValue( HttpContext httpContext )
+        public AuthManager getValue( HttpContext httpContext )
         {
             return authManagerSupplier.get();
         }

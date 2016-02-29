@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.security.auth.BasicAuthManager;
+import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.web.XForwardUtil;
 
 import static java.lang.String.format;
@@ -54,11 +54,11 @@ public class AuthorizationFilter implements Filter
 {
     private static final Pattern PASSWORD_CHANGE_WHITELIST = Pattern.compile( "/user/.*" );
 
-    private final Supplier<BasicAuthManager> authManagerSupplier;
+    private final Supplier<AuthManager> authManagerSupplier;
     private final Log log;
     private final Pattern[] uriWhitelist;
 
-    public AuthorizationFilter( Supplier<BasicAuthManager> authManager, LogProvider logProvider, Pattern... uriWhitelist )
+    public AuthorizationFilter( Supplier<AuthManager> authManager, LogProvider logProvider, Pattern... uriWhitelist )
     {
         this.authManagerSupplier = authManager;
         this.log = logProvider.getLog( getClass() );
@@ -104,7 +104,7 @@ public class AuthorizationFilter implements Filter
         final String username = usernameAndPassword[0];
         final String password = usernameAndPassword[1];
 
-        BasicAuthManager authManager = authManagerSupplier.get();
+        AuthManager authManager = authManagerSupplier.get();
         switch ( authManager.authenticate( username, password ) )
         {
             case PASSWORD_CHANGE_REQUIRED:
