@@ -22,6 +22,7 @@ package org.neo4j.graphdb;
 import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -43,6 +44,8 @@ import static org.junit.Assert.fail;
 
 public class GraphDatabaseServiceTest
 {
+    @Rule public ExpectedException exception = ExpectedException.none();
+
     @Test
     public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown() throws Exception
     {
@@ -51,17 +54,11 @@ public class GraphDatabaseServiceTest
 
         db.shutdown();
 
+        // Expect
+        exception.expect( DatabaseShutdownException.class );
+
         // When
-        try
-        {
-            db.beginTx();
-            fail();
-        }
-        catch ( Exception e )
-        {
-            // Then
-            assertThat( e.getClass().getName(), CoreMatchers.equalTo( DatabaseShutdownException.class.getName() ) );
-        }
+        db.beginTx();
     }
 
     @Test

@@ -26,6 +26,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -68,11 +69,11 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
     {
         if ( transaction == null )
         {
-            throw new NotInTransactionException();
+            throw new BridgeNotInTransactionException();
         }
         if ( transaction.shouldBeTerminated() )
         {
-            throw new TransactionTerminatedException();
+            throw new BridgeTransactionTerminatedException();
         }
     }
 
@@ -92,7 +93,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
     {
         if ( isShutdown )
         {
-            throw new DatabaseShutdownException();
+            throw new BridgeDatabaseShutdownException();
         }
     }
 
@@ -110,5 +111,33 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
     {
         checkIfShutdown();
         return getTopLevelTransactionBoundToThisThread( strict );
+    }
+
+    // Exeptions below extend the public API exceptions with versions that have status codes.
+    private static class BridgeNotInTransactionException extends NotInTransactionException implements Status.HasStatus
+    {
+        @Override
+        public Status status()
+        {
+            return Status.Request.NotInTransaction;
+        }
+    }
+
+    private static class BridgeTransactionTerminatedException extends TransactionTerminatedException implements Status.HasStatus
+    {
+        @Override
+        public Status status()
+        {
+            return Status.Transaction.Terminated;
+        }
+    }
+
+    private static class BridgeDatabaseShutdownException extends DatabaseShutdownException implements Status.HasStatus
+    {
+        @Override
+        public Status status()
+        {
+            return Status.General.DatabaseUnavailable;
+        }
     }
 }

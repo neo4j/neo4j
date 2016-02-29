@@ -74,7 +74,9 @@ public interface Status
         // client
         Invalid( ClientError, "The client provided an invalid request." ),
         InvalidFormat( ClientError, "The client provided a request that was missing required fields, or had values " +
-                "that are not allowed." );
+                "that are not allowed." ),
+        NotInTransaction( ClientError, "The request cannot be performed outside of a transaction, and there is no " +
+                                       "transaction present to use. Wrap your request in a transaction and retry." );
         private final Code code;
 
         @Override
@@ -111,6 +113,15 @@ public interface Status
         DeadlockDetected( TransientError, "This transaction, and at least one more transaction, has acquired locks " +
         "in a way that it will wait indefinitely, and the database has aborted it. Retrying this transaction " +
         "will most likely be successful."),
+
+        Terminated( ClientError,
+                "The current transaction has been marked as terminated, meaning no more " +
+                "interactions with it are allowed. There are several reasons this happens - " +
+                "the client might have asked for the transaction to be terminated, an operator " +
+                "might have asked for the database to be shut down, or the current instance " +
+                "is about to go through a cluster role switch. Simply retry your operation in a " +
+                "new transaction."),
+
 
         InstanceStateChanged( TransientError,
                 "Transactions rely on assumptions around the state of the Neo4j instance they " +
@@ -459,12 +470,19 @@ public interface Status
         /** There are notifications about the request sent by the client.*/
         ClientNotification( TransactionEffect.NONE, PublishingPolicy.PUBLISHABLE,
                 "There are notifications about the request sent by the client." ),
-        /** The database failed to service the request. */
-        DatabaseError( TransactionEffect.ROLLBACK, PublishingPolicy.INTERNAL,
-                "The database failed to service the request. " ),
+
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
         TransientError( TransactionEffect.ROLLBACK, PublishingPolicy.PUBLISHABLE,
                 "The database cannot service the request right now, retrying later might yield a successful outcome. "),
+
+        // Implementation note: These are a sharp tool, database error signals
+        // that something is *seriously* wrong, and will prompt the user to send
+        // an error report back to us. Only use this if the code path you are
+        // at would truly indicate the database is in a broken or bug-induced state.
+        /** The database failed to service the request. */
+        DatabaseError( TransactionEffect.ROLLBACK, PublishingPolicy.INTERNAL,
+                "The database failed to service the request. " ),
+
         ;
 
         private enum TransactionEffect
