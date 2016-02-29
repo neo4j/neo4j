@@ -19,26 +19,21 @@
  */
 package org.neo4j.kernel.configuration;
 
-import java.util.Collections;
+import org.junit.Test;
+
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
@@ -75,28 +70,6 @@ public class ConfigTest
 
         public static Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
 
-    }
-
-    private class ChangeCaptureListener implements ConfigurationChangeListener
-    {
-        private Set<ConfigurationChange> lastChangeSet;
-
-        @Override
-        public void notifyConfigurationChanges( Iterable<ConfigurationChange> change )
-        {
-            lastChangeSet = new HashSet<>();
-            for ( ConfigurationChange ch : change )
-            {
-                lastChangeSet.add( ch );
-            }
-        }
-    }
-
-    private <T> Set<T> setOf( T... objs )
-    {
-        Set<T> set = new HashSet<>();
-        Collections.addAll( set, objs );
-        return set;
     }
 
     @Test
@@ -137,37 +110,6 @@ public class ConfigTest
         assertThat( config.get( setting( "newer", STRING, "" ) ), equalTo( "new" ) );
         assertThat( config.get( setting( "non-overlapping", STRING, "" ) ), equalTo( "huzzah" ) );
         assertThat( config.get( setting( "unrelated", STRING, "" ) ), equalTo( "hello" ) );
-    }
-
-    @Test
-    public void shouldNotifyChangeListenersWhenNewSettingsAreApplied()
-    {
-        // Given
-        Config config = new Config( stringMap( "setting", "old" ), MyMigratingSettings.class );
-        ChangeCaptureListener listener = new ChangeCaptureListener();
-        config.addConfigurationChangeListener( listener );
-
-        // When
-        config.augment( stringMap( "setting", "new" ) );
-
-        // Then
-        assertThat( listener.lastChangeSet,
-                is( setOf( new ConfigurationChange( "setting", "old", "new" ) ) ) );
-    }
-
-    @Test
-    public void shouldNotNotifyChangeListenerWhenNothingChanged()
-    {
-        // Given
-        Config config = new Config( stringMap( "setting", "old" ), MyMigratingSettings.class );
-        ChangeCaptureListener listener = new ChangeCaptureListener();
-        config.addConfigurationChangeListener( listener );
-
-        // When
-        config.augment( stringMap( "setting", "old" ) ); // nothing really changed here
-
-        // Then
-        assertThat( listener.lastChangeSet, nullValue() );
     }
 
     @Test
