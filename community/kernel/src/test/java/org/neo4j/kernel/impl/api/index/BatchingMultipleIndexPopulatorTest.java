@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +39,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -191,7 +191,7 @@ public class BatchingMultipleIndexPopulatorTest
         batchingPopulator.indexAllNodes().run();
 
         verify( populator1 ).add( Arrays.asList( update1, update2, update3 ) );
-        verify( populator42 ).add( Collections.singletonList( update42 ) );
+        verify( populator42 ).add( singletonList( update42 ) );
     }
 
     @Test
@@ -212,7 +212,7 @@ public class BatchingMultipleIndexPopulatorTest
         batchingPopulator.indexAllNodes().run();
 
         verify( populator ).add( Arrays.asList( update1, update2 ) );
-        verify( populator ).add( Collections.singletonList( update3 ) );
+        verify( populator ).add( singletonList( update3 ) );
     }
 
     @Test
@@ -245,6 +245,34 @@ public class BatchingMultipleIndexPopulatorTest
         }
 
         verify( populator ).markAsFailed( failure( batchFlushError ).asString() );
+    }
+
+    @Test
+    public void populatorMarkedAsFailedAndUpdatesNotAdded() throws Exception
+    {
+        setProperty( BATCH_SIZE_NAME, 2 );
+
+        NodePropertyUpdate update1 = NodePropertyUpdate.add( 1, 1, "aaa", new long[]{1} );
+        NodePropertyUpdate update2 = NodePropertyUpdate.add( 1, 1, "bbb", new long[]{1} );
+        NodePropertyUpdate update3 = NodePropertyUpdate.add( 1, 1, "ccc", new long[]{1} );
+        NodePropertyUpdate update4 = NodePropertyUpdate.add( 1, 1, "ddd", new long[]{1} );
+        NodePropertyUpdate update5 = NodePropertyUpdate.add( 1, 1, "eee", new long[]{1} );
+        IndexStoreView storeView = newStoreView( update1, update2, update3, update4, update5 );
+
+        RuntimeException batchFlushError = new RuntimeException( "Batch failed" );
+
+        BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
+                sameThreadExecutor(), NullLogProvider.getInstance() );
+
+        IndexPopulator populator = addPopulator( batchingPopulator, 1 );
+        doThrow( batchFlushError ).when( populator ).add( Arrays.asList( update3, update4 ) );
+
+        batchingPopulator.indexAllNodes().run();
+
+        verify( populator ).add( Arrays.asList( update1, update2 ) );
+        verify( populator ).add( Arrays.asList( update3, update4 ) );
+        verify( populator ).markAsFailed( failure( batchFlushError ).asString() );
+        verify( populator, never() ).add( singletonList( update5 ) );
     }
 
     private static IndexPopulator addPopulator( BatchingMultipleIndexPopulator batchingPopulator, int id )
