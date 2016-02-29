@@ -19,6 +19,14 @@
  */
 package org.neo4j.doc.cypherdoc;
 
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
+
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -27,20 +35,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Matchers;
-
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult;
-import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -52,13 +54,18 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assume.assumeFalse;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class BlockTypeTest
 {
     private GraphDatabaseCypherService database;
-    private DocsExecutionEngine engine;
     private State state;
 
     @Rule
@@ -83,11 +90,10 @@ public class BlockTypeTest
     @Before
     public void setup() throws SQLException
     {
-        database = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase());
-        engine = new DocsExecutionEngine( database );
+        database = new GraphDatabaseCypherService( new TestGraphDatabaseFactory().newImpermanentDatabase() );
         Connection conn = DriverManager.getConnection( "jdbc:hsqldb:mem:graphgisttests;shutdown=true" );
         conn.setAutoCommit( true );
-        state = new State( engine, database, conn, null, "" );
+        state = new State( database, conn, null, "" );
     }
 
     @After
@@ -219,7 +225,7 @@ public class BlockTypeTest
     @Test
     public void graph()
     {
-        engine.execute( "CREATE (n:Person {name:\"Adam\"});" );
+        database.getGraphDatabaseService().execute( "CREATE (n:Person {name:\"Adam\"});" );
         Block block = Block.getBlock( Arrays.asList( "// graph:xyz" ) );
         assertThat( block.type, sameInstance( BlockType.GRAPH ) );
         String output;
@@ -273,16 +279,16 @@ public class BlockTypeTest
     @Test
     public void graphWithoutId()
     {
-        engine.execute( "CREATE (n:Person {name:\"Adam\"});" );
+        database.getGraphDatabaseService().execute( "CREATE (n:Person {name:\"Adam\"});" );
         Block block = Block.getBlock( Arrays.asList( "//graph" ) );
         assertThat( block.type, sameInstance( BlockType.GRAPH ) );
         String output;
         output = block.process( state );
 
         assertThat(
-            output,
-            allOf( startsWith( "[\"dot\"" ), containsString( "Adam" ), containsString( "cypherdoc--" ),
-                    containsString( ".svg" ), containsString( "neoviz" ) ) );
+                output,
+                allOf( startsWith( "[\"dot\"" ), containsString( "Adam" ), containsString( "cypherdoc--" ),
+                        containsString( ".svg" ), containsString( "neoviz" ) ) );
     }
 
     @Test
@@ -332,21 +338,24 @@ public class BlockTypeTest
         // given
         List<String> myQuery = Arrays.asList( "[source, cypher]", "----", "LOAD CSV FROM \"my_file.csv\" AS line",
                 "RETURN line;", "----" );
+        GraphDatabaseCypherService database = mock( GraphDatabaseCypherService.class );
+        GraphDatabaseFacade graph = mock( GraphDatabaseFacade.class );
+        Schema schema = mock( Schema.class );
+        when( graph.schema() ).thenReturn( schema );
+        doNothing().when( schema ).awaitIndexesOnline( anyLong(), any( TimeUnit.class ) );
+        when( database.getGraphDatabaseService() ).thenReturn( graph );
+        when( database.beginTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ) ) )
+                .thenReturn( mock( InternalTransaction.class ) );
         Block block = new Block( myQuery, BlockType.CYPHER );
-        DocsExecutionEngine engine = mock( DocsExecutionEngine.class );
-        InternalExecutionResult result = mock( InternalExecutionResult.class );
-        ResourceIterator iterator = mock( ResourceIterator.class );
+        org.neo4j.graphdb.Result result = mock( org.neo4j.graphdb.Result.class );
         ArgumentCaptor<String> fileQuery = ArgumentCaptor.forClass( String.class );
         ArgumentCaptor<String> httpQuery = ArgumentCaptor.forClass( String.class );
 
-        when( engine.profile( fileQuery.capture(), Matchers.eq( Collections.<String, Object>emptyMap() ) ) ).thenReturn(
-                result );
+        when( graph.execute( fileQuery.capture(), eq( Collections.<String,Object>emptyMap() ) ) )
+                .thenReturn( result );
 
-        when( result.javaIterator() ).thenReturn( iterator );
-
-        when( engine.prettify( httpQuery.capture() ) ).thenReturn( "apa" );
-
-        state = new State( engine, database, null, new File( "/dev/null" ), "http://myurl" );
+        state = spy( new State( database, null, new File( "/dev/null" ), "http://myurl" ) );
+        doReturn( "apa" ).when( state ).prettify( httpQuery.capture() );
         state.knownFiles.add( "my_file.csv" );
 
 

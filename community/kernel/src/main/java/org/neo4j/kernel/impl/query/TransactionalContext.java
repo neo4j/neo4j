@@ -19,21 +19,37 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.Map;
-
-import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.txstate.TxStateHolder;
 
-public interface QueryExecutionEngine
+public interface TransactionalContext
 {
-    GraphDatabaseQueryService queryService();
+    ReadOperations readOperations();
 
-    Result executeQuery( String query, Map<String, Object> parameters, QuerySession querySession ) throws QueryExecutionKernelException;
+    boolean isTopLevelTx();
 
-    Result profileQuery( String query, Map<String, Object> parameters, QuerySession querySession) throws QueryExecutionKernelException;
+    void close( boolean success );
 
-    boolean isPeriodicCommit( String query );
+    void commitAndRestartTx();
 
-    String prettify( String query );
+    void cleanForReuse();
+
+    TransactionalContext provideContext();
+
+    boolean isOpen();
+
+    GraphDatabaseQueryService graph();
+
+    Statement statement();
+
+    TxStateHolder stateView();
+
+    Lock acquireWriteLock( PropertyContainer p );
+
+    QuerySession.MetadataKey<TransactionalContext>
+            metadataKey = new QuerySession.MetadataKey<>( TransactionalContext.class, "transaction context" );
 }
-

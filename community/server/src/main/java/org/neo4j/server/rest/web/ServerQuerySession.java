@@ -22,13 +22,15 @@ package org.neo4j.server.rest.web;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 
 public class ServerQuerySession extends QuerySession
 {
     private final HttpServletRequest request;
 
-    public ServerQuerySession( HttpServletRequest request )
+    public ServerQuerySession( HttpServletRequest request, TransactionalContext transactionalContext )
     {
+        super( transactionalContext );
         this.request = request;
     }
 

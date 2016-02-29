@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.ExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows}
@@ -28,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.helpers.TxCounts
+import org.neo4j.graphdb.QueryExecutionException
 
 import scala.reflect.ClassTag
 
@@ -101,10 +101,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("PROFILE for Cypher 2.3") {
-    val result = eengine.profile("cypher 2.3 match (n) where (n)-[:FOO]->() return *")
+    val result = graph.execute("cypher 2.3 profile match (n) where (n)-[:FOO]->() return *")
 
-    assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    result.executionPlanDescription().toString should include("DB Hits")
+    assert(result.getQueryExecutionType.requestedExecutionPlanDescription, "result not marked with planDescriptionRequested")
+    result.getExecutionPlanDescription.toString should include("DB Hits")
   }
 
   test("match (n) where not (n)-[:FOO]->() return *") {
@@ -128,21 +128,23 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("unfinished profiler complains [using MATCH]") {
     //GIVEN
     createNode("foo" -> "bar")
-    val result: ExecutionResult = eengine.profile("match (n) where id(n) = 0 RETURN n")
+    val result = graph.execute("PROFILE match (n) where id(n) = 0 RETURN n")
 
     //WHEN THEN
-    intercept[ProfilerStatisticsNotReadyException](result.executionPlanDescription())
-    result.toList // need to exhaust the results to ensure that the transaction is closed
+    val ex = intercept[QueryExecutionException](result.getExecutionPlanDescription)
+    ex.getCause.getCause shouldBe a [ProfilerStatisticsNotReadyException]
+    result.close() // ensure that the transaction is closed
   }
 
   test("unfinished profiler complains [using CALL]") {
     //GIVEN
     createLabeledNode("Person")
-    val result: ExecutionResult = eengine.profile("CALL db.labels")
+    val result = graph.execute("PROFILE CALL db.labels")
 
     //WHEN THEN
-    intercept[ProfilerStatisticsNotReadyException](result.executionPlanDescription())
-    result.toList // need to exhaust the results to ensure that the transaction is closed
+    val ex = intercept[QueryExecutionException](result.getExecutionPlanDescription)
+    ex.getCause.getCause shouldBe a [ProfilerStatisticsNotReadyException]
+    result.close() // ensure that the transaction is closed
   }
 
   test("tracks number of rows") {
@@ -334,14 +336,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("reports COST planner when showing plan description") {
-    val result = eengine.execute("CYPHER planner=cost match (n) return n")
-    result.toList
-    val executionPlanDescription = result.executionPlanDescription()
-    executionPlanDescription.toString should include("Planner COST" + System.lineSeparator())
+    val result = graph.execute("CYPHER planner=cost match (n) return n")
+    result.resultAsString()
+    result.getExecutionPlanDescription.toString should include("Planner COST" + System.lineSeparator())
   }
 
   test("reports RULE planner when showing plan description") {
-    val executionPlanDescription = eengine.execute("CYPHER planner=rule create ()").executionPlanDescription()
+    val executionPlanDescription = graph.execute("CYPHER planner=rule create ()").getExecutionPlanDescription()
 
     executionPlanDescription.toString should not include "Planner COST"
     executionPlanDescription.toString should include("Planner RULE" + System.lineSeparator())
@@ -458,9 +459,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("should throw if accessing profiled results before they have been materialized") {
     createNode()
-    val res = eengine.execute("profile match (n) return n")
-    intercept[ProfilerStatisticsNotReadyException](res.executionPlanDescription())
-    res.close()
+    val result = graph.execute("profile match (n) return n")
+
+    val ex = intercept[QueryExecutionException](result.getExecutionPlanDescription)
+    ex.getCause.getCause shouldBe a [ProfilerStatisticsNotReadyException]
+    result.close() // ensure that the transaction is closed
   }
 
   test("should handle cartesian products") {

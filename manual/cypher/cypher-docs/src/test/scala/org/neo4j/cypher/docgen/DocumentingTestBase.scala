@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 import org.junit.{After, Before}
-import org.neo4j.cypher.{TestFriendlyExecutionEngine, CypherException}
 import org.neo4j.cypher.example.JavaExecutionEngineDocTest
 import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
@@ -34,17 +33,15 @@ import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.javacompat.GraphImpl
 import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.cypher.{CypherException, ExecutionEngineHelper}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.index.Index
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.configuration.Settings
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.api.index.IndexingService
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.query.QueryEngineProvider
-import org.neo4j.kernel.impl.query.QueryEngineProvider.embeddedSession
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
 import org.neo4j.test.{AsciiDocGenerator, GraphDescription, TestGraphDatabaseFactory}
 import org.neo4j.visualization.asciidoc.AsciidocHelper
@@ -55,7 +52,7 @@ import org.scalatest.junit.JUnitSuite
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
-trait DocumentationHelper extends GraphIcing with TestFriendlyExecutionEngine {
+trait DocumentationHelper extends GraphIcing with ExecutionEngineHelper {
   def generateConsole: Boolean
   def db: GraphDatabaseCypherService
 
@@ -192,8 +189,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     }
 
     try {
-      val results = engine.profile(query)
-      val result = RewindableExecutionResult(results)
+      val result = profile(query)
 
       if (expectedException.isDefined) {
         fail(s"Expected the test to throw an exception: $expectedException")
@@ -309,7 +305,8 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
     val results = planners.flatMap {
       case s if expectedException.isEmpty =>
-        val rewindable = RewindableExecutionResult(engine.execute(s"$s $query", parameters,embeddedSession()))
+        val rewindable = RewindableExecutionResult(engine.execute(s"$s $query", parameters, db.session()))
+
         db.inTx(assertions(rewindable))
         val dump = rewindable.dumpToString()
         if (graphvizExecutedAfter && s == planners.head) {
@@ -320,7 +317,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
         Some(dump)
 
       case s =>
-        val e = intercept[CypherException](engine.execute(s"$s $query", parameters,embeddedSession()))
+        val e = intercept[CypherException](engine.execute(s"$s $query", parameters, db.session()))
         val expectedExceptionType = expectedException.get
         e match {
           case expectedExceptionType(typedE) => expectedCaught(typedE)
@@ -357,6 +354,10 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   val setupQueries: List[String] = List()
   val setupConstraintQueries: List[String] = List()
 
+  // these 2 methods are need by ExecutionEngineHelper to do its job
+  override def graph = db
+  override def eengine = engine
+
   def indexProps: List[String] = List()
 
   def dumpToFileWithResult(dir: File, writer: PrintWriter, title: String, query: String, returns: String, text: String,
@@ -386,8 +387,8 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     executeQueries(queries)
   }
 
-  def executeQueries(queries: List[String]) {
-    queries.foreach( q => engine.execute(q, Map.empty[String,Object], QueryEngineProvider.embeddedSession()))
+  private def executeQueries(queries: List[String]) {
+    queries.foreach { q => engine.execute(q, Map.empty[String, Object], db.session()) }
   }
 
   protected def sampleAllIndicesAndWait(mode: IndexSamplingMode = IndexSamplingMode.TRIGGER_REBUILD_ALL, time: Long = 10, unit: TimeUnit = TimeUnit.SECONDS) = {

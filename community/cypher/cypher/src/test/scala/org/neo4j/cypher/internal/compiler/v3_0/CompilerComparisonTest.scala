@@ -23,7 +23,6 @@ import java.io.{File, FileWriter}
 import java.text.NumberFormat
 import java.util.{Date, Locale}
 
-import org.neo4j.cypher.internal.Neo4jTransactionContext
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
@@ -33,14 +32,15 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
-import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.coreapi.{PropertyContainerLocker, InternalTransaction}
+import org.neo4j.kernel.impl.query.{TransactionalContext, Neo4jTransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.xml.Elem
@@ -539,16 +539,16 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
   }
 
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseQueryService): (List[Map[String, Any]], InternalExecutionResult) = {
-    val (plan: ExecutionPlan, parameters) = db.withTx {
-      tx =>
-        val transactionalContext = new Neo4jTransactionContext(db, tx, db.statement)
+    val (plan: ExecutionPlan, parameters) = db.withTxAndSession {
+      (tx, session) =>
+        val transactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.metadataKey))
         val planContext = new TransactionBoundPlanContext(transactionalContext)
         compiler.planQuery(query, planContext, devNullLogger)
     }
 
-    db.withTx {
-      tx =>
-        val transactionalContext = new Neo4jTransactionContext(db, tx, db.statement)
+    db.withTxAndSession {
+      (tx, session) =>
+        val transactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.metadataKey))
         val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
         val result = plan.run(queryContext, ProfileMode, parameters)
         (result.toList, result)

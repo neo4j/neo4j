@@ -22,15 +22,16 @@ package org.neo4j.cypher.internal
 import java.io.PrintWriter
 import java.util
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_0, exceptionHandlerFor2_3, exceptionHandlerFor3_0}
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalExecutionResult, READ_WRITE, _}
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, Children, Id, InternalPlanDescription, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor
-import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
-import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.frontend.v2_3.{notification => notification_2_3}
+import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, notification}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
 object RewindableExecutionResult {
@@ -41,7 +42,7 @@ object RewindableExecutionResult {
           new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
             other.executionMode, READ_WRITE) {
             override def executionPlanDescription(): InternalPlanDescription = super.executionPlanDescription()
-              .addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
+              .addArgument(Arguments.Planner(planner.name)).addArgument(Arguments.Runtime(runtime.name))
           }
         }
       case other: StandardInternalExecutionResult =>
@@ -114,11 +115,74 @@ object RewindableExecutionResult {
 
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
-    override def executionPlanDescription(): InternalPlanDescription = ???
+    override def executionPlanDescription(): InternalPlanDescription = lift(inner.executionPlanDescription())
+
+    private def lift(planDescription: v2_3.planDescription.InternalPlanDescription): InternalPlanDescription = {
+      val name: String = planDescription.name
+      val children: Children = planDescription.children match {
+        case v2_3.planDescription.NoChildren => NoChildren
+        case v2_3.planDescription.SingleChild(child) => SingleChild(lift(child))
+        case v2_3.planDescription.TwoChildren(left, right) => TwoChildren(lift(left), lift(right))
+      }
+
+      val arguments: Seq[Argument] = planDescription.arguments.map {
+        case v2_3.planDescription.InternalPlanDescription.Arguments.Time(value) => Arguments.Time(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.Rows(value) => Arguments.Rows(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.DbHits(value) => Arguments.DbHits(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.ColumnsLeft(value) => Arguments.ColumnsLeft(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.Expression(_) => Arguments.Expression(null)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression(_) => Arguments.LegacyExpression(null)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.UpdateActionName(value) => Arguments.UpdateActionName(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.MergePattern(startPoint) => Arguments.MergePattern(startPoint)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.LegacyIndex(value) => Arguments.LegacyIndex(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.Index(label, propertyKey) => Arguments.Index(label, propertyKey)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.PrefixIndex(label, propertyKey, _) => Arguments.PrefixIndex(label, propertyKey, null)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.InequalityIndex(label, propertyKey, bounds) => Arguments.InequalityIndex(label, propertyKey, bounds)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.LabelName(label) => Arguments.LabelName(label)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames(keys) => Arguments.KeyNames(keys)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.KeyExpressions(_) => Arguments.KeyExpressions(null)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.EntityByIdRhs(_) => Arguments.EntityByIdRhs(null)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.EstimatedRows(value) => Arguments.EstimatedRows(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.Version(value) => Arguments.Version(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.Planner(value) => Arguments.Planner(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.PlannerImpl(value) => Arguments.PlannerImpl(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.Runtime(value) => Arguments.Runtime(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.RuntimeImpl(value) => Arguments.RuntimeImpl(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.ExpandExpression(from, relName, relTypes, to, _, varLength) =>
+          Arguments.ExpandExpression(from, relName, relTypes, to, null, varLength)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.SourceCode(className, sourceCode) =>
+          Arguments.SourceCode(className, sourceCode)
+      }
+      new PlanDescriptionImpl( new Id, name, children, arguments, planDescription.identifiers)
+    }
+
 
     override def close(): Unit = inner.close()
 
-    override def notifications: Iterable[InternalNotification] = ???
+    override def notifications: Iterable[notification.InternalNotification] = inner.notifications.map {
+      case notification_2_3.CartesianProductNotification(position, isolatedVariables) => notification.CartesianProductNotification(lift(position), isolatedVariables)
+      case notification_2_3.LengthOnNonPathNotification(position) => notification.LengthOnNonPathNotification(InputPosition.apply(position.offset, position.line, position.column))
+      case notification_2_3.PlannerUnsupportedNotification => notification.PlannerUnsupportedNotification
+      case notification_2_3.RuntimeUnsupportedNotification => notification.RuntimeUnsupportedNotification
+      case notification_2_3.IndexHintUnfulfillableNotification (label, propertyKey) => notification.IndexHintUnfulfillableNotification(label, propertyKey)
+      case notification_2_3.JoinHintUnfulfillableNotification(identified) => notification.JoinHintUnfulfillableNotification(identified)
+      case notification_2_3.JoinHintUnsupportedNotification(identified) => notification.JoinHintUnsupportedNotification(identified)
+      case notification_2_3.IndexLookupUnfulfillableNotification(labels) => notification.IndexLookupUnfulfillableNotification(labels)
+      case notification_2_3.EagerLoadCsvNotification => notification.EagerLoadCsvNotification
+      case notification_2_3.LargeLabelWithLoadCsvNotification => notification.LargeLabelWithLoadCsvNotification
+      case notification_2_3.MissingLabelNotification(position, label) => notification.MissingLabelNotification(lift(position), label)
+      case notification_2_3.MissingRelTypeNotification(position, relType) => notification.MissingRelTypeNotification(lift(position), relType)
+      case notification_2_3.MissingPropertyNameNotification(position, name) => notification.MissingPropertyNameNotification(lift(position), name)
+      case notification_2_3.UnboundedShortestPathNotification(position) => notification.UnboundedShortestPathNotification(lift(position))
+      case notification_2_3.LegacyPlannerNotification =>
+        null // there is no equivalent in 3.0, let's return null so we can check if notifications are not empty in some 2.3 compatibility tests
+      case notification_2_3.BareNodeSyntaxDeprecatedNotification(position) =>
+        null // there is no equivalent in 3.0, let's return null so we can check if notifications are not empty in some 2.3 compatibility tests
+    }
+
+    private def lift(position: frontend.v2_3.InputPosition): InputPosition = {
+      InputPosition.apply(position.offset, position.line, position.column)
+    }
 
     override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
 

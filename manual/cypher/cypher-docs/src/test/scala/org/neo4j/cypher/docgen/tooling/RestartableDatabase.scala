@@ -38,8 +38,10 @@ package org.neo4j.cypher.docgen.tooling
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.neo4j.cypher.TestFriendlyExecutionEngine
+import org.neo4j.cypher.ExecutionEngineHelper
 import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.test.TestGraphDatabaseFactory
 
@@ -47,10 +49,10 @@ import scala.util.Try
 
 /* I exist so my users can have a restartable database that is lazily created */
 class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory = new TestGraphDatabaseFactory())
-  extends TestFriendlyExecutionEngine {
+ extends GraphIcing with ExecutionEngineHelper {
 
-  private var _db: GraphDatabaseCypherService = null
-  private var _engine: ExecutionEngine = null
+  var graph: GraphDatabaseCypherService = null
+  var eengine: ExecutionEngine = null
   private var _failures: Seq[QueryRunResult] = null
   private var _markedForRestart = false
 
@@ -60,10 +62,10 @@ class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory =
   def nowIsASafePointToRestartDatabase() = if(_markedForRestart) restart()
 
   private def createAndStartIfNecessary() {
-    if (_db == null) {
-      _db = new GraphDatabaseCypherService(factory.newImpermanentDatabase())
-      _engine = new ExecutionEngine(_db)
-      _failures = initialize(_engine, init)
+    if (graph == null) {
+      graph = new GraphDatabaseCypherService(factory.newImpermanentDatabase())
+      eengine = new ExecutionEngine(graph)
+      _failures = initialize(init)
     }
   }
 
@@ -74,17 +76,17 @@ class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory =
 
   def getInnerDb = {
     createAndStartIfNecessary()
-    _db
+    graph
   }
 
   def shutdown() {
     restart()
   }
 
-  def execute(q: String) = {
+  def execute(q: String): InternalExecutionResult = {
     createAndStartIfNecessary()
-    val executionResult = try {
-      _engine.execute(q)
+    val executionResult: InternalExecutionResult = try {
+      execute(q, Seq.empty:_*)
     } catch {
       case e: Throwable => _markedForRestart = true; throw e
     }
@@ -93,15 +95,15 @@ class RestartableDatabase(init: Seq[String], factory: TestGraphDatabaseFactory =
   }
 
   private def restart() {
-    if (_db == null) return
-    _db.getGraphDatabaseService.shutdown()
-    _db = null
+    if (graph == null) return
+    graph.getGraphDatabaseService.shutdown()
+    graph = null
     _markedForRestart = false
   }
 
-  private def initialize(engine: ExecutionEngine, init: Seq[String]): Seq[QueryRunResult] =
+  private def initialize(init: Seq[String]): Seq[QueryRunResult] =
     init.flatMap { q =>
-      val result = Try(engine.execute(q))
+      val result = Try(execute(q, Seq.empty:_*))
       result.failed.toOption.map((e: Throwable) => QueryRunResult(q, new ErrorPlaceHolder(), Left(e)))
     }
 }

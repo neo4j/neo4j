@@ -497,7 +497,7 @@ order by a.COL1""")
 
     try {
       // This syntax is valid today, but should give an exception in 1.5
-      engine.execute("create a")
+      engine.execute("create a", Map.empty[String, Any], graph.session())
     } catch {
       case x: SyntaxException =>
       case _: Throwable => fail("expected exception")
@@ -644,7 +644,7 @@ order by a.COL1""")
 
     val engine = new ExecutionEngine(graph)
 
-    intercept[Throwable](engine.execute("BABY START SMILING, YOU KNOW THE SUN IS SHINING."))
+    intercept[Throwable](engine.execute("BABY START SMILING, YOU KNOW THE SUN IS SHINING.", Map.empty[String, Any], graph.session()))
 
     // Until we have a clean cut way where statement context is injected into cypher,
     // I don't know a non-hairy way to tell if this was done correctly, so here goes:
@@ -765,7 +765,7 @@ order by a.COL1""")
     val engine = createReadOnlyEngine()
 
     //WHEN
-    val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n")
+    val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n", Map.empty[String, Any], graph.session())
 
     //THEN
     result.toList shouldBe empty
@@ -973,7 +973,7 @@ order by a.COL1""")
       writer.println("1,2,3")
       writer.println("4,5,6")
     }
-    val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x")
+    val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x", Map.empty[String, Any], graph.session())
     result should have size 2
   }
 
@@ -998,12 +998,12 @@ order by a.COL1""")
     (0 until 100).foreach { _ => createLabeledNode("Person") }
 
     // WHEN
-    eengine.execute(s"match (n:Person) return n").toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any], graph.session()).toList
     planningListener.planRequests.toSeq should equal(Seq(
       s"match (n:Person) return n"
     ))
     (0 until 150).foreach { _ => createLabeledNode("Person") }
-    eengine.execute(s"match (n:Person) return n").toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any], graph.session()).toList
 
     //THEN
     planningListener.planRequests.toSeq should equal (Seq(
@@ -1019,12 +1019,12 @@ order by a.COL1""")
 
     (0 until 100).foreach { _ => createLabeledNode("Person") }
     //WHEN
-    eengine.execute(s"match (n:Person) return n").toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any], graph.session()).toList
     planningListener.planRequests.toSeq should equal(Seq(
       s"match (n:Person) return n"
     ))
     (0 until 9).foreach { _ => createLabeledNode("Dog") }
-    eengine.execute(s"match (n:Person) return n").toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any], graph.session()).toList
 
     //THEN
     planningListener.planRequests.toSeq should equal(Seq(
@@ -1036,14 +1036,14 @@ order by a.COL1""")
     val planningListener = PlanningListener()
     kernelMonitors.addMonitorListener(planningListener)
 
-    val result1 = eengine.execute("match (n) return n").toList
+    val result1 = eengine.execute("match (n) return n", Map.empty[String, Any], graph.session()).toList
     result1 shouldBe empty
 
     val ds = graph.getDependencyResolver.resolveDependency(classOf[NeoStoreDataSource])
     ds.stop()
     ds.start()
 
-    val result2 = eengine.execute("match (n) return n").toList
+    val result2 = eengine.execute("match (n) return n", Map.empty[String, Any], graph.session()).toList
     result2 shouldBe empty
 
     planningListener.planRequests.toSeq should equal(Seq(

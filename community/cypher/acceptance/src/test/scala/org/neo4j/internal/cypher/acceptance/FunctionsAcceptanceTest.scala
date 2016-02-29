@@ -619,9 +619,9 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     val query: String = "MATCH (a)-[r]->() WITH [r, 1] as coll RETURN [x in coll | type(x) ]"
 
     //Expect
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=compiled $query"))
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=interpreted $query"))
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=cost $query"))
-    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=rule $query"))
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=compiled $query", Map.empty[String,Any], graph.session()))
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=interpreted $query", Map.empty[String,Any], graph.session()))
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=cost $query", Map.empty[String,Any], graph.session()))
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=rule $query", Map.empty[String,Any], graph.session()))
   }
 }

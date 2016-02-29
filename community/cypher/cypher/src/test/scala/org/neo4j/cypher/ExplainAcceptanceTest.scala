@@ -39,7 +39,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("EXPLAIN for Cypher 3.0") {
-    val result = eengine.execute("explain match (n) return n")
+    val result = eengine.execute("explain match (n) return n", Map.empty[String, Object], graph.session())
     result.toList
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     result.executionPlanDescription().toString should include("Estimated Rows")

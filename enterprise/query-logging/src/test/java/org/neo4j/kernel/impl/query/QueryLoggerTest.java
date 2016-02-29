@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-
 import org.neo4j.helpers.FakeClock;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.query.QueryLoggerKernelExtension.QueryLogger;
+import org.neo4j.logging.AssertableLogProvider;
 
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
@@ -131,7 +131,8 @@ public class QueryLoggerTest
 
         // then
         logProvider.assertExactly(
-                inLog( getClass() ).error( is( "1 ms: {session one} - MATCH (n) RETURN n - {}" ), sameInstance( failure ) )
+                inLog( getClass() )
+                        .error( is( "1 ms: {session one} - MATCH (n) RETURN n - {}" ), sameInstance( failure ) )
         );
     }
 
@@ -145,8 +146,8 @@ public class QueryLoggerTest
         QueryLogger queryLogger = new QueryLogger( clock, logProvider.getLog( getClass() ), 10/*ms*/ );
 
         // when
-        Map<String, Object> params = new HashMap<>(  );
-        params.put("ages", Arrays.asList(41, 42, 43));
+        Map<String,Object> params = new HashMap<>();
+        params.put( "ages", Arrays.asList( 41, 42, 43 ) );
         queryLogger.startQueryExecution( session, QUERY_4, params );
         clock.forward( 11, TimeUnit.MILLISECONDS );
         queryLogger.endSuccess( session );
@@ -168,21 +169,23 @@ public class QueryLoggerTest
         RuntimeException failure = new RuntimeException();
 
         // when
-        Map<String, Object> params = new HashMap<>(  );
-        params.put("ages", Arrays.asList(41, 42, 43));
+        Map<String,Object> params = new HashMap<>();
+        params.put( "ages", Arrays.asList( 41, 42, 43 ) );
         queryLogger.startQueryExecution( session, QUERY_4, params );
         clock.forward( 1, TimeUnit.MILLISECONDS );
         queryLogger.endFailure( session, failure );
 
         // then
         logProvider.assertExactly(
-                inLog( getClass() ).error( is( "1 ms: {session one} - MATCH (n) WHERE n.age IN {ages} RETURN n - {ages: [41, 42, 43]}" ), sameInstance( failure ) )
+                inLog( getClass() ).error( is(
+                        "1 ms: {session one} - MATCH (n) WHERE n.age IN {ages} RETURN n - {ages: [41, 42, 43]}" ),
+                        sameInstance( failure ) )
         );
     }
 
     private static QuerySession session( final String data )
     {
-        return new QuerySession()
+        return new QuerySession( null )
         {
             @Override
             public String toString()

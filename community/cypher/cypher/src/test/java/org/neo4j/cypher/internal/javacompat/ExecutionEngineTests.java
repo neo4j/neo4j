@@ -28,8 +28,16 @@ import java.util.Map;
 
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -40,7 +48,6 @@ import static org.junit.Assert.assertThat;
 public class ExecutionEngineTests
 {
     private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
-    private static final QuerySession SESSION = QueryEngineProvider.embeddedSession();
 
     @Rule
     public DatabaseRule database = new ImpermanentDatabaseRule();
@@ -48,16 +55,32 @@ public class ExecutionEngineTests
     @Test
     public void shouldConvertListsAndMapsWhenPassingFromScalaToJava() throws Exception
     {
-        GraphDatabaseCypherService graph = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
+        GraphDatabaseQueryService graph = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
         ExecutionEngine executionEngine = new ExecutionEngine( graph, NullLogProvider.getInstance() );
 
-        Result result = executionEngine.executeQuery(
-                "RETURN { key : 'Value' , collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}", NO_PARAMS, SESSION );
+
+        Result result;
+        try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL ) )
+        {
+            result = executionEngine.executeQuery(
+                    "RETURN { key : 'Value' , collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}", NO_PARAMS,
+                    newSession( graph, tx ) );
+            tx.success();
+        }
 
         Map firstRowValue = (Map) result.next().values().iterator().next();
         assertThat( firstRowValue.get( "key" ), is( "Value" ) );
         List theList = (List) firstRowValue.get( "collectionKey" );
         assertThat( ((Map) theList.get( 0 )).get( "inner" ), is( "Map1" ) );
         assertThat( ((Map) theList.get( 1 )).get( "inner" ), is( "Map2" ) );
+    }
+
+    private QuerySession newSession( GraphDatabaseQueryService graph, InternalTransaction tx )
+    {
+        ThreadToStatementContextBridge txBridge =
+                graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        PropertyContainerLocker locker = new PropertyContainerLocker();
+        TransactionalContext transactionalContext = new Neo4jTransactionalContext( graph, tx, txBridge.get(), locker );
+        return QueryEngineProvider.embeddedSession( transactionalContext );
     }
 }

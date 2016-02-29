@@ -41,41 +41,40 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
   test("should be able to switch between versions") {
     runWithConfig() {
       engine =>
-        engine.execute(s"CYPHER 2.3 $QUERY").toList shouldBe empty
-        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
+        engine.execute(s"CYPHER 2.3 $QUERY", Map.empty[String, Object], graph.session()).toList shouldBe empty
+        engine.execute(s"CYPHER 3.0 $QUERY", Map.empty[String, Object], graph.session()).toList shouldBe empty
     }
   }
 
   test("should be able to switch between versions2") {
     runWithConfig() {
       engine =>
-        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
-        engine.execute(s"CYPHER 2.3 $QUERY").toList shouldBe empty
+        engine.execute(s"CYPHER 3.0 $QUERY", Map.empty[String, Object], graph.session()).toList shouldBe empty
+
+        engine.execute(s"CYPHER 2.3 $QUERY", Map.empty[String, Object], graph.session()).toList shouldBe empty
     }
   }
 
   test("should be able to override config") {
     runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "2.3") {
       engine =>
-        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
+        engine.execute(s"CYPHER 3.0 $QUERY", Map.empty[String, Object], graph.session()).toList shouldBe empty
     }
   }
 
   test("should be able to override config2") {
     runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "3.0") {
       engine =>
-        engine.execute(s"CYPHER 2.3 $QUERY").toList shouldBe empty
+        engine.execute(s"CYPHER 2.3 $QUERY", Map.empty[String, Object], graph.session()).toList shouldBe empty
     }
   }
 
   test("should use default version by default") {
     runWithConfig() {
       engine =>
-        val result = engine.execute(QUERY)
+        val result = engine.execute(QUERY, Map.empty[String, Object], graph.session())
         result shouldBe empty
-        result.executionPlanDescription().arguments.get("version") should equal(
-          Some("CYPHER 3.0")
-        )
+        result.executionPlanDescription().arguments.get("version") should equal(Some("CYPHER 3.0"))
     }
   }
 
@@ -111,90 +110,116 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
   test("should not fail if cypher allowed to choose planner or we specify RULE for update query") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
-        engine.execute(queryThatCannotRunWithCostPlanner)
-        engine.execute(s"CYPHER planner=RULE $queryThatCannotRunWithCostPlanner")
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN CYPHER planner=RULE $queryThatCannotRunWithCostPlanner"))
+        engine.execute(queryThatCannotRunWithCostPlanner, Map.empty[String, Object], graph.session())
+        engine.execute(s"CYPHER planner=RULE $queryThatCannotRunWithCostPlanner", Map.empty[String, Object], graph.session())
+        shouldHaveNoWarnings(
+          engine.execute(s"EXPLAIN CYPHER planner=RULE $queryThatCannotRunWithCostPlanner", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should fail if asked to execute query with COST instead of falling back to RULE if hint errors turned on") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
-        intercept[InvalidArgumentException](engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"))
+        intercept[InvalidArgumentException](
+          engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should not fail if asked to execute query with COST and instead fallback to RULE and return a warning if hint errors turned off") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
       engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"), Status.Statement.PlannerUnsupportedWarning)
+        shouldHaveWarning(
+          engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner", Map.empty[String, Object], graph.session()),
+          Status.Statement.PlannerUnsupportedWarning)
     }
   }
 
   test("should not fail if asked to execute query with COST and instead fallback to RULE and return a warning by default") {
     runWithConfig() {
       engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"), Status.Statement.PlannerUnsupportedWarning)
+        shouldHaveWarning(
+          engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner", Map.empty[String, Object], graph.session()),
+          Status.Statement.PlannerUnsupportedWarning)
     }
   }
 
   test("should not fail if asked to execute query with runtime=compiled on simple query") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
-        engine.execute("MATCH (n:Movie) RETURN n")
-        engine.execute("CYPHER runtime=compiled MATCH (n:Movie) RETURN n")
-        shouldHaveNoWarnings(engine.execute("EXPLAIN CYPHER runtime=compiled MATCH (n:Movie) RETURN n"))
+        engine.execute("MATCH (n:Movie) RETURN n", Map.empty[String, Object], graph.session())
+        engine.execute("CYPHER runtime=compiled MATCH (n:Movie) RETURN n", Map.empty[String, Object], graph.session())
+        shouldHaveNoWarnings(
+          engine.execute("EXPLAIN CYPHER runtime=compiled MATCH (n:Movie) RETURN n", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should fail if asked to execute query with runtime=compiled instead of falling back to interpreted if hint errors turned on") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
-        intercept[InvalidArgumentException](engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"))
+        intercept[InvalidArgumentException](
+          engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning if hint errors turned off") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
       engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"), Status.Statement.RuntimeUnsupportedWarning)
+        shouldHaveWarning(
+          engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime", Map.empty[String, Object], graph.session()),
+          Status.Statement.RuntimeUnsupportedWarning)
     }
   }
 
   test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning by default") {
     runWithConfig() {
       engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"), Status.Statement.RuntimeUnsupportedWarning)
+        shouldHaveWarning(
+          engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime", Map.empty[String, Object], graph.session()),
+          Status.Statement.RuntimeUnsupportedWarning)
     }
   }
 
   test("should not fail nor generate a warning if asked to execute query without specifying runtime, knowing that compiled is default but will fallback silently to interpreted") {
     runWithConfig() {
       engine =>
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN $querySupportedByCostButNotCompiledRuntime"))
+        shouldHaveNoWarnings(
+          engine.execute(s"EXPLAIN $querySupportedByCostButNotCompiledRuntime", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should not support old 2.0 and 2.1 compilers") {
     runWithConfig() {
       engine =>
-        intercept[SyntaxException](engine.execute("CYPHER 1.9 MATCH (n) RETURN n"))
-        intercept[SyntaxException](engine.execute("CYPHER 2.0 MATCH (n) RETURN n"))
-        intercept[SyntaxException](engine.execute("CYPHER 2.1 MATCH (n) RETURN n"))
-        intercept[SyntaxException](engine.execute("CYPHER 2.2 MATCH (n) RETURN n"))
+        intercept[SyntaxException](
+          engine.execute("CYPHER 1.9 MATCH (n) RETURN n", Map.empty[String, Object], graph.session())
+        )
+        intercept[SyntaxException](
+          engine.execute("CYPHER 2.0 MATCH (n) RETURN n", Map.empty[String, Object], graph.session())
+        )
+        intercept[SyntaxException](
+          engine.execute("CYPHER 2.1 MATCH (n) RETURN n", Map.empty[String, Object], graph.session())
+        )
+        intercept[SyntaxException](
+          engine.execute("CYPHER 2.2 MATCH (n) RETURN n", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   private def assertProfiled(engine: ExecutionEngine, q: String) {
-    val result = engine.execute(q)
-    val ignored = result.toList
+    val result = engine.execute(q, Map.empty[String, Object], graph.session())
+    result.toList
     assert(result.executionPlanDescription().asJava.hasProfilerStatistics, s"$q was not profiled as expected")
     assert(result.planDescriptionRequested, s"$q was not flagged for planDescription")
   }
 
   private def assertExplained(engine: ExecutionEngine, q: String) {
-    val result = engine.execute(q)
-    val ignored = result.toList
+    val result = engine.execute(q, Map.empty[String, Object], graph.session())
+    result.toList
     assert(!result.executionPlanDescription().asJava.hasProfilerStatistics, s"$q was not profiled as expected")
     assert(result.planDescriptionRequested, s"$q was not flagged for planDescription")
   }

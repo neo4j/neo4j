@@ -34,17 +34,11 @@ import scala.collection.mutable.{Map => MutableMap}
 
 class MutationTest extends ExecutionEngineFunSuite {
 
-  var tx : InternalTransaction = null
   private implicit val monitor = mock[PipeMonitor]
 
-  def createQueryState = {
-    if(tx == null) tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
-    QueryStateHelper.countStats(QueryStateHelper.queryStateFrom(graph, tx))
-  }
+  def createQueryState(tx: InternalTransaction) = {
 
-  override protected def afterEach() {
-    super.afterEach()
-    //    if(tx != null) tx.close()
+    QueryStateHelper.countStats(QueryStateHelper.queryStateFrom(graph, tx))
   }
 
   test("create_node") {
@@ -52,7 +46,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
-    val queryState = createQueryState
+    val queryState = createQueryState(tx)
     createNode.createResults(queryState).toList
 
     val n = graph.getNodeById(0)
@@ -68,7 +62,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
-    createNode.createResults(createQueryState).toList
+    createNode.createResults(createQueryState(tx)).toList
 
     tx.failure()
     tx.close()
@@ -81,7 +75,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     val start = SingleRowPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
 
-    createNode.createResults(createQueryState).toList
+    createNode.createResults(createQueryState(tx)).toList
 
     tx.success()
     tx.close()
@@ -105,7 +99,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     val startPipe = SingleRowPipe()
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, Seq(createRel))
 
-    val state = createQueryState
+    val state = createQueryState(tx)
     val results: List[MutableMap[String, Any]] = createNodePipe.createResults(state).map(ctx => ctx.m).toList
 
     val r = graph.getRelationshipById(0)
@@ -121,7 +115,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
     val createRel = DeleteEntityAction(Literal("some text"), forced = false)
 
-    intercept[CypherTypeException](createRel.exec(ExecutionContext.empty, createQueryState))
+    intercept[CypherTypeException](createRel.exec(ExecutionContext.empty, createQueryState(tx)))
     tx.close()
   }
 
@@ -134,7 +128,7 @@ class MutationTest extends ExecutionEngineFunSuite {
     val startPipe = SingleRowPipe()
     val createNodePipe = new ExecuteUpdateCommandsPipe(startPipe, Seq(deleteCommand))
 
-    val state = createQueryState
+    val state = createQueryState(tx)
     createNodePipe.createResults(state).toList
 
     state.query.transactionalContext.close(success = true)

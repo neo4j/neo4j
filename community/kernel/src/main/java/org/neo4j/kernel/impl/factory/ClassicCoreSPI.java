@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -133,6 +134,12 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     public URL validateURLAccess( URL url ) throws URLAccessValidationError
     {
         return platform.urlAccessRule.validate( platform.config, url );
+    }
+
+    @Override
+    public GraphDatabaseQueryService queryService()
+    {
+        return dataSource.queryExecutor.get().queryService();
     }
 
     @Override

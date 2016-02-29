@@ -24,14 +24,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult;
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.AccessMode;
-import org.neo4j.kernel.api.KernelTransaction;
 
 class Result
 {
@@ -41,18 +38,18 @@ class Result
     final Set<Long> nodeIds = new HashSet<>();
     final Set<Long> relationshipIds = new HashSet<>();
 
-    public Result( String query, InternalExecutionResult result, GraphDatabaseQueryService database )
+    public Result( String query, org.neo4j.graphdb.Result result, GraphDatabaseCypherService database )
     {
         this.query = query;
-        text = result.dumpToString();
-        try (Transaction tx = database.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ))
+        text = result.resultAsString();
+        try ( Transaction tx = database.getGraphDatabaseService().beginTx() )
         {
-            extract( result.javaIterator() );
+            extract( result );
         }
         String profileText;
         try
         {
-            profileText = result.executionPlanDescription().toString();
+            profileText = result.getExecutionPlanDescription().toString();
         }
         catch ( Exception ex )
         {
@@ -97,7 +94,7 @@ class Result
                     relationshipIds.add( relationship.getId() );
                 }
             }
-            else if ( item instanceof Map<?, ?> )
+            else if ( item instanceof Map<?,?> )
             {
                 extract( ((Map<?,?>) item).values().iterator() );
             }

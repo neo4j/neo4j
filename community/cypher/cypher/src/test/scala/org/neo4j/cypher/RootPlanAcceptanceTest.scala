@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_0._
+import scala.collection.JavaConverters._
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -216,11 +217,10 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
           val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
           s"CYPHER $version $plannerString $runtimeString"
       }
-      val result = eengine.profile(s"$prepend $query")
+      val result = eengine.profile(s"$prepend $query", Map.empty[String, Object], graph.session())
       result.size
       val executionResult = result.executionPlanDescription()
       executionResult.asJava
     }
   }
-
 }

@@ -23,8 +23,20 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
+
+import org.neo4j.cypher.internal.DocsExecutionEngine;
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,7 +53,7 @@ public class DocsExecutionEngineTest
     {
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         database = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase());
-        engine = new DocsExecutionEngine( database );
+        engine = new DocsExecutionEngine( database, NullLogProvider.getInstance() );
     }
 
     @After
@@ -53,7 +65,8 @@ public class DocsExecutionEngineTest
     @Test
     public void actually_works_in_rewindable_fashion()
     {
-        InternalExecutionResult result = engine.profile( "CREATE (n:Person {name:'Adam'}) RETURN n" );
+        InternalExecutionResult result = engine.internalProfile( "CREATE (n:Person {name:'Adam'}) RETURN n",
+                Collections.emptyMap(), createSession() );
         String dump = result.dumpToString();
         assertThat( dump, containsString( "1 row" ) );
         assertThat( result.javaIterator().hasNext(), equalTo( true ) );
@@ -62,9 +75,19 @@ public class DocsExecutionEngineTest
     @Test
     public void should_work_in_rewindable_fashion()
     {
-        InternalExecutionResult result = engine.profile( "RETURN 'foo'" );
+        InternalExecutionResult result = engine.internalProfile( "RETURN 'foo'", Collections.emptyMap(), createSession() );
         String dump = result.dumpToString();
         assertThat( dump, containsString( "1 row" ) );
         assertThat( result.javaIterator().hasNext(), equalTo( true ) );
+    }
+
+    public static QuerySession createSession()
+    {
+        InternalTransaction transaction = database.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+        ThreadToStatementContextBridge bridge =
+                database.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        Neo4jTransactionalContext context =
+                new Neo4jTransactionalContext( database, transaction, bridge.get(), new PropertyContainerLocker() );
+        return QueryEngineProvider.embeddedSession( context );
     }
 }

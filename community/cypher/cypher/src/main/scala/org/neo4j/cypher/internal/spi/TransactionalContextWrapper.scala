@@ -19,28 +19,37 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.compiler.v3_0.spi.TransactionalContext
-import org.neo4j.graphdb.{Lock, PropertyContainer, Transaction}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryTransactionalContext
+import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.impl.api.KernelStatement
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.impl.query.TransactionalContext
 
-trait ExtendedTransactionalContext extends TransactionalContext {
+case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
 
   override type ReadOps = ReadOperations
 
-  def newContext(): ExtendedTransactionalContext
+  def provideContext(): TransactionalContextWrapper = TransactionalContextWrapper(tc.provideContext())
 
-  def isOpen: Boolean
+  def isOpen: Boolean = tc.isOpen
 
-  def graph: GraphDatabaseQueryService
+  def graph: GraphDatabaseQueryService = tc.graph()
 
-  def statement: Statement
+  def statement: Statement = tc.statement()
 
-  def stateView: TxStateHolder
+  def stateView: TxStateHolder = tc.stateView()
+
+  def cleanForReuse() = tc.cleanForReuse()
 
   // needed only for compatibility with 2.3
-  def acquireWriteLock(p: PropertyContainer): Lock
+  def acquireWriteLock(p: PropertyContainer): Lock = tc.acquireWriteLock(p)
+
+  override def readOperations: ReadOperations = tc.readOperations()
+
+  override def commitAndRestartTx() { tc.commitAndRestartTx() }
+
+  override def isTopLevelTx: Boolean = tc.isTopLevelTx
+
+  override def close(success: Boolean) { tc.close(success) }
 }

@@ -32,13 +32,14 @@ import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundPlanContext
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest {
 
   import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
   var builder: TraversalMatcherBuilder = null
-  var tx: Transaction = null
+  var tx: InternalTransaction = null
 
   override def beforeEach() {
     super.beforeEach()

@@ -113,7 +113,7 @@ class EagerizationAcceptanceTest
   }
 
   test("github issue #5653") {
-    eengine.execute("CREATE (a:Person {id: 42})-[:FRIEND_OF]->(b:Person {id:42}), (b)-[:FRIEND_OF]->(a), (:Person)-[:FRIEND_OF]->(b)")
+    graph.execute("CREATE (a:Person {id: 42})-[:FRIEND_OF]->(b:Person {id:42}), (b)-[:FRIEND_OF]->(a), (:Person)-[:FRIEND_OF]->(b)")
 
     val query = "MATCH (p1:Person {id: 42})-[r:FRIEND_OF]->(p2:Person {id:42}) DETACH DELETE r, p1, p2 RETURN count(*) AS count"
     val result = updateWithBothPlanners(query)
@@ -123,7 +123,7 @@ class EagerizationAcceptanceTest
   }
 
   test("github issue #5653 with path instead") {
-    eengine.execute("CREATE (a:Person {id: 42})-[:FRIEND_OF]->(b:Person {id:42}), (b)-[:FRIEND_OF]->(a), (:Person)-[:FRIEND_OF]->(b)")
+    graph.execute("CREATE (a:Person {id: 42})-[:FRIEND_OF]->(b:Person {id:42}), (b)-[:FRIEND_OF]->(a), (:Person)-[:FRIEND_OF]->(b)")
 
     val query = "MATCH p = (p1:Person {id: 42})-[r:FRIEND_OF]->(p2:Person {id:42}) DETACH DELETE p RETURN count(*) AS count"
     val result = updateWithBothPlanners(query)
@@ -1515,9 +1515,9 @@ class EagerizationAcceptanceTest
 
     // this is intended for the rule planner only, since the assumption is made that
     // the left-most node in the match pattern will become the 'stable leaf'
-    val result = eengine.execute(s"cypher planner=rule $query")
+    val result = eengine.execute(s"cypher planner=rule $query", Map.empty[String, Object], graph.session())
     result.columnAs[Long]("count(*)").next shouldBe 2
-    assertStatsResult(labelsAdded = 1)(result.queryStatistics())
+    assertStatsResult(labelsAdded = 1)(result.queryStatistics)
 //    assertNumberOfEagerness(query, 1) -- not with rule planner
   }
 
@@ -2387,7 +2387,7 @@ class EagerizationAcceptanceTest
       expectedEagerCount shouldBe >=(optimalEagerCount)
     }
     val q = if (query.contains("EXPLAIN")) query else "EXPLAIN CYPHER " + query
-    val result = eengine.execute(q)
+    val result = eengine.execute(q, Map.empty[String, Object], graph.session())
     val plan = result.executionPlanDescription().toString
     result.close()
     val eagers = EagerRegEx.findAllIn(plan).length

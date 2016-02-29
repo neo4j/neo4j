@@ -26,9 +26,12 @@ import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -79,10 +82,9 @@ public final class CypherDoc
         TestFailureException failure = null;
         try
         {
-            DocsExecutionEngine engine = new DocsExecutionEngine( database );
             conn = DriverManager.getConnection( "jdbc:hsqldb:mem:graphgist;shutdown=true" );
             conn.setAutoCommit( true );
-            return executeBlocks( blocks, new State( engine, database, conn, parentDirectory, url ) );
+            return executeBlocks( blocks, new State( database, conn, parentDirectory, url ) );
         }
         catch ( TestFailureException exception )
         {

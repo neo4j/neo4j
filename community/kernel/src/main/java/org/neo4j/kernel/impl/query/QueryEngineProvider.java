@@ -57,10 +57,10 @@ public abstract class QueryEngineProvider extends Service
         return NoQueryEngine.INSTANCE;
     }
 
-    public static QuerySession embeddedSession()
+    public static QuerySession embeddedSession( TransactionalContext transactionalContext )
     {
         final Thread thread = Thread.currentThread();
-        return new QuerySession()
+        return new QuerySession( transactionalContext )
         {
             @Override
             public String toString()

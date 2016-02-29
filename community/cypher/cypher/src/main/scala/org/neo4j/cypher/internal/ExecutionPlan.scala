@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.query.QuerySession
@@ -28,9 +28,9 @@ final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, stateme
 
 trait ExecutionPlan {
 
-  def run(transactionalContext: ExtendedTransactionalContext, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult
+  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult
 
   def isPeriodicCommit: Boolean
 
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: ExtendedTransactionalContext): Boolean
+  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
 }

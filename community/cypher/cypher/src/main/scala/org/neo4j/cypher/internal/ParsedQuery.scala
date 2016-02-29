@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer
-import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.kernel.api.Statement
 
 trait ParsedQuery {
   def isPeriodicCommit: Boolean
-  def plan(transactionContext: ExtendedTransactionalContext, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any])
+  def plan(transactionContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any])
   def hasErrors: Boolean
 }

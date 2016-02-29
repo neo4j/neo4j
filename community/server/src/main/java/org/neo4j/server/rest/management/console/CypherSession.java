@@ -23,12 +23,13 @@ import java.util.Collections;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.SyntaxException;
+import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.rest.web.ServerQuerySession;
 import org.neo4j.server.webadmin.console.ScriptSession;
 
 public class CypherSession implements ScriptSession
@@ -55,7 +56,9 @@ public class CypherSession implements ScriptSession
         String resultString;
         try
         {
-            Result result = cypherExecutor.getExecutionEngine().executeQuery( script, Collections.<String, Object>emptyMap(), new ServerQuerySession( request ) );
+            QuerySession querySession = cypherExecutor.createSession( request );
+            ExecutionEngine engine = cypherExecutor.getExecutionEngine();
+            Result result = engine.executeQuery( script, Collections.<String,Object>emptyMap(), querySession );
             resultString = result.resultAsString();
         }
         catch ( SyntaxException error )

@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.web.TransactionUriScheme;
@@ -34,7 +35,6 @@ import org.neo4j.test.DoubleLatch;
 import static javax.xml.bind.DatatypeConverter.parseLong;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,7 +47,8 @@ public class ConcurrentTransactionAccessTest
         TransactionRegistry registry =
                 new TransactionHandleRegistry( mock( Clock.class), 0, NullLogProvider.getInstance() );
         TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
-        when(kernel.newTransaction( anyBoolean(), any( AccessMode.class ) )).thenReturn( mock(TransitionalTxManagementKernelTransaction.class) );
+        when(kernel.newTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ) ) )
+                .thenReturn( mock(TransitionalTxManagementKernelTransaction.class) );
         TransactionFacade actions = new TransactionFacade( kernel, null, registry, NullLogProvider.getInstance() );
 
         final TransactionHandle transactionHandle = actions.newTransactionHandle( new DisgustingUriScheme(), true, AccessMode.FULL );

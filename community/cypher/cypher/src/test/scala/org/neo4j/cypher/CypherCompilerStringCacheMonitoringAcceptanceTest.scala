@@ -20,10 +20,14 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.{StringCacheMonitor, ExecutionEngine}
+import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.logging.AssertableLogProvider
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.Map
 
@@ -112,19 +116,19 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
 
   test("should log on cache evictions") {
     // given
-    val logProvider = new AssertableLogProvider( )
-    val engine = new ExecutionEngine( graph, logProvider )
+    val logProvider = new AssertableLogProvider()
+    val engine = new ExecutionEngine(graph, logProvider)
     val counter = new CacheCounter()
     kernelMonitors.addMonitorListener(counter)
     val query = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
-    engine.execute(query).toList
+    engine.execute(query, Map.empty[String, Any], graph.session()).toList
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    engine.execute(query).toList
+    engine.execute(query, Map.empty[String, Any], graph.session()).toList
 
     // then
     logProvider.assertAtLeastOnce(

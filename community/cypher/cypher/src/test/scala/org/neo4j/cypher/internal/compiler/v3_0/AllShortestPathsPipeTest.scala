@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v3_0.QueryStateHelper.queryStateFrom
 import org.neo4j.cypher.internal.compiler.v3_0.commands.{ShortestPath, SingleNode}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{FakePipe, PipeMonitor, ShortestPathPipe}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
@@ -35,9 +36,11 @@ class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
   def runThroughPipeAndGetPath(a: Node, b: Node) = {
     val source = new FakePipe(List(mutable.Map("a" -> a, "b" -> b)), "a" -> CTNode, "b" -> CTNode)
 
-    val pipe = new ShortestPathPipe(source, ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.BOTH, false,
-      Some(15), single = false, relIterator = None))()
-    graph.withTx(tx => pipe.createResults(QueryStateHelper.queryStateFrom(graph, tx)).toList.map(m => m("p").asInstanceOf[Path]))
+    val pipe = new ShortestPathPipe(source, ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(),
+      SemanticDirection.BOTH, allowZeroLength = false, Some(15), single = false, relIterator = None))()
+    graph.withTx { tx =>
+      pipe.createResults(queryStateFrom(graph, tx)).toList.map(m => m("p").asInstanceOf[Path])
+    }
   }
 
   test("should return the shortest path between two nodes") {

@@ -29,12 +29,17 @@ import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.concurrent.DecayingFlags;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
@@ -66,9 +71,9 @@ public class SessionStateMachine implements Session, SessionState
                             ctx.usageData.get( UsageDataKeys.clientNames ).add( clientName );
                             return IDLE;
                         }
-                        catch ( AuthenticationException e)
+                        catch ( AuthenticationException e )
                         {
-                            return error( ctx, new Neo4jError( e.status(), e.getMessage(), e) );
+                            return error( ctx, new Neo4jError( e.status(), e.getMessage(), e ) );
                         }
                     }
 
@@ -76,7 +81,7 @@ public class SessionStateMachine implements Session, SessionState
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
                         ctx.error( new Neo4jError( Status.Request.Invalid, "No operations allowed until you send an " +
-                                "INIT message." ));
+                                                                           "INIT message." ) );
                         return halt( ctx );
                     }
                 },
@@ -90,7 +95,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL);
+                        ctx.db.beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL );
                         ctx.currentTransaction = ctx.txBridge.getKernelTransactionBoundToThisThread( false );
                         return IN_TRANSACTION;
                     }
@@ -104,7 +109,7 @@ public class SessionStateMachine implements Session, SessionState
                             ctx.currentResult = ctx.statementRunner.run( ctx, statement, params );
                             ctx.result( ctx.currentStatementMetadata );
                             //if the call to run failed we must remain in state ERROR
-                            if (ctx.state == ERROR)
+                            if ( ctx.state == ERROR )
                             {
                                 return ERROR;
                             }
@@ -123,7 +128,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginImplicitTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.db.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL);
+                        ctx.db.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
                         ctx.currentTransaction = ctx.txBridge.getKernelTransactionBoundToThisThread( false );
                         return IN_TRANSACTION;
                     }
@@ -144,7 +149,7 @@ public class SessionStateMachine implements Session, SessionState
 
         /**
          * Open transaction, no open stream
-         * <p/>
+         * <p>
          * This is when the client has explicitly requested a transaction to be opened.
          */
         IN_TRANSACTION
@@ -283,13 +288,13 @@ public class SessionStateMachine implements Session, SessionState
         RECOVERABLE_ERROR
                 {
                     @Override
-                    public State reset (SessionStateMachine ctx)
+                    public State reset( SessionStateMachine ctx )
                     {
                         return IN_TRANSACTION;
                     }
 
                     @Override
-                    protected State onNoImplementation (SessionStateMachine ctx, String command)
+                    protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
                         ctx.ignored();
                         return RECOVERABLE_ERROR;
@@ -396,7 +401,7 @@ public class SessionStateMachine implements Session, SessionState
             {
                 // Is this error bad enough that we should roll back, or did the failure occur in an implicit
                 // transaction?
-                if(  err.status().code().classification().rollbackTransaction() ||
+                if ( err.status().code().classification().rollbackTransaction() ||
                      ctx.currentTransaction.transactionType() == KernelTransaction.Type.implicit )
                 {
                     try
@@ -407,7 +412,7 @@ public class SessionStateMachine implements Session, SessionState
                     catch ( Throwable t )
                     {
                         ctx.log.error( "While handling '" + err.status() + "', a second failure occurred when " +
-                                "rolling back transaction: " + t.getMessage(), t );
+                                       "rolling back transaction: " + t.getMessage(), t );
                     }
                     finally
                     {
@@ -427,7 +432,6 @@ public class SessionStateMachine implements Session, SessionState
             ctx.error( err );
             return outcome;
         }
-
     }
 
     private final UsageData usageData;
@@ -494,14 +498,14 @@ public class SessionStateMachine implements Session, SessionState
         before( attachment, callback );
         try
         {
-            state = state.init( this, clientName, authToken);
+            state = state.init( this, clientName, authToken );
         }
         finally { after(); }
     }
 
     @Override
     public <A> void run( String statement, Map<String,Object> params, A attachment,
-                         Callback<StatementMetadata,A> callback )
+            Callback<StatementMetadata,A> callback )
     {
         before( attachment, callback );
         try
@@ -534,7 +538,7 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void reset( A attachment, Callback<Void, A> callback )
+    public <A> void reset( A attachment, Callback<Void,A> callback )
     {
         before( attachment, callback );
         try
@@ -587,6 +591,25 @@ public class SessionStateMachine implements Session, SessionState
         return currentTransaction != null;
     }
 
+    @Override
+    public QuerySession createSession( GraphDatabaseQueryService service, PropertyContainerLocker locker )
+    {
+        InternalTransaction transaction =
+                service.beginTransaction( currentTransaction.transactionType(), currentTransaction.mode() );
+        Neo4jTransactionalContext transactionalContext =
+                new Neo4jTransactionalContext( service, transaction, txBridge.get(), locker );
+
+        return new QuerySession( transactionalContext )
+        {
+
+            @Override
+            public String toString()
+            {
+                return "bolt";
+            }
+        };
+    }
+
     public State state()
     {
         return state;
@@ -605,7 +628,7 @@ public class SessionStateMachine implements Session, SessionState
      */
     private void before( Object attachment, Callback cb )
     {
-        if( cb != null )
+        if ( cb != null )
         {
             cb.started( attachment );
         }
@@ -650,7 +673,7 @@ public class SessionStateMachine implements Session, SessionState
     /** Forward an error to the currently attached callback */
     private void error( Neo4jError err )
     {
-        if( err.status().code().classification() == Status.Classification.DatabaseError )
+        if ( err.status().code().classification() == Status.Classification.DatabaseError )
         {
             log.error( "A database error occurred while servicing a user request: " + err );
         }

@@ -91,10 +91,11 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("correct status code when no index") {
 
     // GIVEN
-    val query = """MATCH (n:Test)
-                  |USING INDEX n:Test(foo)
-                  |WHERE n.foo = {foo}
-                  |RETURN n""".stripMargin
+    val query =
+      """MATCH (n:Test)
+        |USING INDEX n:Test(foo)
+        |WHERE n.foo = {foo}
+        |RETURN n""".stripMargin
 
     // WHEN
     val error = intercept[IndexHintException](executeWithAllPlannersAndCompatibilityMode(query))
@@ -106,52 +107,66 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {
     runWithConfig() {
       engine =>
-        engine.execute("CREATE INDEX ON :Person(name)")
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
+        engine.execute("CREATE INDEX ON :Person(name)", Map.empty[String, Object], graph.session())
+        shouldHaveNoWarnings(
+          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled") {
     runWithConfig() {
       engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.NoSuchIndex)
+        shouldHaveWarning(
+          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session()),
+          Status.Schema.NoSuchIndex)
     }
   }
 
   test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned off") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
       engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.NoSuchIndex)
+        shouldHaveWarning(
+          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session()),
+          Status.Schema.NoSuchIndex)
     }
   }
 
   test("should generate an error if executing a query using EXPLAIN and a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
-        intercept[IndexHintException](engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
+        intercept[IndexHintException](
+          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should generate an error if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
-        intercept[IndexHintException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"))
+        intercept[IndexHintException](
+          engine.execute(s"MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, and hint errors are turned on") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
-        engine.execute("CREATE INDEX ON :Person(email)")
-        intercept[SyntaxException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n"))
+        engine.execute("CREATE INDEX ON :Person(email)", Map.empty[String, Object], graph.session())
+        intercept[SyntaxException](
+          engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, even when hint errors are not turned on") {
     runWithConfig() {
       engine =>
-        engine.execute("CREATE INDEX ON :Person(email)")
-        intercept[SyntaxException](engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n"))
+        engine.execute("CREATE INDEX ON :Person(email)", Map.empty[String, Object], graph.session())
+        intercept[SyntaxException](
+          engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
@@ -168,7 +183,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
 
     //THEN
-    result.toList should equal (List(Map("n" -> jake)))
+    result.toList should equal(List(Map("n" -> jake)))
   }
 
   test("should be able to use index hints on IN collections with duplicates") {
@@ -184,7 +199,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
     //THEN
-    result.toList should equal (List(Map("n" -> jake)))
+    result.toList should equal(List(Map("n" -> jake)))
   }
 
   test("should be able to use index hints on IN an empty collections") {
@@ -200,7 +215,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
 
     //THEN
-    result.toList should equal (List())
+    result.toList should equal(List())
   }
 
   test("should be able to use index hints on IN a null value") {
@@ -216,7 +231,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
     //THEN
-    result.toList should equal (List())
+    result.toList should equal(List())
   }
 
   test("should be able to use index hints on IN a collection parameter") {
@@ -229,10 +244,10 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
 
     //THEN
-    result.toList should equal (List(Map("n" -> jake)))
+    result.toList should equal(List(Map("n" -> jake)))
   }
 
   test("does not accept multiple index hints for the same variable") {
@@ -303,32 +318,39 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING SCAN'") {
     runWithConfig() {
       engine =>
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN MATCH (n:Person) USING SCAN n:Person WHERE n.name = 'John' RETURN n"))
+        shouldHaveNoWarnings(
+          engine.execute(s"EXPLAIN MATCH (n:Person) USING SCAN n:Person WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should succeed if executing a query using both 'USING SCAN' and 'USING INDEX' if index exists") {
     runWithConfig() {
       engine =>
-        engine.execute("CREATE INDEX ON :Person(name)")
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN MATCH (n:Person)-[:WORKS_FOR]->(c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n"))
+        engine.execute("CREATE INDEX ON :Person(name)", Map.empty[String, Object], graph.session())
+        shouldHaveNoWarnings(
+          engine.execute(s"EXPLAIN MATCH (n:Person)-[:WORKS_FOR]->(c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should fail outright if executing a query using a 'USING SCAN' and 'USING INDEX' on the same variable, even if index exists") {
     runWithConfig() {
       engine =>
-        engine.execute("CREATE INDEX ON :Person(name)")
-        intercept[SyntaxException](engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) USING SCAN n:Person WHERE n.name = 'John' RETURN n"))
+        engine.execute("CREATE INDEX ON :Person(name)", Map.empty[String, Object], graph.session())
+        intercept[SyntaxException](
+          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) USING SCAN n:Person WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
   test("should notify unfulfillable when join hint is applied to the start node of a single hop pattern") {
     val initQuery = "CREATE (a:A {prop: 'foo'})-[:R]->(b:B {prop: 'bar'})"
 
-    val query = s"""MATCH (a:A)-->(b:B)
-                    |USING JOIN ON a
-                    |RETURN a.prop AS res""".stripMargin
+    val query =
+      s"""MATCH (a:A)-->(b:B)
+          |USING JOIN ON a
+          |RETURN a.prop AS res""".stripMargin
 
     // Should give either warning or error depending on configuration
     verifyJoinHintUnfulfillableOnRunWithConfig(initQuery, query, expectedResult = List(Map("res" -> "foo")))
@@ -337,9 +359,10 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should notify unfulfillable when join hint is applied to the end node of a single hop pattern") {
     val initQuery = "CREATE (a:A {prop: 'foo'})-[:R]->(b:B {prop: 'bar'})"
 
-    val query = s"""MATCH (a:A)-->(b:B)
-                    |USING JOIN ON b
-                    |RETURN b.prop AS res""".stripMargin
+    val query =
+      s"""MATCH (a:A)-->(b:B)
+          |USING JOIN ON b
+          |RETURN b.prop AS res""".stripMargin
 
     // Should give either warning or error depending on configuration
     verifyJoinHintUnfulfillableOnRunWithConfig(initQuery, query, expectedResult = List(Map("res" -> "bar")))
@@ -356,9 +379,9 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         executeWithCostPlannerOnly(
           s"""
              |CYPHER planner=$plannerName
-              |MATCH (a:A)-->(b:B)<--(c:C)
-              |USING JOIN ON d
-              |RETURN a.prop
+             |MATCH (a:A)-->(b:B)<--(c:C)
+             |USING JOIN ON d
+             |RETURN a.prop
           """.stripMargin))
 
       error.getMessage should include("Variable `d` not defined")
@@ -369,9 +392,9 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         executeWithCostPlannerOnly(
           s"""
              |CYPHER planner=$plannerName
-              |MATCH (a:A)
-              |USING JOIN ON a
-              |RETURN a.prop
+             |MATCH (a:A)
+             |USING JOIN ON a
+             |RETURN a.prop
           """.stripMargin))
 
       error.getMessage should include("Cannot use join hint for single node pattern")
@@ -382,9 +405,9 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         executeWithCostPlannerOnly(
           s"""
              |CYPHER planner=$plannerName
-              |MATCH (a:A)-[r1]->(b:B)-[r2]->(c:C)
-              |USING JOIN ON r1
-              |RETURN a.prop
+             |MATCH (a:A)-[r1]->(b:B)-[r2]->(c:C)
+             |USING JOIN ON r1
+             |RETURN a.prop
           """.stripMargin))
 
       error.getMessage should include("Type mismatch: expected Node but was Relationship")
@@ -395,9 +418,9 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         executeWithCostPlannerOnly(
           s"""
              |CYPHER planner=$plannerName
-              |MATCH p=(a:A)-->(b:B)-->(c:C)
-              |USING JOIN ON p
-              |RETURN a.prop
+             |MATCH p=(a:A)-->(b:B)-->(c:C)
+             |USING JOIN ON p
+             |RETURN a.prop
           """.stripMargin))
 
       error.getMessage should include("Type mismatch: expected Node but was Path")
@@ -418,10 +441,10 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       val result = executeWithCostPlannerOnly(
         s"""
            |CYPHER planner=$plannerName
-            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
-            |USING JOIN ON c
-            |WHERE a.prop = e.prop
-            |RETURN c""".stripMargin)
+           |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
+           |USING JOIN ON c
+           |WHERE a.prop = e.prop
+           |RETURN c""".stripMargin)
 
       result.toList should equal(List(Map("c" -> c)))
       result.executionPlanDescription() should includeOnlyOneHashJoinOn("c")
@@ -442,10 +465,10 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       val result = executeWithCostPlannerOnly(
         s"""
            |CYPHER planner=$plannerName
-            |MATCH (a:Foo)-[:X*]->(b)<-[:Y]->(c:Bar)
-            |USING JOIN ON b
-            |WHERE a.prop = c.prop
-            |RETURN c""".stripMargin)
+           |MATCH (a:Foo)-[:X*]->(b)<-[:Y]->(c:Bar)
+           |USING JOIN ON b
+           |WHERE a.prop = c.prop
+           |RETURN c""".stripMargin)
 
       result.toList should equal(List(Map("c" -> e)))
       result.executionPlanDescription() should includeOnlyOneHashJoinOn("b")
@@ -466,12 +489,12 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       val result = executeWithCostPlannerOnly(
         s"""
            |CYPHER planner=$plannerName
-            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
-            |USING JOIN ON b
-            |USING JOIN ON c
-            |USING JOIN ON d
-            |WHERE a.prop = e.prop
-            |RETURN b, d""".stripMargin)
+           |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
+           |USING JOIN ON b
+           |USING JOIN ON c
+           |USING JOIN ON d
+           |WHERE a.prop = e.prop
+           |RETURN b, d""".stripMargin)
 
       result.toList should equal(List(Map("b" -> b, "d" -> d)))
       result.executionPlanDescription() should includeOnlyOneHashJoinOn("b")
@@ -487,10 +510,11 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       relate(a, x)
       relate(b, x)
 
-      val query = s"""CYPHER planner=$plannerName
-                     |MATCH (a)-->(x)<--(b)
-                     |USING JOIN ON x
-                     |RETURN x""".stripMargin
+      val query =
+        s"""CYPHER planner=$plannerName
+            |MATCH (a)-->(x)<--(b)
+            |USING JOIN ON x
+            |RETURN x""".stripMargin
 
       val result = executeWithCostPlannerOnly(query)
 
@@ -520,10 +544,11 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         createLabeledNode("Movie")
       }
 
-      val query = s"""CYPHER planner=$plannerName
-                     |MATCH (a:Person {name:"Tom Hanks"})-[:ACTS_IN]->(x)<-[:ACTS_IN]-(b:Person {name:"Meg Ryan"})
-                     |USING JOIN ON x
-                     |RETURN x""".stripMargin
+      val query =
+        s"""CYPHER planner=$plannerName
+            |MATCH (a:Person {name:"Tom Hanks"})-[:ACTS_IN]->(x)<-[:ACTS_IN]-(b:Person {name:"Meg Ryan"})
+            |USING JOIN ON x
+            |RETURN x""".stripMargin
 
       val result = executeWithCostPlannerOnly(query)
     }
@@ -549,10 +574,11 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         createLabeledNode("Movie")
       }
 
-      val query = s"""CYPHER planner=$plannerName
-                      |MATCH (a:Person {name:"Tom Hanks"})-[:ACTS_IN]->(x)<-[:ACTS_IN]-(b:Person {name:"Meg Ryan"})
-                      |USING JOIN ON x
-                      |RETURN x""".stripMargin
+      val query =
+        s"""CYPHER planner=$plannerName
+            |MATCH (a:Person {name:"Tom Hanks"})-[:ACTS_IN]->(x)<-[:ACTS_IN]-(b:Person {name:"Meg Ryan"})
+            |USING JOIN ON x
+            |RETURN x""".stripMargin
 
       val result = executeWithCostPlannerOnly(query)
 
@@ -583,12 +609,13 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         createLabeledNode("Movie")
       }
 
-      val query = s"""CYPHER planner=$plannerName
-                      |MATCH (a:Person {name:"Tom Hanks"})-[:ACTS_IN]->(x)<-[:ACTS_IN]-(b:Person {name:"Meg Ryan"})
-                      |USING INDEX a:Person(name)
-                      |USING INDEX b:Person(name)
-                      |USING JOIN ON x
-                      |RETURN x""".stripMargin
+      val query =
+        s"""CYPHER planner=$plannerName
+            |MATCH (a:Person {name:"Tom Hanks"})-[:ACTS_IN]->(x)<-[:ACTS_IN]-(b:Person {name:"Meg Ryan"})
+            |USING INDEX a:Person(name)
+            |USING INDEX b:Person(name)
+            |USING JOIN ON x
+            |RETURN x""".stripMargin
 
       val result = executeWithCostPlannerOnly(query)
 
@@ -619,10 +646,11 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         createLabeledNode(Map("title" -> s"Movie $i"), "Movie")
       }
 
-      val query = s"""CYPHER planner=$plannerName
-                      |MATCH (a:Person)-[:ACTS_IN]->(x:Movie {title: "When Harry Met Sally"})<-[:ACTS_IN]-(b:Person)
-                      |USING JOIN ON x
-                      |RETURN x""".stripMargin
+      val query =
+        s"""CYPHER planner=$plannerName
+            |MATCH (a:Person)-[:ACTS_IN]->(x:Movie {title: "When Harry Met Sally"})<-[:ACTS_IN]-(b:Person)
+            |USING JOIN ON x
+            |RETURN x""".stripMargin
 
       val result = executeWithCostPlannerOnly(query)
 
@@ -666,20 +694,24 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   private def verifyJoinHintUnfulfillableOnRunWithConfig(initQuery: String, query: String, expectedResult: Any): Unit = {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
       engine =>
-        engine.execute(initQuery)
-        val result = engine.execute(query)
+        engine.execute(initQuery, Map.empty[String, Object], graph.session())
+        val result = engine.execute(query, Map.empty[String, Object], graph.session())
         shouldHaveNoWarnings(result)
         result.toList should equal(expectedResult)
 
-        val explainResult = engine.execute(s"EXPLAIN $query")
+        val explainResult = engine.execute(s"EXPLAIN $query", Map.empty[String, Object], graph.session())
         shouldHaveWarning(explainResult, Status.Statement.JoinHintUnfulfillableWarning)
     }
 
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       engine =>
-        engine.execute(initQuery)
-        intercept[JoinHintException](engine.execute(query))
-        intercept[JoinHintException](engine.execute(s"EXPLAIN $query"))
+        engine.execute(initQuery, Map.empty[String, Object], graph.session())
+        intercept[JoinHintException](
+          engine.execute(query, Map.empty[String, Object], graph.session())
+        )
+        intercept[JoinHintException](
+          engine.execute(s"EXPLAIN $query", Map.empty[String, Object], graph.session())
+        )
     }
   }
 
@@ -720,18 +752,20 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     protected val joinStr = operator.getSimpleName
 
     def verifyOccurences(actualOccurences: Int): Boolean
+
     def matchResultMsg(negated: Boolean, result: InternalPlanDescription, numberOfOperatorOccurences: Integer): String
 
     override def apply(result: InternalPlanDescription): MatchResult = {
-      val operatorOccurences = result.flatten.filter { description =>
+      val operatorOccurrences = result.flatten.filter { description =>
         val nameCondition = description.name == joinStr
         val variableCondition = withVariable == "" || description.variables.contains(withVariable)
         nameCondition && variableCondition
       }
-      val numberOfOperatorOccurences = operatorOccurences.length
-      val matches = verifyOccurences(numberOfOperatorOccurences)
+      val numberOfOperatorOccurrences = operatorOccurrences.length
+      val matches = verifyOccurences(numberOfOperatorOccurrences)
 
-      MatchResult(matches, matchResultMsg(negated = false, result, numberOfOperatorOccurences), matchResultMsg(negated = true, result, numberOfOperatorOccurences))
+      MatchResult(matches, matchResultMsg(negated = false, result, numberOfOperatorOccurrences), matchResultMsg(negated = true, result, numberOfOperatorOccurrences))
     }
   }
+
 }

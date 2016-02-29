@@ -54,6 +54,10 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   var dir: File = createDir(section)
   var allQueriesWriter: Writer = null
 
+  // these 2 methods are need by ExecutionEngineHelper to do its job
+  override def graph = db
+  override def eengine = engine
+
   def title: String
   def linkId: String = null
   def css: String
@@ -77,7 +81,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(docQuery), true)
     allQueriesWriter.append(fullQuerySnippet).append("\n\n")
 
-    val result = engine.execute(testQuery, params,QueryEngineProvider.embeddedSession())
+    val result = engine.execute(testQuery, params, db.session())
     result
   } catch {
     case e: CypherException => throw new InternalException(queryText, e)

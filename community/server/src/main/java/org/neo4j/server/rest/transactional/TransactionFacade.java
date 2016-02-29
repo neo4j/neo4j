@@ -29,8 +29,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
-import static org.neo4j.server.rest.web.QuerySessionProvider.provider;
-
 /**
  * Transactional actions contains the business logic for executing statements against Neo4j across long-running
  * transactions.
@@ -70,7 +68,7 @@ public class TransactionFacade
     public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction, AccessMode mode )
             throws TransactionLifecycleException
     {
-        return new TransactionHandle( kernel, engine, registry, uriScheme, implicitTransaction, mode, logProvider, provider );
+        return new TransactionHandle( kernel, engine, registry, uriScheme, implicitTransaction, mode, logProvider );
     }
 
     public TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException

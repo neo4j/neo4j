@@ -42,12 +42,18 @@ public class ExecutionEngine implements QueryExecutionEngine
 
     /**
      * Creates an execution engine around the give graph database
-     * @param database The database to wrap
+     * @param queryService The database to wrap
      * @param logProvider A {@link LogProvider} for cypher-statements
      */
-    public ExecutionEngine( GraphDatabaseQueryService database, LogProvider logProvider )
+    public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider )
     {
-        inner = new org.neo4j.cypher.internal.ExecutionEngine( database, logProvider );
+        inner = new org.neo4j.cypher.internal.ExecutionEngine( queryService, logProvider );
+    }
+
+    @Override
+    public GraphDatabaseQueryService queryService()
+    {
+        return inner.queryService();
     }
 
     @Override

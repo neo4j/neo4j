@@ -196,9 +196,13 @@ class PrettifierParser extends Parser with Base with Strings {
     keyword("WHERE") ~> NonBreakingKeywords
   }
 
-  def parse(input: String): Seq[SyntaxToken] = parserunners.ReportingParseRunner(main).run(input) match {
-    case (output: ParsingResult[_]) if output.matched => output.result.get
-    case (output: ParsingResult[Seq[SyntaxToken]])    => throw new SyntaxException(output.parseErrors.mkString("\n"))
+  def parse(input: String): Seq[SyntaxToken] = {
+    val runner = parserunners.ReportingParseRunner(main)
+    val v = runner.run(input)
+    v match {
+      case (output: ParsingResult[_]) if output.matched => output.result.get
+      case (output: ParsingResult[Seq[SyntaxToken]])    => throw new SyntaxException(output.parseErrors.mkString("\n"))
+    }
   }
 }
 

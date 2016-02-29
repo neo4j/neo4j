@@ -36,7 +36,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   type EntityAccessor = inner.EntityAccessor
 
-  override def transactionalContext: TransactionalContext = inner.transactionalContext
+  override def transactionalContext: QueryTransactionalContext = inner.transactionalContext
 
   override def entityAccessor: EntityAccessor = inner.entityAccessor
 
@@ -223,7 +223,7 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
 }
 
-class DelegatingTransactionalContext(val inner: TransactionalContext) extends TransactionalContext {
+class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
 
   override type ReadOps = inner.ReadOps
 

@@ -31,16 +31,17 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.rest.web.QuerySessionProvider;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
@@ -59,8 +60,10 @@ import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
  * the same instance. Therefore the implementation assumes that a single instance will only be accessed from
  * a single thread.
  *
- * All of the public methods on this class are "single-shot"; once you have called one method, the handle returns itself
- * to the registry. If you want to use it again, you'll need to acquire it back from the registry to ensure exclusive use.
+ * All of the public methods on this class are "single-shot"; once you have called one method, the handle returns
+ * itself
+ * to the registry. If you want to use it again, you'll need to acquire it back from the registry to ensure exclusive
+ * use.
  */
 public class TransactionHandle implements TransactionTerminationHandle
 {
@@ -68,26 +71,25 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
-    private final boolean implicitTransaction;
+    private final Type type;
     private final AccessMode mode;
     private final Log log;
     private final long id;
-    private final QuerySessionProvider sessionFactory;
     private TransitionalTxManagementKernelTransaction context;
 
     public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
             TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction, AccessMode mode,
-            LogProvider logProvider, QuerySessionProvider sessionFactory )
+            LogProvider logProvider )
     {
         this.txManagerFacade = txManagerFacade;
         this.engine = engine;
         this.registry = registry;
         this.uriScheme = uriScheme;
-        this.implicitTransaction = implicitTransaction;
+        this.type = implicitTransaction ? Type.implicit : Type.explicit;
+        ;
         this.mode = mode;
         this.log = logProvider.getLog( getClass() );
         this.id = registry.begin( this );
-        this.sessionFactory = sessionFactory;
     }
 
     public URI uri()
@@ -97,10 +99,11 @@ public class TransactionHandle implements TransactionTerminationHandle
 
     public boolean isImplicit()
     {
-        return implicitTransaction;
+        return type == Type.implicit;
     }
 
-    public void execute( StatementDeserializer statements, ExecutionResultSerializer output, HttpServletRequest request )
+    public void execute( StatementDeserializer statements, ExecutionResultSerializer output,
+            HttpServletRequest request )
     {
         List<Neo4jError> errors = new LinkedList<>();
         try
@@ -138,7 +141,7 @@ public class TransactionHandle implements TransactionTerminationHandle
             try
             {
                 Statement peek = statements.peek();
-                if ( implicitTransaction && peek == null ) /* JSON parse error */
+                if ( isImplicit() && peek == null ) /* JSON parse error */
                 {
                     addToCollection( statements.errors(), errors );
                 }
@@ -201,7 +204,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             try
             {
-                context = txManagerFacade.newTransaction( implicitTransaction, mode );
+                context = txManagerFacade.newTransaction( type, mode );
             }
             catch ( RuntimeException e )
             {
@@ -216,7 +219,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     }
 
     private void execute( StatementDeserializer statements, ExecutionResultSerializer output,
-                          List<Neo4jError> errors, HttpServletRequest request )
+            List<Neo4jError> errors, HttpServletRequest request )
     {
         executeStatements( statements, output, errors, request );
 
@@ -285,7 +288,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     }
 
     private void executeStatements( StatementDeserializer statements, ExecutionResultSerializer output,
-                                    List<Neo4jError> errors, HttpServletRequest request )
+            List<Neo4jError> errors, HttpServletRequest request )
     {
         try
         {
@@ -303,8 +306,8 @@ public class TransactionHandle implements TransactionTerminationHandle
                     }
 
                     hasPrevious = true;
-                    Result result = engine.executeQuery(
-                            statement.statement(), statement.parameters(), sessionFactory.create( request ) );
+                    QuerySession querySession = txManagerFacade.create( engine.queryService(), type, mode, request );
+                    Result result = engine.executeQuery( statement.statement(), statement.parameters(), querySession );
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                     output.notifications( result.getNotifications() );
                 }

@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherTestSupport
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Exceptions
-import org.neo4j.kernel.impl.query.QueryEngineProvider
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.util.{Failure, Success, Try}
@@ -44,7 +43,9 @@ object NewPlannerMonitor {
   }
 
   final case class UnableToHandleQuery(stackTrace: String) extends NewPlannerMonitorCall
+
   final case class NewQuerySeen(stackTrace: String) extends NewPlannerMonitorCall
+
 }
 
 class NewPlannerMonitor extends NewLogicalPlanSuccessRateMonitor {
@@ -72,7 +73,9 @@ object NewRuntimeMonitor {
   }
 
   final case class UnableToCompileQuery(stackTrace: String) extends NewRuntimeMonitorCall
+
   final case class NewPlanSeen(stackTrace: String) extends NewRuntimeMonitorCall
+
 }
 
 class NewRuntimeMonitor extends NewRuntimeSuccessRateMonitor {
@@ -100,7 +103,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   //in that way we will notice when we support new queries
   override def databaseConfig(): Map[Setting[_], String] =
     Map(GraphDatabaseSettings.cypher_parser_version -> CypherVersion.v3_0.name,
-        GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10")
+      GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10")
 
   val newPlannerMonitor = new NewPlannerMonitor
 
@@ -130,20 +133,20 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     })
   }
 
-    private def failedToUseNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
-      trace.collect {
-        case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $query\n$stackTrace")
-      }
+  private def failedToUseNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
+    trace.collect {
+      case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $query\n$stackTrace")
     }
+  }
 
-    private def unexpectedlyUsedNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
-      val events = trace.collectFirst {
-        case event: UnableToHandleQuery => event
-      }
-      events.orElse {
-        fail(s"Unexpectedly used the new planner on: $query")
-      }
+  private def unexpectedlyUsedNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
+    val events = trace.collectFirst {
+      case event: UnableToHandleQuery => event
     }
+    events.orElse {
+      fail(s"Unexpectedly used the new planner on: $query")
+    }
+  }
 
   def executeScalarWithAllPlanners[T](queryText: String, params: (String, Any)*): T =
     executeScalarWithAllPlannersAndMaybeCompatibilityMode(false, queryText, params: _*)
@@ -161,7 +164,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     val idpResult = monitoringNewPlanner(self.executeScalar[T](queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
 
     assert(ruleResult === idpResult, "Diverging results between rule and cost planners")
-    if ( enableCompatibility) {
+    if (enableCompatibility) {
       assert(compatibilityResult === idpResult, "Diverging results between compatibility mode and cost/rule planners")
     }
 
@@ -274,11 +277,12 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     }
   }
 
-  protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =
-    eengine.execute(queryText, params.toMap, QueryEngineProvider.embeddedSession()) match {
-      case e:ExecutionResultWrapperFor3_0 => RewindableExecutionResult(e)
-      case e:ExecutionResultWrapperFor2_3 => RewindableExecutionResult(e)
+  protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult = {
+    eengine.execute(queryText, params.toMap, graph.session()) match {
+      case e: ExecutionResultWrapperFor3_0 => RewindableExecutionResult(e)
+      case e: ExecutionResultWrapperFor2_3 => RewindableExecutionResult(e)
     }
+  }
 
   override def execute(queryText: String, params: (String, Any)*) =
     fail("Don't use execute together with NewPlannerTestSupport")
@@ -310,10 +314,11 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   }
 
   /**
-   * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
-   */
+    * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
+    */
   implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
     def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs)
+
     def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs = false)
   }
 
@@ -326,10 +331,10 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     def toCompararableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
       def convert(v: Any): Any = v match {
         case a: Array[_] => a.toList.map(convert)
-        case m: Map[_,_] =>  {
+        case m: Map[_, _] => {
           Eagerly.immutableMapValues(m, convert)
         }
-        case m: java.util.Map[_,_] =>  {
+        case m: java.util.Map[_, _] => {
           Eagerly.immutableMapValues(m.asScala, convert)
         }
         case l: java.util.List[_] => l.asScala.map(convert)

@@ -38,9 +38,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle;
 import org.neo4j.visualization.graphviz.GraphvizWriter;
@@ -302,9 +302,9 @@ enum BlockType
                 if ( exec )
                 {
                     state.latestResult =
-                            new Result( fileQuery, state.engine.profile( fileQuery, state.parameters ), state.database );
-                    prettifiedStatements.add( state.engine.prettify( webQuery ) );
-                    try (Transaction tx = state.database.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ))
+                            new Result( fileQuery, state.database.getGraphDatabaseService().execute( "PROFILE " + fileQuery, state.parameters ), state.database );
+                    prettifiedStatements.add( state.prettify( webQuery ) );
+                    try ( InternalTransaction tx = state.database.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ) )
                     {
                         state.database.getGraphDatabaseService().schema().awaitIndexesOnline( 10000, TimeUnit.SECONDS );
                         tx.success();
@@ -451,7 +451,7 @@ enum BlockType
         GraphvizWriter writer = new GraphvizWriter(
                 AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors() );
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (Transaction tx = state.database.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ))
+        try ( InternalTransaction tx = state.database.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ) )
         {
             if ( resultOnly )
             {

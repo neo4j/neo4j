@@ -399,7 +399,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("2.3 can warn about bare nodes") {
-    val res = eengine.execute("EXPLAIN CYPHER 2.3 MATCH n RETURN n")
+    val res = eengine.execute("EXPLAIN CYPHER 2.3 MATCH n RETURN n", Map.empty[String, Any], graph.session())
 
     res.notifications should not be empty
   }

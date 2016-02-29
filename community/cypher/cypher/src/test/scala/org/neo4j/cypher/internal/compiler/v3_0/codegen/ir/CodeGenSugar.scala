@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.Neo4jTransactionContext
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{Namer, _}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
@@ -31,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, InternalResultRow, InternalResultVisitor, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
-import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -39,6 +38,8 @@ import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.{AccessMode, KernelTransaction, Statement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.JavaConversions
@@ -69,7 +70,8 @@ trait CodeGenSugar extends MockitoSugar {
     val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ)
     try {
       val statement = graphDb.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-      val transactionalContext = new Neo4jTransactionContext(graphDb, tx, statement)
+      val locker: PropertyContainerLocker = new PropertyContainerLocker
+      val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graphDb, tx, statement, locker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val result = plan.executionResultBuilder(queryContext, mode, tracer(mode), params, taskCloser)
       tx.success()
@@ -129,7 +131,7 @@ trait CodeGenSugar extends MockitoSugar {
 
   private def mockQueryContext() = {
     val qc = mock[QueryContext]
-    val transactionalContext = mock[ExtendedTransactionalContext]
+    val transactionalContext = mock[TransactionalContextWrapper]
     val statement = mock[Statement]
     when(qc.transactionalContext).thenReturn(transactionalContext)
     when(transactionalContext.statement).thenReturn(statement)

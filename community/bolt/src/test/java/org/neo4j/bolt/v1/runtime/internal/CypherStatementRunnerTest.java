@@ -21,9 +21,11 @@ package org.neo4j.bolt.v1.runtime.internal;
 
 import org.junit.Test;
 
-import org.neo4j.bolt.v1.runtime.internal.CypherStatementRunner.BoltQuerySession;
 import org.neo4j.graphdb.Result;
+import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QuerySession;
 
 import static java.util.Collections.EMPTY_MAP;
 import static org.mockito.Matchers.any;
@@ -45,7 +47,7 @@ public class CypherStatementRunnerTest
     public void shouldCreateImplicitTxIfNoneExists() throws Exception
     {
         // Given
-        when( engine.executeQuery( anyString(), anyMap(), any( BoltQuerySession.class ) ) ).thenReturn( mock( Result.class ) );
+        when( engine.executeQuery( anyString(), anyMap(), any( QuerySession.class ) ) ).thenReturn( mock( Result.class ) );
         when( ctx.hasTransaction() ).thenReturn( false );
 
         CypherStatementRunner cypherRunner = new CypherStatementRunner( engine );
@@ -54,9 +56,11 @@ public class CypherStatementRunnerTest
         cypherRunner.run( ctx, "<query>", EMPTY_MAP );
 
         // Then
+        verify( ctx ).createSession( any( GraphDatabaseQueryService.class ), any( PropertyContainerLocker.class ));
         verify( ctx ).hasTransaction();
         verify( ctx ).beginImplicitTransaction();
-        verify( engine ).executeQuery( eq( "<query>" ), eq( EMPTY_MAP ), any( BoltQuerySession.class ) );
+        verify( engine ).queryService();
+        verify( engine ).executeQuery( eq( "<query>" ), eq( EMPTY_MAP ), any( QuerySession.class ) );
         verifyNoMoreInteractions( engine, ctx );
     }
 }
