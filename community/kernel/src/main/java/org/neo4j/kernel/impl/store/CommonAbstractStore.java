@@ -31,6 +31,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
@@ -46,6 +47,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -157,14 +159,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
      */
     protected void checkStorage( boolean createIfNotExists )
     {
-        try ( PagedFile ignore = pageCache.map( storageFileName, pageCache.pageSize() ) )
+        int pageSize = pageCache.pageSize();
+        try ( PagedFile ignore = pageCache.map( storageFileName, pageSize, ANY_PAGE_SIZE ) )
         {
         }
         catch ( NoSuchFileException e )
         {
             if ( createIfNotExists )
             {
-                try ( PagedFile file = pageCache.map( storageFileName, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+                try ( PagedFile file = pageCache.map( storageFileName, pageSize, StandardOpenOption.CREATE ) )
                 {
                     initialiseNewStoreFile( file );
                     return;
@@ -237,7 +240,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     {
         if ( getNumberOfReservedLowIds() > 0 )
         {
-            try ( PagedFile pagedFile = pageCache.map( getStorageFileName(), pageCache.pageSize() ) )
+            try ( PagedFile pagedFile = pageCache.map( getStorageFileName(), pageCache.pageSize(), ANY_PAGE_SIZE ) )
             {
                 try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
                 {

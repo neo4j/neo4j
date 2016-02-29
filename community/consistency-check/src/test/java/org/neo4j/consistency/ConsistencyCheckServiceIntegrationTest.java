@@ -45,7 +45,8 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -113,6 +114,7 @@ public class ConsistencyCheckServiceIntegrationTest
         assertTrue( "Inconsistency report file " + specificLogFile + " not generated", specificLogFile.exists() );
     }
 
+    // TODO test discovered to be flaky during merge. Fix ASAP.
     @Test
     public void shouldNotReportDuplicateForHugeLongValues() throws Exception
     {
@@ -201,8 +203,10 @@ public class ConsistencyCheckServiceIntegrationTest
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration )
             throws ConsistencyCheckIncompleteException, IOException
     {
+        LogProvider instance = FormattedLogProvider.toOutputStream( System.out );
+//        NullLogProvider instance = NullLogProvider.getInstance();
         return service.runFullConsistencyCheck( fixture.directory(),
-                configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
+                configuration, ProgressMonitorFactory.NONE, instance, false );
     }
 
     @Rule

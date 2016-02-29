@@ -80,7 +80,7 @@ public class RecordScannerTest
         RecordProcessor<Integer> recordProcessor = mock( RecordProcessor.class );
 
         RecordScanner<Integer> scanner = new ParallelRecordScanner<>( "our test task", Statistics.NONE, 1, store,
-                progressBuilder, recordProcessor, CacheAccess.EMPTY );
+                progressBuilder, recordProcessor, CacheAccess.EMPTY, QueueDistribution.ROUND_ROBIN );
 
         // when
         scanner.run();

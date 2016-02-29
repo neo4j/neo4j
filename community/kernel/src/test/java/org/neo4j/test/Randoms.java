@@ -169,6 +169,7 @@ public class Randoms
     @SuppressWarnings( "unchecked" )
     public <T> T[] selection( T[] among, int min, int max, boolean allowDuplicates )
     {
+        assert min <= max;
         int diff = min == max ? 0 : random.nextInt( max-min );
         int length = min + diff;
         T[] result = (T[]) Array.newInstance( among.getClass().getComponentType(), length );

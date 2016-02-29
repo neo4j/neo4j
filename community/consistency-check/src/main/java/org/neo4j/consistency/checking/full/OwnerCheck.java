@@ -130,6 +130,11 @@ class OwnerCheck implements CheckDecorator
     }
 
     @Override
+    public void prepare()
+    {
+    }
+
+    @Override
     public OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> decorateNeoStoreChecker(
             OwningRecordCheck<NeoStoreRecord, ConsistencyReport.NeoStoreConsistencyReport> checker )
     {

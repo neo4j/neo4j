@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checking.full;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
+import org.neo4j.consistency.checking.full.QueueDistribution.QueueDistributor;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.progress.ProgressListener;
@@ -37,16 +38,18 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
     private final ProgressListener progressListener;
     private final StoreAccess storeAccess;
     private final CacheAccess cacheAccess;
+    private final QueueDistribution distribution;
 
     StoreProcessorTask( String name, Statistics statistics, int threads, RecordStore<R> store, StoreAccess storeAccess,
             String builderPrefix, ProgressMonitorFactory.MultiPartBuilder builder, CacheAccess cacheAccess,
-            StoreProcessor processor )
+            StoreProcessor processor, QueueDistribution distribution )
     {
         super( name, statistics, threads );
         this.store = store;
         this.storeAccess = storeAccess;
         this.cacheAccess = cacheAccess;
         this.processor = processor;
+        this.distribution = distribution;
         this.progressListener = builder.progressForPart( name +
                 indexedPartName( store.getStorageFileName().getName(), builderPrefix ), store.getHighId() );
     }
@@ -83,10 +86,12 @@ public class StoreProcessorTask<R extends AbstractBaseRecord> extends Consistenc
                 }
                 else
                 {
-                    highId = storeAccess.getRelationshipStore().getHighId();
+                    highId = storeAccess.getNodeStore().getHighId();
                 }
-                long recordsPerCPU = (highId / numberOfThreads) + 1;
-                processor.applyFilteredParallel( store, progressListener, numberOfThreads, recordsPerCPU );
+                long recordsPerCPU = RecordDistributor.calculateRecodsPerCpu( highId, numberOfThreads );
+                QueueDistributor<R> distributor = distribution.distributor( recordsPerCPU, numberOfThreads );
+                processor.applyFilteredParallel( store, progressListener, numberOfThreads, recordsPerCPU,
+                        distributor );
             }
             else
             {

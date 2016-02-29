@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 /**
  * Processor of node records with the context of how they're indexed.
  */
-public class PropertyAndNode2LabelIndexProcessor implements RecordProcessor<NodeRecord>
+public class PropertyAndNode2LabelIndexProcessor extends RecordProcessor.Adapter<NodeRecord>
 {
     private final ConsistencyReporter reporter;
     private final RecordCheck<NodeRecord, ConsistencyReport.NodeConsistencyReport> nodeIndexCheck;
@@ -71,10 +71,5 @@ public class PropertyAndNode2LabelIndexProcessor implements RecordProcessor<Node
                 mandatoryCheck.receive( ChainCheck.keys( property ) );
             }
         }
-    }
-
-    @Override
-    public void close()
-    {
     }
 }

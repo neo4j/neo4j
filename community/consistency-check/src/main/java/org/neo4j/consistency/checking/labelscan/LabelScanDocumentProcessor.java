@@ -24,7 +24,7 @@ import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 
-public class LabelScanDocumentProcessor implements RecordProcessor<NodeLabelRange>
+public class LabelScanDocumentProcessor extends RecordProcessor.Adapter<NodeLabelRange>
 {
     private final ConsistencyReporter reporter;
     private final LabelScanCheck labelScanCheck;
@@ -39,10 +39,5 @@ public class LabelScanDocumentProcessor implements RecordProcessor<NodeLabelRang
     public void process( NodeLabelRange nodeLabelRange )
     {
         reporter.forNodeLabelScan( new LabelScanDocument( nodeLabelRange ), labelScanCheck );
-    }
-
-    @Override
-    public void close()
-    {
     }
 }
