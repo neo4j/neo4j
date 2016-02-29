@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_0.codegen
 
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
 /**
  * This constitutes the SPI for code generation.
@@ -121,7 +121,7 @@ trait MethodStructure[E] {
   def lookupPropertyKey(propName: String, propVar: String)
   def indexSeek(iterVar: String, descriptorVar: String, value: E): Unit
   def indexUniqueSeek(name: String, descriptorVar: String, value: E)
-
+  def relType(relIdVar: String): E
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
 
 

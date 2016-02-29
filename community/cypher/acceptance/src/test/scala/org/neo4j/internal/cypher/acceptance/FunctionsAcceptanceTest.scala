@@ -500,4 +500,28 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     // THEN
     result.toList should equal(List(Map("id(r)" -> expected)))
   }
+
+  test("type should work in both runtimes")  {
+    // GIVEN
+    relate(createNode(), createNode(), "T")
+
+    // WHEN
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]->() RETURN type(r)")
+
+    // THEN
+    result.toList should equal(List(Map("type(r)" -> "T")))
+  }
+
+  test("nested type should work in both runtimes")  {
+    val intermediate = createNode()
+    // GIVEN
+    relate(createNode(), intermediate, "T1")
+    relate(intermediate, createNode(), "T2")
+
+    // WHEN
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r1]->()-[r2]->() RETURN type(r1), type(r2)")
+
+    // THEN
+    result.toList should equal(List(Map("type(r1)" -> "T1", "type(r2)" -> "T2")))
+  }
 }

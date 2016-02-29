@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, InternalResultVisitor, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext, TransactionalContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, ParameterNotFoundException, SemanticDirection, symbols}
@@ -47,7 +47,7 @@ import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.kernel.api.{ReadOperations, Statement, StatementTokenNameLookup, TokenNameLookup}
+import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.NodeManager
@@ -100,7 +100,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         throwsException(typeParameter("E")))) { method =>
         using(method.tryBlock()) { body =>
           body.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
-          body.assign(typeRef[RelationshipDataExtractor], "rel", Templates.newRelationshipDataExtractor)
           block(Method(fields, body, new AuxGenerator(packageName, generator)))
           body.expression(Expression.invoke(body.self(), fields.success))
           using(body.finallyBlock()) { then =>
@@ -245,24 +244,30 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String,
                                        relVar: String) = {
-    val startNode = Expression.invoke(generator.load("rel"), Methods.startNode)
-    val endNode = Expression.invoke(generator.load("rel"), Methods.endNode)
+    val extractor = relExtractor(relVar)
+    generator.assign(typeRef[RelationshipDataExtractor], extractor, Templates.newRelationshipDataExtractor)
+    val startNode = Expression.invoke(generator.load(extractor), Methods.startNode)
+    val endNode = Expression.invoke(generator.load(extractor), Methods.endNode)
     generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
       Expression.invoke(generator.load(iterVar), Methods.nextLong),
-      generator.load("rel")))
+      generator.load(extractor)))
     generator.assign(typeRef[Long], toNodeVar, DirectionConverter.toGraphDb(direction) match {
       case Direction.INCOMING => startNode
       case Direction.OUTGOING => endNode
       case Direction.BOTH => Expression.ternary(Expression.eq(startNode, generator.load(fromNodeVar)), endNode, startNode)
     })
-    generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load("rel"), Methods.relationship))
+    generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load(extractor), Methods.relationship))
   }
 
+  private def relExtractor(relVar: String) = s"${relVar}Extractor"
+
   override def nextRelationship(iterVar: String, ignored: SemanticDirection, relVar: String) = {
+    val extractor = relExtractor(relVar)
+    generator.assign(typeRef[RelationshipDataExtractor], extractor, Templates.newRelationshipDataExtractor)
     generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
       Expression.invoke(generator.load(iterVar), Methods.nextLong),
-      generator.load("rel")))
-    generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load("rel"), Methods.relationship))
+      generator.load(extractor)))
+    generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load(extractor), Methods.relationship))
   }
 
   override def allNodesScan(iterVar: String) =
@@ -478,7 +483,6 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     val returnType: TypeReference = joinTableType(resultType)
     generator.assign(returnType, resultVar, Expression.invoke(generator.self(),MethodReference.methodReference(generator.owner(),returnType, methodName)))
     using(generator.classGenerator().generateMethod(returnType, methodName)) { body =>
-      body.assign(typeRef[RelationshipDataExtractor], "rel", Templates.newRelationshipDataExtractor)
       block(copy(generator = body, event = None))
       body.returns(body.load(resultVar))
     }
@@ -657,6 +661,16 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     }
   }
 
+  override def relType(relVar: String) =  {
+    val typeOfRel = Expression.invoke(generator.load(relExtractor(relVar)), Methods.typeOf)
+    val variable = generator.declare(typeRef[String], context.namer.newVarName())
+    Templates.handleExceptions(generator, fields.ro) { inner =>
+      val invoke = Expression.invoke(readOperations, Methods.relationshipTypeGetName, typeOfRel)
+      inner.assign(variable, invoke)
+      generator.load(variable.name())
+    }
+  }
+
   override def projectVariable(variableName: String, expression: Expression) = {
     // java.lang.Object is an ok type for result variables because we only put them into result row
     val resultType = typeRef[Object]
@@ -759,8 +773,9 @@ private object Methods {
   val arrayAsList = method[MapUtil, util.Map[String, Object]]("map", typeRef[Array[Object]])
   val relationshipVisit = method[RelationshipIterator, Boolean]("relationshipVisit", typeRef[Long], typeRef[RelationshipVisitor[RuntimeException]])
   val relationship = method[RelationshipDataExtractor, Long]("relationship", typeRef[Long])
-  val startNode = method[RelationshipIterator, Long]("startNode")
-  val endNode = method[RelationshipIterator, Long]("endNode")
+  val startNode = method[RelationshipDataExtractor, Long]("startNode")
+  val endNode = method[RelationshipDataExtractor, Long]("endNode")
+  val typeOf = method[RelationshipDataExtractor, Int]("type")
   val nodeGetAllRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction])
   val nodeGetRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
   val allConnectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Long], typeRef[Direction])
@@ -783,6 +798,7 @@ private object Methods {
   val not = method[CompiledConversionUtils, java.lang.Boolean]("not", typeRef[Object])
   val loadParameter = method[CompiledConversionUtils, java.lang.Object]("loadParameter", typeRef[Object])
   val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
+  val relationshipTypeGetName = method[ReadOperations, String]("relationshipTypeGetName", typeRef[Int])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty")
   val nodesGetFromIndexLookup = method[ReadOperations, PrimitiveLongIterator]("nodesGetFromIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
