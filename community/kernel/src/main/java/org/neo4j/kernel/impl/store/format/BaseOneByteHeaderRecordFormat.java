@@ -56,18 +56,42 @@ public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseR
         return isInUse( cursor.getByte( cursor.getOffset() ) );
     }
 
-    protected boolean isInUse( byte firstByte )
+    /**
+     * Given a record with a header byte this method checks the specific bit which this record format was
+     * configured to interpret as inUse.
+     *
+     * @param headerByte header byte of a record (the first byte) which contains the inUse bit we're interested in.
+     * @return whether or not this header byte has the specific bit saying that it's in use.
+     */
+    protected boolean isInUse( byte headerByte )
     {
-        return (firstByte & inUseBitMaskForFirstByte) != 0;
+        return has( headerByte, inUseBitMaskForFirstByte );
     }
 
+    /**
+     * Checks whether or not a specific bit in a byte is set.
+     *
+     * @param headerByte the header byte to check, here represented as a {@code long} for convenience
+     * due to many callers keeping this header as long as to remove common problems of forgetting to
+     * cast to long before shifting.
+     * @param bitMask mask for the bit to check, such as 0x1, 0x2 and 0x4.
+     * @return whether or not that bit is set.
+     */
     protected static boolean has( long headerByte, int bitMask )
     {
         return (headerByte & bitMask) != 0;
     }
 
-    protected static byte set( byte header, int bitMask, boolean value )
+    /**
+     * Sets or clears bits specified by the {@code bitMask} in the header byte.
+     *
+     * @param headerByte byte to set bits in.
+     * @param bitMask mask specifying which bits to change.
+     * @param value {@code true} means setting the bits specified by the bit mask, {@code false} means clearing.
+     * @return the {@code headerByte} with the changes incorporated.
+     */
+    protected static byte set( byte headerByte, int bitMask, boolean value )
     {
-        return (byte) (value ? header | bitMask : header);
+        return (byte) (value ? headerByte | bitMask : headerByte);
     }
 }
