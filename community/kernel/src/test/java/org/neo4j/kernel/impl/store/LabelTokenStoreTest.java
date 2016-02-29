@@ -27,8 +27,9 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.logging.LogProvider;
@@ -37,7 +38,6 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -45,12 +45,12 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class LabelTokenStoreTest
 {
     private final File file = mock( File.class );
-    private final Config config = mock( Config.class );
     private final IdGeneratorFactory generatorFactory = mock( IdGeneratorFactory.class );
     private final PageCache cache = mock( PageCache.class );
     private final LogProvider logProvider = mock( LogProvider.class );
     private final DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
     private final PageCursor pageCursor = mock( PageCursor.class );
+    private final Config config = new Config();
 
     @Test
     public void forceGetRecordSkipInUsecheck() throws IOException
@@ -74,7 +74,7 @@ public class LabelTokenStoreTest
         public UnusedLabelTokenStore() throws IOException
         {
             super( file, config, generatorFactory, cache, logProvider, dynamicStringStore,
-                    select().labelToken(), select().storeVersion() );
+                    select( config, NullLogService.getInstance() ) );
             storeFile = mock( PagedFile.class );
 
             when( storeFile.io( any( Long.class ), any( Integer.class ) ) ).thenReturn( pageCursor );

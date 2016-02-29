@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandVisitor;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -59,7 +60,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 
 public class WriteTransactionCommandOrderingTest
@@ -207,7 +207,7 @@ public class WriteTransactionCommandOrderingTest
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, new Config(), null, null, NullLogProvider.getInstance(), null, null, null,
-                    select().property(), select().storeVersion() );
+                    select( new Config(), NullLogService.getInstance() ) );
             this.currentRecording = currentRecording;
         }
 
@@ -235,7 +235,7 @@ public class WriteTransactionCommandOrderingTest
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, new Config(), null, null, NullLogProvider.getInstance(), null,
-                    select().node(), select().storeVersion() );
+                    select( new Config(), NullLogService.getInstance() ) );
             this.currentRecording = currentRecording;
         }
 
@@ -271,7 +271,7 @@ public class WriteTransactionCommandOrderingTest
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, new Config(), null, null, NullLogProvider.getInstance(),
-                    select().relationship(), select().storeVersion() );
+                    select( new Config(), NullLogService.getInstance() ) );
             this.currentRecording = currentRecording;
         }
 

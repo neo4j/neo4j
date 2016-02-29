@@ -32,7 +32,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -72,11 +72,10 @@ public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreH
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
             DynamicArrayStore arrayPropertyStore,
-            RecordFormat<PropertyRecord> recordFormat,
-            String storeVersion )
+            RecordFormats recordFormats)
     {
         super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormat, storeVersion, NO_STORE_HEADER_FORMAT );
+                recordFormats.property(), recordFormats.storeVersion(), NO_STORE_HEADER_FORMAT );
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;

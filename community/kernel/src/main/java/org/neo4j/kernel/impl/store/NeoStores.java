@@ -471,8 +471,7 @@ public class NeoStores implements AutoCloseable
     {
         File storeFile = getStoreFile( storeName );
         return initialize( new NodeStore( storeFile, config, idGeneratorFactory, pageCache, logProvider,
-                (DynamicArrayStore) getOrCreateStore( StoreType.NODE_LABEL ), recordFormats.node(),
-                recordFormats.storeVersion() ) );
+                (DynamicArrayStore) getOrCreateStore( StoreType.NODE_LABEL ), recordFormats ) );
     }
 
     CommonAbstractStore createPropertyKeyTokenStore( String storeName )
@@ -489,15 +488,14 @@ public class NeoStores implements AutoCloseable
         return initialize( new PropertyStore( storeFile, config, idGeneratorFactory, pageCache, logProvider,
                 (DynamicStringStore) getOrCreateStore( StoreType.PROPERTY_STRING ),
                 (PropertyKeyTokenStore) getOrCreateStore( StoreType.PROPERTY_KEY_TOKEN ),
-                (DynamicArrayStore) getOrCreateStore( StoreType.PROPERTY_ARRAY ), recordFormats.property(),
-                recordFormats.storeVersion() ) );
+                (DynamicArrayStore) getOrCreateStore( StoreType.PROPERTY_ARRAY ), recordFormats ) );
     }
 
     CommonAbstractStore createRelationshipStore( String storeName )
     {
         File file = getStoreFile( storeName );
         return initialize( new RelationshipStore( file, config, idGeneratorFactory, pageCache, logProvider,
-                recordFormats.relationship(), recordFormats.storeVersion() ) );
+                recordFormats ) );
     }
 
     CommonAbstractStore createDynamicStringStore( String storeName, IdType idType,
@@ -518,16 +516,14 @@ public class NeoStores implements AutoCloseable
         File storeFile = getStoreFile( storeName );
         return initialize( new RelationshipTypeTokenStore( storeFile, config, idGeneratorFactory,
                 pageCache, logProvider,
-                (DynamicStringStore) getOrCreateStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME ),
-                recordFormats.relationshipTypeToken(), recordFormats.storeVersion() ) );
+                (DynamicStringStore) getOrCreateStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME ), recordFormats ) );
     }
 
     CommonAbstractStore createLabelTokenStore( String storeName )
     {
         File fileName = getStoreFile( storeName );
         return initialize( new LabelTokenStore( fileName, config, idGeneratorFactory, pageCache,
-                logProvider, (DynamicStringStore) getOrCreateStore( StoreType.LABEL_TOKEN_NAME ),
-                recordFormats.labelToken(), recordFormats.storeVersion() ) );
+                logProvider, (DynamicStringStore) getOrCreateStore( StoreType.LABEL_TOKEN_NAME ), recordFormats ) );
     }
 
     CommonAbstractStore createSchemaStore( String storeName )

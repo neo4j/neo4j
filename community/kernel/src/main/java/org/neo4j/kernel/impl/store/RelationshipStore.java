@@ -20,9 +20,10 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -43,11 +44,11 @@ public class RelationshipStore extends ComposableRecordStore<RelationshipRecord,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
-            RecordFormat<RelationshipRecord> recordFormat,
-            String storeVersion )
+            RecordFormats recordFormats)
     {
         super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
-                pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat, storeVersion, NO_STORE_HEADER_FORMAT );
+                pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.relationship(), recordFormats.storeVersion(),
+                NO_STORE_HEADER_FORMAT );
     }
 
     @Override

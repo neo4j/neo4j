@@ -23,11 +23,11 @@ import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
@@ -47,12 +47,11 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             PageCache pageCache,
             LogProvider logProvider,
             DynamicStringStore nameStore,
-            RecordFormat<RelationshipTypeTokenRecord> recordFormat,
-            String storeVersion )
+            RecordFormats recordFormats)
     {
-        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache,
-                logProvider, nameStore, TYPE_DESCRIPTOR, new RelationshipTypeToken.Factory(), recordFormat,
-                storeVersion );
+        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
+                TYPE_DESCRIPTOR, new RelationshipTypeToken.Factory(), recordFormats.relationshipTypeToken(),
+                recordFormats.storeVersion() );
     }
 
     @Override

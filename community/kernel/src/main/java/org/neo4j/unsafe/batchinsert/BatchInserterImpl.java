@@ -52,8 +52,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
-import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -144,6 +142,8 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
+import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
+import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -272,7 +272,7 @@ public class BatchInserterImpl implements BatchInserter
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
         StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,
-                logService.getInternalLogProvider(), InternalRecordFormatSelector.select() );
+                logService.getInternalLogProvider(), InternalRecordFormatSelector.select(config, logService) );
 
         if ( dump )
         {
