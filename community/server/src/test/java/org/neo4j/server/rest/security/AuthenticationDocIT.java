@@ -23,6 +23,7 @@ import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -247,6 +248,32 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         JsonNode firstError = response.get( "errors" ).get( 0 );
         assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.AuthenticationRateLimit" ) );
         assertThat( firstError.get( "message" ).asText(), equalTo( "Too many failed authentication requests. Please wait 5 seconds and try again." ) );
+    }
+
+    // TODO: Enable this test when we have authorization in place
+    @Test
+    @Ignore
+    public void shouldNotAllowDataAccessForUnauthorizedUser() throws Exception
+    {
+        // Given
+        startServerWithConfiguredUser(); // TODO: The user for this test should not have read access
+
+        // When
+        HTTP.Response response =
+                HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) ).POST(
+                        server.baseUri().resolve( "authentication" ).toString(),
+                        HTTP.RawPayload.quotedJson( "{'username':'neo4j', 'password':'secret'}" )
+                );
+
+        // When & then
+        assertEquals( 403, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) )
+                .POST( server.baseUri().resolve( "db/data/node" ).toString(),
+                        RawPayload.quotedJson( "{'name':'jake'}" ) ).status() );
+        assertEquals( 403, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) )
+                .GET( server.baseUri().resolve( "db/data/node/1234" ).toString() ).status() );
+        assertEquals( 403, HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "secret" ) )
+                .POST( server.baseUri().resolve( "db/data/transaction/commit" ).toString(),
+                        RawPayload.quotedJson( "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ) ).status() );
     }
 
     private void assertAuthorizationRequired( String method, String path, int expectedAuthorizedStatus ) throws JsonParseException
