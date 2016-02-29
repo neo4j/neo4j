@@ -236,7 +236,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         }
         catch ( IOException e )
         {
-            // Just throw IOException, add proper handling further up
             throw new UnderlyingStorageException( e );
         }
         loadIdGenerator();
@@ -288,13 +287,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     public byte[] getRawRecordData( long id ) throws IOException
     {
         byte[] data = new byte[recordSize];
-        try ( PageCursor pageCursor = storeFile.io( id / getRecordsPerPage(), PagedFile.PF_SHARED_READ_LOCK ) )
+        long pageId = RecordPageLocationCalculator.pageIdForRecord( id, storeFile.pageSize(), recordSize );
+        int offset = RecordPageLocationCalculator.offsetForId( id, storeFile.pageSize(), recordSize );
+        try ( PageCursor pageCursor = storeFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             if ( pageCursor.next() )
             {
                 do
                 {
-                    pageCursor.setOffset( (int) (id % getRecordsPerPage() * recordSize) );
+                    pageCursor.setOffset( offset );
                     pageCursor.getBytes( data );
                 }
                 while ( pageCursor.shouldRetry() );
@@ -302,7 +303,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         }
         return data;
     }
-
 
     /**
      * This method is called when opening the store to extract header data and determine things like
