@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.MapUtil;
@@ -34,7 +33,6 @@ import static org.junit.Assert.fail;
 
 public class HighLimitTest
 {
-    @Ignore("Waiting on store migration work")
     @Test
     public void shouldResolveHighLimitsRecordFormat() throws Exception
     {
@@ -51,7 +49,7 @@ public class HighLimitTest
         assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
 
-    @Ignore("Waiting on store migration work")
+
     @Test
     public void shouldResolveNoRecordFormatToHighLimitDefault() throws Exception
     {

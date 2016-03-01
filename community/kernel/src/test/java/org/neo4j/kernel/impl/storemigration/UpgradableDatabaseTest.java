@@ -47,20 +47,20 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateToFixedLength;
+import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException.MESSAGE;
 
 @RunWith( Enclosed.class )
 public class UpgradableDatabaseTest
 {
     private static final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-
     @RunWith( Parameterized.class )
     public static class SupportedVersions
     {
@@ -259,8 +259,8 @@ public class UpgradableDatabaseTest
             catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )
             {
                 // then
-                assertThat( e.getMessage(), containsString( neostoreFilename ) );
-                assertThat( e.getMessage(), containsString( "has a store version number that we cannot upgrade from" ) );
+                File expectedFile = new File( workingDirectory, neostoreFilename ).getAbsoluteFile();
+                assertEquals( String.format( MESSAGE, expectedFile, version ), e.getMessage() );
                 assertThat( e.getMessage(), containsString( version ) );
             }
         }

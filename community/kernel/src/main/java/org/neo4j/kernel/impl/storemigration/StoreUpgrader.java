@@ -314,7 +314,7 @@ public class StoreUpgrader
 
     public static class UnexpectedUpgradingStoreVersionException extends UnableToUpgradeException
     {
-        private static final String MESSAGE = "'%s' has a store version '%s' that we cannot upgrade from.";
+        protected static final String MESSAGE = "'%s' has a store version '%s' that we cannot upgrade from.";
 
         public UnexpectedUpgradingStoreVersionException( String filename, String actualVersion )
         {
