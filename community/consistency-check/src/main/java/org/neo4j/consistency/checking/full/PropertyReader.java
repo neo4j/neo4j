@@ -41,13 +41,11 @@ public class PropertyReader implements PropertyAccessor
 {
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
-    private final NodeRecord nodeRecord;
 
     public PropertyReader( StoreAccess storeAccess )
     {
         this.propertyStore = storeAccess.getRawNeoStores().getPropertyStore();
         this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
-        this.nodeRecord = nodeStore.newRecord();
     }
 
     public Collection<PropertyRecord> getPropertyRecordChain( NodeRecord nodeRecord )
@@ -103,6 +101,7 @@ public class PropertyReader implements PropertyAccessor
     @Override
     public Property getProperty( long nodeId, int propertyKeyId )
     {
+        NodeRecord nodeRecord = nodeStore.newRecord();
         if ( nodeStore.getRecord( nodeId, nodeRecord, FORCE ).inUse() )
         {
             for ( PropertyBlock block : propertyBlocks( nodeRecord ) )

@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -44,15 +44,13 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.consistency.ConsistencyCheckService.defaultLogFileName;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
@@ -114,7 +112,6 @@ public class ConsistencyCheckServiceIntegrationTest
         assertTrue( "Inconsistency report file " + specificLogFile + " not generated", specificLogFile.exists() );
     }
 
-    // TODO test discovered to be flaky during merge. Fix ASAP.
     @Test
     public void shouldNotReportDuplicateForHugeLongValues() throws Exception
     {
@@ -203,10 +200,8 @@ public class ConsistencyCheckServiceIntegrationTest
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration )
             throws ConsistencyCheckIncompleteException, IOException
     {
-        LogProvider instance = FormattedLogProvider.toOutputStream( System.out );
-//        NullLogProvider instance = NullLogProvider.getInstance();
         return service.runFullConsistencyCheck( fixture.directory(),
-                configuration, ProgressMonitorFactory.NONE, instance, false );
+                configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
     }
 
     @Rule
