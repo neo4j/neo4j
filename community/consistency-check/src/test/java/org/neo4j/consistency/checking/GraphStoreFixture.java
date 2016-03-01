@@ -34,6 +34,7 @@ import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -432,7 +433,12 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private void generateInitialData()
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
-        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder.newGraphDatabase();
+        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder
+                // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
+                // tests and records around that. Those tests could change, but the simpler option is to just
+                // keep the block size to 60 and let them be.
+                .setConfig( GraphDatabaseSettings.label_block_size, "60" )
+                .newGraphDatabase();
         try
         {
             generateInitialData( graphDb );

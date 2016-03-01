@@ -152,7 +152,6 @@ public class NodeInUseWithCorrectLabelsCheckTest
         return nodeRecord;
     }
 
-    @SuppressWarnings("unchecked")
     private Engine engineFor( ConsistencyReport.LabelScanConsistencyReport report )
     {
         Engine engine = mock( Engine.class );
@@ -162,7 +161,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
 
     private NodeInUseWithCorrectLabelsCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport> checker( long[] expectedLabels )
     {
-        return new NodeInUseWithCorrectLabelsCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>( expectedLabels );
+        return new NodeInUseWithCorrectLabelsCheck<>( expectedLabels );
     }
 
     interface Engine extends CheckerEngine<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>

@@ -77,7 +77,7 @@ public class CommunityServerBuilder
 
     protected Clock clock = null;
     private String[] autoIndexedNodeKeys = null;
-    private String[] autoIndexedRelationshipKeys = null;
+    private final String[] autoIndexedRelationshipKeys = null;
     private String host = null;
     private String[] securityRuleClassNames;
     public boolean persistent;
@@ -117,7 +117,7 @@ public class CommunityServerBuilder
     public File createConfigFiles() throws IOException
     {
         File temporaryConfigFile = ServerTestUtils.createTempConfigFile();
-        File temporaryFolder = temporaryConfigFile.getParentFile();
+        File temporaryFolder = ServerTestUtils.createTempDir();
 
         ServerTestUtils.writeConfigToFile( createConfiguration( temporaryFolder ), temporaryConfigFile );
 
