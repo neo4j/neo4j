@@ -50,7 +50,7 @@ public class StoreUtil
             @Override
             public boolean accept( File file )
             {
-                return !file.getName().startsWith( "metrics" ) && !file.getName().startsWith( "messages." ) &&
+                return !file.getName().startsWith( "metrics" ) && !file.getName().startsWith( "debug." ) &&
                        !isBranchedDataRootDirectory( file );
             }
         } );
