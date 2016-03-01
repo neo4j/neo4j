@@ -3641,7 +3641,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             while ( cursorA.next() )
             {
                 assertTrue( cursorB.next() );
-                assertThat( cursorA.copyTo( 0, cursorB, 0, cursorA.getCurrentPageSize() ), is( pageSize ) );
+                int bytesCopied;
+                do
+                {
+                    bytesCopied = cursorA.copyTo( 0, cursorB, 0, cursorA.getCurrentPageSize() );
+                }
+                while ( cursorA.shouldRetry() );
+                assertThat( bytesCopied, is( pageSize ) );
             }
         }
 
@@ -3655,7 +3661,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 {
                     assertTrue( cursor.next() );
                 }
-                assertThat( cursor.getByte(), is( (byte) i ) );
+                byte b;
+                do
+                {
+                    b = cursor.getByte();
+                }
+                while( cursor.shouldRetry() );
+                assertThat( b, is( (byte) i ) );
             }
         }
     }
