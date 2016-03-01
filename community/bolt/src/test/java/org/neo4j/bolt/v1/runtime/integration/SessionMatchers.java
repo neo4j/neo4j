@@ -90,13 +90,30 @@ public class SessionMatchers
             protected boolean matchesSafely( RecordingCallback.Call item )
             {
                 return expected == item.error().status();
-
             }
 
             @Override
             public void describeTo( Description description )
             {
                 description.appendText( expected.toString() );
+            }
+        };
+    }
+
+    public static Matcher<? super RecordingCallback.Call> failedWith( final String expected )
+    {
+        return new TypeSafeMatcher<RecordingCallback.Call>()
+        {
+            @Override
+            protected boolean matchesSafely( RecordingCallback.Call item )
+            {
+                return expected.equals( item.error().message() );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( expected );
             }
         };
     }
