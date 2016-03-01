@@ -61,6 +61,6 @@ public class NodeMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "NodeMatcher for a node with labelNames: " + labelNames + " and properties: " + propertyMatcher;
+        return "NodeMatcher (" + labelNames + ") " + propertyMatcher;
     }
 }

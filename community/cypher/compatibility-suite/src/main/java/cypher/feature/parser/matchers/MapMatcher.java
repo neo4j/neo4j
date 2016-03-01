@@ -59,6 +59,6 @@ public class MapMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "MapMatcher for " + map.toString();
+        return "MapMatcher {" + map.toString();
     }
 }

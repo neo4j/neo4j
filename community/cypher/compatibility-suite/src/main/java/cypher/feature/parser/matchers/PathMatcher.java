@@ -62,7 +62,8 @@ public class PathMatcher implements ValueMatcher
                 if ( matches )
                 {
                     Iterator<Relationship> relationships = path.relationships().iterator();
-                    for (PathLinkMatcher pathLink : pathLinks) {
+                    for ( PathLinkMatcher pathLink : pathLinks )
+                    {
                         pathLink.matches( relationships.next() );
                     }
                 }
@@ -75,10 +76,12 @@ public class PathMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        if (pathLinks.isEmpty())
+        if ( pathLinks.isEmpty() )
         {
-        return "PathMatcher for " + singleNodePath;
-        } else {
+            return "PathMatcher for " + singleNodePath;
+        }
+        else
+        {
             return "PathMatcher for " + pathLinks;
         }
     }

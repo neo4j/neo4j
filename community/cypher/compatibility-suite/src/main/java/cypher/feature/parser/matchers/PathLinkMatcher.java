@@ -65,7 +65,7 @@ public class PathLinkMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "PathLinkMatcher for "
+        return "PathLinkMatcher "
                + leftNode + (outgoing ? "-" : "<-")
                + relMatcher + (outgoing ? "->" : "-")
                + rightNode;

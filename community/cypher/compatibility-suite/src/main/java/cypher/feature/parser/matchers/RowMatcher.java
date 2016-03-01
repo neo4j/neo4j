@@ -49,6 +49,6 @@ public class RowMatcher implements Matcher<Map<String,Object>>
     @Override
     public String toString()
     {
-        return "RowMatcher with " + values;
+        return "RowMatcher(" + values + ")";
     }
 }

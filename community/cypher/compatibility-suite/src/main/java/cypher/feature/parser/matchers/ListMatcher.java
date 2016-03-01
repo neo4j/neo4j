@@ -41,9 +41,7 @@ public class ListMatcher implements ValueMatcher
             {
                 for ( int i = 0; i < list.size(); ++i )
                 {
-                    ValueMatcher valueMatcher = list.get( i );
-                    Object value1 = realList.get( i );
-                    match &= valueMatcher.matches( value1 );
+                    match &= list.get( i ).matches( realList.get( i ) );
                 }
             }
             return match;
