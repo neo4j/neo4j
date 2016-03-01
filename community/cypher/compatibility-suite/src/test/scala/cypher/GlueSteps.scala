@@ -56,7 +56,7 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
     // do nothing, but necessary for the scala match
   }
 
-  Given(USING_DB) { (dbName: String) =>
+  Given(NAMED_GRAPH) { (dbName: String) =>
     val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
     graph = loadConfig(builder).newGraphDatabase()
   }
@@ -124,15 +124,13 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
 
 object GlueSteps {
 
-  // to be replaced
-  val USING_DB = """^using: (.*)$"""
-
   // for Background
   val BACKGROUND = "^$"
 
   // for Given
   val ANY = "^any graph$"
   val EMPTY = "^an empty graph$"
+  val NAMED_GRAPH = """^the (.*) graph$"""
 
   // for And
   val INIT_QUERY = "^having executed: (.*)$"

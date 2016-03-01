@@ -22,14 +22,13 @@
 Feature: CineastDependent
 
   Background:
-    Given using: cineast
+    Given the cineast graph
 
   Scenario: should make query from existing database
     When executing query: MATCH (n) RETURN count(n)
     Then the result should be:
       | count(n) |
       | 63084    |
-
 
   Scenario: should support multiple divisions in aggregate function
     When executing query: MATCH (n) RETURN count(n)/60/60 as count
