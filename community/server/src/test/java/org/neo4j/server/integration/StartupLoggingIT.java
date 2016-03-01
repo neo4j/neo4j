@@ -65,10 +65,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         boot.start( null, propertyPairs );
         boot.stop();
 
-        // Then
         List<String> captured = suppressOutput.getOutputVoice().lines();
-        // TODO: Obviously the logging below is insane, but we added this test in a point release, so we don't want to break anyone grepping for this
-        //       This should be changed in 3.0.0.
         assertThat( captured, containsAtLeastTheseLines(
                 warn( "Config file \\[config.neo4j\\.conf\\] does not exist." ),
                 info( "Starting..." ),
