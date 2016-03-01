@@ -256,8 +256,8 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         long highTransactionId = lastCommittedId.get();
         while ( logFiles.versionExists( logVersion ) )
         {
-            long previousLogLastTxId = logHeaderCache.getLogHeader( logVersion );
-            if ( previousLogLastTxId == -1 )
+            Long previousLogLastTxId = logHeaderCache.getLogHeader( logVersion );
+            if ( previousLogLastTxId == null )
             {
                 LogHeader header = readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ) );
                 assert logVersion == header.logVersion;

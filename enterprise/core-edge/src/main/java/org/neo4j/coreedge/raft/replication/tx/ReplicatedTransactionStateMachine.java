@@ -45,12 +45,12 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionInva
 
 public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
 {
-    private final GlobalSessionTrackerState<MEMBER> sessionTracker;
+    private final GlobalSessionTrackerState<MEMBER> sessionTrackerState;
     private final GlobalSession myGlobalSession;
     private final LockTokenManager lockTokenManager;
     private final TransactionCommitProcess commitProcess;
     private final CommittingTransactions transactionFutures;
-    private final StateStorage<GlobalSessionTrackerState<MEMBER>> storage;
+    private final StateStorage<GlobalSessionTrackerState<MEMBER>> sessionTrackerStorage;
     private final Log log;
 
     private long lastCommittedIndex = -1;
@@ -59,15 +59,15 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
                                               GlobalSession myGlobalSession,
                                               LockTokenManager lockTokenManager,
                                               CommittingTransactions transactionFutures,
-                                              StateStorage<GlobalSessionTrackerState<MEMBER>> storage,
+                                              StateStorage<GlobalSessionTrackerState<MEMBER>> sessionTrackerStorage,
                                               LogProvider logProvider )
     {
         this.commitProcess = commitProcess;
         this.myGlobalSession = myGlobalSession;
         this.lockTokenManager = lockTokenManager;
         this.transactionFutures = transactionFutures;
-        this.storage = storage;
-        this.sessionTracker = storage.getInitialState();
+        this.sessionTrackerStorage = sessionTrackerStorage;
+        this.sessionTrackerState = sessionTrackerStorage.getInitialState();
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -81,9 +81,9 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
     }
 
     @Override
-    public void flush() throws IOException
+    public synchronized void flush() throws IOException
     {
-        storage.persistStoreData( sessionTracker );
+        sessionTrackerStorage.persistStoreData( sessionTrackerState );
     }
 
     private void handleTransaction( ReplicatedTransaction<MEMBER> replicatedTx, long logIndex )
@@ -107,11 +107,11 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
 
         try
         {
-        /*
-         * At this point, we need to check if the tx exists in the log. If it does, it is ok to skip it. However, we
-         * may still need to persist the session state (as we may crashed in between), which happens outside this
-         * if check.
-         */
+            /*
+             * At this point, we need to check if the tx exists in the log. If it does, it is ok to skip it. However, we
+             * may still need to persist the session state (as we may crashed in between), which happens outside this
+             * if check.
+             */
             if ( logIndex <= lastCommittedIndex )
             {
                 log.info( "Ignoring transaction at log index %d since already committed up to %d", logIndex,
@@ -173,18 +173,19 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
                             " restarted once the underlying cause has been addressed.", e );
                 }
             }
-        /*
-         * Finally, we need to check, in an idempotent fashion, if the session state needs to be persisted.
-         */
-            if ( sessionTracker.logIndex() < logIndex )
+
+            /*
+             * Finally, we need to check, in an idempotent fashion, if the session state needs to be persisted.
+             */
+            if ( sessionTrackerState.logIndex() < logIndex )
             {
-                sessionTracker.update( replicatedTx.globalSession(), replicatedTx.localOperationId(), logIndex );
+                sessionTrackerState.update( replicatedTx.globalSession(), replicatedTx.localOperationId(), logIndex );
                 sessionUpdated = true;
             }
             else
             {
                 log.info( format( "Rejecting log index %d since the session tracker is already at log index %d",
-                        logIndex, sessionTracker.logIndex() ) );
+                        logIndex, sessionTrackerState.logIndex() ) );
             }
         }
         finally
@@ -199,7 +200,7 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
 
     private boolean operationValid( ReplicatedTransaction<MEMBER> replicatedTx )
     {
-        return sessionTracker.validateOperation( replicatedTx.globalSession(), replicatedTx.localOperationId() );
+        return sessionTrackerState.validateOperation( replicatedTx.globalSession(), replicatedTx.localOperationId() );
     }
 
     public void setLastCommittedIndex( long lastCommittedIndex )

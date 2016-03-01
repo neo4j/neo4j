@@ -278,10 +278,10 @@ public class EnterpriseCoreEditionModule
                 new ReplicatedLockTokenStateMachine<>( lockTokenState );
         stateMachines.add( replicatedLockTokenStateMachine );
 
-        StateStorage<GlobalSessionTrackerState<CoreMember>> onDiskGlobalSessionTrackerState;
+        StateStorage<GlobalSessionTrackerState<CoreMember>> sessionTrackerStorage;
         try
         {
-            onDiskGlobalSessionTrackerState = life.add( new DurableStateStorage<>(
+            sessionTrackerStorage = life.add( new DurableStateStorage<>(
                     fileSystem, new File( clusterStateDirectory, "session-tracker-state" ), "session-tracker",
                     new GlobalSessionTrackerState.Marshal<>( new CoreMemberMarshal() ),
                     config.get( CoreEdgeClusterSettings.global_session_tracker_state_size ),
@@ -295,7 +295,7 @@ public class EnterpriseCoreEditionModule
 
         commitProcessFactory = createCommitProcessFactory( replicator, localSessionPool,
                 replicatedLockTokenStateMachine,
-                dependencies, logging, platformModule.monitors, onDiskGlobalSessionTrackerState, stateMachines );
+                dependencies, logging, platformModule.monitors, sessionTrackerStorage, stateMachines );
 
         final StateStorage<IdAllocationState> idAllocationState;
         try
@@ -412,12 +412,15 @@ public class EnterpriseCoreEditionModule
                 return new InMemoryRaftLog();
             case PHYSICAL:
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
-                int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
+                int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_entry_cache_size );
+                int metaDataCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
+                int headerCacheSize = config.get( CoreEdgeClusterSettings.raft_log_header_cache_size );
+
                 return life.add( new PhysicalRaftLog(
                         fileSystem,
                         new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
-                        rotateAtSize, entryCacheSize, new PhysicalLogFile.Monitor.Adapter(),
-                        marshal, databaseHealthSupplier, logProvider ) );
+                        rotateAtSize, entryCacheSize, metaDataCacheSize, headerCacheSize,
+                        new PhysicalLogFile.Monitor.Adapter(), marshal, databaseHealthSupplier, logProvider ) );
             case NAIVE:
             default:
                 return life.add( new NaiveDurableRaftLog(
@@ -452,7 +455,7 @@ public class EnterpriseCoreEditionModule
             final Replicator replicator, final LocalSessionPool localSessionPool,
             final LockTokenManager currentReplicatedLockState, final Dependencies dependencies,
             final LogService logging, Monitors monitors,
-            StateStorage<GlobalSessionTrackerState<CoreMember>> globalSessionTrackerState,
+            StateStorage<GlobalSessionTrackerState<CoreMember>> sessionTrackerStorage,
             StateMachines stateMachines )
     {
         return ( appender, applier, config ) -> {
@@ -464,7 +467,7 @@ public class EnterpriseCoreEditionModule
             ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine = new
                     ReplicatedTransactionStateMachine<>(
                     localCommit, localSessionPool.getGlobalSession(), currentReplicatedLockState,
-                    committingTransactions, globalSessionTrackerState, logging.getInternalLogProvider() );
+                    committingTransactions, sessionTrackerStorage, logging.getInternalLogProvider() );
 
             dependencies.satisfyDependencies( replicatedTxStateMachine );
 

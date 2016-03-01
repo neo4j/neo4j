@@ -20,90 +20,76 @@
 package org.neo4j.coreedge.raft.log;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Queue;
-import java.util.function.Predicate;
+import java.util.Stack;
 
 import org.neo4j.cursor.IOCursor;
 
 public class PhysicalRaftLogEntryCursor implements IOCursor<RaftLogAppendRecord>
 {
+    private long NO_SKIP = -1;
     private final RaftRecordCursor<?> recordCursor;
-    private RaftLogAppendRecord currentEntry;
-    private final Queue<RaftLogAppendRecord> logicallyNext;
-    private final List<RaftLogAppendRecord> staging;
 
-    public PhysicalRaftLogEntryCursor( RaftRecordCursor<?> recordCursor )
+    private final Stack<Long> skipStack;
+    private RaftLogAppendRecord currentEntry;
+    private long nextIndex;
+    private long skipPoint = NO_SKIP;
+    private boolean skipMode = false;
+
+    public PhysicalRaftLogEntryCursor( RaftRecordCursor<?> recordCursor, Stack<Long> skipStack, long fromIndex )
     {
         this.recordCursor = recordCursor;
-        this.logicallyNext = new LinkedList<>();
-        this.staging = new LinkedList<>();
+        this.skipStack = skipStack;
+        this.nextIndex = fromIndex;
+        popSkip();
+    }
+
+    private void popSkip()
+    {
+        skipPoint = skipStack.empty() ? NO_SKIP : skipStack.pop();
     }
 
     @Override
     public boolean next() throws IOException
     {
-        if ( !logicallyNext.isEmpty() )
-        {
-            currentEntry = logicallyNext.poll();
-            return true;
-        }
+        RaftLogRecord record;
         while ( recordCursor.next() )
         {
-            RaftLogRecord record = recordCursor.get();
+            record = recordCursor.get();
             switch ( record.getType() )
             {
                 case APPEND:
-                    staging.add( (RaftLogAppendRecord) record );
-                    break;
-                case COMMIT:
-                {
-                    moveStagingToLogicallyNextAndSetCurrentEntry( logIndex -> logIndex <= record.getLogIndex() );
-
-                    if ( currentEntry != null )
+                    if( skipMode )
                     {
+                        // skip records
+                    }
+                    else if( record.getLogIndex() == nextIndex )
+                    {
+                        currentEntry = (RaftLogAppendRecord) record;
+
+                        nextIndex++;
+                        if( nextIndex == skipPoint )
+                        {
+                            skipMode = true;
+                        }
                         return true;
                     }
                     break;
-                }
-                case TRUNCATE:
+                case CONTINUATION:
                 {
-                    removeFromStaging( index -> index >= record.getLogIndex() );
+                    if( skipMode )
+                    {
+                        popSkip();
+                        if( skipPoint == NO_SKIP || skipPoint > nextIndex )
+                        {
+                            skipMode = false;
+                        }
+                    }
                     break;
                 }
             }
         }
-        moveStagingToLogicallyNextAndSetCurrentEntry( index -> true );
-        return currentEntry != null;
-    }
-
-    private void removeFromStaging( Predicate<Long> condition )
-    {
-        ListIterator<RaftLogAppendRecord> iterator = staging.listIterator();
-        while ( iterator.hasNext() )
-        {
-            if ( condition.test( iterator.next().getLogIndex() ) )
-            {
-                iterator.remove();
-            }
-        }
-    }
-
-    private void moveStagingToLogicallyNextAndSetCurrentEntry( Predicate<Long> condition )
-    {
-        ListIterator<RaftLogAppendRecord> iterator = staging.listIterator();
-        while ( iterator.hasNext() )
-        {
-            RaftLogAppendRecord next = iterator.next();
-            if ( condition.test( next.getLogIndex() ) )
-            {
-                logicallyNext.offer( next );
-                iterator.remove();
-            }
-        }
-        currentEntry = logicallyNext.poll();
+        currentEntry = null;
+        return false;
     }
 
     @Override

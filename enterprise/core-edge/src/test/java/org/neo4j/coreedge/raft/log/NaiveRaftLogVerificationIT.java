@@ -19,35 +19,27 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import java.io.IOException;
+import java.io.File;
 
-import org.neo4j.storageengine.api.ReadableChannel;
-import org.neo4j.storageengine.api.WritableChannel;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.coreedge.raft.log.PhysicalRaftLog.RecordType.COMMIT;
-
-public class RaftLogCommitRecord extends RaftLogRecord
+public class NaiveRaftLogVerificationIT extends RaftLogVerificationIT
 {
-    public RaftLogCommitRecord( long logIndex )
+    @Override
+    protected RaftLog createRaftLog() throws Throwable
     {
-        super( COMMIT, logIndex );
-    }
+        FileSystemAbstraction fsa = fsRule.get();
+        File directory = new File( "raft-log" );
+        fsa.mkdir( directory );
 
-    public static RaftLogCommitRecord read( ReadableChannel channel ) throws IOException
-    {
-        long commitIndex = channel.getLong();
-        return new RaftLogCommitRecord( commitIndex );
-    }
-
-    public static void write( WritableChannel channel, long commitIndex ) throws IOException
-    {
-        channel.put( COMMIT.value() );
-        channel.putLong( commitIndex );
+        return new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),
+                NullLogProvider.getInstance() );
     }
 
     @Override
-    public String toString()
+    protected long operations()
     {
-        return String.format( "RaftLogCommitRecord{%s}", super.toString() );
+        return 500;
     }
 }

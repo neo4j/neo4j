@@ -187,6 +187,14 @@ public class CoreEdgeClusterSettings
     public static final Setting<Integer> raft_log_meta_data_cache_size =
             setting( "core_edge.raft_log_meta_data_cache_size", INTEGER, "100000" );
 
+    @Description("RAFT entry cache size (in unit of entries)")
+    public static final Setting<Integer> raft_log_entry_cache_size =
+            setting( "core_edge.raft_log_entry_cache_size", INTEGER, "32" );
+
+    @Description("RAFT header cache size (in unit of file headers)")
+    public static final Setting<Integer> raft_log_header_cache_size =
+            setting( "core_edge.raft_log_header_cache_size", INTEGER, "10" );
+
     @Description("Enable or disable the dump of all network messages pertaining to the RAFT protocol")
     public static final Setting<Boolean> raft_messages_log_enable =
             setting( "core_edge.raft_messages_log_enable", BOOLEAN, "false");

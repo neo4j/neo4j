@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.cursor.IOCursor;
 
 public class InMemoryRaftLog implements RaftLog
@@ -150,7 +149,7 @@ public class InMemoryRaftLog implements RaftLog
             @Override
             public RaftLogEntry get()
             {
-                return readLogEntry( currentIndex );
+                return ( currentIndex <= appendIndex ) ? readLogEntry( currentIndex ) : null;
             }
         };
     }

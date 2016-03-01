@@ -50,7 +50,7 @@ public class PhysicalLogFileInformationTest
         long expected = 5;
 
         long version = 10L;
-        when( logHeaderCache.getLogHeader( version ) ).thenReturn( -1L );
+        when( logHeaderCache.getLogHeader( version ) ).thenReturn( null );
         when( logFiles.versionExists( version ) ).thenReturn( true );
         when( logFiles.extractHeader( version ) ).thenReturn(
                 new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L )
@@ -84,7 +84,7 @@ public class PhysicalLogFileInformationTest
 
         long version = 10L;
         when( logFiles.getHighestLogVersion() ).thenReturn( version );
-        when( logHeaderCache.getLogHeader( version ) ).thenReturn( -1L );
+        when( logHeaderCache.getLogHeader( version ) ).thenReturn( null );
         when( logFiles.versionExists( version ) ).thenReturn( true );
         when( logFiles.extractHeader( version ) ).thenReturn(
                 new LogHeader( (byte) -1/*ignored*/, -1L/*ignored*/, expected - 1L )

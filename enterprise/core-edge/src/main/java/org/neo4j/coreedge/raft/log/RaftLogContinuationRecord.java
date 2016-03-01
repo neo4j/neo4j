@@ -19,16 +19,35 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-public class RaftLogTruncateRecord extends RaftLogRecord
+import java.io.IOException;
+
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
+
+import static org.neo4j.coreedge.raft.log.PhysicalRaftLog.RecordType.CONTINUATION;
+
+public class RaftLogContinuationRecord extends RaftLogRecord
 {
-    RaftLogTruncateRecord( long fromLogIndex )
+    RaftLogContinuationRecord( long fromLogIndex )
     {
-        super( PhysicalRaftLog.RecordType.TRUNCATE, fromLogIndex );
+        super( CONTINUATION, fromLogIndex );
+    }
+
+    public static RaftLogContinuationRecord read( ReadableChannel channel ) throws IOException
+    {
+        long fromIndex = channel.getLong();
+        return new RaftLogContinuationRecord( fromIndex );
+    }
+
+    public static void write( WritableChannel channel, long fromIndex ) throws IOException
+    {
+        channel.put( CONTINUATION.value() );
+        channel.putLong( fromIndex );
     }
 
     @Override
     public String toString()
     {
-        return String.format( "RaftLogTruncateRecord{%s}", super.toString() );
+        return String.format( "RaftLogContinuationRecord{%s}", super.toString() );
     }
 }

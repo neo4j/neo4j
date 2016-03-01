@@ -30,7 +30,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.function.Supplier;
+import java.util.Stack;
 
 import org.junit.After;
 import org.junit.Test;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogVersions;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 
@@ -75,8 +76,8 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, 1000000, cacheSize,
-                new PhysicalLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(), mock( Supplier.class ),
+        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, 1000000, cacheSize, 10, 10,
+                new PhysicalLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(), () -> mock( DatabaseHealth.class ),
                 NullLogProvider.getInstance() );
         life.add( newRaftLog );
         life.init();
@@ -151,7 +152,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
     }
 
     @Test
-    public void shouldRestoreCorrectCommitAndAppendIndexOnStartupWhenTruncationRecordsArePresent() throws Exception
+    public void shouldRestoreCorrectCommitAndAppendIndexOnStartupAfterTruncation() throws Exception
     {
         // Given
         PhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
@@ -217,7 +218,8 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
                 logStoreChannel, 0, LogVersions.CURRENT_LOG_VERSION );
         ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
 
-        try ( PhysicalRaftLogEntryCursor cursor = new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( logChannel, new DummyRaftableContentSerializer() ) ) )
+        try ( PhysicalRaftLogEntryCursor cursor = new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( logChannel, new DummyRaftableContentSerializer() ),
+                new Stack<>(), 0 ) )
         {
             boolean firstRecordEncountered = false;
             while( cursor.next() )

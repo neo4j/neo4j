@@ -58,7 +58,7 @@ public class PhysicalRaftLogRotationTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, rotateAtSize, 100,
+        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, rotateAtSize, 100, 10, 10,
                 logFileMonitor, new DummyRaftableContentSerializer(),  () -> mock( DatabaseHealth.class ),
                 NullLogProvider.getInstance() );
         life.add( newRaftLog );
@@ -92,33 +92,7 @@ public class PhysicalRaftLogRotationTest
     }
 
     @Test
-    public void shouldRotateOnCommitWhenRotateSizeIsReached() throws Exception
-    {
-        // Given
-        AtomicLong currentVersion = new AtomicLong();
-        PhysicalLogFile.Monitor logFileMonitor =
-                ( logFile, logVersion, lastTransactionId, clean ) -> currentVersion.set( logVersion );
-        int rotateAtSize = 100;
-        PhysicalRaftLog log = createRaftLog( rotateAtSize, logFileMonitor );
-
-        StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < rotateAtSize - 40; i++ )
-        {
-            builder.append( "i" );
-        }
-
-        // When
-        ReplicatedString stringThatGetsTheSizeToAlmost100Bytes = new ReplicatedString( builder.toString() );
-        log.append( new RaftLogEntry( 0, stringThatGetsTheSizeToAlmost100Bytes ) );
-        assertEquals( 0, currentVersion.get() );
-        log.commit( 1 );
-
-        // Then
-        assertEquals( 1, currentVersion.get() );
-    }
-
-    @Test
-    public void shouldRotateOnTruncateWhenRotateSizeIsReached() throws Exception
+    public void shouldRotateOnTruncate() throws Exception
     {
         // Given
         AtomicLong currentVersion = new AtomicLong();
@@ -164,40 +138,6 @@ public class PhysicalRaftLogRotationTest
 
         // When
         life.remove( log );
-        log = createRaftLog( rotateAtSize, new PhysicalLogFile.Monitor.Adapter() );
-
-        // Then
-        assertEquals( indexToCommit, log.commitIndex() );
-        assertEquals( indexToCommit, log.appendIndex() );
-        assertTrue( log.entryExists( indexToCommit ) );
-        assertEquals( term, log.readEntryTerm( indexToCommit ) );
-    }
-
-
-    @Test
-    public void shouldBeAbleToRecoverToLatestStateAfterRotationWhenEarlierFilesArePruned() throws Throwable
-    {
-        int rotateAtSize = 100;
-        PhysicalRaftLog log = createRaftLog( rotateAtSize, new PhysicalLogFile.Monitor.Adapter() );
-
-        StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < rotateAtSize - 40; i++ )
-        {
-            builder.append( "i" );
-        }
-
-        ReplicatedString stringThatGetsTheSizeToAlmost100Bytes = new ReplicatedString( builder.toString() );
-        int term = 0;
-        long indexToCommit = log.append( new RaftLogEntry( term, stringThatGetsTheSizeToAlmost100Bytes ) );
-        log.commit( indexToCommit );
-        indexToCommit = log.append( new RaftLogEntry( term, ReplicatedInteger.valueOf( 1 ) ) );
-        log.commit( indexToCommit );
-
-        // When
-        life.remove( log );
-
-        fileSystem.deleteFile( new File( new File("raft-log"), "raft.log.0" ) ); // hackish, decorate it my great Tech Liege
-
         log = createRaftLog( rotateAtSize, new PhysicalLogFile.Monitor.Adapter() );
 
         // Then

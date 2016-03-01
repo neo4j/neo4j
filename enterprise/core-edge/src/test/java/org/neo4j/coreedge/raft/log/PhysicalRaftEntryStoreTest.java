@@ -48,7 +48,7 @@ public class PhysicalRaftEntryStoreTest
 
         File baseDirectory = new File( "raft-logs" );
         fsa.mkdir( baseDirectory );
-        PhysicalRaftLog log = new PhysicalRaftLog( fsa, baseDirectory, 10000, 1, mock( PhysicalLogFile.Monitor.class),
+        PhysicalRaftLog log = new PhysicalRaftLog( fsa, baseDirectory, 10000, 1, 10, 10, mock( PhysicalLogFile.Monitor.class),
                 new DummyRaftableContentSerializer(), mock( Supplier.class ), NullLogProvider.getInstance() );
         AtomicLong appendIndex = new AtomicLong( 0 );
 

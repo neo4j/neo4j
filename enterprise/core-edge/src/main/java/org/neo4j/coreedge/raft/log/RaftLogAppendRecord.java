@@ -19,19 +19,49 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import java.io.IOException;
+
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
+
+import static org.neo4j.coreedge.raft.log.PhysicalRaftLog.RecordType.APPEND;
+
 public class RaftLogAppendRecord extends RaftLogRecord
 {
     private final RaftLogEntry logEntry;
 
     RaftLogAppendRecord( long logIndex, RaftLogEntry logEntry )
     {
-        super( PhysicalRaftLog.RecordType.APPEND, logIndex );
+        super( APPEND, logIndex );
         this.logEntry = logEntry;
     }
 
     public RaftLogEntry getLogEntry()
     {
         return logEntry;
+    }
+
+    public static RaftLogAppendRecord read( ReadableChannel channel, ChannelMarshal<ReplicatedContent> marshal ) throws IOException
+    {
+        long appendIndex = channel.getLong();
+        long term = channel.getLong();
+        ReplicatedContent content = marshal.unmarshal( channel );
+        if ( content == null )
+        {
+            throw ReadPastEndException.INSTANCE;
+        }
+        return new RaftLogAppendRecord( appendIndex, new RaftLogEntry( term, content ) );
+    }
+
+    public static void write( WritableChannel channel, ChannelMarshal<ReplicatedContent> marshal, long appendIndex, long term, ReplicatedContent content ) throws IOException
+    {
+        channel.put( APPEND.value() );
+        channel.putLong( appendIndex );
+        channel.putLong( term );
+        marshal.marshal( content, channel );
     }
 
     @Override

@@ -19,28 +19,25 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+
+import static org.junit.Assert.assertEquals;
 
 public class LogHeaderCacheTest
 {
     @Test
-    public void shouldReturnNegativeNumberWhenThereIsNoHeaderInTheCache()
+    public void shouldReturnNullWhenThereIsNoHeaderInTheCache()
     {
         // given
         final LogHeaderCache cache = new LogHeaderCache( 2 );
 
         // when
-        final long logHeader = cache.getLogHeader( 5 );
+        final Long logHeader = cache.getLogHeader( 5 );
 
         // then
-        assertEquals( -1, logHeader );
+        assertEquals( null, logHeader );
     }
 
     @Test
@@ -66,9 +63,9 @@ public class LogHeaderCacheTest
         // when
         cache.putHeader( 5, 3 );
         cache.clear();
-        final long logHeader = cache.getLogHeader( 5 );
+        final Long logHeader = cache.getLogHeader( 5 );
 
         // then
-        assertEquals( -1, logHeader );
+        assertEquals( null, logHeader );
     }
 }

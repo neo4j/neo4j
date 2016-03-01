@@ -40,9 +40,8 @@ public class LogHeaderCache
         logHeaderCache.put( logVersion, previousLogLastCommittedTx );
     }
 
-    public long getLogHeader( long logVersion )
+    public Long getLogHeader( long logVersion )
     {
-        Long value = logHeaderCache.get( logVersion );
-        return value == null ? -1 : value;
+        return logHeaderCache.get( logVersion );
     }
 }
