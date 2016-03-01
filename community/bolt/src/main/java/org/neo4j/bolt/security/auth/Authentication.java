@@ -34,7 +34,7 @@ import java.util.Map;
  * </ul>
  * <p>
  *
- * For updating the credentials the new credentials is supplied with the key <code>new-credentials</code>.
+ * For updating the credentials the new credentials is supplied with the key <code>new_credentials</code>.
  */
 public interface Authentication
 {
@@ -55,5 +55,5 @@ public interface Authentication
     String SCHEME_KEY = "scheme";
     String PRINCIPAL = "principal";
     String CREDENTIALS = "credentials";
-    String NEW_CREDENTIALS = "new-credentials";
+    String NEW_CREDENTIALS = "new_credentials";
 }

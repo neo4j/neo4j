@@ -128,7 +128,7 @@ public class BasicAuthenticationTest
 
         // When
         authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret",
-                "new-credentials", "secret2" ) );
+                "new_credentials", "secret2" ) );
     }
 
     @Test
@@ -144,7 +144,7 @@ public class BasicAuthenticationTest
 
         // When
         authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret",
-                "new-credentials", "secret2" ) );
+                "new_credentials", "secret2" ) );
     }
 
     @Test
@@ -163,7 +163,7 @@ public class BasicAuthenticationTest
         // When
         // When
         authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret",
-                "new-credentials", "secret2" ) );
+                "new_credentials", "secret2" ) );
     }
 
     @Test
