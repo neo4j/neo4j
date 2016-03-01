@@ -37,7 +37,7 @@ public class StoreFiles
             return !(
                     name.startsWith( "metrics" ) ||
                             name.startsWith( "raft-messages." ) ||
-                            name.startsWith( "messages." ) ||
+                            name.startsWith( "debug." ) ||
                             name.startsWith( "raft-logs" ) ||
                             name.startsWith( "store_lock" )
             );

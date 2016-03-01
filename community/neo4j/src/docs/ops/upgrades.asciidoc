@@ -61,7 +61,7 @@ To perform an explicit store upgrade:
 . Start up Neo4j.
 . The database store upgrade will occur during startup.
 . The `allow_store_upgrade` configuration parameter should be removed, set to `false` or commented out.
-. Information about the upgrade and a progress indicator are logged into the _messages.log_ file, inside the database store directory.
+. Information about the upgrade and a progress indicator are logged into the _debug.log_ file, inside the database store directory.
 
 [CAUTION]
 .Disk space requirements
