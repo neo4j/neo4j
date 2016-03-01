@@ -52,13 +52,6 @@ the relevant Commercial Agreement.
   </licenses>
 
   <dependencies>
-    <!-- We temporarily depend on the legacy consistency checker so that the CC-tool -->
-    <!-- in this current checker can invoke the legacy checker -->
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-consistency-check-legacy</artifactId>
-      <version>${project.version}</version>
-    </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>

@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
@@ -37,7 +38,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.legacy.consistency.ConsistencyCheckService;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.TargetDirectory;
 
@@ -149,9 +149,8 @@ public class RestartIT
         for ( CoreGraphDatabase core : cluster.coreServers() )
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                    new File( core.getStoreDir() ), Config.defaults(), ProgressMonitorFactory.NONE,
-                    FormattedLogProvider.toOutputStream( System.out ), new DefaultFileSystemAbstraction() );
-
+                    new File( core.getStoreDir() ),Config.defaults(), ProgressMonitorFactory.NONE,
+                    FormattedLogProvider.toOutputStream( System.out ), new DefaultFileSystemAbstraction(), false );
             assertTrue( "Inconsistent: " + core, result.isSuccessful() );
         }
 
@@ -159,8 +158,7 @@ public class RestartIT
         {
             ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
                     new File( edge.getStoreDir() ), Config.defaults(), ProgressMonitorFactory.NONE,
-                    FormattedLogProvider.toOutputStream( System.out ), new DefaultFileSystemAbstraction() );
-
+                    FormattedLogProvider.toOutputStream( System.out ), new DefaultFileSystemAbstraction(), false );
             assertTrue( "Inconsistent: " + edge, result.isSuccessful() );
         }
     }

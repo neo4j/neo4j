@@ -19,20 +19,16 @@
  */
 package org.neo4j.consistency;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.mockito.ArgumentCaptor;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Properties;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.mockito.ArgumentCaptor;
 
 import org.neo4j.consistency.ConsistencyCheckTool.ToolFailureException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -59,47 +55,28 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
-import static org.neo4j.consistency.ConsistencyCheckTool.USE_LEGACY_CHECKER;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.ArrayUtil.concat;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
-@RunWith( Parameterized.class )
 public class ConsistencyCheckToolTest
 {
-    private final boolean useLegacyChecker;
+    private SystemExitRule systemExitRule = SystemExitRule.none();
+    private TargetDirectory.TestDirectory storeDirectory = TargetDirectory.testDirForTest( getClass() );
+    private EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Rule
-    public SystemExitRule systemExitRule = SystemExitRule.none();
-
-    @Parameters( name = "Experimental:{0}" )
-    public static Collection<Object[]> data()
-    {
-        Collection<Object[]> data = new ArrayList<>();
-        data.add( new Object[] { Boolean.FALSE } );
-        data.add( new Object[] { Boolean.TRUE } );
-        return data;
-    }
-
-    public ConsistencyCheckToolTest( boolean useLegacyChecker )
-    {
-        this.useLegacyChecker = useLegacyChecker;
-    }
+    public RuleChain ruleChain = RuleChain.outerRule( systemExitRule ).around( storeDirectory ).around( fs );
 
     @Test
     public void runsConsistencyCheck() throws Exception
     {
         // given
-        assumeFalse( "This test runs with mocked ConsistencyCheckService, doesn't work with the legacy checker " +
-                "since it creates its own", useLegacyChecker );
         File storeDir = storeDirectory.directory();
         String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
@@ -118,8 +95,6 @@ public class ConsistencyCheckToolTest
     public void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
     {
         // given
-        assumeFalse( "This test runs with mocked ConsistencyCheckService, doesn't work with the legacy checker " +
-                "since it creates its own", useLegacyChecker );
         File storeDir = storeDirectory.directory();
         String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
@@ -140,8 +115,6 @@ public class ConsistencyCheckToolTest
     public void passesOnConfigurationIfProvided() throws Exception
     {
         // given
-        assumeFalse( "This test runs with mocked ConsistencyCheckService, doesn't work with the legacy checker " +
-                "since it creates its own", useLegacyChecker );
         File storeDir = storeDirectory.directory();
         File configFile = storeDirectory.file( "neo4j.conf" );
         Properties properties = new Properties();
@@ -282,7 +255,7 @@ public class ConsistencyCheckToolTest
     }
 
     private void runConsistencyCheckToolWith( Monitors monitors, FileSystemAbstraction fileSystem, String... args )
-                    throws IOException, ToolFailureException
+            throws IOException, ToolFailureException
     {
         GraphDatabaseFactory graphDbFactory = new TestGraphDatabaseFactory()
         {
@@ -294,25 +267,14 @@ public class ConsistencyCheckToolTest
         }.setFileSystem( fileSystem ).setMonitors( monitors );
 
         new ConsistencyCheckTool( mock( ConsistencyCheckService.class ),
-                graphDbFactory, fileSystem, mock( PrintStream.class ) ).run( augment( args ) );
+                graphDbFactory, fileSystem, mock( PrintStream.class ) ).run( args );
     }
 
-    private String[] augment( String[] args )
-    {
-        return concat( "-" + USE_LEGACY_CHECKER + "=" + useLegacyChecker, args );
-    }
-
-    private void runConsistencyCheckToolWith ( ConsistencyCheckService
-        consistencyCheckService, PrintStream systemError, String... args ) throws ToolFailureException, IOException
+    private void runConsistencyCheckToolWith( ConsistencyCheckService
+            consistencyCheckService, PrintStream systemError, String... args ) throws ToolFailureException, IOException
     {
         new ConsistencyCheckTool( consistencyCheckService, new GraphDatabaseFactory(),
                 new DefaultFileSystemAbstraction(), systemError )
-                .run( augment( args ) );
+                .run( args );
     }
-
-    @Rule
-    public TargetDirectory.TestDirectory storeDirectory = TargetDirectory.testDirForTest( getClass() );
-
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }
