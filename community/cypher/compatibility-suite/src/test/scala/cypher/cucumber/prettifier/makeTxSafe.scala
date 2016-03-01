@@ -21,38 +21,47 @@ package cypher.cucumber.prettifier
 
 import java.util
 
-import cypher.feature.parser.EmptyNode
+import cypher.feature.parser.{ParsedNode, ParsedRelationship}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.graphdb._
-import org.neo4j.helpers.collection.{Iterables, IteratorUtil}
+import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.kernel.GraphDatabaseQueryService
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 object makeTxSafe extends ((GraphDatabaseQueryService, Result) => util.List[util.Map[String, AnyRef]]) with GraphIcing {
 
   override def apply(graph: GraphDatabaseQueryService, raw: Result): util.List[util.Map[String, AnyRef]] = {
-    val safe = graph.inTx {
-      replaceNodes(IteratorUtil.asList(raw))
+    val asList = IteratorUtil.asList(raw)
+    val scalaItr = asList.asScala.map(_.asScala)
+    graph.inTx {
+      replaceNodes(scalaItr)
     }
-    raw.close()
-    safe
   }
 
-  def replaceNodes(rows: util.List[util.Map[String, AnyRef]]) = {
-    val scalaResults = rows.asScala.map(_.asScala)
-    scalaResults.flatMap { map =>
-      map.map { case (key, value) =>
-        Map(key -> convert(value))
+  def replaceNodes(rows: mutable.Seq[mutable.Map[String, AnyRef]]) = {
+    val newList = new util.ArrayList[util.Map[String, AnyRef]]()
+    rows.foreach((map: mutable.Map[String, AnyRef]) => {
+      val newMap = new util.HashMap[String, AnyRef]()
+      map.foreach { case (key, value) =>
+        newMap.put(key, convert(value))
       }
-    }.map(_.asJava).asJava
+      newList.add(newMap)
+    })
+    newList
   }
-
 
   def convert(original: AnyRef): AnyRef = original match {
-    case n: Node => EmptyNode.newWith(Iterables.toList(n.getLabels), n.getAllProperties)
-    case r: Relationship => null
+    case n: Node => ParsedNode.fromRealNode(n)
+    case r: Relationship => ParsedRelationship.fromRealRelationship(r)
     case p: Path => null
+    case l: util.List[AnyRef] =>
+      val newList = new util.ArrayList[AnyRef]()
+      l.asScala.foreach { e =>
+        newList.add(convert(e))
+      }
+      newList
     case x => x
   }
 }

@@ -227,6 +227,10 @@ public class ParsedNode implements Node
     @Override
     public boolean equals( Object obj )
     {
+        if ( obj == this )
+        {
+            return true;
+        }
         if ( obj == null )
         {
             return false;
@@ -246,8 +250,33 @@ public class ParsedNode implements Node
         return false;
     }
 
-    public static Node parsedNode(final Iterable<Label> labelNames, final Map<String, Object> properties) {
-        return new ParsedNode() {
+    @Override
+    public int hashCode()
+    {
+        int hash = 3;
+        hash = hash * 23 + getLabels().hashCode();
+        hash = hash * 23 + getAllProperties().hashCode();
+        return hash;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder( "(" );
+        getLabels().forEach( l -> sb.append( ":" ).append( l.name() ) );
+        if ( !getAllProperties().isEmpty() )
+        {
+            sb.append( " {" );
+            getAllProperties().forEach( ( key, value ) -> sb.append( key ).append( ":" ).append( value.toString() ) );
+            sb.append( "}" );
+        }
+        return sb.append( ")" ).toString();
+    }
+
+    public static Node parsedNode( final Iterable<Label> labelNames, final Map<String,Object> properties )
+    {
+        return new ParsedNode()
+        {
             @Override
             public Map<String,Object> getAllProperties()
             {
@@ -258,6 +287,27 @@ public class ParsedNode implements Node
             public Iterable<Label> getLabels()
             {
                 return labelNames;
+            }
+        };
+    }
+
+    public static Node fromRealNode( Node real )
+    {
+        // need to fetch them before the tx closes
+        final Iterable<Label> realLabels = real.getLabels();
+        final Map<String,Object> realProps = real.getAllProperties();
+        return new ParsedNode()
+        {
+            @Override
+            public Map<String,Object> getAllProperties()
+            {
+                return realProps;
+            }
+
+            @Override
+            public Iterable<Label> getLabels()
+            {
+                return realLabels;
             }
         };
     }

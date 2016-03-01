@@ -133,6 +133,10 @@ public class ParsedRelationship implements Relationship
     @Override
     public boolean equals( Object obj )
     {
+        if ( obj == this )
+        {
+            return true;
+        }
         if ( obj == null )
         {
             return false;
@@ -141,11 +145,34 @@ public class ParsedRelationship implements Relationship
         {
             ParsedRelationship other = (ParsedRelationship) obj;
 
-            boolean typeEquality = this.getType().equals( other.getType() );
+            boolean typeEquality = this.getType().name().equals( other.getType().name() );
             boolean propEquality = getAllProperties().equals( other.getAllProperties() );
             return typeEquality && propEquality;
         }
         return false;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 3;
+        hash = hash * 23 + getType().hashCode();
+        hash = hash * 23 + getAllProperties().hashCode();
+        return hash;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder( "[:" );
+        sb.append( getType().name() );
+        if ( !getAllProperties().isEmpty() )
+        {
+            sb.append( " {" );
+            getAllProperties().forEach( ( key, value ) -> sb.append( key ).append( ":" ).append( value.toString() ) );
+            sb.append( "}" );
+        }
+        return sb.append( "]" ).toString();
     }
 
     public static Relationship parsedRelationship( final RelationshipType type, final Map<String,Object> properties )
@@ -166,4 +193,24 @@ public class ParsedRelationship implements Relationship
         };
     }
 
+    public static Relationship fromRealRelationship( Relationship real )
+    {
+        final RelationshipType type = real.getType();
+        // need to fetch them before the tx closes
+        final Map<String,Object> realProps = real.getAllProperties();
+        return new ParsedRelationship()
+        {
+            @Override
+            public Map<String,Object> getAllProperties()
+            {
+                return realProps;
+            }
+
+            @Override
+            public RelationshipType getType()
+            {
+                return type;
+            }
+        };
+    }
 }
