@@ -269,18 +269,8 @@ trait UpdateGraph {
   def deleteOverlap(qg: QueryGraph): Boolean = {
     // TODO:H FIXME qg.argumentIds here is not correct, but there is a unit test that depends on it
     val identifiersToRead = qg.allPatternNodesRead ++ qg.allPatternRelationshipsRead.map(_.name) ++ qg.argumentIds
-    (identifiersToRead intersect identifiersToDelete).nonEmpty || deletedRelationshipsOverlap(qg)
+    (identifiersToRead intersect identifiersToDelete).nonEmpty
   }
-
-  private def deletedRelationshipsOverlap(qg: QueryGraph): Boolean = {
-    val relsToRead = qg.allPatternRelationshipsRead.map(_.name)
-    val relDeleted = patternRelationships.filter { p =>
-      identifiersToDelete.contains(p.name)
-    }
-    relsToRead.nonEmpty && relDeleted.nonEmpty
-  }
-
-  def patternRelationships: Set[PatternRelationship]
 
   private def removeLabelOverlap(qg: QueryGraph) = {
     removeLabelPatterns.exists {

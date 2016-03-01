@@ -2343,17 +2343,43 @@ class EagerizationAcceptanceTest
         |MATCH (d)-->(c2:Cookie)
         |RETURN d, c2""".stripMargin
 
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
-
-    val expectedStats = Map(
-      "c0" -> Map("nodes" -> 1, "relationships" -> 2),
-      "c1" -> Map("nodes" -> 1, "relationships" -> 2)
-    )
     cookies.foreach { case (name, node)  =>
       val result = updateWithBothPlanners(query, ("cookie" -> name))
-      val expected = expectedStats(name)
-      assertStats(result, nodesDeleted = expected("nodes"), relationshipsDeleted = expected("relationships"))
+      assertStats(result, nodesDeleted = 1, relationshipsDeleted = 2)
     }
+    assertNumberOfEagerness(query, 2)
+  }
+
+  test("should always be eager after deleted nodes if there are any subsequent matches that might load them") {
+    val cookies = (0 until 2).foldLeft(Map.empty[String, Node]) { (nodes, index) =>
+      val name = s"c$index"
+      val cookie = createLabeledNode(Map("name" -> name), "Cookie")
+      nodes + (name -> cookie)
+    }
+
+    val query = "MATCH (c:Cookie) DELETE c WITH 1 as t MATCH (x:Cookie) RETURN count(*) as count"
+
+    val result = updateWithBothPlanners(query)
+
+    result.columnAs[Int]("count").next should equal(0)
+    assertStats(result, nodesDeleted = 2)
+    assertNumberOfEagerness(query, 1)
+  }
+
+  test("should always be eager after deleted paths if there are any subsequent matches that might load them") {
+    val cookies = (0 until 2).foldLeft(Map.empty[String, Node]) { (nodes, index) =>
+      val name = s"c$index"
+      val cookie = createLabeledNode(Map("name" -> name), "Cookie")
+      nodes + (name -> cookie)
+    }
+
+    val query = "MATCH p=(:Cookie) DELETE p WITH 1 as t MATCH (x:Cookie) RETURN count(*) as count"
+
+    val result = updateWithBothPlanners(query)
+
+    result.columnAs[Int]("count").next should equal(0)
+    assertStats(result, nodesDeleted = 2)
+    assertNumberOfEagerness(query, 1)
   }
 
   private def assertNumberOfEagerness(query: String, expectedEagerCount: Int, optimalEagerCount: Int = -1) {
