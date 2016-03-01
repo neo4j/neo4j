@@ -126,7 +126,7 @@ public class AuthenticationIT
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
                         init( "TestClient/1.1", map( "principal", "neo4j",
-                                "credentials", "neo4j", "new-credentials", "secret", "scheme", "basic" ) ) ) );
+                                "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
