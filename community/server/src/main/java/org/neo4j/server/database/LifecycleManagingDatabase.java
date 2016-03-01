@@ -85,6 +85,7 @@ public class LifecycleManagingDatabase implements Database
     @Override
     public void start() throws Throwable
     {
+        log.info( "Starting..." );
         this.graph = dbFactory.newGraphDatabase( config, dependencies );
         // in order to speed up testing, they should not run the preload, but in production it pays to do it.
         if ( !isInTestMode() )
@@ -93,7 +94,7 @@ public class LifecycleManagingDatabase implements Database
         }
 
         isRunning = true;
-        log.info( "Successfully started database" );
+        log.info( "Started." );
     }
 
     @Override
@@ -101,10 +102,11 @@ public class LifecycleManagingDatabase implements Database
     {
         if ( graph != null )
         {
+            log.info( "Stopping..." );
             graph.shutdown();
             isRunning = false;
             graph = null;
-            log.info( "Successfully stopped database" );
+            log.info( "Stopped." );
         }
     }
 

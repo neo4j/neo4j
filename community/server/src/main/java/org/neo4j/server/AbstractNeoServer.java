@@ -293,7 +293,6 @@ public abstract class AbstractNeoServer implements NeoServer
         int sslPort = getHttpsPort();
         boolean sslEnabled = getHttpsEnabled();
 
-        log.info( "Starting HTTP on port %s (%d threads available)", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
         webServer.setMaxThreads( maxThreads );
@@ -306,7 +305,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
         if ( keyStoreInfo.isPresent() )
         {
-            log.info( "Enabling HTTPS on port %s", sslPort );
             webServer.setHttpsCertificateInformation( keyStoreInfo.get() );
         }
     }
@@ -321,7 +319,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             webServer.start();
 
-            log.info( "Remote interface ready and available at %s", baseUri() );
+            log.info( "Remote interface available at %s", baseUri() );
         }
         catch ( Exception e )
         {
@@ -467,9 +465,6 @@ public abstract class AbstractNeoServer implements NeoServer
                 this::stopModules,
                 life::stop
         ).run();
-
-        //noinspection deprecation
-        log.info( "Successfully shutdown database" );
     }
 
     private void stopWebServer()

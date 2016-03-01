@@ -501,7 +501,6 @@ public class Jetty9WebServer implements WebServer
     private void loadStaticContent( SessionManager sm, String mountPoint )
     {
         String contentLocation = staticContent.get( mountPoint );
-        log.info( "Mounting static content at %s", mountPoint );
         try
         {
             SessionHandler sessionHandler = new SessionHandler( sm );
