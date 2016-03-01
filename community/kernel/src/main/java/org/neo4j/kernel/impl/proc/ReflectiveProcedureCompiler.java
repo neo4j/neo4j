@@ -189,15 +189,23 @@ public class ReflectiveProcedureCompiler
             // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
             try
             {
+                int numberOfDeclaredArguments = signature.inputSignature().size();
+                if (numberOfDeclaredArguments != input.length) {
+                    throw new ProcedureException( Status.Procedure.CallFailed,
+                            "Procedure `%s` takes %d arguments but %d was provided.",
+                            signature.name(),
+                            numberOfDeclaredArguments, input.length );
+                }
+
                 Object cls = constructor.invoke();
                 //API injection
                 for ( FieldInjections.FieldSetter setter : fieldSetters )
                 {
                     setter.apply( ctx, cls );
                 }
-                Object[] args = new Object[signature.inputSignature().size() + 1];
+                Object[] args = new Object[numberOfDeclaredArguments + 1];
                 args[0] = cls;
-                System.arraycopy( input, 0, args, 1, input.length );
+                System.arraycopy( input, 0, args, 1, numberOfDeclaredArguments );
 
                 Object rs = procedureMethod.invokeWithArguments( args );
 

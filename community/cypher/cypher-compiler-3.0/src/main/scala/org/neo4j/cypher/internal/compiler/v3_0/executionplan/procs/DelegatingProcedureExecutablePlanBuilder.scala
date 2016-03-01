@@ -129,7 +129,7 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
     if (intersected == TypeSpec.none)
       throw new CypherTypeException(
         s"""Parameter `${field.name}` for procedure `${proc.name}`
-            |expects value of type ${semanticTable.types(exp).actual.toShortString} but got value of type ${field.typ}.
+            |expects value of type $expected but got value of type ${actual.toShortString}.
             |
         |Usage: CALL ${proc.name}(${proc.inputSignature.map(s => s"<${s.name}>").mkString(", ")})
             |${proc.inputSignature.map(s => s"    ${s.name} (type ${s.typ})").mkString("Parameters:" + System.lineSeparator(), System.lineSeparator(),"")}

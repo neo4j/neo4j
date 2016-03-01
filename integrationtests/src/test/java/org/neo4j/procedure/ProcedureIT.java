@@ -19,18 +19,18 @@
  */
 package org.neo4j.procedure;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -50,12 +50,10 @@ import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -93,7 +91,7 @@ public class ProcedureIT
         exception.expect( QueryExecutionException.class );
         exception.expectMessage(
                 "Parameter `name` for procedure `org.neo4j.procedure.simpleArgument`" + lineSeparator() +
-                "expects value of type String but got value of type Integer." + lineSeparator() + lineSeparator() +
+                "expects value of type Integer but got value of type String." + lineSeparator() + lineSeparator() +
                 "Usage: CALL org.neo4j.procedure.simpleArgument(<name>)" + lineSeparator() +
                 "Parameters:" + lineSeparator() +
                 "    name (type Integer)"  );
@@ -101,6 +99,20 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
                 db.execute( "CALL org.neo4j.procedure.simpleArgument('42')");
+        }
+    }
+
+    @Test
+    public void shouldGiveNiceErrorMessageWhenNoArguments() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage(
+                "Failed to invoke procedure `org.neo4j.procedure.simpleArgument`: Procedure `org.neo4j.procedure.simpleArgument` takes 1 arguments but 0 was provided.");
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.execute( "CALL org.neo4j.procedure.simpleArgument()");
         }
     }
 
@@ -422,7 +434,7 @@ public class ProcedureIT
             Node node = single( db.execute( "CALL org.neo4j.procedure.node", map( "id", nodeId ) ).columnAs( "node" ) );
             node.setProperty( "name", "Stefan" );
             tx.success();
-        };
+        }
     }
 
     @Test
