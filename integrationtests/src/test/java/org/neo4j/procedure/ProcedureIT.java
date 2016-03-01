@@ -91,7 +91,7 @@ public class ProcedureIT
         exception.expect( QueryExecutionException.class );
         exception.expectMessage(
                 "Parameter `name` for procedure `org.neo4j.procedure.simpleArgument`" + lineSeparator() +
-                "expects value of type String but got value of type Integer." + lineSeparator() + lineSeparator() +
+                "expects value of type Integer but got value of type String." + lineSeparator() + lineSeparator() +
                 "Usage: CALL org.neo4j.procedure.simpleArgument(<name>)" + lineSeparator() +
                 "Parameters:" + lineSeparator() +
                 "    name (type Integer)"  );
@@ -470,25 +470,6 @@ public class ProcedureIT
                 .newGraphDatabase();
 
     }
-
-    @Test
-    public void shouldCall() throws Throwable
-    {
-        // When
-        try ( Transaction ignore = db.beginTx() )
-        {
-            db.createNode( label( "Person" ) ).setProperty( "name", "Buddy Holly" );
-        }
-
-        // Then
-        try ( Transaction ignore = db.beginTx() )
-        {
-            Result res = db.execute(
-                    "CALL org.neo4j.procedure.knows()" );
-            System.out.println(res.resultAsString());
-        }
-    }
-
 
     @After
     public void tearDown()
