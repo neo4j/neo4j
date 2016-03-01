@@ -27,20 +27,19 @@ public class AuthenticationException extends IOException implements Status.HasSt
 {
     private final Status status;
 
-    public AuthenticationException( Status status )
+    public AuthenticationException( Status status, String identifier )
     {
-        super( status.code().description() );
-        this.status = status;
-    }
-    public AuthenticationException( Status status, String message )
-    {
-        super( message );
-        this.status = status;
+        this(status, identifier, status.code().description(), null);
     }
 
-    public AuthenticationException( Status status, String message, Throwable e )
+    public AuthenticationException( Status status, String identifier, String message )
     {
-        super(message, e);
+        this(status, identifier, message, null);
+    }
+
+    public AuthenticationException( Status status, String identifier, String message, Throwable e )
+    {
+        super(message + " (ID:" + identifier + ")"  , e);
         this.status = status;
     }
 
@@ -50,4 +49,5 @@ public class AuthenticationException extends IOException implements Status.HasSt
     {
         return status;
     }
+
 }

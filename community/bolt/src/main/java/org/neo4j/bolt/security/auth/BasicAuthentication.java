@@ -21,6 +21,7 @@ package org.neo4j.bolt.security.auth;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
@@ -35,12 +36,14 @@ public class BasicAuthentication implements Authentication
     private final BasicAuthManager authManager;
     private final static String SCHEME = "basic";
     private final Log log;
+    private final Supplier<String> identifier;
 
 
-    public BasicAuthentication( BasicAuthManager authManager, LogProvider logProvider )
+    public BasicAuthentication( BasicAuthManager authManager, LogProvider logProvider, Supplier<String> identifier )
     {
         this.authManager = authManager;
         this.log = logProvider.getLog( getClass() );
+        this.identifier = identifier;
     }
 
     @Override
@@ -48,7 +51,7 @@ public class BasicAuthentication implements Authentication
     {
         if ( !SCHEME.equals( authToken.get( SCHEME_KEY ) ) )
         {
-            throw new AuthenticationException( Status.Security.AuthenticationFailed,
+            throw new AuthenticationException( Status.Security.AuthenticationFailed, identifier.get(),
                     "Authorization token must contain: '" + SCHEME_KEY + " : " + SCHEME + "'" );
         }
 
@@ -71,12 +74,12 @@ public class BasicAuthentication implements Authentication
         case SUCCESS:
             break;
         case PASSWORD_CHANGE_REQUIRED:
-            throw new AuthenticationException( Status.Security.CredentialsExpired );
+            throw new AuthenticationException( Status.Security.CredentialsExpired, identifier.get() );
         case TOO_MANY_ATTEMPTS:
-            throw new AuthenticationException( Status.Security.AuthenticationRateLimit );
+            throw new AuthenticationException( Status.Security.AuthenticationRateLimit, identifier.get() );
         default:
             log.warn( "Failed authentication attempt for '%s'", user);
-            throw new AuthenticationException( Status.Security.AuthenticationFailed );
+            throw new AuthenticationException( Status.Security.AuthenticationFailed, identifier.get() );
         }
     }
 
@@ -92,11 +95,11 @@ public class BasicAuthentication implements Authentication
             }
             catch ( IOException e )
             {
-                throw new AuthenticationException( Status.Security.AuthenticationFailed, e.getMessage(), e );
+                throw new AuthenticationException( Status.Security.AuthenticationFailed, identifier.get(), e.getMessage(), e );
             }
             break;
         default:
-            throw new AuthenticationException( Status.Security.AuthenticationFailed );
+            throw new AuthenticationException( Status.Security.AuthenticationFailed, identifier.get() );
         }
     }
 
@@ -105,7 +108,7 @@ public class BasicAuthentication implements Authentication
         Object value = authToken.get( key );
         if ( value == null || !(value instanceof String) )
         {
-            throw new AuthenticationException( Status.Security.AuthenticationFailed,
+            throw new AuthenticationException( Status.Security.AuthenticationFailed, identifier.get(),
                     "The value associated with the key `" + key + "` must be a String but was: " +
                     (value == null ? "null" : value.getClass().getSimpleName()));
         }
