@@ -26,7 +26,7 @@ public class QueryStatistics implements org.neo4j.graphdb.QueryStatistics
 {
     private final org.neo4j.cypher.internal.QueryStatistics inner;
 
-    QueryStatistics( org.neo4j.cypher.internal.QueryStatistics inner )
+    public QueryStatistics( org.neo4j.cypher.internal.QueryStatistics inner )
     {
         this.inner = inner;
     }

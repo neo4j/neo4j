@@ -19,7 +19,7 @@
  */
 package cypher.feature.parser
 
-import cypher.feature.parser.matchers.{ResultMatcher, RowMatcher, ValueMatcher}
+import cypher.feature.parser.matchers.{QueryStatisticsMatcher, ResultMatcher, RowMatcher, ValueMatcher}
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -101,6 +101,15 @@ trait Accepters extends DecorateAsJava {
   case class accept(value: Any) extends Matcher[ValueMatcher] {
 
     override def apply(matcher: ValueMatcher): MatchResult = {
+      MatchResult(matches = matcher.matches(value),
+                  s"$matcher did not match $value",
+                  s"$matcher unexpectedly matched $value")
+    }
+  }
+
+  case class acceptStatistics(value: QueryStatistics) extends Matcher[QueryStatisticsMatcher] {
+
+    override def apply(matcher: QueryStatisticsMatcher): MatchResult = {
       MatchResult(matches = matcher.matches(value),
                   s"$matcher did not match $value",
                   s"$matcher unexpectedly matched $value")
