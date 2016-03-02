@@ -151,7 +151,7 @@ class BackupService
                 @Override
                 public Response<?> copyStore( StoreWriter writer )
                 {
-                    client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
+                    client = new BackupClient( sourceHostNameOrIp, sourcePort, null, new DevNullLoggingService(),
                             StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER,
                             monitors.newMonitor( ByteCounterMonitor.class ),
                             monitors.newMonitor( RequestMonitor.class ) );
@@ -265,8 +265,8 @@ class BackupService
         }
     }
 
-    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb, long timeout )
-            throws IncrementalBackupNotPossibleException
+    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
+            long timeout ) throws IncrementalBackupNotPossibleException
     {
         return incrementalWithContext( sourceHostNameOrIp, sourcePort, targetDb, timeout, slaveContextOf( targetDb ) );
     }
@@ -317,7 +317,7 @@ class BackupService
      * @return A backup context, ready to perform
      */
     private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
-                                                  long timeout, RequestContext context ) throws IncrementalBackupNotPossibleException
+            long timeout, RequestContext context ) throws IncrementalBackupNotPossibleException
     {
         DependencyResolver resolver = targetDb.getDependencyResolver();
 
@@ -326,7 +326,7 @@ class BackupService
                 new TransactionCommittingResponseUnpacker( resolver, 100 );
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
-        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
+        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, null,
                 resolver.resolveDependency( Logging.class ), targetDb.storeId(), timeout, unpacker,
                 monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
                 monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );

@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.InstanceId;
@@ -215,8 +215,8 @@ public class SwitchToSlaveTest
         when( masterClient.getProtocolVersion() ).thenReturn( MasterClient214.PROTOCOL_VERSION );
 
         MasterClientResolver masterClientResolver = mock( MasterClientResolver.class );
-        when( masterClientResolver.instantiate( anyString(), anyInt(), any( Monitors.class ), any( StoreId.class ),
-                any( LifeSupport.class ) ) ).thenReturn( masterClient );
+        when( masterClientResolver.instantiate( anyString(), anyInt(), anyString(), any( Monitors.class ),
+                any( StoreId.class ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
         return spy( new SwitchToSlave( ConsoleLogger.DEV_NULL, configMock(), neoStoreDataSource.getDependencyResolver(),
                 mock( HaIdGeneratorFactory.class ), new DevNullLoggingService(),
