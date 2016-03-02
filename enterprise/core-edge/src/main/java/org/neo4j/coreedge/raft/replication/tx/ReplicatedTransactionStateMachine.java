@@ -27,7 +27,8 @@ import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.raft.state.StateStorage;
-import org.neo4j.coreedge.server.core.locks.LockTokenManager;
+import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -47,28 +48,30 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
 {
     private final GlobalSessionTrackerState<MEMBER> sessionTrackerState;
     private final GlobalSession myGlobalSession;
-    private final LockTokenManager lockTokenManager;
+    private final ReplicatedLockTokenStateMachine<MEMBER> lockTokenStateMachine;
     private final TransactionCommitProcess commitProcess;
-    private final CommittingTransactions transactionFutures;
     private final StateStorage<GlobalSessionTrackerState<MEMBER>> sessionTrackerStorage;
+    private final CommittingTransactions committingTransactions;
     private final Log log;
 
     private long lastCommittedIndex = -1;
 
     public ReplicatedTransactionStateMachine( TransactionCommitProcess commitProcess,
                                               GlobalSession myGlobalSession,
-                                              LockTokenManager lockTokenManager,
-                                              CommittingTransactions transactionFutures,
-                                              StateStorage<GlobalSessionTrackerState<MEMBER>> sessionTrackerStorage,
-                                              LogProvider logProvider )
+                                              ReplicatedLockTokenStateMachine<MEMBER> lockStateMachine,
+                                              CommittingTransactions committingTransactions,
+                                              StateStorage<GlobalSessionTrackerState<MEMBER>> storage,
+                                              LogProvider logProvider,
+                                              RecoverTransactionLogState recoverTransactionLogState )
     {
         this.commitProcess = commitProcess;
         this.myGlobalSession = myGlobalSession;
-        this.lockTokenManager = lockTokenManager;
-        this.transactionFutures = transactionFutures;
-        this.sessionTrackerStorage = sessionTrackerStorage;
-        this.sessionTrackerState = sessionTrackerStorage.getInitialState();
+        this.lockTokenStateMachine = lockStateMachine;
+        this.committingTransactions = committingTransactions;
+        this.sessionTrackerStorage = storage;
+        this.sessionTrackerState = storage.getInitialState();
         this.log = logProvider.getLog( getClass() );
+        this.lastCommittedIndex = recoverTransactionLogState.findLastCommittedIndex();
     }
 
     @Override
@@ -138,10 +141,10 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
 
                 // A missing future means the transaction does not belong to this instance
                 Optional<CommittingTransaction> future = replicatedTx.globalSession().equals( myGlobalSession ) ?
-                        Optional.ofNullable( transactionFutures.retrieve( replicatedTx.localOperationId() ) ) :
+                        Optional.ofNullable( committingTransactions.retrieve( replicatedTx.localOperationId() ) ) :
                         Optional.<CommittingTransaction>empty();
 
-                int currentTokenId = lockTokenManager.currentToken().id();
+                int currentTokenId = lockTokenStateMachine.currentToken().id();
                 int txLockSessionId = tx.getLockSessionId();
 
                 if ( currentTokenId != txLockSessionId && txLockSessionId != Locks.Client.NO_LOCK_SESSION_ID )

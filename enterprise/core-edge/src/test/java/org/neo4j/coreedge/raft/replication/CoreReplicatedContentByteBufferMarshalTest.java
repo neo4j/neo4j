@@ -56,7 +56,7 @@ public class CoreReplicatedContentByteBufferMarshalTest
 
     CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
             new AdvertisedSocketAddress( "raft:1" ) );
-    GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
+    GlobalSession<CoreMember> globalSession = new GlobalSession<>( UUID.randomUUID(), coreMember );
 
     @Test
     public void shouldMarshalTransactionReference() throws Exception
@@ -134,7 +134,7 @@ public class CoreReplicatedContentByteBufferMarshalTest
         after.setNameId( 3232 );
         commands.add( new Command.LabelTokenCommand( before, after ) );
         ReplicatedContent message = new ReplicatedTokenRequest( TokenType.LABEL, "theLabel",
-                ReplicatedTokenRequestSerializer.createCommandBytes( commands ) );
+                ReplicatedTokenRequestSerializer.commandBytes( commands ) );
 
         // when
         marshal.marshal( message, buffer );

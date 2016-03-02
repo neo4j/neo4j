@@ -36,6 +36,23 @@ public interface LockToken
     int INVALID_LOCK_TOKEN_ID = -1;
 
     /**
+     * Convenience method for retrieving a valid candidate id for a
+     * lock token request.
+     *
+     *  @return A suitable candidate id for a token request.
+     * @param currentId
+     */
+    static int nextCandidateId( int currentId )
+    {
+        int candidateId = currentId + 1;
+        if( candidateId == INVALID_LOCK_TOKEN_ID )
+        {
+            candidateId++;
+        }
+        return candidateId;
+    }
+
+    /**
      * The id of the lock token.
      */
     int id();

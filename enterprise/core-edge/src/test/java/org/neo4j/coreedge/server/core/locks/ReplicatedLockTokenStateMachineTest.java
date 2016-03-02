@@ -44,8 +44,8 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldStartWithInvalidTokenId() throws Exception
     {
         // given
-        LockTokenManager stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
+        ReplicatedLockTokenStateMachine<Object> stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
 
         // when
         int initialTokenId = stateMachine.currentToken().id();
@@ -59,14 +59,14 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         ReplicatedLockTokenStateMachine<Object> stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
-        int firstCandidateId = stateMachine.nextCandidateId();
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        int firstCandidateId = LockToken.nextCandidateId( stateMachine.currentToken().id() );
 
         // when
         stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ), 0 );
 
         // then
-        assertEquals( firstCandidateId + 1, stateMachine.nextCandidateId() );
+        assertEquals( firstCandidateId + 1, LockToken.nextCandidateId( stateMachine.currentToken().id() ) );
     }
 
     @Test
@@ -74,8 +74,8 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
-        int firstCandidateId = stateMachine.nextCandidateId();
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        int firstCandidateId = LockToken.nextCandidateId( stateMachine.currentToken().id() );
 
         // when
         stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ), 1 );
@@ -95,8 +95,8 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
-        int firstCandidateId = stateMachine.nextCandidateId();
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        int firstCandidateId = LockToken.nextCandidateId( stateMachine.currentToken().id() );
 
         // when
         stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ), 1 );
@@ -116,8 +116,8 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
-        int firstCandidateId = stateMachine.nextCandidateId();
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        int firstCandidateId = LockToken.nextCandidateId( stateMachine.currentToken().id() );
 
         // when
         stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId ), 1 );
@@ -141,8 +141,8 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
-        int firstCandidateId = stateMachine.nextCandidateId();
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        int firstCandidateId = LockToken.nextCandidateId( stateMachine.currentToken().id() );
 
         // when
         stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( member( 0 ), firstCandidateId + 1 ), 1 ); // not accepted
@@ -190,7 +190,7 @@ public class ReplicatedLockTokenStateMachineTest
         DurableStateStorage<ReplicatedLockTokenState<CoreMember>> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", marshal, 100, health(), NullLogProvider.getInstance() );
 
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( storage );
+        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( storage, new PendingLockTokensRequests<>() );
 
         CoreMember memberA = new CoreMember(
                 new AdvertisedSocketAddress( "1" ),

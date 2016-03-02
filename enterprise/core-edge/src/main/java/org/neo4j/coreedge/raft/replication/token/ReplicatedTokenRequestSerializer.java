@@ -84,7 +84,7 @@ public class ReplicatedTokenRequestSerializer
         return new ReplicatedTokenRequest( type, tokenName, commandBytes );
     }
 
-    public static byte[] createCommandBytes( Collection<StorageCommand> commands )
+    public static byte[] commandBytes( Collection<StorageCommand> commands )
     {
         ByteBuf commandBuffer = Unpooled.buffer();
         NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( commandBuffer );

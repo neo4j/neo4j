@@ -19,29 +19,25 @@
  */
 package org.neo4j.coreedge.raft.replication.token;
 
-import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.coreedge.raft.replication.RaftReplicator;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
-import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.logging.LogProvider;
 
-public class ReplicatedRelationshipTypeTokenHolder extends ReplicatedTokenHolder<RelationshipTypeToken,RelationshipTypeTokenRecord> implements RelationshipTypeTokenHolder
+public class ReplicatedRelationshipTypeTokenHolder extends
+        ReplicatedTokenHolder<RelationshipTypeToken> implements RelationshipTypeTokenHolder
 {
-    public ReplicatedRelationshipTypeTokenHolder( Replicator replicator, IdGeneratorFactory idGeneratorFactory,
-                                                  Dependencies dependencies, long timeoutMillis, LogProvider logProvider )
+    public ReplicatedRelationshipTypeTokenHolder(
+            TokenRegistry<RelationshipTypeToken> registry,
+            RaftReplicator<CoreMember> replicator,
+            IdGeneratorFactory idGeneratorFactory, Dependencies dependencies, Long timeoutMillis )
     {
-        super( replicator, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_TOKEN, dependencies,
-                new RelationshipTypeToken.Factory(), TokenType.RELATIONSHIP, timeoutMillis, logProvider );
-    }
-
-    @Override
-    protected String tokenType()
-    {
-        return "RelationshipType";
+        super( registry, replicator, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_TOKEN, dependencies,
+                TokenType.RELATIONSHIP, timeoutMillis );
     }
 
     @Override
@@ -49,5 +45,4 @@ public class ReplicatedRelationshipTypeTokenHolder extends ReplicatedTokenHolder
     {
         txState.relationshipTypeDoCreateForName( tokenName, tokenId );
     }
-
 }
