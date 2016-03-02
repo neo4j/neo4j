@@ -25,16 +25,20 @@ Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credenti
     6A 00 00
 
 Server: FAILURE { "code": "Neo.ClientError.Security.CredentialsExpired",
-                  "message": "The credentials have expired and need to be updated."}
+                  "message": "The credentials have expired and need to be updated. (ID:6CE05C78B721D6C5616EF00C808992DB327DF9E9FAEEA45288A7E0916B604DC9)"}
 
-    00 73 B1 7F  A2 84 63 6F  64 65 D0 2B  4E 65 6F 2E
+    00 B9 B1 7F  A2 84 63 6F  64 65 D0 2B  4E 65 6F 2E
     43 6C 69 65  6E 74 45 72  72 6F 72 2E  53 65 63 75
     72 69 74 79  2E 43 72 65  64 65 6E 74  69 61 6C 73
     45 78 70 69  72 65 64 87  6D 65 73 73  61 67 65 D0
-    34 54 68 65  20 63 72 65  64 65 6E 74  69 61 6C 73
+    7A 54 68 65  20 63 72 65  64 65 6E 74  69 61 6C 73
     20 68 61 76  65 20 65 78  70 69 72 65  64 20 61 6E
     64 20 6E 65  65 64 20 74  6F 20 62 65  20 75 70 64
-    61 74 65 64  2E 00 00
+    61 74 65 64  2E 20 28 49  44 3A 36 43  45 30 35 43
+    37 38 42 37  32 31 44 36  43 35 36 31  36 45 46 30
+    30 43 38 30  38 39 39 32  44 42 33 32  37 44 46 39
+    45 39 46 41  45 45 41 34  35 32 38 38  41 37 45 30
+    39 31 36 42  36 30 34 44  43 39 29 00  00
 
 Server: <disconnect>
 Client: <connect>

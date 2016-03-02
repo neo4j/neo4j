@@ -46,6 +46,7 @@ public class HexPrinter
     private final PrintStream out;
     private int bytesPerLine;
     private int bytesPerGroup;
+    private String byteSeparator;
     private String groupSeparator;
     private int maxLineNumberDigits;
     private String lineNumberPrefix;
@@ -60,6 +61,7 @@ public class HexPrinter
     private static final String DEFAULT_GROUP_SEPARATOR = "    ";
     private static final String DEFAULT_LINE_NUMBER_PREFIX = "@ ";
     private static final String DEFAULT_LINE_NUMBER_SUFFIX = ": ";
+    private static final String DEFAULT_BYTE_SEPARATOR = " ";
 
     public HexPrinter withBytesPerLine( int bytesPerLine )
     {
@@ -103,6 +105,12 @@ public class HexPrinter
         return this;
     }
 
+    public HexPrinter withByteSeparator( String byteSeparator)
+    {
+        this.byteSeparator = byteSeparator;
+        return this;
+    }
+
     public HexPrinter withBytesGroupingFormat( int bytesPerLine, int bytesPerGroup, String separator )
     {
         this.bytesPerLine = bytesPerLine;
@@ -143,6 +151,7 @@ public class HexPrinter
         this.maxLineNumberDigits = DEFAULT_MAX_LINE_NUMBER_DIGITS;
         this.lineNumberPrefix = DEFAULT_LINE_NUMBER_PREFIX;
         this.lineNumberSuffix = DEFAULT_LINE_NUMBER_SUFFIX;
+        this.byteSeparator = DEFAULT_BYTE_SEPARATOR;
     }
 
     /**
@@ -253,7 +262,7 @@ public class HexPrinter
         }
         else
         {
-            out.append( " " );
+            out.append( byteSeparator );
         }
         out.printf( "%X%X", 0xF & (value >> 4), 0xF & value );
     }

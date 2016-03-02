@@ -19,10 +19,13 @@
  */
 package org.neo4j.bolt.security.auth;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.string.UTF8;
 
 public abstract class AuthUtils
@@ -40,12 +43,14 @@ public abstract class AuthUtils
             messageDigest = MessageDigest.getInstance( "SHA-256" );
             messageDigest.update( UTF8.encode( storeId.toString() ) );
             byte[] digest = messageDigest.digest();
-            StringBuilder builder = new StringBuilder( digest.length * 2 );
-            for ( byte b : digest )
-            {
-                builder.append( String.format( "%02x", b ) );
-            }
-            return builder.toString();
+            ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream( digest.length );
+            PrintStream stream = new PrintStream( byteArrayStream );
+            new HexPrinter( stream )
+                    .withByteSeparator( "" )
+                    .withGroupSeparator( "" )
+                    .append( digest );
+            stream.flush();
+            return byteArrayStream.toString();
         }
         catch ( NoSuchAlgorithmException e )
         {

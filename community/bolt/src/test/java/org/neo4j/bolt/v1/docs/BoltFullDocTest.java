@@ -88,20 +88,24 @@ public abstract class BoltFullDocTest
                         assertThat( "'" + event.humanReadableMessage() + "' should serialize to the documented " +
                                     "binary data.",
                                 hex( event.payload() ),
-                                equalTo( hex( DocSerialization.packAndChunk( event.humanReadableMessage(), 1024 * 8 ) ) ) );
+                                equalTo( hex( DocSerialization
+                                        .packAndChunk( event.humanReadableMessage(), 1024 * 8 ) ) ) );
 
                         // Ensure that the server replies as documented
-                        Message serverMessage = recvOneMessage( client );
+                        Message serverMessage = readOneMessage( client );
                         assertThat(
-                                "The message recieved from the server should match the documented binary representation. " +
-                                "Human-readable message is <" + event.humanReadableMessage() + ">, received message was: " + serverMessage,
+                                "The message received from the server should match the documented binary " +
+                                "representation. " +
+                                "Human-readable message is <" + event.humanReadableMessage() +
+                                ">, received message was: " + serverMessage,
                                 serverMessage,
                                 equalTo( message( dechunk( event.payload() ) ) ) );
                     }
                     else
                     {
                         // Raw data assertions - used for documenting the version negotiation, for instance
-                        assertThat( "The data recieved from the server should match the documented binary representation.",
+                        assertThat(
+                                "The data recieved from the server should match the documented binary representation.",
                                 hex( client.recv( event.payload().length ) ),
                                 equalTo( hex( event.payload() ) ) );
                     }
@@ -112,6 +116,11 @@ public abstract class BoltFullDocTest
                 }
             }
         }
+    }
+
+    private Message readOneMessage( Connection client ) throws Exception
+    {
+        return trimMessage( recvOneMessage( client ) );
     }
 
     @Before
@@ -129,8 +138,17 @@ public abstract class BoltFullDocTest
         }
     }
 
+    //Allows extending classes to tamper with the message before comparing it with
+    //what is documented
+    protected Message trimMessage( Message message )
+    {
+        return message;
+    }
+
     protected abstract Connection createClient();
+
     protected abstract HostnamePort address();
+
     protected abstract DocExchangeExample example();
 
     private static String hex( byte[] payload )

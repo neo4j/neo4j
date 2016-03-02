@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.neo4j.bolt.v1.messaging.message.FailureMessage;
+import org.neo4j.bolt.v1.messaging.message.Message;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -37,10 +39,11 @@ import org.neo4j.helpers.HostnamePort;
 @RunWith( Parameterized.class )
 public class BoltAuthDocTest extends BoltFullDocTest
 {
+    //this is here to fake a unique identifier derived from the store id
+    private final static String UNIQUE_IDENTIFIER = "(ID:6CE05C78B721D6C5616EF00C808992DB327DF9E9FAEEA45288A7E0916B604DC9)";
+
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( settings -> {
-        settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-    } );
+    public Neo4jWithSocket server = new Neo4jWithSocket( settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" ) );
 
     @Parameterized.Parameter( 0 )
     public String testName;
@@ -91,5 +94,17 @@ public class BoltAuthDocTest extends BoltFullDocTest
     protected DocExchangeExample example()
     {
         return example;
+    }
+
+    @Override
+    protected Message trimMessage( Message message )
+    {
+        if (message instanceof FailureMessage)
+        {
+            FailureMessage failureMessage = (FailureMessage) message;
+            return new FailureMessage( failureMessage.status(), failureMessage.message().replaceAll( "\\(ID:.*\\)", UNIQUE_IDENTIFIER ) );
+        }
+
+        return message;
     }
 }
