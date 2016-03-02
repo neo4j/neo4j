@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.repr.RepresentationWriteHandler;
 import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.CypherService;
@@ -51,7 +52,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
     {
         RepresentationWriteHandler representationWriteHandler = DO_NOTHING;
 
-        AccessMode mode = AccessMode.Static.FULL;
+        AccessMode mode = AuthorizedRequestWrapper.getAccessModeFromHttpContext( httpContext );
 
         if ( o instanceof RestfulGraphDatabase )
         {

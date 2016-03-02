@@ -39,6 +39,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
 import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.TransactionHandle;
@@ -77,7 +78,8 @@ public class TransactionalService
         try
         {
             usage.get( features ).flag( http_tx_endpoint );
-            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme, false, AccessMode.Static.FULL );
+            AccessMode accessMode = AuthorizedRequestWrapper.getAccessModeFromHttpServletRequest( request );
+            TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme, false, accessMode );
             return createdResponse( transactionHandle, executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request ) );
         }
         catch ( TransactionLifecycleException e )
@@ -134,7 +136,8 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            transactionHandle = facade.newTransactionHandle( uriScheme, true, AccessMode.Static.FULL );
+            AccessMode accessMode = AuthorizedRequestWrapper.getAccessModeFromHttpServletRequest( request );
+            transactionHandle = facade.newTransactionHandle( uriScheme, true, accessMode );
         }
         catch ( TransactionLifecycleException e )
         {
