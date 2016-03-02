@@ -21,10 +21,9 @@ package cypher;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
-import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 
-@RunWith( Enclosed.class )
+@RunWith( DownloadedFeatures.class )
 public class FeatureSuiteTest
 {
     @RunWith( Cucumber.class )
@@ -36,7 +35,8 @@ public class FeatureSuiteTest
                     "cypher.cucumber.db.DatabaseProvider:target/dbs",
                     "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/rule.json"
             },
-            glue = { "classpath:cypher/feature/steps" }
+            glue = { "classpath:cypher/feature/steps" },
+            features = { "target/features" }
     )
     public static class RuleInterpreted
     {
@@ -51,7 +51,8 @@ public class FeatureSuiteTest
                     "cypher.cucumber.db.DatabaseProvider:target/dbs",
                     "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-interpreted.json",
             },
-            glue = { "classpath:cypher/feature/steps" }
+            glue = { "classpath:cypher/feature/steps" },
+            features = { "target/features" }
     )
     public static class CostInterpreted
     {

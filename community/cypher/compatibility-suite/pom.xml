@@ -92,6 +92,20 @@
       <version>1.2.4</version>
     </dependency>
 
+    <!-- JSON -->
+
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-core-asl</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- scala -->
 
     <dependency>
