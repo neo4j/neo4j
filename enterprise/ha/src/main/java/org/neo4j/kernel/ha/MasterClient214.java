@@ -36,13 +36,15 @@ public class MasterClient214 extends MasterClient210
 {
     public static final ProtocolVersion PROTOCOL_VERSION = new ProtocolVersion( (byte) 8, INTERNAL_PROTOCOL_VERSION );
 
-    public MasterClient214( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, long readTimeoutSeconds,
+    public MasterClient214( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+                            LogProvider logProvider, StoreId storeId, long readTimeoutSeconds,
                             long lockReadTimeout, int maxConcurrentChannels, int chunkSize, ResponseUnpacker unpacker,
                             ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
                             LogEntryReader<ReadableClosablePositionAwareChannel> entryReader )
     {
-        super( hostNameOrIp, port, logProvider, storeId, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels,
-                chunkSize, PROTOCOL_VERSION, unpacker, byteCounterMonitor, requestMonitor, entryReader );
+        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId, readTimeoutSeconds,
+                lockReadTimeout, maxConcurrentChannels, chunkSize, PROTOCOL_VERSION, unpacker, byteCounterMonitor,
+                requestMonitor, entryReader );
     }
 
     @Override

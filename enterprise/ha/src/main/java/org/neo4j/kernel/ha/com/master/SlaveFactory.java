@@ -25,7 +25,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public interface SlaveFactory
 {
-    Slave newSlave( LifeSupport life, ClusterMember clusterMember );
+    Slave newSlave( LifeSupport life, ClusterMember clusterMember, String originHostNameOrIp, int originPort );
 
     void setStoreId( StoreId storeId );
 }
