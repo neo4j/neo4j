@@ -25,14 +25,17 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
+import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
+
 class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
 {
     private static final int RECORD_SIZE = 32;
-    private static final int FIRST_IN_START_BIT = 0b0000_1000;
-    private static final int FIRST_IN_END_BIT   = 0b0001_0000;
-    private static final int HAS_START_NEXT_BIT = 0b0010_0000;
-    private static final int HAS_END_NEXT_BIT   = 0b0100_0000;
-    private static final int HAS_PROPERTY_BIT   = 0b1000_0000;
+    private static final int FIRST_IN_FIRST_CHAIN_BIT = 0b0000_1000;
+    private static final int FIRST_IN_SECOND_CHAIN_BIT = 0b0001_0000;
+    private static final int HAS_FIRST_CHAIN_NEXT_BIT = 0b0010_0000;
+    private static final int HAS_SECOND_CHAIN_NEXT_BIT = 0b0100_0000;
+    private static final int HAS_PROPERTY_BIT = 0b1000_0000;
 
     public RelationshipRecordFormat()
     {
@@ -50,42 +53,51 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
             boolean inUse, DataAdapter<PageCursor> adapter )
     {
         int type = cursor.getShort() & 0xFFFF;
+        long recordId = record.getId();
         record.initialize( inUse,
-                decode( cursor, adapter, headerByte, HAS_PROPERTY_BIT, NULL  ),
-                decode( cursor, adapter  ),
-                decode( cursor, adapter  ),
+                decode( cursor, adapter, headerByte, HAS_PROPERTY_BIT, NULL ),
+                decode( cursor, adapter ),
+                decode( cursor, adapter ),
                 type,
-                decode( cursor, adapter ),
-                decode( cursor, adapter, headerByte, HAS_START_NEXT_BIT, NULL ),
-                decode( cursor, adapter ),
-                decode( cursor, adapter, headerByte, HAS_END_NEXT_BIT, NULL ),
-                has( headerByte, FIRST_IN_START_BIT ),
-                has( headerByte, FIRST_IN_END_BIT ) );
+                decodeAbsoluteOrRelative( cursor, headerByte, adapter, FIRST_IN_FIRST_CHAIN_BIT, recordId ),
+                decodeAbsoluteIfPresent( cursor, adapter, headerByte, HAS_FIRST_CHAIN_NEXT_BIT, recordId ),
+                decodeAbsoluteOrRelative( cursor, headerByte, adapter, FIRST_IN_SECOND_CHAIN_BIT, recordId ),
+                decodeAbsoluteIfPresent( cursor, adapter, headerByte, HAS_SECOND_CHAIN_NEXT_BIT, recordId ),
+                has( headerByte, FIRST_IN_FIRST_CHAIN_BIT ),
+                has( headerByte, FIRST_IN_SECOND_CHAIN_BIT ) );
+    }
+
+    private long decodeAbsoluteOrRelative( PageCursor cursor, long headerByte,
+            DataAdapter<PageCursor> adapter, int firstInStartBit, long recordId )
+    {
+        return has( headerByte, firstInStartBit ) ? decode( cursor, adapter ) : toAbsolute( decode( cursor, adapter ),
+                recordId );
     }
 
     @Override
     protected byte headerBits( RelationshipRecord record )
     {
         byte header = 0;
-        header = set( header, FIRST_IN_START_BIT, record.isFirstInFirstChain() );
-        header = set( header, FIRST_IN_END_BIT, record.isFirstInSecondChain() );
+        header = set( header, FIRST_IN_FIRST_CHAIN_BIT, record.isFirstInFirstChain() );
+        header = set( header, FIRST_IN_SECOND_CHAIN_BIT, record.isFirstInSecondChain() );
         header = set( header, HAS_PROPERTY_BIT, record.getNextProp(), NULL );
-        header = set( header, HAS_START_NEXT_BIT, record.getFirstNextRel(), NULL );
-        header = set( header, HAS_END_NEXT_BIT, record.getSecondNextRel(), NULL );
+        header = set( header, HAS_FIRST_CHAIN_NEXT_BIT, record.getFirstNextRel(), NULL );
+        header = set( header, HAS_SECOND_CHAIN_NEXT_BIT, record.getSecondNextRel(), NULL );
         return header;
     }
 
     @Override
     protected int requiredDataLength( RelationshipRecord record )
     {
+        long recordId = record.getId();
         return Short.BYTES + // type
                length( record.getNextProp(), NULL ) +
                length( record.getFirstNode() ) +
                length( record.getSecondNode() ) +
-               length( record.getFirstPrevRel() ) +
-               length( record.getFirstNextRel(), NULL ) +
-               length( record.getSecondPrevRel() ) +
-               length( record.getSecondNextRel(), NULL );
+               length( getFirstPrevReference( record, recordId ) ) +
+               getRelativeReferenceLength( record.getFirstNextRel(), recordId ) +
+               length( getSecondPrevReference( record, recordId ) ) +
+               getRelativeReferenceLength( record.getSecondNextRel(), recordId );
     }
 
     @Override
@@ -93,12 +105,43 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
             throws IOException
     {
         cursor.putShort( (short) record.getType() );
+        long recordId = record.getId();
         encode( cursor, adapter, record.getNextProp(), NULL );
         encode( cursor, adapter, record.getFirstNode() );
         encode( cursor, adapter, record.getSecondNode() );
-        encode( cursor, adapter, record.getFirstPrevRel() );
-        encode( cursor, adapter, record.getFirstNextRel(), NULL );
-        encode( cursor, adapter, record.getSecondPrevRel() );
-        encode( cursor, adapter, record.getSecondNextRel(), NULL );
+
+        encode( cursor, adapter, getFirstPrevReference( record, recordId ) );
+        if ( record.getFirstNextRel() != NULL )
+        {
+            encode( cursor, adapter, toRelative( record.getFirstNextRel(), recordId ) );
+        }
+        encode( cursor, adapter, getSecondPrevReference( record, recordId ) );
+        if ( record.getSecondNextRel() != NULL )
+        {
+            encode( cursor, adapter, toRelative( record.getSecondNextRel(), recordId ) );
+        }
+    }
+
+    private long getSecondPrevReference( RelationshipRecord record, long recordId )
+    {
+        return record.isFirstInSecondChain() ? record.getSecondPrevRel() :
+                                   toRelative( record.getSecondPrevRel(), recordId );
+    }
+
+    private long getFirstPrevReference( RelationshipRecord record, long recordId )
+    {
+        return record.isFirstInFirstChain() ? record.getFirstPrevRel()
+                                              : toRelative( record.getFirstPrevRel(), recordId );
+    }
+
+    private int getRelativeReferenceLength( long absoluteReference, long recordId )
+    {
+        return absoluteReference != NULL ? length( toRelative( absoluteReference, recordId ) ) : 0;
+    }
+
+    private long decodeAbsoluteIfPresent( PageCursor cursor, DataAdapter<PageCursor> adapter, long headerByte,
+            int conditionBit, long recordId )
+    {
+        return has( headerByte, conditionBit ) ? toAbsolute( decode( cursor, adapter ), recordId ) : NULL;
     }
 }

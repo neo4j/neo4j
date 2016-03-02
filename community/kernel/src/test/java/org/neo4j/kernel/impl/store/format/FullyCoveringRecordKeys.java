@@ -42,38 +42,28 @@ class FullyCoveringRecordKeys implements RecordKeys
     @Override
     public RecordKey<NodeRecord> node()
     {
-        return new RecordKey<NodeRecord>()
-        {
-            @Override
-            public void assertRecordsEquals( NodeRecord written, NodeRecord read )
-            {
-                assertEquals( written.getNextProp(), read.getNextProp() );
-                assertEquals( written.getNextRel(), read.getNextRel() );
-                assertEquals( written.getLabelField(), read.getLabelField() );
-                assertEquals( written.isDense(), read.isDense() );
-            }
+        return ( written, read ) -> {
+            assertEquals( written.getNextProp(), read.getNextProp() );
+            assertEquals( written.getNextRel(), read.getNextRel() );
+            assertEquals( written.getLabelField(), read.getLabelField() );
+            assertEquals( written.isDense(), read.isDense() );
         };
     }
 
     @Override
     public RecordKey<RelationshipRecord> relationship()
     {
-        return new RecordKey<RelationshipRecord>()
-        {
-            @Override
-            public void assertRecordsEquals( RelationshipRecord written, RelationshipRecord read )
-            {
-                assertEquals( written.getNextProp(), read.getNextProp() );
-                assertEquals( written.getFirstNode(), read.getFirstNode() );
-                assertEquals( written.getSecondNode(), read.getSecondNode() );
-                assertEquals( written.getType(), read.getType() );
-                assertEquals( written.getFirstPrevRel(), read.getFirstPrevRel() );
-                assertEquals( written.getFirstNextRel(), read.getFirstNextRel() );
-                assertEquals( written.getSecondPrevRel(), read.getSecondPrevRel() );
-                assertEquals( written.getSecondNextRel(), read.getSecondNextRel() );
-                assertEquals( written.isFirstInFirstChain(), read.isFirstInFirstChain() );
-                assertEquals( written.isFirstInSecondChain(), read.isFirstInSecondChain() );
-            }
+        return ( written, read ) -> {
+            assertEquals( written.getNextProp(), read.getNextProp() );
+            assertEquals( written.getFirstNode(), read.getFirstNode() );
+            assertEquals( written.getSecondNode(), read.getSecondNode() );
+            assertEquals( written.getType(), read.getType() );
+            assertEquals( written.getFirstPrevRel(), read.getFirstPrevRel() );
+            assertEquals( written.getFirstNextRel(), read.getFirstNextRel() );
+            assertEquals( written.getSecondPrevRel(), read.getSecondPrevRel() );
+            assertEquals( written.getSecondNextRel(), read.getSecondNextRel() );
+            assertEquals( written.isFirstInFirstChain(), read.isFirstInFirstChain() );
+            assertEquals( written.isFirstInSecondChain(), read.isFirstInSecondChain() );
         };
     }
 
@@ -119,77 +109,48 @@ class FullyCoveringRecordKeys implements RecordKeys
     @Override
     public RecordKey<RelationshipGroupRecord> relationshipGroup()
     {
-        return new RecordKey<RelationshipGroupRecord>()
-        {
-            @Override
-            public void assertRecordsEquals( RelationshipGroupRecord written, RelationshipGroupRecord read )
-            {
-                assertEquals( written.getType(), read.getType() );
-                assertEquals( written.getFirstOut(), read.getFirstOut() );
-                assertEquals( written.getFirstIn(), read.getFirstIn() );
-                assertEquals( written.getFirstLoop(), read.getFirstLoop() );
-                assertEquals( written.getNext(), read.getNext() );
-                assertEquals( written.getOwningNode(), read.getOwningNode() );
-            }
+        return ( written, read ) -> {
+            assertEquals( written.getType(), read.getType() );
+            assertEquals( written.getFirstOut(), read.getFirstOut() );
+            assertEquals( written.getFirstIn(), read.getFirstIn() );
+            assertEquals( written.getFirstLoop(), read.getFirstLoop() );
+            assertEquals( written.getNext(), read.getNext() );
+            assertEquals( written.getOwningNode(), read.getOwningNode() );
         };
     }
 
     @Override
     public RecordKey<RelationshipTypeTokenRecord> relationshipTypeToken()
     {
-        return new RecordKey<RelationshipTypeTokenRecord>()
-        {
-            @Override
-            public void assertRecordsEquals( RelationshipTypeTokenRecord written, RelationshipTypeTokenRecord read )
-            {
-                assertEquals( written.getNameId(), read.getNameId() );
-            }
-        };
+        return ( written, read ) -> assertEquals( written.getNameId(), read.getNameId() );
     }
 
     @Override
     public RecordKey<PropertyKeyTokenRecord> propertyKeyToken()
     {
-        return new RecordKey<PropertyKeyTokenRecord>()
-        {
-            @Override
-            public void assertRecordsEquals( PropertyKeyTokenRecord written, PropertyKeyTokenRecord read )
-            {
-                assertEquals( written.getNameId(), read.getNameId() );
-                assertEquals( written.getPropertyCount(), read.getPropertyCount() );
-            }
+        return ( written, read ) -> {
+            assertEquals( written.getNameId(), read.getNameId() );
+            assertEquals( written.getPropertyCount(), read.getPropertyCount() );
         };
     }
 
     @Override
     public RecordKey<LabelTokenRecord> labelToken()
     {
-        return new RecordKey<LabelTokenRecord>()
-        {
-            @Override
-            public void assertRecordsEquals( LabelTokenRecord written, LabelTokenRecord read )
-            {
-                assertEquals( written.getNameId(), read.getNameId() );
-            }
-        };
+        return ( written, read ) -> assertEquals( written.getNameId(), read.getNameId() );
     }
 
     @Override
     public RecordKey<DynamicRecord> dynamic()
     {
-        return new RecordKey<DynamicRecord>()
-        {
-            @Override
-            public void assertRecordsEquals( DynamicRecord written, DynamicRecord read )
-            {
-                // Don't assert type, since that's read from the data, and the data in this test
-                // is randomly generated. Since we assert that the data is the same then the type
-                // is also correct.
-                assertEquals( written.getLength(), read.getLength() );
-                assertEquals( written.getNextBlock(), read.getNextBlock() );
-                assertArrayEquals( written.getData(), read.getData() );
-                assertEquals( written.isStartRecord(), read.isStartRecord() );
-            }
+        return ( written, read ) -> {
+            // Don't assert type, since that's read from the data, and the data in this test
+            // is randomly generated. Since we assert that the data is the same then the type
+            // is also correct.
+            assertEquals( written.getLength(), read.getLength() );
+            assertEquals( written.getNextBlock(), read.getNextBlock() );
+            assertArrayEquals( written.getData(), read.getData() );
+            assertEquals( written.isStartRecord(), read.isStartRecord() );
         };
     }
 }
