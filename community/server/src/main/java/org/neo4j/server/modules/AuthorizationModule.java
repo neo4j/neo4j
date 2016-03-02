@@ -22,11 +22,14 @@ package org.neo4j.server.modules;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
+import javax.servlet.Filter;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.rest.dbms.AuthorizationFilter;
+import org.neo4j.server.rest.dbms.AuthorizationDisabledFilter;
+import org.neo4j.server.rest.dbms.AuthorizationEnabledFilter;
 import org.neo4j.server.web.WebServer;
 
 public class AuthorizationModule implements ServerModule
@@ -49,11 +52,18 @@ public class AuthorizationModule implements ServerModule
     @Override
     public void start()
     {
+        final Filter authorizationFilter;
+
         if ( config.get( GraphDatabaseSettings.auth_enabled ) )
         {
-            final AuthorizationFilter authorizationFilter = new AuthorizationFilter( authManagerSupplier, logProvider, uriWhitelist );
-            webServer.addFilter( authorizationFilter, "/*" );
+            authorizationFilter = new AuthorizationEnabledFilter( authManagerSupplier, logProvider, uriWhitelist );
         }
+        else
+        {
+            authorizationFilter = new AuthorizationDisabledFilter();
+        }
+
+        webServer.addFilter( authorizationFilter, "/*" );
     }
 
     @Override
