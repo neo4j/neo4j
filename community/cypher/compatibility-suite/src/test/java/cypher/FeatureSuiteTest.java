@@ -28,23 +28,31 @@ import org.junit.runner.RunWith;
 public class FeatureSuiteTest
 {
     @RunWith( Cucumber.class )
-    @CucumberOptions( plugin = {
-            "pretty", "html:target/rule-interpreted",
-            "cypher.cucumber.reporter.CypherResultReporter:target/rule-interpreted",
-            "cypher.cucumber.db.DatabaseProvider:target/dbs",
-            "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/rule.json",
-    } )
+    @CucumberOptions(
+            plugin = {
+                    "pretty",
+                    "html:target/rule-interpreted",
+                    "cypher.cucumber.reporter.CypherResultReporter:target/rule-interpreted",
+                    "cypher.cucumber.db.DatabaseProvider:target/dbs",
+                    "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/rule.json"
+            },
+            glue = { "classpath:cypher/feature/steps" }
+    )
     public static class RuleInterpreted
     {
     }
 
     @RunWith( Cucumber.class )
-    @CucumberOptions( plugin = {
-            "pretty", "html:target/cost-interpreted",
-            "cypher.cucumber.reporter.CypherResultReporter:target/cost-interpreted",
-            "cypher.cucumber.db.DatabaseProvider:target/dbs",
-            "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-interpreted.json",
-    } )
+    @CucumberOptions(
+            plugin = {
+                    "pretty",
+                    "html:target/cost-interpreted",
+                    "cypher.cucumber.reporter.CypherResultReporter:target/cost-interpreted",
+                    "cypher.cucumber.db.DatabaseProvider:target/dbs",
+                    "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-interpreted.json",
+            },
+            glue = { "classpath:cypher/feature/steps" }
+    )
     public static class CostInterpreted
     {
     }
