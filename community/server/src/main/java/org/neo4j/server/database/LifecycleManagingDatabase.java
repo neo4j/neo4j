@@ -21,12 +21,12 @@ package org.neo4j.server.database;
 
 import java.io.File;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.Log;
-import org.neo4j.server.configuration.ServerSettings;
 
 /**
  * Wraps a neo4j database in lifecycle management. This is intermediate, and will go away once we have an internal
@@ -67,7 +67,7 @@ public class LifecycleManagingDatabase implements Database
     @Override
     public String getLocation()
     {
-        File file = config.get( ServerSettings.database_path );
+        File file = config.get( DatabaseManagementSystemSettings.database_path );
         return file.getAbsolutePath();
     }
 

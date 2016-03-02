@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 
@@ -58,7 +59,7 @@ public class ConfigFileBuilder
     {
         File file = new File( directory, "config" );
         Map<String, String> config = MapUtil.stringMap(
-                ServerSettings.data_directory.name(), directory.getAbsolutePath()+"/data",
+                DatabaseManagementSystemSettings.data_directory.name(), directory.getAbsolutePath()+"/data",
                 ServerSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
                 ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
         config.put( ServerSettings.webserver_port.name(), "7474" );

@@ -42,6 +42,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterable;
@@ -177,8 +178,8 @@ public class InProcessBuilderTest
         // When
         // create graph db with one node upfront
         Path dir = Files.createTempDirectory( getClass().getSimpleName() + "_shouldRunBuilderOnExistingStorageDir" );
-        File storeDir = new Config( stringMap( ServerSettings.data_directory.name(), dir.toString() ) )
-                .get( ServerSettings.database_path );
+        File storeDir = new Config( stringMap( DatabaseManagementSystemSettings.data_directory.name(), dir.toString() ) )
+                .get( DatabaseManagementSystemSettings.database_path );
         try
         {
             GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );

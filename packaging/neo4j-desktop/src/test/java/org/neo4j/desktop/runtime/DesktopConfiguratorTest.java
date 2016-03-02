@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -63,7 +64,7 @@ public class DesktopConfiguratorTest
         // Then
         assertEquals( storeDir.getAbsolutePath(), config.getDatabaseDirectory() );
 
-        File pathToStoreDir = config.configuration().get( ServerSettings.database_path );
+        File pathToStoreDir = config.configuration().get( DatabaseManagementSystemSettings.database_path );
         assertEquals( storeDir, pathToStoreDir );
     }
 }

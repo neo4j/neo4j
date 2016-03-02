@@ -63,6 +63,7 @@
     <module>consistency-check</module>
     <module>neo4j-harness</module>
     <module>licensecheck-config</module>
+    <module>dbms</module>
   </modules>
 
   <licenses>

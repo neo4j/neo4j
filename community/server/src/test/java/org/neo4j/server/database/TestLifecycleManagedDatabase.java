@@ -28,13 +28,13 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.SuppressOutput;
 
@@ -73,7 +73,7 @@ public class TestLifecycleManagedDatabase
         dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
         when(dbFactory.newGraphDatabase( any( Config.class ), any( GraphDatabaseFacadeFactory.Dependencies.class ) ))
                 .thenReturn( (GraphDatabaseFacade) dbRule.getGraphDatabaseAPI() );
-        dbConfig = new Config(stringMap( ServerSettings.data_directory.name(), dataDirectory.getAbsolutePath() ) );
+        dbConfig = new Config(stringMap( DatabaseManagementSystemSettings.data_directory.name(), dataDirectory.getAbsolutePath() ) );
         theDatabase = newDatabase();
     }
 
@@ -148,6 +148,6 @@ public class TestLifecycleManagedDatabase
     public void shouldBeAbleToGetLocation() throws Throwable
     {
         theDatabase.start();
-        assertThat( theDatabase.getLocation(), is( dbConfig.get( ServerSettings.database_path ).getAbsolutePath() ) );
+        assertThat( theDatabase.getLocation(), is( dbConfig.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath() ) );
     }
 }

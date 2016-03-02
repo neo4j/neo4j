@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -191,15 +192,15 @@ public class StoreUpgradeIntegrationTest
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
             File rootDir = testDir.directory();
-            File storeDir = new Config( stringMap( ServerSettings.data_directory.name(), rootDir.toString() ) )
-                    .get( ServerSettings.database_path );
+            File storeDir = new Config( stringMap( DatabaseManagementSystemSettings.data_directory.name(), rootDir.toString() ) )
+                    .get( DatabaseManagementSystemSettings.database_path );
 
             store.prepareDirectory( storeDir );
 
             File configFile = new File( rootDir, "neo4j.conf" );
             Properties props = new Properties();
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
-            props.setProperty( ServerSettings.data_directory.name(), rootDir.getAbsolutePath() );
+            props.setProperty( DatabaseManagementSystemSettings.data_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             props.store( new FileWriter( configFile ), "" );
