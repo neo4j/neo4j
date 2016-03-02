@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{PatternRelationship, IdName}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 import scala.annotation.tailrec

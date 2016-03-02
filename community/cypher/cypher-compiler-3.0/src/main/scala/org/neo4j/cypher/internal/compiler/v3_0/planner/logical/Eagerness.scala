@@ -114,7 +114,7 @@ object Eagerness {
   }
 
   def tailWriteReadEagerize(inputPlan: LogicalPlan, query: PlannerQuery)
-                           (implicit context: LogicalPlanningContext): LogicalPlan = {
+                             (implicit context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
     if (alwaysEager || query.tail.isDefined && writeReadConflictInTail(query, query.tail.get))
       context.logicalPlanProducer.planEager(inputPlan)
@@ -149,9 +149,10 @@ object Eagerness {
   }
 
   @tailrec
-  def writeReadConflictInTail(head: PlannerQuery, tail: PlannerQuery): Boolean = {
+  def writeReadConflictInTail(head: PlannerQuery, tail: PlannerQuery)
+                             (implicit context: LogicalPlanningContext): Boolean = {
     val conflict = if (tail.queryGraph.writeOnly) false
-    else head.queryGraph overlaps tail.queryGraph
+    else (head.queryGraph overlaps tail.queryGraph) || deleteReadOverlap(head.queryGraph, tail.queryGraph)
     if (conflict)
       true
     else if (tail.tail.isEmpty)
@@ -160,7 +161,27 @@ object Eagerness {
       writeReadConflictInTail(head, tail.tail.get)
   }
 
-  def writeReadConflictInHead(head: PlannerQuery, tail: PlannerQuery): Boolean = {
+  private def deleteReadOverlap(from: QueryGraph, to: QueryGraph)(implicit context: LogicalPlanningContext): Boolean = {
+    val deleted = from.identifiersToDelete
+    deletedRelationshipsOverlap(deleted, to) || deletedNodesOverlap(deleted, to)
+  }
+
+  private def deletedRelationshipsOverlap(deleted: Set[IdName], to: QueryGraph)
+                                         (implicit context: LogicalPlanningContext): Boolean = {
+    val relsToRead = to.allPatternRelationshipsRead
+    val relsDeleted = deleted.filter(id => context.semanticTable.isRelationship(id.name))
+    relsToRead.nonEmpty && relsDeleted.nonEmpty
+  }
+
+  private def deletedNodesOverlap(deleted: Set[IdName], to: QueryGraph)
+                                 (implicit context: LogicalPlanningContext): Boolean = {
+    val nodesToRead = to.allPatternNodesRead
+    val nodesDeleted = deleted.filter(id => context.semanticTable.isNode(id.name))
+    nodesToRead.nonEmpty && nodesDeleted.nonEmpty
+  }
+
+  def writeReadConflictInHead(head: PlannerQuery, tail: PlannerQuery)
+                             (implicit context: LogicalPlanningContext): Boolean = {
     // If the first planner query is write only, we can use a different overlaps method (writeOnlyHeadOverlaps)
     // that makes us less eager
     if (head.queryGraph.writeOnly)
