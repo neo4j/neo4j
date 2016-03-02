@@ -34,24 +34,30 @@ import org.neo4j.helpers.Clock
 
 trait SemanticCheckMonitor {
   def startSemanticCheck(query: String)
+
   def finishSemanticCheckSuccess(query: String)
+
   def finishSemanticCheckError(query: String, errors: Seq[SemanticError])
 }
 
 trait AstRewritingMonitor {
   def startRewriting(queryText: String, statement: Statement)
+
   def abortedRewriting(obj: AnyRef)
+
   def finishRewriting(queryText: String, statement: Statement)
 }
 
 trait CypherCacheFlushingMonitor[T] {
-  def cacheFlushDetected(justBeforeKey: T){}
+  def cacheFlushDetected(justBeforeKey: T) {}
 }
 
 trait CypherCacheHitMonitor[T] {
-  def cacheHit(key: T){}
-  def cacheMiss(key: T){}
-  def cacheDiscard(key: T){}
+  def cacheHit(key: T) {}
+
+  def cacheMiss(key: T) {}
+
+  def cacheDiscard(key: T) {}
 }
 
 trait InfoLogger {
@@ -147,28 +153,21 @@ case class CypherCompiler(parser: CypherParser,
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
-    var planned = false
-    val plan = Iterator.continually {
-      cacheAccessor.getOrElseUpdate(cache)(parsedQuery.statement, {
-        planned = true
+    val (executionPlan, _) = cache.getOrElseUpdate(parsedQuery.statement,
+      plan => plan.isStale(context.txIdProvider, context.statistics), {
         executionPlanBuilder.build(context, parsedQuery)
-      })
-    }.flatMap { plan =>
-      if ( !planned && plan.isStale(context.txIdProvider, context.statistics) ) {
-        cacheAccessor.remove(cache)(parsedQuery.statement)
-        None
-      } else {
-        Some(plan)
       }
-    }.next()
-    (plan, parsedQuery.extractedParams)
+    )
+    (executionPlan, parsedQuery.extractedParams)
   }
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                            monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
-                           context: PlanContext) =
+                           context: PlanContext) = {
     context.getOrCreateFromSchemaState(cacheAccessor, {
       monitor.cacheFlushDetected(cacheAccessor)
-      planCacheFactory()
+      val lruCache: LRUCache[Statement, ExecutionPlan] = planCacheFactory()
+      new QueryCache[Statement, ExecutionPlan](cacheAccessor, lruCache)
     })
+  }
 }

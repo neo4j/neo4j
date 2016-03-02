@@ -73,14 +73,27 @@ class ExecutionEngineIT extends CypherFunSuite {
 
   test("should throw error if using COST for older versions") {
     //given
-    intercept[Exception] {
-      val db = new TestGraphDatabaseFactory()
-        .newImpermanentDatabaseBuilder()
-        .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-        .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.0").newGraphDatabase()
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.0").newGraphDatabase()
 
+    // when-then
+    intercept[Exception] {
       db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
     }
+  }
+
+  test("should work if query cache size is set to zero") {
+    //given
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.query_cache_size, "0").newGraphDatabase()
+
+    // when
+    db.execute("RETURN 42").close()
+
+    // then no exception is thrown
   }
 
   test("should not leak transaction when closing the result for a query") {

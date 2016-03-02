@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap
 
+// use only for compatibility with 1.9 and 2.0
 class LRUCache[K, V](cacheSize: Int) extends ((K, => V) => V) {
 
   val inner = new ConcurrentLinkedHashMap.Builder[K, V]
