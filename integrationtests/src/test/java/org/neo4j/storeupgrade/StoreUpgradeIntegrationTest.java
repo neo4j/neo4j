@@ -19,7 +19,6 @@
  */
 package org.neo4j.storeupgrade;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -203,7 +202,10 @@ public class StoreUpgradeIntegrationTest
             props.setProperty( ServerSettings.data_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-            props.store( new FileWriter( configFile ), "" );
+            try ( FileWriter writer = new FileWriter( configFile ) )
+            {
+                props.store( writer, "" );
+            }
 
             try
             {
@@ -299,7 +301,6 @@ public class StoreUpgradeIntegrationTest
             );
         }
 
-        @Ignore
         @Test
         public void migrationShouldFail() throws Throwable
         {

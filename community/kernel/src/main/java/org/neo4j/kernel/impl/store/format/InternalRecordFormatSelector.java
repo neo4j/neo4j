@@ -26,7 +26,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats.Factory;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV1_9;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
@@ -48,7 +47,6 @@ public class InternalRecordFormatSelector
     private static final String COMMUNITY_KEY = "community";
     private static final RecordFormats FALLBACK = LowLimitV3_0.RECORD_FORMATS;
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
-            LowLimitV1_9.RECORD_FORMATS,
             LowLimitV2_0.RECORD_FORMATS,
             LowLimitV2_1.RECORD_FORMATS,
             LowLimitV2_2.RECORD_FORMATS,
