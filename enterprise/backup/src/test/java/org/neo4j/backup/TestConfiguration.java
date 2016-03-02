@@ -20,7 +20,6 @@
 package org.neo4j.backup;
 
 import java.io.File;
-import java.net.InetAddress;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
@@ -41,6 +40,7 @@ public class TestConfiguration
 
     private static final String SOURCE_DIR = "target/db";
     private static final String BACKUP_DIR = "target/full-backup";
+    private static final String HOST_ADDRESS = "127.0.0.1";
 
     @Before
     public void before() throws Exception
@@ -53,7 +53,7 @@ public class TestConfiguration
     public void testOnByDefault() throws Exception
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( SOURCE_DIR );
-        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
+        OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
         db.shutdown();
     }
 
@@ -65,7 +65,7 @@ public class TestConfiguration
             newGraphDatabase();
         try
         {
-            OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
+            OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
             fail( "Shouldn't be possible" );
         }
         catch ( Exception e )
@@ -81,7 +81,7 @@ public class TestConfiguration
             setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
             newGraphDatabase();
 
-        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
+        OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
         db.shutdown();
     }
 
@@ -94,14 +94,14 @@ public class TestConfiguration
             setConfig( OnlineBackupSettings.online_backup_server, ":"+customPort ).newGraphDatabase();
         try
         {
-            OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
+            OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
             fail( "Shouldn't be possible" );
         }
         catch ( Exception e )
         { // Good
         }
 
-        OnlineBackup.from( InetAddress.getLocalHost().getHostAddress(), Integer.parseInt(customPort) ).full( BACKUP_DIR );
+        OnlineBackup.from( HOST_ADDRESS, Integer.parseInt(customPort) ).full( BACKUP_DIR );
         db.shutdown();
     }
 }

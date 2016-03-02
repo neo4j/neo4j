@@ -19,14 +19,14 @@
  */
 package org.neo4j.backup;
 
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.Description;
+import org.neo4j.helpers.HostnamePort;
+
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.setting;
-
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.Description;
-import org.neo4j.helpers.HostnamePort;
 
 /**
  * Settings for online backup
@@ -40,5 +40,5 @@ public class OnlineBackupSettings
 
     @Description("Listening server for online backups")
     public static final Setting<HostnamePort> online_backup_server = setting( "online_backup_server", HOSTNAME_PORT,
-            "0.0.0.0:6362-6372" );
+            "127.0.0.1:6362-6372" );
 }
