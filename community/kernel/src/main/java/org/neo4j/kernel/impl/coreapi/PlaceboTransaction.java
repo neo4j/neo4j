@@ -68,12 +68,6 @@ public class PlaceboTransaction implements InternalTransaction
     }
 
 	@Override
-	public void finish()
-	{
-		close();
-	}
-
-	@Override
 	public Lock acquireWriteLock( PropertyContainer entity )
 	{
 		return locker.exclusiveLock( stmt, entity );

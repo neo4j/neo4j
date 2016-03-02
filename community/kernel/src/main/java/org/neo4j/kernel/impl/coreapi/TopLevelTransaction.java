@@ -61,12 +61,6 @@ public class TopLevelTransaction implements InternalTransaction
     }
 
     @Override
-    public final void finish()
-    {
-        close();
-    }
-
-    @Override
     public final void terminate()
     {
         this.transaction.markForTermination();

@@ -31,14 +31,14 @@ package org.neo4j.graphdb;
  * programmatically, through this interface, or by a container through the Java Transaction API (JTA). The
  * Transaction interface makes handling programmatic transactions easier than using JTA programmatically.
  * Here's the idiomatic use of programmatic transactions in Neo4j starting from java 7:
- * 
+ *
  * <pre>
  * <code>
  * try ( Transaction tx = graphDb.beginTx() )
  * {
  *     // operations on the graph
  *     // ...
- * 
+ *
  *     tx.success();
  * }
  * </code>
@@ -66,9 +66,9 @@ package org.neo4j.graphdb;
  * Read operations inside of a transaction will also read uncommitted data from
  * the same transaction.
  * <p>
- * 
+ *
  * Here's the idiomatic use of programmatic transactions in Neo4j on java 6 or earlier:
- * 
+ *
  * <pre>
  * <code>
  * Transaction tx = graphDb.beginTx();
@@ -76,7 +76,7 @@ package org.neo4j.graphdb;
  * {
  *     // operations on the graph
  *     // ...
- * 
+ *
  *     tx.success();
  * }
  * finally
@@ -128,38 +128,18 @@ public interface Transaction extends AutoCloseable
     /**
      * Commits or marks this transaction for rollback, depending on whether
      * {@link #success()} or {@link #failure()} has been previously invoked.
-     * 
+     *
      * All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside this
      * transaction will be automatically closed by this method.
-     * 
-     * Preferably this method will not be used, instead a {@link Transaction} should participate in a
-     * try-with-resource statement so that {@link #close()} is automatically called instead.
-     * 
-     * Invoking {@link #close()} (which is unnecessary when in try-with-resource statement) or this method
-     * has the exact same effect.
-     * 
-     * @deprecated due to implementing {@link AutoCloseable}, where {@link #close()} is called automatically
-     * when used in try-with-resource statements.
-     */
-    @Deprecated
-    void finish();
-    
-    /**
-     * Commits or marks this transaction for rollback, depending on whether
-     * {@link #success()} or {@link #failure()} has been previously invoked.
-     * 
-     * All {@link ResourceIterable ResourceIterables} that where returned from operations executed inside this
-     * transaction will be automatically closed by this method.
-     * 
+     *
      * This method comes from {@link AutoCloseable} so that a {@link Transaction} can participate
      * in try-with-resource statements. It will not throw any declared exception.
-     * 
-     * Invoking this method (which is unnecessary when in try-with-resource statement) or {@link #finish()}
-     * has the exact same effect.
+     *
+     * Invoking this method (which is unnecessary when in try-with-resource statement).
      */
     @Override
     void close();
-    
+
     /**
      * Acquires a write lock for {@code entity} for this transaction.
      * The lock (returned from this method) can be released manually, but
@@ -167,14 +147,14 @@ public interface Transaction extends AutoCloseable
      * @param entity the entity to acquire a lock for. If another transaction
      * currently holds a write lock to that entity this call will wait until
      * it's released.
-     * 
+     *
      * @return a {@link Lock} which optionally can be used to release this
      * lock earlier than when the transaction finishes. If not released
      * (with {@link Lock#release()} it's going to be released with the
      * transaction finishes.
      */
     Lock acquireWriteLock( PropertyContainer entity );
-    
+
     /**
      * Acquires a read lock for {@code entity} for this transaction.
      * The lock (returned from this method) can be released manually, but
@@ -182,7 +162,7 @@ public interface Transaction extends AutoCloseable
      * @param entity the entity to acquire a lock for. If another transaction
      * currently hold a write lock to that entity this call will wait until
      * it's released.
-     * 
+     *
      * @return a {@link Lock} which optionally can be used to release this
      * lock earlier than when the transaction finishes. If not released
      * (with {@link Lock#release()} it's going to be released with the
