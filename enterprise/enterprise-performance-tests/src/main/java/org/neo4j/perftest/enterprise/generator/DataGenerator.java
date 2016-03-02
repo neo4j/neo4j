@@ -137,7 +137,7 @@ public class DataGenerator
             if ( configuration.get( report_stats ) )
             {
                 PropertyStats stats = new PropertyStats();
-                stats.applyFiltered( stores.getPropertyStore(), RecordStore.IN_USE );
+                stats.applyFiltered( stores.getPropertyStore() );
                 // TODO please pass in the PrintStream as an argument
                 System.out.println( stats );
             }

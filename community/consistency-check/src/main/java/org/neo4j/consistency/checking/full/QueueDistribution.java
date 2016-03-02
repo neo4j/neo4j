@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checking.full;
 
 import org.neo4j.consistency.checking.full.RecordDistributor.RecordConsumer;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 /**
@@ -112,7 +113,8 @@ public interface QueueDistribution
             }
             catch ( ArrayIndexOutOfBoundsException e )
             {
-                throw e;
+                throw Exceptions.withMessage( e, e.getMessage() + ", recordsPerCPU:" + recordsPerCpu +
+                        ", relationship:" + relationship );
             }
         }
     }

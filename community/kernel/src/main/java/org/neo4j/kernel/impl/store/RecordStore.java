@@ -71,15 +71,6 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 
     int getNumberOfReservedLowIds();
 
-    Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()
-    {
-        @Override
-        public boolean test( AbstractBaseRecord item )
-        {
-            return item.inUse();
-        }
-    };
-
     class Delegator<R extends AbstractBaseRecord> implements RecordStore<R>
     {
         private final RecordStore<R> actual;
@@ -287,14 +278,17 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
                             while ( ids.hasNext() )
                             {
                                 R record = store.forceGetRecord( ids.next() );
-                                for ( Predicate<? super R> filter : filters )
+                                if ( record.inUse() )
                                 {
-                                    if ( !filter.test( record ) )
+                                    for ( Predicate<? super R> filter : filters )
                                     {
-                                        continue scan;
+                                        if ( !filter.test( record ) )
+                                        {
+                                            continue scan;
+                                        }
                                     }
+                                    return record;
                                 }
-                                return record;
                             }
                             return null;
                         }

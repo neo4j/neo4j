@@ -27,8 +27,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RecordStore.Scanner;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-import static org.neo4j.kernel.impl.store.RecordStore.IN_USE;
-
 public class IterableStore<RECORD extends AbstractBaseRecord> implements BoundedIterable<RECORD>
 {
     private final RecordStore<RECORD> store;
@@ -54,7 +52,7 @@ public class IterableStore<RECORD extends AbstractBaseRecord> implements Bounded
     @Override
     public Iterator<RECORD> iterator()
     {
-        return Scanner.scan( store, forward, IN_USE ).iterator();
+        return Scanner.scan( store, forward ).iterator();
     }
 
     public void warmUpCache()

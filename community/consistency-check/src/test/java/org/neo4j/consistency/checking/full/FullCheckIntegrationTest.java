@@ -41,11 +41,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
+import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
+import org.neo4j.consistency.checking.GraphStoreFixture.TransactionDataBuilder;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -1930,6 +1933,41 @@ public class FullCheckIntegrationTest
 
         createUniquenessConstraintRule( labelId, propertyKeyId );
         createNodePropertyExistenceConstraint( labelId, propertyKeyId );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then
+        assertTrue( stats.isConsistent() );
+    }
+
+    @Test
+    public void shouldManageUnusedRecordsWithWeirdDataIn() throws Exception
+    {
+        // Given
+        final AtomicLong id = new AtomicLong();
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( TransactionDataBuilder tx, IdGenerator next )
+            {
+                id.set( next.relationship() );
+                RelationshipRecord relationship = new RelationshipRecord( id.get() );
+                relationship.setFirstNode( -1 );
+                relationship.setSecondNode( -1 );
+                relationship.setInUse( true );
+                tx.create( relationship );
+            }
+        } );
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( TransactionDataBuilder tx, IdGenerator next )
+            {
+                RelationshipRecord relationship = new RelationshipRecord( id.get() );
+                tx.delete( relationship );
+            }
+        } );
 
         // When
         ConsistencySummaryStatistics stats = check();
