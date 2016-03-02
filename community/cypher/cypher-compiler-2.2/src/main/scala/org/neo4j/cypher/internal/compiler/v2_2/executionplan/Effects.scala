@@ -134,6 +134,8 @@ case object ReadsNodes extends ReadEffect {
 
 case object WritesNodes extends WriteEffect
 
+case object DeletesNode extends WriteEffect
+
 case class ReadsNodeProperty(propertyName: String) extends ReadEffect {
   override def toString = s"${super.toString} '$propertyName'"
 
@@ -179,6 +181,8 @@ case object ReadsRelationships extends ReadEffect {
 }
 
 case object WritesRelationships extends WriteEffect
+
+case object DeletesRelationship extends WriteEffect
 
 case class ReadsRelationshipProperty(propertyName: String) extends ReadEffect {
   override def toString = s"${super.toString} '$propertyName'"
