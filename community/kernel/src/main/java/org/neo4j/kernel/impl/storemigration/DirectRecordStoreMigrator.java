@@ -74,7 +74,7 @@ public class DirectRecordStoreMigrator
             {
                 // This condition will exclude counts store and "neostore" since we don't want to copy its metadata
                 // into the new migrated store.
-                if ( type.isRecordStore() && type != StoreType.META_DATA &&
+                if ( type.isRecordStore() &&
                         toFormat.hasStore( type ) && fromFormat.hasStore( type ) )
                 {
                     migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ) );

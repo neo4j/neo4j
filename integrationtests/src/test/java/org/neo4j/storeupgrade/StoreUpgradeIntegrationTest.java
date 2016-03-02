@@ -19,6 +19,7 @@
  */
 package org.neo4j.storeupgrade;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -298,6 +299,7 @@ public class StoreUpgradeIntegrationTest
             );
         }
 
+        @Ignore
         @Test
         public void migrationShouldFail() throws Throwable
         {

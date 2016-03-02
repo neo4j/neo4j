@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
 
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -94,7 +95,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.Capability.VERSION_TRAILERS;
@@ -183,10 +183,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void migrateWithDirectMigration( File storeDir, File migrationDir,
-            RecordFormats oldFormat, RecordFormats newFormat )
+            RecordFormats oldFormat, RecordFormats newFormat ) throws IOException
     {
         DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config );
-        migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, StoreType.values(), new StoreType[0] );
+        //Not interested in migrating MetaData store.
+        StoreType[] stores = ArrayUtil.filter( StoreType.values(), type -> type != StoreType.META_DATA );
+        migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, stores, new StoreType[0] );
     }
 
     private void writeLastTxChecksum( File migrationDir, long lastTxChecksum ) throws IOException
