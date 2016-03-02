@@ -52,14 +52,16 @@ public class SlaveClient extends Client<Slave> implements Slave
 {
     private final InstanceId machineId;
 
-    public SlaveClient( InstanceId machineId, String hostNameOrIp, int port, LogProvider logProvider,
+    public SlaveClient( InstanceId machineId, String destinationHostNameOrIp, int destinationPort,
+                        String originHostNameOrIp, LogProvider logProvider,
                         StoreId storeId, int maxConcurrentChannels, int chunkSize,
                         ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logProvider, storeId, Protocol.DEFAULT_FRAME_LENGTH,
+        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId,
+                Protocol.DEFAULT_FRAME_LENGTH,
                 new ProtocolVersion( SlaveServer.APPLICATION_PROTOCOL_VERSION, INTERNAL_PROTOCOL_VERSION ),
-                HaSettings.read_timeout.apply( Functions.<String, String>nullFunction() ),
-                maxConcurrentChannels, chunkSize, NO_OP_RESPONSE_UNPACKER, byteCounterMonitor, requestMonitor );
+                HaSettings.read_timeout.apply( Functions.<String,String>nullFunction() ), maxConcurrentChannels,
+                chunkSize, NO_OP_RESPONSE_UNPACKER, byteCounterMonitor, requestMonitor );
         this.machineId = machineId;
     }
 

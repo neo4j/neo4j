@@ -26,8 +26,9 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.function.Function;
 import org.neo4j.function.Functions;
+import org.neo4j.helpers.Function;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
@@ -52,14 +53,16 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
     private final ClusterMembers clusterMembers;
     private final Cluster cluster;
     private final SlaveFactory slaveFactory;
+    private final HostnamePort me;
     private HighAvailabilitySlaves.HASClusterListener clusterListener;
 
-    public HighAvailabilitySlaves( ClusterMembers clusterMembers, Cluster cluster, SlaveFactory slaveFactory )
+    public HighAvailabilitySlaves( ClusterMembers clusterMembers, Cluster cluster, SlaveFactory slaveFactory,
+            HostnamePort me )
     {
         this.clusterMembers = clusterMembers;
         this.cluster = cluster;
         this.slaveFactory = slaveFactory;
-
+        this.me = me;
     }
 
     private Function<ClusterMember, Slave> slaveForMember()
@@ -74,7 +77,7 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
                     Slave presentSlave = slaves.get( from );
                     if ( presentSlave == null )
                     {
-                        presentSlave = slaveFactory.newSlave( life, from );
+                        presentSlave = slaveFactory.newSlave( life, from, me.getHost(), me.getPort() );
                         slaves.put( from, presentSlave );
                     }
                     return presentSlave;

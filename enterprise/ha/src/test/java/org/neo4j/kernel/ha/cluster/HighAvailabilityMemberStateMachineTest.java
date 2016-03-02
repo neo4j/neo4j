@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -33,6 +28,11 @@ import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -403,7 +403,7 @@ public class HighAvailabilityMemberStateMachineTest
                     }
                 } );
         when( masterClient.toString() ).thenReturn( "TheExpectedMasterClient!" );
-        when( masterClientResolver.instantiate( anyString(), anyInt(), any( Monitors.class ),
+        when( masterClientResolver.instantiate( anyString(), anyInt(), anyString(), any( Monitors.class ),
                 any( StoreId.class ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
         final CountDownLatch latch = new CountDownLatch( 2 );

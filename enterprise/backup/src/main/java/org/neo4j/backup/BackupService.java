@@ -145,7 +145,7 @@ class BackupService
                 @Override
                 public Response<?> copyStore( StoreWriter writer )
                 {
-                    client = new BackupClient( sourceHostNameOrIp, sourcePort, NullLogProvider.getInstance(),
+                    client = new BackupClient( sourceHostNameOrIp, sourcePort, null, NullLogProvider.getInstance(),
                             StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, monitors.newMonitor(
                             ByteCounterMonitor.class ), monitors.newMonitor( RequestMonitor.class ) );
                     client.start();
@@ -302,7 +302,7 @@ class BackupService
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
         LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();
-        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, logProvider, targetDb.storeId(),
+        BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort, null, logProvider, targetDb.storeId(),
                 timeout, unpacker, monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
                 monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );
 

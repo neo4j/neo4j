@@ -28,6 +28,9 @@ import org.mockito.stubbing.Answer;
 import java.io.IOException;
 import java.util.Random;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
@@ -81,6 +84,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.CleanupRule;
 
+import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -89,9 +93,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -230,7 +231,8 @@ public class MasterClientTest
 
     private MasterClient214 newMasterClient214( StoreId storeId ) throws Throwable
     {
-        return initAndStart( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, NullLogProvider.getInstance(),
+        return initAndStart(
+                new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, NO_OP_RESPONSE_UNPACKER,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
                 monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
@@ -238,7 +240,8 @@ public class MasterClientTest
 
     private MasterClient214 newMasterClient214( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
     {
-        return initAndStart( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, NullLogProvider.getInstance(),
+        return initAndStart(
+                new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
                 monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );

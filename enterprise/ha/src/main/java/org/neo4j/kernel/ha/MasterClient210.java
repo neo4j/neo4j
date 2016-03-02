@@ -76,23 +76,27 @@ public class MasterClient210 extends Client<Master> implements MasterClient
 
     private final long lockReadTimeoutMillis;
 
-    public MasterClient210( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, long readTimeoutMillis,
+    public MasterClient210( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+                            LogProvider logProvider, StoreId storeId, long readTimeoutMillis,
                             long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
                             ResponseUnpacker responseUnpacker,
                             ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logProvider, storeId, MasterServer.FRAME_LENGTH, PROTOCOL_VERSION, readTimeoutMillis,
+        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId,
+                MasterServer.FRAME_LENGTH, PROTOCOL_VERSION, readTimeoutMillis,
                 maxConcurrentChannels, chunkSize, responseUnpacker, byteCounterMonitor, requestMonitor );
         this.lockReadTimeoutMillis = lockReadTimeoutMillis;
     }
 
-    MasterClient210( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, long readTimeoutMillis,
+    MasterClient210( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+                     LogProvider logProvider, StoreId storeId, long readTimeoutMillis,
                      long lockReadTimeoutMillis, int maxConcurrentChannels, int chunkSize,
                      ProtocolVersion protocolVersion, ResponseUnpacker responseUnpacker,
                      ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logProvider, storeId, MasterServer.FRAME_LENGTH, protocolVersion, readTimeoutMillis,
-                maxConcurrentChannels, chunkSize, responseUnpacker, byteCounterMonitor, requestMonitor );
+        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId,
+                MasterServer.FRAME_LENGTH, protocolVersion, readTimeoutMillis, maxConcurrentChannels, chunkSize,
+                responseUnpacker, byteCounterMonitor, requestMonitor );
         this.lockReadTimeoutMillis = lockReadTimeoutMillis;
     }
 
