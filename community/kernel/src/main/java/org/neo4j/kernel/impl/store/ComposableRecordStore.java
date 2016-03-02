@@ -35,18 +35,15 @@ import org.neo4j.logging.LogProvider;
 public class ComposableRecordStore<RECORD extends AbstractBaseRecord, HEADER extends StoreHeader>
         extends CommonAbstractStore<RECORD>
 {
-    protected final RecordFormat<RECORD> recordFormat;
     protected final StoreHeaderFormat<HEADER> storeHeaderFormat;
     protected HEADER storeHeader;
 
     public ComposableRecordStore( File fileName, Config configuration, IdType idType,
             IdGeneratorFactory idGeneratorFactory, PageCache pageCache, LogProvider logProvider, String typeDescriptor,
-            RecordFormat<RECORD> recordFormat, String storeVersion,
-            StoreHeaderFormat<HEADER> storeHeaderFormat )
+            RecordFormat<RECORD> recordFormat, StoreHeaderFormat<HEADER> storeHeaderFormat, String storeVersion )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
-                storeVersion );
-        this.recordFormat = recordFormat;
+                recordFormat, storeVersion );
         this.storeHeaderFormat = storeHeaderFormat;
     }
 

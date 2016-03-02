@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Node;
@@ -35,7 +34,6 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class RelationshipProxyTest extends PropertyContainerProxyTest
@@ -57,22 +55,10 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     {
         // GIVEN
         RelationshipActions actions = mock( RelationshipActions.class );
-        when( actions.newNodeProxy( anyLong() ) ).then( new Answer<Node>()
-        {
-            @Override
-            public Node answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return nodeWithId( (Long) invocation.getArguments()[0] );
-            }
-        } );
-        when( actions.getRelationshipTypeById( anyInt() ) ).then( new Answer<RelationshipType>()
-        {
-            @Override
-            public RelationshipType answer( InvocationOnMock invocation ) throws Throwable
-            {
-                return new RelationshipTypeToken( "whatever", (Integer) invocation.getArguments()[0] );
-            }
-        } );
+        when( actions.newNodeProxy( anyLong() ) ).then(
+                (Answer<Node>) invocation -> nodeWithId( (Long) invocation.getArguments()[0] ) );
+        when( actions.getRelationshipTypeById( anyInt() ) ).then(
+                (Answer<RelationshipType>) invocation -> new RelationshipTypeToken( "whatever", (Integer) invocation.getArguments()[0] ) );
 
         long[] ids = new long[]{
                 1437589437,

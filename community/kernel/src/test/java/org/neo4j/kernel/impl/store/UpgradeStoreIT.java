@@ -416,7 +416,7 @@ public class UpgradeStoreIT
         }
 
         @Override
-        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
         {
             IdGenerator generator = new IdGeneratorImpl( fs, fileName, grabSize, Long.MAX_VALUE, false, highId );
             generators.put( idType, generator );

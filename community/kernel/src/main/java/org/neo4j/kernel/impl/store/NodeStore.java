@@ -74,7 +74,7 @@ public class NodeStore extends ComposableRecordStore<NodeRecord,NoStoreHeader>
             RecordFormats recordFormats)
     {
         super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormats.node(), recordFormats.storeVersion(), NO_STORE_HEADER_FORMAT );
+                recordFormats.node(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion() );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 

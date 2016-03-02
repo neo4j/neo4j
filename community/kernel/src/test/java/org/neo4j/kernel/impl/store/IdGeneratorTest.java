@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,10 +42,17 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.PropertyKeyTokenRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -55,7 +63,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
@@ -499,12 +506,13 @@ public class IdGeneratorTest
     {
         try
         {
+            PropertyKeyTokenRecordFormat recordFormat = new PropertyKeyTokenRecordFormat();
             IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
             IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1,
-                    IdType.PROPERTY_KEY_TOKEN.getMaxValue(), false, 0 );
-            idGenerator.setHighId( IdType.PROPERTY_KEY_TOKEN.getMaxValue() - 1 );
+                    recordFormat.getMaxId(), false, 0 );
+            idGenerator.setHighId( recordFormat.getMaxId() - 1 );
             long id = idGenerator.nextId();
-            assertEquals( IdType.PROPERTY_KEY_TOKEN.getMaxValue() - 1, id );
+            assertEquals( recordFormat.getMaxId() - 1, id );
             idGenerator.freeId( id );
             try
             {
@@ -515,10 +523,10 @@ public class IdGeneratorTest
             { // good, capacity exceeded
             }
             closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, IdType.PROPERTY_KEY_TOKEN.getMaxValue(), false, 0 );
-            assertEquals( IdType.PROPERTY_KEY_TOKEN.getMaxValue() + 1, idGenerator.getHighId() );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, recordFormat.getMaxId(), false, 0 );
+            assertEquals( recordFormat.getMaxId() + 1, idGenerator.getHighId() );
             id = idGenerator.nextId();
-            assertEquals( IdType.PROPERTY_KEY_TOKEN.getMaxValue() - 1, id );
+            assertEquals( recordFormat.getMaxId() - 1, id );
             try
             {
                 idGenerator.nextId();
@@ -541,31 +549,36 @@ public class IdGeneratorTest
     @Test
     public void makeSureIdCapacityCannotBeExceeded() throws Exception
     {
-        for ( IdType type : IdType.values() )
+        RecordFormats formats = LowLimitV3_0.RECORD_FORMATS;
+        List<RecordFormat<? extends AbstractBaseRecord>> recordFormats = Arrays.asList( formats.node(),
+                formats.dynamic(),
+                formats.labelToken(),
+                formats.property(),
+                formats.propertyKeyToken(),
+                formats.relationship(),
+                formats.relationshipGroup(),
+                formats.relationshipTypeToken() );
+
+        for ( RecordFormat format : recordFormats )
         {
-            makeSureIdCapacityCannotBeExceeded( type );
+            makeSureIdCapacityCannotBeExceeded( format );
         }
     }
 
-    private void makeSureIdCapacityCannotBeExceeded( IdType type )
+    private void makeSureIdCapacityCannotBeExceeded( RecordFormat format )
     {
         deleteIdGeneratorFile();
         IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
-        long maxValue = type.getMaxValue();
-        IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, maxValue, false, 0 );
+        long maxValue = format.getMaxId();
+        IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, maxValue - 1, false, 0 );
         long id = maxValue - 2;
         idGenerator.setHighId( id );
         assertEquals( id, idGenerator.nextId() );
         assertEquals( id + 1, idGenerator.nextId() );
-        if ( maxValue != (long) Math.pow( 2, 32 ) - 1 )
-        {
-            // This is for the special -1 value
-            assertEquals( id + 2, idGenerator.nextId() );
-        }
         try
         {
             idGenerator.nextId();
-            fail( "Id capacity shouldn't be able to be exceeded for " + type );
+            fail( "Id capacity shouldn't be able to be exceeded for " + format );
         }
         catch ( StoreFailureException e )
         { // Good
@@ -576,16 +589,16 @@ public class IdGeneratorTest
     @Test
     public void makeSureMagicMinusOneIsNotReturnedFromNodeIdGenerator() throws Exception
     {
-        makeSureMagicMinusOneIsSkipped( IdType.NODE );
-        makeSureMagicMinusOneIsSkipped( IdType.RELATIONSHIP );
-        makeSureMagicMinusOneIsSkipped( IdType.PROPERTY );
+        makeSureMagicMinusOneIsSkipped( new NodeRecordFormat() );
+        makeSureMagicMinusOneIsSkipped( new RelationshipRecordFormat() );
+        makeSureMagicMinusOneIsSkipped( new PropertyRecordFormat());
     }
 
-    private void makeSureMagicMinusOneIsSkipped( IdType type )
+    private void makeSureMagicMinusOneIsSkipped( RecordFormat format )
     {
         deleteIdGeneratorFile();
         IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, type.getMaxValue(), false, 0 );
+        IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, format.getMaxId(), false, 0 );
         long id = (long) Math.pow( 2, 32 ) - 3;
         idGenerator.setHighId( id );
         assertEquals( id, idGenerator.nextId() );
@@ -601,7 +614,7 @@ public class IdGeneratorTest
     public void makeSureMagicMinusOneCannotBeReturnedEvenIfFreed() throws Exception
     {
         IdGeneratorImpl.createGenerator( fs, idGeneratorFile(), 0, false );
-        IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, IdType.NODE.getMaxValue(), false, 0 );
+        IdGenerator idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, new NodeRecordFormat().getMaxId(), false, 0 );
         long magicMinusOne = (long) Math.pow( 2, 32 ) - 1;
         idGenerator.setHighId( magicMinusOne );
         assertEquals( magicMinusOne + 1, idGenerator.nextId() );
@@ -609,7 +622,7 @@ public class IdGeneratorTest
         idGenerator.freeId( magicMinusOne );
         closeIdGenerator( idGenerator );
 
-        idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, IdType.NODE.getMaxValue(), false, 0 );
+        idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 1, new NodeRecordFormat().getMaxId(), false, 0 );
         assertEquals( magicMinusOne - 1, idGenerator.nextId() );
         assertEquals( magicMinusOne + 2, idGenerator.nextId() );
         closeIdGenerator( idGenerator );

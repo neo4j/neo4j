@@ -80,21 +80,8 @@ public abstract class AbstractDynamicStore extends ComposableRecordStore<Dynamic
             String storeVersion )
     {
         super( fileName, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
-                recordFormat,
-                storeVersion,
-                new IntStoreHeaderFormat( dataSizeFromConfiguration + recordFormat.getRecordHeaderSize() )
-                {
-                    @Override
-                    public void writeHeader( PageCursor cursor )
-                    {
-                        if ( defaultValue < 1 || defaultValue > 0xFFFF )
-                        {
-                            throw new IllegalArgumentException(
-                                    "Illegal block size[" + defaultValue + "], limit is 65535" );
-                        }
-                        super.writeHeader( cursor );
-                    }
-                } );
+                recordFormat, new DynamicStoreHeaderFormat( dataSizeFromConfiguration, recordFormat ),
+                storeVersion );
     }
 
     public static void allocateRecordsFromBytes(
@@ -235,5 +222,24 @@ public abstract class AbstractDynamicStore extends ComposableRecordStore<Dynamic
         }
 
         return readFullByteArrayFromHeavyRecords( records, propertyType );
+    }
+
+    private static class DynamicStoreHeaderFormat extends IntStoreHeaderFormat
+    {
+        DynamicStoreHeaderFormat( int dataSizeFromConfiguration, RecordFormat<DynamicRecord> recordFormat )
+        {
+            super( dataSizeFromConfiguration + recordFormat.getRecordHeaderSize() );
+        }
+
+        @Override
+        public void writeHeader( PageCursor cursor )
+        {
+            if ( defaultValue < 1 || defaultValue > 0xFFFF )
+            {
+                throw new IllegalArgumentException(
+                        "Illegal block size[" + defaultValue + "], limit is 65535" );
+            }
+            super.writeHeader( cursor );
+        }
     }
 }

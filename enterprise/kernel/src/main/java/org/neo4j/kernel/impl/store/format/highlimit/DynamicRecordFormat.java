@@ -99,4 +99,10 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
     {
         return record.getNextBlock();
     }
+
+    @Override
+    public long getMaxId()
+    {
+        return getMaxId( HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
+    }
 }

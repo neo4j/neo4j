@@ -32,7 +32,7 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
     private final Map<IdType,IdGenerator> idGenerators = new HashMap<>();
 
     @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, long highId )
+    public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
     {
         IdGenerator generator = new ReadOnlyIdGenerator( highId );
         idGenerators.put( idType, generator );

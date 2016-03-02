@@ -143,4 +143,10 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      */
     @Override
     int hashCode();
+
+    /**
+     * Maximum number that can be used to as id in specified format
+     * @return maximum possible id
+     */
+    long getMaxId();
 }

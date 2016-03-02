@@ -42,20 +42,19 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 import static java.lang.String.format;
 
-public class RelationshipProxy
-        extends PropertyContainerProxy
-        implements Relationship, RelationshipVisitor<RuntimeException>
+public class RelationshipProxy extends PropertyContainerProxy implements Relationship,
+        RelationshipVisitor<RuntimeException>
 {
     public interface RelationshipActions
     {
@@ -73,10 +72,10 @@ public class RelationshipProxy
     }
 
     private final RelationshipActions actions;
-    /** [unused,target][source,id] **/
-    private short hiBits;
-    private short type;
-    private int loId, loSource, loTarget;
+    private long id = AbstractBaseRecord.NO_ID;
+    private long startNode = AbstractBaseRecord.NO_ID;
+    private long endNode = AbstractBaseRecord.NO_ID;
+    private int type;
 
     public RelationshipProxy( RelationshipActions actions, long id, long startNode, int type, long endNode )
     {
@@ -87,29 +86,22 @@ public class RelationshipProxy
     public RelationshipProxy( RelationshipActions actions, long id )
     {
         this.actions = actions;
-        assert (0xFFFF_FFF0_0000_0000L & id) == 0;
-        this.hiBits = (short) (0xF000 | (id >> 32));
-        this.loId = (int) id;
+        this.id = id;
     }
 
     @Override
     public void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
     {
-        assert (0xFFFF_FFF0_0000_0000L & id) == 0 &&        // 36 bits
-               (0xFFFF_FFF0_0000_0000L & startNode) == 0 && // 36 bits
-               (0xFFFF_FFF0_0000_0000L & endNode) == 0 &&   // 36 bits
-               (0xFFFF_0000 & type) == 0                    // 16 bits
-               : "For id:" + id + ", type:" + type + ", source:" + startNode + ", target:" + endNode;
-        this.hiBits = (short) ((id >> 32) | ((startNode >> 28) & 0x00F0) | ((endNode >> 24) & 0x0F00));
-        this.type = (short) type;
-        this.loId = (int) id;
-        this.loSource = (int) startNode;
-        this.loTarget = (int) endNode;
+        this.id = id;
+        this.type = type;
+        this.startNode = startNode;
+        this.endNode = endNode;
     }
 
     private void initializeData()
     {
-        if ( (hiBits & 0xF000) != 0 )
+        // it enough to check only start node, since it's absence will indicate that data was not yet loaded
+        if (startNode == AbstractBaseRecord.NO_ID)
         {
             try ( Statement statement = actions.statement() )
             {
@@ -125,34 +117,27 @@ public class RelationshipProxy
     @Override
     public long getId()
     {
-        long loBits = allBitsOf( loId );
-        return hiBits == 0 ? loBits : ((hiBits & 0x000FL) << 32 | loBits);
+        return id;
     }
 
     private int typeId()
     {
         initializeData();
-        return type & 0xFFFF;
+        return type;
     }
 
     private long sourceId()
     {
         initializeData();
-        long loBits = allBitsOf( loSource );
-        return hiBits == 0 ? loBits : ((hiBits & 0x00F0L) << 28 | loBits);
+        return startNode;
     }
 
     private long targetId()
     {
         initializeData();
-        long loBits = allBitsOf( loTarget );
-        return hiBits == 0 ? loBits : ((hiBits & 0x0F00L) << 24 | loBits);
+        return endNode;
     }
 
-    private long allBitsOf( int bits )
-    {
-        return bits&0xFFFFFFFFL;
-    }
 
     @Override
     public GraphDatabaseService getGraphDatabase()
@@ -505,7 +490,7 @@ public class RelationshipProxy
         {
             // We don't keep the rel-name lookup if the database is shut down. However, failing on toString would be uncomfortably evil, so we fall
             // back to noting the relationship type id.
-            relType = "RELTYPE(" + typeId() + ")";
+            relType = "RELTYPE(" + type + ")";
         }
         return format( "(%d)-[%s,%d]->(%d)", sourceId(), relType, getId(), targetId() );
     }

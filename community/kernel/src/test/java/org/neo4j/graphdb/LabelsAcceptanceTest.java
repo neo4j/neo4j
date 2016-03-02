@@ -35,10 +35,8 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -47,6 +45,8 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -587,7 +587,7 @@ public class LabelsAcceptanceTest
         final EphemeralIdGenerator.Factory idFactory = new EphemeralIdGenerator.Factory()
         {
             @Override
-            public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+            public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
             {
                 if ( idType == IdType.LABEL_TOKEN )
                 {
@@ -607,7 +607,7 @@ public class LabelsAcceptanceTest
                     }
                     return generator;
                 }
-                return super.open( fileName, grabSize, idType, Long.MAX_VALUE );
+                return super.open( fileName, grabSize, idType, Long.MAX_VALUE, Long.MAX_VALUE );
             }
         };
 
