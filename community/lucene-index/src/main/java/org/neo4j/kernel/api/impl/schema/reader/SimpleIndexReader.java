@@ -117,6 +117,12 @@ public class SimpleIndexReader implements IndexReader
     }
 
     @Override
+    public PrimitiveLongIterator endsWith( String suffix )
+    {
+        return query( LuceneDocumentStructure.newSuffixStringQuery( suffix ) );
+    }
+
+    @Override
     public long countIndexedNodes( long nodeId, Object propertyValue )
     {
         Query nodeIdQuery = new TermQuery( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ) );

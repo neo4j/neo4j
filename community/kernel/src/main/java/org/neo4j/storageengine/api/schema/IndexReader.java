@@ -83,6 +83,14 @@ public interface IndexReader extends Resource
     PrimitiveLongIterator containsString( String exactTerm );
 
     /**
+     * Searches this index for string values ending with the suffix search string.
+     *
+     * @param suffix the string to search for in the index
+     * @return ids of matching nodes.
+     */
+    PrimitiveLongIterator endsWith( String suffix );
+
+    /**
      * @param nodeId node if to match.
      * @param propertyValue property value to match.
      * @return number of index entries for the given {@code nodeId} and {@code propertyValue}.
@@ -126,6 +134,12 @@ public interface IndexReader extends Resource
 
         @Override
         public PrimitiveLongIterator containsString( String exactTerm )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator endsWith(String suffix)
         {
             return PrimitiveLongCollections.emptyIterator();
         }

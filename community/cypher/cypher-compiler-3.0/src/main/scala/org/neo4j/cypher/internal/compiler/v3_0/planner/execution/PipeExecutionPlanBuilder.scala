@@ -211,6 +211,9 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
     case NodeIndexContainsScan(IdName(id), label, propertyKey, valueExpr, _) =>
       NodeIndexContainsScanPipe(id, label, propertyKey, buildExpression(valueExpr))()
+
+    case NodeIndexEndsWithScan(IdName(id), label, propertyKey, valueExpr, _) =>
+      NodeIndexEndsWithScanPipe(id, label, propertyKey, buildExpression(valueExpr))()
   }
 
   def build(plan: LogicalPlan, source: Pipe): RonjaPipe = plan match {

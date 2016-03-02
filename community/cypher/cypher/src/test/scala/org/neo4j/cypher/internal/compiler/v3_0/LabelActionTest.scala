@@ -194,9 +194,11 @@ class SnitchingQueryContext extends QueryContext {
 
   override def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
 
-  override def indexSeekByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] = ???
+  override def indexScanByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] = ???
 
   override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = ???
 
   override def isGraphKernelResultValue(v: Any): Boolean = ???
+
+  override def indexScanByEndsWith(index: IndexDescriptor, value: String) = ???
 }

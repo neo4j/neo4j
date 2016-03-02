@@ -24,9 +24,9 @@ package org.neo4j.cypher
  * If you only want to verify that plans using indexes are actually planned, please use
  * [[org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LeafPlanningIntegrationTest]]
  */
-class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
+class NodeIndexEndsWithScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
 
-  test("should be case sensitive for CONTAINS with indexes") {
+  test("should be case sensitive for ENDS WITH with indexes") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "LONDON"), "Location")
     graph.inTx {
@@ -40,14 +40,14 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     graph.createIndex("Location", "name")
 
-    val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' RETURN l"
+    val query = "MATCH (l:Location) WHERE l.name ENDS WITH 'ondon' RETURN l"
 
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
-    result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
+    result should (use("NodeIndexEndsWithScan") and evaluateTo(List(Map("l" -> london))))
   }
 
-  test("should be case sensitive for CONTAINS with unique indexes") {
+  test("should be case sensitive for ENDS WITH with unique indexes") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
     createLabeledNode(Map("name" -> "LONDON"), "Location")
     graph.inTx {
@@ -61,14 +61,14 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     graph.createConstraint("Location", "name")
 
-    val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' RETURN l"
+    val query = "MATCH (l:Location) WHERE l.name ENDS WITH 'ondon' RETURN l"
 
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
-    result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
+    result should (use("NodeIndexEndsWithScan") and evaluateTo(List(Map("l" -> london))))
   }
 
-  test("should be case sensitive for CONTAINS with multiple indexes and predicates") {
+  test("should be case sensitive for ENDS WITH with multiple indexes and predicates") {
     val london = createLabeledNode(Map("name" -> "London", "country" -> "UK"), "Location")
     createLabeledNode(Map("name" -> "LONDON", "country" -> "UK"), "Location")
     graph.inTx {
@@ -83,14 +83,14 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
     graph.createIndex("Location", "name")
     graph.createIndex("Location", "country")
 
-    val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
+    val query = "MATCH (l:Location) WHERE l.name ENDS WITH 'ondon' AND l.country = 'UK' RETURN l"
 
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
-    result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
+    result should (use("NodeIndexEndsWithScan") and evaluateTo(List(Map("l" -> london))))
   }
 
-  test("should not use contains index with multiple indexes and predicates where other index is more selective") {
+  test("should not use endsWith index scan with multiple indexes and predicates where other index is more selective") {
     val london = createLabeledNode(Map("name" -> "London", "country" -> "UK"), "Location")
     createLabeledNode(Map("name" -> "LONDON", "country" -> "UK"), "Location")
     graph.inTx {
@@ -105,15 +105,14 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
     graph.createIndex("Location", "name")
     graph.createIndex("Location", "country")
 
-    val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
+    val query = "MATCH (l:Location) WHERE l.name ENDS WITH 'ondon' AND l.country = 'UK' RETURN l"
 
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     result should (use("NodeIndexSeek") and evaluateTo(List(Map("l" -> london))))
   }
 
-  test("should use contains index with multiple indexes and predicates where other index is more selective but we add index hint") {
-    System.setProperty("pickBestPlan.VERBOSE", "true")
+  test("should use endsWith index with multiple indexes and predicates where other index is more selective but we add index hint") {
     val london = createLabeledNode(Map("name" -> "London", "country" -> "UK"), "Location")
     createLabeledNode(Map("name" -> "LONDON", "country" -> "UK"), "Location")
     graph.inTx {
@@ -128,12 +127,12 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
     graph.createIndex("Location", "name")
     graph.createIndex("Location", "country")
 
-    val query = "MATCH (l:Location) USING INDEX l:Location(name) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
+    val query = "MATCH (l:Location) USING INDEX l:Location(name) WHERE l.name ENDS WITH 'ondon' AND l.country = 'UK' RETURN l"
 
     // RULE has bug with this query
     val result = executeWithCostPlannerOnly(query)
 
-    result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
+    result should (use("NodeIndexEndsWithScan") and evaluateTo(List(Map("l" -> london))))
   }
 
   test("should return nothing when invoked with a null value") {
@@ -150,11 +149,11 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     graph.createConstraint("Location", "name")
 
-    val query = "MATCH (l:Location) WHERE l.name CONTAINS {param} RETURN l"
+    val query = "MATCH (l:Location) WHERE l.name ENDS WITH {param} RETURN l"
 
     val result = executeWithAllPlannersAndCompatibilityMode(query, "param" -> null)
 
-    result should (use("NodeIndexContainsScan") and evaluateTo(List.empty))
+    result should (use("NodeIndexEndsWithScan") and evaluateTo(List.empty))
   }
 
   test("throws appropriate type error") {
@@ -171,7 +170,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     graph.createConstraint("Location", "name")
 
-    val query = "MATCH (l:Location) WHERE l.name CONTAINS {param} RETURN l"
+    val query = "MATCH (l:Location) WHERE l.name ENDS WITH {param} RETURN l"
 
     intercept[CypherTypeException](executeWithAllPlannersAndCompatibilityMode(query, "param" -> 42))
   }

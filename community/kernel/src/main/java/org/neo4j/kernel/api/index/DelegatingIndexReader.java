@@ -70,6 +70,12 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
+    public PrimitiveLongIterator endsWith( String suffix )
+    {
+        return delegate.endsWith( suffix );
+    }
+
+    @Override
     public long countIndexedNodes( long nodeId, Object propertyValue )
     {
         return delegate.countIndexedNodes( nodeId, propertyValue );

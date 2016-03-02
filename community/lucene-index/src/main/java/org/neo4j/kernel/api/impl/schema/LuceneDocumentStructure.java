@@ -169,6 +169,14 @@ public class LuceneDocumentStructure
         return new ConstantScoreQuery( prefixQuery );
     }
 
+    public static Query newSuffixStringQuery( String suffix )
+    {
+        String searchTerm = QueryParser.escape( suffix );
+        Term term = new Term( ValueEncoding.String.key(), "*" + searchTerm );
+
+        return new WildcardQuery( term );
+    }
+
     public static Term newTermForChangeOrRemove( long nodeId )
     {
         return new Term( NODE_ID_KEY, "" + nodeId );

@@ -854,6 +854,16 @@ public class StateHandlingStatementOperations implements
         return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
     }
 
+    @Override
+    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, IndexDescriptor index,
+            String suffix ) throws IndexNotFoundKernelException
+    {
+        StorageStatement storeStatement = state.getStoreStatement();
+        IndexReader reader = storeStatement.getIndexReader( index );
+        PrimitiveLongIterator committed = reader.endsWith( suffix );
+        return filterIndexStateChangesForScanOrSeek( state, index, null, committed );
+    }
+
     private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, IndexDescriptor index,
             Object value, PrimitiveLongIterator committed )
     {

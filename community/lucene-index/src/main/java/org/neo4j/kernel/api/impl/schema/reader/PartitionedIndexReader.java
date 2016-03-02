@@ -100,6 +100,12 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
+    public PrimitiveLongIterator endsWith( String suffix )
+    {
+        return partitionedOperation( reader -> reader.endsWith( suffix ) );
+    }
+
+    @Override
     public long countIndexedNodes( long nodeId, Object propertyValue )
     {
         return indexReaders.parallelStream()

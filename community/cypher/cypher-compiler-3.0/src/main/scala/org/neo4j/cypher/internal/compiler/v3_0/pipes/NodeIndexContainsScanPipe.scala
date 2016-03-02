@@ -22,20 +22,19 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, ReadsGivenNodeProperty, ReadsNodesWithLabels}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CastSupport.castOrFail
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Index, LegacyExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CTNode
+import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-case class NodeIndexContainsScanPipe(ident: String,
-                                     label: LabelToken,
-                                     propertyKey: PropertyKeyToken,
-                                     valueExpr: Expression)
-                                    (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+abstract class AbstractNodeIndexStringScanPipe(ident: String,
+                                               label: LabelToken,
+                                               propertyKey: PropertyKeyToken,
+                                               valueExpr: Expression)(implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
   private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
@@ -49,8 +48,7 @@ case class NodeIndexContainsScanPipe(ident: String,
 
     val resultNodes = value match {
       case value: String =>
-        state.query.
-          indexSeekByContains(descriptor, value).
+        queryContextCall(state, descriptor, value).
           map(node => baseContext.newWith1(ident, node))
       case null =>
         Iterator.empty
@@ -60,12 +58,9 @@ case class NodeIndexContainsScanPipe(ident: String,
     resultNodes
   }
 
-  override def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
+  protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String): Iterator[Node]
 
-  override def planDescriptionWithoutCardinality = {
-    val arguments = Seq(Index(label.name, propertyKey.name), LegacyExpression(valueExpr))
-    new PlanDescriptionImpl(this.id, "NodeIndexContainsScan", NoChildren, arguments, variables)
-  }
+  override def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
   override def symbols = new SymbolTable(Map(ident -> CTNode))
 
@@ -79,6 +74,40 @@ case class NodeIndexContainsScanPipe(ident: String,
   override def sources: Seq[Pipe] = Seq.empty
 
   override def localEffects = Effects(ReadsNodesWithLabels(label.name), ReadsGivenNodeProperty(propertyKey.name))
+}
+
+case class NodeIndexContainsScanPipe(ident: String,
+                                     label: LabelToken,
+                                     propertyKey: PropertyKeyToken,
+                                     valueExpr: Expression)
+                                    (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+  extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
 
   override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+
+  override def planDescriptionWithoutCardinality = {
+    val arguments = Seq(Index(label.name, propertyKey.name), LegacyExpression(valueExpr))
+    new PlanDescriptionImpl(this.id, "NodeIndexContainsScan", NoChildren, arguments, variables)
+  }
+
+  override protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String) =
+    state.query.indexScanByContains(indexDescriptor, value)
+}
+
+case class NodeIndexEndsWithScanPipe(ident: String,
+                                     label: LabelToken,
+                                     propertyKey: PropertyKeyToken,
+                                     valueExpr: Expression)
+                                    (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+  extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
+
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+
+  override def planDescriptionWithoutCardinality = {
+    val arguments = Seq(Index(label.name, propertyKey.name), LegacyExpression(valueExpr))
+    new PlanDescriptionImpl(this.id, "NodeIndexEndsWithScan", NoChildren, arguments, variables)
+  }
+
+  override protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String) =
+    state.query.indexScanByEndsWith(indexDescriptor, value)
 }

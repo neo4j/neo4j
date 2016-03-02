@@ -219,6 +219,14 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public PrimitiveLongIterator nodesGetFromIndexEndsWithScan( KernelStatement state, IndexDescriptor index,
+            String suffix ) throws IndexNotFoundKernelException
+    {
+        guard.check();
+        return entityReadDelegate.nodesGetFromIndexEndsWithScan( state, index, suffix );
+    }
+
+    @Override
     public long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {

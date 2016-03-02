@@ -21,182 +21,236 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.net.URL
 
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{KernelPredicate, Expander}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_0.ExceptionTranslationSupport
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.graphdb.{Path, Node, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 import scala.collection.Iterator
 
-class ExceptionTranslatingQueryContextFor3_0(inner: QueryContext) extends DelegatingQueryContext(inner) with ExceptionTranslationSupport {
+class ExceptionTranslatingQueryContextFor3_0(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
+  override type EntityAccessor = inner.EntityAccessor
+
+  override def entityAccessor = inner.entityAccessor
+
   override def transactionalContext =
-    new ExceptionTranslatingTransactionalContext(super.transactionalContext)
+    new ExceptionTranslatingTransactionalContext(inner.transactionalContext)
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
-    translateException(super.setLabelsOnNode(node, labelIds))
+    translateException(inner.setLabelsOnNode(node, labelIds))
 
   override def createNode(): Node =
-    translateException(super.createNode())
+    translateException(inner.createNode())
 
   override def createRelationship(start: Node, end: Node, relType: String): Relationship =
-    translateException(super.createRelationship(start, end, relType))
+    translateException(inner.createRelationship(start, end, relType))
 
   override def getLabelsForNode(node: Long): Iterator[Int] =
-    translateException(super.getLabelsForNode(node))
+    translateException(inner.getLabelsForNode(node))
 
   override def getLabelName(id: Int): String =
-    translateException(super.getLabelName(id))
+    translateException(inner.getLabelName(id))
 
   override def getOptLabelId(labelName: String): Option[Int] =
-    translateException(super.getOptLabelId(labelName))
+    translateException(inner.getOptLabelId(labelName))
 
   override def getLabelId(labelName: String): Int =
-    translateException(super.getLabelId(labelName))
+    translateException(inner.getLabelId(labelName))
 
   override def getOrCreateLabelId(labelName: String): Int =
-    translateException(super.getOrCreateLabelId(labelName))
+    translateException(inner.getOrCreateLabelId(labelName))
 
   override def nodeOps: Operations[Node] =
-    new ExceptionTranslatingOperations[Node](super.nodeOps)
+    new ExceptionTranslatingOperations[Node](inner.nodeOps)
 
   override def relationshipOps: Operations[Relationship] =
-    new ExceptionTranslatingOperations[Relationship](super.relationshipOps)
+    new ExceptionTranslatingOperations[Relationship](inner.relationshipOps)
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
-    translateException(super.removeLabelsFromNode(node, labelIds))
+    translateException(inner.removeLabelsFromNode(node, labelIds))
 
   override def getPropertiesForNode(node: Long): Iterator[Int] =
-    translateException(super.getPropertiesForNode(node))
+    translateException(inner.getPropertiesForNode(node))
 
   override def getPropertiesForRelationship(relId: Long): Iterator[Int] =
-    translateException(super.getPropertiesForRelationship(relId))
+    translateException(inner.getPropertiesForRelationship(relId))
 
   override def getPropertyKeyName(propertyKeyId: Int): String =
-    translateException(super.getPropertyKeyName(propertyKeyId))
+    translateException(inner.getPropertyKeyName(propertyKeyId))
 
   override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
-    translateException(super.getOptPropertyKeyId(propertyKeyName))
+    translateException(inner.getOptPropertyKeyId(propertyKeyName))
 
   override def getPropertyKeyId(propertyKey: String): Int =
-    translateException(super.getPropertyKeyId(propertyKey))
+    translateException(inner.getPropertyKeyId(propertyKey))
 
   override def getOrCreatePropertyKeyId(propertyKey: String): Int =
-    translateException(super.getOrCreatePropertyKeyId(propertyKey))
+    translateException(inner.getOrCreatePropertyKeyId(propertyKey))
 
   override def addIndexRule(labelId: Int, propertyKeyId: Int) =
-    translateException(super.addIndexRule(labelId, propertyKeyId))
+    translateException(inner.addIndexRule(labelId, propertyKeyId))
 
   override def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    translateException(super.dropIndexRule(labelId, propertyKeyId))
+    translateException(inner.dropIndexRule(labelId, propertyKeyId))
 
   override def indexSeek(index: IndexDescriptor, value: Any): Iterator[Node] =
-    translateException(super.indexSeek(index, value))
+    translateException(inner.indexSeek(index, value))
 
   override def getNodesByLabel(id: Int): Iterator[Node] =
-    translateException(super.getNodesByLabel(id))
+    translateException(inner.getNodesByLabel(id))
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
-    translateException(super.nodeGetDegree(node, dir))
+    translateException(inner.nodeGetDegree(node, dir))
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int =
-    translateException(super.nodeGetDegree(node, dir, relTypeId))
+    translateException(inner.nodeGetDegree(node, dir, relTypeId))
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
-    translateException(super.getOrCreateFromSchemaState(key, creator))
+    translateException(inner.getOrCreateFromSchemaState(key, creator))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    translateException(super.createUniqueConstraint(labelId, propertyKeyId))
+    translateException(inner.createUniqueConstraint(labelId, propertyKeyId))
 
   override def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    translateException(super.dropUniqueConstraint(labelId, propertyKeyId))
+    translateException(inner.dropUniqueConstraint(labelId, propertyKeyId))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
-    translateException(super.createNodePropertyExistenceConstraint(labelId, propertyKeyId))
+    translateException(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
-    translateException(super.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
+    translateException(inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
-    translateException(super.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
+    translateException(inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
-    translateException(super.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
+    translateException(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
-    translateIterator(super.callReadOnlyProcedure(name, args))
+    translateIterator(inner.callReadOnlyProcedure(name, args))
 
   override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
-    translateIterator(super.callReadWriteProcedure(name, args))
+    translateIterator(inner.callReadWriteProcedure(name, args))
 
   override def isGraphKernelResultValue(v: Any): Boolean =
-    translateException(super.isGraphKernelResultValue(v))
+    translateException(inner.isGraphKernelResultValue(v))
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
-    super.withAnyOpenQueryContext(qc =>
+    inner.withAnyOpenQueryContext(qc =>
       translateException(
         work(new ExceptionTranslatingQueryContextFor3_0(qc))
       ))
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean =
-    translateException(super.isLabelSetOnNode(label, node))
+    translateException(inner.isLabelSetOnNode(label, node))
 
   override def getRelTypeId(relType: String) =
-    translateException(super.getRelTypeId(relType))
+    translateException(inner.getRelTypeId(relType))
 
   override def getRelTypeName(id: Int) =
-    translateException(super.getRelTypeName(id))
+    translateException(inner.getRelTypeName(id))
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any) =
-    translateException(super.lockingUniqueIndexSeek(index, value))
+    translateException(inner.lockingUniqueIndexSeek(index, value))
 
   override def getImportURL(url: URL) =
-    translateException(super.getImportURL(url))
+    translateException(inner.getImportURL(url))
 
   override def relationshipStartNode(rel: Relationship) =
-    translateException(super.relationshipStartNode(rel))
+    translateException(inner.relationshipStartNode(rel))
 
   override def relationshipEndNode(rel: Relationship) =
-    translateException(super.relationshipEndNode(rel))
+    translateException(inner.relationshipEndNode(rel))
+
+  override def createRelationship(start: Long, end: Long, relType: Int) =
+    translateException(inner.createRelationship(start, end, relType))
+
+  override def getOrCreateRelTypeId(relTypeName: String) =
+    translateException(inner.getOrCreateRelTypeId(relTypeName))
+
+  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]) =
+    translateException(inner.getRelationshipsForIds(node, dir, types))
+
+  override def indexSeekByRange(index: IndexDescriptor, value: Any) =
+    translateException(inner.indexSeekByRange(index, value))
+
+  override def indexScanByContains(index: IndexDescriptor, value: String) =
+    translateException(inner.indexScanByContains(index, value))
+
+  override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
+    translateException(inner.indexScanByEndsWith(index, value))
+
+  override def indexScan(index: IndexDescriptor) =
+    translateException(inner.indexScan(index))
+
+  override def nodeIsDense(node: Long) =
+    translateException(inner.nodeIsDense(node))
+
+  override def variableLengthPathExpand(node: PatternNode, realNode: Node, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]) =
+    translateException(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
+
+  override def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]) =
+    translateException(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))
+
+  override def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]) =
+    translateException(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
+
+  override def nodeCountByCountStore(labelId: Int) =
+    translateException(inner.nodeCountByCountStore(labelId))
+
+  override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int) =
+  translateException(inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId))
+
+  override def lockNodes(nodeIds: Long*) =
+    translateException(inner.lockNodes(nodeIds:_*))
+
+  override def lockRelationships(relIds: Long*) =
+    translateException(inner.lockRelationships(relIds:_*))
+
+  override def getOptRelTypeId(relType: String) =
+    translateException(inner.getOptRelTypeId(relType))
 
   class ExceptionTranslatingOperations[T <: PropertyContainer](inner: Operations[T])
     extends DelegatingOperations[T](inner) {
     override def delete(obj: T) =
-      translateException(super.delete(obj))
+      translateException(inner.delete(obj))
 
     override def setProperty(id: Long, propertyKey: Int, value: Any) =
-      translateException(super.setProperty(id, propertyKey, value))
+      translateException(inner.setProperty(id, propertyKey, value))
 
     override def getById(id: Long): T =
-      translateException(super.getById(id))
+      translateException(inner.getById(id))
 
     override def getProperty(id: Long, propertyKeyId: Int): Any =
-      translateException(super.getProperty(id, propertyKeyId))
+      translateException(inner.getProperty(id, propertyKeyId))
 
     override def hasProperty(id: Long, propertyKeyId: Int): Boolean =
-      translateException(super.hasProperty(id, propertyKeyId))
+      translateException(inner.hasProperty(id, propertyKeyId))
 
     override def propertyKeyIds(id: Long): Iterator[Int] =
-      translateException(super.propertyKeyIds(id))
+      translateException(inner.propertyKeyIds(id))
 
     override def removeProperty(id: Long, propertyKeyId: Int) =
-      translateException(super.removeProperty(id, propertyKeyId))
+      translateException(inner.removeProperty(id, propertyKeyId))
 
     override def indexGet(name: String, key: String, value: Any): Iterator[T] =
-      translateException(super.indexGet(name, key, value))
+      translateException(inner.indexGet(name, key, value))
 
     override def indexQuery(name: String, query: Any): Iterator[T] =
-      translateException(super.indexQuery(name, query))
+      translateException(inner.indexQuery(name, query))
 
     override def all: Iterator[T] =
-      translateException(super.all)
+      translateException(inner.all)
 
     override def isDeletedInThisTx(obj: T): Boolean =
-      translateException(super.isDeletedInThisTx(obj))
+      translateException(inner.isDeletedInThisTx(obj))
   }
 
   class ExceptionTranslatingTransactionalContext(inner: TransactionalContext) extends DelegatingTransactionalContext(inner) {
-    override def close(success: Boolean) { translateException(super.close(success)) }
+    override def close(success: Boolean) { translateException(inner.close(success)) }
   }
 }
 
