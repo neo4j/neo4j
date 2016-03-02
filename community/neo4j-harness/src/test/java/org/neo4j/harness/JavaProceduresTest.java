@@ -148,7 +148,7 @@ public class JavaProceduresTest
                     quotedJson( "{ 'statements': [ { 'statement': 'CALL org.neo4j.harness.procThatThrows' } ] }" ) );
 
             String error = response.get( "errors" ).get( 0 ).get( "message" ).asText();
-            assertEquals( "Failed to invoke procedure `org.neo4j.harness.procThatThrows`: This is an exception", error );
+            assertEquals( "Failed to invoke procedure `org.neo4j.harness.procThatThrows`: Caused by: java.lang.RuntimeException: This is an exception", error );
         }
     }
 

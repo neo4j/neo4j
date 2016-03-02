@@ -255,7 +255,7 @@ public class ReflectiveProcedureTest
         // Expect
         exception.expect( ProcedureException.class );
         exception.expectMessage( "Failed to invoke procedure `org.neo4j.kernel.impl.proc.throwsAtInvocation`: " +
-                                 "`java.lang.IndexOutOfBoundsException` was thrown when invoking the procedure." );
+                                 "Caused by: java.lang.IndexOutOfBoundsException" );
 
         // When
         proc.apply( new BasicContext(), new Object[0] );
