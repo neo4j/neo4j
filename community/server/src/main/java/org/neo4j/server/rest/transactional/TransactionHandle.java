@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -307,7 +308,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                     output.notifications( result.getNotifications() );
                 }
-                catch ( KernelException | CypherException e )
+                catch ( KernelException | CypherException | AuthorizationViolationException e )
                 {
                     errors.add( new Neo4jError( e.status(), e ) );
                     break;

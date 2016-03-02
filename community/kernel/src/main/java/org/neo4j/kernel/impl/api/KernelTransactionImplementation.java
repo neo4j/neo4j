@@ -131,7 +131,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionHooks.TransactionHooksState hooksState;
     private KernelStatement currentStatement;
     private CloseListener closeListener;
-    private AccessMode accessMode; // Defines whether a transaction is allowed to upgrade to WRITE or SCHEMA mode
+    private AccessMode accessMode; // Defines whether a transaction/statement is allowed to perform read, write or schema commands
     private Locks.Client locks;
     private boolean beforeHookInvoked;
     private boolean closing, closed;
@@ -254,21 +254,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
     {
-        if( !accessMode.allowsWrites() )
-        {
-            throw new InvalidTransactionTypeKernelException(
-                    String.format( "Write operations are not allowed for `%s` transactions.", accessMode.name() ) );
-        }
         transactionType = transactionType.upgradeToDataTransaction();
     }
 
     public void upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
     {
-        if( !accessMode.allowsSchemaWrites() )
-        {
-            throw new InvalidTransactionTypeKernelException(
-                    String.format( "Schema write operations are not allowed for `%s` transactions.", accessMode.name() ) );
-        }
         doUpgradeToSchemaTransaction();
         transactionType = transactionType.upgradeToSchemaTransaction();
     }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
@@ -36,6 +37,7 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.shouldBeTerminated() ).thenReturn( true );
+        when( transaction.mode() ).thenReturn( AccessMode.FULL );
 
         KernelStatement statement = new KernelStatement(
             transaction, null, null, null, null, null );

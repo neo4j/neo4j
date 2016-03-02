@@ -36,6 +36,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriBuilder;
 
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -115,7 +116,14 @@ public class AuthorizationFilter implements Filter
                 }
                 // fall through
             case SUCCESS:
-                filterChain.doFilter( new AuthorizedRequestWrapper( BASIC_AUTH, username, request ), servletResponse );
+                try
+                {
+                    filterChain.doFilter( new AuthorizedRequestWrapper( BASIC_AUTH, username, request ), servletResponse );
+                }
+                catch ( AuthorizationViolationException e )
+                {
+                    unauthorizedAccess( e.getMessage() ).accept( response );
+                }
                 return;
             case TOO_MANY_ATTEMPTS:
                 tooManyAttempts.accept( response );
@@ -159,6 +167,14 @@ public class AuthorizationFilter implements Filter
                     map( "errors", singletonList( map(
                             "code", Status.Security.AuthenticationRateLimit.code().serialize(),
                             "message", "Too many failed authentication requests. Please wait 5 seconds and try again." ) ) ) );
+
+    private static ThrowingConsumer<HttpServletResponse, IOException> unauthorizedAccess( final String message )
+    {
+        return error( 403,
+                map( "errors", singletonList( map(
+                        "code", Status.Security.AuthorizationFailed.code().serialize(),
+                        "message", String.format("Unauthorized access violation: %s.", message ) ) ) ) );
+    }
 
     private static ThrowingConsumer<HttpServletResponse, IOException> passwordChangeRequired( final String username, final String baseURL )
     {
