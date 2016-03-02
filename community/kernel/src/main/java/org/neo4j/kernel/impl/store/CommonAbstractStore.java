@@ -31,7 +31,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
@@ -160,6 +159,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     protected void checkStorage( boolean createIfNotExists )
     {
         int pageSize = pageCache.pageSize();
+        //noinspection EmptyTryBlock
         try ( PagedFile ignore = pageCache.map( storageFileName, pageSize, ANY_PAGE_SIZE ) )
         {
         }
@@ -333,31 +333,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
                 log.debug( getStorageFileName() + " non clean shutdown detected" );
             }
         }
-    }
-
-    protected int getHeaderRecord() throws IOException
-    {
-        int headerRecord = 0;
-        try ( PagedFile pagedFile = pageCache.map( getStorageFileName(), pageCache.pageSize() ) )
-        {
-            try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
-            {
-                if ( pageCursor.next() )
-                {
-                    do
-                    {
-                        headerRecord = pageCursor.getInt();
-                    }
-                    while ( pageCursor.shouldRetry() );
-                }
-            }
-        }
-        if ( headerRecord <= 0 )
-        {
-            throw new InvalidRecordException( "Illegal block size: " +
-                    headerRecord + " in " + getStorageFileName() );
-        }
-        return headerRecord;
     }
 
     public boolean isInUse( long id )
@@ -545,9 +520,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
      */
     public void freeId( long id )
     {
-        if ( idGenerator != null )
+        IdGenerator generator = this.idGenerator;
+        if ( generator != null )
         {
-            idGenerator.freeId( id );
+            generator.freeId( id );
         }
         // else we're deleting records as part of applying transactions during recovery, and that's fine
     }
@@ -573,13 +549,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     {
         // This method might get called during recovery, where we don't have a reliable id generator yet,
         // so ignore these calls and let rebuildIdGenerators() figure out the high id after recovery.
-        if ( idGenerator != null )
+        IdGenerator generator = this.idGenerator;
+        if ( generator != null )
         {
-            synchronized ( idGenerator )
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized ( generator )
             {
-                if ( highId > idGenerator.getHighId() )
+                if ( highId > generator.getHighId() )
                 {
-                    idGenerator.setHighId( highId );
+                    generator.setHighId( highId );
                 }
             }
         }
@@ -750,7 +728,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
      * Requesting an operation from after this method has been invoked is
      * illegal and an exception will be thrown.
      * <p>
-     * This method will start by invoking the {@link #closeStorage} method
+     * This method will start by invoking the {@link #closeStoreFile()} method
      * giving the implementing store way to do anything that it needs to do
      * before the pagedFile is closed.
      */
@@ -860,7 +838,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
      * {@link #logVersions(Logger)}
      * For a good samaritan to pick up later.
      */
-    public void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )
+    public void visitStore( Visitor<CommonAbstractStore<RECORD>,RuntimeException> visitor )
     {
         visitor.visit( this );
     }
