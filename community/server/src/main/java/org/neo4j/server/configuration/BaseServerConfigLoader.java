@@ -88,7 +88,7 @@ public class BaseServerConfigLoader
     private static void overrideEmbeddedDefaults( HashMap<String, String> config )
     {
         config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
-        config.putIfAbsent( GraphDatabaseSettings.log_queries_filename.name(), "data/log/queries.log" );
+        config.putIfAbsent( GraphDatabaseSettings.log_queries_filename.name(), "data/log/query.log" );
         config.putIfAbsent( BoltKernelExtension.Settings.enabled.name(), "true" );
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
     }

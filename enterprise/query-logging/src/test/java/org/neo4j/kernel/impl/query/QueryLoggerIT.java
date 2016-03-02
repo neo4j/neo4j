@@ -73,7 +73,7 @@ public class QueryLoggerIT
     @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
+        final File logFilename = new File( testDirectory.graphDbDir(), "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
                 .newGraphDatabase();
@@ -89,7 +89,7 @@ public class QueryLoggerIT
     @Test
     public void shouldLogParametersWhenNestedMap() throws Exception
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
+        final File logFilename = new File( testDirectory.graphDbDir(), "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
                 .newGraphDatabase();
@@ -116,7 +116,7 @@ public class QueryLoggerIT
     @Test
     public void shouldLogParametersWhenList() throws Exception
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
+        final File logFilename = new File( testDirectory.graphDbDir(), "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
                 .newGraphDatabase();
@@ -152,7 +152,7 @@ public class QueryLoggerIT
     @Test
     public void disabledQueryLogging() throws IOException
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
+        final File logFilename = new File( testDirectory.graphDbDir(), "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
                 .newGraphDatabase();
@@ -166,8 +166,8 @@ public class QueryLoggerIT
     @Test
     public void queryLogRotation() throws Exception
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
-        final File shiftedLogFilename = new File( testDirectory.graphDbDir(), "queries.log.1" );
+        final File logFilename = new File( testDirectory.graphDbDir(), "query.log" );
+        final File shiftedLogFilename = new File( testDirectory.graphDbDir(), "query.log.1" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
                 .setConfig( GraphDatabaseSettings.log_queries_rotation_threshold, "1" )
