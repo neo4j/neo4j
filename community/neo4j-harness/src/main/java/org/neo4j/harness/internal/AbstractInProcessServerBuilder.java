@@ -30,6 +30,7 @@ import java.util.function.Function;
 
 import org.apache.commons.io.FileUtils;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -209,7 +210,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private TestServerBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;
-        config.put( ServerSettings.data_directory.name(), serverFolder.getAbsolutePath() );
+        config.put( DatabaseManagementSystemSettings.data_directory.name(), serverFolder.getAbsolutePath() );
         return this;
     }
 

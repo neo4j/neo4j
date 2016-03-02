@@ -31,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -81,7 +82,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     {
         // When
         int resultCode = start( bootstrapper, commandLineConfig( 
-                "-c", configOption( ServerSettings.data_directory.name(), tempDir.getRoot().getAbsolutePath() ),
+                "-c", configOption( DatabaseManagementSystemSettings.data_directory.name(), tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( GraphDatabaseSettings.auth_store.name(), tempDir.newFile().getAbsolutePath()),
                 "-c", configOption( ServerSettings.tls_certificate_file.name(), new File(tempDir.getRoot(), "cert.cert").getAbsolutePath()),
                 "-c", configOption( ServerSettings.tls_key_file.name(), new File(tempDir.getRoot(), "key.key").getAbsolutePath())

@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -69,7 +70,7 @@ public class CommunityServerBuilder
     private final Properties arbitraryProperties = new Properties();
 
     public static LifecycleManagingDatabase.GraphFactory  IN_MEMORY_DB = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.database_path );
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         Map<String, String> params = config.getParams();
         params.put( CommunityFacadeFactory.Configuration.ephemeral.name(), "true" );
         return new ImpermanentGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(dependencies) );
@@ -140,7 +141,7 @@ public class CommunityServerBuilder
 
         if ( dataDir != null )
         {
-            properties.put( ServerSettings.data_directory.name(), dataDir );
+            properties.put( DatabaseManagementSystemSettings.data_directory.name(), dataDir );
         }
 
         if ( portNo != null )

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
@@ -53,7 +54,7 @@ public class BaseServerConfigLoader
 
     protected Iterable<Class<?>> settingsClasses( HashMap<String, String> settings )
     {
-        return asList( ServerSettings.class, GraphDatabaseSettings.class );
+        return asList( ServerSettings.class, GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
     }
 
     private HashMap<String, String> calculateSettings( File configFile, File legacyConfigFile, Log log,

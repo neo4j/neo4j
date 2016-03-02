@@ -31,13 +31,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -53,7 +53,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     @Before
     public void setUp() throws IOException
     {
-        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( ServerSettings.data_directory ) );
+        FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( DatabaseManagementSystemSettings.data_directory ) );
     }
 
     @Test

@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.enterprise.modules.JMXManagementModule;
@@ -73,22 +73,22 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     }
 
     private static final GraphFactory HA_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.database_path );
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         return new HighlyAvailableGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
     private static final GraphFactory ENTERPRISE_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.database_path );
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
     private static final GraphFactory CORE_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.database_path );
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
     private static final GraphFactory EDGE_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.database_path );
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         return new EdgeGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 

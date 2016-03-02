@@ -23,13 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.BaseServerConfigLoader;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.test.CleanupRule;
@@ -70,17 +70,17 @@ public class ServerManagementTest
         server.start();
 
         assertNotNull( server.getDatabase().getGraph() );
-        assertEquals( config.get( ServerSettings.database_path ).getAbsolutePath(),
+        assertEquals( config.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath(),
                 server.getDatabase().getLocation() );
 
         // Change the database location
-        config.augment( stringMap( ServerSettings.data_directory.name(), dataDirectory2 ) );
+        config.augment( stringMap( DatabaseManagementSystemSettings.data_directory.name(), dataDirectory2 ) );
         ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
 
         // Then
         assertNotNull( server.getDatabase().getGraph() );
-        assertEquals( config.get( ServerSettings.database_path ).getAbsolutePath(),
+        assertEquals( config.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath(),
                 server.getDatabase().getLocation() );
     }
 

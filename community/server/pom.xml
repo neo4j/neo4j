@@ -136,6 +136,12 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-dbms</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>server-api</artifactId>
       <version>${project.version}</version>
     </dependency>

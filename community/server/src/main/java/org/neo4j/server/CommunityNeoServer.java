@@ -24,11 +24,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.AuthorizationModule;
@@ -51,7 +51,7 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 public class CommunityNeoServer extends AbstractNeoServer
 {
     public static final GraphFactory COMMUNITY_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( ServerSettings.database_path );
+        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         return new CommunityFacadeFactory().newFacade( storeDir, config.getParams(), dependencies );
     };
 
