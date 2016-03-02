@@ -72,6 +72,8 @@ include::startnode.asciidoc[]
 
 include::endnode.asciidoc[]
 
+include::properties.asciidoc[]
+
 include::toint.asciidoc[]
 
 include::tofloat.asciidoc[]

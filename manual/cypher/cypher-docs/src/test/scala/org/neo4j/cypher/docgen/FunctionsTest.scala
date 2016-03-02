@@ -833,6 +833,21 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
     )
   }
 
+  @Test def propertiesFunc() {
+    testThis(
+      title = "PROPERTIES",
+      syntax = "PROPERTIES( expression )",
+      arguments = List("expression" -> "An expression that returns a node, a relationship, or a map"),
+      text = "`PROPERTIES` converts the arguments to a map of its properties. " +
+        "If the argument is a node or a relationship, the returned map is a map of its properties ." +
+        "If the argument is already a map, it is returned unchanged.",
+      queryText = "create (p:Person {name: 'Stefan', city: 'Berlin'}) return properties(p)",
+      returns = "",
+      assertions = (p) => assert(List(
+        Map("properties(p)" -> Map("name" -> "Stefan", "city" -> "Berlin"))) === p.toList)
+    )
+  }
+
   @Test def now() {
     testThis(
       title = "TIMESTAMP",

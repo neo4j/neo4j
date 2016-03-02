@@ -222,6 +222,7 @@ object ExpressionConverters {
       case ToLower => commandexpressions.LowerFunction(toCommandExpression(invocation.arguments.head))
       case ToString => commandexpressions.ToStringFunction(toCommandExpression(invocation.arguments.head))
       case ToUpper => commandexpressions.UpperFunction(toCommandExpression(invocation.arguments.head))
+      case Properties => commandexpressions.PropertiesFunction(toCommandExpression(invocation.arguments.head))
       case Trim => commandexpressions.TrimFunction(toCommandExpression(invocation.arguments.head))
       case Type => commandexpressions.RelationshipTypeFunction(toCommandExpression(invocation.arguments.head))
       case Upper => commandexpressions.UpperFunction(toCommandExpression(invocation.arguments.head))

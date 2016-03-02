@@ -208,6 +208,48 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("string_numbers" -> List("1", "2", "3"))))
   }
 
+  test("properties should work on nodes") {
+
+    // When
+    val result = executeScalarWithAllPlanners[Map[String,Any]](
+      "CREATE (n:Person {name: 'Popeye', level: 9001}) RETURN properties(n) AS m"
+    )
+
+    // Then
+    result should equal(Map("name" -> "Popeye", "level" -> 9001))
+  }
+
+  test("properties should work on relationships") {
+
+    // When
+    val result = executeScalarWithAllPlanners[Map[String,Any]](
+      "CREATE ()-[r:SWOOSHES {name: 'Popeye', level: 9001}]->() RETURN properties(r) AS m"
+    )
+
+    // Then
+    result should equal(Map("name" -> "Popeye", "level" -> 9001))
+  }
+
+  test("properties should work on maps") {
+
+    // When
+    val result = executeScalarWithAllPlanners[Map[String,Any]](
+      "RETURN properties({name: 'Popeye', level: 9001})"
+    )
+
+    // Then
+    result should equal(Map("name" -> "Popeye", "level" -> 9001))
+  }
+
+  test("properties(null) should be null") {
+
+    // When
+    val result = executeScalarWithAllPlanners[Map[String,Any]]("RETURN properties(null)")
+
+    // Then
+    result should be(null)
+  }
+
   test("case should handle mixed number types") {
     val query =
       """WITH 0.5 AS x
