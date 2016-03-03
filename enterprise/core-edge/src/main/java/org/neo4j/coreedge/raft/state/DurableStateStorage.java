@@ -110,7 +110,7 @@ public class DurableStateStorage<STATE> extends LifecycleAdapter implements Stat
         }
     }
 
-    private void switchStoreFile() throws IOException
+    protected void switchStoreFile() throws IOException
     {
         currentStoreChannel.close();
 
