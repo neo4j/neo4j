@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.locking.community;
 import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
 import org.neo4j.kernel.impl.locking.Locks;
 
-public class CommunityLocksCompatibility extends LockingCompatibilityTestSuite
+public class CommunityLocksTest extends LockingCompatibilityTestSuite
 {
     @Override
     protected Locks createLockManager()
