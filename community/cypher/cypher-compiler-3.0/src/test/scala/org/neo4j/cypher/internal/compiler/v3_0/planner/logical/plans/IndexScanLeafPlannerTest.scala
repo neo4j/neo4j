@@ -29,302 +29,285 @@ import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val idName = IdName("n")
-  val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome")_))_
-  val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _)_
+  val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
+  val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _) _
 
-  val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property)_
-  val startsWithPredicate: Expression = StartsWith(property, StringLiteral("")_)_
-  val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12")_)_
-  val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12")_)_
-  val eqPredicate: Expression = Equals(property, SignedDecimalIntegerLiteral("12")_)_
-  val regexPredicate: Expression = RegexMatch(property, StringLiteral("Johnny")_)_
+  val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property) _
+  val startsWithPredicate: Expression = StartsWith(property, StringLiteral("") _) _
+  val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12") _) _
+  val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12") _) _
+  val eqPredicate: Expression = Equals(property, SignedDecimalIntegerLiteral("12") _) _
+  val regexPredicate: Expression = RegexMatch(property, StringLiteral("Johnny") _) _
   val stringLiteral: Expression = StringLiteral("apa") _
-  val containsPredicate: Expression = Contains(property, stringLiteral)_
+  val containsPredicate: Expression = Contains(property, stringLiteral) _
 
+  test("does not plan index scan when no index exist") {
+    new given {
+      qg = queryGraph(existsPredicate, hasLabels)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
 
-  // TESTS OF has(n.prop)
-  {
-    test("does not plan index scan when no index exist") {
-      new given {
-        qg = queryGraph(existsPredicate, hasLabels)
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-        // then
-        resultPlans shouldBe empty
-      }
+      // then
+      resultPlans shouldBe empty
     }
+  }
 
-    test("index scan when there is an index on the property") {
-      new given {
-        qg = queryGraph(existsPredicate, hasLabels)
+  test("index scan when there is an index on the property") {
+    new given {
+      qg = queryGraph(existsPredicate, hasLabels)
 
-        indexOn("Awesome", "prop")
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
 
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexScan(`idName`, _, _, _)) => ()
-        }
-      }
-    }
-
-    test("unique index scan when there is an unique index on the property") {
-      new given {
-        qg = queryGraph(existsPredicate, hasLabels)
-
-        uniqueIndexOn("Awesome", "prop")
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexScan(`idName`, _, _, _)) => ()
-        }
-      }
-    }
-
-    test("plans index scans such that it solves hints") {
-      val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
-
-      new given {
-        qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
-
-        indexOn("Awesome", "prop")
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexScan(`idName`, _, _, _)) => ()
-        }
-
-        resultPlans.map(_.solved.queryGraph) should beLike {
-          case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
-        }
-      }
-    }
-
-    test("plans unique index scans such that it solves hints") {
-      val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
-
-      new given {
-        qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
-
-        uniqueIndexOn("Awesome", "prop")
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexScan(`idName`, _, _, _)) => ()
-        }
-
-        resultPlans.map(_.solved.queryGraph) should beLike {
-          case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
-        }
-      }
-    }
-
-    test("plans index scans for: n.prop STARTS WITH <pattern>") {
-      new given {
-        new given {
-          qg = queryGraph(startsWithPredicate, hasLabels)
-          indexOn("Awesome", "prop")
-        }.withLogicalPlanningContext { (cfg, ctx) =>
-          // when
-          val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-          // then
-          resultPlans should beLike {
-            case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
-              plan.solved should beLike {
-                case RegularPlannerQuery(scanQG, _, _) =>
-                  scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, startsWithPredicate)))
-              }
-          }
-        }
-      }
-    }
-
-    test("plans index scans for: n.prop < <value>") {
-      new given {
-        new given {
-          qg = queryGraph(ltPredicate, hasLabels)
-          indexOn("Awesome", "prop")
-        }.withLogicalPlanningContext { (cfg, ctx) =>
-          // when
-          val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-          // then
-          resultPlans should beLike {
-            case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
-              plan.solved should beLike {
-                case RegularPlannerQuery(scanQG, _, _) =>
-                  scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, ltPredicate)))
-              }
-          }
-        }
-      }
-    }
-
-    test("plans index scans for: n.prop <> <value>") {
-      new given {
-        new given {
-          qg = queryGraph(neqPredicate, hasLabels)
-          indexOn("Awesome", "prop")
-        }.withLogicalPlanningContext { (cfg, ctx) =>
-          // when
-          val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-          // then
-          resultPlans should beLike {
-            case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
-              plan.solved should beLike {
-                case RegularPlannerQuery(scanQG, _, _) =>
-                  scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, neqPredicate)))
-              }
-          }
-        }
-      }
-    }
-
-    test("plans index scans for: n.prop = <value>") {
-      new given {
-        new given {
-          qg = queryGraph(eqPredicate, hasLabels)
-          indexOn("Awesome", "prop")
-        }.withLogicalPlanningContext { (cfg, ctx) =>
-          // when
-          val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-          // then
-          resultPlans should beLike {
-            case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
-              plan.solved should beLike {
-                case RegularPlannerQuery(scanQG, _, _) =>
-                  scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, eqPredicate)))
-              }
-          }
-        }
-      }
-    }
-
-    test("plans index scans for: n.prop = <pattern>") {
-      new given {
-        new given {
-          qg = queryGraph(regexPredicate, hasLabels)
-          indexOn("Awesome", "prop")
-        }.withLogicalPlanningContext { (cfg, ctx) =>
-          // when
-          val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-          // then
-          resultPlans should beLike {
-            case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
-              plan.solved should beLike {
-                case RegularPlannerQuery(scanQG, _, _) =>
-                  scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, regexPredicate)))
-              }
-          }
-        }
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexScan(`idName`, _, _, _)) => ()
       }
     }
   }
 
-  // TESTS OF n.prop CONTAINS "..."
-  {
-    test("does not plan index contains scan when no index exist") {
-      new given {
-        qg = queryGraph(containsPredicate, hasLabels)
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+  test("unique index scan when there is an unique index on the property") {
+    new given {
+      qg = queryGraph(existsPredicate, hasLabels)
 
-        // then
-        resultPlans shouldBe empty
+      uniqueIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexScan(`idName`, _, _, _)) => ()
       }
     }
+  }
 
-    test("index contains scan when there is an index on the property") {
-      new given {
-        qg = queryGraph(containsPredicate, hasLabels)
+  test("plans index scans such that it solves hints") {
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
 
-        indexOn("Awesome", "prop")
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+    new given {
+      qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
 
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _)) => ()
-        }
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexScan(`idName`, _, _, _)) => ()
+      }
+
+      resultPlans.map(_.solved.queryGraph) should beLike {
+        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
       }
     }
+  }
 
-    test("unique index contains scan when there is an unique index on the property") {
-      new given {
-        qg = queryGraph(containsPredicate, hasLabels)
+  test("plans unique index scans such that it solves hints") {
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
 
-        uniqueIndexOn("Awesome", "prop")
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+    new given {
+      qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
 
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _)) => ()
-        }
+      uniqueIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexScan(`idName`, _, _, _)) => ()
+      }
+
+      resultPlans.map(_.solved.queryGraph) should beLike {
+        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
       }
     }
+  }
 
-    test("plans index contains scans such that it solves hints") {
-      val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
+  test("plans index scans for: n.prop STARTS WITH <pattern>") {
+    new given {
+      qg = queryGraph(startsWithPredicate, hasLabels)
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
 
-      new given {
-        qg = queryGraph(containsPredicate, hasLabels).addHints(Some(hint))
-
-        indexOn("Awesome", "prop")
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
-
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _)) => ()
-        }
-
-        resultPlans.map(_.solved.queryGraph) should beLike {
-          case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
-        }
+      // then
+      resultPlans should beLike {
+        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+          plan.solved should beLike {
+            case RegularPlannerQuery(scanQG, _, _) =>
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, startsWithPredicate)))
+          }
       }
     }
+  }
 
-    test("plans unique index contains scans such that it solves hints") {
-      val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
+  test("plans index scans for: n.prop < <value>") {
+    new given {
+      qg = queryGraph(ltPredicate, hasLabels)
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
 
-      new given {
-        qg = queryGraph(containsPredicate, hasLabels).addHints(Some(hint))
+      // then
+      resultPlans should beLike {
+        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+          plan.solved should beLike {
+            case RegularPlannerQuery(scanQG, _, _) =>
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, ltPredicate)))
+          }
+      }
+    }
+  }
 
-        uniqueIndexOn("Awesome", "prop")
-      }.withLogicalPlanningContext { (cfg, ctx) =>
-        // when
-        val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+  test("plans index scans for: n.prop <> <value>") {
+    new given {
+      qg = queryGraph(neqPredicate, hasLabels)
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
 
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _)) => ()
-        }
+      // then
+      resultPlans should beLike {
+        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+          plan.solved should beLike {
+            case RegularPlannerQuery(scanQG, _, _) =>
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, neqPredicate)))
+          }
+      }
+    }
+  }
 
-        resultPlans.map(_.solved.queryGraph) should beLike {
-          case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
-        }
+  test("plans index scans for: n.prop = <value>") {
+    new given {
+      qg = queryGraph(eqPredicate, hasLabels)
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+          plan.solved should beLike {
+            case RegularPlannerQuery(scanQG, _, _) =>
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, eqPredicate)))
+          }
+      }
+    }
+  }
+
+  test("plans index scans for: n.prop = <pattern>") {
+    new given {
+      qg = queryGraph(regexPredicate, hasLabels)
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+          plan.solved should beLike {
+            case RegularPlannerQuery(scanQG, _, _) =>
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, regexPredicate)))
+          }
+      }
+    }
+  }
+
+  test("does not plan index contains scan when no index exist") {
+    new given {
+      qg = queryGraph(containsPredicate, hasLabels)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans shouldBe empty
+    }
+  }
+
+  test("index contains scan when there is an index on the property") {
+    new given {
+      qg = queryGraph(containsPredicate, hasLabels)
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _)) => ()
+      }
+    }
+  }
+
+  test("unique index contains scan when there is an unique index on the property") {
+    new given {
+      qg = queryGraph(containsPredicate, hasLabels)
+
+      uniqueIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _)) => ()
+      }
+    }
+  }
+
+  test("plans index contains scans such that it solves hints") {
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
+
+    new given {
+      qg = queryGraph(containsPredicate, hasLabels).addHints(Some(hint))
+
+      indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _)) => ()
+      }
+
+      resultPlans.map(_.solved.queryGraph) should beLike {
+        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
+      }
+    }
+  }
+
+  test("plans unique index contains scans such that it solves hints") {
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, PropertyKeyName("prop")(pos)) _
+
+    new given {
+      qg = queryGraph(containsPredicate, hasLabels).addHints(Some(hint))
+
+      uniqueIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexScanLeafPlanner(cfg.qg)(ctx)
+
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexContainsScan(`idName`, _, _, `stringLiteral`, _)) => ()
+      }
+
+      resultPlans.map(_.solved.queryGraph) should beLike {
+        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
       }
     }
   }
