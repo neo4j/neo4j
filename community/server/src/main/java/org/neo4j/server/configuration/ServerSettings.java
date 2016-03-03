@@ -68,7 +68,7 @@ public interface ServerSettings
             setting( "org.neo4j.server.webserver.max.response.header", INTEGER, "20480" );
 
     @Description("Comma-seperated list of custom security rules for Neo4j to use.")
-    Setting<List<String>> security_rules = setting( "org.neo4j.server.rest.security_rules", STRING_LIST, EMPTY );
+    Setting<List<String>> security_rules = setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
 
     @Description("Http port for the Neo4j REST API.")
     Setting<Integer> webserver_port = setting( "org.neo4j.server.webserver.port", INTEGER, "7474", port );
@@ -77,7 +77,7 @@ public interface ServerSettings
     Setting<String> webserver_address = BoltKernelExtension.Settings.webserver_address;
 
     @Description("Number of Neo4j worker threads.")
-    Setting<Integer> webserver_max_threads = setting( "org.neo4j.server.webserver.maxthreads",
+    Setting<Integer> webserver_max_threads = setting( "dbms.threads.worker_count",
             INTEGER, "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ), min( 1 ) );
 
     @Description("If execution time limiting is enabled in the database, this configures the maximum request execution time.")
@@ -89,7 +89,7 @@ public interface ServerSettings
             "org.neo4j.server.manage.console_engines", STRING_LIST, "SHELL" );
 
     @Description("Comma-separated list of <classname>=<mount point> for unmanaged extensions.")
-    Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "org.neo4j.server.thirdparty_jaxrs_classes",
+    Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "dbms.unmanaged_extension_classes",
             new Function<String, List<ThirdPartyJaxRsPackage>>()
             {
                 @Override
@@ -153,7 +153,7 @@ public interface ServerSettings
             NO_DEFAULT );
 
     @Description("Timeout for idle transactions.")
-    Setting<Long> transaction_timeout = setting( "org.neo4j.server.transaction.timeout", DURATION, "60s" );
+    Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
 
     @Description("Enable the Bolt protocol")
     Setting<Boolean> bolt_enabled = BoltKernelExtension.Settings.enabled;

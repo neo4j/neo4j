@@ -52,7 +52,7 @@ public abstract class GraphDatabaseSettings
     @Title("Read only database")
     @Description("Only allow read operations from this Neo4j instance. " +
                  "This mode still requires write access to the directory for lock purposes.")
-    public static final Setting<Boolean> read_only = setting( "read_only", BOOLEAN, FALSE );
+    public static final Setting<Boolean> read_only = setting( "dbms.read_only", BOOLEAN, FALSE );
 
     @Description("Print out the effective Neo4j configuration after startup.")
     public static final Setting<Boolean> dump_configuration = setting("dump_configuration", BOOLEAN, FALSE );
@@ -99,7 +99,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> cypher_compiler_tracing = setting( "dbms.cypher.compiler_tracing", BOOLEAN, FALSE );
 
     @Description( "The number of Cypher query execution plans that are cached." )
-    public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "1000", min( 0 ) );
+    public static Setting<Integer> query_cache_size = setting( "dbms.query_cache_size", INTEGER, "1000", min( 0 ) );
 
     @Description( "The threshold when a plan is considered stale. If any of the underlying" +
                   " statistics used to create the plan has changed more than this value, " +
@@ -134,11 +134,11 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
-    public static Setting<Boolean> allow_file_urls = setting( "allow_file_urls", BOOLEAN, TRUE );
+    public static Setting<Boolean> allow_file_urls = setting( "dbms.security.allow_csv_import_from_file_urls", BOOLEAN, TRUE );
 
     @Description( "Sets the root directory for file URLs used with the Cypher `LOAD CSV` clause. This must be set to a single "
                   + "directory, restricting access to only those files within that directory and its subdirectories." )
-    public static Setting<File> load_csv_file_url_root = setting( "dbms.security.load_csv_file_url_root", PATH, NO_DEFAULT );
+    public static Setting<File> load_csv_file_url_root = setting( "dbms.directories.import", PATH, NO_DEFAULT );
 
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )
@@ -154,7 +154,7 @@ public abstract class GraphDatabaseSettings
 
     @Description("Location of the database plugin directory. Compiled Java JAR files that contain database " +
                  "procedures will be loaded if they are placed in this directory.")
-    public static final Setting<File> plugin_dir = setting("dbms.plugin.directory", PATH, "plugins" );
+    public static final Setting<File> plugin_dir = setting("dbms.directories.plugins", PATH, "plugins" );
 
     @Description("The location of the internal diagnostics log.")
     @Internal
@@ -234,20 +234,20 @@ public abstract class GraphDatabaseSettings
     // Index sampling
     @Description("Enable or disable background index sampling")
     public static final Setting<Boolean> index_background_sampling_enabled =
-            setting("index_background_sampling_enabled", BOOLEAN, TRUE );
+            setting("dbms.index_sampling.background_enabled", BOOLEAN, TRUE );
 
     @Description("Size of buffer used by index sampling")
     public static final Setting<Long> index_sampling_buffer_size =
-            setting("index_sampling_buffer_size", BYTES, "64m",
+            setting("dbms.index_sampling.buffer_size", BYTES, "64m",
                     min( /* 1m */ 1048576L ), max( (long) Integer.MAX_VALUE ) );
 
     @Description("Percentage of index updates of total index size required before sampling of a given index is triggered")
     public static final Setting<Integer> index_sampling_update_percentage =
-            setting("index_sampling_update_percentage", INTEGER, "5", min( 0 ) );
+            setting("dbms.index_sampling.update_percentage", INTEGER, "5", min( 0 ) );
 
     // Lucene settings
     @Description( "The maximum number of open Lucene index searchers." )
-    public static Setting<Integer> lucene_searcher_cache_size = setting("lucene_searcher_cache_size",INTEGER, Integer.toString( Integer.MAX_VALUE ), min( 1 ));
+    public static Setting<Integer> lucene_searcher_cache_size = setting("dbms.index_searcher_cache_size",INTEGER, Integer.toString( Integer.MAX_VALUE ), min( 1 ));
 
     // Lucene schema indexes
     @Internal
@@ -259,13 +259,13 @@ public abstract class GraphDatabaseSettings
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
             "prune logical logs that only contains transactions older than 10 days from the current time, " +
             "or \"100k txs\" will keep the 100k latest transactions and prune any older transactions.")
-    public static final Setting<String> keep_logical_logs = setting("keep_logical_logs", STRING, "7 days", illegalValueMessage( "must be `true`/`false` or of format '<number><optional unit> <type>' for example `100M size` for " +
+    public static final Setting<String> keep_logical_logs = setting("dbms.tx_log.rotation.retention_policy", STRING, "7 days", illegalValueMessage( "must be `true`/`false` or of format '<number><optional unit> <type>' for example `100M size` for " +
                         "limiting logical log space on disk to 100Mb," +
                         " or `200k txs` for limiting the number of transactions to keep to 200 000", matches(ANY)));
 
     @Description( "Specifies at which file size the logical log will auto-rotate. " +
                   "`0` means that no rotation will automatically occur based on file size. " )
-    public static final Setting<Long> logical_log_rotation_threshold = setting( "logical_log_rotation_threshold", BYTES, "250M", min( 1024*1024L /*1Mb*/ ) );
+    public static final Setting<Long> logical_log_rotation_threshold = setting( "dbms.tx_log.rotation.size", BYTES, "250M", min( 1024*1024L /*1Mb*/ ) );
 
     @Description("Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
             "but will limit the ability to reuse the space of deleted entities.")
@@ -286,7 +286,7 @@ public abstract class GraphDatabaseSettings
                   "the page cache. The default page cache memory assumes the machine is dedicated to running " +
                   "Neo4j, and is heuristically set to 50% of RAM minus the max Java heap size." )
     public static final Setting<Long> pagecache_memory =
-            setting( "dbms.pagecache.memory", BYTES, defaultPageCacheMemory(), min( 8192 * 30L ) );
+            setting( "dbms.memory.pagecache.size", BYTES, defaultPageCacheMemory(), min( 8192 * 30L ) );
 
     private static String defaultPageCacheMemory()
     {
@@ -334,7 +334,7 @@ public abstract class GraphDatabaseSettings
     @Description( "Specify which page swapper to use for doing paged IO. " +
                   "This is only used when integrating with proprietary storage technology." )
     public static final Setting<String> pagecache_swapper =
-            setting( "dbms.pagecache.swapper", STRING, (String) null );
+            setting( "dbms.memory.pagecache.swapper", STRING, (String) null );
 
     @Description("How many relationships to read at a time during iteration")
     public static final Setting<Integer> relationship_grab_size = setting("relationship_grab_size", INTEGER,
@@ -385,7 +385,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Long> gc_monitor_block_threshold = MonitorGc.Configuration.gc_monitor_threshold;
 
     @Description( "Relationship count threshold for considering a node to be dense" )
-    public static final Setting<Integer> dense_node_threshold = setting( "dense_node_threshold", INTEGER, "50", min(1) );
+    public static final Setting<Integer> dense_node_threshold = setting( "dbms.relationship_grouping_threshold", INTEGER, "50", min(1) );
 
     @Description( "Log executed queries that takes longer than the configured threshold. "
             + "_NOTE: This feature is only available in the Neo4j Enterprise Edition_." )

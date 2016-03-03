@@ -108,7 +108,7 @@ public class Cluster
     private Map<String, String> serverParams( String serverType, int serverId, String initialHosts )
     {
         Map<String, String> params = stringMap();
-        params.put( "org.neo4j.server.database.mode", serverType );
+        params.put( "dbms.mode", serverType );
         params.put( ClusterSettings.cluster_name.name(), CLUSTER_NAME );
         params.put( ClusterSettings.server_id.name(), String.valueOf( serverId ) );
         params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialHosts );

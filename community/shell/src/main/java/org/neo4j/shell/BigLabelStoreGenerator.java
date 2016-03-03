@@ -37,7 +37,7 @@ import static java.lang.String.format;
  * Builds a store in the path at $GRAPH_DB of $NUM_NODES nodes, where each node has at most
  * $NUM_LABELS randomly selected labels.
  *
- * keep_logical_logs=false
+ * dbms.tx_log.rotation.retention_policy=false
  * neostore.nodestore.db.mapped_memory=28000M
  * neostore.nodestore.db.labels.mapped_memory=14000M
  *

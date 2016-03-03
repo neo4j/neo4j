@@ -64,7 +64,7 @@ However, the incremental backup may fail for a number of reasons:
 
 [NOTE]
 Note that when copying the outstanding transactions, the backup tool needs access to the historical logical logs.
-These logical logs are kept by Neo4j and automatically removed after a period of time, based on the  <<configuration-logical-logs,+keep_logical_logs+ configuration>>.
+These logical logs are kept by Neo4j and automatically removed after a period of time, based on the  <<configuration-logical-logs,+dbms.tx_log.rotation.retention_policy+ configuration>>.
 If the required logical logs have already been removed, the backup tool will do a full backup instead.
 
 [[backup-java]]

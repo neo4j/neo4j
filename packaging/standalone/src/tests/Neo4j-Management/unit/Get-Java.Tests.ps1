@@ -383,9 +383,9 @@ InModuleScope Neo4j-Management {
         ($Path -eq 'TestPath:\JavaHome\bin\java.exe')
       }
       Mock Get-Neo4jSetting {
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='org.neo4j.server.database.mode'; 'Value'='ARBITER' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.mode'; 'Value'='ARBITER' })
       } -ParameterFilter {
-        $Name -eq 'org.neo4j.server.database.mode'
+        $Name -eq 'dbms.mode'
       }
 
       $serverObject = (New-Object -TypeName PSCustomObject -Property @{

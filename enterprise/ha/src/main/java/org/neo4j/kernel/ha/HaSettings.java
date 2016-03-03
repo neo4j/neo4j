@@ -55,7 +55,7 @@ public class HaSettings
     @Description( "Timeout for waiting for internal conditions during state switch, like for transactions "
             + "to complete, before switching to master or slave." )
     public static final Setting<Long> internal_state_switch_timeout =
-            setting( "ha.internal_state_switch_timeout", DURATION, "10s" );
+            setting( "ha.internal_role_switch_timeout", DURATION, "10s" );
 
     @Description( "Timeout for taking remote (write) locks on slaves. Defaults to ha.read_timeout." )
     public static final Setting<Long> lock_read_timeout = setting( "ha.lock_read_timeout", DURATION, read_timeout );
@@ -80,10 +80,9 @@ public class HaSettings
             setting( "dbms.security.ha_status_auth_enabled", BOOLEAN, Settings.TRUE );
 
     @Description( "Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase " +
-            "throughput, but may also be more sensitive to variations in bandwidth, whereas lower size increases tolerance" +
-            " for bandwidth variations." )
-    public static final Setting<Long> com_chunk_size =
-            setting( "ha.com_chunk_size", BYTES, "2M", min( 1024L ) );
+            "throughput, but may also be more sensitive to variations in bandwidth, whereas lower size increases " +
+            "tolerance for bandwidth variations." )
+    public static final Setting<Long> com_chunk_size = setting( "ha.data_chunk_size", BYTES, "2M", min( 1024L ) );
 
     @Description( "Interval of pulling updates from master." )
     public static final Setting<Long> pull_interval = setting( "ha.pull_interval", DURATION, "0s" );

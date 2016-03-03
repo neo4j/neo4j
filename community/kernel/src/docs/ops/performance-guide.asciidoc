@@ -31,7 +31,7 @@ We find that `-XX:+UseG1GC` works well in most use cases.
 
 The next thing to look at, is the file caching memory.
 Neo4j uses its own page cache for the store files, and relies on the operating system for caching the index files.
-Make sure that the `dbms.pagecache.memory` setting (in _neo4j.conf_) is large enough to fit the entire store, if possible.
+Make sure that the `dbms.memory.pagecache.size` setting (in _neo4j.conf_) is large enough to fit the entire store, if possible.
 But also make sure that you are not allocating so much memory to the JVM and the Neo4j page cache, that there is no memory left for the operating system to cache the Lucene index files.
 For more information on configuration see <<configuration>>.
 
@@ -51,9 +51,9 @@ For this reason, the heap should ideally be sized and tuned such that transactio
 When using Neo4j Server, JVM configuration goes into the _conf/neo4j-wrapper.conf_ file. See <<server-configuration>>.
 --
 
-In server deployments, the heap size is configured with the `wrapper.java.maxmemory` (in MBs) setting in the _neo4j-wrapper.conf_ file.
+In server deployments, the heap size is configured with the `dbms.memory.heap.max_size` (in MBs) setting in the _neo4j-wrapper.conf_ file.
 For embedded, the heap size is specified by giving the `-Xmx???m` command line flag to the `java` process, where the `???` is the maximum heap size in MBs.
-The initial size of the heap is specified by the `wrapper.java.initmemory` setting, or with the `-Xms???m` flag, or chosen heuristically by the JVM itself if left unspecified.
+The initial size of the heap is specified by the `dbms.memory.heap.initial_size` setting, or with the `-Xms???m` flag, or chosen heuristically by the JVM itself if left unspecified.
 The JVM will automatically grow the heap as needed, up to the maximum size.
 The growing of the heap requires a full GC cycle.
 If you know that you will need all the heap memory, you can set the initial heap size and the maximum heap size to the same value.

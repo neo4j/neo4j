@@ -22,14 +22,14 @@ Since this is potentially a very time-consuming operation, these numbers are col
 Execution plans are cached and will not be replanned until the statistical information used to produce the plan has changed.
 The following configuration options allows you to control how sensitive replanning should be to updates of the database.
 
-`index_background_sampling_enabled`::
+`dbms.index_sampling.background_enabled`::
 Controls whether indexes will automatically be re-sampled when they have been updated enough.
 The Cypher query planner depends on accurate statistics to create efficient plans, so it is important it is kept up to date as the database evolves.
 +
 [TIP]
 If background sampling is turned off, make sure to trigger manual sampling when data has been updated.
 
-`index_sampling_update_percentage`::
+`dbms.index_sampling.update_percentage`::
 Controls how large portion of the index has to have been updated before a new sampling run is triggered.
 
 `cypher.statistics_divergence_threshold`::

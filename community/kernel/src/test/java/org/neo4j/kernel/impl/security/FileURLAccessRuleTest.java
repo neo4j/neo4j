@@ -77,7 +77,7 @@ public class FileURLAccessRuleTest
         }
         catch ( URLAccessValidationError error )
         {
-            assertThat( error.getMessage(), equalTo( "configuration property 'allow_file_urls' is false" ) );
+            assertThat( error.getMessage(), equalTo( "configuration property 'dbms.security.allow_csv_import_from_file_urls' is false" ) );
         }
     }
 

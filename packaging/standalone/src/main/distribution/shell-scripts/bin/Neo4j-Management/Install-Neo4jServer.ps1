@@ -141,7 +141,7 @@ Function Install-Neo4jServer
       $result = (New-Service -Name $Name -Description $Description -DisplayName $DisplayName -BinaryPathName $binPath -StartupType $StartType)
     }
     
-    $thisServer | Set-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'wrapper.name' -Value $Name | Out-Null
+    $thisServer | Set-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.windows_service_name' -Value $Name | Out-Null
         
     if ($PassThru) { Write-Output $thisServer } else { Write-Output $result }
   }

@@ -118,9 +118,9 @@ Function Start-Neo4jShell
     $Port = 1337    
     Get-Neo4jSetting -Neo4jServer $thisServer | ForEach-Object -Process `
     {
-      if (($_.ConfigurationFile -eq 'neo4j.conf') -and ($_.Name -eq 'remote_shell_enabled')) { $ShellRemoteEnabled = ($_.Value.ToUpper() -eq 'TRUE') }
-      if (($_.ConfigurationFile -eq 'neo4j.conf') -and ($_.Name -eq 'remote_shell_host')) { $ShellHost = ($_.Value) }
-      if (($_.ConfigurationFile -eq 'neo4j.conf') -and ($_.Name -eq 'remote_shell_port')) { $Port = [int]($_.Value) }
+      if (($_.ConfigurationFile -eq 'neo4j.conf') -and ($_.Name -eq 'dbms.shell.enabled')) { $ShellRemoteEnabled = ($_.Value.ToUpper() -eq 'TRUE') }
+      if (($_.ConfigurationFile -eq 'neo4j.conf') -and ($_.Name -eq 'dbms.shell.host')) { $ShellHost = ($_.Value) }
+      if (($_.ConfigurationFile -eq 'neo4j.conf') -and ($_.Name -eq 'dbms.shell.port')) { $Port = [int]($_.Value) }
     }
     if (!$ShellRemoteEnabled) { $ShellHost = 'localhost' }
     if ($UseHost -ne '') { $ShellHost = $UseHost }

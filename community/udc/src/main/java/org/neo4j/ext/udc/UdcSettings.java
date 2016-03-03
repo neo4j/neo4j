@@ -44,7 +44,7 @@ public class UdcSettings
     /** Configuration key for enabling the UDC extension. */
     @Description( "Enable the UDC extension." )
     public static final Setting<Boolean> udc_enabled = setting(
-            "neo4j.ext.udc.enabled", Enabled.UNLESS_EXPLICITLY_DISABLED, Enabled.AS_DEFAULT_VALUE );
+            "dbms.udc.enabled", Enabled.UNLESS_EXPLICITLY_DISABLED, Enabled.AS_DEFAULT_VALUE );
 
     /** Configuration key for the first delay, expressed in milliseconds. */
     @Internal

@@ -79,7 +79,7 @@ public abstract class GraphDatabaseFacadeFactory
     public static class Configuration
     {
         public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
-        public static final Setting<String> ephemeral_keep_logical_logs = setting( "keep_logical_logs", STRING, "1 " +
+        public static final Setting<String> ephemeral_keep_logical_logs = setting( "dbms.tx_log.rotation.retention_policy", STRING, "1 " +
                 "files", illegalValueMessage( "must be `true`/`false` or of format '<number><optional unit> <type>' " +
                 "for example `100M size` for " +
                 "limiting logical log space on disk to 100Mb," +

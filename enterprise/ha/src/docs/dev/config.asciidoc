@@ -20,7 +20,7 @@ This means that you can extend the cluster without changing the configuration of
 
 == Server configuration ==
 
-If you are running Neo4j server, specify `org.neo4j.server.database.mode=HA` in <<file-locations, _neo4j.conf_>>.
+If you are running Neo4j server, specify `dbms.mode=HA` in <<file-locations, _neo4j.conf_>>.
 
 include::{importdir}/neo4j-server-enterprise-docs-jar/ops/configuration-attributes.asciidoc[]
 

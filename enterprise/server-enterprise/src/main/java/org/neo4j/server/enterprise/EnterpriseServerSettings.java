@@ -33,7 +33,7 @@ public interface EnterpriseServerSettings
 {
     @Description( "Configure the operating mode of the database -- 'SINGLE' for stand-alone operation, 'HA' for " +
             "operating as a member in a cluster or 'ARBITER' for an HA-only cluster member with no database" )
-    Setting<String> mode = setting( "org.neo4j.server.database.mode", STRING, "SINGLE" );
+    Setting<String> mode = setting( "dbms.mode", STRING, "SINGLE" );
 
     @SuppressWarnings("unused") // accessed from the browser
     @Description( "Configure the Neo4j Browser to time out logged in users after this idle period. " +

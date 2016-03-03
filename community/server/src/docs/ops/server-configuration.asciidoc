@@ -64,7 +64,7 @@ wrapper.java.additional=-Djava.net.preferIPv4Stack=true
 Specify the number of threads used by the Neo4j Web server to control the level of concurrent HTTP requests that the server will service.
 [source,properties]
 ----
-org.neo4j.server.webserver.maxthreads=200
+dbms.threads.worker_count=200
 ----
 
 NOTE: The default value is the number of CPUs reported available by the JVM, limited to a maximum of 500. The limit can be exceeded by specifying a larger value.
@@ -74,7 +74,7 @@ within the timeout period, the server will roll it back. You can configure the t
 the following property to the number of seconds before timeout. The default timeout is 60 seconds.
 [source,properties]
 ----
-org.neo4j.server.transaction.timeout=60
+dbms.transaction_timeout=60
 ----
 
 == Neo4j Database performance configuration ==

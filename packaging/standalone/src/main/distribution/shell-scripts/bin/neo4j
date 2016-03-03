@@ -104,7 +104,7 @@ show_java_help() {
 setup_arbiter_options() {
   is_arbiter() {
     compgen -G "${NEO4J_HOME}/lib/neo4j-server-enterprise-*.jar" >/dev/null && \
-      [[ "$(echo "${org_neo4j_server_database_mode:-}" | tr [:lower:] [:upper:])" == "ARBITER" ]]
+      [[ "$(echo "${dbms_mode:-}" | tr [:lower:] [:upper:])" == "ARBITER" ]]
   }
 
   if is_arbiter; then
@@ -127,7 +127,7 @@ setup_arbiter_options() {
 
       echo "Started at http://${NEO4J_SERVER_ADDRESS}:${port} (pid ${NEO4J_PID})."
 
-      if [[ "$(echo "${org_neo4j_server_database_mode:-}" | tr [:lower:] [:upper:])" == "HA" ]]; then
+      if [[ "$(echo "${dbms_mode:-}" | tr [:lower:] [:upper:])" == "HA" ]]; then
         echo "This HA instance will be operational once it has joined the cluster."
       else
         echo "There may be a short delay until the server is ready."
@@ -212,8 +212,8 @@ setup_paths() {
 
 setup_java_opts() {
   JAVA_MEMORY_OPTS=""
-  [[ "${wrapper_java_initmemory:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xms${wrapper_java_initmemory}m"
-  [[ "${wrapper_java_maxmemory:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xmx${wrapper_java_maxmemory}m"
+  [[ "${dbms_memory_heap_initial_size:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xms${dbms_memory_heap_initial_size}m"
+  [[ "${dbms_memory_heap_max_size:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xmx${dbms_memory_heap_max_size}m"
 
   JAVA_OPTS="-server"
   [[ "${JAVA_MEMORY_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_MEMORY_OPTS}"
