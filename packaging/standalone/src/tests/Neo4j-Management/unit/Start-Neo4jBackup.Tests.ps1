@@ -72,7 +72,7 @@ InModuleScope Neo4j-Management {
     Context "Uses default values" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise'; }) }
       Mock Get-Neo4jSetting {@(
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_enabled'; 'Value'='true' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.enabled'; 'Value'='true' })
       )} 
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
@@ -96,7 +96,7 @@ InModuleScope Neo4j-Management {
     Context "Backup is disabled" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise'; }) }
       Mock Get-Neo4jSetting {@(
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_enabled'; 'Value'='false' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.enabled'; 'Value'='false' })
       )} 
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
@@ -109,8 +109,8 @@ InModuleScope Neo4j-Management {
     Context "Uses default values from configuration file" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise'; }) }
       Mock Get-Neo4jSetting {@(
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_enabled'; 'Value'='true' })
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_server'; 'Value'='1.2.3.4:1234' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.enabled'; 'Value'='true' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.address'; 'Value'='1.2.3.4:1234' })
       )} 
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
@@ -135,7 +135,7 @@ InModuleScope Neo4j-Management {
     Context "UseHost Parameter" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise'; }) }
       Mock Get-Neo4jSetting {@(
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_enabled'; 'Value'='true' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.enabled'; 'Value'='true' })
       )} 
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
@@ -157,7 +157,7 @@ InModuleScope Neo4j-Management {
     Context "UsePort Parameter" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise'; }) }
       Mock Get-Neo4jSetting {@(
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_enabled'; 'Value'='true' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.enabled'; 'Value'='true' })
       )} 
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
@@ -187,8 +187,8 @@ InModuleScope Neo4j-Management {
     Context "Appends other commands" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise'; }) }
       Mock Get-Neo4jSetting {@(
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_enabled'; 'Value'='true' })
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_server'; 'Value'='1.2.3.4:1234' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.enabled'; 'Value'='true' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.address'; 'Value'='1.2.3.4:1234' })
       )} 
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
@@ -206,8 +206,8 @@ InModuleScope Neo4j-Management {
     Context "Starts a new process by default" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise'; }) }
       Mock Get-Neo4jSetting {@(
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_enabled'; 'Value'='true' })
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_server'; 'Value'='1.2.3.4:1234' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.enabled'; 'Value'='true' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.address'; 'Value'='1.2.3.4:1234' })
       )} 
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
@@ -224,8 +224,8 @@ InModuleScope Neo4j-Management {
     Context "Starts shell in same process if specified" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise'; }) }
       Mock Get-Neo4jSetting {@(
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_enabled'; 'Value'='true' })
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_server'; 'Value'='1.2.3.4:1234' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.enabled'; 'Value'='true' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.address'; 'Value'='1.2.3.4:1234' })
       )} 
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }
@@ -242,8 +242,8 @@ InModuleScope Neo4j-Management {
     Context "Returns the Neo4jServer Object if -PassThru" {
       Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Enterprise'; }) }
       Mock Get-Neo4jSetting {@(
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_enabled'; 'Value'='true' })
-        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='online_backup_server'; 'Value'='1.2.3.4:1234' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.enabled'; 'Value'='true' })
+        New-Object -TypeName PSCustomObject -Property (@{ 'ConfigurationFile'='neo4j.conf'; 'Name'='dbms.backup.address'; 'Value'='1.2.3.4:1234' })
       )} 
       Mock Get-Java { return New-Object -TypeName PSCustomObject -Property (@{'java'='ignoreme'; 'args' = @();}) }
       Mock Start-Process { }

@@ -97,7 +97,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         @Description( "Set the encryption level for Neo4j Bolt protocol ports" )
         public static final Setting<EncryptionLevel> tls_level =
-                setting( "tls.level", options( EncryptionLevel.class ), OPTIONAL.name() );
+                setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() );
 
         @Description( "Host and port for the Neo4j Bolt Protocol" )
         public static final Setting<HostnamePort> socket_address =

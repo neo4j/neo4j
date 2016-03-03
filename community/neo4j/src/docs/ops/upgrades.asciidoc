@@ -13,7 +13,7 @@ ifndef::upgradetext[<<ha-upgrade-guide>>.]
 ifdef::upgradetext['Upgrade of a Neo4j HA Cluster' at {manual-ha-upgrade-guide}.]
 
 Throughout this instruction, the files used to store the Neo4j data are referred to as `database files`.
-The location of these files is specified by configuring `org.neo4j.server.database.location` in `neo4j.conf`.
+These files is are found in the directory specified by `dbms.directories.data` in `neo4j.conf`.
 
 [CAUTION]
 .Disk space requirements
@@ -56,13 +56,13 @@ available with Neo4j Enterprise, ensure that backups have completed successfully
   Be aware of settings that have changed name between versions.
 . Copy the database from the old installation (typically _data/graph.db_) into the new one (_data/databases/graph.db_).
 . If the database is not called `graph.db`, set `dbms.active_database` in `neo4j.conf` to the name of the database.
-. Set `allow_store_upgrade=true` in `neo4j.conf` of the {neo4j-version} installation.
+. Set `dbms.allow_format_migration=true` in `neo4j.conf` of the {neo4j-version} installation.
   Neo4j will fail to start without this configuration.
 . Start up Neo4j {neo4j-version}.
 . The database upgrade will take place during startup.
 . Information about the upgrade and a progress indicator are logged into `debug.log`.
-. When upgrade has finished, the `allow_store_upgrade` should be set to `false` or be removed. 
-. It is good practice to make a full backup immediately after the backup.
+. When upgrade has finished, the `dbms.allow_format_migration` should be set to `false` or be removed.
+. It is good practice to make a full backup immediately after the upgrade.
 
 [NOTE]
 .Cypher compatibility

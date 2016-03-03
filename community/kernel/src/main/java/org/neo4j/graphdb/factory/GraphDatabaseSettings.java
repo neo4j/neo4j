@@ -61,23 +61,23 @@ public abstract class GraphDatabaseSettings
             "older store version. " +
             "Setting this to `true` does not guarantee successful upgrade, it just " +
             "allows an upgrade to be performed.")
-    public static final Setting<Boolean> allow_store_upgrade = setting("allow_store_upgrade", BOOLEAN, FALSE );
+    public static final Setting<Boolean> allow_store_upgrade = setting("dbms.allow_format_migration", BOOLEAN, FALSE );
 
     // Cypher settings
     // TODO: These should live with cypher
     @Description( "Set this to specify the default parser (language version)." )
     public static final Setting<String> cypher_parser_version = setting(
-            "cypher_parser_version",
+            "cypher.default_language_version",
             options("2.3", "3.0", DEFAULT ), DEFAULT );
 
     @Description( "Set this to specify the default planner for the default language version." )
     public static final Setting<String> cypher_planner = setting(
-            "dbms.cypher.planner",
+            "cypher.planner",
             options( "COST", "RULE", DEFAULT ), DEFAULT );
 
     @Description( "Set this to specify the behavior when Cypher planner or runtime hints cannot be fulfilled. "
             + "If true, then non-conformance will result in an error, otherwise only a warning is generated." )
-    public static final Setting<Boolean> cypher_hints_error = setting( "dbms.cypher.hints.error", BOOLEAN, FALSE );
+    public static final Setting<Boolean> cypher_hints_error = setting( "cypher.hints_error", BOOLEAN, FALSE );
 
     @Description( "If set to true it will disable the shortest path fallback. That means that no full path enumeration" +
                   "will be performed in case shortest path algorithms cannot be used. This might happen in case of" +
@@ -85,7 +85,8 @@ public abstract class GraphDatabaseSettings
                   "with property 'name=Emil'. The problem is that graph algorithms work only on universal predicates," +
                   "e.g., when searching for the shortest where all nodes have label 'Person'.  Note that disabling " +
                   "shortest path fallback (i.e., setting this property to true) might cause errors at runtime." )
-    public static final Setting<Boolean> forbid_exhaustive_shortestpath = setting( "dbms.cypher.forbid.exhaustive.shortestpath", BOOLEAN, FALSE );
+    public static final Setting<Boolean> forbid_exhaustive_shortestpath = setting(
+            "cypher.forbid_exhaustive_shortestpath", BOOLEAN, FALSE );
 
     @Description( "Set this to specify the default runtime for the default language version." )
     @Internal
@@ -105,7 +106,7 @@ public abstract class GraphDatabaseSettings
                   "the plan is considered stale and will be replanned. " +
                   "A value of 0 means always replan, and 1 means never replan." )
     public static Setting<Double> query_statistics_divergence_threshold = setting(
-            "dbms.cypher.statistics_divergence_threshold", DOUBLE, "0.5", min( 0.0 ), max(
+            "cypher.statistics_divergence_threshold", DOUBLE, "0.5", min( 0.0 ), max(
                     1.0 ) );
 
     @Description( "The threshold when a warning is generated if a label scan is done after a load csv " +
@@ -129,7 +130,7 @@ public abstract class GraphDatabaseSettings
             "dbms.cypher.idp_solver_duration_threshold", LONG, "1000", min( 10L ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
-    public static Setting<Long> cypher_min_replan_interval = setting( "dbms.cypher.min_replan_interval", DURATION, "1s" );
+    public static Setting<Long> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "1s" );
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
@@ -206,31 +207,29 @@ public abstract class GraphDatabaseSettings
 
     // Auto Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
-            "while `true` enables it by default for properties "
-            + "listed in the node_keys_indexable setting.")
+            "while `true` enables it by default for properties listed in the dbms.auto_index.nodes.keys setting.")
     @Internal
     @Deprecated
-    public static final Setting<Boolean> node_auto_indexing = setting("node_auto_indexing", BOOLEAN, FALSE);
+    public static final Setting<Boolean> node_auto_indexing = setting("dbms.auto_index.nodes.enabled", BOOLEAN, FALSE);
 
     @Description("A list of property names (comma separated) that will be indexed by default. This applies to _nodes_ " +
             "only.")
     @Internal
     @Deprecated
-    public static final Setting<List<String>> node_keys_indexable = setting("node_keys_indexable", STRING_LIST, "" );
+    public static final Setting<List<String>> node_keys_indexable = setting("dbms.auto_index.nodes.keys", STRING_LIST, "" );
 
     @Description("Controls the auto indexing feature for relationships. Setting it to `false` shuts it down, " +
-            "while `true` enables it by default for properties "
-            + "listed in the relationship_keys_indexable setting.")
+            "while `true` enables it by default for properties listed in the dbms.auto_index.relationships.keys setting.")
     @Internal
     @Deprecated
     public static final Setting<Boolean> relationship_auto_indexing =
-            setting("relationship_auto_indexing", BOOLEAN, FALSE );
+            setting("dbms.auto_index.relationships.enabled", BOOLEAN, FALSE );
 
     @Description("A list of property names (comma separated) that will be indexed by default. This applies to " +
             "_relationships_ only." )
     @Internal
     @Deprecated
-    public static final Setting<List<String>> relationship_keys_indexable = setting("relationship_keys_indexable", STRING_LIST, "" );
+    public static final Setting<List<String>> relationship_keys_indexable = setting("dbms.auto_index.relationships.keys", STRING_LIST, "" );
 
     // Index sampling
     @Description("Enable or disable background index sampling")

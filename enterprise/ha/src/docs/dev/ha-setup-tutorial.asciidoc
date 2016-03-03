@@ -225,7 +225,7 @@ Neo4j instance #1 -- ~/neo4j-01::
 dbms.pagecache.memory=500m
 
 # Port to listen to for incoming backup requests.
-online_backup_server = 127.0.0.1:6366
+dbms.backup.address = 127.0.0.1:6366
 
 # Unique server id for this Neo4j instance
 # can not be negative id and must be unique
@@ -262,7 +262,7 @@ Neo4j instance #2 -- ~/neo4j-02::
 dbms.pagecache.memory=500m
 
 # Port to listen to for incoming backup requests.
-online_backup_server = 127.0.0.1:6367
+dbms.backup.address = 127.0.0.1:6367
 
 # Unique server id for this Neo4j instance
 # can not be negative id and must be unique
@@ -299,7 +299,7 @@ Neo4j instance #3 -- ~/neo4j-03::
 dbms.pagecache.memory=500m
 
 # Port to listen to for incoming backup requests.
-online_backup_server = 127.0.0.1:6368
+dbms.backup.address = 127.0.0.1:6368
 
 # Unique server id for this Neo4j instance
 # can not be negative id and must be unique
