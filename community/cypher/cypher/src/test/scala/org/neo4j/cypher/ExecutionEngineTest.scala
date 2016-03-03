@@ -33,7 +33,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
-import org.neo4j.kernel.api.AccessMode
+import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.{NeoStoreDataSource}
 import org.neo4j.test.TestGraphDatabaseFactory

@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.security.AccessMode;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

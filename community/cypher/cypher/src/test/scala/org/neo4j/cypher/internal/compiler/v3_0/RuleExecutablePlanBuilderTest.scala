@@ -46,7 +46,8 @@ import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.Label.label
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
+import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.scalatest.mock.MockitoSugar

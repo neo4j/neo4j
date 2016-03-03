@@ -21,6 +21,8 @@ package org.neo4j.kernel.api;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.security.AccessMode;
+
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;

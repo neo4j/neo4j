@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb.{Node, NotFoundException}
-import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
+import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 import scala.collection.mutable.{Map => MutableMap}

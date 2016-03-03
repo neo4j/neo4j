@@ -26,13 +26,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.{BuilderTest, Solved, TraversalMatcherBuilder, Unsolved}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ArgumentPipe, SingleRowPipe}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundPlanContext
-import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.security.AccessMode
 
 class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest {
 

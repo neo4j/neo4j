@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.security;
 
-/** Controls the capabilities of a {@link KernelTransaction}. */
+/** Controls the capabilities of a KernelTransaction. */
 public interface AccessMode
 {
     enum Static implements AccessMode

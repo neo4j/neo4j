@@ -22,7 +22,8 @@ package org.neo4j.cypher
 import java.util
 
 import org.neo4j.graphdb._
-import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
+import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.scalatest.Assertions
 

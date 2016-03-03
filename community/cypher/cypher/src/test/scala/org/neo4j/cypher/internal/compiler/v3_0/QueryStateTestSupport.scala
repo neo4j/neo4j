@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
+import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.security.AccessMode
 
 trait QueryStateTestSupport {
   self: GraphDatabaseTestSupport =>
