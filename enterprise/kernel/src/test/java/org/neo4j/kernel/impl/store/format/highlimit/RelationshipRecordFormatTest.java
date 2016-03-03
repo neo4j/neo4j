@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -27,14 +26,12 @@ import java.io.IOException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
-import org.neo4j.kernel.impl.store.format.highlimit.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-@Ignore( "Disabled as long as relative references are" )
 public class RelationshipRecordFormatTest
 {
     private static final int DATA_SIZE = 100;
@@ -48,7 +45,20 @@ public class RelationshipRecordFormatTest
         long recordId = 0xF1F1F1F1F1F1L;
         int recordOffset = cursor.getOffset();
 
-        RelationshipRecord record = createRecord( format, recordId );
+        RelationshipRecord record = createRecord( format, recordId, false, false );
+        RelationshipRecord firstInSecondChain = createRecord( format, recordId, false, true );
+        RelationshipRecord firstInFirstChain = createRecord( format, recordId, true, false );
+        RelationshipRecord firstInBothChains = createRecord( format, recordId, true, true );
+
+        checkRecord( format, recordSize, cursor, recordId, recordOffset, record );
+        checkRecord( format, recordSize, cursor, recordId, recordOffset, firstInSecondChain );
+        checkRecord( format, recordSize, cursor, recordId, recordOffset, firstInFirstChain );
+        checkRecord( format, recordSize, cursor, recordId, recordOffset, firstInBothChains );
+    }
+
+    private void checkRecord( RelationshipRecordFormat format, int recordSize, StubPageCursor cursor,
+            long recordId, int recordOffset, RelationshipRecord record ) throws IOException
+    {
         format.write( record, cursor, recordSize, null);
 
         RelationshipRecord recordFromStore = format.newRecord();
@@ -81,10 +91,13 @@ public class RelationshipRecordFormatTest
         cursor.setOffset( recordOffset );
     }
 
-    private RelationshipRecord createRecord( RelationshipRecordFormat format, long recordId )
+    private RelationshipRecord createRecord( RelationshipRecordFormat format, long recordId,
+            boolean firstInFirstChain, boolean firstInSecondChain )
     {
         RelationshipRecord record = format.newRecord();
         record.setInUse( true );
+        record.setFirstInFirstChain( firstInFirstChain );
+        record.setFirstInSecondChain( firstInSecondChain );
         record.setId( recordId );
         record.setFirstNextRel( 1L );
         record.setFirstNode( 2L );

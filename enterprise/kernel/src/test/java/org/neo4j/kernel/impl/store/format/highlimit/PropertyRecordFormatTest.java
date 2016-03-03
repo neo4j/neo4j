@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -27,14 +26,12 @@ import java.io.IOException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
-import org.neo4j.kernel.impl.store.format.highlimit.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-@Ignore( "Disabled as long as relative references are" )
 public class PropertyRecordFormatTest
 {
     private static final int DATA_SIZE = 100;
