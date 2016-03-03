@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
+import org.neo4j.cypher.internal.frontend.v3_0.CypherException
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_0.{CypherException, NodeStillHasRelationshipsException}
-import org.neo4j.graphdb.TransactionFailureException
-import org.neo4j.kernel.api.exceptions.Status
 
 import scala.collection.immutable
 
@@ -72,12 +70,7 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
   def next(): Map[String, Any] = failIfThrows {
     if (closer.isClosed) return Iterator.empty.next()
 
-    val input: collection.Map[String, Any] = inner.next()
-    val result: Map[String, Any] = Eagerly.immutableMapValues(input, materialize)
-    if (!inner.hasNext) {
-      close(success = true)
-    }
-    result
+    Eagerly.immutableMapValues(inner.next(), materialize)
   }
 
   private def materialize(v: Any): Any = v match {

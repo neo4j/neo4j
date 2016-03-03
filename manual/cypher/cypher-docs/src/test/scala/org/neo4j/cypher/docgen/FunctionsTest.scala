@@ -126,7 +126,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """To return or filter on the size of a list, use the `size()` function.""",
       queryText = """return size(['Alice', 'Bob']) as col""",
       returns = """The number of items in the list is returned by the query.""",
-      assertions = (col) => assertEquals(2, col.columnAs[Int]("col").toList.head))
+      assertions = (col) => assertEquals(2, col.columnAs[Long]("col").toList.head))
   }
 
   @Test def size2() {
@@ -142,7 +142,7 @@ class FunctionsTest extends DocumentingTestBase {
                |""".stripMargin,
       queryText = """match (a) where a.name='Alice' return size( (a)-->()-->() ) as fof""",
       returns = """The number of sub-graphs matching the pattern expression is returned by the query.""",
-      assertions = (p) => assertEquals(3, p.columnAs[Int]("fof").toList.head))
+      assertions = (p) => assertEquals(3, p.columnAs[Long]("fof").toList.head))
   }
 
   @Test def length() {
@@ -153,7 +153,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """To return or filter on the length of a path, use the `LENGTH()` function.""",
       queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' return length(p)""",
       returns = """The length of the path `p` is returned by the query.""",
-      assertions = (p) => assertEquals(2, p.columnAs[Int]("length(p)").toList.head))
+      assertions = (p) => assertEquals(2, p.columnAs[Long]("length(p)").toList.head))
   }
 
   @Test def lengthString() {
@@ -164,7 +164,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """To return or filter on the length of a string, use the `LENGTH()` function.""",
       queryText = """match (a) where length(a.name) > 6 return length(a.name)""",
       returns = """The length of the name `Charlie` is returned by the query.""",
-      assertions = (p) => assertEquals(7, p.columnAs[Int]("length(a.name)").toList.head))
+      assertions = (p) => assertEquals(7, p.columnAs[Long]("length(a.name)").toList.head))
   }
 
   @Test def labels() {
@@ -323,7 +323,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """Returns the id of the relationship or node.""",
       queryText = """match (a) return id(a)""",
       returns = """This returns the node id for three nodes.""",
-      assertions = (p) => assert(Seq(0,1,2,3,4) === p.columnAs[Int]("id(a)").toSeq)
+      assertions = (p) => assert(Seq(0,1,2,3,4) === p.columnAs[Long]("id(a)").toSeq)
     )
   }
 

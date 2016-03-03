@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-// Generated from /Users/mats/gitRoots/3.0-main/neo4j/community/cypher/compatibility-suite/src/main/resources/FeatureResults.g4 by ANTLR 4.5.1
+// Generated from /Users/mats/gitRoots/3.0-copy/neo4j/community/cypher/compatibility-suite/src/main/resources/FeatureResults.g4 by ANTLR 4.5.1
 package cypher.feature.parser.generated;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -47,6 +47,16 @@ public interface FeatureResultsListener extends ParseTreeListener {
 	 */
 	void exitNode(FeatureResultsParser.NodeContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link FeatureResultsParser#nodeDesc}.
+	 * @param ctx the parse tree
+	 */
+	void enterNodeDesc(FeatureResultsParser.NodeDescContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FeatureResultsParser#nodeDesc}.
+	 * @param ctx the parse tree
+	 */
+	void exitNodeDesc(FeatureResultsParser.NodeDescContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link FeatureResultsParser#relationship}.
 	 * @param ctx the parse tree
 	 */
@@ -56,6 +66,16 @@ public interface FeatureResultsListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitRelationship(FeatureResultsParser.RelationshipContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FeatureResultsParser#relationshipDesc}.
+	 * @param ctx the parse tree
+	 */
+	void enterRelationshipDesc(FeatureResultsParser.RelationshipDescContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FeatureResultsParser#relationshipDesc}.
+	 * @param ctx the parse tree
+	 */
+	void exitRelationshipDesc(FeatureResultsParser.RelationshipDescContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FeatureResultsParser#path}.
 	 * @param ctx the parse tree
@@ -67,15 +87,45 @@ public interface FeatureResultsListener extends ParseTreeListener {
 	 */
 	void exitPath(FeatureResultsParser.PathContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link FeatureResultsParser#pathElement}.
+	 * Enter a parse tree produced by {@link FeatureResultsParser#pathBody}.
 	 * @param ctx the parse tree
 	 */
-	void enterPathElement(FeatureResultsParser.PathElementContext ctx);
+	void enterPathBody(FeatureResultsParser.PathBodyContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link FeatureResultsParser#pathElement}.
+	 * Exit a parse tree produced by {@link FeatureResultsParser#pathBody}.
 	 * @param ctx the parse tree
 	 */
-	void exitPathElement(FeatureResultsParser.PathElementContext ctx);
+	void exitPathBody(FeatureResultsParser.PathBodyContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FeatureResultsParser#pathLink}.
+	 * @param ctx the parse tree
+	 */
+	void enterPathLink(FeatureResultsParser.PathLinkContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FeatureResultsParser#pathLink}.
+	 * @param ctx the parse tree
+	 */
+	void exitPathLink(FeatureResultsParser.PathLinkContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FeatureResultsParser#forwardsRelationship}.
+	 * @param ctx the parse tree
+	 */
+	void enterForwardsRelationship(FeatureResultsParser.ForwardsRelationshipContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FeatureResultsParser#forwardsRelationship}.
+	 * @param ctx the parse tree
+	 */
+	void exitForwardsRelationship(FeatureResultsParser.ForwardsRelationshipContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link FeatureResultsParser#backwardsRelationship}.
+	 * @param ctx the parse tree
+	 */
+	void enterBackwardsRelationship(FeatureResultsParser.BackwardsRelationshipContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link FeatureResultsParser#backwardsRelationship}.
+	 * @param ctx the parse tree
+	 */
+	void exitBackwardsRelationship(FeatureResultsParser.BackwardsRelationshipContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link FeatureResultsParser#integer}.
 	 * @param ctx the parse tree

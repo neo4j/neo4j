@@ -31,20 +31,32 @@ value : node
       | map
       ;
 
-node : '(' (label)* WS? (propertyMap)? ')' ;
+node : nodeDesc ;
 
-relationship : '[' relationshipType (WS propertyMap)* ']' ;
+nodeDesc : '(' (label)* WS? (propertyMap)? ')' ;
 
-path : '<' (pathElement)? '>'  ;
+relationship : relationshipDesc ;
 
-pathElement : node (', ' relationship ', ' node)* ;
+relationshipDesc : '[' relationshipType (WS propertyMap)* ']' ;
 
-integer : IntegerLiteral ;
+path : '<' pathBody '>' ;
 
-floatingPoint : FloatingPointLiteral
+pathBody : nodeDesc (pathLink)* ;
+
+pathLink : (forwardsRelationship | backwardsRelationship) nodeDesc ;
+
+forwardsRelationship : '-' relationshipDesc '->' ;
+
+backwardsRelationship : '<-' relationshipDesc '-' ;
+
+integer : INTEGER_LITERAL ;
+
+floatingPoint : FLOAT_LITERAL
               | INFINITY ;
 
-bool : 'true' | 'false' ;
+bool : 'true'
+     | 'false'
+     ;
 
 nullValue : 'null' ;
 
@@ -62,46 +74,59 @@ mapContents : keyValuePair (', ' keyValuePair)* ;
 
 keyValuePair: propertyKey ':' WS? propertyValue ;
 
-propertyKey : SymbolicNameString ;
+propertyKey : SYMBOLIC_NAME ;
 
 propertyValue : value ;
 
 relationshipType : ':' relationshipTypeName ;
 
-relationshipTypeName : SymbolicNameString ;
+relationshipTypeName : SYMBOLIC_NAME ;
 
 label : ':' labelName ;
 
-labelName : SymbolicNameString ;
+labelName : SYMBOLIC_NAME ;
 
-IntegerLiteral : ('-')? DecimalLiteral ;
+INTEGER_LITERAL : ('-')? DECIMAL_LITERAL ;
 
-DecimalLiteral : '0' | NONZERODIGIT DIGIT* ;
+DECIMAL_LITERAL : '0'
+                | NONZERODIGIT DIGIT*
+                ;
 
-DIGIT          :  '0' | NONZERODIGIT ;
-NONZERODIGIT   :  [1-9] ;
+DIGIT : '0'
+      | NONZERODIGIT
+      ;
+
+NONZERODIGIT : [1-9] ;
 
 INFINITY : '-'? 'Inf' ;
 
-FloatingPointLiteral : '-'? FloatingPointRepr ;
+FLOAT_LITERAL : '-'? FLOAT_REPR ;
 
-FloatingPointRepr :  DIGIT+ '.' DIGIT+ EXPONENTPART?
-                  |  '.' DIGIT+ EXPONENTPART?
-                  |  DIGIT EXPONENTPART
-                  |  DIGIT+ EXPONENTPART? ;
+FLOAT_REPR : DIGIT+ '.' DIGIT+ EXPONENTPART?
+           | '.' DIGIT+ EXPONENTPART?
+           | DIGIT EXPONENTPART
+           | DIGIT+ EXPONENTPART?
+           ;
 
-EXPONENTPART :  ('E' | 'e') ('+' | '-')? DIGIT+;
+EXPONENTPART :  ('E' | 'e') ('+' | '-')? DIGIT+ ;
 
-SymbolicNameString : IDENTIFIER ;
+SYMBOLIC_NAME : IDENTIFIER ;
 
 WS : ' ' ;
 
 IDENTIFIER : [a-zA-Z0-9$_]+ ;
 
-string : StringLiteral ;
+// The string rule should ideally not include the apostrophes in the parsed value,
+// but a lexer rule may not match the empty string, so I haven't found a way
+// to define that quite well yet.
 
-StringLiteral : '\'' StringElement* '\'' ;
+string : STRING_LITERAL ;
 
-fragment StringElement    :  '\u0000' .. '\u0026' | '\u0028' .. '\u01FF' // escaping for ' (apostrophe/single quote)
-                          | EscapedSingleQuote ;
-fragment EscapedSingleQuote : '\\\'' ;
+STRING_LITERAL : '\'' STRING_BODY* '\'' ;
+
+STRING_BODY : '\u0000' .. '\u0026' // \u0027 is the string delimiter character (')
+            | '\u0028' .. '\u01FF'
+            | ESCAPED_APOSTROPHE
+            ;
+
+ESCAPED_APOSTROPHE : '\\\'' ;

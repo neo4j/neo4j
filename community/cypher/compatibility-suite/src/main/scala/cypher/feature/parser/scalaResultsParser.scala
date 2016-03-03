@@ -19,37 +19,31 @@
  */
 package cypher.feature.parser
 
-import java.util
-
 import cucumber.api.DataTable
+import cypher.feature.parser.matchers.{ResultMatcher, RowMatcher, ValueMatcher}
 
 import scala.collection.JavaConverters._
 
-object scalaResultsParser {
+object matcherParser extends (String => ValueMatcher) {
 
   private def parser = new ResultsParser
-  private val listener = new CypherValuesCreator
+  private val listener = new CypherMatchersCreator
 
-  def apply(input: String): AnyRef = {
-    parser.parse(input, listener)
+  def apply(input: String): ValueMatcher = {
+    parser.matcherParse(input, listener)
   }
 }
 
-object parseFullTable extends (DataTable => util.List[util.Map[String, AnyRef]]) {
+object constructResultMatcher extends (DataTable => ResultMatcher) {
 
-  override def apply(table: DataTable): util.List[util.Map[String, AnyRef]] = {
+  override def apply(table: DataTable): ResultMatcher = {
     val keys = table.topCells().asScala
     val cells = table.cells(1).asScala
 
-    val output = new util.ArrayList[util.Map[String, AnyRef]]
-    cells.foreach { case list =>
-      val map = new util.HashMap[String, AnyRef]()
-      list.asScala.zipWithIndex.foreach { case (value, index) =>
-        val parsed = scalaResultsParser(value)
-        map.put(keys(index), parsed)
-      }
-      output.add(map)
-    }
-    output
+    new ResultMatcher(cells.map { list =>
+      new RowMatcher(list.asScala.zipWithIndex.map { case (value, index) =>
+        (keys(index), matcherParser(value))
+      }.toMap.asJava)
+    }.toList.asJava)
   }
 }

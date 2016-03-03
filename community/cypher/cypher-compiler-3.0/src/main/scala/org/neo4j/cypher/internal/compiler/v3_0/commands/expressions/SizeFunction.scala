@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Path
 case class SizeFunction(inner: Expression)
   extends NullInNullOutExpression(inner)
   with CollectionSupport {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
+  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Long = value match {
     case _: Path    => throw new CypherTypeException("SIZE cannot be used on paths")
     case s: String  => s.length()
     case x          => makeTraversable(x).toSeq.length

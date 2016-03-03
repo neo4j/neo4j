@@ -29,22 +29,17 @@ import cypher.GlueSteps._
 import cypher.cucumber.DataTableConverter._
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
-import cypher.cucumber.prettifier.{makeTxSafe, prettifier}
-import cypher.feature.parser.parseFullTable
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import cypher.feature.parser.{Accepters, constructResultMatcher}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
-import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.util.Try
 
-class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
+class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Accepters {
 
   val Background = new Step("Background")
 
@@ -100,26 +95,19 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN {
   }
 
   Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
-    val expectedRows = parseFullTable(expectedTable)
-    val actualRows = makeTxSafe(new GraphDatabaseCypherService(graph), result)
+    val matcher = constructResultMatcher(expectedTable)
 
-    expectedRows should represent(actualRows)
+    matcher should acceptResult(result)
   }
 
-  Then(RESULT) { (sorted: Boolean, names: DataTable) =>
-    val expected = names.asScala[String]
-    val actual = IteratorUtil.asList(result).asScala.map(_.asScala).toList.map {
-      _.map { case (k, v) => (k, prettifier.prettify(graph, v)) }
-    }
+  Then(EXPECT_SORTED_RESULT) { (expectedTable: DataTable) =>
+    val matcher = constructResultMatcher(expectedTable)
 
-    if (sorted) {
-      actual should equal(expected)
-    } else {
-      // if it is not sorted let's sort the result before checking equality
-      actual.sortWith(sorter) should equal(expected.sortWith(sorter))
-    }
+    matcher should acceptOrderedResult(result)
+  }
 
-    result.close()
+  Then(EXPECT_EMPTY_RESULT) {
+    result.hasNext shouldBe false
   }
 
   private def castParameters(map: java.util.Map[String, Object]) = {
@@ -167,7 +155,6 @@ object GlueSteps {
 
   val USING_DB = """^using: (.*)$"""
   val RUNNING_PARAMETRIZED_QUERY = """^running parametrized: (.*)$"""
-  val RESULT = """^(sorted )?result:$"""
 
   // new constants:
 
@@ -185,5 +172,7 @@ object GlueSteps {
 
   // for Then
   val EXPECT_RESULT = "^the result should be:$"
+  val EXPECT_SORTED_RESULT = "^the result should be, in order:$"
+  val EXPECT_EMPTY_RESULT = "^the result should be empty$"
 
 }

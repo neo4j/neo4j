@@ -31,8 +31,7 @@ Feature: ReturnAcceptanceTest
   Scenario: should accept skip zero
     Given using: cineast
     When executing query: MATCH (n) WHERE 1 = 0 RETURN n SKIP 0;
-    Then result:
-      |  |
+    Then the result should be empty
 
   Scenario: should limit to two hits
     Given an empty graph
@@ -47,7 +46,7 @@ Feature: ReturnAcceptanceTest
     Given an empty graph
       And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
     When executing query: MATCH (n) RETURN n ORDER BY n.name ASC SKIP 2;
-    Then the result should be:
+    Then the result should be, in order:
       | n             |
       | ({name: 'C'}) |
       | ({name: 'D'}) |
@@ -59,7 +58,7 @@ Feature: ReturnAcceptanceTest
     When running parametrized: MATCH (n) RETURN n ORDER BY n.name ASC SKIP { skipAmount };
       | skipAmount |
       | 2          |
-    Then the result should be:
+    Then the result should be, in order:
       | n             |
       | ({name: 'C'}) |
       | ({name: 'D'}) |
@@ -69,7 +68,7 @@ Feature: ReturnAcceptanceTest
     Given an empty graph
       And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"}), ({name: "D"}), ({name: "E"});
     When executing query: MATCH (n) WHERE id(n) IN [0,1,2,3,4] RETURN n ORDER BY n.name ASC SKIP 2 LIMIT 2;
-    Then the result should be:
+    Then the result should be, in order:
       | n             |
       | ({name: 'C'}) |
       | ({name: 'D'}) |
@@ -80,7 +79,7 @@ Feature: ReturnAcceptanceTest
     When running parametrized: MATCH (n) WHERE id(n) IN [0,1,2,3,4] RETURN n ORDER BY n.name ASC SKIP { s } LIMIT { l };
       | s | l |
       | 2 | 2 |
-    Then the result should be:
+    Then the result should be, in order:
       | n             |
       | ({name: 'C'}) |
       | ({name: 'D'}) |
@@ -89,11 +88,11 @@ Feature: ReturnAcceptanceTest
     Given an empty graph
       And having executed: CREATE ({division: "A", age: 22}), ({division: "B", age: 33}), ({division: "B", age: 44}), ({division: "C", age: 55});
     When executing query: MATCH (n) WHERE id(n) IN [0,1,2,3] RETURN n.division, max(n.age) ORDER BY max(n.age);
-    Then sorted result:
+    Then the result should be, in order:
       | n.division | max(n.age) |
-      | A          | 22         |
-      | B          | 44         |
-      | C          | 55         |
+      | 'A'        | 22         |
+      | 'B'        | 44         |
+      | 'C'        | 55         |
 
   Scenario: should return collection size
     Given using: cineast
@@ -106,7 +105,7 @@ Feature: ReturnAcceptanceTest
     Given an empty graph
       And having executed: CREATE ({name: "A"}), ({name: "B"}), ({name: "C"});
     When executing query: MATCH (a) WHERE id(a) IN [0,1,2,0] RETURN DISTINCT a ORDER BY a.name;
-    Then the result should be:
+    Then the result should be, in order:
       | a             |
       | ({name: 'A'}) |
       | ({name: 'B'}) |
@@ -145,8 +144,7 @@ Feature: ReturnAcceptanceTest
   Scenario: should allow ordering on aggregate function
     Given using: cineast
     When executing query: MATCH (n)-[:KNOWS]-(c) WHERE id(n) = 0 RETURN n, count(c) AS cnt ORDER BY cnt;
-    Then result:
-      |  |
+    Then the result should be empty
 
   Scenario: arithmetic precedence test
     Given any graph
