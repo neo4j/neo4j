@@ -83,8 +83,9 @@ public interface ServerSettings
             INTEGER, "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ), min( 1 ) );
 
     @Description("If execution time limiting is enabled in the database, this configures the maximum request execution time.")
+    @Internal
     Setting<Long> webserver_limit_execution_time =
-            setting( "org.neo4j.server.webserver.limit.executiontime", DURATION, NO_DEFAULT );
+            setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
 
     @Description("Console engines for the legacy webadmin administration")
     Setting<List<String>> management_console_engines = setting(

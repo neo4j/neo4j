@@ -370,7 +370,7 @@ public abstract class GraphDatabaseSettings
             illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
 
     @Internal
-    public static final Setting<Boolean> execution_guard_enabled = setting("execution_guard_enabled", BOOLEAN, FALSE );
+    public static final Setting<Boolean> execution_guard_enabled = setting("unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
 
     @Description("Amount of time in ms the GC monitor thread will wait before taking another measurement.")
     @Internal
