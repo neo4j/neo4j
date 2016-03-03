@@ -60,12 +60,14 @@ public interface ServerSettings
     String SERVER_CONFIG_FILE = "config/neo4j.conf";
 
     @Description("Maximum request header size")
+    @Internal
     Setting<Integer> maximum_request_header_size =
-            setting( "org.neo4j.server.webserver.max.request.header", INTEGER, "20480" );
+            setting( "unsupported.dbms.max_http_request_header_size", INTEGER, "20480" );
 
     @Description("Maximum response header size")
+    @Internal
     Setting<Integer> maximum_response_header_size =
-            setting( "org.neo4j.server.webserver.max.response.header", INTEGER, "20480" );
+            setting( "unsupported.dbms.max_http_response_header_size", INTEGER, "20480" );
 
     @Description("Comma-seperated list of custom security rules for Neo4j to use.")
     Setting<List<String>> security_rules = setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );

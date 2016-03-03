@@ -44,7 +44,7 @@ Obviously the store files will grow as you add more nodes, relationships and pro
   This will automatically be rounded down to the nearest whole page.
   This value cannot be zero.
   For extremely small and memory constrained deployments, it is recommended to still reserve at least a couple of megabytes for the page cache.
-| dump_configuration | `true` or `false` | If set to `true` the current configuration settings will be written to the default system output, mostly the console or the logfiles.
+| unsupported.dbms.report_configuration | `true` or `false` | If set to `true` the current configuration settings will be written to the default system output, mostly the console or the logfiles.
 |========================================================
 
 When configuring the amount of memory allowed for the page cache and the JVM heap, make sure to also leave room for the operating systems page cache, and other programs and services the system might want to run.

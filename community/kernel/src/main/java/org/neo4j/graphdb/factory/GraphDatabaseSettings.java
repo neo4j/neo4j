@@ -55,7 +55,8 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> read_only = setting( "dbms.read_only", BOOLEAN, FALSE );
 
     @Description("Print out the effective Neo4j configuration after startup.")
-    public static final Setting<Boolean> dump_configuration = setting("dump_configuration", BOOLEAN, FALSE );
+    @Internal
+    public static final Setting<Boolean> dump_configuration = setting("unsupported.dbms.report_configuration", BOOLEAN, FALSE );
 
     @Description("Whether to allow a store upgrade in case the current version of the database starts against an " +
             "older store version. " +
