@@ -241,6 +241,30 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result should equal(Map("name" -> "Popeye", "level" -> 9001))
   }
 
+  test("properties should fail when called with an INTEGER argument") {
+    a[SyntaxException] shouldBe thrownBy {
+      executeScalarWithAllPlanners[Map[String, Any]](
+        "RETURN properties(1)"
+      )
+    }
+  }
+
+  test("properties should fail when called with a STRING argument") {
+    a[SyntaxException] shouldBe thrownBy {
+      executeScalarWithAllPlanners[Map[String, Any]](
+        "RETURN properties('Hallo')"
+      )
+    }
+  }
+
+  test("properties should fail when called with a LIST OF BOOLEAN argument") {
+    a[SyntaxException] shouldBe thrownBy {
+      executeScalarWithAllPlanners[Map[String, Any]](
+        "RETURN properties([true, false])"
+      )
+    }
+  }
+
   test("properties(null) should be null") {
 
     // When

@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, SimpleTypedFunctio
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case object Properties extends Function with SimpleTypedFunction {
-  def name = "properties"
+  override def name = "properties"
 
-  val signatures = Vector(
+  override val signatures = Vector(
     Signature(argumentTypes = Vector(CTNode), outputType = CTMap),
     Signature(argumentTypes = Vector(CTRelationship), outputType = CTMap),
     Signature(argumentTypes = Vector(CTMap), outputType = CTMap)

@@ -27,18 +27,18 @@ import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) {
-  def symbolTableDependencies: Set[String] = a.symbolTableDependencies
+  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =
+    value match {
+      case IsMap(mapValue) => mapValue(state.query).toMap
+      case v =>
+        throw new CypherTypeException(s"Expected a Node, Relationship, or Map, got: $v")
+    }
 
-  protected def calculateType(symbols: SymbolTable): CypherType = CTMap
+  override def symbolTableDependencies = a.symbolTableDependencies
 
-  def arguments: Seq[Expression] = Seq(a)
+  override protected def calculateType(symbols: SymbolTable) = CTMap
 
-  def rewrite(f: (Expression) => Expression): Expression = f(PropertiesFunction(a.rewrite(f)))
+  override def arguments = Seq(a)
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = a(m) match {
-    case IsMap(mapValue) =>
-      mapValue(state.query).toMap
-    case v =>
-      throw new CypherTypeException(s"Expected a Node, Relationship, or Map, got: $v")
-  }
+  override def rewrite(f: (Expression) => Expression) = f(PropertiesFunction(a.rewrite(f)))
 }
