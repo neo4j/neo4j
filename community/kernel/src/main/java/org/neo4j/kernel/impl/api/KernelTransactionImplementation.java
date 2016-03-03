@@ -72,13 +72,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      *   - the #release() method releases resources acquired in #initialize() or during the transaction's life time
      */
 
-    private enum TransactionType
+    private enum TransactionWriteState
     {
-        READ,
+        NONE,
         DATA
                 {
                     @Override
-                    TransactionType upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
+                    TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
                     {
                         throw new InvalidTransactionTypeKernelException(
                                 "Cannot perform schema updates in a transaction that has performed data updates." );
@@ -87,19 +87,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         SCHEMA
                 {
                     @Override
-                    TransactionType upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
+                    TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
                     {
                         throw new InvalidTransactionTypeKernelException(
                                 "Cannot perform data updates in a transaction that has performed schema updates." );
                     }
                 };
 
-        TransactionType upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
+        TransactionWriteState upgradeToDataWrites() throws InvalidTransactionTypeKernelException
         {
             return DATA;
         }
 
-        TransactionType upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
+        TransactionWriteState upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
         {
             return SCHEMA;
         }
@@ -126,7 +126,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
-    private TransactionType transactionType; // Tracks current state of transaction, which will upgrade to WRITE or SCHEMA mode when necessary
+    private TransactionWriteState writeState; // Tracks current state of transaction, which will upgrade to WRITE or SCHEMA mode when necessary
     private TransactionHooks.TransactionHooksState hooksState;
     private final KernelStatement currentStatement;
     private final StorageStatement storageStatement;
@@ -181,7 +181,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.type = type;
         this.locks = locks;
         this.closing = closed = failure = success = terminated = beforeHookInvoked = false;
-        this.transactionType = TransactionType.READ;
+        this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.transactionEvent = tracer.beginTransaction();
@@ -243,20 +243,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement;
     }
 
-    public void upgradeToDataTransaction() throws InvalidTransactionTypeKernelException
+    public void upgradeToDataWrites() throws InvalidTransactionTypeKernelException
     {
-        transactionType = transactionType.upgradeToDataTransaction();
+        writeState = writeState.upgradeToDataWrites();
     }
 
-    public void upgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
-    {
-        doUpgradeToSchemaTransaction();
-        transactionType = transactionType.upgradeToSchemaTransaction();
-    }
-
-    public void doUpgradeToSchemaTransaction() throws InvalidTransactionTypeKernelException
+    public void upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
     {
         schemaWriteGuard.assertSchemaWritesAllowed();
+        writeState = writeState.upgradeToSchemaWrites();
     }
 
     private void dropCreatedConstraintIndexes() throws TransactionFailureException
@@ -385,7 +380,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 closing = false;
                 transactionEvent.setSuccess( success );
                 transactionEvent.setFailure( failure );
-                transactionEvent.setTransactionType( transactionType.name() );
+                transactionEvent.setTransactionType( writeState.name() );
                 transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
                 transactionEvent.close();
             }
