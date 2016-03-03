@@ -143,8 +143,8 @@ public class QueryLoggerIT
         executeQueryAndShutdown( database );
 
         inMemoryLog.assertContainsMessageContaining( GraphDatabaseSettings.log_queries.name() +
-                                                     " is enabled but no " +
-                                                     GraphDatabaseSettings.log_queries_filename.name() +
+                                                     " is enabled but " +
+                                                     GraphDatabaseSettings.logs_directory.name() +
                                                      " has not been provided in configuration, hence query logging is" +
                                                      " suppressed" );
     }
