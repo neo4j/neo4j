@@ -200,10 +200,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
         else if ( value instanceof Path )
         {
-            for ( PropertyContainer element : ((Path) value) )
-            {
-                writeMeta( out, element );
-            }
+            writeMetaPath( out, (Path) value );
         }
         else if ( value instanceof Iterable )
         {
@@ -219,6 +216,26 @@ public class Neo4jJsonCodec extends ObjectMapper
             {
                 writeMeta( out, map.get( key ) );
             }
+        }
+        else
+        {
+            out.writeNull();
+        }
+    }
+
+    private void writeMetaPath( JsonGenerator out, Path value ) throws IOException
+    {
+        out.writeStartArray();
+        try
+        {
+            for ( PropertyContainer element : value )
+            {
+                writeMeta( out, element );
+            }
+        }
+        finally
+        {
+            out.writeEndArray();
         }
     }
 

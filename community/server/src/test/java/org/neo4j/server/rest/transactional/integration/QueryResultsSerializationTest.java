@@ -46,6 +46,7 @@ import static org.neo4j.server.rest.transactional.integration.TransactionMatcher
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.restContainsDeletedEntities;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.restContainsNoDeletedEntities;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.rowContainsDeletedEntities;
+import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.rowContainsDeletedEntitiesInPath;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.rowContainsNoDeletedEntities;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -496,7 +497,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 queryAsJsonRow( "MATCH p=(s)-[r:R]->(e) DELETE p RETURN p" ) );
 
         assertThat( commit, containsNoErrors() );
-        assertThat( commit, rowContainsDeletedEntities( 2, 1 ) );
+        assertThat( commit, rowContainsDeletedEntitiesInPath( 2, 1 ) );
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( nodesInDatabase(), equalTo( 0L ) );
     }
@@ -512,7 +513,7 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
                 queryAsJsonRow( "MATCH p=(s)-[r:R]->(e) DELETE s,r RETURN p" ) );
 
         assertThat( commit, containsNoErrors() );
-        assertThat( commit, rowContainsDeletedEntities( 1, 1 ) );
+        assertThat( commit, rowContainsDeletedEntitiesInPath( 1, 1 ) );
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( nodesInDatabase(), equalTo( 1L ) );
     }
