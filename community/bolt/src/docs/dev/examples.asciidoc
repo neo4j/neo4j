@@ -3,64 +3,6 @@
 
 This section contains concrete examples showing how to perform tasks using the full Bolt protocol stack.
 
-=== Authentication
-
-The first time you connect to neo4j with the default credentials you will be asked to update the password.
-
-.Run query
-[source,bolt_auth]
-----
-# Handshake
-Client: <connect>
-Client: 60 60 B0 17
-Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
-Server: 00 00 00 01
-
-Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credentials": "neo4j"}
-
-    00 3F B1 01  8C 4D 79 43  6C 69 65 6E  74 2F 31 2E
-    30 A3 86 73  63 68 65 6D  65 85 62 61  73 69 63 89
-    70 72 69 6E  63 69 70 61  6C 85 6E 65  6F 34 6A 8B
-    63 72 65 64  65 6E 74 69  61 6C 73 85  6E 65 6F 34
-    6A 00 00
-
-Server: FAILURE { "code": "Neo.ClientError.Security.CredentialsExpired",
-                  "message": "The credentials have expired and need to be updated. (ID:6CE05C78B721D6C5616EF00C808992DB327DF9E9FAEEA45288A7E0916B604DC9)"}
-
-    00 B9 B1 7F  A2 84 63 6F  64 65 D0 2B  4E 65 6F 2E
-    43 6C 69 65  6E 74 45 72  72 6F 72 2E  53 65 63 75
-    72 69 74 79  2E 43 72 65  64 65 6E 74  69 61 6C 73
-    45 78 70 69  72 65 64 87  6D 65 73 73  61 67 65 D0
-    7A 54 68 65  20 63 72 65  64 65 6E 74  69 61 6C 73
-    20 68 61 76  65 20 65 78  70 69 72 65  64 20 61 6E
-    64 20 6E 65  65 64 20 74  6F 20 62 65  20 75 70 64
-    61 74 65 64  2E 20 28 49  44 3A 36 43  45 30 35 43
-    37 38 42 37  32 31 44 36  43 35 36 31  36 45 46 30
-    30 43 38 30  38 39 39 32  44 42 33 32  37 44 46 39
-    45 39 46 41  45 45 41 34  35 32 38 38  41 37 45 30
-    39 31 36 42  36 30 34 44  43 39 29 00  00
-
-Server: <disconnect>
-Client: <connect>
-Client: 60 60 B0 17
-Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
-Server: 00 00 00 01
-
-Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credentials": "neo4j", "new_credentials": "secret"}
-
-    00 40 B1 01  8C 4D 79 43  6C 69 65 6E  74 2F 31 2E
-    30 A4 86 73  63 68 65 6D  65 85 62 61  73 69 63 89
-    70 72 69 6E  63 69 70 61  6C 85 6E 65  6F 34 6A 8B
-    63 72 65 64  65 6E 74 69  61 6C 73 85  6E 65 6F 34
-    6A 8F 00 16  6E 65 77 5F  63 72 65 64  65 6E 74 69
-    61 6C 73 86  73 65 63 72  65 74 00 00
-
-Server: SUCCESS { }
-
-   00 03 b1 70  a0 00 00
-
-----
-
 === Running a Cypher query
 
 This illustrates running a simple Cypher query without parameters, and retrieving the results.
