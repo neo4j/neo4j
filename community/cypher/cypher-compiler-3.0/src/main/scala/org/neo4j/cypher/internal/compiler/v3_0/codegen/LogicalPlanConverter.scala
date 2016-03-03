@@ -263,7 +263,7 @@ object LogicalPlanConverter {
       val fromNodeVar = context.getVariable(expand.from.name)
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(expand)
-      val expandGenerator = ExpandAllLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar)
+      val expandGenerator = ExpandAllLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar, relVar)
 
       (methodHandle, WhileLoop(relVar, expandGenerator, action))
     }
@@ -278,7 +278,7 @@ object LogicalPlanConverter {
       val toNodeVar = context.getVariable(expand.to.name)
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(expand)
-      val expandGenerator = ExpandIntoLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar)
+      val expandGenerator = ExpandIntoLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar, relVar)
 
       (methodHandle, WhileLoop(relVar, expandGenerator, action))
     }
@@ -328,7 +328,7 @@ object LogicalPlanConverter {
           case (acc, predicate) => If(predicate, acc)
         }
 
-      val expand = ExpandAllLoopDataGenerator(opName, fromNodeVar, optionalExpand.dir, typeVar2TypeName, toNodeVar)
+      val expand = ExpandAllLoopDataGenerator(opName, fromNodeVar, optionalExpand.dir, typeVar2TypeName, toNodeVar, relVar)
 
       val loop = WhileLoop(relVar, expand, instructionWithPredicates)
 
@@ -363,7 +363,7 @@ object LogicalPlanConverter {
           case (acc, predicate) => If(predicate, acc)
         }
 
-      val expand = ExpandIntoLoopDataGenerator(opName, fromNodeVar, optionalExpand.dir, typeVar2TypeName, toNodeVar)
+      val expand = ExpandIntoLoopDataGenerator(opName, fromNodeVar, optionalExpand.dir, typeVar2TypeName, toNodeVar, relVar)
 
       val loop = WhileLoop(relVar, expand, instructionWithPredicates)
 

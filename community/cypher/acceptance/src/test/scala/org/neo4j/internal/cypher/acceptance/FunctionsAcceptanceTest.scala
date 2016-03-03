@@ -524,4 +524,26 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     // THEN
     result.toList should equal(List(Map("type(r1)" -> "T1", "type(r2)" -> "T2")))
   }
+
+  test("type should handle optional when null")  {
+    // GIVEN
+    createNode()
+
+    // WHEN
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) OPTIONAL MATCH (a)-[r:NOT_THERE]->() RETURN type(r)")
+
+    // THEN
+    result.toList should equal(List(Map("type(r)" -> null)))
+  }
+
+  test("type should handle optional when both null and match")  {
+    // GIVEN
+    relate(createNode(), createNode(), "T")
+
+    // WHEN
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) OPTIONAL MATCH (a)-[r:T]->() RETURN type(r)")
+
+    // THEN
+    result.toList should equal(List(Map("type(r)" -> "T"), Map("type(r)" -> null)))
+  }
 }

@@ -30,5 +30,5 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
 
   override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     if (!nullable && lhs.cypherType == symbols.CTBoolean && rhs.cypherType == symbols.CTBoolean) structure.or
-    else structure.ternaryOr
+    else structure.threeValuedOr
 }

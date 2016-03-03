@@ -43,11 +43,13 @@ case class LongsToListTable(structure: Map[String, CypherType], localMap: Map[St
 
 trait MethodStructure[E] {
 
+
   // misc
   def projectVariable(variableName: String, value: E)
   def declareFlag(name: String, initialValue: Boolean)
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
+  def declare(varName: String, cypherType: CypherType): Unit
   def declareProperty(name: String): Unit
   def declareCounter(name: String, initialValue: E): Unit
   def putField(structure: Map[String, CypherType], value: E, fieldType: CypherType, fieldName: String, localVar: String): Unit
@@ -80,12 +82,12 @@ trait MethodStructure[E] {
   def mod(lhs: E, rhs: E): E
 
   // predicates
-  def ternaryNot(value: E): E
+  def threeValuedNot(value: E): E
   def not(value: E): E
-  def ternaryEquals(lhs: E, rhs: E): E
+  def threeValuedEquals(lhs: E, rhs: E): E
   def eq(lhs: E, rhs: E): E
   def or(lhs: E, rhs: E): E
-  def ternaryOr(lhs: E, rhs: E): E
+  def threeValuedOr(lhs: E, rhs: E): E
 
   // null handling
   def markAsNull(varName: String, cypherType: CypherType): Unit
@@ -121,14 +123,16 @@ trait MethodStructure[E] {
   def lookupPropertyKey(propName: String, propVar: String)
   def indexSeek(iterVar: String, descriptorVar: String, value: E): Unit
   def indexUniqueSeek(name: String, descriptorVar: String, value: E)
-  def relType(relIdVar: String): E
+  def relType(relIdVar: String, typeVar: String): Unit
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
+  def createRelExtractor(extractorName: String): Unit
 
 
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit
   def forEach(varName: String, cypherType: CypherType, iterable: E)(block: MethodStructure[E] => Unit): Unit
   def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
+  def ternaryOperator(test:E, onSuccess:E, onError: E): E
   def returnSuccessfully(): Unit
 
   // results

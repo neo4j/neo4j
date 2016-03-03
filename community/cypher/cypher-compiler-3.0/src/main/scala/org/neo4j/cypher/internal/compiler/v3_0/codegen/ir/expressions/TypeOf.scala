@@ -27,9 +27,20 @@ case class TypeOf(relId: Variable)
 
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    if (nullable) structure.nullable(relId.name, relId.cypherType, structure.relType(relId.name))
-    else structure.relType(relId.name)
+  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
+    val typeName = context.namer.newVarName()
+    structure.declare(typeName, CTString)
+    if (nullable) {
+      structure.ifStatement(structure.notNull(relId.name, relId.cypherType)) { body =>
+        body.relType(relId.name, typeName)
+      }
+      structure.load(typeName)
+    }
+    else {
+      structure.relType(relId.name, typeName)
+      structure.load(typeName)
+    }
+  }
 
   override def nullable(implicit context: CodeGenContext) = relId.nullable
 

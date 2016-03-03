@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v3_0.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_0.codegen.{CodeGenContext, MethodStructure, Variable}
 
 /**
  * Generates code that runs and afterwards checks if the provided variable has been set,
@@ -35,7 +35,7 @@ case class NullingInstruction(loop: Instruction, yieldedFlagVar: String, alterna
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.declareFlag(yieldedFlagVar, initialValue = false)
     loop.body(generator)
-    generator.ifStatement(generator.ternaryNot(generator.load(yieldedFlagVar))){ ifBody =>
+    generator.ifStatement(generator.threeValuedNot(generator.load(yieldedFlagVar))){ ifBody =>
       //mark variables as null
       nullableVars.foreach(v => ifBody.markAsNull(v.name, v.cypherType))
       alternativeAction.body(ifBody)
