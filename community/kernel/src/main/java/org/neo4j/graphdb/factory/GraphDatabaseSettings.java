@@ -38,27 +38,7 @@ import org.neo4j.logging.Level;
 
 import static java.lang.String.valueOf;
 
-import static org.neo4j.kernel.configuration.Settings.ANY;
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.BYTES;
-import static org.neo4j.kernel.configuration.Settings.DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.DOUBLE;
-import static org.neo4j.kernel.configuration.Settings.DURATION;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.LONG;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
-import static org.neo4j.kernel.configuration.Settings.list;
-import static org.neo4j.kernel.configuration.Settings.matches;
-import static org.neo4j.kernel.configuration.Settings.max;
-import static org.neo4j.kernel.configuration.Settings.min;
-import static org.neo4j.kernel.configuration.Settings.options;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.Settings.*;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -412,8 +392,14 @@ public abstract class GraphDatabaseSettings
             + "_NOTE: This feature is only available in the Neo4j Enterprise Edition_." )
     public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
 
-    @Description( "Log executed queries that take longer than the configured threshold" )
-    public static final Setting<File> log_queries_filename = setting("dbms.querylog.filename", PATH, NO_DEFAULT );
+    @Description("Path of the logs directory")
+    public static final Setting<File> logs_directory = setting("dbms.directories.logs", PATH, NO_DEFAULT);
+
+    @Internal
+    public static final Setting<File> log_queries_filename = derivedSetting("dbms.querylog.filename",
+            logs_directory,
+            ( logs ) -> new File( logs, "query.log" ),
+            PATH );
 
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
                  "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")

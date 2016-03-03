@@ -73,6 +73,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         final Config config = dependencies.config();
         boolean queryLogEnabled = config.get( GraphDatabaseSettings.log_queries );
         final File queryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
+        final File logsDirectory = config.get( GraphDatabaseSettings.logs_directory );
         final FileSystemAbstraction fileSystem = dependencies.fileSystem();
         final JobScheduler jobScheduler = dependencies.jobScheduler();
         final Monitors monitoring = dependencies.monitoring();
@@ -81,11 +82,11 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         {
             return createEmptyAdapter();
         }
-        if ( queryLogFile == null )
+        if ( logsDirectory == null )
         {
             dependencies.logger().getInternalLog( getClass() )
-                    .warn( GraphDatabaseSettings.log_queries.name() + " is enabled but no " +
-                           GraphDatabaseSettings.log_queries_filename.name() +
+                    .warn( GraphDatabaseSettings.log_queries.name() + " is enabled but " +
+                           GraphDatabaseSettings.logs_directory.name() +
                            " has not been provided in configuration, hence query logging is suppressed" );
 
             return createEmptyAdapter();

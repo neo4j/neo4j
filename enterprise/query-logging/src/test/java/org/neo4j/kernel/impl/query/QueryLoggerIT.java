@@ -73,9 +73,10 @@ public class QueryLoggerIT
     @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
+        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
+        final File logFilename = new File( logsDirectory, "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .newGraphDatabase();
 
         executeQueryAndShutdown( database );
@@ -89,9 +90,10 @@ public class QueryLoggerIT
     @Test
     public void shouldLogParametersWhenNestedMap() throws Exception
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
+        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
+        final File logFilename = new File( logsDirectory, "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .newGraphDatabase();
 
         Map<String, Object> props = new HashMap<>();
@@ -116,9 +118,10 @@ public class QueryLoggerIT
     @Test
     public void shouldLogParametersWhenList() throws Exception
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
+        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
+        final File logFilename = new File( logsDirectory, "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .newGraphDatabase();
 
         Map<String, Object> params = new HashMap<>();
@@ -143,8 +146,8 @@ public class QueryLoggerIT
         executeQueryAndShutdown( database );
 
         inMemoryLog.assertContainsMessageContaining( GraphDatabaseSettings.log_queries.name() +
-                                                     " is enabled but no " +
-                                                     GraphDatabaseSettings.log_queries_filename.name() +
+                                                     " is enabled but " +
+                                                     GraphDatabaseSettings.logs_directory.name() +
                                                      " has not been provided in configuration, hence query logging is" +
                                                      " suppressed" );
     }
@@ -152,7 +155,7 @@ public class QueryLoggerIT
     @Test
     public void disabledQueryLogging() throws IOException
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
+        final File logFilename = new File( testDirectory.graphDbDir(), "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
                 .newGraphDatabase();
@@ -166,10 +169,11 @@ public class QueryLoggerIT
     @Test
     public void queryLogRotation() throws Exception
     {
-        final File logFilename = new File( testDirectory.graphDbDir(), "queries.log" );
-        final File shiftedLogFilename = new File( testDirectory.graphDbDir(), "queries.log.1" );
+        final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
+        final File logFilename = new File( logsDirectory, "query.log" );
+        final File shiftedLogFilename = new File( logsDirectory, "query.log.1" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
+                .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
                 .setConfig( GraphDatabaseSettings.log_queries_rotation_threshold, "1" )
                 .newGraphDatabase();
 

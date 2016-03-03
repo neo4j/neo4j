@@ -190,6 +190,38 @@ public class Settings
         };
     }
 
+    public static <OUT, IN1> Setting<OUT> derivedSetting( String name,
+                                                          Setting<IN1> in1,
+                                                          Function<IN1, OUT> derivation,
+                                                          Function<String, OUT> overrideConverter)
+    {
+        return new Setting<OUT>()
+        {
+            @Override
+            public String name()
+            {
+                return name;
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return NO_DEFAULT;
+            }
+
+            @Override
+            public OUT apply( Function<String, String> config )
+            {
+                String override = config.apply( name );
+                if ( override != null )
+                {
+                    return overrideConverter.apply( override );
+                }
+                return derivation.apply( in1.apply( config ) );
+            }
+        };
+    }
+
     private static <T> Function<Function<String, String>, String> inheritedValue( final Function<Function<String,
             String>, String> lookup, final Setting<T> inheritedSetting )
     {
