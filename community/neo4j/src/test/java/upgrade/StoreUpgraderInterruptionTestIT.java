@@ -81,13 +81,13 @@ public class StoreUpgraderInterruptionTestIT
             InMemoryLabelScanStore(), 2 );
 
     @Parameters( name = "{0}" )
-    public static Collection<Object[]> versions()
+    public static Collection<String> versions()
     {
         return Arrays.asList(
-                new Object[]{LowLimitV2_0.STORE_VERSION},
-                new Object[]{LowLimitV2_1.STORE_VERSION},
-                new Object[]{LowLimitV2_2.STORE_VERSION},
-                new Object[]{LowLimitV2_3.STORE_VERSION}
+                LowLimitV2_0.STORE_VERSION,
+                LowLimitV2_1.STORE_VERSION,
+                LowLimitV2_2.STORE_VERSION,
+                LowLimitV2_3.STORE_VERSION
         );
     }
 

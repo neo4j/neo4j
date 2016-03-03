@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.StoreType;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 import static org.neo4j.helpers.ArrayUtil.contains;
-import static org.neo4j.helpers.ArrayUtil.containsAll;
-import static org.neo4j.helpers.ArrayUtil.filter;
 
 /**
  * Base class for simpler implementation of {@link RecordFormats}.
@@ -94,12 +95,6 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public boolean hasStore( StoreType store )
-    {
-        return true;
-    }
-
-    @Override
     public Capability[] capabilities()
     {
         return capabilities;
@@ -112,13 +107,13 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public boolean hasSameCapabilities( RecordFormats other, int types )
+    public boolean hasSameCapabilities( RecordFormats other, CapabilityType types )
     {
-        Capability[] myFormatCapabilities =
-                filter( this.capabilities(), capability -> capability.isType( types ) );
-        Capability[] otherFormatCapabilities =
-                filter( other.capabilities(), capability -> capability.isType( types ) );
-        return containsAll( myFormatCapabilities, otherFormatCapabilities ) &&
-                containsAll( otherFormatCapabilities, myFormatCapabilities );
+        Set<Capability> myFormatCapabilities = Stream.of( capabilities() )
+                .filter( capability -> capability.isType( types ) ).collect( toSet() );
+        Set<Capability> otherFormatCapabilities = Stream.of( other.capabilities() )
+                .filter( capability -> capability.isType( types ) ).collect( toSet() );
+
+        return myFormatCapabilities.equals( otherFormatCapabilities );
     }
 }

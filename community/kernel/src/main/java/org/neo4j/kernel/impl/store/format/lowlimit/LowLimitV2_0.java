@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -90,11 +89,5 @@ public class LowLimitV2_0 extends BaseRecordFormats
     public RecordFormat<DynamicRecord> dynamic()
     {
         return new DynamicRecordFormat();
-    }
-
-    @Override
-    public boolean hasStore( StoreType store )
-    {
-        return store != StoreType.RELATIONSHIP_GROUP;
     }
 }

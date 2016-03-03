@@ -59,7 +59,7 @@ public class DirectRecordStoreMigrator
     }
 
     public void migrate( File fromStoreDir, RecordFormats fromFormat, File toStoreDir, RecordFormats toFormat,
-            StoreType[] types, StoreType[] additionalTypesToOpen )
+            StoreType[] types, StoreType... additionalTypesToOpen )
     {
         StoreType[] storesToOpen = ArrayUtil.concat( types, additionalTypesToOpen );
         try (
@@ -72,10 +72,8 @@ public class DirectRecordStoreMigrator
         {
             for ( StoreType type : types )
             {
-                // This condition will exclude counts store and "neostore" since we don't want to copy its metadata
-                // into the new migrated store.
-                if ( type.isRecordStore() &&
-                        toFormat.hasStore( type ) && fromFormat.hasStore( type ) )
+                // This condition will exclude counts store first and foremost.
+                if ( type.isRecordStore() )
                 {
                     migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ) );
                 }

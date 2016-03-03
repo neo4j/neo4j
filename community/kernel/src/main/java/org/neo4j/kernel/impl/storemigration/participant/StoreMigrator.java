@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
 
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -51,7 +50,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
@@ -95,8 +94,11 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
+
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.Capability.VERSION_TRAILERS;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
@@ -157,7 +159,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         RecordFormats newFormat = InternalRecordFormatSelector.fromVersion( versionToMigrateTo );
         if ( !oldFormat.equals( newFormat ) )
         {
-            if ( newFormat.hasSameCapabilities( oldFormat, Capability.TYPE_FORMAT ) )
+            if ( newFormat.hasSameCapabilities( oldFormat, CapabilityType.FORMAT ) )
             {
                 // Do direct migration
                 migrateWithDirectMigration( storeDir, migrationDir, oldFormat, newFormat );
@@ -183,12 +185,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void migrateWithDirectMigration( File storeDir, File migrationDir,
-            RecordFormats oldFormat, RecordFormats newFormat ) throws IOException
+            RecordFormats oldFormat, RecordFormats newFormat )
     {
         DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config );
-        //Not interested in migrating MetaData store.
-        StoreType[] stores = ArrayUtil.filter( StoreType.values(), type -> type != StoreType.META_DATA );
-        migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, stores, new StoreType[0] );
+        StoreType[] stores = stream( StoreType.values() )
+                // Not interested in migrating MetaData store.
+                .filter( type -> type != META_DATA )
+                .toArray( StoreType[]::new );
+        migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, stores );
     }
 
     private void writeLastTxChecksum( File migrationDir, long lastTxChecksum ) throws IOException

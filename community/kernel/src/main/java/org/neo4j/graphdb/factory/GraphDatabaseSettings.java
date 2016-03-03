@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.logging.Level;
 
+import static java.lang.String.valueOf;
+
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -367,7 +369,7 @@ public abstract class GraphDatabaseSettings
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> string_block_size = setting("string_block_size", INTEGER,
-            dynamicRecordDataSizeForAligningWith( 128 ), min(1) );
+            valueOf( dynamicRecordDataSizeForAligningWith( 128 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
 
     @Description("Specifies the block size for storing arrays. This parameter is only honored when the store is " +
             "created, otherwise it is ignored. " +
@@ -375,7 +377,7 @@ public abstract class GraphDatabaseSettings
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> array_block_size = setting("array_block_size", INTEGER,
-            dynamicRecordDataSizeForAligningWith( 128 ), min(1) );
+            valueOf( dynamicRecordDataSizeForAligningWith( 128 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
 
     @Description("Specifies the block size for storing labels exceeding in-lined space in node record. " +
     		"This parameter is only honored when the store is created, otherwise it is ignored. " +
@@ -383,7 +385,7 @@ public abstract class GraphDatabaseSettings
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> label_block_size = setting("label_block_size", INTEGER,
-            dynamicRecordDataSizeForAligningWith( 64 ),min(1) );
+            valueOf( dynamicRecordDataSizeForAligningWith( 64 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
 
     @Description("An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
@@ -447,8 +449,8 @@ public abstract class GraphDatabaseSettings
      * to get to the data size, which is the value that the configuration will end up having.
      * @return the dynamic record data size based on the desired record size and with the header size in mind.
      */
-    private static String dynamicRecordDataSizeForAligningWith( int recordSize )
+    private static int dynamicRecordDataSizeForAligningWith( int recordSize )
     {
-        return String.valueOf( recordSize - InternalRecordFormatSelector.select().dynamic().getRecordHeaderSize() );
+        return recordSize - InternalRecordFormatSelector.select().dynamic().getRecordHeaderSize();
     }
 }

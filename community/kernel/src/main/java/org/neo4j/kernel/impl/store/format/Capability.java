@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import static org.neo4j.helpers.ArrayUtil.contains;
+
 /**
  * A collection of high level capabilities a store can have, should not be more granular than necessary
  * for differentiating different version from one another.
@@ -28,42 +30,37 @@ public enum Capability
     /**
      * Store has schema support
      */
-    SCHEMA( Capability.TYPE_STORE ),
+    SCHEMA( CapabilityType.STORE ),
 
     /**
      * Store has dense node support
      */
-    DENSE_NODES( Capability.TYPE_FORMAT | Capability.TYPE_STORE ),
+    DENSE_NODES( CapabilityType.FORMAT, CapabilityType.STORE ),
 
     /**
      * Store has version trailers in the end of cleanly shut down store
      */
-    VERSION_TRAILERS( Capability.TYPE_STORE ),
+    VERSION_TRAILERS( CapabilityType.STORE ),
 
     /**
      * Lucene version 3.x
      */
-    LUCENE_3( Capability.TYPE_INDEX ),
+    LUCENE_3( CapabilityType.INDEX ),
 
     /**
      * Lucene version 5.x
      */
-    LUCENE_5( Capability.TYPE_INDEX );
+    LUCENE_5( CapabilityType.INDEX );
 
-    public static final int TYPE_FORMAT = 0x1;
-    public static final int TYPE_STORE = 0x2;
-    public static final int TYPE_INDEX = 0x4;
-    public static final int ALL_TYPES = TYPE_FORMAT | TYPE_STORE | TYPE_INDEX;
+    private final CapabilityType[] types;
 
-    private final int types;
-
-    Capability( int types )
+    Capability( CapabilityType... types )
     {
         this.types = types;
     }
 
-    public boolean isType( int type )
+    public boolean isType( CapabilityType type )
     {
-        return (types & type) != 0;
+        return contains( types, type );
     }
 }

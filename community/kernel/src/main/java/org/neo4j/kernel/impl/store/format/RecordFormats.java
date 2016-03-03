@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.format;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -49,6 +48,13 @@ public interface RecordFormats
     String storeVersion();
 
     /**
+     * Generation of this format, simply an increasing int which should be incrementing along with
+     * releases, e.g. store version, e.g. official versions of the product. This is for preventing downgrades.
+     * When implementing a new format or evolving an older format the generation of the new format should
+     * be higher than the format it evolves from, or in case of a new format - newer than the currently newest format.
+     * The generation value doesn't need to correlate to any other value, the only thing needed is to
+     * determine "older" or "newer".
+     *
      * @return format generation, with the intent of usage being that a store can migrate to a newer or
      * same generation, but not to an older generation.
      */
@@ -70,8 +76,6 @@ public interface RecordFormats
 
     RecordFormat<DynamicRecord> dynamic();
 
-    boolean hasStore( StoreType store );
-
     /**
      * Use when comparing one format to another, for example for migration purposes.
      *
@@ -85,5 +89,12 @@ public interface RecordFormats
      */
     boolean hasCapability( Capability capability );
 
-    boolean hasSameCapabilities( RecordFormats other, int types );
+    /**
+     * Whether or not this format has the same capabilities of the specific {@code type} as the {@code other} format.
+     *
+     * @param other {@link RecordFormats} to compare with.
+     * @param type {@link CapabilityType type} of capability to compare.
+     * @return true if both formats have the same set of capabilities of the given {@code type}.
+     */
+    boolean hasSameCapabilities( RecordFormats other, CapabilityType type );
 }

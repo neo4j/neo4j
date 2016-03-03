@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
@@ -68,7 +68,7 @@ public class LegacyIndexMigrator extends AbstractStoreMigrationParticipant
         {
             RecordFormats from = InternalRecordFormatSelector.fromVersion( versionToMigrateFrom );
             RecordFormats to = InternalRecordFormatSelector.fromVersion( versionToMigrateTo );
-            if ( !from.hasSameCapabilities( to, Capability.TYPE_INDEX ) )
+            if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
             {
                 originalLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( storeDir );
                 migrationLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationDir );

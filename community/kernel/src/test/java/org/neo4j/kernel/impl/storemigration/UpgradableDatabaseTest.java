@@ -45,8 +45,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -261,7 +259,6 @@ public class UpgradableDatabaseTest
                 // then
                 File expectedFile = new File( workingDirectory, neostoreFilename ).getAbsoluteFile();
                 assertEquals( String.format( MESSAGE, expectedFile, version ), e.getMessage() );
-                assertThat( e.getMessage(), containsString( version ) );
             }
         }
     }
