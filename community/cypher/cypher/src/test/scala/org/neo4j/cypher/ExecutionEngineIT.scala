@@ -126,16 +126,16 @@ class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine 
     plan.getArguments.get("planner-impl") should equal("IDP")
   }
 
-  test("should throw error if using COST for older versions") {
+  test("should work if query cache size is set to zero") {
     //given
-    intercept[Exception] {
-      val db = new TestGraphDatabaseFactory()
-        .newImpermanentDatabaseBuilder()
-        .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-        .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.0").newGraphDatabase()
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.query_cache_size, "0").newGraphDatabase()
 
-      db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
-    }
+    // when
+    db.execute("RETURN 42").close()
+
+    // then no exception is thrown
   }
 
   test("should not leak transaction when closing the result for a query") {

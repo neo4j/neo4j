@@ -33,7 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api, monitoring}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 
@@ -133,31 +133,28 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
       var n = 0
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
         // create transaction and query context
-        var touched = false
         val tc = TransactionContextFactory.open(graph,txBridge)
 
-        val (plan: ExecutionPlan, extractedParameters) = try {
+        val ((plan: ExecutionPlan, extractedParameters), touched) = try {
           // fetch plan cache
-          val cache: LRUCachev3_0[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(tc.readOperations, {
+          val cache = getOrCreateFromSchemaState(tc.readOperations, {
             cacheMonitor.cacheFlushDetected(tc.statement)
-            new LRUCachev3_0[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+            val lruCache = new LRUCachev3_0[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+            new QueryCache(cacheAccessor, lruCache)
           })
 
-          Iterator.continually {
-            cacheAccessor.getOrElseUpdate(cache)(cacheKey, {
-              touched = true
+          cache.getOrElseUpdate(cacheKey, queryText,
+            planParams => {
+              val stale: Boolean = planParams._1.isStale(lastCommittedTxId, tc)
+              println(stale)
+              stale
+            }, {
               val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
               parsedQuery.plan(tc, phaseTracer)
-            })
-          }.flatMap { case (candidatePlan, params) =>
-            if (!touched && candidatePlan.isStale(lastCommittedTxId, tc)) {
-              cacheAccessor.remove(cache)(cacheKey, queryText)
-              None
-            } else {
-              Some((candidatePlan, params))
             }
-          }.next()
-        } catch {
+          )
+        }
+        catch {
           case (t: Throwable) =>
             tc.close(success = false)
             throw t

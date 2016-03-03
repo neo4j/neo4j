@@ -186,24 +186,15 @@ case class CypherCompiler(parser: CypherParser,
     PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger, plannerName, offset)
   }
 
-  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext,
-                        tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
+  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext, tracer: CompilationPhaseTracer):
+  (ExecutionPlan, Map[String, Any]) = {
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
-    var planned = false
-    val plan = Iterator.continually {
-      cacheAccessor.getOrElseUpdate(cache)(parsedQuery.statement, {
-        planned = true
+    val (executionPlan, _) = cache.getOrElseUpdate(parsedQuery.statement, parsedQuery.queryText,
+      plan => plan.isStale(context.txIdProvider, context.statistics), {
         executionPlanBuilder.build(context, parsedQuery, tracer)
-      })
-    }.flatMap { plan =>
-      if (!planned && plan.isStale(context.txIdProvider, context.statistics)) {
-        cacheAccessor.remove(cache)(parsedQuery.statement, parsedQuery.queryText)
-        None
-      } else {
-        Some(plan)
       }
-    }.next()
-    (plan, parsedQuery.extractedParams)
+    )
+    (executionPlan, parsedQuery.extractedParams)
   }
 
   private def syntaxDeprecationNotifications(statement: Statement) =
@@ -215,6 +206,7 @@ case class CypherCompiler(parser: CypherParser,
                            context: PlanContext) =
     context.getOrCreateFromSchemaState(cacheAccessor, {
       monitor.cacheFlushDetected(cacheAccessor)
-      planCacheFactory()
+      val lRUCache = planCacheFactory()
+      new QueryCache(cacheAccessor, lRUCache)
     })
 }
