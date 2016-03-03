@@ -337,10 +337,6 @@ public abstract class GraphDatabaseSettings
     public static final Setting<String> pagecache_swapper =
             setting( "dbms.memory.pagecache.swapper", STRING, (String) null );
 
-    @Description("How many relationships to read at a time during iteration")
-    public static final Setting<Integer> relationship_grab_size = setting("relationship_grab_size", INTEGER,
-            "100", min( 1 ));
-
     @Description("Specifies the block size for storing strings. This parameter is only honored when the store is " +
             "created, otherwise it is ignored. " +
             "Note that each character in a string occupies two bytes, meaning that e.g a block size of 120 will hold " +

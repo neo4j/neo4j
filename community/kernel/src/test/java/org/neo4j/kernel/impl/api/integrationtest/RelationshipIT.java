@@ -33,14 +33,12 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -48,7 +46,6 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class RelationshipIT extends KernelIntegrationTest
 {
@@ -233,56 +230,6 @@ public class RelationshipIT extends KernelIntegrationTest
 
             // Then the node should still load the real rels
             assertRels( stmt.nodeGetRelationships(refNode, Direction.BOTH, new int[]{relTypeTheNodeDoesUse}), rels );
-        }
-    }
-
-    @Test
-    public void shouldHandleInterleavedSmallAndLargeRelGroupLoading() throws Exception
-    {
-        int grabSize = Integer.parseInt(GraphDatabaseSettings.relationship_grab_size.getDefaultValue());
-
-        // Given a dense node with one type of rels
-        long[] largeRelGroup = new long[grabSize + 1];
-        long[] smallRelGroup = new long[1];
-
-        long refNode;
-        int largeGroupType, smallGroupType;
-        {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
-
-            largeGroupType = statement.relationshipTypeGetOrCreateForName( "Type1" );
-            smallGroupType = statement.relationshipTypeGetOrCreateForName( "Type2" );
-
-            refNode = statement.nodeCreate();
-            long otherNode = statement.nodeCreate();
-
-            for ( int i = 0; i < largeRelGroup.length; i++ )
-            {
-                largeRelGroup[i] = statement.relationshipCreate( largeGroupType, refNode, otherNode );
-            }
-            for ( int i = 0; i < smallRelGroup.length; i++ )
-            {
-                smallRelGroup[i] = statement.relationshipCreate( smallGroupType, refNode, otherNode );
-            }
-
-            commit();
-        }
-
-        {
-            ReadOperations stmt = readOperationsInNewTransaction();
-
-            // When I exhaust up to the grab size
-            PrimitiveLongIterator iter = stmt.nodeGetRelationships( refNode, Direction.BOTH, new int[]{largeGroupType} );
-            for ( int i = 0; i < grabSize - 1; i++ )
-            {
-                assertTrue(iter.hasNext());
-                iter.next();
-            }
-
-            // Then both the small rel group, the remaining rels in the iterator should work
-            assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, new int[]{smallGroupType} ) );
-            assertThat( count( PrimitiveLongCollections.toIterator( iter ) ), equalTo(2) );
-            assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, new int[]{largeGroupType} ), largeRelGroup );
         }
     }
 
