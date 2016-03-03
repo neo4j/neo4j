@@ -121,8 +121,7 @@ public final class UnsafeUtil
         pageSize = ps;
 
         // See java.nio.Bits.unaligned() and its uses.
-        String alignmentProperty = System.getProperty(
-                allowUnalignedMemoryAccessProperty );
+        String alignmentProperty = System.getProperty( allowUnalignedMemoryAccessProperty );
         if ( alignmentProperty != null &&
                 (alignmentProperty.equalsIgnoreCase( "true" )
                         || alignmentProperty.equalsIgnoreCase( "false" )) )
@@ -131,10 +130,20 @@ public final class UnsafeUtil
         }
         else
         {
+            boolean unaligned = false;
             String arch = System.getProperty( "os.arch", "?" );
-            allowUnalignedMemoryAccess =
-                    arch.equals( "x86_64" ) || arch.equals( "i386" )
-                            || arch.equals( "x86" ) || arch.equals( "amd64" );
+            switch ( arch ) // list of architectures that support unaligned access to memory
+            {
+            case "x86_64":
+            case "i386":
+            case "x86":
+            case "amd64":
+            case "ppc64":
+            case "ppc64le":
+            case "ppc64be":
+                unaligned = true;
+            }
+            allowUnalignedMemoryAccess = unaligned;
         }
         storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
     }

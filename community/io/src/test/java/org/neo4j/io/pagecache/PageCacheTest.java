@@ -3661,9 +3661,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 {
                     assertTrue( cursor.next() );
                 }
+                int offset = cursor.getOffset();
                 byte b;
                 do
                 {
+                    cursor.setOffset( offset );
                     b = cursor.getByte();
                 }
                 while( cursor.shouldRetry() );
