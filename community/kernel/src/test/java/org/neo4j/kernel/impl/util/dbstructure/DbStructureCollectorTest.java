@@ -21,13 +21,12 @@ package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.helpers.collection.Pair.of;
 
 public class DbStructureCollectorTest
@@ -55,13 +54,13 @@ public class DbStructureCollectorTest
         DbStructureLookup lookup = collector.lookup();
 
         // THEN
-        assertEquals( asList( of( 1, "Person" ), of( 2, "City" ) ), toList( lookup.labels() ) );
-        assertEquals( asList( of( 1, "name" ), of( 2, "income" ) ), toList( lookup.properties() ) );
-        assertEquals( asList( of( 1, "LIVES_IN" ), of( 2, "FRIEND" ) ), toList( lookup.relationshipTypes() ) );
+        assertEquals( asList( of( 1, "Person" ), of( 2, "City" ) ), Iterators.asList( lookup.labels() ) );
+        assertEquals( asList( of( 1, "name" ), of( 2, "income" ) ), Iterators.asList( lookup.properties() ) );
+        assertEquals( asList( of( 1, "LIVES_IN" ), of( 2, "FRIEND" ) ), Iterators.asList( lookup.relationshipTypes() ) );
 
-        assertEquals( asList( of( "City", "name" ) ), toList( lookup.knownUniqueConstraints() ) );
-        assertEquals( asList( of( "Person", "name" ) ), toList( lookup.knownUniqueIndices() ) );
-        assertEquals( asList( of( "City", "income" ) ), toList( lookup.knownIndices() ) );
+        assertEquals( asList( of( "City", "name" ) ), Iterators.asList( lookup.knownUniqueConstraints() ) );
+        assertEquals( asList( of( "Person", "name" ) ), Iterators.asList( lookup.knownUniqueIndices() ) );
+        assertEquals( asList( of( "City", "income" ) ), Iterators.asList( lookup.knownIndices() ) );
 
         assertEquals( 50, lookup.nodesWithLabelCardinality( -1 ) );
         assertEquals( 20, lookup.nodesWithLabelCardinality( 1 ) );

@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -53,8 +54,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -159,7 +158,7 @@ public class DuplicatePropertyRemoverTest
             assertNull( propertyBlock );
             nextPropId = propRecord.getNextProp();
 
-            propBlockCount += count( (Iterable<PropertyBlock>) propRecord );
+            propBlockCount += Iterables.count( (Iterable<PropertyBlock>) propRecord );
         }
         assertEquals( prevProBlockCount - 1, propBlockCount );
     }

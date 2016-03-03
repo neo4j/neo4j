@@ -26,11 +26,9 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 
 import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class IndexCreatorImpl implements IndexCreator
 {
@@ -62,7 +60,7 @@ public class IndexCreatorImpl implements IndexCreator
                     "Compound indexes are not yet supported, only one property per index is allowed." );
         return
             new IndexCreatorImpl( actions, label,
-                                  addToCollection( asList( propertyKey ), new ArrayList<>( propertyKeys ) ) );
+                                  Iterables.addToCollection( asList( propertyKey ), new ArrayList<>( propertyKeys ) ) );
     }
 
     @Override
@@ -73,7 +71,7 @@ public class IndexCreatorImpl implements IndexCreator
         if ( propertyKeys.isEmpty() )
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
 
-        return actions.createIndexDefinition( label, single( propertyKeys ) );
+        return actions.createIndexDefinition( label, Iterables.single( propertyKeys ) );
     }
 
     protected void assertInUnterminatedTransaction()

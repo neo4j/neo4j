@@ -19,11 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.helpers.collection.IteratorUtil.last;
 
 /**
  * An {@link ExecutionMonitor} that prints progress in percent, knowing the max number of nodes and relationships
@@ -84,7 +83,7 @@ public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMon
 
     private long doneBatches( StageExecution execution )
     {
-        return last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
+        return Iterables.last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
     }
 
     @Override

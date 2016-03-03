@@ -30,10 +30,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -41,7 +42,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class TestLuceneSchemaBatchInsertIT
@@ -73,7 +73,7 @@ public class TestLuceneSchemaBatchInsertIT
         // assert the indexProvider is a Lucene one
         try ( Transaction ignore = db.beginTx() )
         {
-            IndexDefinition indexDefinition = single( db.schema().getIndexes( LABEL ) );
+            IndexDefinition indexDefinition = Iterables.single( db.schema().getIndexes( LABEL ) );
             assertThat( db.schema().getIndexState( indexDefinition ), is( Schema.IndexState.ONLINE ) );
             assertThat( schemaIndexProvider, instanceOf( LuceneSchemaIndexProvider.class ) );
         }

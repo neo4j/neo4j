@@ -39,7 +39,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -282,7 +282,7 @@ public abstract class AbstractLuceneIndex implements Closeable
             {
                 snapshotIterators.add( partition.snapshot() );
             }
-            return Iterables.concatResourceIterators( snapshotIterators.iterator() );
+            return Iterators.concatResourceIterators( snapshotIterators.iterator() );
         }
         catch ( Exception e )
         {

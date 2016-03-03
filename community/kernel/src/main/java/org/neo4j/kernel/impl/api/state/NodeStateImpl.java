@@ -29,7 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -287,25 +287,25 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
             @Override
             public Iterator<StorageProperty> addedProperties()
             {
-                return IteratorUtil.emptyIterator();
+                return Iterators.emptyIterator();
             }
 
             @Override
             public Iterator<StorageProperty> changedProperties()
             {
-                return IteratorUtil.emptyIterator();
+                return Iterators.emptyIterator();
             }
 
             @Override
             public Iterator<Integer> removedProperties()
             {
-                return IteratorUtil.emptyIterator();
+                return Iterators.emptyIterator();
             }
 
             @Override
             public Iterator<StorageProperty> addedAndChangedProperties()
             {
-                return IteratorUtil.emptyIterator();
+                return Iterators.emptyIterator();
             }
 
             @Override

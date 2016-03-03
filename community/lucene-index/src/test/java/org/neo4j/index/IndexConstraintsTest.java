@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
@@ -42,7 +41,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.Iterables.single;
 
 public class IndexConstraintsTest
@@ -128,7 +127,7 @@ public class IndexConstraintsTest
 
         try( Transaction tx = graphDb.beginTx() )
         {
-            IndexDefinition index = first( graphDb.schema().getIndexes( LABEL ) );
+            IndexDefinition index = firstOrNull( graphDb.schema().getIndexes( LABEL ) );
             index.drop();
 
             graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
@@ -158,7 +157,7 @@ public class IndexConstraintsTest
 
         try( Transaction tx = graphDb.beginTx() )
         {
-            IndexDefinition index = first( graphDb.schema().getIndexes( LABEL ) );
+            IndexDefinition index = firstOrNull( graphDb.schema().getIndexes( LABEL ) );
             index.drop();
 
             graphDb.schema().constraintFor( LABEL ).assertPropertyIsUnique( PROPERTY_KEY ).create();
@@ -178,7 +177,7 @@ public class IndexConstraintsTest
 
         try( Transaction tx = graphDb.beginTx() )
         {
-            ConstraintDefinition constraint = first( graphDb.schema().getConstraints( LABEL ) );
+            ConstraintDefinition constraint = firstOrNull( graphDb.schema().getConstraints( LABEL ) );
             constraint.drop();
 
             graphDb.schema().indexFor( LABEL ).on( PROPERTY_KEY ).create();

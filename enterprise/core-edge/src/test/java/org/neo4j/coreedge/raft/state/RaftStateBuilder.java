@@ -25,20 +25,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
+import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.membership.RaftMembership;
+import org.neo4j.coreedge.raft.outcome.LogCommand;
+import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
 import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.raft.membership.RaftMembership;
-import org.neo4j.coreedge.raft.RaftMessages;
-import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
-import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.coreedge.raft.outcome.LogCommand;
-import org.neo4j.coreedge.raft.outcome.Outcome;
 
 import static java.util.Collections.emptySet;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftStateBuilder
 {

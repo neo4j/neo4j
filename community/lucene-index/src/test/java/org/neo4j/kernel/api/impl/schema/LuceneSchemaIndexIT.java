@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -48,9 +49,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class LuceneSchemaIndexIT
 {
@@ -258,7 +258,7 @@ public class LuceneSchemaIndexIT
             String name = files.next().getName();
             out.add( name );
         }
-        return asUniqueSet( out );
+        return Iterables.asUniqueSet( out );
     }
 
     private void generateUpdates( LuceneIndexAccessor indexAccessor, int nodesToUpdate )

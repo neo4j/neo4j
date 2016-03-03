@@ -28,7 +28,8 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -206,13 +206,13 @@ public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreH
             DynamicRecordAllocator allocator )
     {
         AbstractDynamicStore.allocateRecordsFromBytes( target, chars,
-                IteratorUtil.<DynamicRecord>emptyIterator(), allocator );
+                Iterators.<DynamicRecord>emptyIterator(), allocator );
     }
 
     public static void allocateArrayRecords( Collection<DynamicRecord> target, Object array,
             DynamicRecordAllocator allocator )
     {
-        DynamicArrayStore.allocateRecords( target, array, IteratorUtil.<DynamicRecord>emptyIterator(), allocator );
+        DynamicArrayStore.allocateRecords( target, array, Iterators.<DynamicRecord>emptyIterator(), allocator );
     }
 
     public void encodeValue( PropertyBlock block, int keyId, Object value )
@@ -235,7 +235,7 @@ public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreH
             byte[] encodedString = encodeString( string );
             List<DynamicRecord> valueRecords = new ArrayList<>();
             allocateStringRecords( valueRecords, encodedString, stringAllocator );
-            setSingleBlockValue( block, keyId, PropertyType.STRING, first( valueRecords ).getId() );
+            setSingleBlockValue( block, keyId, PropertyType.STRING, Iterables.first( valueRecords ).getId() );
             for ( DynamicRecord valueRecord : valueRecords )
             {
                 valueRecord.setType( PropertyType.STRING.intValue() );
@@ -294,7 +294,7 @@ public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreH
             // Fall back to dynamic array store
             List<DynamicRecord> arrayRecords = new ArrayList<>();
             allocateArrayRecords( arrayRecords, value, arrayAllocator );
-            setSingleBlockValue( block, keyId, PropertyType.ARRAY, first( arrayRecords ).getId() );
+            setSingleBlockValue( block, keyId, PropertyType.ARRAY, Iterables.first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
                 valueRecord.setType( PropertyType.ARRAY.intValue() );

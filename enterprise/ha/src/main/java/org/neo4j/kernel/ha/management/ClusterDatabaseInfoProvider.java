@@ -52,8 +52,8 @@ public class ClusterDatabaseInfoProvider
 
         return new ClusterDatabaseInfo( new ClusterMemberInfo( currentMember.getInstanceId().toString(),
                 currentMember.getHAUri() != null, true, currentMember.getHARole(),
-                Iterables.toArray(String.class, Iterables.map( Functions.TO_STRING, currentMember.getRoleURIs() ) ),
-                Iterables.toArray(String.class, Iterables.map( Functions.TO_STRING, currentMember.getRoles() ) ) ),
+                Iterables.asArray(String.class, Iterables.map( Functions.TO_STRING, currentMember.getRoleURIs() ) ),
+                Iterables.asArray(String.class, Iterables.map( Functions.TO_STRING, currentMember.getRoles() ) ) ),
                 txIdGetter.getLastTxId(), lastUpdateTime.getLastUpdateTime() );
     }
 }

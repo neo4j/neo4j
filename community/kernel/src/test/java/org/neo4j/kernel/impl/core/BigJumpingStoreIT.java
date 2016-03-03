@@ -35,21 +35,19 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
@@ -153,7 +151,7 @@ public class BigJumpingStoreIT
             {
                 node = db.getNodeById( node.getId() );
                 assertProperties( map( "number", nodeCount++, "string", stringValue, "array", arrayValue ), node );
-                relCount += count( node.getRelationships( Direction.OUTGOING ) );
+                relCount += Iterables.count( node.getRelationships( Direction.OUTGOING ) );
             }
         }
         assertEquals( numberOfRels, relCount );
@@ -192,12 +190,12 @@ public class BigJumpingStoreIT
                     }
             }
 
-            if ( count( node.getRelationships() ) > 50 )
+            if ( Iterables.count( node.getRelationships() ) > 50 )
             {
                 if ( i % 2 == 0 )
                 {
-                    deleteIfNotNull( firstOrNull( node.getRelationships() ) );
-                    deleteIfNotNull( lastOrNull( node.getRelationships() ) );
+                    deleteIfNotNull( Iterables.firstOrNull( node.getRelationships() ) );
+                    deleteIfNotNull( Iterables.lastOrNull( node.getRelationships() ) );
                 }
                 else
                 {
@@ -236,7 +234,7 @@ public class BigJumpingStoreIT
                         assertProperties( map( "number", nodeCount, "string", stringValue ), node );
                         break;
                     case 3:
-                        assertEquals( 0, count( node.getPropertyKeys() ) );
+                        assertEquals( 0, Iterables.count( node.getPropertyKeys() ) );
                         break;
                     case 4:
                         assertProperties( map( "number", nodeCount, "string", stringValue, "array", arrayValue,

@@ -42,17 +42,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @RunWith( Parameterized.class )
 public class TestRelationshipCount
@@ -111,9 +109,9 @@ public class TestRelationshipCount
         assertEquals( expectedRelCount, node.getDegree( Direction.OUTGOING ) );
         assertEquals( 0, node.getDegree( Direction.INCOMING ) );
         assertEquals( rels.get( MyRelTypes.TEST2 ),
-                asSet( node.getRelationships( MyRelTypes.TEST2 ) ) );
+                Iterables.asSet( node.getRelationships( MyRelTypes.TEST2 ) ) );
         assertEquals( join( rels.get( MyRelTypes.TEST_TRAVERSAL ), rels.get( MyRelTypes.TEST2 ) ),
-                asSet( node.getRelationships( MyRelTypes.TEST_TRAVERSAL, MyRelTypes.TEST2 ) ) );
+                Iterables.asSet( node.getRelationships( MyRelTypes.TEST_TRAVERSAL, MyRelTypes.TEST2 ) ) );
     }
 
     private <T> Set<T> join( Set<T> set, Set<T> set2 )
@@ -176,12 +174,12 @@ public class TestRelationshipCount
 
     private void assertExpectedRelationshipTypes( Set<String> expectedTypes, Node node, boolean commit )
     {
-        assertEquals( expectedTypes, asSet( asStrings( node.getRelationshipTypes() ) ) );
+        assertEquals( expectedTypes, Iterables.asSet( asStrings( node.getRelationshipTypes() ) ) );
         if ( commit )
         {
             newTransaction();
         }
-        assertEquals( expectedTypes, asSet( asStrings( node.getRelationshipTypes() ) ) );
+        assertEquals( expectedTypes, Iterables.asSet( asStrings( node.getRelationshipTypes() ) ) );
     }
 
     private Iterable<String> asStrings( Iterable<RelationshipType> relationshipTypes )

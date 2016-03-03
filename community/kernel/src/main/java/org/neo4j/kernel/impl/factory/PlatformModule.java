@@ -274,7 +274,7 @@ public class PlatformModule
     private Iterable<Class<?>> getSettingsClasses( Iterable<Class<?>> settingsClasses,
             Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        List<Class<?>> totalSettingsClasses = Iterables.toList( settingsClasses );
+        List<Class<?>> totalSettingsClasses = Iterables.asList( settingsClasses );
 
         // Get the list of settings classes for extensions
         for ( KernelExtensionFactory<?> kernelExtension : kernelExtensions )

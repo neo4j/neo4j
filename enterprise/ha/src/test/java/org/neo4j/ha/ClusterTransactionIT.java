@@ -27,7 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -158,7 +158,7 @@ public class ClusterTransactionIT
         try ( Transaction tx = master.beginTx() )
         {
             GlobalGraphOperations gops = GlobalGraphOperations.at( master );
-            assertThat( IteratorUtil.count( gops.getAllNodes() ), is( 3 ) );
+            assertThat( Iterables.count( gops.getAllNodes() ), is( 3L ) );
         }
     }
 }

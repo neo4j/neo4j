@@ -31,13 +31,13 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents;
 import org.neo4j.cluster.member.paxos.PaxosClusterMemberEvents.ClusterMembersSnapshot;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
 import static org.neo4j.kernel.impl.store.StoreId.DEFAULT;
@@ -66,9 +66,9 @@ public class ClusterMembersSnapshotTest
 
         // THEN
         // -- getting the snapshot list should only reveal the last one
-        assertEquals( 1, count( snapshot.getCurrentAvailable( instanceId ) ) );
+        assertEquals( 1, Iterables.count( snapshot.getCurrentAvailable( instanceId ) ) );
         assertThat( snapshot.getCurrentAvailable( instanceId ), hasItem( memberIsAvailable( memberIsAvailable ) ) );
-        assertEquals( 1, count( snapshot.getCurrentAvailableMembers() ) );
+        assertEquals( 1, Iterables.count( snapshot.getCurrentAvailableMembers() ) );
         assertThat( snapshot.getCurrentAvailableMembers(), hasItems( memberIsAvailable( memberIsAvailable ) ) );
     }
 
@@ -93,9 +93,9 @@ public class ClusterMembersSnapshotTest
 
         // THEN
         // -- getting the snapshot list should reveal both
-        assertEquals( 1, count( snapshot.getCurrentAvailable( instanceId ) ) );
+        assertEquals( 1, Iterables.count( snapshot.getCurrentAvailable( instanceId ) ) );
         assertThat( snapshot.getCurrentAvailable( instanceId ), hasItems( memberIsAvailable( event2 ) ) );
-        assertEquals( 1, count( snapshot.getCurrentAvailableMembers() ) );
+        assertEquals( 1, Iterables.count( snapshot.getCurrentAvailableMembers() ) );
         assertThat( snapshot.getCurrentAvailableMembers(), hasItems( memberIsAvailable( event2 ) ) );
     }
 
@@ -120,9 +120,9 @@ public class ClusterMembersSnapshotTest
 
         // THEN
         // -- getting the snapshot list should reveal both
-        assertEquals( 1, count( snapshot.getCurrentAvailable( instanceId ) ) );
+        assertEquals( 1, Iterables.count( snapshot.getCurrentAvailable( instanceId ) ) );
         assertThat( snapshot.getCurrentAvailable( instanceId ), hasItems( memberIsAvailable( event2 ) ) );
-        assertEquals( 1, count( snapshot.getCurrentAvailableMembers() ) );
+        assertEquals( 1, Iterables.count( snapshot.getCurrentAvailableMembers() ) );
         assertThat( snapshot.getCurrentAvailableMembers(), hasItems( memberIsAvailable( event2 ) ) );
     }
 
@@ -148,9 +148,9 @@ public class ClusterMembersSnapshotTest
 
         // THEN
         // -- getting the snapshot list should only reveal the last member added, as it had the same role
-        assertEquals( 1, count( snapshot.getCurrentAvailable( otherInstanceId ) ) );
+        assertEquals( 1, Iterables.count( snapshot.getCurrentAvailable( otherInstanceId ) ) );
         assertThat( snapshot.getCurrentAvailable( otherInstanceId ), hasItems( memberIsAvailable( otherEvent ) ) );
-        assertEquals( 1, count( snapshot.getCurrentAvailableMembers() ) );
+        assertEquals( 1, Iterables.count( snapshot.getCurrentAvailableMembers() ) );
         assertThat( snapshot.getCurrentAvailableMembers(), hasItems( memberIsAvailable( otherEvent ) ) );
     }
 
@@ -175,7 +175,7 @@ public class ClusterMembersSnapshotTest
         snapshot.availableMember( otherEvent );
 
         // THEN
-        assertEquals( 2, count( snapshot.getCurrentAvailableMembers() ) );
+        assertEquals( 2, Iterables.count( snapshot.getCurrentAvailableMembers() ) );
         assertThat( snapshot.getCurrentAvailableMembers(),
                 hasItems( memberIsAvailable( event ), memberIsAvailable( otherEvent ) ) );
     }

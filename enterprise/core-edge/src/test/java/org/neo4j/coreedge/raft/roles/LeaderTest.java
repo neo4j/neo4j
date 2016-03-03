@@ -24,24 +24,25 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Heartbeat;
+import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
-import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
-import org.neo4j.coreedge.raft.state.follower.FollowerState;
-import org.neo4j.coreedge.raft.state.follower.FollowerStates;
+import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
+import org.neo4j.coreedge.raft.state.follower.FollowerState;
+import org.neo4j.coreedge.raft.state.follower.FollowerStates;
+import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -53,16 +54,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
-import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesResponse;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @RunWith(MockitoJUnitRunner.class)
 public class LeaderTest
@@ -342,9 +339,9 @@ public class LeaderTest
         Outcome<RaftTestMember> outcome = leader.handle( message, state, log() );
 
         // then
-        assertEquals( 0, count( outcome.getOutgoingMessages() ) );
+        assertEquals( 0, Iterables.count( outcome.getOutgoingMessages() ) );
         assertEquals( FOLLOWER, outcome.getNewRole() );
-        assertEquals( 0, count( outcome.getLogCommands() ) );
+        assertEquals( 0, Iterables.count( outcome.getLogCommands() ) );
         assertEquals( state.term() + 1, outcome.getTerm() );
     }
 
@@ -386,11 +383,11 @@ public class LeaderTest
         //state.update( outcome );
 
         // then
-        AppendLogEntry logCommand = (AppendLogEntry) single( outcome.getLogCommands() );
+        AppendLogEntry logCommand = (AppendLogEntry) Iterables.single( outcome.getLogCommands() );
         assertEquals( 0, logCommand.index );
         assertEquals( 0, logCommand.entry.term() );
 
-        ShipCommand.NewEntry shipCommand = (ShipCommand.NewEntry) single( outcome.getShipCommands() );
+        ShipCommand.NewEntry shipCommand = (ShipCommand.NewEntry) Iterables.single( outcome.getShipCommands() );
 
         assertEquals( shipCommand, new ShipCommand.NewEntry( -1, -1, new RaftLogEntry( 0, CONTENT ) ) );
     }
@@ -419,7 +416,7 @@ public class LeaderTest
                 new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0, 0 ), state, log() );
 
         // then
-        assertThat( firstOrNull( outcome.getLogCommands() ), instanceOf( CommitCommand.class ) );
+        assertThat( Iterables.firstOrNull( outcome.getLogCommands() ), instanceOf( CommitCommand.class ) );
         assertEquals( 0, outcome.getLeaderCommit() );
     }
 

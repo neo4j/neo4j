@@ -45,7 +45,7 @@ import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.function.Predicates.in;
 import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.Iterables.asList;
 
 /**
  * Context for {@link ClusterState} state machine.
@@ -432,7 +432,7 @@ class ClusterContextImpl
                                         HeartbeatContextImpl snapshotHeartbeatContext )
     {
         return new ClusterContextImpl( me, commonStateSnapshot, logging, timeouts,
-                joiningInstances == null ? null : new ArrayList<>(toList(joiningInstances)),
+                joiningInstances == null ? null : new ArrayList<>( asList(joiningInstances)),
                 joinDeniedConfigurationResponseState == null ? null : joinDeniedConfigurationResponseState.snapshot(),
                 executor, objectOutputStreamFactory, objectInputStreamFactory, snapshotLearnerContext,
                 snapshotHeartbeatContext );

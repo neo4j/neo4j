@@ -35,7 +35,7 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
@@ -135,7 +135,7 @@ public class ExecutionResultTest
         List<Map<String,Object>> listResult;
         try ( Result result = db.execute( "CYPHER runtime=compiled MATCH (n) RETURN n" ) )
         {
-            listResult = Iterables.toList( result );
+            listResult = Iterators.asList( result );
         }
 
         // Then

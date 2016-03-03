@@ -37,7 +37,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.CombiningIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
 public class ConfigurationParser
@@ -45,13 +45,13 @@ public class ConfigurationParser
     @SuppressWarnings( "unchecked" )
     public ConfigurationParser( File configFile, String... format )
     {
-        this( IteratorUtil.asIterable( new CombiningIterator<String>( Arrays.asList(
+        this( Iterators.asIterable( new CombiningIterator<String>( Arrays.asList(
                 new LineIterator( configFile ), new ArrayIterator<String>( format ) ) ) ) );
     }
 
     public ConfigurationParser( String... format )
     {
-        this( IteratorUtil.asIterable( new ArrayIterator<String>( format ) ) );
+        this( Iterators.asIterable( new ArrayIterator<String>( format ) ) );
     }
 
     public ConfigurationParser( Iterable<String> format )

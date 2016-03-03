@@ -52,11 +52,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -91,6 +91,7 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -120,13 +121,12 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.helpers.collection.Iterables.addToCollection;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.helpers.collection.Iterators.asCollection;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
@@ -138,13 +138,9 @@ public class BatchInsertTest
     private final int denseNodeThreshold;
 
     @Parameterized.Parameters
-    public static Collection<Object[]> data()
+    public static Collection<Integer> data()
     {
-        Collection<Object[]> result = new ArrayList<>();
-        result.add( new Object[] { 3 } );
-        result.add( new Object[] { 20 } );
-        result.add( new Object[] { parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) } );
-        return result;
+        return Arrays.asList( 3, 20, parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
     }
 
     public BatchInsertTest( int denseNodeThreshold )
@@ -583,8 +579,8 @@ public class BatchInsertTest
             Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
             Relationship realRelationship = db.getRelationshipById( relationship );
             assertEquals( realSelfRelationship, realStartNode.getSingleRelationship( RelTypes.REL_TYPE1, Direction.INCOMING ) );
-            assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships( Direction.OUTGOING ) ) );
-            assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships() ) );
+            assertEquals( asSet( realSelfRelationship, realRelationship ), Iterables.asSet( realStartNode.getRelationships( Direction.OUTGOING ) ) );
+            assertEquals( asSet( realSelfRelationship, realRelationship ), Iterables.asSet( realStartNode.getRelationships() ) );
         }
         finally
         {
@@ -812,7 +808,7 @@ public class BatchInsertTest
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
 
         // THEN
-        assertEquals( asSet( Labels.FIRST.name(), Labels.THIRD.name() ), asSet( labelNames ) );
+        assertEquals( asSet( Labels.FIRST.name(), Labels.THIRD.name() ), Iterables.asSet( labelNames ) );
         inserter.shutdown();
     }
 
@@ -828,7 +824,7 @@ public class BatchInsertTest
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
 
         // THEN
-        assertEquals( labels.other(), asSet( labelNames ) );
+        assertEquals( labels.other(), Iterables.asSet( labelNames ) );
         inserter.shutdown();
     }
 
@@ -845,7 +841,7 @@ public class BatchInsertTest
 
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
-        assertEquals( labels.other(), asSet( labelNames ) );
+        assertEquals( labels.other(), Iterables.asSet( labelNames ) );
         inserter.shutdown();
     }
 
@@ -861,7 +857,7 @@ public class BatchInsertTest
 
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
-        assertEquals( asSet( Labels.FIRST.name() ), asSet( labelNames ) );
+        assertEquals( asSet( Labels.FIRST.name() ), Iterables.asSet( labelNames ) );
         inserter.shutdown();
     }
 
@@ -876,7 +872,7 @@ public class BatchInsertTest
 
         // THEN
         assertEquals( "Hacker", definition.getLabel().name() );
-        assertEquals( asCollection( iterator( "handle" ) ), asCollection( definition.getPropertyKeys() ) );
+        assertEquals( asCollection( iterator( "handle" ) ), Iterables.asCollection( definition.getPropertyKeys() ) );
         inserter.shutdown();
     }
 
@@ -893,7 +889,7 @@ public class BatchInsertTest
         // THEN
         assertEquals( "Hacker", definition.getLabel().name() );
         assertEquals( ConstraintType.UNIQUENESS, definition.getConstraintType() );
-        assertEquals( asSet( "handle" ), asSet( definition.getPropertyKeys() ) );
+        assertEquals( asSet( "handle" ), Iterables.asSet( definition.getPropertyKeys() ) );
         inserter.shutdown();
     }
 
@@ -1358,7 +1354,7 @@ public class BatchInsertTest
         createRelationships( inserter, node, RelTypes.REL_TYPE2, 4, 5, 6 );
 
         // WHEN
-        Set<Long> gottenRelationships = asSet( inserter.getRelationshipIds( node ) );
+        Set<Long> gottenRelationships = Iterables.asSet( inserter.getRelationshipIds( node ) );
 
         // THEN
         assertEquals( 21, gottenRelationships.size() );
@@ -1434,7 +1430,7 @@ public class BatchInsertTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                List<ConstraintDefinition> constraints = asList( db.schema().getConstraints() );
+                List<ConstraintDefinition> constraints = Iterables.asList( db.schema().getConstraints() );
                 assertEquals( 1, constraints.size() );
                 ConstraintDefinition constraint = constraints.get( 0 );
                 assertEquals( label.name(), constraint.getLabel().name() );
@@ -1674,7 +1670,7 @@ public class BatchInsertTest
                 @Override
                 public void write( NodeLabelUpdate update ) throws IOException
                 {
-                    addToCollection( Collections.singletonList( update ).iterator(), allUpdates );
+                    addToCollection( Collections.singletonList( update ), allUpdates );
                 }
 
                 @Override
@@ -1726,7 +1722,7 @@ public class BatchInsertTest
         return array;
     }
 
-    private static enum Labels implements Label
+    private enum Labels implements Label
     {
         FIRST,
         SECOND,

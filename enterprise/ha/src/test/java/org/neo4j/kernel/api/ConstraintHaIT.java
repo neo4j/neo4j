@@ -19,18 +19,29 @@
  */
 package org.neo4j.kernel.api;
 
-import java.io.File;
-
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-import org.neo4j.graphdb.*;
+
+import java.io.File;
+
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ConstraintHaIT.NodePropertyExistenceConstraintHaIT;
 import org.neo4j.kernel.api.ConstraintHaIT.RelationshipPropertyExistenceConstraintHaIT;
 import org.neo4j.kernel.api.ConstraintHaIT.UniquenessConstraintHaIT;
@@ -51,13 +62,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 @RunWith( Suite.class )
@@ -83,7 +91,7 @@ public class ConstraintHaIT
         @Override
         protected ConstraintDefinition getConstraint( GraphDatabaseService db, String type, String value )
         {
-            return singleOrNull( db.schema().getConstraints( DynamicLabel.label( type ) ) );
+            return Iterables.singleOrNull( db.schema().getConstraints( DynamicLabel.label( type ) ) );
         }
 
         @Override
@@ -143,7 +151,7 @@ public class ConstraintHaIT
         @Override
         protected ConstraintDefinition getConstraint( GraphDatabaseService db, String type, String value )
         {
-            return singleOrNull( db.schema().getConstraints( DynamicRelationshipType.withName( type ) ) );
+            return Iterables.singleOrNull( db.schema().getConstraints( DynamicRelationshipType.withName( type ) ) );
         }
 
         @Override
@@ -208,13 +216,13 @@ public class ConstraintHaIT
         @Override
         protected ConstraintDefinition getConstraint( GraphDatabaseService db, String type, String value )
         {
-            return singleOrNull( db.schema().getConstraints( DynamicLabel.label( type ) ) );
+            return Iterables.singleOrNull( db.schema().getConstraints( DynamicLabel.label( type ) ) );
         }
 
         @Override
         protected IndexDefinition getIndex( GraphDatabaseService db, String type, String value )
         {
-            return singleOrNull( db.schema().getIndexes( DynamicLabel.label( type ) ) );
+            return Iterables.singleOrNull( db.schema().getIndexes( DynamicLabel.label( type ) ) );
         }
 
         @Override
@@ -240,7 +248,7 @@ public class ConstraintHaIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                assertEquals( 1, toList( db.findNodes( label( type ), propertyKey, value ) ).size() );
+                assertEquals( 1, Iterators.asList( db.findNodes( label( type ), propertyKey, value ) ).size() );
                 tx.success();
             }
         }

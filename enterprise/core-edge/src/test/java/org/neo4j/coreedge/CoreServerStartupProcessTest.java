@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge;
 
-import java.util.List;
-
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
+
+import java.util.List;
 
 import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
@@ -34,14 +34,13 @@ import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.coreedge.raft.state.StateMachineApplier;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.CoreServerStartupProcess;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.coreedge.CoreServerStartupProcessTest.LifeSupportMatcherBuilder.startsComponent;
 
 public class CoreServerStartupProcessTest
@@ -91,7 +90,7 @@ public class CoreServerStartupProcessTest
         @Override
         protected boolean matchesSafely( LifeSupport lifeSupport )
         {
-            List<Lifecycle> lifeCycles = IteratorUtil.asList( lifeSupport.getLifecycleInstances() );
+            List<Lifecycle> lifeCycles = Iterables.asList( lifeSupport.getLifecycleInstances() );
             return lifeCycles.indexOf( component2 ) < lifeCycles.indexOf( component1 );
         }
 

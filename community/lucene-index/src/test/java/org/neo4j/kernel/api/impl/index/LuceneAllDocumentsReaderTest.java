@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 
 import static org.junit.Assert.assertEquals;
@@ -68,7 +68,7 @@ public class LuceneAllDocumentsReaderTest
     public void readAllDocuments()
     {
         LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
-        List<Document> documents = Iterables.toList( allDocumentsReader.iterator() );
+        List<Document> documents = Iterators.asList( allDocumentsReader.iterator() );
 
         assertEquals( "Should have 1 document from first partition and 2 from second one.", 3, documents.size() );
         assertEquals( "1", documents.get( 0 ).getField( "value" ).stringValue() );

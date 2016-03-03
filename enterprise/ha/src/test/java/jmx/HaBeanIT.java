@@ -51,11 +51,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesMembers;
 import static org.neo4j.test.ha.ClusterRule.intBase;
 import static org.neo4j.test.ha.ClusterRule.stringWithIntBase;
@@ -292,7 +291,7 @@ public class HaBeanIT
 
     public static URI getUriForScheme( final String scheme, Iterable<URI> uris )
     {
-        return first( filter( item -> {
+        return firstOrNull( filter( item -> {
             return item.getScheme().equals( scheme );
         }, uris ) );
     }

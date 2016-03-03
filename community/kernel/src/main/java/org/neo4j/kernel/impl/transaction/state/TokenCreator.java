@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.storageengine.api.Token;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
 public class TokenCreator<R extends TokenRecord, T extends Token>
@@ -44,7 +44,7 @@ public class TokenCreator<R extends TokenRecord, T extends Token>
         record.setInUse( true );
         record.setCreated();
         Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ) );
-        record.setNameId( (int) first( nameRecords ).getId() );
+        record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
     }
 }

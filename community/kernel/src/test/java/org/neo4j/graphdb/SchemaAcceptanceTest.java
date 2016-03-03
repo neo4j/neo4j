@@ -29,6 +29,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.lang.String.format;
@@ -48,7 +49,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
 import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
 import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class SchemaAcceptanceTest
 {
@@ -69,6 +70,12 @@ public class SchemaAcceptanceTest
     {
         MY_TYPE,
         MY_OTHER_TYPE
+    }
+
+    @Before
+    public void init()
+    {
+        db = dbRule.getGraphDatabaseAPI();
     }
 
     @Test
@@ -328,7 +335,7 @@ public class SchemaAcceptanceTest
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
 
             assertEquals( label.name(), constraint.getLabel().name() );
-            assertEquals( asSet( propertyKey ), asSet( constraint.getPropertyKeys() ) );
+            assertEquals( asSet( propertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
             tx.success();
         }
     }
@@ -493,12 +500,6 @@ public class SchemaAcceptanceTest
             assertThat( db.schema().getIndexState( indexA ), is( Schema.IndexState.ONLINE ) );
             assertThat( db.schema().getIndexState( indexC ), is( Schema.IndexState.POPULATING ) );
         }
-    }
-
-    @Before
-    public void init()
-    {
-        db = dbRule.getGraphDatabaseAPI();
     }
 
     private void dropConstraint( GraphDatabaseService db, ConstraintDefinition constraint )

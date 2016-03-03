@@ -26,18 +26,18 @@ import java.util.List;
 import org.neo4j.function.Functions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.KernelData;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.KernelData;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.management.ClusterDatabaseInfo;
 import org.neo4j.management.ClusterMemberInfo;
 
+import static org.neo4j.helpers.collection.Iterables.asArray;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toArray;
 
 public class HighlyAvailableKernelData extends KernelData implements Lifecycle
 {
@@ -95,8 +95,8 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
         {
             ClusterMemberInfo clusterMemberInfo = new ClusterMemberInfo( clusterMember.getInstanceId().toString(),
                     clusterMember.getHAUri() != null, clusterMember.isAlive(), clusterMember.getHARole(),
-                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoleURIs() ) ),
-                    toArray( String.class, map( Functions.TO_STRING, clusterMember.getRoles() ) ) );
+                    asArray( String.class, map( Functions.TO_STRING, clusterMember.getRoleURIs() ) ),
+                    asArray( String.class, map( Functions.TO_STRING, clusterMember.getRoles() ) ) );
             clusterMemberInfos.add( clusterMemberInfo );
         }
 

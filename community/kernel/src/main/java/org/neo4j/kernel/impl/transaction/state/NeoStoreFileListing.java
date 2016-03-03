@@ -27,7 +27,7 @@ import java.util.Objects;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
+import static org.neo4j.helpers.collection.Iterators.resourceIterator;
 
 public class NeoStoreFileListing
 {
@@ -73,7 +73,7 @@ public class NeoStoreFileListing
         {
             ResourceIterator<File> snapshot = indexProvider.listStoreFiles();
             snapshots.add( snapshot );
-            IteratorUtil.addToCollection( snapshot, files );
+            Iterators.addToCollection( snapshot, files );
         }
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
@@ -83,7 +83,7 @@ public class NeoStoreFileListing
     private Resource gatherSchemaIndexFiles(Collection<File> targetFiles) throws IOException
     {
         ResourceIterator<File> snapshot = indexingService.snapshotStoreFiles();
-        IteratorUtil.addToCollection(snapshot, targetFiles);
+        Iterators.addToCollection(snapshot, targetFiles);
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;
@@ -92,7 +92,7 @@ public class NeoStoreFileListing
     private Resource gatherLabelScanStoreFiles( Collection<File> targetFiles ) throws IOException
     {
         ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
-        IteratorUtil.addToCollection(snapshot, targetFiles);
+        Iterators.addToCollection(snapshot, targetFiles);
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;

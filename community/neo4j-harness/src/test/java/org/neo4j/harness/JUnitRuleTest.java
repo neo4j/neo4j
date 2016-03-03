@@ -33,7 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
@@ -104,7 +104,7 @@ public class JUnitRuleTest
         // When I run this test
 
         // Then
-        assertEquals( 2, IteratorUtil.count(
+        assertEquals( 2, Iterators.count(
                 neo4j.getGraphDatabaseService().execute( "MATCH (n:User) RETURN n" )
         ) );
     }
@@ -138,7 +138,7 @@ public class JUnitRuleTest
                 Result result = ruleWithDirectory.getGraphDatabaseService().execute( "match (n) return count(n) as " +
                                                                                      "count" );
 
-                List<Object> column = IteratorUtil.asList( result.columnAs( "count" ) );
+                List<Object> column = Iterators.asList( result.columnAs( "count" ) );
                 assertEquals( 1, column.size() );
                 assertEquals( 1, column.get( 0 ) );
             }

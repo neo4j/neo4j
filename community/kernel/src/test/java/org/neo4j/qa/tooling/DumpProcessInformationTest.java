@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.logging.NullLogProvider;
@@ -43,8 +44,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class DumpProcessInformationTest
 {
@@ -73,7 +73,7 @@ public class DumpProcessInformationTest
         // bail if our Java installation is wonky and `jps` doesn't work
         assumeThat( pids.size(), greaterThan( 0 ) );
 
-        Pair<Long, String> pid = single( pids );
+        Pair<Long, String> pid = Iterables.single( pids );
         File threaddumpFile = dumper.doThreadDump( pid );
         process.destroy();
 

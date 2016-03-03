@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphalgo.path;
 
-import java.io.IOException;
-
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
@@ -43,11 +43,9 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.junit.Assert.assertTrue;
-
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 @Ignore( "Not a test, merely a performance measurement. Convert into a proper performance benchmark at some point" )
 public class PathExplosionIT
@@ -136,10 +134,10 @@ public class PathExplosionIT
         long startTime = currentTimeMillis();
         
         Path path = FIND_MULTIPLE_PATHS ?
-                // call findAllPaths, but just grab the first one
-                toList( pathFinder.findAllPaths( startNode, endNode ) ).get( 0 ) :
-                // call findinglePath
-                pathFinder.findSinglePath( startNode, endNode );
+                    // call findAllPaths, but just grab the first one
+                    asList( pathFinder.findAllPaths( startNode, endNode ) ).get( 0 ) :
+                    // call findinglePath
+                    pathFinder.findSinglePath( startNode, endNode );
 
         // iterate through the path
         count( path );

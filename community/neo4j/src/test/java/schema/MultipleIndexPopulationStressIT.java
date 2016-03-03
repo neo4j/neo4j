@@ -43,7 +43,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.TimeUtil;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -73,12 +73,10 @@ import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -256,7 +254,7 @@ public class MultipleIndexPopulationStressIT
         {
             long nodeId = random.random().nextInt( nodeCount );
             Node node = db.getNodeById( nodeId );
-            Object[] keys = IteratorUtil.asCollection( node.getPropertyKeys() ).toArray();
+            Object[] keys = Iterables.asCollection( node.getPropertyKeys() ).toArray();
             String key = (String) random.among( keys );
             if ( random.random().nextFloat() < 0.1 )
             {   // REMOVE

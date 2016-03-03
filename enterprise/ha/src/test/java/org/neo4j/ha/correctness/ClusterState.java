@@ -33,7 +33,6 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 /**
  * A picture of the state of the cluster, including all messages waiting to get delivered.
@@ -124,7 +123,7 @@ class ClusterState
         Iterable<ClusterAction> newActions = action.perform( newState );
 
         // Include any outcome actions into the new state snapshot
-        newState.pendingActions.addAll( asCollection(newActions) );
+        newState.pendingActions.addAll( Iterables.asCollection(newActions) );
 
         return newState;
     }

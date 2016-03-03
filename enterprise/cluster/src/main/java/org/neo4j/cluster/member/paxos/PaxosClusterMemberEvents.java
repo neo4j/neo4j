@@ -56,8 +56,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.function.Predicates.in;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 /**
  * Paxos based implementation of {@link org.neo4j.cluster.member.ClusterMemberEvents}
@@ -234,17 +234,17 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
         public void availableMember( MemberIsAvailable memberIsAvailable )
         {
-            availableMembers = toList( nextSnapshotFunction.apply( availableMembers, memberIsAvailable ) );
+            availableMembers = asList( nextSnapshotFunction.apply( availableMembers, memberIsAvailable ) );
         }
 
         public void unavailableMember( final InstanceId member )
         {
-            availableMembers = toList( filter( item -> !item.getInstanceId().equals( member ), availableMembers ) );
+            availableMembers = asList( filter( item -> !item.getInstanceId().equals( member ), availableMembers ) );
         }
 
         public void unavailableMember( final URI member, final InstanceId id, final String role )
         {
-            availableMembers = toList( filter( item -> {
+            availableMembers = asList( filter( item -> {
                 boolean matchByUriOrId = item.getClusterUri().equals( member ) || item.getInstanceId().equals( id );
                 boolean matchByRole = item.getRole().equals( role );
 
@@ -259,7 +259,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
         public Iterable<MemberIsAvailable> getCurrentAvailable( final InstanceId memberId )
         {
-            return toList( Iterables.filter( item -> {
+            return asList( Iterables.filter( item -> {
                 return item.getInstanceId().equals( memberId );
             }, availableMembers ) );
         }

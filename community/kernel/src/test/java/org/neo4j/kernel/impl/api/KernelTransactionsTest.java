@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Collection;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -58,8 +59,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class KernelTransactionsTest
 {
@@ -77,7 +77,7 @@ public class KernelTransactionsTest
         first.close();
 
         // Then
-        assertThat( asUniqueSet( registry.activeTransactions() ), equalTo( asSet( second, third ) ) );
+        assertThat( Iterables.asUniqueSet( registry.activeTransactions() ), equalTo( asSet( second, third ) ) );
     }
 
     @Test

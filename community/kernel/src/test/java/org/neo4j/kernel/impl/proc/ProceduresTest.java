@@ -26,7 +26,7 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
@@ -35,14 +35,15 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.CallableProcedure.Key.key;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresTest
 {
-    @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     private final Procedures procs = new Procedures();
     private final ProcedureSignature signature = procedureSignature( "org", "myproc" ).build();
@@ -67,7 +68,7 @@ public class ProceduresTest
         procs.register( procedure( procedureSignature( "org", "myproc3" ).build() ) );
 
         // Then
-        List<ProcedureSignature> signatures = IteratorUtil.asList( procs.getAll() );
+        List<ProcedureSignature> signatures = Iterables.asList( procs.getAll() );
         assertThat( signatures, containsInAnyOrder(
                 procedureSignature( "org", "myproc1" ).build(),
                 procedureSignature( "org", "myproc2" ).build(),

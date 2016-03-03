@@ -42,19 +42,16 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.SideSelectorPolicies;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.util.Arrays.asList;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfContainsAll;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 import static org.neo4j.kernel.Traversal.traversal;
 import static org.neo4j.kernel.Uniqueness.NODE_PATH;
@@ -82,7 +79,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     {
         createGraph( "A TO B" );
 
-        count( bidirectionalTraversal()
+        Iterables.count( bidirectionalTraversal()
             .startSide( traversal().uniqueness( Uniqueness.NODE_GLOBAL ) )
             .endSide( traversal().uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ) )
             .traverse( getNodeWithName( "A" ), getNodeWithName( "B" ) ) );
@@ -185,7 +182,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
         Node a = getNodeWithName( "a" );
         Node b = getNodeWithName( "b" );
         Relationship r = a.getSingleRelationship( to, OUTGOING );
-        Path path = single( bidirectionalTraversal()
+        Path path = Iterables.single( bidirectionalTraversal()
             .mirroredSides( traversal().relationships( to, OUTGOING ).uniqueness( NODE_PATH ) )
             .collisionEvaluator( Evaluators.atDepth( 1 ) )
             .sideSelector( SideSelectorPolicies.LEVEL, 1 )
@@ -226,7 +223,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
             }
         };
 
-        count( bidirectionalTraversal()
+        Iterables.count( bidirectionalTraversal()
                 // Just make up a number bigger than the path length (in this case 10) so that we can assert it in
                 // the collision policy later
                 .mirroredSides( traversal( NODE_PATH ).expand( PathExpanders.<Integer>forType( to ),

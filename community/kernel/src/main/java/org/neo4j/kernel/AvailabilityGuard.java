@@ -32,7 +32,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.helpers.Listeners.notifyListeners;
-import static org.neo4j.helpers.collection.Iterables.join;
 
 /**
  * The availability guard ensures that the database will only take calls when it is in an ok state.
@@ -346,7 +345,7 @@ public class AvailabilityGuard
     {
         if ( blockingRequirements.size() > 0 || requirementCount.get() > 0 )
         {
-            String causes = join( ", ", Iterables.map( DESCRIPTION, blockingRequirements ) );
+            String causes = Iterables.join( ", ", Iterables.map( DESCRIPTION, blockingRequirements ) );
             return requirementCount.get() + " reasons for blocking: " + causes + ".";
         }
         return "No blocking components";

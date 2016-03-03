@@ -25,7 +25,7 @@ import java.util.Collections;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 
 public class IOCursorAsResourceIterable<T> implements ResourceIterable<T>
 {
@@ -105,11 +105,11 @@ public class IOCursorAsResourceIterable<T> implements ResourceIterable<T>
             }
 
             cursor.close();
-            return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator() );
+            return Iterators.<T>asResourceIterator( Collections.<T>emptyIterator() );
         }
         catch ( IOException e )
         {
-            return IteratorUtil.<T>asResourceIterator( Collections.<T>emptyIterator() );
+            return Iterators.<T>asResourceIterator( Collections.<T>emptyIterator() );
         }
     }
 }

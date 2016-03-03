@@ -18,12 +18,12 @@
  */
 package org.neo4j.examples.orderedpath;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -37,8 +37,7 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 public class OrderedPathDocTest

@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
@@ -52,7 +53,6 @@ import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdd
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
@@ -377,7 +377,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
                 record.setCreated();
             }
         }
-        SchemaRule rule = first( recordsAfter ).inUse()
+        SchemaRule rule = Iterables.first( recordsAfter ).inUse()
                           ? readSchemaRule( recordsAfter )
                           : readSchemaRule( recordsBefore );
         return new Command.SchemaRuleCommand( recordsBefore, recordsAfter, rule );
@@ -630,7 +630,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
         try
         {
-            rule = AbstractSchemaRule.deserialize( first( recordsBefore ).getId(), deserialized );
+            rule = AbstractSchemaRule.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
         }
         catch ( MalformedSchemaRuleException e )
         {

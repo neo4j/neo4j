@@ -28,16 +28,14 @@ import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.allocateRecordsForDynamicLabels;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
@@ -86,7 +84,7 @@ public class NodeRecordTest
         Iterable<DynamicRecord> usedRecords = node.getUsedDynamicLabelRecords();
 
         // Then
-        assertThat( toList( usedRecords ), equalTo( asList( dynamic1, dynamic2 ) ) );
+        assertThat( asList( usedRecords ), equalTo( asList( dynamic1, dynamic2 ) ) );
     }
 
     @Test

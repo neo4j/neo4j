@@ -22,8 +22,6 @@ package org.neo4j.index.impl.lucene.legacy;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Iterator;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -37,8 +35,7 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.Iterators.count;
 
 public class AutoIndexOperationsTest
 {
@@ -79,12 +76,12 @@ public class AutoIndexOperationsTest
             Node start = db.getNodeById( startId );
             Node end = db.getNodeById( endId );
             IndexHits<Relationship> hits = autoRelationshipIndex.get( "Type", type.name(), start, end );
-            assertEquals( 1, count( (Iterator<Relationship>)hits ) );
+            assertEquals( 1, count( hits ) );
             assertEquals( 1, hits.size() );
             rel.delete();
             autoRelationshipIndex = db.index().getRelationshipAutoIndexer().getAutoIndex();
             hits = autoRelationshipIndex.get( "Type", type.name(), start, end );
-            assertEquals( 0, count( (Iterator<Relationship>)hits ) );
+            assertEquals( 0, count( hits ) );
             assertEquals( 0, hits.size() );
             tx.success();
         }

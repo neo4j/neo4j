@@ -18,26 +18,25 @@
  */
 package org.neo4j.harness.doc;
 
-import java.net.URI;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.net.URI;
 import java.util.function.Function;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.junit.Neo4jRule;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
-import org.neo4j.server.configuration.ServerSettings;
-
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 
-import static org.junit.Assert.*;
 
 public class JUnitDocTest
 {
@@ -79,9 +78,7 @@ public class JUnitDocTest
 
         // and we have access to underlying GraphDatabaseService
         try (Transaction tx = neo4j.getGraphDatabaseService().beginTx()) {
-            assertEquals( 2, IteratorUtil.count(
-                    neo4j.getGraphDatabaseService().findNodes( Label.label( "Admin" ) )
-            ));
+            assertEquals( 2, count(neo4j.getGraphDatabaseService().findNodes( Label.label( "Admin" ) ) ));
             tx.success();
         }
     }

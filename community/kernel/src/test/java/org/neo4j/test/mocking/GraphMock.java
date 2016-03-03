@@ -19,12 +19,12 @@
  */
 package org.neo4j.test.mocking;
 
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -32,16 +32,14 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.Property;
 
 import static java.util.Arrays.asList;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
 import static org.neo4j.helpers.collection.Iterables.reverse;
 import static org.neo4j.test.mocking.Properties.properties;
 
@@ -129,7 +127,7 @@ public class GraphMock
     {
         Node node = mockPropertyContainer( Node.class, properties );
         when( node.getId() ).thenReturn( id );
-        when( node.getLabels() ).thenReturn( asResourceIterable( asList( labels ) ) );
+        when( node.getLabels() ).thenReturn( Iterables.asResourceIterable( asList( labels ) ) );
         return node;
     }
 

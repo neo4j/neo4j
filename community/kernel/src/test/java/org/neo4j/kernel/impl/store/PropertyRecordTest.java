@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
@@ -36,9 +37,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class PropertyRecordTest
 {
@@ -59,7 +57,7 @@ public class PropertyRecordTest
         record.setPropertyBlock( blockB );
 
         // Then the record should only contain a single block, because blockB overwrote blockA
-        List<PropertyBlock> propertyBlocks = asList( (Iterable<PropertyBlock>)record );
+        List<PropertyBlock> propertyBlocks = Iterables.asList( (Iterable<PropertyBlock>)record );
         assertThat( propertyBlocks, hasItem( blockB ));
         assertThat( propertyBlocks, hasSize( 1 ) );
     }
@@ -121,7 +119,7 @@ public class PropertyRecordTest
         assertFalse( iterator.hasNext() );
 
         // and THEN there should only be the non-removed blocks left
-        assertEquals( blocks, asSet( (Iterable<PropertyBlock>) record ) );
+        assertEquals( blocks, Iterables.asSet( (Iterable<PropertyBlock>) record ) );
     }
 
     private void assertIteratorRemoveThrowsIllegalState( Iterator<PropertyBlock> iterator )

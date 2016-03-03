@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -93,29 +93,29 @@ public class SchemaCache
 
     public Iterator<PropertyConstraint> constraints()
     {
-        return Iterables.concat( nodeConstraints.iterator(), relationshipConstraints.iterator() );
+        return Iterators.concat( nodeConstraints.iterator(), relationshipConstraints.iterator() );
     }
 
     public Iterator<NodePropertyConstraint> constraintsForLabel( final int label )
     {
-        return filter( constraint -> constraint.label() == label, nodeConstraints.iterator() );
+        return Iterators.filter( constraint -> constraint.label() == label, nodeConstraints.iterator() );
     }
 
     public Iterator<NodePropertyConstraint> constraintsForLabelAndProperty( final int label, final int property )
     {
-        return filter( constraint -> constraint.label() == label &&
+        return Iterators.filter( constraint -> constraint.label() == label &&
                                      constraint.propertyKey() == property, nodeConstraints.iterator() );
     }
 
     public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipType( final int typeId )
     {
-        return filter( constraint -> constraint.relationshipType() == typeId, relationshipConstraints.iterator() );
+        return Iterators.filter( constraint -> constraint.relationshipType() == typeId, relationshipConstraints.iterator() );
     }
 
     public Iterator<RelationshipPropertyConstraint> constraintsForRelationshipTypeAndProperty( final int typeId,
             final int propertyKeyId )
     {
-        return filter(
+        return Iterators.filter(
                 constraint -> constraint.relationshipType() == typeId &&
                               constraint.propertyKey() == propertyKeyId, relationshipConstraints.iterator() );
     }

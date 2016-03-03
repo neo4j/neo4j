@@ -24,11 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
@@ -38,7 +37,7 @@ import org.neo4j.server.webadmin.console.ScriptSession;
 
 public class SessionFactoryImpl implements ConsoleSessionFactory
 {
-    private static final Collection<ConsoleSessionCreator> creators = IteratorUtil.asCollection( ServiceLoader.load( ConsoleSessionCreator.class ) );
+    private static final Collection<ConsoleSessionCreator> creators = Iterables.asCollection( ServiceLoader.load( ConsoleSessionCreator.class ) );
 
     private final HttpSession httpSession;
     private final CypherExecutor cypherExecutor;

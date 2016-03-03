@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -31,8 +32,6 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.impl.store.PropertyType.STRING;
 
 public class PhysicalLogCommandReaderV2_1Test
@@ -61,7 +60,7 @@ public class PhysicalLogCommandReaderV2_1Test
         PropertyCommand readCommand = (PropertyCommand) reader.read( data );
         PropertyRecord readRecord = readCommand.getAfter();
         assertEquals( id, readRecord.getId() );
-        PropertyBlock readBlock = single( (Iterable<PropertyBlock>) readRecord );
+        PropertyBlock readBlock = Iterables.single( (Iterable<PropertyBlock>) readRecord );
         assertArrayEquals( data1, readBlock.getValueRecords().get( 0 ).getData() );
         assertArrayEquals( data2, readBlock.getValueRecords().get( 1 ).getData() );
         assertEquals( 2, readRecord.getDeletedRecords().size() );

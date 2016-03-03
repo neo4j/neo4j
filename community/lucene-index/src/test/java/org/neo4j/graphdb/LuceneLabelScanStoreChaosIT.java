@@ -41,7 +41,7 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 /**

@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.IOUtils;
 
 import static java.util.stream.Collectors.toList;
@@ -54,7 +54,7 @@ public class LuceneAllDocumentsReader implements BoundedIterable<Document>
                 .collect( toList() )
                 .iterator();
 
-        return Iterables.concat( iterators );
+        return Iterators.concat( iterators );
     }
 
     @Override

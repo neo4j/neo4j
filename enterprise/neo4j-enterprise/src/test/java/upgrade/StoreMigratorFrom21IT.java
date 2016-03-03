@@ -34,7 +34,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.AccessMode;
@@ -162,11 +163,11 @@ public class StoreMigratorFrom21IT
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.READ );
               Statement statement = tx.acquireStatement() )
         {
-            IteratorUtil.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 0 ) );
-            IteratorUtil.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 1 ) );
-            IteratorUtil.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 2 ) );
-            IteratorUtil.asUniqueSet( statement.readOperations().relationshipGetPropertyKeys( 0 ) );
-            IteratorUtil.asUniqueSet( statement.readOperations().relationshipGetPropertyKeys( 1 ) );
+            Iterators.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 0 ) );
+            Iterators.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 1 ) );
+            Iterators.asUniqueSet( statement.readOperations().nodeGetPropertyKeys( 2 ) );
+            Iterators.asUniqueSet( statement.readOperations().relationshipGetPropertyKeys( 0 ) );
+            Iterators.asUniqueSet( statement.readOperations().relationshipGetPropertyKeys( 1 ) );
         }
 
         database.shutdown();
@@ -175,7 +176,7 @@ public class StoreMigratorFrom21IT
     private void verifyPropertiesEqual( PropertyContainer entity, Pair<String,String>... expectedProperties )
     {
         Map<String, String> properties = (Map) entity.getAllProperties();
-        assertThat( properties, is( IteratorUtil.asMap( Arrays.asList( expectedProperties ) ) ) );
+        assertThat( properties, is( Iterables.asMap( Arrays.asList( expectedProperties ) ) ) );
     }
 }
 

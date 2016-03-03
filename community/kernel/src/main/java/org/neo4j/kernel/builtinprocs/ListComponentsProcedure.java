@@ -26,7 +26,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.neo4j.helpers.collection.Iterables.asRawIterator;
+import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;

@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Set;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.raft.NoLeaderFoundException;
@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -44,12 +43,11 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.io.File.pathSeparator;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.Assert.assertEventually;
 
 public class EdgeServerReplicationIT
@@ -146,7 +144,7 @@ public class EdgeServerReplicationIT
         {
             try ( Transaction tx = edgeDB.beginTx() )
             {
-                ThrowingSupplier<Long, Exception> nodeCount = () -> Iterables.count( edgeDB.getAllNodes() );
+                ThrowingSupplier<Long, Exception> nodeCount = () -> count( edgeDB.getAllNodes() );
                 assertEventually( "node to appear on edge server", nodeCount, is( nodesBeforeEdgeServerStarts + 1l ),
                         1, MINUTES );
 

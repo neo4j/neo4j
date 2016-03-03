@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.command;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -43,8 +44,6 @@ import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
-
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.util.Bits.bitFlag;
 import static org.neo4j.kernel.impl.util.Bits.bitFlags;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
@@ -618,7 +617,7 @@ public abstract class Command implements StorageCommand
         public SchemaRuleCommand( SchemaRecord recordsBefore, SchemaRecord recordsAfter,
                 SchemaRule schemaRule )
         {
-            setup( first( recordsAfter ).getId(), Mode.fromRecordState( first( recordsAfter ) ) );
+            setup( Iterables.first( recordsAfter ).getId(), Mode.fromRecordState( Iterables.first( recordsAfter ) ) );
             this.recordsBefore = recordsBefore;
             this.recordsAfter = recordsAfter;
             this.schemaRule = schemaRule;
@@ -661,7 +660,7 @@ public abstract class Command implements StorageCommand
             channel.put( NeoCommandType.SCHEMA_RULE_COMMAND );
             writeDynamicRecords( channel, recordsBefore, recordsBefore.size() );
             writeDynamicRecords( channel, recordsAfter, recordsAfter.size() );
-            channel.put( first( recordsAfter ).isCreated() ? (byte) 1 : 0 );
+            channel.put( Iterables.first( recordsAfter ).isCreated() ? (byte) 1 : 0 );
         }
     }
 

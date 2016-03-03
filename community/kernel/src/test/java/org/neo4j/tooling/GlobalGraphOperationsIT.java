@@ -29,15 +29,15 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.helpers.collection.Iterables.asSet;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.helpers.collection.Iterables.toSet;
 
 public class GlobalGraphOperationsIT
 {
@@ -58,7 +58,7 @@ public class GlobalGraphOperationsIT
         // When
         try( Transaction tx = db.beginTx() )
         {
-            assertThat( toList( db.getAllPropertyKeys() ), equalTo( asList( "myProperty" ) ) );
+            assertThat( asList( db.getAllPropertyKeys() ), equalTo( asList( "myProperty" ) ) );
         }
     }
 
@@ -78,7 +78,7 @@ public class GlobalGraphOperationsIT
 
         try( Transaction tx = db.beginTx() )
         {
-            Node node = IteratorUtil.single( db.findNodes( dead ) );
+            Node node = Iterators.single( db.findNodes( dead ) );
             node.delete();
             tx.success();
         }
@@ -87,8 +87,8 @@ public class GlobalGraphOperationsIT
         try( Transaction ignored = db.beginTx() )
         {
             assertThat(
-                    toSet( GlobalGraphOperations.at( db ).getAllLabels() ),
-                    equalTo( toSet( asList( alive, dead ) ) ) );
+                    asSet( GlobalGraphOperations.at( db ).getAllLabels() ),
+                    equalTo( asSet( asList( alive, dead ) ) ) );
         }
     }
 
@@ -108,7 +108,7 @@ public class GlobalGraphOperationsIT
 
         try( Transaction tx = db.beginTx() )
         {
-            Node node = IteratorUtil.single( db.findNodes( dead ) );
+            Node node = Iterators.single( db.findNodes( dead ) );
             node.delete();
             tx.success();
         }
@@ -116,7 +116,7 @@ public class GlobalGraphOperationsIT
         // When - Then
         try( Transaction ignored = db.beginTx() )
         {
-            assertThat( toSet( db.getAllLabels() ), equalTo( Collections.singleton( alive ) ) );
+            assertThat( asSet( db.getAllLabels() ), equalTo( Collections.singleton( alive ) ) );
         }
     }
 
@@ -145,7 +145,7 @@ public class GlobalGraphOperationsIT
         try( Transaction ignored = db.beginTx() )
         {
             Iterable<String> result = map( RelationshipType::name, GlobalGraphOperations.at( db ).getAllRelationshipTypes() );
-            assertThat( toSet( result ), equalTo( toSet( asList( alive.name(), dead.name() ) ) ) );
+            assertThat( asSet( result ), equalTo( asSet( asList( alive.name(), dead.name() ) ) ) );
         }
     }
 
@@ -174,7 +174,7 @@ public class GlobalGraphOperationsIT
         try( Transaction ignored = db.beginTx() )
         {
             Iterable<String> result = map( RelationshipType::name, db.getAllRelationshipTypes() );
-            assertThat( toSet( result ) , equalTo( Collections.singleton( alive.name() ) ) );
+            assertThat( asSet( result ) , equalTo( Collections.singleton( alive.name() ) ) );
         }
     }
 }

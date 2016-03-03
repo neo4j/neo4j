@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -228,7 +228,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
      */
     public ResourceIterator<File> snapshotMetaFiles()
     {
-        return IteratorUtil.emptyIterator();
+        return Iterators.emptyIterator();
     }
 
     public static class Descriptor

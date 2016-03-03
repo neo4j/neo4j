@@ -51,7 +51,7 @@ public class HighestSelectionStrategy implements DependencyResolver.SelectionStr
     public <T> T select( Class<T> type, Iterable<T> candidates )
             throws IllegalArgumentException
     {
-        List<Comparable> all = (List<Comparable>) Iterables.toList( candidates );
+        List<Comparable> all = (List<Comparable>) Iterables.asList( candidates );
         if ( all.isEmpty() )
         {
             throw new IllegalArgumentException( "Could not resolve dependency of type: " +

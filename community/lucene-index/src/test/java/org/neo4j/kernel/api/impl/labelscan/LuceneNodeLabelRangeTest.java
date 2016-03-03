@@ -21,9 +21,10 @@ package org.neo4j.kernel.api.impl.labelscan;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.Iterables;
+
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 
 public class LuceneNodeLabelRangeTest
 {
@@ -38,9 +39,9 @@ public class LuceneNodeLabelRangeTest
         LuceneNodeLabelRange range = LuceneNodeLabelRange.fromBitmapStructure( 0, labelIds, nodeIdsByLabelIndex );
 
         // then
-        assertThat( asIterable( range.nodes() ), hasItems(0L, 2L, 4L));
-        assertThat( asIterable( range.labels( 0 ) ), hasItems( 1L, 5L ) );
-        assertThat( asIterable( range.labels( 2 ) ), hasItems( 3L, 5L ) );
-        assertThat( asIterable( range.labels( 4 ) ), hasItems( 3L, 5L ) );
+        assertThat( Iterables.asIterable( range.nodes() ), hasItems(0L, 2L, 4L));
+        assertThat( Iterables.asIterable( range.labels( 0 ) ), hasItems( 1L, 5L ) );
+        assertThat( Iterables.asIterable( range.labels( 2 ) ), hasItems( 3L, 5L ) );
+        assertThat( Iterables.asIterable( range.labels( 4 ) ), hasItems( 3L, 5L ) );
     }
 }

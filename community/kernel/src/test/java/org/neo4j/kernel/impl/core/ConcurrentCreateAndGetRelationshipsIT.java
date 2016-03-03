@@ -19,28 +19,27 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 /**
  * Ensures the absence of an issue where iterating through a {@link RelationshipIterator} would result in
@@ -146,7 +145,7 @@ public class ConcurrentCreateAndGetRelationshipsIT
                 try ( Transaction tx = db.beginTx() )
                 {
                     // ArrayIndexOutOfBoundsException happens here
-                    count( parentNode.getRelationships( RELTYPE, OUTGOING ) );
+                    Iterables.count( parentNode.getRelationships( RELTYPE, OUTGOING ) );
 
                     parentNode.createRelationshipTo( db.createNode(), RELTYPE );
                     tx.success();

@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
@@ -74,7 +74,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
         serializer = serializer.append( (AbstractSchemaRule)rule );
         List<DynamicRecord> records = new ArrayList<>();
         allocateRecordsFromBytes( records, serializer.serialize(),
-                IteratorUtil.iterator( getRecord( rule.getId(), newRecord(), CHECK ) ), this );
+        Iterators.iterator( getRecord( rule.getId(), newRecord(), CHECK ) ), this );
         return records;
     }
 

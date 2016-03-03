@@ -51,7 +51,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.configuration.AsciiDocItem;
 import org.neo4j.kernel.configuration.AsciiDocListGenerator;
 import org.neo4j.test.AsciiDocGenerator;
@@ -69,7 +69,7 @@ public class JmxDocTest
     private static final List<String> QUERIES = Collections.singletonList( "org.neo4j:*" );
     private static final String JAVADOC_URL = "link:javadocs/";
     private static final int EXPECTED_NUMBER_OF_BEANS = 12;
-    private static final Set<String> EXCLUDES = IteratorUtil.set( "JMX Server" );
+    private static final Set<String> EXCLUDES = Iterators.set( "JMX Server" );
     private static final Map<String, String> TYPES = new HashMap<String, String>()
     {
         {

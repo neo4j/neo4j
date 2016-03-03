@@ -32,8 +32,6 @@ import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.DiffApplyingRelationshipIterator;
 import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 /**
  * Given a sequence of add and removal operations, instances of DiffSets track
  * which elements need to actually be added and removed at minimum from some
@@ -81,7 +79,7 @@ public class RelationshipDiffSets<T> extends SuperDiffSets<T,RelationshipIterato
     public RelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
         return new RelationshipDiffSets<>( txStateRelationshipHome,
-                asSet( Iterables.filter( addedFilter, added( false ) ) ),
-                asSet( removed( false ) ) );
+                Iterables.asSet( Iterables.filter( addedFilter, added( false ) ) ),
+                Iterables.asSet( removed( false ) ) );
     }
 }

@@ -34,7 +34,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.GraphDescription;
@@ -250,7 +251,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
     public static <E> void assertContains( Iterator<E> actual, E... expected )
     {
-        assertContains( IteratorUtil.asIterable( actual ), expected );
+        assertContains( Iterators.asIterable( actual ), expected );
     }
 
     public static <E> void assertContains( Iterable<E> actual, E... expected )
@@ -285,7 +286,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
     public static <T> void assertContainsInOrder( Iterable<T> collection,
             T... expectedItems )
     {
-        assertContainsInOrder( IteratorUtil.asCollection( collection ), expectedItems );
+        assertContainsInOrder( Iterables.asCollection( collection ), expectedItems );
     }
 
     public static <T> String join( String delimiter, T... items )

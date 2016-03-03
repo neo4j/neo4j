@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -42,10 +43,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class NeoStoreFileListingTest
 {
@@ -274,7 +273,7 @@ public class NeoStoreFileListingTest
         {
             fnames.add( result.next().getPath() );
         }
-        return asUniqueSet( fnames );
+        return Iterables.asUniqueSet( fnames );
     }
 
     private void filesInStoreDirAre( String[] filenames, String[] dirs )

@@ -37,6 +37,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
@@ -55,7 +56,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
@@ -158,8 +158,8 @@ public class TestBranchedData
         createNode( odin, "B2", andIndexInto( indexName ) );
         assertTrue( odin.isMaster() );
         // perform transactions so that index files changes under the hood
-        Set<File> odinLuceneFilesBefore = asSet( gatherLuceneFiles( odin, indexName ) );
-        for ( char prefix = 'C'; !changed( odinLuceneFilesBefore, asSet( gatherLuceneFiles( odin, indexName ) ) ); prefix++ )
+        Set<File> odinLuceneFilesBefore = Iterables.asSet( gatherLuceneFiles( odin, indexName ) );
+        for ( char prefix = 'C'; !changed( odinLuceneFilesBefore, Iterables.asSet( gatherLuceneFiles( odin, indexName ) ) ); prefix++ )
         {
             createNodes( odin, String.valueOf( prefix ), 10_000, andIndexInto( indexName ) );
             cluster.force(); // Force will most likely cause lucene legacy indexes to commit and change file structure

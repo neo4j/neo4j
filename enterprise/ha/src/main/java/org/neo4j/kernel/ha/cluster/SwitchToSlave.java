@@ -42,7 +42,6 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.BranchedDataException;
@@ -79,6 +78,7 @@ import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.StoreUtil;
+import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -88,7 +88,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.kernel.ha.cluster.member.ClusterMembers.hasInstanceId;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.getServerId;
 import static org.neo4j.kernel.impl.store.NeoStores.isStorePresent;
@@ -428,7 +428,7 @@ public class SwitchToSlave
         ClusterMembers clusterMembers = resolver.resolveDependency( ClusterMembers.class );
         InstanceId serverId = HighAvailabilityModeSwitcher.getServerId( masterUri );
         Iterable<ClusterMember> members = clusterMembers.getMembers();
-        ClusterMember master = first( filter( hasInstanceId( serverId ), members ) );
+        ClusterMember master = firstOrNull( filter( hasInstanceId( serverId ), members ) );
         if ( master == null )
         {
             throw new IllegalStateException( "Cannot find the master among " + members +

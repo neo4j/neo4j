@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.test.TargetDirectory;
@@ -78,7 +78,7 @@ public class LuceneIndexSnapshotFileIteratorTest
 
         try ( ResourceIterator<File> snapshot = LuceneIndexSnapshotFileIterator.forIndex( indexDir, writer ) )
         {
-            Set<String> snapshotFiles = Iterables.toList( snapshot ).stream().map( File::getName ).collect( toSet() );
+            Set<String> snapshotFiles = Iterators.asList( snapshot ).stream().map( File::getName ).collect( toSet() );
             assertEquals( files, snapshotFiles );
         }
     }

@@ -26,24 +26,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.addAll;
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.Iterables.asList;
 
 public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dependencies
 {
     public static GraphDatabaseDependencies newDependencies( GraphDatabaseFacadeFactory.Dependencies deps )
     {
         return new GraphDatabaseDependencies( deps.monitors(), deps.userLogProvider(),
-                toList( deps.settingsClasses() ), toList( deps.kernelExtensions() ), deps.urlAccessRules(), toList( deps.executionEngines() ) );
+                asList( deps.settingsClasses() ), asList( deps.kernelExtensions() ), deps.urlAccessRules(), asList( deps.executionEngines() ) );
     }
 
     public static GraphDatabaseDependencies newDependencies()
@@ -60,7 +60,7 @@ public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dep
         urlAccessRules.put( "ftp", URLAccessRules.alwaysPermitted() );
         urlAccessRules.put( "file", URLAccessRules.fileAccess() );
 
-        List<QueryEngineProvider> queryEngineProviders = toList( Service.load( QueryEngineProvider.class ) );
+        List<QueryEngineProvider> queryEngineProviders = asList( Service.load( QueryEngineProvider.class ) );
 
         return new GraphDatabaseDependencies( null, null, new ArrayList<>(), kernelExtensions,
                 urlAccessRules, queryEngineProviders );

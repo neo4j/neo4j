@@ -582,7 +582,7 @@ public class Settings
                         return optionValue;
                     }
                 }
-                throw new IllegalArgumentException( "must be one of " + Iterables.toList( optionValues ).toString() );
+                throw new IllegalArgumentException( "must be one of " + Iterables.asList( optionValues ).toString() );
             }
 
             @Override

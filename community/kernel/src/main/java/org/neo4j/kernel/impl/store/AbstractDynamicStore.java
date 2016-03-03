@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -203,7 +203,7 @@ public abstract class AbstractDynamicStore extends ComposableRecordStore<Dynamic
 
     public void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte src[] )
     {
-        allocateRecordsFromBytes( target, src, IteratorUtil.<DynamicRecord>emptyIterator(), this );
+        allocateRecordsFromBytes( target, src, Iterators.<DynamicRecord>emptyIterator(), this );
     }
 
     @Override

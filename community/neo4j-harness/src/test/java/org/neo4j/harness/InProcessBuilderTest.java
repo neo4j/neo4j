@@ -19,6 +19,11 @@
  */
 package org.neo4j.harness;
 
+import org.apache.commons.io.FileUtils;
+import org.codehaus.jackson.JsonNode;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -36,11 +41,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,7 +51,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
@@ -68,7 +67,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -200,7 +198,7 @@ public class InProcessBuilderTest
                 {
                     ResourceIterable<Node> allNodes = Iterables.asResourceIterable( server.graph().getAllNodes() );
 
-                    assertTrue( IteratorUtil.count( allNodes ) > 0 );
+                    assertTrue( Iterables.count( allNodes ) > 0 );
 
                     // When: create another node
                     server.graph().createNode();
@@ -214,7 +212,7 @@ public class InProcessBuilderTest
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    assertEquals( 1, IteratorUtil.count( db.getAllNodes() ) );
+                    assertEquals( 1, Iterables.count( db.getAllNodes() ) );
                     tx.success();
                 }
             }

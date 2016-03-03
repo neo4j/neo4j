@@ -33,9 +33,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -124,12 +124,12 @@ public class ConstraintRecoveryIT
 
         try(Transaction tx = db.beginTx())
         {
-            assertEquals(0, Iterables.count(Iterables.toList( db.schema().getConstraints() )));
+            assertEquals(0, Iterables.count(Iterables.asList( db.schema().getConstraints() )));
         }
 
         try(Transaction tx = db.beginTx())
         {
-            assertEquals(0, Iterables.count(Iterables.toList( db.schema().getIndexes() )));
+            assertEquals(0, Iterables.count(Iterables.asList( db.schema().getIndexes() )));
         }
 
         db.shutdown();

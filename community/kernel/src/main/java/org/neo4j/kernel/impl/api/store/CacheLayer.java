@@ -45,6 +45,7 @@ import java.util.function.Predicate;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicates;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyConstraint;
@@ -67,9 +68,6 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
-
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
 
 /**
  * This is the object-caching layer. It delegates to the legacy object cache system if possible, or delegates to the
@@ -130,8 +128,8 @@ public class CacheLayer implements StoreReadLayer
     private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<SchemaRule> rules,
             final SchemaRule.Kind kind )
     {
-        Iterator<SchemaRule> filteredRules = filter( item -> item.getKind() == kind, rules.iterator() );
-        return map( TO_INDEX_RULE, filteredRules );
+        Iterator<SchemaRule> filteredRules = Iterators.filter( item -> item.getKind() == kind, rules.iterator() );
+        return Iterators.map( TO_INDEX_RULE, filteredRules );
     }
 
     @Override

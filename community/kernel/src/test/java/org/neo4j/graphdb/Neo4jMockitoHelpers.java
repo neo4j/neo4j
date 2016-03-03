@@ -19,10 +19,10 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.Iterator;
-
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -31,7 +31,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 
 public class Neo4jMockitoHelpers
 {

@@ -30,7 +30,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Neo4jMatchers;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.PrettyJSON;
@@ -40,7 +40,6 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.StreamingFormat;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static org.hamcrest.Matchers.containsString;
@@ -214,7 +213,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldGetLocationHeadersWhenCreatingThings() throws Exception {
 
-        int originalNodeCount = countNodes();
+        long originalNodeCount = countNodes();
 
         final String jsonString = new PrettyJSON()
             .array()
@@ -309,7 +308,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
             .endArray()
             .toString();
 
-        int originalNodeCount = countNodes();
+        long originalNodeCount = countNodes();
 
         JaxRsResponse response = RestRequest.req()
                 .accept(APPLICATION_JSON_TYPE)
@@ -441,7 +440,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
 
             .endArray().toString();
 
-        int originalNodeCount = countNodes();
+        long originalNodeCount = countNodes();
 
         JaxRsResponse response = RestRequest.req()
                 .accept(APPLICATION_JSON_TYPE)
@@ -474,7 +473,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
 
             .endArray().toString();
 
-        int originalNodeCount = countNodes();
+        long originalNodeCount = countNodes();
 
         JaxRsResponse response = RestRequest.req()
                 .accept( APPLICATION_JSON_TYPE )
@@ -649,11 +648,11 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
         assertEquals(body1.get("start"), body2.get("self"));
 
     }
-    private int countNodes()
+    private long countNodes()
     {
         try ( Transaction transaction = graphdb().beginTx() )
         {
-            return IteratorUtil.count( (Iterable) graphdb().getAllNodes() );
+            return Iterables.count( (Iterable) graphdb().getAllNodes() );
         }
     }
 }

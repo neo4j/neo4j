@@ -24,12 +24,12 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
 public class ListPropertyKeysDocIT extends AbstractRestFunctionalTestBase
@@ -51,7 +51,7 @@ public class ListPropertyKeysDocIT extends AbstractRestFunctionalTestBase
                 .get( uri )
                 .entity();
 
-        Set<?> parsed = asSet((List<?>) readJson( body ));
+        Set<?> parsed = Iterables.asSet((List<?>) readJson( body ));
         assertTrue( parsed.contains( "name" ) );
     }
 }

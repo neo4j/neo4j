@@ -26,9 +26,8 @@ import org.neo4j.coreedge.raft.RaftMessages.Timeout.Heartbeat;
 import org.neo4j.coreedge.raft.state.explorer.ClusterState;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.coreedge.server.RaftTestMember.member;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class OutOfOrderDeliveryTest
 {

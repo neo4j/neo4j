@@ -50,7 +50,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
@@ -73,6 +72,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
@@ -342,7 +342,7 @@ public class BackupServiceIT
                 Node node = findNodeByLabel( (GraphDatabaseAPI) backupBasedDatabase, markerLabel );
                 // newProperty + 10 defined properties.
                 assertEquals( "We should be able to see all previously defined properties.",
-                        11, Iterables.toList( node.getPropertyKeys() ).size() );
+                        11, Iterables.asList( node.getPropertyKeys() ).size() );
             }
         }
         finally

@@ -19,16 +19,16 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.test.TargetDirectory;
@@ -50,19 +51,16 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.test.Assert.assertEventually;
 
 public class CoreServerReplicationIT
@@ -407,7 +405,7 @@ public class CoreServerReplicationIT
                     assertEquals( "value1", node.getProperty( "key1" ) );
                     Iterable<Label> labels = node.getSingleRelationship( withName( "relType1" ), Direction.OUTGOING )
                             .getEndNode().getLabels();
-                    assertEquals( singletonList( label( "label2" ) ), asList( labels ) );
+                    assertEquals( singletonList( label( "label2" ) ), Iterables.asList( labels ) );
                 }
 
                 tx.success();

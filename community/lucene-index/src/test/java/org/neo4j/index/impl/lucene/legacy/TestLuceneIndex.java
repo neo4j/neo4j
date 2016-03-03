@@ -51,12 +51,13 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.index.UniqueFactory;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.Matchers.emptyIterable;
@@ -71,8 +72,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
@@ -981,15 +982,15 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         creator.delete( b );
         restartTx();
 
-        IteratorUtil.count( (Iterator<Node>) index.get( key, value ) );
+        Iterators.count( (Iterator<Node>) index.get( key, value ) );
         rollbackTx();
         beginTx();
 
-        IteratorUtil.count( (Iterator<Node>) index.get( key, value ) );
+        Iterators.count( (Iterator<Node>) index.get( key, value ) );
         index.add( c, "something", "whatever" );
         restartTx();
 
-        IteratorUtil.count( (Iterator<Node>) index.get( key, value ) );
+        Iterators.count( (Iterator<Node>) index.get( key, value ) );
     }
 
     @Test
@@ -1862,7 +1863,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         // WHEN
         index.remove( node1, "name" );
-        Set<Node> nodes = asSet( (Iterable<Node>) index.query( "*:*" ) );
+        Set<Node> nodes = Iterables.asSet( index.query( "*:*" ) );
 
         // THEN
         assertEquals( asSet(), nodes );
@@ -1883,13 +1884,13 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         // WHEN
         IndexHits<Relationship> hits = index.get( "Type", type.name(), start, end );
-        assertEquals( 1, count( (Iterator<Relationship>)hits ) );
+        assertEquals( 1, count( hits ) );
         assertEquals( 1, hits.size() );
         index.remove( rel );
 
         // THEN
         hits = index.get( "Type", type.name(), start, end );
-        assertEquals( 0, count( (Iterator<Relationship>)hits ) );
+        assertEquals( 0, count( hits ) );
         assertEquals( 0, hits.size() );
     }
 }

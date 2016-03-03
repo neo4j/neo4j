@@ -19,22 +19,20 @@
  */
 package org.neo4j.metatest;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 
 import static java.nio.ByteBuffer.allocateDirect;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class TestEphemeralFileChannel
 {

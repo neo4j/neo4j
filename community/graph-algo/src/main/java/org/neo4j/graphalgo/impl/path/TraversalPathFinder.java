@@ -19,13 +19,12 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
-
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.LimitingIterable;
 
 public abstract class TraversalPathFinder implements PathFinder<Path>
@@ -35,7 +34,7 @@ public abstract class TraversalPathFinder implements PathFinder<Path>
     @Override
     public Path findSinglePath( Node start, Node end )
     {
-        return firstOrNull( findAllPaths( start, end ) );
+        return Iterables.firstOrNull( findAllPaths( start, end ) );
     }
     
     protected Integer maxResultCount()

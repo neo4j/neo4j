@@ -210,7 +210,7 @@ public class SubGraphExporter
     private String formatProperties( PropertyContainer pc )
     {
         StringBuilder result = new StringBuilder();
-        List<String> keys = Iterables.toList( pc.getPropertyKeys() );
+        List<String> keys = Iterables.asList( pc.getPropertyKeys() );
         Collections.sort( keys );
         for ( String prop : keys )
         {

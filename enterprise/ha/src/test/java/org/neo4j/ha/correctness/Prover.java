@@ -35,7 +35,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.ha.correctness.ClusterInstance.newClusterInstance;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class Prover
 {

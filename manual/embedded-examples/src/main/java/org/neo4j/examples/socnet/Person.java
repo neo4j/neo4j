@@ -35,15 +35,16 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.helpers.collection.IterableWrapper;
 
 import static org.neo4j.examples.socnet.RelTypes.FRIEND;
 import static org.neo4j.examples.socnet.RelTypes.NEXT;
 import static org.neo4j.examples.socnet.RelTypes.STATUS;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.PathExpanders.forTypeAndDirection;
+import static org.neo4j.helpers.collection.Iterables.addToCollection;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 public class Person
 {
@@ -106,9 +107,9 @@ public class Person
         }
     }
 
-    public int getNrOfFriends()
+    public long getNrOfFriends()
     {
-        return IteratorUtil.count( getFriends() );
+        return count( getFriends() );
     }
 
     public Iterable<Person> getFriends()
@@ -149,17 +150,17 @@ public class Person
             int numberOfFriendsToReturn )
     {
         HashSet<Person> friends = new HashSet<>();
-        IteratorUtil.addToCollection( getFriends(), friends );
+        addToCollection( getFriends(), friends );
 
         HashSet<Person> friendsOfFriends = new HashSet<>();
-        IteratorUtil.addToCollection( getFriendsOfFriends(), friendsOfFriends );
+        addToCollection( getFriendsOfFriends(), friendsOfFriends );
 
         friendsOfFriends.removeAll( friends );
 
         ArrayList<RankedPerson> rankedFriends = new ArrayList<>();
         for ( Person friend : friendsOfFriends )
         {
-            int rank = getNumberOfPathsToPerson( friend );
+            long rank = getNumberOfPathsToPerson( friend );
             rankedFriends.add( new RankedPerson( friend, rank ) );
         }
 
@@ -240,9 +241,9 @@ public class Person
     {
         final Person person;
 
-        final int rank;
+        final long rank;
 
-        private RankedPerson( Person person, int rank )
+        private RankedPerson( Person person, long rank )
         {
 
             this.person = person;
@@ -253,7 +254,7 @@ public class Person
         {
             return person;
         }
-        public int getRank()
+        public long getRank()
         {
             return rank;
         }
@@ -265,7 +266,7 @@ public class Person
         @Override
         public int compare( RankedPerson a, RankedPerson b )
         {
-            return b.getRank() - a.getRank();
+            return Long.compare( b.getRank(), a.getRank() );
         }
 
     }
@@ -328,11 +329,11 @@ public class Person
         };
     }
 
-    private int getNumberOfPathsToPerson( Person otherPerson )
+    private long getNumberOfPathsToPerson( Person otherPerson )
     {
         PathFinder<Path> finder = GraphAlgoFactory.allPaths( forTypeAndDirection( FRIEND, BOTH ), 2 );
         Iterable<Path> paths = finder.findAllPaths( getUnderlyingNode(), otherPerson.getUnderlyingNode() );
-        return IteratorUtil.count( paths );
+        return count( paths );
     }
 
     private Iterable<Person> createPersonsFromNodes( final Path path )

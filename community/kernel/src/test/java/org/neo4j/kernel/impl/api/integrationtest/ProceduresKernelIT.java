@@ -26,7 +26,7 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
@@ -37,7 +37,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
@@ -89,7 +89,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // When
         List<ProcedureSignature> signatures =
-                IteratorUtil.asList( readOperationsInNewTransaction().proceduresGetAll() );
+                Iterables.asList( readOperationsInNewTransaction().proceduresGetAll() );
 
         // Then
         assertThat( signatures, hasItems(

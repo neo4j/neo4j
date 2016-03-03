@@ -30,15 +30,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.Iterators.addToCollection;
 
 public class NodeManagerTest
 {
@@ -74,17 +74,12 @@ public class NodeManagerTest
         allNodes.next();
 
         // and WHEN another node is then added
-        Thread thread = new Thread( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                Transaction newTx = db.beginTx();
-                assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
-                db.createNode();
-                newTx.success();
-                newTx.close();
-            }
+        Thread thread = new Thread( () -> {
+            Transaction newTx = db.beginTx();
+            assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
+            db.createNode();
+            newTx.success();
+            newTx.close();
         } );
         thread.start();
         thread.join();

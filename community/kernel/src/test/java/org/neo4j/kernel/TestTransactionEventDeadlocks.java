@@ -28,13 +28,13 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class TestTransactionEventDeadlocks
 {
@@ -81,7 +81,7 @@ public class TestTransactionEventDeadlocks
         {
             // TODO Hmm, makes me think... should we really call transaction event handlers
             // for these relationship type / property index transasctions?
-            if ( count( data.createdRelationships() ) == 0 )
+            if ( Iterables.count( data.createdRelationships() ) == 0 )
                 return null;
 
             node.setProperty( "counter", ((Long) node.removeProperty( "counter" )) + 1 );

@@ -140,7 +140,7 @@ public class TypeMappers
 
     private ProcedureException javaToNeoMappingError( Type cls )
     {
-        List<Type> types = Iterables.toList( javaToNeo.keySet() );
+        List<Type> types = Iterables.asList( javaToNeo.keySet() );
         types.sort( (a,b)->a.toString().compareTo( b.toString() ) );
 
         return new ProcedureException( Status.Statement.InvalidType,

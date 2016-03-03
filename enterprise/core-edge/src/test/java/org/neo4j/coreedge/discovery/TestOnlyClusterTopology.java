@@ -25,8 +25,7 @@ import java.util.Set;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import org.neo4j.helpers.collection.Iterables;
 
 public class TestOnlyClusterTopology implements ClusterTopology
 {
@@ -56,7 +55,7 @@ public class TestOnlyClusterTopology implements ClusterTopology
     @Override
     public Set<CoreMember> getMembers()
     {
-        return asSet( coreMembers );
+        return Iterables.asSet( coreMembers );
     }
 
     @Override

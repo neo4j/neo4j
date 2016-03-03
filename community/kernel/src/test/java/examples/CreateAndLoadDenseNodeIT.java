@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -40,7 +41,6 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.test.BatchTransaction.beginBatchTx;
 
 @Ignore( "Not a test. Here for show-off purposes" )
@@ -62,12 +62,12 @@ public class CreateAndLoadDenseNodeIT
         loadRelationships( node, MyRelTypes.TEST_TRAVERSAL, INCOMING );
     }
 
-    private int loadRelationships( Node node, RelationshipType type, Direction direction )
+    private long loadRelationships( Node node, RelationshipType type, Direction direction )
     {
-        int count;
+        long count;
         try ( Transaction tx = db.beginTx() )
         {
-            count = count( node.getRelationships( type, direction ) );
+            count = Iterables.count( node.getRelationships( type, direction ) );
             int pCount = node.getDegree( type, direction );
             assertEquals( count, pCount );
             tx.success();

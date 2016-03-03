@@ -36,8 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -53,15 +52,15 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static java.util.concurrent.Executors.newCachedThreadPool;
 
 /**
  * Test for a problem where multiple threads getting an index for the first time
@@ -166,7 +165,7 @@ public class IndexCreationTest
                     // The first COMMIT
                     assertTrue( startFound );
                     assertFalse( "Index creation transaction wasn't the first one", commandsInFirstEntry.isEmpty() );
-                    List<StorageCommand> createCommands = IteratorUtil.asList( new FilteringIterator<>(
+                    List<StorageCommand> createCommands = Iterators.asList( new FilteringIterator<>(
                             commandsInFirstEntry.iterator(),
                             item -> item instanceof IndexDefineCommand
                     ) );

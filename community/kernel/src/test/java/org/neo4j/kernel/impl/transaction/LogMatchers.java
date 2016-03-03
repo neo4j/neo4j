@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -69,7 +69,7 @@ public class LogMatchers
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( fileChannel, header.logVersion, header.logFormatVersion );
         ReadableLogChannel logChannel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS );
-        return Iterables.toList( new IOCursorAsResourceIterable<>( new LogEntryCursor(
+        return Iterables.asList( new IOCursorAsResourceIterable<>( new LogEntryCursor(
                 new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ), logChannel ) ) );
     }
 

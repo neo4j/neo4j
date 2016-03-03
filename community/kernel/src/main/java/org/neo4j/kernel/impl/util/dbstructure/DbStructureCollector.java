@@ -25,8 +25,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
@@ -86,7 +85,7 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String, String>> knownUniqueConstraints()
             {
-                return Iterables.map( uniquenessConstraint -> {
+                return Iterators.map( uniquenessConstraint -> {
                     String label = labels.byIdOrFail( uniquenessConstraint.label() );
                     String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
                     return Pair.of( label, propertyKey );
@@ -96,7 +95,7 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String,String>> knownNodePropertyExistenceConstraints()
             {
-                return Iterables.map( uniquenessConstraint -> {
+                return Iterators.map( uniquenessConstraint -> {
                     String label = labels.byIdOrFail( uniquenessConstraint.label() );
                     String propertyKey = propertyKeys.byIdOrFail( uniquenessConstraint.propertyKey() );
                     return Pair.of( label, propertyKey );
@@ -106,7 +105,7 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public Iterator<Pair<String,String>> knownRelationshipPropertyExistenceConstraints()
             {
-                return IteratorUtil.emptyIterator();
+                return Iterators.emptyIterator();
             }
 
             @Override

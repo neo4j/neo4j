@@ -33,7 +33,7 @@ import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
 
 public class Fixture
@@ -88,7 +88,7 @@ public class Fixture
     public void boot() throws RaftInstance.BootstrapException
     {
         net.start();
-        IteratorUtil.first( rafts ).bootstrapWithInitialMembers( new RaftTestGroup( members ) );
+        Iterables.first( rafts ).bootstrapWithInitialMembers( new RaftTestGroup( members ) );
     }
 
     public void teardown() throws InterruptedException

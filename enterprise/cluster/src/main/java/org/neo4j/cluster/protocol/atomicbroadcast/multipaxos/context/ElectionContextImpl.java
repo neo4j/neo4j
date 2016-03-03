@@ -43,9 +43,9 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.util.Quorums.isQuorum;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 public class ElectionContextImpl
         extends AbstractContextImpl
@@ -65,7 +65,7 @@ public class ElectionContextImpl
     {
         super( me, commonState, logging, timeouts );
         this.electionCredentialsProvider = electionCredentialsProvider;
-        this.roles = new ArrayList<>(toList(roles));
+        this.roles = new ArrayList<>( asList(roles));
         this.elections = new HashMap<>();
         this.clusterContext = clusterContext;
         this.heartbeatContext = heartbeatContext;
@@ -298,7 +298,7 @@ public class ElectionContextImpl
     public boolean isElector()
     {
         // Only the first alive server should try elections. Everyone else waits
-        List<org.neo4j.cluster.InstanceId> aliveInstances = toList( getAlive() );
+        List<org.neo4j.cluster.InstanceId> aliveInstances = asList( getAlive() );
         Collections.sort( aliveInstances );
         return aliveInstances.indexOf( getMyId() ) == 0;
     }
@@ -443,7 +443,7 @@ public class ElectionContextImpl
 
     public static List<Vote> removeBlankVotes( Collection<Vote> voteList )
     {
-        return toList( filter( item ->
+        return asList( filter( item ->
                 !(item.getCredentials() instanceof NotElectableElectionCredentials), voteList ) );
     }
 }

@@ -36,7 +36,7 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -252,7 +252,7 @@ public class RaftLogShipperTest
 
         do
         {
-            AppendEntries.Request last = (AppendEntries.Request) IteratorUtil.last( outbound.sentTo( follower ) );
+            AppendEntries.Request last = (AppendEntries.Request) Iterables.last( outbound.sentTo( follower ) );
             matchIndex = last.prevLogIndex() + last.entries().length;
 
             outbound.clear();

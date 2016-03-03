@@ -31,7 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.Strings;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -545,7 +545,7 @@ public class StorePropertyPayloadCursorTest
         @Override
         public Iterator<Param> iterator()
         {
-            return IteratorUtil.iterator( params );
+            return Iterators.iterator( params );
         }
 
         @Override

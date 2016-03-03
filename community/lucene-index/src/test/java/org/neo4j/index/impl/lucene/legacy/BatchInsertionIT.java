@@ -36,13 +36,11 @@ import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-
-import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.EXACT_CONFIG;
 
@@ -70,8 +68,8 @@ public class BatchInsertionIT
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( count( db.findNodes( label( "User" ), "name", "Bob" ) ), equalTo(1) );
-            assertThat( count( db.findNodes( label( "Admin" ), "name", "Bob" ) ), equalTo(1) );
+            assertThat( count( db.findNodes( label( "User" ), "name", "Bob" ) ), equalTo(1L) );
+            assertThat( count( db.findNodes( label( "Admin" ), "name", "Bob" ) ), equalTo(1L) );
         }
         finally
         {
@@ -97,7 +95,7 @@ public class BatchInsertionIT
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try(Transaction tx = db.beginTx())
         {
-            assertThat( count( db.findNodes( label( "Banana" ), "name", "Bob" ) ), equalTo(0) );
+            assertThat( count( db.findNodes( label( "Banana" ), "name", "Bob" ) ), equalTo(0L) );
         }
         finally
         {

@@ -159,7 +159,7 @@ public class ClusterConfiguration
 
     public List<URI> getMemberURIs()
     {
-        return Iterables.toList( members.values() );
+        return Iterables.asList( members.values() );
     }
 
     public String getName()

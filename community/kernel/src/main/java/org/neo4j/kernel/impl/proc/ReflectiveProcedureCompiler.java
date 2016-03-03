@@ -44,7 +44,7 @@ import org.neo4j.procedure.Procedure;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
-import static org.neo4j.helpers.collection.Iterables.asRawIterator;
+import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 
 /**
  * Handles converting a class into one or more callable {@link CallableProcedure}.

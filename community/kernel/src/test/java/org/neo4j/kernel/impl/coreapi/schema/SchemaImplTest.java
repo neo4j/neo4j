@@ -34,13 +34,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexPopulationProgress;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 
 
 public class SchemaImplTest
@@ -125,7 +125,7 @@ public class SchemaImplTest
         try ( Transaction transaction = db.beginTx() )
         {
             Iterable<IndexDefinition> indexes = db.schema().getIndexes( label );
-            IndexDefinition index = firstOrNull( indexes );
+            IndexDefinition index = Iterables.firstOrNull( indexes );
             boolean exists = index != null;
             transaction.success();
             return exists;

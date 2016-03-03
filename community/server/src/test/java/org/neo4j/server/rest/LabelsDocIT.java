@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
@@ -46,7 +47,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 import static org.neo4j.test.GraphDescription.PropType.ARRAY;
@@ -143,7 +144,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
             .entity();
         @SuppressWarnings("unchecked")
         List<String> labels = (List<String>) readJson( body );
-        assertEquals( asSet( "Actor", "Director" ), asSet( labels ) );
+        assertEquals( asSet( "Actor", "Director" ), Iterables.asSet( labels ) );
     }
 
     @Documented( "Removing a label from a node." )
@@ -199,7 +200,8 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
             .entity();
 
         List<?> parsed = (List<?>) readJson( body );
-        assertEquals( asSet( "Clint Eastwood", "Donald Sutherland" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
+        assertEquals( asSet( "Clint Eastwood", "Donald Sutherland" ), Iterables
+                .asSet( map( getProperty( "name", String.class ), parsed ) ) );
     }
 
     @Test
@@ -228,7 +230,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
                 .entity();
 
         List<?> parsed = (List<?>) readJson( result );
-        assertEquals( asSet( "Clint Eastwood" ), asSet( map( getProperty( "name", String.class ), parsed ) ) );
+        assertEquals( asSet( "Clint Eastwood" ), Iterables.asSet( map( getProperty( "name", String.class ), parsed ) ) );
     }
 
     @Test
@@ -256,8 +258,8 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, parsed.size() );
 
         //noinspection AssertEqualsBetweenInconvertibleTypes
-        assertEquals( asSet( asList( asList( "Clint", "Eastwood" ) ) ),
-                asSet( map( getProperty( "names", List.class ), parsed ) ) );
+        assertEquals( Iterables.asSet( asList( asList( "Clint", "Eastwood" ) ) ),
+                Iterables.asSet( map( getProperty( "names", List.class ), parsed ) ) );
     }
 
     @Test
@@ -280,7 +282,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
                 .get( uri )
                 .entity();
 
-        Set<?> parsed = asSet((List<?>) readJson( body ));
+        Set<?> parsed = Iterables.asSet((List<?>) readJson( body ));
         assertTrue( parsed.contains( "Person" ) );
         assertTrue( parsed.contains( "Actor" ) );
         assertTrue( parsed.contains( "Director" ) );

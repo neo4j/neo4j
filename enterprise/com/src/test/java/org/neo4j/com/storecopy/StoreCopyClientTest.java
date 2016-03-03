@@ -34,10 +34,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
@@ -117,10 +117,10 @@ public class StoreCopyClientTest
 
         try ( Transaction tx = copy.beginTx() )
         {
-            long nodesCount = IteratorUtil.count( copy.findNodes( label( "BeforeCopyBegins" ) ) );
+            long nodesCount = Iterators.count( copy.findNodes( label( "BeforeCopyBegins" ) ) );
             assertThat( nodesCount, equalTo( 1l ) );
 
-            assertThat( IteratorUtil.single( copy.findNodes( label( "BeforeCopyBegins" ) ) ).getId(),
+            assertThat( Iterators.single( copy.findNodes( label( "BeforeCopyBegins" ) ) ).getId(),
                     equalTo( 0l ) );
 
             tx.success();
@@ -179,7 +179,7 @@ public class StoreCopyClientTest
 
         try ( Transaction tx = copy.beginTx() )
         {
-            long nodesCount = IteratorUtil.count( copy.findNodes( label( "BeforeCopyBegins" ) ) );
+            long nodesCount = Iterators.count( copy.findNodes( label( "BeforeCopyBegins" ) ) );
             assertThat( nodesCount, equalTo( 0l ) );
 
             tx.success();
