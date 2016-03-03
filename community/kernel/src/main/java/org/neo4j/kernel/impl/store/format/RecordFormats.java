@@ -29,9 +29,12 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
+/**
+ * The record formats that a store version uses. Contains all formats for all different stores as well as
+ * accessors for which {@link Capability capabilities} a format has as to be able to compare between formats.
+ */
 public interface RecordFormats
 {
-
     abstract class Factory extends Service
     {
         public Factory( String key, String... altKeys )
@@ -44,9 +47,22 @@ public interface RecordFormats
 
     String storeVersion();
 
+    /**
+     * Generation of this format, simply an increasing int which should be incrementing along with
+     * releases, e.g. store version, e.g. official versions of the product. This is for preventing downgrades.
+     * When implementing a new format or evolving an older format the generation of the new format should
+     * be higher than the format it evolves from, or in case of a new format - newer than the currently newest format.
+     * The generation value doesn't need to correlate to any other value, the only thing needed is to
+     * determine "older" or "newer".
+     *
+     * @return format generation, with the intent of usage being that a store can migrate to a newer or
+     * same generation, but not to an older generation.
+     */
+    int generation();
+
     RecordFormat<NodeRecord> node();
 
-    RecordFormat<DynamicRecord> dynamic();
+    RecordFormat<RelationshipGroupRecord> relationshipGroup();
 
     RecordFormat<RelationshipRecord> relationship();
 
@@ -58,5 +74,27 @@ public interface RecordFormats
 
     RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken();
 
-    RecordFormat<RelationshipGroupRecord> relationshipGroup();
+    RecordFormat<DynamicRecord> dynamic();
+
+    /**
+     * Use when comparing one format to another, for example for migration purposes.
+     *
+     * @return array of {@link Capability capabilities} for comparison.
+     */
+    Capability[] capabilities();
+
+    /**
+     * @param capability {@link Capability} to check for.
+     * @return whether or not this format has a certain {@link Capability}.
+     */
+    boolean hasCapability( Capability capability );
+
+    /**
+     * Whether or not this format has the same capabilities of the specific {@code type} as the {@code other} format.
+     *
+     * @param other {@link RecordFormats} to compare with.
+     * @param type {@link CapabilityType type} of capability to compare.
+     * @return true if both formats have the same set of capabilities of the given {@code type}.
+     */
+    boolean hasSameCapabilities( RecordFormats other, CapabilityType type );
 }

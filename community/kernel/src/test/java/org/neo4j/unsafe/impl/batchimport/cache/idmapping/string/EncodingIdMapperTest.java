@@ -112,15 +112,9 @@ public class EncodingIdMapperTest
                     private int i;
 
                     @Override
-                    public boolean hasNext()
+                    protected Object fetchNextOrNull()
                     {
-                        return i < 300_000;
-                    }
-
-                    @Override
-                    public Object next()
-                    {
-                        return "" + (i++);
+                        return i < 300_000 ? "" + (i++) : null;
                     }
                 };
             }

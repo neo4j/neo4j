@@ -28,18 +28,18 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.Collection;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Random;
+import java.util.function.BiConsumer;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -48,26 +48,28 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.format.CapabilityType;
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.storemigration.DirectRecordStoreMigrator;
+import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.StoreMigratorCheckPointer;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicator;
-import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -78,7 +80,6 @@ import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
@@ -87,14 +88,18 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
-import org.neo4j.unsafe.impl.batchimport.input.SourceInputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
+
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
+import static org.neo4j.kernel.impl.store.format.Capability.VERSION_TRAILERS;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -139,7 +144,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
-            String versionToMigrateFrom ) throws IOException
+            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         // Extract information about the last transaction from legacy neostore
         File neoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
@@ -150,31 +155,44 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         writeLastTxChecksum( migrationDir, lastTxChecksum );
         writeLastTxLogPosition( migrationDir, lastTxLogPosition );
 
-        switch ( versionToMigrateFrom )
+        RecordFormats oldFormat = InternalRecordFormatSelector.fromVersion( versionToMigrateFrom );
+        RecordFormats newFormat = InternalRecordFormatSelector.fromVersion( versionToMigrateTo );
+        if ( !oldFormat.equals( newFormat ) )
         {
-        case Legacy23Store.LEGACY_VERSION:
-        case Legacy22Store.LEGACY_VERSION:
-            // nothing to do
-            break;
-        case Legacy21Store.LEGACY_VERSION:
-            removeDuplicateEntityProperties(
-                    storeDir, migrationDir, pageCache, schemaIndexProvider, Legacy21Store.LEGACY_VERSION );
-            break;
-        case Legacy20Store.LEGACY_VERSION:
-            // migrate stores
-            migrateWithBatchImporter( storeDir, migrationDir,
-                    lastTxId, lastTxChecksum, lastTxLogPosition.getLogVersion(), lastTxLogPosition.getByteOffset(),
-                    pageCache, progressMonitor, versionToMigrateFrom );
-            // don't create counters from scratch, since the batch importer just did
-            break;
-        default:
-            throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
+            if ( newFormat.hasSameCapabilities( oldFormat, CapabilityType.FORMAT ) )
+            {
+                // Do direct migration
+                migrateWithDirectMigration( storeDir, migrationDir, oldFormat, newFormat );
+            }
+            else
+            {
+                // Some form of migration is required (a fallback/catch-all option)
+                migrateWithBatchImporter( storeDir, migrationDir,
+                        lastTxId, lastTxChecksum, lastTxLogPosition.getLogVersion(), lastTxLogPosition.getByteOffset(),
+                        progressMonitor, oldFormat, newFormat );
+            }
+        }
+
+        if ( versionToMigrateFrom.equals( LowLimitV2_1.STORE_VERSION ) )
+        {
+            removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider, oldFormat );
         }
 
         // DO NOT migrate logs. LegacyLogs is able to migrate logs, but only changes its format, not any
         // contents of it, and since the record format has changed there would be a mismatch between the
         // commands in the log and the contents in the store. If log migration is to be performed there
         // must be a proper translation happening while doing so.
+    }
+
+    private void migrateWithDirectMigration( File storeDir, File migrationDir,
+            RecordFormats oldFormat, RecordFormats newFormat )
+    {
+        DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config );
+        StoreType[] stores = stream( StoreType.values() )
+                // Not interested in migrating MetaData store.
+                .filter( type -> type != META_DATA )
+                .toArray( StoreType[]::new );
+        migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, stores );
     }
 
     private void writeLastTxChecksum( File migrationDir, long lastTxChecksum ) throws IOException
@@ -283,7 +301,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void removeDuplicateEntityProperties( File storeDir, File migrationDir, PageCache pageCache,
-            SchemaIndexProvider schemaIndexProvider, String versionToUpgradeFrom ) throws IOException
+            SchemaIndexProvider schemaIndexProvider, RecordFormats oldFormat ) throws IOException
     {
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.<StoreFile,StoreFile>iterable(
                 StoreFile.PROPERTY_STORE,
@@ -293,23 +311,23 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 StoreFile.PROPERTY_STRING_STORE,
                 StoreFile.NODE_STORE,
                 StoreFile.NODE_LABEL_STORE,
-                StoreFile.SCHEMA_STORE ), false, false, StoreFileType.STORE );
+                StoreFile.SCHEMA_STORE ), false, ExistingTargetStrategy.SKIP, StoreFileType.STORE );
 
         // copy ids only if present
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.<StoreFile,StoreFile>iterable(
                 StoreFile.PROPERTY_STORE,
                 StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
                 StoreFile.PROPERTY_KEY_TOKEN_STORE,
-                StoreFile.NODE_STORE ), true, false, StoreFileType.ID );
+                StoreFile.NODE_STORE ), true, ExistingTargetStrategy.SKIP, StoreFileType.ID );
 
         // let's remove trailers here on the copied files since the new code doesn't remove them since in 2.3
         // there are no store trailers
-        StoreFile.removeTrailers( versionToUpgradeFrom, fileSystem, migrationDir, pageCache.pageSize() );
+        StoreFile.removeTrailers( oldFormat.storeVersion(), fileSystem, migrationDir, pageCache.pageSize() );
 
         new PropertyDeduplicator( fileSystem, migrationDir, pageCache, schemaIndexProvider ).deduplicateProperties();
     }
 
-    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache ) throws IOException
+    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache )
     {
         final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
@@ -333,52 +351,87 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId, long lastTxChecksum,
-            long lastTxLogVersion, long lastTxLogByteOffset, PageCache pageCache,
-            MigrationProgressMonitor.Section progressMonitor, String versionToUpgradeFrom )
+            long lastTxLogVersion, long lastTxLogByteOffset, MigrationProgressMonitor.Section progressMonitor,
+            RecordFormats oldFormat, RecordFormats newFormat )
             throws IOException
     {
-        prepareBatchImportMigration( storeDir, migrationDir );
+        prepareBatchImportMigration( storeDir, migrationDir, oldFormat, newFormat );
 
-        if ( !Legacy20Store.LEGACY_VERSION.equals( versionToUpgradeFrom ) )
-        {
-            throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
-        }
-
-        LegacyStore legacyStore = new Legacy20Store( fileSystem, new File( storeDir, MetaDataStore.DEFAULT_NAME ) );
-        Configuration importConfig = new Configuration.Overridden( config );
-        AdditionalInitialIds additionalInitialIds =
-                readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
-        BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
-                importConfig, logService,
-                withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
-                        importConfig ), importConfig ), additionalInitialIds, config );
-        InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
-        InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
+        boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals( oldFormat.dynamic() );
+        boolean requiresPropertyMigration =
+                !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
-        try ( OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
+        try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, storeDir );
+                OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
         {
+            Configuration importConfig = new Configuration.Overridden( config );
+            AdditionalInitialIds additionalInitialIds =
+                    readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
+
+            // We have to make sure to keep the token ids if we're migrating properties/labels
+            BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
+                    importConfig, logService,
+                    withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
+                            importConfig ), importConfig ), additionalInitialIds, config );
+            InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore, requiresPropertyMigration );
+            InputIterable<InputRelationship> relationships =
+                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration );
             importer.doImport(
                     Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true,
                             Collectors.badCollector( badOutput, 0 ) ) );
+
+            // During migration the batch importer doesn't necessarily writes all entities, depending on
+            // which stores needs migration. Node, relationship, relationship group stores are always written
+            // anyways and cannot be avoided with the importer, but delete the store files that weren't written
+            // (left empty) so that we don't overwrite those in the real store directory later.
+            Collection<StoreFile> storesToDeleteFromMigratedDirectory = new ArrayList<>();
+            storesToDeleteFromMigratedDirectory.add( StoreFile.NEO_STORE );
+            if ( !requiresPropertyMigration )
+            {
+                // We didn't migrate properties, so the property stores in the migrated store are just empty/bogus
+                storesToDeleteFromMigratedDirectory.addAll( asList(
+                        StoreFile.PROPERTY_STORE,
+                        StoreFile.PROPERTY_STRING_STORE,
+                        StoreFile.PROPERTY_ARRAY_STORE ) );
+            }
+            if ( !requiresDynamicStoreMigration )
+            {
+                // We didn't migrate labels (dynamic node labels) or any other dynamic store
+                storesToDeleteFromMigratedDirectory.addAll( asList(
+                        StoreFile.NODE_LABEL_STORE,
+                        StoreFile.LABEL_TOKEN_STORE,
+                        StoreFile.LABEL_TOKEN_NAMES_STORE,
+                        StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE,
+                        StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
+                        StoreFile.PROPERTY_KEY_TOKEN_STORE,
+                        StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                        StoreFile.SCHEMA_STORE ) );
+            }
+            StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null, storesToDeleteFromMigratedDirectory,
+                    true, null, StoreFileType.values() );
         }
 
-        // During migration the batch importer only writes node, relationship, relationship group and counts stores.
-        // Delete the property store files from the batch import migration so that even if we won't
-        // migrate property stores as part of deduplicating property key tokens or properties then
-        // we won't move these empty property store files to the store directory, overwriting the old ones.
-        StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null, Iterables.<StoreFile,StoreFile>iterable(
-                StoreFile.PROPERTY_STORE,
-                StoreFile.PROPERTY_STRING_STORE,
-                StoreFile.PROPERTY_ARRAY_STORE,
-                StoreFile.PROPERTY_KEY_TOKEN_STORE,
-                StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE ), true, false, StoreFileType.values() );
-
-        // Close
-        legacyStore.close();
+        // The batch importer will create a whole store. so
+        // disregard the new and empty ".id" files, i.e. reuse the existing id files
+        StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null,
+                StoreFile.currentStoreFiles(),
+                true, // allow to skip non existent source files
+                null,
+                StoreFileType.ID );
     }
 
-    private void prepareBatchImportMigration( File storeDir, File migrationDir ) throws IOException
+    private NeoStores instantiateLegacyStore( RecordFormats format, File storeDir )
     {
+        return new StoreFactory( storeDir, config, new ReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
+                NullLogProvider.getInstance(), format ).openAllNeoStores( true );
+    }
+
+    private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
+            RecordFormats newFormat )
+            throws IOException
+    {
+        BatchingNeoStores.createStore( fileSystem, migrationDir.getPath(), config );
+
         // We use the batch importer for migrating the data, and we use it in a special way where we only
         // rewrite the stores that have actually changed format. We know that to be node and relationship
         // stores. Although since the batch importer also populates the counts store, all labels need to
@@ -386,11 +439,28 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         // that dynamic record store over before doing the "batch import".
         //   Copying this file just as-is assumes that the format hasn't change. If that happens we're in
         // a different situation, where we first need to migrate this file.
-        BatchingNeoStores.createStore( fileSystem, migrationDir.getPath(), config );
-        Iterable<StoreFile> storeFiles = iterable( StoreFile.NODE_LABEL_STORE );
-        StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, storeFiles,
-                true, // OK if it's not there (1.9)
-                false, StoreFileType.values() );
+        if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
+        {
+            Iterable<StoreFile> storeFiles = iterable( StoreFile.NODE_LABEL_STORE );
+            StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, storeFiles,
+                    true, // OK if it's not there (1.9)
+                    ExistingTargetStrategy.FAIL, StoreFileType.values() );
+        }
+        else
+        {
+            // Migrate all token stores, schema store and dynamic node label ids, keeping their ids intact
+            DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config );
+            migrator.migrate( storeDir, oldFormat, migrationDir, newFormat,
+                    new StoreType[] {
+                        StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
+                        StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
+                        StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME,
+                        StoreType.NODE_LABEL,
+                        StoreType.SCHEMA },
+                    new StoreType[] {
+                        StoreType.NODE,
+                    } );
+        }
     }
 
     private AdditionalInitialIds readAdditionalIds( File storeDir, final long lastTxId, final long lastTxChecksum,
@@ -461,199 +531,97 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private ExecutionMonitor migrationBatchImporterMonitor( LegacyStore legacyStore,
+    private ExecutionMonitor migrationBatchImporterMonitor( NeoStores legacyStore,
             final MigrationProgressMonitor.Section progressMonitor, Configuration config )
     {
         return new BatchImporterProgressMonitor(
-                legacyStore.getNodeStoreReader().getMaxId(), legacyStore.getRelStoreReader().getMaxId(),
+                legacyStore.getNodeStore().getHighId(), legacyStore.getRelationshipStore().getHighId(),
                 config, progressMonitor );
     }
 
-    private StoreFile[] allExcept( StoreFile... exceptions )
+    private InputIterable<InputRelationship> legacyRelationshipsAsInput( NeoStores legacyStore,
+            boolean requiresPropertyMigration )
     {
-        List<StoreFile> result = new ArrayList<>();
-        result.addAll( Arrays.asList( StoreFile.values() ) );
-        for ( StoreFile except : exceptions )
-        {
-            result.remove( except );
-        }
-        return result.toArray( new StoreFile[result.size()] );
-    }
-
-    private InputIterable<InputRelationship> legacyRelationshipsAsInput( LegacyStore legacyStore )
-    {
-        final LegacyRelationshipStoreReader reader = legacyStore.getRelStoreReader();
-        return new InputIterable<InputRelationship>()
+        RelationshipStore store = legacyStore.getRelationshipStore();
+        final BiConsumer<InputRelationship,RelationshipRecord> propertyDecorator =
+                propertyDecorator( requiresPropertyMigration, legacyStore );
+        return new StoreScanAsInputIterable<InputRelationship,RelationshipRecord>( store )
         {
             @Override
-            public InputIterator<InputRelationship> iterator()
+            protected InputRelationship inputEntityOf( RelationshipRecord record )
             {
-                final Iterator<RelationshipRecord> source;
-                try
-                {
-                    source = reader.iterator( 0 );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-
-                final StoreSourceTraceability traceability =
-                        new StoreSourceTraceability( "legacy relationships", reader.getRecordSize() );
-                return new SourceInputIterator<InputRelationship,RelationshipRecord>( traceability )
-                {
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return source.hasNext();
-                    }
-
-                    @Override
-                    public InputRelationship next()
-                    {
-                        if ( !hasNext() )
-                        {
-                            throw new NoSuchElementException();
-                        }
-
-                        RelationshipRecord record = source.next();
-                        InputRelationship result = new InputRelationship(
-                                "legacy store", record.getId(), record.getId() * RelationshipRecordFormat.RECORD_SIZE,
-                                InputEntity.NO_PROPERTIES, record.getNextProp(),
-                                record.getFirstNode(), record.getSecondNode(), null, record.getType() );
-                        result.setSpecificId( record.getId() );
-                        traceability.atId( record.getId() );
-                        return result;
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                    }
-                };
-            }
-
-            @Override
-            public boolean supportsMultiplePasses()
-            {
-                return true;
+                InputRelationship result = new InputRelationship(
+                        "legacy store", record.getId(), record.getId() * RelationshipRecordFormat.RECORD_SIZE,
+                        InputEntity.NO_PROPERTIES, record.getNextProp(),
+                        record.getFirstNode(), record.getSecondNode(), null, record.getType() );
+                propertyDecorator.accept( result, record );
+                result.setSpecificId( record.getId() );
+                return result;
             }
         };
     }
 
-    private InputIterable<InputNode> legacyNodesAsInput( LegacyStore legacyStore )
+    private InputIterable<InputNode> legacyNodesAsInput( NeoStores legacyStore,
+            boolean requiresPropertyMigration )
     {
-        final LegacyNodeStoreReader reader = legacyStore.getNodeStoreReader();
-        return new InputIterable<InputNode>()
+        NodeStore store = legacyStore.getNodeStore();
+        final BiConsumer<InputNode,NodeRecord> propertyDecorator =
+                propertyDecorator( requiresPropertyMigration, legacyStore );
+
+        return new StoreScanAsInputIterable<InputNode,NodeRecord>( store )
         {
             @Override
-            public InputIterator<InputNode> iterator()
+            protected InputNode inputEntityOf( NodeRecord record )
             {
-                final Iterator<NodeRecord> source;
-                try
-                {
-                    source = reader.iterator();
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-
-                final StoreSourceTraceability traceability =
-                        new StoreSourceTraceability( "legacy nodes", reader.getRecordSize() );
-                return new SourceInputIterator<InputNode,NodeRecord>( traceability )
-                {
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return source.hasNext();
-                    }
-
-                    @Override
-                    public InputNode next()
-                    {
-                        if ( !hasNext() )
-                        {
-                            throw new NoSuchElementException();
-                        }
-
-                        NodeRecord record = source.next();
-                        traceability.atId( record.getId() );
-                        return new InputNode(
-                                "legacy store", record.getId(), record.getId() * NodeRecordFormat.RECORD_SIZE,
-                                record.getId(), InputEntity.NO_PROPERTIES, record.getNextProp(),
-                                InputNode.NO_LABELS, record.getLabelField() );
-                    }
-
-                    @Override
-                    public void close()
-                    {
-                    }
-                };
+                InputNode node = new InputNode(
+                        "legacy store", record.getId(), record.getId() * NodeRecordFormat.RECORD_SIZE,
+                        record.getId(), InputEntity.NO_PROPERTIES, record.getNextProp(),
+                        InputNode.NO_LABELS, record.getLabelField() );
+                propertyDecorator.accept( node, record );
+                return node;
             }
+        };
+    }
 
-            @Override
-            public boolean supportsMultiplePasses()
+    private <ENTITY extends InputEntity,RECORD extends PrimitiveRecord> BiConsumer<ENTITY,RECORD> propertyDecorator(
+            boolean requiresPropertyMigration, NeoStores stores )
+    {
+        if ( !requiresPropertyMigration )
+        {
+            return (a, b) -> {};
+        }
+
+        final StorePropertyCursor cursor = new StorePropertyCursor( stores.getPropertyStore(), (ignored) -> {} );
+        final List<Object> scratch = new ArrayList<>();
+        return (ENTITY entity, RECORD record) -> {
+            cursor.init( record.getNextProp(), LockService.NO_LOCK );
+            scratch.clear();
+            while ( cursor.next() )
             {
-                return true;
+                scratch.add( cursor.propertyKeyId() ); // add key as int here as to have the importer use the token id
+                scratch.add( cursor.value() );
             }
+            entity.setProperties( scratch.isEmpty() ? InputEntity.NO_PROPERTIES : scratch.toArray() );
+            cursor.close();
         };
     }
 
     @Override
-    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom ) throws IOException
+    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom,
+            String versionToUpgradeTo ) throws IOException
     {
-        // The batch importer will create a whole store. so
-        // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
-
-        Iterable<StoreFile> filesToMove;
-        StoreFile[] idFilesToDelete;
-        switch ( versionToUpgradeFrom )
-        {
-        case Legacy20Store.LEGACY_VERSION:
-            // Note: We don't overwrite the label stores in 2.0
-            filesToMove = Arrays.asList(
-                    StoreFile.NODE_STORE,
-                    StoreFile.RELATIONSHIP_STORE,
-                    StoreFile.RELATIONSHIP_GROUP_STORE,
-                    StoreFile.COUNTS_STORE_LEFT,
-                    StoreFile.COUNTS_STORE_RIGHT );
-            idFilesToDelete = allExcept(
-                    StoreFile.RELATIONSHIP_GROUP_STORE
-            );
-            break;
-        case Legacy21Store.LEGACY_VERSION:
-            filesToMove = Arrays.asList(
-                    StoreFile.NODE_STORE,
-                    StoreFile.COUNTS_STORE_LEFT,
-                    StoreFile.COUNTS_STORE_RIGHT,
-                    StoreFile.PROPERTY_STORE,
-                    StoreFile.PROPERTY_KEY_TOKEN_STORE,
-                    StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
-            idFilesToDelete = new StoreFile[]{};
-            break;
-        case Legacy22Store.LEGACY_VERSION:
-        case Legacy23Store.LEGACY_VERSION:
-            filesToMove = Collections.emptyList();
-            idFilesToDelete = new StoreFile[]{};
-            break;
-        default:
-            throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
-        }
-
-        StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null,
-                Iterables.<StoreFile,StoreFile>iterable( idFilesToDelete ),
-                true, // allow to skip non existent source files
-                false, // not allow to overwrite target files
-                StoreFileType.ID );
-
         // Move the migrated ones into the store directory
-        StoreFile.fileOperation( MOVE, fileSystem, migrationDir, storeDir, filesToMove,
+        StoreFile.fileOperation( MOVE, fileSystem, migrationDir, storeDir, StoreFile.currentStoreFiles(),
                 true, // allow to skip non existent source files
-                true, // allow to overwrite target files
+                ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
                 StoreFileType.values() );
 
-        if ( !Legacy23Store.LEGACY_VERSION.equals( versionToUpgradeFrom ) )
+        RecordFormats oldFormat = InternalRecordFormatSelector.fromVersion( versionToUpgradeFrom );
+        RecordFormats newFormat = InternalRecordFormatSelector.fromVersion( versionToUpgradeTo );
+        boolean movingAwayFromVersionTrailers =
+                oldFormat.hasCapability( VERSION_TRAILERS ) && !newFormat.hasCapability( VERSION_TRAILERS );
+
+        if ( movingAwayFromVersionTrailers )
         {
             StoreFile.removeTrailers( versionToUpgradeFrom, fileSystem, storeDir, pageCache.pageSize() );
         }
@@ -663,12 +631,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         long lastCommittedTx = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
 
         // update or add upgrade id and time and other necessary neostore records
-        updateOrAddNeoStoreFieldsAsPartOfMigration( migrationDir, storeDir );
+        updateOrAddNeoStoreFieldsAsPartOfMigration( migrationDir, storeDir, versionToUpgradeTo );
 
         // delete old logs
         legacyLogs.deleteUnusedLogFiles( storeDir );
 
-        if ( !Legacy23Store.LEGACY_VERSION.equals( versionToUpgradeFrom ) )
+        if ( movingAwayFromVersionTrailers )
         {
             // write a check point in the log in order to make recovery work in the newer version
             new StoreMigratorCheckPointer( storeDir, fileSystem ).checkPoint( logVersion, lastCommittedTx );
@@ -680,27 +648,24 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         switch ( versionToMigrateFrom )
         {
-        case Legacy20Store.LEGACY_VERSION:
-        case Legacy23Store.LEGACY_VERSION:
-            // nothing to do
-            break;
-        case Legacy21Store.LEGACY_VERSION:
-        case Legacy22Store.LEGACY_VERSION:
+        case LowLimitV2_1.STORE_VERSION:
+        case LowLimitV2_2.STORE_VERSION:
             // create counters from scratch
             Iterable<StoreFile> countsStoreFiles =
                     Iterables.iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
             StoreFile.fileOperation( DELETE, fileSystem, storeDir, storeDir,
-                    countsStoreFiles, true, false, StoreFileType.STORE );
+                    countsStoreFiles, true, null, StoreFileType.STORE );
             File neoStore = new File( storeDir, DEFAULT_NAME );
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
             rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
             break;
         default:
-            throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
+            // OK, don't rebuild for other versions
         }
     }
 
-    private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir ) throws IOException
+    private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir,
+            String versionToMigrateTo ) throws IOException
     {
         final File storeDirNeoStore = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.UPGRADE_TRANSACTION_ID,
@@ -733,7 +698,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         // Upgrade version in NeoStore
         MetaDataStore.setRecord( pageCache, storeDirNeoStore, Position.STORE_VERSION,
-                MetaDataStore.versionStringToLong( LowLimit.STORE_VERSION ) );
+                MetaDataStore.versionStringToLong( versionToMigrateTo ) );
     }
 
     @Override

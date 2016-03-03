@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.MapUtil;
@@ -27,14 +26,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class HighLimitTest
 {
-    @Ignore("Waiting on store migration work")
     @Test
     public void shouldResolveHighLimitsRecordFormat() throws Exception
     {
@@ -48,10 +46,10 @@ public class HighLimitTest
     {
         Config config = new Config( MapUtil.stringMap( "record_format", "community" ) );
         RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
-        assertEquals( LowLimit.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
+        assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
 
-    @Ignore("Waiting on store migration work")
+
     @Test
     public void shouldResolveNoRecordFormatToHighLimitDefault() throws Exception
     {

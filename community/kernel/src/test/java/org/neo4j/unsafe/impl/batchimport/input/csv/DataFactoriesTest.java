@@ -43,7 +43,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.csv.reader.Readables.sources;
 import static org.neo4j.csv.reader.Readables.wrap;
-import static org.neo4j.helpers.collection.IteratorUtil.array;
+import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 

@@ -25,10 +25,9 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
+import org.neo4j.kernel.impl.store.format.CapabilityType;
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.Log;
@@ -62,17 +61,15 @@ public class LegacyIndexMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
-            String versionToMigrateFrom ) throws IOException
+            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         IndexImplementation indexImplementation = indexProviders.get( LUCENE_LEGACY_INDEX_PROVIDER_NAME );
         if ( indexImplementation != null )
         {
-            switch ( versionToMigrateFrom )
+            RecordFormats from = InternalRecordFormatSelector.fromVersion( versionToMigrateFrom );
+            RecordFormats to = InternalRecordFormatSelector.fromVersion( versionToMigrateTo );
+            if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
             {
-            case Legacy23Store.LEGACY_VERSION:
-            case Legacy22Store.LEGACY_VERSION:
-            case Legacy21Store.LEGACY_VERSION:
-            case Legacy20Store.LEGACY_VERSION:
                 originalLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( storeDir );
                 migrationLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( migrationDir );
                 if ( isNotEmptyDirectory( originalLegacyIndexesRoot ) )
@@ -80,9 +77,6 @@ public class LegacyIndexMigrator extends AbstractStoreMigrationParticipant
                     migrateLegacyIndexes( progressMonitor );
                     legacyIndexMigrated = true;
                 }
-                break;
-            default:
-                throw new IllegalStateException( "Unknown version to upgrade from: " + versionToMigrateFrom );
             }
         }
         else
@@ -92,7 +86,8 @@ public class LegacyIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom )
+    public void moveMigratedFiles( File migrationDir, File storeDir, String versionToMigrateFrom,
+            String versionToMigrateTo )
             throws IOException
     {
         if ( legacyIndexMigrated )

@@ -101,10 +101,11 @@ public class DatabaseStartupTest
         db.shutdown();
 
         // mess up the version in the metadatastore
-        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ))
+        String badStoreVersion = "bad";
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
         {
             MetaDataStore.setRecord( pageCache, new File(storeDir, MetaDataStore.DEFAULT_NAME ),
-                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ));
+                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( badStoreVersion ) );
         }
 
         // when
@@ -120,7 +121,7 @@ public class DatabaseStartupTest
             assertTrue( ex.getCause() instanceof LifecycleException );
             assertTrue( ex.getCause().getCause() instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
             assertThat( ex.getCause().getCause().getMessage(),
-                    containsString( "has a store version number that we cannot upgrade from." ) );
+                    containsString( "has a store version '" + badStoreVersion + "' that we cannot upgrade from." ) );
         }
     }
 }

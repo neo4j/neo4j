@@ -68,7 +68,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -222,7 +221,7 @@ public class ParallelBatchImporterTest
                 result.isSuccessful() );
     }
 
-    private static abstract class InputIdGenerator
+    public static abstract class InputIdGenerator
     {
         abstract void reset();
 

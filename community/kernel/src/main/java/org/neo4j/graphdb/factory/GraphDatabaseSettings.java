@@ -33,7 +33,10 @@ import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.logging.Level;
+
+import static java.lang.String.valueOf;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -355,36 +358,40 @@ public abstract class GraphDatabaseSettings
             setting( "dbms.pagecache.swapper", STRING, (String) null );
 
     @Description("How many relationships to read at a time during iteration")
-    public static final Setting<Integer> relationship_grab_size = setting("relationship_grab_size", INTEGER, "100", min( 1 ));
+    public static final Setting<Integer> relationship_grab_size = setting("relationship_grab_size", INTEGER,
+            "100", min( 1 ));
 
     @Description("Specifies the block size for storing strings. This parameter is only honored when the store is " +
             "created, otherwise it is ignored. " +
-            "Note that each character in a string occupies two bytes, meaning that a block size of 120 (the default " +
-            "size) will hold a 60 character " +
-            "long string before overflowing into a second block. Also note that each block carries an overhead of 8 " +
-            "bytes. " +
-            "This means that if the block size is 120, the size of the stored records will be 128 bytes.")
+            "Note that each character in a string occupies two bytes, meaning that e.g a block size of 120 will hold " +
+            "a 60 character long string before overflowing into a second block. " +
+            "Also note that each block carries a ~10B of overhead so record size on disk will be slightly larger " +
+            "than the configured block size" )
     @Internal
-    public static final Setting<Integer> string_block_size = setting("string_block_size", INTEGER, "120",min(1));
+    public static final Setting<Integer> string_block_size = setting("string_block_size", INTEGER,
+            valueOf( dynamicRecordDataSizeForAligningWith( 128 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
 
     @Description("Specifies the block size for storing arrays. This parameter is only honored when the store is " +
             "created, otherwise it is ignored. " +
-            "The default block size is 120 bytes, and the overhead of each block is the same as for string blocks, " +
-            "i.e., 8 bytes.")
+            "Also note that each block carries a ~10B of overhead so record size on disk will be slightly larger " +
+            "than the configured block size" )
     @Internal
-    public static final Setting<Integer> array_block_size = setting("array_block_size", INTEGER, "120",min(1));
+    public static final Setting<Integer> array_block_size = setting("array_block_size", INTEGER,
+            valueOf( dynamicRecordDataSizeForAligningWith( 128 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
 
     @Description("Specifies the block size for storing labels exceeding in-lined space in node record. " +
     		"This parameter is only honored when the store is created, otherwise it is ignored. " +
-            "The default block size is 60 bytes, and the overhead of each block is the same as for string blocks, " +
-            "i.e., 8 bytes.")
+            "Also note that each block carries a ~10B of overhead so record size on disk will be slightly larger " +
+            "than the configured block size" )
     @Internal
-    public static final Setting<Integer> label_block_size = setting("label_block_size", INTEGER, "60",min(1));
+    public static final Setting<Integer> label_block_size = setting("label_block_size", INTEGER,
+            valueOf( dynamicRecordDataSizeForAligningWith( 64 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
 
     @Description("An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
     @Internal
-    public static final Setting<String> forced_kernel_id = setting("forced_kernel_id", STRING, NO_DEFAULT, illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
+    public static final Setting<String> forced_kernel_id = setting("forced_kernel_id", STRING, NO_DEFAULT,
+            illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
 
     @Internal
     public static final Setting<Boolean> execution_guard_enabled = setting("execution_guard_enabled", BOOLEAN, FALSE );
@@ -433,4 +440,17 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
 
+    /**
+     * Uses the default selected record format to figure out the correct dynamic record data size to create
+     * a store with.
+     *
+     * @param recordSize the desired record size, which optimally is a power-of-two, e.g. 64 or 128.
+     * The dynamic record header size from the selected record format will then be subtracted from this value
+     * to get to the data size, which is the value that the configuration will end up having.
+     * @return the dynamic record data size based on the desired record size and with the header size in mind.
+     */
+    private static int dynamicRecordDataSizeForAligningWith( int recordSize )
+    {
+        return recordSize - InternalRecordFormatSelector.select().dynamic().getRecordHeaderSize();
+    }
 }

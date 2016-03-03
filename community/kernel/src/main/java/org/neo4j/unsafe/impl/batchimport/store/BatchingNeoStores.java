@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;

@@ -39,13 +39,13 @@ import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>
 {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
-    public static final int BLOCK_SIZE = 56; // + BLOCK_HEADER_SIZE == 64
+    public static final int BLOCK_SIZE = 56;
 
     @SuppressWarnings("deprecation")
     public SchemaStore(
@@ -74,7 +74,7 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
         serializer = serializer.append( (AbstractSchemaRule)rule );
         List<DynamicRecord> records = new ArrayList<>();
         allocateRecordsFromBytes( records, serializer.serialize(),
-                IteratorUtil.iterator( getRecord( rule.getId(), newRecord(), FORCE ) ), this );
+                IteratorUtil.iterator( getRecord( rule.getId(), newRecord(), CHECK ) ), this );
         return records;
     }
 

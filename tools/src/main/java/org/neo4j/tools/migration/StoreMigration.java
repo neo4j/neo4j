@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
@@ -129,7 +130,7 @@ public class StoreMigration
                     schemaIndexProvider,
                     labelScanStoreProvider,
                     legacyIndexProvider.getIndexProviders(),
-                    pageCache ).migrate( storeDirectory );
+                    pageCache, InternalRecordFormatSelector.select() ).migrate( storeDirectory );
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }

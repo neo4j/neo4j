@@ -30,7 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -75,7 +75,7 @@ public class BatchingNeoStoresTest
                 GraphDatabaseSettings.string_block_size.name(), String.valueOf( size ) ) );
 
         // WHEN
-        int headerSize = LowLimit.RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        int headerSize = LowLimitV3_0.RECORD_FORMATS.dynamic().getRecordHeaderSize();
         try ( BatchingNeoStores store =
                 new BatchingNeoStores( fsr.get(), storeDir, DEFAULT, NullLogService.getInstance(), EMPTY, config ) )
         {

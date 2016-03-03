@@ -19,11 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.NoSuchElementException;
-
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 
 /**
@@ -31,35 +30,47 @@ import org.neo4j.unsafe.impl.batchimport.input.Input;
  */
 public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceability
 {
-    public static class Adapter<T> extends SourceTraceability.Adapter implements InputIterator<T>
+    public static abstract class Adapter<T> extends PrefetchingIterator<T> implements InputIterator<T>
     {
+        private final SourceTraceability defaults = new SourceTraceability.Adapter()
+        {
+            @Override
+            public String sourceDescription()
+            {
+                return Readables.EMPTY.sourceDescription();
+            }
+        };
+
         @Override
         public String sourceDescription()
         {
-            return Readables.EMPTY.sourceDescription();
+            return defaults.sourceDescription();
+        }
+
+        @Override
+        public long lineNumber()
+        {
+            return defaults.lineNumber();
+        }
+
+        @Override
+        public long position()
+        {
+            return defaults.position();
         }
 
         @Override
         public void close()
         {   // Nothing to close
         }
+    }
 
+    public static class Empty<T> extends Adapter<T>
+    {
         @Override
-        public boolean hasNext()
+        protected T fetchNextOrNull()
         {
-            return false;
-        }
-
-        @Override
-        public T next()
-        {
-            throw new NoSuchElementException();
-        }
-
-        @Override
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
+            return null;
         }
     }
 }

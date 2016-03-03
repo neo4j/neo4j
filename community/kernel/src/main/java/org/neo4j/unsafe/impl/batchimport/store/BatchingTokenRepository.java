@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -176,10 +175,26 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
             int count = properties.length >> 1;
             for ( int i = 0, cursor = 0; i < count; i++ )
             {
-                int key = getOrCreateId( (String)properties[cursor++] );
+                int key = getOrCreateId( properties[cursor++] );
                 Object value = properties[cursor++];
                 target[offset+i] = creator.encodeValue( new PropertyBlock(), key, value );
             }
+        }
+
+        private int getOrCreateId( Object key )
+        {
+            if ( key instanceof String )
+            {
+                // A name was supplied, get or create a token id for it
+                return getOrCreateId( (String) key );
+            }
+            else if ( key instanceof Integer )
+            {
+                // A raw token id was supplied, just use it
+                return ((Integer)key).intValue();
+            }
+            throw new IllegalArgumentException( "Expected either a String or Integer for property key, but was '" +
+                    key + "'" + ", " + key.getClass() );
         }
     }
 
@@ -200,7 +215,8 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     public static class BatchingRelationshipTypeTokenRepository
             extends BatchingTokenRepository<RelationshipTypeTokenRecord,RelationshipTypeToken>
     {
-        public BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord, RelationshipTypeToken> store, int highId )
+        public BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord,
+                RelationshipTypeToken> store, int highId )
         {
             super( store, highId );
         }

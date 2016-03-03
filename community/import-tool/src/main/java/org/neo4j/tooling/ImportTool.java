@@ -47,6 +47,7 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -415,7 +416,7 @@ public class ImportTool
                 {
                     StoreFile.fileOperation( FileOperation.DELETE, fs, storeDir, null,
                             Iterables.<StoreFile,StoreFile>iterable( StoreFile.values() ),
-                            false, false, StoreFileType.values() );
+                            false, ExistingTargetStrategy.FAIL, StoreFileType.values() );
                 }
                 catch ( IOException e )
                 {

@@ -25,6 +25,8 @@ import java.util.Set;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
+import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdSequence;
@@ -108,6 +110,30 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     public PrepareTrackingRecordFormat<DynamicRecord> dynamic()
     {
         return new PrepareTrackingRecordFormat<>( actual.dynamic(), dynamicPrepare );
+    }
+
+    @Override
+    public Capability[] capabilities()
+    {
+        return actual.capabilities();
+    }
+
+    @Override
+    public int generation()
+    {
+        return actual.generation();
+    }
+
+    @Override
+    public boolean hasCapability( Capability capability )
+    {
+        return actual.hasCapability( capability );
+    }
+
+    @Override
+    public boolean hasSameCapabilities( RecordFormats other, CapabilityType type )
+    {
+        return actual.hasSameCapabilities( other, type );
     }
 
     public class PrepareTrackingRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>

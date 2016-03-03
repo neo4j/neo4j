@@ -43,15 +43,16 @@ import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
@@ -68,7 +69,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasLatestVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasCurrentFormatVersion;
 
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
@@ -80,13 +81,13 @@ public class StoreUpgraderInterruptionTestIT
             InMemoryLabelScanStore(), 2 );
 
     @Parameters( name = "{0}" )
-    public static Collection<Object[]> versions()
+    public static Collection<String> versions()
     {
         return Arrays.asList(
-                new Object[]{Legacy20Store.LEGACY_VERSION},
-                new Object[]{Legacy21Store.LEGACY_VERSION},
-                new Object[]{Legacy22Store.LEGACY_VERSION},
-                new Object[]{Legacy23Store.LEGACY_VERSION}
+                LowLimitV2_0.STORE_VERSION,
+                LowLimitV2_1.STORE_VERSION,
+                LowLimitV2_2.STORE_VERSION,
+                LowLimitV2_3.STORE_VERSION
         );
     }
 
@@ -106,7 +107,7 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ) );
+                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), InternalRecordFormatSelector.select() );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = Config.empty();
@@ -115,14 +116,15 @@ public class StoreUpgraderInterruptionTestIT
             @Override
             public void migrate( File sourceStoreDir, File targetStoreDir,
                     MigrationProgressMonitor.Section progressMonitor,
-                    String versionToMigrateFrom ) throws IOException
+                    String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
             {
-                super.migrate( sourceStoreDir, targetStoreDir, progressMonitor, versionToMigrateFrom );
+                super.migrate( sourceStoreDir, targetStoreDir, progressMonitor, versionToMigrateFrom,
+                        versionToMigrateTo );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
 
-        assertEquals( !Legacy23Store.LEGACY_VERSION.equals( version ),
+        assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         try
@@ -136,7 +138,7 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertEquals( !Legacy23Store.LEGACY_VERSION.equals( version ),
+        assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         progressMonitor = new SilentMigrationProgressMonitor();
@@ -144,7 +146,7 @@ public class StoreUpgraderInterruptionTestIT
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
         newUpgrader(upgradableDatabase, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDirectory );
 
-        assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
+        assertTrue( checkNeoStoreHasCurrentFormatVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
         assertConsistentStore( workingDirectory );
@@ -165,21 +167,22 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ) );
+                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), InternalRecordFormatSelector.select() );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = Config.empty();
         StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, config, logService, schemaIndexProvider )
         {
             @Override
-            public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom ) throws IOException
+            public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom,
+                    String versionToMigrateTo ) throws IOException
             {
-                super.moveMigratedFiles( migrationDir, storeDir, versionToUpgradeFrom );
+                super.moveMigratedFiles( migrationDir, storeDir, versionToUpgradeFrom, versionToMigrateTo );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
 
-        assertEquals( !Legacy23Store.LEGACY_VERSION.equals( version ),
+        assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         try
@@ -193,7 +196,7 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
+        assertTrue( checkNeoStoreHasCurrentFormatVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
         assertConsistentStore( workingDirectory );
@@ -203,7 +206,7 @@ public class StoreUpgraderInterruptionTestIT
         newUpgrader( upgradableDatabase, progressMonitor, createIndexMigrator(), migrator )
                 .migrateIfNeeded( workingDirectory );
 
-        assertTrue( checkNeoStoreHasLatestVersion( check, workingDirectory ) );
+        assertTrue( checkNeoStoreHasCurrentFormatVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fs, workingDirectory ) );
 
         pageCache.close();

@@ -920,10 +920,4 @@ public abstract class IteratorUtil
     {
         return () -> resourceIterator( iterable.iterator(), Resource.EMPTY );
     }
-
-    @SafeVarargs
-    public static <T> T[] array( T... items )
-    {
-        return items;
-    }
 }

@@ -55,6 +55,12 @@ import org.neo4j.logging.LogProvider;
  * <p>
  * Note, the first block of a dynamic store is reserved and contains information
  * about the store.
+ * <p>
+ * About configuring block size: Record size is the whole record size including the header (next pointer
+ * and what not). The term block size is equivalent to data size, which is the size of the record - header size.
+ * User configures block size and the block size is what is passed into the constructor to the store.
+ * The record size is what's stored in the header (first record). {@link #getRecordDataSize()} returns
+ * the size which was configured at the store creation, {@link #getRecordSize()} returns what the store header says.
  */
 public abstract class AbstractDynamicStore extends ComposableRecordStore<DynamicRecord,IntStoreHeader>
         implements DynamicRecordAllocator

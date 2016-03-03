@@ -19,31 +19,11 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v20;
 
-import org.junit.Test;
+import org.neo4j.test.Unzip;
 
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store.assertLegacyAndCurrentVersionHaveSameLength;
-
-public class Legacy20StoreTest
+/**
+ * Here as a place holder for using {@link Unzip} to find old db tarballs.
+ */
+public interface Legacy20Store
 {
-    @Test
-    public void shouldFailIfEncodedVersionLengthDiffers() throws Exception
-    {
-        try
-        {
-            // WHEN
-            assertLegacyAndCurrentVersionHaveSameLength( "111", LowLimit.STORE_VERSION );
-            fail( "Should have thrown exception" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // THEN
-            assertThat( e.getMessage(), containsString( "remain the same between versions" ) );
-        }
-    }
 }

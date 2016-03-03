@@ -17,22 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.kernel.impl.storemigration.legacystore.v21;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Iterator;
+import org.neo4j.test.Unzip;
 
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-
-public interface LegacyNodeStoreReader extends Closeable
+/**
+ * Here as a place holder for using {@link Unzip} to find old db tarballs.
+ */
+public interface Legacy21Store
 {
-    long getMaxId();
-
-    int getRecordSize();
-
-    Iterator<NodeRecord> iterator() throws IOException;
-
-    @Override
-    void close() throws IOException;
 }

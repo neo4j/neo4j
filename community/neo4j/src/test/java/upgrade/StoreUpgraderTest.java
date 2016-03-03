@@ -49,6 +49,11 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -56,10 +61,6 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v22.Legacy22Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
@@ -70,7 +71,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -84,13 +84,15 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasLatestVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasCurrentFormatVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyStoreFiles;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.isolatedMigrationDirectoryOf;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
@@ -123,13 +125,13 @@ public class StoreUpgraderTest
     }
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> versions()
+    public static Collection<String> versions()
     {
         return Arrays.asList(
-                new Object[]{Legacy20Store.LEGACY_VERSION},
-                new Object[]{Legacy21Store.LEGACY_VERSION},
-                new Object[]{Legacy22Store.LEGACY_VERSION},
-                new Object[]{Legacy23Store.LEGACY_VERSION}
+                LowLimitV2_0.STORE_VERSION,
+                LowLimitV2_1.STORE_VERSION,
+                LowLimitV2_2.STORE_VERSION,
+                LowLimitV2_3.STORE_VERSION
         );
     }
 
@@ -147,15 +149,16 @@ public class StoreUpgraderTest
         // Given
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
-        assertEquals( !Legacy23Store.LEGACY_VERSION.equals( version ),
+                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
+                InternalRecordFormatSelector.select() );
+        assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fileSystem, dbDirectory, version ) );
 
         // When
         newUpgrader( upgradableDatabase, pageCache ).migrateIfNeeded( dbDirectory );
 
         // Then
-        assertTrue( checkNeoStoreHasLatestVersion( check, dbDirectory ) );
+        assertTrue( checkNeoStoreHasCurrentFormatVersion( check, dbDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fileSystem, dbDirectory ) );
 
         // We leave logical logs in place since the new version can read the old
@@ -172,7 +175,8 @@ public class StoreUpgraderTest
                 .allow_store_upgrade.name(), "false" ) );
 
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
+                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
+                InternalRecordFormatSelector.select() );
 
         try
         {
@@ -187,9 +191,9 @@ public class StoreUpgraderTest
 
     @Test
     public void shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound()
-            throws IOException, ConsistencyCheckIncompleteException
+            throws IOException
     {
-        Assume.assumeFalse( Legacy23Store.LEGACY_VERSION.equals( version ) );
+        Assume.assumeFalse( LowLimitV2_3.STORE_VERSION.equals( version ) );
 
         File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
                                              + "shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound-comparison" );
@@ -199,7 +203,8 @@ public class StoreUpgraderTest
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
+                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
+                InternalRecordFormatSelector.select() );
 
         try
         {
@@ -216,7 +221,7 @@ public class StoreUpgraderTest
 
     @Test
     public void shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly()
-            throws IOException, ConsistencyCheckIncompleteException
+            throws IOException
     {
         File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
                                              + "shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly-comparison" );
@@ -225,7 +230,8 @@ public class StoreUpgraderTest
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
+                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
+                InternalRecordFormatSelector.select() );
 
         try
         {
@@ -242,7 +248,7 @@ public class StoreUpgraderTest
 
     @Test
     public void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly()
-            throws IOException, ConsistencyCheckIncompleteException
+            throws IOException
     {
         File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
                                              + "shouldRefuseToUpgradeIfAllOfTheStoresWeNotShutDownCleanly-comparison" );
@@ -251,7 +257,8 @@ public class StoreUpgraderTest
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
+                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
+                InternalRecordFormatSelector.select() );
 
         try
         {
@@ -271,9 +278,11 @@ public class StoreUpgraderTest
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
+                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
+                InternalRecordFormatSelector.select() );
 
-        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( dbDirectory );
+        String versionToMigrateTo = upgradableDatabase.currentVersion();
+        String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( dbDirectory ).storeVersion();
 
         // GIVEN
         {
@@ -304,9 +313,10 @@ public class StoreUpgraderTest
 
             // THEN
             verify( observingParticipant, Mockito.times( 0 ) ).migrate( any( File.class ), any( File.class ),
-                    any( MigrationProgressMonitor.Section.class ), eq( versionToMigrateFrom ) );
+                    any( MigrationProgressMonitor.Section.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
             verify( observingParticipant, Mockito.times( 1 ) ).
-                    moveMigratedFiles( any( File.class ), any( File.class ), eq( versionToMigrateFrom ) );
+                    moveMigratedFiles( any( File.class ), any( File.class ), eq( versionToMigrateFrom ),
+                            eq( versionToMigrateTo ) );
 
             verify( observingParticipant, Mockito.times( 1 ) ).cleanup( any( File.class ) );
         }
@@ -319,7 +329,8 @@ public class StoreUpgraderTest
         fileSystem.deleteFile( new File( dbDirectory, StoreLogService.INTERNAL_LOG_NAME ) );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
+                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
+                InternalRecordFormatSelector.select() );
 
         // When
         newUpgrader( upgradableDatabase, allowMigrateConfig, pageCache ).migrateIfNeeded( dbDirectory );
@@ -327,16 +338,16 @@ public class StoreUpgraderTest
         // Then
         StoreFactory storeFactory =
                 new StoreFactory( fileSystem, dbDirectory, pageCache, NullLogProvider.getInstance() );
-        NeoStores neoStores = storeFactory.openAllNeoStores();
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
+        {
+            assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),
+                    equalTo( neoStores.getMetaDataStore().getLastCommittedTransaction() ) );
+            assertThat( neoStores.getMetaDataStore().getUpgradeTime(),
+                    not( equalTo( MetaDataStore.FIELD_NOT_INITIALIZED ) ) );
 
-        assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),
-                equalTo( neoStores.getMetaDataStore().getLastCommittedTransaction() ) );
-        assertThat( neoStores.getMetaDataStore().getUpgradeTime(),
-                not( equalTo( MetaDataStore.FIELD_NOT_INITIALIZED ) ) );
-
-        long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );
-        assertThat( neoStores.getMetaDataStore().getUpgradeTime(), greaterThan( minuteAgo ) );
-        neoStores.close();
+            long minuteAgo = System.currentTimeMillis() - MINUTES.toMillis( 1 );
+            assertThat( neoStores.getMetaDataStore().getUpgradeTime(), greaterThan( minuteAgo ) );
+        }
     }
 
     @Test
@@ -346,7 +357,8 @@ public class StoreUpgraderTest
         fileSystem.deleteFile( new File( dbDirectory, StoreLogService.INTERNAL_LOG_NAME ) );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
+                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
+                InternalRecordFormatSelector.select() );
 
         // When
         newUpgrader( upgradableDatabase, allowMigrateConfig, pageCache ).migrateIfNeeded( dbDirectory );
@@ -369,9 +381,8 @@ public class StoreUpgraderTest
 
         // When
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ) );
-        NullLogService instance = NullLogService.getInstance();
-        StoreMigrator migrator = spy( new StoreMigrator(fileSystem, pageCache, Config.empty(), instance, schemaIndexProvider ) );
+                new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
+                InternalRecordFormatSelector.select() );
         StoreUpgrader storeUpgrader = newUpgrader( upgradableDatabase, pageCache );
         storeUpgrader.migrateIfNeeded( dbDirectory );
 
@@ -384,8 +395,8 @@ public class StoreUpgraderTest
         return new AbstractStoreMigrationParticipant( "Failing" )
         {
             @Override
-            public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom )
-                    throws IOException
+            public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom,
+                    String versionToMigrateTo ) throws IOException
             {
                 throw new IOException( failureMessage );
             }
@@ -431,7 +442,7 @@ public class StoreUpgraderTest
 
     private void makeDbNotCleanlyShutdown( boolean truncateAll ) throws IOException
     {
-        if ( Legacy23Store.LEGACY_VERSION.equals( version ) )
+        if ( LowLimitV2_3.STORE_VERSION.equals( version ) )
         {
             removeCheckPointFromTxLog( fileSystem, dbDirectory );
         }

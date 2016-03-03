@@ -32,7 +32,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimit;
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
@@ -115,9 +120,10 @@ public class MigrationTestUtils
     public static void truncateToFixedLength( FileSystemAbstraction fileSystem, File storeFile, int newLength )
             throws IOException
     {
-        StoreChannel fileChannel = fileSystem.open( storeFile, "rw" );
-        fileChannel.truncate( newLength );
-        fileChannel.close();
+        try ( StoreChannel fileChannel = fileSystem.open( storeFile, "rw" ) )
+        {
+            fileChannel.truncate( newLength );
+        }
     }
 
     public static void prepareSampleLegacyDatabase( String version, EphemeralFileSystemAbstraction workingFs,
@@ -144,13 +150,13 @@ public class MigrationTestUtils
     {
         switch ( version )
         {
-        case Legacy23Store.LEGACY_VERSION:
+        case LowLimitV2_3.STORE_VERSION:
             return find23FormatStoreDirectory( targetDir );
-        case Legacy22Store.LEGACY_VERSION:
+        case LowLimitV2_2.STORE_VERSION:
             return find22FormatStoreDirectory( targetDir );
-        case Legacy21Store.LEGACY_VERSION:
+        case LowLimitV2_1.STORE_VERSION:
             return find21FormatStoreDirectory( targetDir );
-        case Legacy20Store.LEGACY_VERSION:
+        case LowLimitV2_0.STORE_VERSION:
             return find20FormatStoreDirectory( targetDir );
         default:
             throw new IllegalArgumentException( "Unknown version" );
@@ -183,7 +189,6 @@ public class MigrationTestUtils
     }
 
     public static boolean allLegacyStoreFilesHaveVersion( FileSystemAbstraction fs, File dir, String version )
-            throws IOException
     {
         final Iterable<StoreFile> storeFilesWithGivenVersions =
                 Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( version ) );
@@ -198,10 +203,10 @@ public class MigrationTestUtils
         return success;
     }
 
-    public static boolean allStoreFilesHaveNoTrailer( FileSystemAbstraction fs, File dir ) throws IOException
+    public static boolean allStoreFilesHaveNoTrailer( FileSystemAbstraction fs, File dir )
     {
         final Iterable<StoreFile> storeFilesWithGivenVersions =
-                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( LowLimit.STORE_VERSION ) );
+                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( LowLimitV3_0.STORE_VERSION ) );
         LegacyStoreVersionCheck legacyStoreVersionCheck = new LegacyStoreVersionCheck( fs );
 
         boolean success = true;
@@ -209,7 +214,7 @@ public class MigrationTestUtils
         {
             File file = new File( dir, storeFile.storeFileName() );
             StoreVersionCheck.Result result =
-                    legacyStoreVersionCheck.hasVersion( file, LowLimit.STORE_VERSION, storeFile.isOptional() );
+                    legacyStoreVersionCheck.hasVersion( file, LowLimitV3_0.STORE_VERSION, storeFile.isOptional() );
             success &= result.outcome == Outcome.unexpectedUpgradingStoreVersion ||
                        result.outcome == Outcome.storeVersionNotFound;
         }
@@ -228,10 +233,10 @@ public class MigrationTestUtils
         return false;
     }
 
-    public static boolean checkNeoStoreHasLatestVersion( StoreVersionCheck check, File workingDirectory )
+    public static boolean checkNeoStoreHasCurrentFormatVersion( StoreVersionCheck check, File workingDirectory )
     {
         File neostoreFile = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
-        return check.hasVersion( neostoreFile, LowLimit.STORE_VERSION ).outcome.isSuccessful();
+        return check.hasVersion( neostoreFile, InternalRecordFormatSelector.select().storeVersion() ).outcome.isSuccessful();
     }
 
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )

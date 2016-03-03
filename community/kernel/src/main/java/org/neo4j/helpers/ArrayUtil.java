@@ -22,7 +22,6 @@ package org.neo4j.helpers;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.function.Function;
-
 import static java.util.Arrays.copyOf;
 
 /**

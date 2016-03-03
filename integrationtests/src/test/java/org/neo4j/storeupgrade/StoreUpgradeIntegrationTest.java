@@ -203,7 +203,10 @@ public class StoreUpgradeIntegrationTest
             props.setProperty( DatabaseManagementSystemSettings.data_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-            props.store( new FileWriter( configFile ), "" );
+            try ( FileWriter writer = new FileWriter( configFile ) )
+            {
+                props.store( writer, "" );
+            }
 
             try
             {

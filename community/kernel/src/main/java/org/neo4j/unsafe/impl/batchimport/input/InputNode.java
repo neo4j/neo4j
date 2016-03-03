@@ -32,7 +32,7 @@ public class InputNode extends InputEntity
     private final Group group;
     private final Object id;
     private String[] labels;
-    private final Long labelField;
+    private Long labelField;
 
     public InputNode( String sourceDescription, long lineNumber, long position,
             Object id, Object[] properties, Long firstPropertyId, String[] labels, Long labelField )
@@ -98,5 +98,6 @@ public class InputNode extends InputEntity
     public void setLabels( String[] labels )
     {
         this.labels = labels;
+        this.labelField = null;
     }
 }

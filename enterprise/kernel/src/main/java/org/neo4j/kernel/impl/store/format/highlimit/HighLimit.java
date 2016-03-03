@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
+import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.lowlimit.LabelTokenRecordFormat;
@@ -38,15 +40,15 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
  *
  * @see BaseHighLimitRecordFormat
  */
-public class HighLimit implements RecordFormats
+public class HighLimit extends BaseRecordFormats
 {
     public static final RecordFormats RECORD_FORMATS = new HighLimit();
+    // Enterprise.HighLimit.Zero
+    public static final String STORE_VERSION = "vE.H.0";
 
-    @Override
-    public String storeVersion()
+    public HighLimit()
     {
-        // Enterprise.HighLimit.Zero
-        return "vE.H.0";
+        super( STORE_VERSION, 6, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
     }
 
     @Override
@@ -74,12 +76,6 @@ public class HighLimit implements RecordFormats
     }
 
     @Override
-    public RecordFormat<DynamicRecord> dynamic()
-    {
-        return new DynamicRecordFormat();
-    }
-
-    @Override
     public RecordFormat<LabelTokenRecord> labelToken()
     {
         return new LabelTokenRecordFormat();
@@ -95,5 +91,11 @@ public class HighLimit implements RecordFormats
     public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
     {
         return new RelationshipTypeTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<DynamicRecord> dynamic()
+    {
+        return new DynamicRecordFormat();
     }
 }

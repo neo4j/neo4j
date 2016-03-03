@@ -80,7 +80,6 @@ import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSAC
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.execution_guard_enabled;
 
 /**
  * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
@@ -147,9 +146,9 @@ public class DataSourceModule
 
         SchemaWriteGuard schemaWriteGuard = deps.satisfyDependency( editionModule.schemaWriteGuard );
 
-        Guard guard = config.get( execution_guard_enabled ) ?
-                      deps.satisfyDependency( new Guard( logging.getInternalLog( Guard.class ) ) ) :
-                      null;
+        Boolean isGuardEnabled = config.get( GraphDatabaseSettings.execution_guard_enabled );
+        Guard guard =
+                isGuardEnabled ? deps.satisfyDependency( new Guard( logging.getInternalLog( Guard.class ) ) ) : null;
 
         kernelEventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
 

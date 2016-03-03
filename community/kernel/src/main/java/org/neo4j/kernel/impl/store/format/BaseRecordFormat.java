@@ -98,4 +98,16 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     public void prepare( RECORD record, int recordSize, IdSequence idSequence )
     {   // Do nothing by default
     }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        return obj != null && getClass().equals( obj.getClass() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return getClass().hashCode();
+    }
 }

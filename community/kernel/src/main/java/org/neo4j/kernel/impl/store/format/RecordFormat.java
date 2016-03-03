@@ -127,4 +127,20 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @see RecordStore#getNextRecordReference(AbstractBaseRecord)
      */
     long getNextRecordReference( RECORD record );
+
+    /**
+     * Can be used to compare against another {@link RecordFormat}, returns {@code true} the format
+     * represented by {@code obj} is the exact same as this format.
+     *
+     * @param otherFormat other format to compare with.
+     * @return whether or not the other format is the same as this one.
+     */
+    @Override
+    boolean equals( Object otherFormat );
+
+    /**
+     * To match {@link #equals(Object)}.
+     */
+    @Override
+    int hashCode();
 }
