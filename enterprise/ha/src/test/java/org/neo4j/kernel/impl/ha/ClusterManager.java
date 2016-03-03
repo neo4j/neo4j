@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -125,7 +126,7 @@ public class ClusterManager
     }
 
     public static final int NF_OUT = 0x1, NF_IN = 0x2;
-
+    public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
 
@@ -561,7 +562,7 @@ public class ClusterManager
                 {
                     try
                     {
-                        member.get().beginTx().close();
+                        member.get( DEFAULT_TIMEOUT_SECONDS ).beginTx().close();
                     }
                     catch ( TransactionFailureException e )
                     {
@@ -790,15 +791,15 @@ public class ClusterManager
             untilThen = executor.submit( starter );
         }
 
-        public HighlyAvailableGraphDatabase get()
+        public HighlyAvailableGraphDatabase get( long timeoutSeconds )
         {
             if ( result == null )
             {
                 try
                 {
-                    result = untilThen.get();
+                    result = untilThen.get( timeoutSeconds, TimeUnit.SECONDS );
                 }
-                catch ( InterruptedException | ExecutionException e )
+                catch ( InterruptedException | ExecutionException | TimeoutException e )
                 {
                     throw new RuntimeException( e );
                 }
@@ -934,7 +935,8 @@ public class ClusterManager
             }
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
-                insertInitialData( member.get(), name, member.get().getConfig().get( ClusterSettings.server_id ) );
+                insertInitialData( member.get( DEFAULT_TIMEOUT_SECONDS ), name, member.get( DEFAULT_TIMEOUT_SECONDS )
+                        .getConfig().get( ClusterSettings.server_id ) );
             }
         }
 
@@ -955,7 +957,7 @@ public class ClusterManager
         {
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
-                member.get().shutdown();
+                member.get( DEFAULT_TIMEOUT_SECONDS ).shutdown();
             }
         }
 
@@ -969,7 +971,7 @@ public class ClusterManager
                 @Override
                 public HighlyAvailableGraphDatabase apply( HighlyAvailableGraphDatabaseProxy from )
                 {
-                    return from.get();
+                    return from.get( DEFAULT_TIMEOUT_SECONDS );
                 }
             }, members.values() );
         }
@@ -1022,7 +1024,7 @@ public class ClusterManager
          */
         public HighlyAvailableGraphDatabase getMemberByServerId( InstanceId serverId )
         {
-            HighlyAvailableGraphDatabase db = members.get( serverId ).get();
+            HighlyAvailableGraphDatabase db = members.get( serverId ).get( DEFAULT_TIMEOUT_SECONDS );
             if ( db == null )
             {
                 throw new IllegalStateException( "Db " + serverId + " not found at the moment in " + name +
@@ -1054,7 +1056,7 @@ public class ClusterManager
         {
             for ( HighlyAvailableGraphDatabaseProxy highlyAvailableGraphDatabaseProxy : members.values() )
             {
-                if ( highlyAvailableGraphDatabaseProxy.get().equals( db ) )
+                if ( highlyAvailableGraphDatabaseProxy.get( DEFAULT_TIMEOUT_SECONDS ).equals( db ) )
                 {
                     return;
                 }
@@ -1148,7 +1150,7 @@ public class ClusterManager
                     @Override
                     public void stop() throws Throwable
                     {
-                        graphDatabase.get().shutdown();
+                        graphDatabase.get( DEFAULT_TIMEOUT_SECONDS ).shutdown();
                     }
                 } );
             }
