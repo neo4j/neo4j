@@ -21,8 +21,9 @@ package org.neo4j.kernel.api;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 
 import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 
@@ -130,15 +131,20 @@ public class TransactionStatementSharingTest
     public void shouldNotShareStateForSequentialReadStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.READ );
+        KernelTransactionFactory.Instances instances =
+                KernelTransactionFactory.kernelTransactionWithInternals( AccessMode.READ );
+        KernelTransaction tx = instances.transaction;
         Statement statement = tx.acquireStatement();
         ReadOperations ops1 = statement.readOperations();
+        verify( instances.storageStatement ).acquire();
         statement.close();
 
         // when
+        verify( instances.storageStatement ).close();
+        reset( instances.storageStatement );
         ReadOperations ops2 = tx.acquireStatement().readOperations();
 
         // then
-        assertNotSame( ops1, ops2 );
+        verify( instances.storageStatement ).acquire();
     }
 }

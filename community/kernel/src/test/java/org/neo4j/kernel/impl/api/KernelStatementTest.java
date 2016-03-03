@@ -40,7 +40,8 @@ public class KernelStatementTest
         when( transaction.mode() ).thenReturn( AccessMode.FULL );
 
         KernelStatement statement = new KernelStatement(
-            transaction, null, null, null, null, null );
+            transaction, null, null, mock( StorageStatement.class ), null );
+        statement.acquire();
 
         statement.readOperations().nodeExists( 0 );
     }
@@ -51,7 +52,8 @@ public class KernelStatementTest
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );
         KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
-                null, null, null, storeStatement, new Procedures() );
+                null, null, storeStatement, new Procedures() );
+        statement.acquire();
 
         // when
         statement.forceClose();

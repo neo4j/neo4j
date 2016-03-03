@@ -97,9 +97,9 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public StorageStatement acquireStatement()
+    public StorageStatement newStatement()
     {
-        return diskLayer.acquireStatement();
+        return diskLayer.newStatement();
     }
 
     @Override
@@ -435,5 +435,11 @@ public class CacheLayer implements StoreReadLayer
     public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
     {
         return diskLayer.indexSample( index, target );
+    }
+
+    @Override
+    public boolean nodeExists( long id )
+    {
+        return diskLayer.nodeExists( id );
     }
 }

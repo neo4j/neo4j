@@ -68,7 +68,7 @@ public class TxStateTransactionDataViewTest
     public void setup()
     {
         when( bridge.get() ).thenReturn( stmt );
-        when( ops.acquireStatement() ).thenReturn( storeStatement );
+        when( ops.newStatement() ).thenReturn( storeStatement );
     }
 
     @Test
@@ -297,6 +297,6 @@ public class TxStateTransactionDataViewTest
     {
         NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
-        return new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops );
+        return new TxStateTransactionDataSnapshot( state, nodeActions, relActions, ops, storeStatement );
     }
 }

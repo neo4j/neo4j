@@ -28,6 +28,23 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
 
+/**
+ * LEGEND:
+ * V: variable between 3B-8B
+ *
+ * Record format:
+ * 1B   header
+ * 2B   relationship type
+ * VB   first property
+ * VB   start node
+ * VB   end node
+ * VB   start node chain previous relationship
+ * VB   start node chain next relationship
+ * VB   end node chain previous relationship
+ * VB   end node chain next relationship
+ *
+ * => 24B-59B
+ */
 class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
 {
     private static final int RECORD_SIZE = 32;

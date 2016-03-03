@@ -31,9 +31,26 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  * are accessed through this statement interface as opposed to through the {@link StoreReadLayer} directly.
  * One of the main reasons is that the access methods returns objects, like {@link Cursor cursors} which
  * are valuable to reuse over a reasonably large window to reduce garbage churn in general.
+ *
+ * A {@link StorageStatement} must be {@link #acquire() acquired} before use. After use the statement
+ * should be {@link #close() closed}. After closed the statement can be acquired again.
  */
 public interface StorageStatement extends AutoCloseable
 {
+    /**
+     * Acquires this statement so that it can be used, should later be {@link #close() closed}.
+     * Since a {@link StorageStatement} can be reused after {@link #close() closed}, this call should
+     * do initialization/clearing of state whereas data structures can be kept between uses.
+     */
+    void acquire();
+
+    /**
+     * Closes this statement and releases any allocated resources. After closed this statement can
+     * be {@link #acquire() acquired} and be used again.
+     */
+    @Override
+    void close();
+
     /**
      * Acquires {@link Cursor} capable of {@link Cursor#get() serving} {@link NodeItem} for selected nodes.
      * No node is selected when this method returns, a call to {@link Cursor#next()} will have to be made
@@ -94,12 +111,6 @@ public interface StorageStatement extends AutoCloseable
      * @return a {@link Cursor} over all stored relationships.
      */
     Cursor<RelationshipItem> relationshipsGetAllCursor();
-
-    /**
-     * Closes this statement and releases any allocated resources.
-     */
-    @Override
-    void close();
 
     /**
      * @return {@link LabelScanReader} capable of reading nodes for specific label ids.

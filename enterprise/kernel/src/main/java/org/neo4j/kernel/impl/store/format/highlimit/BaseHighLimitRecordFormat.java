@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.offsetForId;
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
@@ -88,9 +89,11 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     }
 
     @Override
-    protected final void doRead( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile,
-            long headerByte, boolean inUse ) throws IOException
+    public void read( RECORD record, PageCursor primaryCursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+            throws IOException
     {
+        byte headerByte = primaryCursor.getByte();
+        boolean inUse = isInUse( headerByte );
         boolean doubleRecordUnit = has( headerByte, HEADER_BIT_RECORD_UNIT );
         if ( doubleRecordUnit )
         {
@@ -142,37 +145,44 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             long inUseByte, boolean inUse, DataAdapter<PageCursor> adapter );
 
     @Override
-    protected final void doWrite( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile )
+    public void write( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile )
             throws IOException
     {
-        // Let the specific implementation provide the additional header bits and we'll provide the core format bits.
-        byte headerByte = headerBits( record );
-        assert (headerByte & 0x7) == 0 : "Format-specific header bits (" + headerByte +
-                ") collides with format-generic header bits";
-        headerByte = set( headerByte, IN_USE_BIT, record.inUse() );
-        headerByte = set( headerByte, HEADER_BIT_RECORD_UNIT, record.requiresSecondaryUnit() );
-        headerByte = set( headerByte, HEADER_BIT_FIRST_RECORD_UNIT, true );
-        primaryCursor.putByte( headerByte );
-
-        if ( record.requiresSecondaryUnit() )
+        if ( record.inUse() )
         {
-            int primaryEndOffset = calculatePrimaryCursorEndOffset( primaryCursor, recordSize );
+            // Let the specific implementation provide the additional header bits and we'll provide the core format bits.
+            byte headerByte = headerBits( record );
+            assert (headerByte & 0x7) == 0 : "Format-specific header bits (" + headerByte +
+                    ") collides with format-generic header bits";
+            headerByte = set( headerByte, IN_USE_BIT, record.inUse() );
+            headerByte = set( headerByte, HEADER_BIT_RECORD_UNIT, record.requiresSecondaryUnit() );
+            headerByte = set( headerByte, HEADER_BIT_FIRST_RECORD_UNIT, true );
+            primaryCursor.putByte( headerByte );
 
-            // Write using the normal adapter since the first reference we write cannot really overflow
-            // into the secondary record
-            long secondaryUnitId = record.getSecondaryUnitId();
-            Reference.encode( secondaryUnitId, primaryCursor, PAGE_CURSOR_ADAPTER );
+            if ( record.requiresSecondaryUnit() )
+            {
+                int primaryEndOffset = calculatePrimaryCursorEndOffset( primaryCursor, recordSize );
 
-            long pageId = pageIdForRecord( secondaryUnitId, storeFile.pageSize(), recordSize );
-            int offset = offsetForId( secondaryUnitId, storeFile.pageSize(), recordSize );
-            SecondaryPageCursorWriteDataAdapter dataAdapter = new SecondaryPageCursorWriteDataAdapter(
-                    pageId, offset, primaryEndOffset );
+                // Write using the normal adapter since the first reference we write cannot really overflow
+                // into the secondary record
+                long secondaryUnitId = record.getSecondaryUnitId();
+                Reference.encode( secondaryUnitId, primaryCursor, PAGE_CURSOR_ADAPTER );
 
-            doWriteInternal( record, primaryCursor, dataAdapter );
+                long pageId = pageIdForRecord( secondaryUnitId, storeFile.pageSize(), recordSize );
+                int offset = offsetForId( secondaryUnitId, storeFile.pageSize(), recordSize );
+                SecondaryPageCursorWriteDataAdapter dataAdapter = new SecondaryPageCursorWriteDataAdapter(
+                        pageId, offset, primaryEndOffset );
+
+                doWriteInternal( record, primaryCursor, dataAdapter );
+            }
+            else
+            {
+                doWriteInternal( record, primaryCursor, PAGE_CURSOR_ADAPTER );
+            }
         }
         else
         {
-            doWriteInternal( record, primaryCursor, PAGE_CURSOR_ADAPTER );
+            markFirstByteAsUnused( primaryCursor );
         }
     }
 
@@ -184,15 +194,17 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     @Override
     public final void prepare( RECORD record, int recordSize, IdSequence idSequence )
     {
-        assert record.inUse();
-        int length = 1 + requiredDataLength( record );
-        boolean requiresSecondaryUnit = length > recordSize;
-        record.setRequiresSecondaryUnit( requiresSecondaryUnit );
-        if ( record.requiresSecondaryUnit() && !record.hasSecondaryUnitId() )
+        if ( record.inUse() )
         {
-            // Allocate a new id at this point, but this is not the time to free this ID the the case where
-            // this record doesn't need this secondary unit anymore... that needs to be done when applying to store.
-            record.setSecondaryUnitId( idSequence.nextId() );
+            int length = 1 + requiredDataLength( record );
+            boolean requiresSecondaryUnit = length > recordSize;
+            record.setRequiresSecondaryUnit( requiresSecondaryUnit );
+            if ( record.requiresSecondaryUnit() && !record.hasSecondaryUnitId() )
+            {
+                // Allocate a new id at this point, but this is not the time to free this ID the the case where
+                // this record doesn't need this secondary unit anymore... that needs to be done when applying to store.
+                record.setSecondaryUnitId( idSequence.nextId() );
+            }
         }
     }
 

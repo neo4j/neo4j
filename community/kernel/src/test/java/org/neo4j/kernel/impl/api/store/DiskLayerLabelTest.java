@@ -65,7 +65,7 @@ public class DiskLayerLabelTest extends DiskLayerTest
         }
 
         // THEN
-        Cursor<NodeItem> node = disk.acquireStatement().acquireSingleNodeCursor( nodeId );
+        Cursor<NodeItem> node = disk.newStatement().acquireSingleNodeCursor( nodeId );
         node.next();
         PrimitiveIntIterator readLabels = node.get().getLabels();
         assertEquals( new HashSet<>( asList( labelId1, labelId2 ) ),

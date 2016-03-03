@@ -99,6 +99,8 @@ public class ForsetiClient implements Locks.Client
      * we want to hold in the global lock map. */
     private final ExclusiveLock myExclusiveLock = new ExclusiveLock(this);
 
+    private boolean hasLocks;
+
     public ForsetiClient( int id,
                           ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps,
                           WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
@@ -134,6 +136,7 @@ public class ForsetiClient implements Locks.Client
     @Override
     public void acquireShared( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
     {
+        hasLocks = true;
         // increment number of active clients if we can't do so we are closed so exiting
         if ( !stateHolder.incrementActiveClients() )
         {
@@ -243,6 +246,7 @@ public class ForsetiClient implements Locks.Client
     @Override
     public void acquireExclusive( ResourceType resourceType, long resourceId ) throws AcquireLockTimeoutException
     {
+        hasLocks = true;
         // For details on how this works, refer to the acquireShared method call, as the two are very similar
 
         // increment number of active clients if we can't do so we are closed so exiting
@@ -552,7 +556,10 @@ public class ForsetiClient implements Locks.Client
                     // If the map is small, its fast and nice to GC to clear it. However, if its large, it is
                     // 1) Faster to simply allocate a new one and
                     // 2) Safer, because we guard against clients getting giant maps over time
-                    exclusiveLocks.clear();
+                    if ( size > 0 )
+                    {
+                        exclusiveLocks.clear();
+                    }
                 }
                 else
                 {
@@ -570,7 +577,10 @@ public class ForsetiClient implements Locks.Client
                     // If the map is small, its fast and nice to GC to clear it. However, if its large, it is
                     // 1) Faster to simply allocate a new one and
                     // 2) Safer, because we guard against clients getting giant maps over time
-                    sharedLocks.clear();
+                    if ( size > 0 )
+                    {
+                        sharedLocks.clear();
+                    }
                 }
                 else
                 {
@@ -603,8 +613,12 @@ public class ForsetiClient implements Locks.Client
     public void close()
     {
         stop();
-        releaseAllClientLocks();
-        clearWaitList();
+        if ( hasLocks )
+        {
+            releaseAllClientLocks();
+            clearWaitList();
+            hasLocks = false;
+        }
         clientPool.release( this );
     }
 

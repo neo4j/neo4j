@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.core.NodeProxy.NodeActions;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TxStateTransactionDataSnapshot;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
@@ -105,7 +106,7 @@ public class TransactionEventHandlers
 
     @Override
     public TransactionHandlerState beforeCommit( ReadableTransactionState state, KernelTransaction transaction,
-            StoreReadLayer storeReadLayer )
+            StoreReadLayer storeReadLayer, StorageStatement statement )
     {
         if ( transactionEventHandlers.isEmpty() )
         {
@@ -113,7 +114,8 @@ public class TransactionEventHandlers
         }
 
         TransactionData txData = state == null ? EMPTY_DATA :
-                new TxStateTransactionDataSnapshot( state, nodeActions, relationshipActions, storeReadLayer );
+                new TxStateTransactionDataSnapshot( state, nodeActions, relationshipActions,
+                        storeReadLayer, statement );
 
         TransactionHandlerState handlerStates = new TransactionHandlerState( txData );
         for ( TransactionEventHandler<?> handler : this.transactionEventHandlers )

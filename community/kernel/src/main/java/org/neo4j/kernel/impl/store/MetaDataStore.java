@@ -97,8 +97,6 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
         }
     }
 
-    public static final int META_DATA_RECORD_COUNT = Position.values().length;
-
     // Fields the neostore keeps cached and must be initialized on startup
     private volatile long creationTimeField = FIELD_NOT_INITIALIZED;
     private volatile long randomNumberField = FIELD_NOT_INITIALIZED;
@@ -173,18 +171,6 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
         storeFile = null;
     }
 
-    @Override
-    protected void createHeaderRecord( PageCursor cursor )
-    {
-        // We aren't creating a header, but we have said that we have reserved low ids.
-    }
-
-    @Override
-    public int getNumberOfReservedLowIds()
-    {
-        return META_DATA_RECORD_COUNT;
-    }
-
     // Only for initialization and recovery, so we don't need to lock the records
     @Override
     public void setLastCommittedAndClosedTransactionId(
@@ -202,7 +188,7 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
     }
 
     @Override
-    public int getRecordSize()
+    protected int determineRecordSize()
     {
         return RECORD_SIZE;
     }

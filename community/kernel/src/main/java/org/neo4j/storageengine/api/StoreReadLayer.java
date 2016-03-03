@@ -49,10 +49,9 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 public interface StoreReadLayer
 {
     /**
-     * @return statement acquired and held onto by caller. Contains data structures which are beneficial to reuse
-     * within a certain context.
+     * @return new {@link StorageStatement}, which can be used after a call to {@link StorageStatement#acquire()}.
      */
-    StorageStatement acquireStatement();
+    StorageStatement newStatement();
 
     /**
      * @param labelId label to list indexes for.
@@ -378,4 +377,6 @@ public interface StoreReadLayer
     DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target );
 
     DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target );
+
+    boolean nodeExists( long id );
 }

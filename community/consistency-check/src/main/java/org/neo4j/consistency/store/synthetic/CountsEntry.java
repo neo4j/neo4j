@@ -56,12 +56,6 @@ public class CountsEntry extends AbstractBaseRecord
     }
 
     @Override
-    public void setId( long id )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public long getId()
     {
         throw new UnsupportedOperationException();

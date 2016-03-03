@@ -50,14 +50,11 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
 
     private final Function<StoreHeader,Integer> recordSize;
     private final int recordHeaderSize;
-    protected final int inUseBitMaskForFirstByte;
 
-    protected BaseRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize,
-            int inUseBitMaskForFirstByte )
+    protected BaseRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
     {
         this.recordSize = recordSize;
         this.recordHeaderSize = recordHeaderSize;
-        this.inUseBitMaskForFirstByte = inUseBitMaskForFirstByte;
     }
 
     @Override
@@ -70,17 +67,6 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     public int getRecordHeaderSize()
     {
         return recordHeaderSize;
-    }
-
-    @Override
-    public boolean isInUse( PageCursor cursor )
-    {
-        return isInUse( cursor.getByte( cursor.getOffset() ) );
-    }
-
-    protected boolean isInUse( byte firstByte )
-    {
-        return (firstByte & inUseBitMaskForFirstByte) != 0;
     }
 
     @Override

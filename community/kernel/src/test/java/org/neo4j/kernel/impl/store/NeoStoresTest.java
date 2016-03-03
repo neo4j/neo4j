@@ -259,7 +259,7 @@ public class NeoStoresTest
     {
         DefinedProperty property = Property.property( key, value );
         Property oldProperty = Property.noNodeProperty( nodeId, key );
-        try ( StorageStatement statement = storeLayer.acquireStatement();
+        try ( StorageStatement statement = storeLayer.newStatement();
                 Cursor<NodeItem> cursor = statement.acquireSingleNodeCursor( nodeId ) )
         {
             if ( cursor.next() )
@@ -280,7 +280,7 @@ public class NeoStoresTest
     {
         DefinedProperty property = Property.property( key, value );
         Property oldProperty = Property.noRelationshipProperty( relationshipId, key );
-        try ( StorageStatement statement = storeLayer.acquireStatement();
+        try ( StorageStatement statement = storeLayer.newStatement();
                 Cursor<RelationshipItem> cursor = statement.acquireSingleRelationshipCursor( relationshipId ) )
         {
             if ( cursor.next() )
@@ -960,7 +960,7 @@ public class NeoStoresTest
 
     private boolean nodeExists( long nodeId )
     {
-        try ( StorageStatement statement = storeLayer.acquireStatement() )
+        try ( StorageStatement statement = storeLayer.newStatement() )
         {
             try ( Cursor<NodeItem> node = statement.acquireSingleNodeCursor( nodeId ) )
             {
@@ -1330,7 +1330,7 @@ public class NeoStoresTest
 
     private void testGetRels( long relIds[] )
     {
-        try ( StorageStatement statement = storeLayer.acquireStatement() )
+        try ( StorageStatement statement = storeLayer.newStatement() )
         {
             for ( long relId : relIds )
             {

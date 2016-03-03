@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
+import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 
-public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends BaseRecordFormat<RECORD>
+public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends BaseOneByteHeaderRecordFormat<RECORD>
 {
     protected static final int BASE_RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 

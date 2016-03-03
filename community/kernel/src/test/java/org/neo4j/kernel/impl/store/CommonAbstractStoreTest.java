@@ -95,7 +95,7 @@ public class CommonAbstractStoreTest
         }
 
         @Override
-        public int getRecordSize()
+        protected int determineRecordSize()
         {
             return 10;
         }

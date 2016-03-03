@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
+import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat<RelationshipGroupRecord>
@@ -43,59 +46,73 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
     }
 
     @Override
-    public void doRead( RelationshipGroupRecord record, PageCursor cursor, int recordSize, PagedFile storeFile, long headerByte, boolean inUse )
+    public void read( RelationshipGroupRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
+            PagedFile storeFile ) throws IOException
     {
         // [    ,   x] in use
         // [    ,xxx ] high next id bits
         // [ xxx,    ] high firstOut bits
-        // [    ,xxx ] high firstIn bits
-        // [ xxx,    ] high firstLoop bits
-        long highByte = cursor.getByte();
+        long headerByte = cursor.getByte();
+        boolean inUse = isInUse( (byte) headerByte );
+        if ( mode.shouldLoad( inUse ) )
+        {
+            // [    ,xxx ] high firstIn bits
+            // [ xxx,    ] high firstLoop bits
+            long highByte = cursor.getByte();
 
-        int type = cursor.getShort() & 0xFFFF;
-        long nextLowBits = cursor.getUnsignedInt();
-        long nextOutLowBits = cursor.getUnsignedInt();
-        long nextInLowBits = cursor.getUnsignedInt();
-        long nextLoopLowBits = cursor.getUnsignedInt();
-        long owningNode = cursor.getUnsignedInt() | (((long)cursor.getByte()) << 32);
+            int type = cursor.getShort() & 0xFFFF;
+            long nextLowBits = cursor.getUnsignedInt();
+            long nextOutLowBits = cursor.getUnsignedInt();
+            long nextInLowBits = cursor.getUnsignedInt();
+            long nextLoopLowBits = cursor.getUnsignedInt();
+            long owningNode = cursor.getUnsignedInt() | (((long)cursor.getByte()) << 32);
 
-        long nextMod = (headerByte & 0xE) << 31;
-        long nextOutMod = (headerByte & 0x70) << 28;
-        long nextInMod = (highByte & 0xE) << 31;
-        long nextLoopMod = (highByte & 0x70) << 28;
+            long nextMod = (headerByte & 0xE) << 31;
+            long nextOutMod = (headerByte & 0x70) << 28;
+            long nextInMod = (highByte & 0xE) << 31;
+            long nextLoopMod = (highByte & 0x70) << 28;
 
-        record.initialize( inUse, type,
-                BaseRecordFormat.longFromIntAndMod( nextOutLowBits, nextOutMod ),
-                BaseRecordFormat.longFromIntAndMod( nextInLowBits, nextInMod ),
-                BaseRecordFormat.longFromIntAndMod( nextLoopLowBits, nextLoopMod ),
-                owningNode,
-                BaseRecordFormat.longFromIntAndMod( nextLowBits, nextMod ) );
+            record.initialize( inUse, type,
+                    BaseRecordFormat.longFromIntAndMod( nextOutLowBits, nextOutMod ),
+                    BaseRecordFormat.longFromIntAndMod( nextInLowBits, nextInMod ),
+                    BaseRecordFormat.longFromIntAndMod( nextLoopLowBits, nextLoopMod ),
+                    owningNode,
+                    BaseRecordFormat.longFromIntAndMod( nextLowBits, nextMod ) );
+        }
     }
 
     @Override
-    public void doWrite( RelationshipGroupRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
+    public void write( RelationshipGroupRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
+            throws IOException
     {
-        long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getNext() & 0x700000000L) >> 31;
-        long nextOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstOut() & 0x700000000L) >> 28;
-        long nextInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstIn() & 0x700000000L) >> 31;
-        long nextLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstLoop() & 0x700000000L) >> 28;
+        if ( record.inUse() )
+        {
+            long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getNext() & 0x700000000L) >> 31;
+            long nextOutMod = record.getFirstOut() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstOut() & 0x700000000L) >> 28;
+            long nextInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstIn() & 0x700000000L) >> 31;
+            long nextLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstLoop() & 0x700000000L) >> 28;
 
-        // [    ,   x] in use
-        // [    ,xxx ] high next id bits
-        // [ xxx,    ] high firstOut bits
-        cursor.putByte( (byte) (nextOutMod | nextMod | 1) );
+            // [    ,   x] in use
+            // [    ,xxx ] high next id bits
+            // [ xxx,    ] high firstOut bits
+            cursor.putByte( (byte) (nextOutMod | nextMod | 1) );
 
-        // [    ,xxx ] high firstIn bits
-        // [ xxx,    ] high firstLoop bits
-        cursor.putByte( (byte) (nextLoopMod | nextInMod) );
+            // [    ,xxx ] high firstIn bits
+            // [ xxx,    ] high firstLoop bits
+            cursor.putByte( (byte) (nextLoopMod | nextInMod) );
 
-        cursor.putShort( (short) record.getType() );
-        cursor.putInt( (int) record.getNext() );
-        cursor.putInt( (int) record.getFirstOut() );
-        cursor.putInt( (int) record.getFirstIn() );
-        cursor.putInt( (int) record.getFirstLoop() );
-        cursor.putInt( (int) record.getOwningNode() );
-        cursor.putByte( (byte) (record.getOwningNode() >> 32) );
+            cursor.putShort( (short) record.getType() );
+            cursor.putInt( (int) record.getNext() );
+            cursor.putInt( (int) record.getFirstOut() );
+            cursor.putInt( (int) record.getFirstIn() );
+            cursor.putInt( (int) record.getFirstLoop() );
+            cursor.putInt( (int) record.getOwningNode() );
+            cursor.putByte( (byte) (record.getOwningNode() >> 32) );
+        }
+        else
+        {
+            markFirstByteAsUnused( cursor );
+        }
     }
 
     @Override

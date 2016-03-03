@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
+import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<RelationshipRecord>
@@ -46,108 +49,122 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
     }
 
     @Override
-    public void doRead( RelationshipRecord record, PageCursor cursor, int recordSize, PagedFile storeFile, long headerByte, boolean inUse )
+    public void read( RelationshipRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
+            PagedFile storeFile ) throws IOException
     {
-        // [    ,   x] in use flag
-        // [    ,xxx ] first node high order bits
-        // [xxxx,    ] next prop high order bits
-        long firstNode = cursor.getUnsignedInt();
-        long firstNodeMod = (headerByte & 0xEL) << 31;
+        byte headerByte = cursor.getByte();
+        boolean inUse = isInUse( headerByte );
+        if ( mode.shouldLoad( inUse ) )
+        {
+            // [    ,   x] in use flag
+            // [    ,xxx ] first node high order bits
+            // [xxxx,    ] next prop high order bits
+            long firstNode = cursor.getUnsignedInt();
+            long firstNodeMod = (headerByte & 0xEL) << 31;
 
-        long secondNode = cursor.getUnsignedInt();
+            long secondNode = cursor.getUnsignedInt();
 
-        // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
-        // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
-        // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
-        // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
-        // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
-        // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-        long typeInt = cursor.getInt();
-        long secondNodeMod = (typeInt & 0x70000000L) << 4;
-        int type = (int)(typeInt & 0xFFFF);
+            // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
+            // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
+            // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
+            // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
+            // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
+            // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
+            long typeInt = cursor.getInt();
+            long secondNodeMod = (typeInt & 0x70000000L) << 4;
+            int type = (int)(typeInt & 0xFFFF);
 
-        long firstPrevRel = cursor.getUnsignedInt();
-        long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
+            long firstPrevRel = cursor.getUnsignedInt();
+            long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
 
-        long firstNextRel = cursor.getUnsignedInt();
-        long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
+            long firstNextRel = cursor.getUnsignedInt();
+            long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
 
-        long secondPrevRel = cursor.getUnsignedInt();
-        long secondPrevRelMod = (typeInt & 0x380000L) << 13;
+            long secondPrevRel = cursor.getUnsignedInt();
+            long secondPrevRelMod = (typeInt & 0x380000L) << 13;
 
-        long secondNextRel = cursor.getUnsignedInt();
-        long secondNextRelMod = (typeInt & 0x70000L) << 16;
+            long secondNextRel = cursor.getUnsignedInt();
+            long secondNextRelMod = (typeInt & 0x70000L) << 16;
 
-        long nextProp = cursor.getUnsignedInt();
-        long nextPropMod = (headerByte & 0xF0L) << 28;
+            long nextProp = cursor.getUnsignedInt();
+            long nextPropMod = (headerByte & 0xF0L) << 28;
 
-        byte extraByte = cursor.getByte();
+            byte extraByte = cursor.getByte();
 
-        record.initialize( inUse,
-                BaseRecordFormat.longFromIntAndMod( nextProp, nextPropMod ),
-                BaseRecordFormat.longFromIntAndMod( firstNode, firstNodeMod ),
-                BaseRecordFormat.longFromIntAndMod( secondNode, secondNodeMod ),
-                type,
-                BaseRecordFormat.longFromIntAndMod( firstPrevRel, firstPrevRelMod ),
-                BaseRecordFormat.longFromIntAndMod( firstNextRel, firstNextRelMod ),
-                BaseRecordFormat.longFromIntAndMod( secondPrevRel, secondPrevRelMod ),
-                BaseRecordFormat.longFromIntAndMod( secondNextRel, secondNextRelMod ),
-                (extraByte & 0x1) != 0,
-                (extraByte & 0x2) != 0 );
+            record.initialize( inUse,
+                    BaseRecordFormat.longFromIntAndMod( nextProp, nextPropMod ),
+                    BaseRecordFormat.longFromIntAndMod( firstNode, firstNodeMod ),
+                    BaseRecordFormat.longFromIntAndMod( secondNode, secondNodeMod ),
+                    type,
+                    BaseRecordFormat.longFromIntAndMod( firstPrevRel, firstPrevRelMod ),
+                    BaseRecordFormat.longFromIntAndMod( firstNextRel, firstNextRelMod ),
+                    BaseRecordFormat.longFromIntAndMod( secondPrevRel, secondPrevRelMod ),
+                    BaseRecordFormat.longFromIntAndMod( secondNextRel, secondNextRelMod ),
+                    (extraByte & 0x1) != 0,
+                    (extraByte & 0x2) != 0 );
+        }
     }
 
     @Override
-    public void doWrite( RelationshipRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
+    public void write( RelationshipRecord record, PageCursor cursor, int recordSize, PagedFile storeFile )
+            throws IOException
     {
-        long firstNode = record.getFirstNode();
-        short firstNodeMod = (short)((firstNode & 0x700000000L) >> 31);
+        if ( record.inUse() )
+        {
+            long firstNode = record.getFirstNode();
+            short firstNodeMod = (short)((firstNode & 0x700000000L) >> 31);
 
-        long secondNode = record.getSecondNode();
-        long secondNodeMod = (secondNode & 0x700000000L) >> 4;
+            long secondNode = record.getSecondNode();
+            long secondNodeMod = (secondNode & 0x700000000L) >> 4;
 
-        long firstPrevRel = record.getFirstPrevRel();
-        long firstPrevRelMod = firstPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstPrevRel & 0x700000000L) >> 7;
+            long firstPrevRel = record.getFirstPrevRel();
+            long firstPrevRelMod = firstPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstPrevRel & 0x700000000L) >> 7;
 
-        long firstNextRel = record.getFirstNextRel();
-        long firstNextRelMod = firstNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstNextRel & 0x700000000L) >> 10;
+            long firstNextRel = record.getFirstNextRel();
+            long firstNextRelMod = firstNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstNextRel & 0x700000000L) >> 10;
 
-        long secondPrevRel = record.getSecondPrevRel();
-        long secondPrevRelMod = secondPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondPrevRel & 0x700000000L) >> 13;
+            long secondPrevRel = record.getSecondPrevRel();
+            long secondPrevRelMod = secondPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondPrevRel & 0x700000000L) >> 13;
 
-        long secondNextRel = record.getSecondNextRel();
-        long secondNextRelMod = secondNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondNextRel & 0x700000000L) >> 16;
+            long secondNextRel = record.getSecondNextRel();
+            long secondNextRelMod = secondNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondNextRel & 0x700000000L) >> 16;
 
-        long nextProp = record.getNextProp();
-        long nextPropMod = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (nextProp & 0xF00000000L) >> 28;
+            long nextProp = record.getNextProp();
+            long nextPropMod = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (nextProp & 0xF00000000L) >> 28;
 
-        // [    ,   x] in use flag
-        // [    ,xxx ] first node high order bits
-        // [xxxx,    ] next prop high order bits
-        short inUseUnsignedByte = (short)((record.inUse() ? Record.IN_USE : Record.NOT_IN_USE).byteValue() | firstNodeMod | nextPropMod);
+            // [    ,   x] in use flag
+            // [    ,xxx ] first node high order bits
+            // [xxxx,    ] next prop high order bits
+            short inUseUnsignedByte = (short)((record.inUse() ? Record.IN_USE : Record.NOT_IN_USE).byteValue() | firstNodeMod | nextPropMod);
 
-        // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
-        // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
-        // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
-        // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
-        // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
-        // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-        int typeInt = (int)(record.getType() | secondNodeMod | firstPrevRelMod | firstNextRelMod | secondPrevRelMod | secondNextRelMod);
+            // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
+            // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
+            // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
+            // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
+            // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
+            // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
+            int typeInt = (int)(record.getType() | secondNodeMod | firstPrevRelMod | firstNextRelMod | secondPrevRelMod | secondNextRelMod);
 
-        // [    ,   x] 1:st in start node chain, 0x1
-        // [    ,  x ] 1:st in end node chain,   0x2
-        long firstInStartNodeChain = record.isFirstInFirstChain() ? 0x1 : 0;
-        long firstInEndNodeChain = record.isFirstInSecondChain() ? 0x2 : 0;
-        byte extraByte = (byte) (firstInEndNodeChain | firstInStartNodeChain);
+            // [    ,   x] 1:st in start node chain, 0x1
+            // [    ,  x ] 1:st in end node chain,   0x2
+            long firstInStartNodeChain = record.isFirstInFirstChain() ? 0x1 : 0;
+            long firstInEndNodeChain = record.isFirstInSecondChain() ? 0x2 : 0;
+            byte extraByte = (byte) (firstInEndNodeChain | firstInStartNodeChain);
 
-        cursor.putByte( (byte)inUseUnsignedByte );
-        cursor.putInt( (int) firstNode );
-        cursor.putInt( (int) secondNode );
-        cursor.putInt( typeInt );
-        cursor.putInt( (int) firstPrevRel );
-        cursor.putInt( (int) firstNextRel );
-        cursor.putInt( (int) secondPrevRel );
-        cursor.putInt( (int) secondNextRel );
-        cursor.putInt( (int) nextProp );
-        cursor.putByte( extraByte );
+            cursor.putByte( (byte)inUseUnsignedByte );
+            cursor.putInt( (int) firstNode );
+            cursor.putInt( (int) secondNode );
+            cursor.putInt( typeInt );
+            cursor.putInt( (int) firstPrevRel );
+            cursor.putInt( (int) firstNextRel );
+            cursor.putInt( (int) secondPrevRel );
+            cursor.putInt( (int) secondNextRel );
+            cursor.putInt( (int) nextProp );
+            cursor.putByte( extraByte );
+        }
+        else
+        {
+            markFirstByteAsUnused( cursor );
+        }
     }
 }

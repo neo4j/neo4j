@@ -81,7 +81,7 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
         return Math.toIntExact( id );
     }
 
-    public void setId( long id )
+    public final void setId( long id )
     {
         this.id = id;
     }

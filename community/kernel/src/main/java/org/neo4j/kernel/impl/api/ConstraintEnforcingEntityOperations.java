@@ -586,4 +586,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     {
         return entityReadOperations.relationshipsGetCount( statement );
     }
+
+    @Override
+    public boolean nodeExists( KernelStatement statement, long id )
+    {
+        return entityReadOperations.nodeExists( statement, id );
+    }
 }

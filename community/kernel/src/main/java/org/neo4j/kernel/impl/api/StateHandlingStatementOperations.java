@@ -1173,7 +1173,7 @@ public class StateHandlingStatementOperations implements
             try
             {
                 statement.txState().accept( new TransactionCountingStateVisitor( EMPTY, storeLayer,
-                        statement.txState(), counts ) );
+                        statement.getStoreStatement(), statement.txState(), counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
@@ -1203,7 +1203,7 @@ public class StateHandlingStatementOperations implements
             try
             {
                 statement.txState().accept( new TransactionCountingStateVisitor( EMPTY, storeLayer,
-                        statement.txState(), counts ) );
+                        statement.getStoreStatement(), statement.txState(), counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )
@@ -1705,5 +1705,23 @@ public class StateHandlingStatementOperations implements
             }
         }
         return labelIds;
+    }
+
+    @Override
+    public boolean nodeExists( KernelStatement statement, long id )
+    {
+        if ( statement.hasTxStateWithChanges() )
+        {
+            TransactionState txState = statement.txState();
+            if ( txState.nodeIsDeletedInThisTx( id ) )
+            {
+                return false;
+            }
+            else if ( txState.nodeIsAddedInThisTx( id ) )
+            {
+                return true;
+            }
+        }
+        return storeLayer.nodeExists( id );
     }
 }

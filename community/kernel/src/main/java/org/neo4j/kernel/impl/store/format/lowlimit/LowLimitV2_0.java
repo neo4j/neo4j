@@ -52,7 +52,7 @@ public class LowLimitV2_0 extends BaseRecordFormats
     public RecordFormat<RelationshipRecord> relationship()
     {
         // Yes, uses the same relationship record format as 1.9
-        return new RelationshipRecordFormatV1_9();
+        return new RelationshipRecordFormatV2_0();
     }
 
     @Override

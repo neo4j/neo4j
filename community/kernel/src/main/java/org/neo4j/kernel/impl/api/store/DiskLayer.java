@@ -113,7 +113,7 @@ public class DiskLayer implements StoreReadLayer
 
     public DiskLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
-            IndexingService indexService, Supplier<StorageStatement> statementProvider )
+            IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -121,7 +121,7 @@ public class DiskLayer implements StoreReadLayer
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
         this.neoStores = neoStores;
-        this.statementProvider = statementProvider;
+        this.statementProvider = storeStatementSupplier;
         this.nodeStore = this.neoStores.getNodeStore();
         this.relationshipStore = this.neoStores.getRelationshipStore();
         this.counts = neoStores.getCounts();
@@ -129,7 +129,7 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
-    public StorageStatement acquireStatement()
+    public StorageStatement newStatement()
     {
         return statementProvider.get();
     }
@@ -613,5 +613,11 @@ public class DiskLayer implements StoreReadLayer
     public DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
     {
         return counts.indexSample( index.getLabelId(), index.getPropertyKeyId(), target );
+    }
+
+    @Override
+    public boolean nodeExists( long id )
+    {
+        return nodeStore.isInUse( id );
     }
 }

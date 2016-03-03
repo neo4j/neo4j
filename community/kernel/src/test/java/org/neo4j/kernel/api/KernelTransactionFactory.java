@@ -44,7 +44,24 @@ import static org.mockito.Mockito.when;
 
 public class KernelTransactionFactory
 {
-    static KernelTransaction kernelTransaction( AccessMode accessMode )
+    public static class Instances
+    {
+        public KernelTransactionImplementation transaction;
+        public StorageEngine storageEngine;
+        public StoreReadLayer storeReadLayer;
+        public StorageStatement storageStatement;
+
+        public Instances( KernelTransactionImplementation transaction, StorageEngine storageEngine,
+                StoreReadLayer storeReadLayer, StorageStatement storageStatement )
+        {
+            this.transaction = transaction;
+            this.storageEngine = storageEngine;
+            this.storeReadLayer = storeReadLayer;
+            this.storageStatement = storageStatement;
+        }
+    }
+
+    static Instances kernelTransactionWithInternals( AccessMode accessMode )
     {
         TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
         TransactionHeaderInformationFactory headerInformationFactory = mock( TransactionHeaderInformationFactory.class );
@@ -52,10 +69,12 @@ public class KernelTransactionFactory
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
-        when( storeReadLayer.acquireStatement() ).thenReturn( mock( StorageStatement.class ) );
+        StorageStatement storageStatement = mock( StorageStatement.class );
+        when( storeReadLayer.newStatement() ).thenReturn( storageStatement );
         when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
 
-        return new KernelTransactionImplementation( mock( StatementOperationParts.class ),
+        KernelTransactionImplementation transaction = new KernelTransactionImplementation(
+                mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ),
                 new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), new Procedures(), headerInformationFactory,
@@ -65,5 +84,11 @@ public class KernelTransactionFactory
                 Clock.SYSTEM_CLOCK,
                 TransactionTracer.NULL,
                 storageEngine ).initialize( 0, new NoOpClient(), KernelTransaction.Type.implicit, accessMode );
+        return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
+    }
+
+    static KernelTransaction kernelTransaction( AccessMode accessMode )
+    {
+        return kernelTransactionWithInternals( accessMode ).transaction;
     }
 }

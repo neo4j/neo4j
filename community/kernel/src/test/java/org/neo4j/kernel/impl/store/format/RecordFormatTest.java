@@ -195,7 +195,7 @@ public abstract class RecordFormatTest
                 catch ( Throwable t )
                 {
                     Exceptions.setMessage( t, t.getMessage() + " : written:" + written + ", read:" + read +
-                            ", seed:" + random.seed() );
+                            ", seed:" + random.seed() + ", iteration:" + i );
                     throw t;
                 }
             }

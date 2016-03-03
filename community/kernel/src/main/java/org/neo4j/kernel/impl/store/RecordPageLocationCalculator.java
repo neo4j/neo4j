@@ -50,6 +50,6 @@ public class RecordPageLocationCalculator
      */
     public static int offsetForId( long id, int pageSize, int recordSize )
     {
-        return (int) (id * recordSize % pageSize);
+        return (int) ((id * recordSize) % pageSize);
     }
 }
