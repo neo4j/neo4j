@@ -176,11 +176,11 @@ public interface ServerSettings
     Setting<URI> browser_path = setting( "org.neo4j.server.webadmin.browser.uri", Settings.URI, "/browser/" );
 
     @Internal
-    Setting<Boolean> script_sandboxing_enabled = setting("org.neo4j.server.script.sandboxing.enabled",
+    Setting<Boolean> script_sandboxing_enabled = setting("unsupported.dbms.security.script_sandboxing_enabled",
             BOOLEAN, TRUE );
 
     @Internal
-    Setting<Boolean> wadl_enabled = setting( "unsupported_wadl_generation_enabled", BOOLEAN,
+    Setting<Boolean> wadl_enabled = setting( "unsupported.dbms.wadl_generation_enabled", BOOLEAN,
             FALSE );
 
     @Internal

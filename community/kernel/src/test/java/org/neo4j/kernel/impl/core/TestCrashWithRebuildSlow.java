@@ -102,7 +102,7 @@ public class TestCrashWithRebuildSlow
         }
         assertThat( snapshotChecksum, equalTo( checksumBefore ) );
 
-        // Recover with rebuild_idgenerators_fast=false
+        // Recover with unsupported.dbms.id_generator_fast_rebuild_enabled=false
         assertNumberOfFreeIdsEquals( storeDir, snapshot, 0 );
         GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( snapshot )

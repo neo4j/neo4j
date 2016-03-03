@@ -91,12 +91,12 @@ public abstract class GraphDatabaseSettings
     @Description( "Set this to specify the default runtime for the default language version." )
     @Internal
     public static final Setting<String> cypher_runtime = setting(
-            "dbms.cypher.runtime",
+            "unsupported.cypher.runtime",
             options( "INTERPRETED", "COMPILED", DEFAULT ), DEFAULT );
 
     @Description( "Enable tracing of compilation in cypher." )
     @Internal
-    public static final Setting<Boolean> cypher_compiler_tracing = setting( "dbms.cypher.compiler_tracing", BOOLEAN, FALSE );
+    public static final Setting<Boolean> cypher_compiler_tracing = setting( "unsupported.cypher.compiler_tracing", BOOLEAN, FALSE );
 
     @Description( "The number of Cypher query execution plans that are cached." )
     public static Setting<Integer> query_cache_size = setting( "dbms.query_cache_size", INTEGER, "1000", min( 0 ) );
@@ -113,21 +113,21 @@ public abstract class GraphDatabaseSettings
                   "where the label has no index" )
     @Internal
     public static Setting<Long> query_non_indexed_label_warning_threshold = setting(
-            "dbms.cypher.non_indexed_label_warning_threshold", LONG, "10000" );
+            "unsupported.cypher.non_indexed_label_warning_threshold", LONG, "10000" );
 
     @Description( "To improve IDP query planning time, we can restrict the internal planning table size, " +
                   "triggering compaction of candidate plans. The smaller the threshold the faster the planning, " +
                   "but the higher the risk of sub-optimal plans." )
     @Internal
     public static Setting<Integer> cypher_idp_solver_table_threshold = setting(
-            "dbms.cypher.idp_solver_table_threshold", INTEGER, "128", min( 16 ) );
+            "unsupported.cypher.idp_solver_table_threshold", INTEGER, "128", min( 16 ) );
 
     @Description( "To improve IDP query planning time, we can restrict the internal planning loop duration, " +
                   "triggering more frequent compaction of candidate plans. The smaller the threshold the " +
                   "faster the planning, but the higher the risk of sub-optimal plans." )
     @Internal
     public static Setting<Long> cypher_idp_solver_duration_threshold = setting(
-            "dbms.cypher.idp_solver_duration_threshold", LONG, "1000", min( 10L ) );
+            "unsupported.cypher.idp_solver_duration_threshold", LONG, "1000", min( 10L ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
     public static Setting<Long> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "1s" );
@@ -144,13 +144,13 @@ public abstract class GraphDatabaseSettings
                   "starting a new transaction." )
     @Internal
     public static final Setting<Long> transaction_start_timeout =
-            setting( "transaction_start_timeout", DURATION, "1s" );
+            setting( "unsupported.dbms.transaction_start_timeout", DURATION, "1s" );
 
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )
     @Internal
     public static final Setting<Long> shutdown_transaction_end_timeout =
-            setting( "shutdown_transaction_end_timeout", DURATION, "10s" );
+            setting( "unsupported.dbms.shutdown_transaction_end_timeout", DURATION, "10s" );
 
     @Description("Location of the database plugin directory. Compiled Java JAR files that contain database " +
                  "procedures will be loaded if they are placed in this directory.")
@@ -172,10 +172,10 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Level> store_internal_log_level = setting( "store.internal_log.level",
             options( Level.class ), "INFO" );
 
-    @Description( "Maximum time interval for log rotation to wait for active transaction completion" )
+    @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
     @Internal
-    public static final Setting<Long> store_interval_log_rotation_wait_time =
-            setting( "store.interval.log.rotation", DURATION, "10m" );
+    public static final Setting<Long> counts_store_rotation_timeout =
+            setting( "unsupported.dbms.counts_store_rotation_timeout", DURATION, "10m" );
 
     @Description( "Minimum time interval after last rotation of the internal log before it may be rotated again." )
     public static final Setting<Long> store_internal_log_rotation_delay =
@@ -252,7 +252,7 @@ public abstract class GraphDatabaseSettings
     // Lucene schema indexes
     @Internal
     public static final Setting<Boolean> multi_threaded_schema_index_population_enabled =
-            setting( "multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE );
+            setting( "unsupported.dbms.multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE );
 
     // Store settings
     @Description("Make Neo4j keep the logical transaction logs for being able to backup the database. " +
@@ -270,13 +270,13 @@ public abstract class GraphDatabaseSettings
     @Description("Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
             "but will limit the ability to reuse the space of deleted entities.")
     @Internal
-    public static final Setting<Boolean> rebuild_idgenerators_fast = setting("rebuild_idgenerators_fast", BOOLEAN, TRUE );
+    public static final Setting<Boolean> rebuild_idgenerators_fast = setting("unsupported.dbms.id_generator_fast_rebuild_enabled", BOOLEAN, TRUE );
 
     // Store memory settings
     @Description("Target size for pages of mapped memory. If set to 0, then a reasonable default is chosen, " +
                  "depending on the storage device used.")
     @Internal
-    public static final Setting<Long> mapped_memory_page_size = setting( "dbms.pagecache.pagesize", BYTES, "0" );
+    public static final Setting<Long> mapped_memory_page_size = setting( "unsupported.dbms.memory.pagecache.pagesize", BYTES, "0" );
 
     @SuppressWarnings( "unchecked" )
     @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
@@ -347,7 +347,7 @@ public abstract class GraphDatabaseSettings
             "Also note that each block carries a ~10B of overhead so record size on disk will be slightly larger " +
             "than the configured block size" )
     @Internal
-    public static final Setting<Integer> string_block_size = setting("string_block_size", INTEGER,
+    public static final Setting<Integer> string_block_size = setting("unsupported.dbms.block_size.strings", INTEGER,
             valueOf( dynamicRecordDataSizeForAligningWith( 128 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
 
     @Description("Specifies the block size for storing arrays. This parameter is only honored when the store is " +
@@ -355,7 +355,7 @@ public abstract class GraphDatabaseSettings
             "Also note that each block carries a ~10B of overhead so record size on disk will be slightly larger " +
             "than the configured block size" )
     @Internal
-    public static final Setting<Integer> array_block_size = setting("array_block_size", INTEGER,
+    public static final Setting<Integer> array_block_size = setting("unsupported.dbms.block_size.array_properties", INTEGER,
             valueOf( dynamicRecordDataSizeForAligningWith( 128 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
 
     @Description("Specifies the block size for storing labels exceeding in-lined space in node record. " +
@@ -363,13 +363,13 @@ public abstract class GraphDatabaseSettings
             "Also note that each block carries a ~10B of overhead so record size on disk will be slightly larger " +
             "than the configured block size" )
     @Internal
-    public static final Setting<Integer> label_block_size = setting("label_block_size", INTEGER,
+    public static final Setting<Integer> label_block_size = setting("unsupported.dbms.block_size.labels", INTEGER,
             valueOf( dynamicRecordDataSizeForAligningWith( 64 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
 
     @Description("An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
     @Internal
-    public static final Setting<String> forced_kernel_id = setting("forced_kernel_id", STRING, NO_DEFAULT,
+    public static final Setting<String> forced_kernel_id = setting("unsupported.dbms.kernel_id", STRING, NO_DEFAULT,
             illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
 
     @Internal
@@ -416,7 +416,7 @@ public abstract class GraphDatabaseSettings
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
                   "flushing data into underlying storage.")
     @Internal
-    public static final Setting<Integer> batch_inserter_batch_size = setting( "batch_inserter_batch_size", INTEGER,
+    public static final Setting<Integer> batch_inserter_batch_size = setting( "unsupported.tools.batch_inserter.batch_size", INTEGER,
             "10000" );
 
     @Description("Enable auth requirement to access Neo4j.")

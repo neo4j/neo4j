@@ -37,7 +37,7 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                config.put( "ephemeral", "false" );
+                config.put( "unsupported.dbms.ephemeral", "false" );
 
                 return new EnterpriseGraphDatabase( storeDir, config, state.databaseDependencies() );
             }

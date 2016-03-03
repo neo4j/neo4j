@@ -56,7 +56,7 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( final Map<String, String> config )
             {
-                config.put( "ephemeral", "false" );
+                config.put( "unsupported.dbms.ephemeral", "false" );
                 return new HighlyAvailableGraphDatabase( storeDir, config, state.databaseDependencies() );
             }
         };

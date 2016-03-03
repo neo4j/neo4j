@@ -46,7 +46,7 @@ public class UdcConstants
     public static final String PROPERTY_IDS_IN_USE = "propids";
     public static final String LABEL_IDS_IN_USE = "labelids";
 
-    public static final String UDC_PROPERTY_PREFIX = "neo4j.ext.udc";
+    public static final String UDC_PROPERTY_PREFIX = "unsupported.dbms.udc";
     public static final String OS_PROPERTY_PREFIX = "os";
     public static final String UNKNOWN_DIST = "unknown";
 }

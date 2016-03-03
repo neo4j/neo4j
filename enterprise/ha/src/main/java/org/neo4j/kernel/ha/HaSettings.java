@@ -47,22 +47,22 @@ public class HaSettings
     public static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
 
     @Description( "How long a slave will wait for response from master before giving up." )
-    public static final Setting<Long> read_timeout = setting( "ha.read_timeout", DURATION, "20s" );
+    public static final Setting<Long> read_timeout = setting( "ha.slave_read_timeout", DURATION, "20s" );
 
     @Description( "Timeout for request threads waiting for instance to become master or slave." )
-    public static final Setting<Long> state_switch_timeout = setting( "ha.state_switch_timeout", DURATION, "120s" );
+    public static final Setting<Long> state_switch_timeout = setting( "ha.role_switch_timeout", DURATION, "120s" );
 
     @Description( "Timeout for waiting for internal conditions during state switch, like for transactions "
             + "to complete, before switching to master or slave." )
     public static final Setting<Long> internal_state_switch_timeout =
             setting( "ha.internal_role_switch_timeout", DURATION, "10s" );
 
-    @Description( "Timeout for taking remote (write) locks on slaves. Defaults to ha.read_timeout." )
-    public static final Setting<Long> lock_read_timeout = setting( "ha.lock_read_timeout", DURATION, read_timeout );
+    @Description( "Timeout for taking remote (write) locks on slaves. Defaults to ha.slave_read_timeout." )
+    public static final Setting<Long> lock_read_timeout = setting( "ha.slave_lock_timeout", DURATION, read_timeout );
 
     @Description( "Maximum number of connections a slave can have to the master." )
     public static final Setting<Integer> max_concurrent_channels_per_slave =
-            setting( "ha.max_concurrent_channels_per_slave", INTEGER, "20", min( 1 ) );
+            setting( "ha.max_channels_per_slave", INTEGER, "20", min( 1 ) );
 
     @Description( "Hostname and port to bind the HA server." )
     public static final Setting<HostnamePort> ha_server = setting( "ha.server", HOSTNAME_PORT, "0.0.0.0:6001-6011" );
@@ -94,7 +94,7 @@ public class HaSettings
     public static final Setting<TxPushStrategy> tx_push_strategy = setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_ascending.name() );
 
     @Description( "Size of batches of transactions applied on slaves when pulling from master" )
-    public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_apply_batch_size", INTEGER, "100" );
+    public static final Setting<Integer> pull_apply_batch_size = setting( "ha.pull_batch_size", INTEGER, "100" );
 
     public enum TxPushStrategy
     {
