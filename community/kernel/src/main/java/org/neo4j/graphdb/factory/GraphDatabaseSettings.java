@@ -393,7 +393,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
 
     @Description("Path of the logs directory")
-    public static final Setting<File> logs_directory = setting("dbms.directories.logs", PATH, "data/log");
+    public static final Setting<File> logs_directory = setting("dbms.directories.logs", PATH, NO_DEFAULT);
 
     @Internal
     public static final Setting<File> log_queries_filename = derivedSetting("dbms.querylog.filename",
