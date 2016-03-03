@@ -542,70 +542,6 @@
       </plugin>
 
       <plugin>
-        <groupId>com.voltvoodoo</groupId>
-        <artifactId>brew</artifactId>
-        <version>0.2.10</version>
-        <executions>
-          <execution>
-            <id>compile-webadmin</id>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <phase>compile</phase>
-          </execution>
-          <execution>
-            <id>minify-webadmin</id>
-            <goals>
-              <goal>optimize</goal>
-            </goals>
-            <phase>process-classes</phase>
-          </execution>
-        </executions>
-        <configuration>
-          <modules>
-            <module>
-              <name>webadmin</name>
-              <exclude>
-                <!-- Arbor runs with WebWorkers, webworkers are started by giving
-           the browser a js url to fetch and run, so this needs to be separate
-           from the webadmin js file. -->
-                <exclude>lib/arbor.js</exclude>
-              </exclude>
-            </module>
-          </modules>
-          <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
-          <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
-
-          <optimizeSourceDir>${project.build.outputDirectory}/webadmin-html/js</optimizeSourceDir>
-          <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
-
-          <optimizedFileNameSuffix>false</optimizedFileNameSuffix>
-          <minifyOnlyAggregatedFiles>true</minifyOnlyAggregatedFiles>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>com.github.searls</groupId>
-        <artifactId>jasmine-maven-plugin</artifactId>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <id>webadmin-specs</id>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <jsTestSrcDir>${project.build.outputDirectory}/webadmin-html/js/test</jsTestSrcDir>
-          <customRunnerTemplate>src/test/resources/SpecRunner.htmlTemplate</customRunnerTemplate>
-          <specRunnerTemplate>REQUIRE_JS</specRunnerTemplate>
-          <!-- *Must* be relative to jasmine dir -->
-          <junitXmlReportFileName>../surefire-reports/TEST-Webadmin.xml</junitXmlReportFileName>
-        </configuration>
-      </plugin>
-
-      <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
           <groups>
@@ -640,7 +576,7 @@
 
                 <!-- Inject version-specific things (codename, version etc.)
                      into webadmin -->
-                <ant antfile="src/build/webadmin-branding.ant.xml"/>
+                <!--<ant antfile="src/build/webadmin-branding.ant.xml"/>-->
 
               </target>
             </configuration>
