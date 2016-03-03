@@ -79,6 +79,8 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR
 abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
+    private static final int HEADER_BYTE = Byte.BYTES;
+
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
     static final int HEADER_BIT_FIRST_RECORD_UNIT = 0b0000_0100;
@@ -143,7 +145,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
 
     private int calculatePrimaryCursorEndOffset( PageCursor primaryCursor, int recordSize )
     {
-        return primaryCursor.getOffset() + recordSize - 1 /*the header byte*/;
+        return primaryCursor.getOffset() + recordSize - HEADER_BYTE;
     }
 
     protected abstract void doReadInternal( RECORD record, PageCursor cursor, int recordSize,
@@ -201,8 +203,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     {
         if ( record.inUse() )
         {
-            int length = 1 + requiredDataLength( record );
-            boolean requiresSecondaryUnit = length > recordSize;
+            int requiredLength = HEADER_BYTE + requiredDataLength( record );
+            boolean requiresSecondaryUnit = requiredLength > recordSize;
             record.setRequiresSecondaryUnit( requiresSecondaryUnit );
             if ( record.requiresSecondaryUnit() && !record.hasSecondaryUnitId() )
             {

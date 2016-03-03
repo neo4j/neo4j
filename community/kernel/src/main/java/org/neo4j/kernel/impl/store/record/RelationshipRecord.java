@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
+
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
@@ -209,9 +210,11 @@ public class RelationshipRecord extends PrimitiveRecord
     @Override
     public RelationshipRecord clone()
     {
-        return new RelationshipRecord( getId() ).initialize( inUse(), nextProp,
-                firstNode, secondNode, type,
-                firstPrevRel, firstNextRel, secondPrevRel, secondNextRel, firstInFirstChain, firstInSecondChain );
+        RelationshipRecord record = new RelationshipRecord( getId() ).initialize( inUse(), nextProp, firstNode,
+                secondNode, type, firstPrevRel, firstNextRel, secondPrevRel, secondNextRel, firstInFirstChain,
+                firstInSecondChain );
+        record.setSecondaryUnitId( getSecondaryUnitId() );
+        return record;
     }
 
     @Override

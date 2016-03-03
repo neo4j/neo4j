@@ -71,7 +71,6 @@ public class InternalRecordFormatSelector
             String candidateId = candidate.getKeys().iterator().next();
             if ( candidateId.equals( key ) )
             {
-                // We specified config to select this format specifically and we found it
                 return candidate.newInstance();
             }
             else if ( "".equals( key ) )
@@ -104,8 +103,7 @@ public class InternalRecordFormatSelector
 
     public static RecordFormats fromVersion( String storeVersion )
     {
-        Iterable<RecordFormats> additionalFormats = map( Factory::newInstance,
-                loadAdditionalFormats() );
+        Iterable<RecordFormats> additionalFormats = map( Factory::newInstance, loadAdditionalFormats() );
         for ( RecordFormats format : concat( KNOWN_FORMATS, additionalFormats ) )
         {
             if ( format.storeVersion().equals( storeVersion ) )
