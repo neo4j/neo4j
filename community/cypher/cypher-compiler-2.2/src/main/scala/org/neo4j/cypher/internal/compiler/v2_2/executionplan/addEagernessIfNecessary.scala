@@ -26,9 +26,8 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
     val nodesInterfere = from.contains(ReadsNodes) && to.contains(WritesNodes)
     val relsInterfere = from.contains(ReadsRelationships) && to.contains(WritesRelationships)
 
-    val readWriteInterfereNodes = from.contains(WritesNodes) && to.contains(WritesNodes) && to.contains(ReadsNodes)
-    val readWriteInterfereRelationships = from.contains(WritesRelationships) && to.contains(WritesRelationships) &&
-                                          to.contains(ReadsRelationships)
+    val readWriteInterfereNodes = nodesWriteInterference(from, to)
+    val readWriteInterfereRelationships = relsWriteInterference(from, to)
 
     nodesInterfere || relsInterfere || readWriteInterfereNodes || readWriteInterfereRelationships ||
       nodePropertiesInterfere(from, to) || relationshipPropertiesInterfere(from, to) || labelsInterfere(from, to)
@@ -45,6 +44,22 @@ object addEagernessIfNecessary extends (Pipe => Pipe) {
       }
     }
     toPipe.dup(sources.toList)
+  }
+
+  private def relsWriteInterference(from: Effects, to: Effects) = {
+    from.contains(WritesRelationships) && to.contains(WritesRelationships) && to.contains(ReadsRelationships) ||
+      from.contains(DeletesRelationship) && to.contains(ReadsRelationships)
+  }
+
+  private def nodesWriteInterference(from: Effects, to: Effects) = {
+    val toReads = to.effectsSet.collect {
+      case reads@ReadsNodes => reads
+      case reads:ReadsLabel => reads
+      case reads:ReadsNodeProperty => reads
+    }
+    // The first case could also use toReads, but we left it at ReadsNodes to minimize code changes in patch releases
+    (from.contains(WritesNodes) && to.contains(WritesNodes) && to.contains(ReadsNodes)) ||
+      (from.contains(DeletesNode) && toReads.nonEmpty)
   }
 
   private def nodePropertiesInterfere(from: Effects, to: Effects): Boolean = {
