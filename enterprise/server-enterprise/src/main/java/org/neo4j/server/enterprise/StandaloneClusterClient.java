@@ -58,14 +58,15 @@ import static org.neo4j.helpers.Exceptions.peel;
  *
  * @author Mattias Persson
  */
-public class StandaloneClusterClient
+public class StandaloneClusterClient implements AutoCloseable
 {
-    private final LifeSupport life;
+    private final LifeSupport life = new LifeSupport();
     private final Timer timer;
 
-    private StandaloneClusterClient( LifeSupport life )
+    public StandaloneClusterClient( Config config ) throws IOException
     {
-        this.life = life;
+        start( config );
+
         timer = new Timer( true );
         addShutdownHook();
         life.start();
@@ -95,22 +96,19 @@ public class StandaloneClusterClient
         } );
     }
 
-    public static void main( String[] args ) throws IOException
+    private void start( Config config ) throws IOException
     {
         try
         {
-            LifeSupport life = new LifeSupport();
             life.add( new Neo4jJobScheduler() );
 
             new ClusterClientModule(
                     life,
                     new Dependencies(),
                     new Monitors(),
-                    getConfig( args ),
+                    config,
                     logService( new DefaultFileSystemAbstraction() ),
                     new NotElectableElectionCredentialsProvider() );
-
-            new StandaloneClusterClient( life );
         }
         catch ( LifecycleException e )
         {
@@ -129,7 +127,18 @@ public class StandaloneClusterClient
         }
     }
 
-    private static Config getConfig( String[] args ) throws IOException
+    public static void main( String[] args ) throws IOException
+    {
+        new StandaloneClusterClient( getConfig( args ) );
+    }
+
+    @Override
+    public void close()
+    {
+        life.shutdown();
+    }
+
+    public static Config getConfig( String[] args ) throws IOException
     {
         Map<String, String> config = new HashMap<>();
         String configPath = System.getProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );

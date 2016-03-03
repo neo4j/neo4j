@@ -28,6 +28,7 @@ import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.AccessibleObject;
 import java.net.URI;
 import java.nio.file.Files;
@@ -286,8 +287,16 @@ public class StandaloneClusterClientIT
         {
             if ( process != null )
             {
-                kill( process );
-                process.waitFor();
+                // Tell it to leave the cluster and shut down now
+                try ( OutputStream inputToOtherProcess = process.getOutputStream() )
+                {
+                    inputToOtherProcess.write( 0 );
+                    inputToOtherProcess.flush();
+                }
+                if ( !process.waitFor( 10, SECONDS ) )
+                {
+                    kill( process );
+                }
             }
             if ( handler != null )
             {
