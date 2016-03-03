@@ -24,7 +24,7 @@ Edit the following properties:
 | Property Name                 | Meaning
 | dbms.memory.heap.initial_size | initial heap size (in MB)
 | dbms.memory.heap.max_size     | maximum heap size (in MB)
-| wrapper.java.additional       | additional literal JVM parameter
+| dbms.jvm.additional           | additional literal JVM parameter
 |====================
 
 For more information on the tuning properties, see <<performance-guide>>.

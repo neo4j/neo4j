@@ -14,7 +14,7 @@ for run_command in run_console run_daemon; do
   "
 
   test_expect_success "should add additional options" "
-    set_config 'wrapper.java.additional' '-XX:+UseG1GC', neo4j-wrapper.conf &&
+    set_config 'dbms.jvm.additional' '-XX:+UseG1GC', neo4j-wrapper.conf &&
     ${run_command} &&
     test_expect_java_arg '-XX:+UseG1GC'
   "

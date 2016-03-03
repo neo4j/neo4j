@@ -217,7 +217,7 @@ setup_java_opts() {
 
   JAVA_OPTS="-server"
   [[ "${JAVA_MEMORY_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_MEMORY_OPTS}"
-  [[ "${wrapper_java_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${wrapper_java_additional}"
+  [[ "${dbms_jvm_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${dbms_jvm_additional}"
   return 0
 }
 

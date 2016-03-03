@@ -58,7 +58,7 @@ org.neo4j.server.webadmin.management.uri=/db/manage
 Force the server to use IPv4 network addresses, in 'conf/neo4j-wrapper.conf' under the section _Java Additional Parameters_ add a new paramter:
 [source,properties]
 ----
-wrapper.java.additional=-Djava.net.preferIPv4Stack=true
+dbms.jvm.additional=-Djava.net.preferIPv4Stack=true
 ----
 
 Specify the number of threads used by the Neo4j Web server to control the level of concurrent HTTP requests that the server will service.
@@ -149,7 +149,7 @@ Failure to transmit both `X-Forwarded-Host` and `X-Forwarded-Proto` headers will
 To get garbage collection logging output you have to pass the corresponding option to the server JVM executable by setting the following value in _conf/neo4j-wrapper.conf_:
 [source,properties]
 ----
-wrapper.java.additional=-Xloggc:data/log/neo4j-gc.log
+dbms.jvm.additional=-Xloggc:data/log/neo4j-gc.log
 ----
 This line is already present and needs uncommenting.
 Note also that logging is not directed to console.
