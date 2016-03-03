@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -42,6 +43,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
@@ -198,6 +200,9 @@ public class ClusterTopologyChangesIT
     @Test
     public void failedInstanceShouldReceiveCorrectCoordinatorIdUponRejoiningCluster() throws Throwable
     {
+        // Starting a duplicate clusterClient on Windows can give port conflicts
+        Assume.assumeFalse( Settings.osIsWindows() );
+        
         // Given
         HighlyAvailableGraphDatabase initialMaster = cluster.getMaster();
 
