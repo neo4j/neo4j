@@ -103,7 +103,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAc
                            config: CypherCompilerConfiguration, clock: Clock, pipeBuilder: ExecutablePlanBuilder)
   extends PatternGraphBuilder {
 
-  def build(planContext: PlanContext, inputQuery: PreparedQuery, tracer: CompilationPhaseTracer=CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
+  def build(planContext: PlanContext, inputQuery: PreparedQuery, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
     val executablePlan = pipeBuilder.producePlan(inputQuery, planContext, tracer)
     executablePlan match {
       case Left(compiledPlan) => buildCompiled(compiledPlan, planContext, inputQuery)

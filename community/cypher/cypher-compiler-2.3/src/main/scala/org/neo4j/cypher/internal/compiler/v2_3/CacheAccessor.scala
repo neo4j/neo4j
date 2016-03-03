@@ -24,6 +24,30 @@ trait CacheAccessor[K, T] {
   def remove(cache: LRUCache[K, T])(key: K)
 }
 
+class QueryCache[K, T](cacheAccessor: CacheAccessor[K, T], cache: LRUCache[K, T]) {
+  def getOrElseUpdate(key: K, isStale: T => Boolean, produce: => T): (T, Boolean) = {
+    if (cache.size == 0)
+      (produce, false)
+    else {
+      var planned = false
+      Iterator.continually {
+        cacheAccessor.getOrElseUpdate(cache)(key, {
+          planned = true
+          produce
+        })
+      }.flatMap { value =>
+        if (!planned && isStale(value)) {
+          cacheAccessor.remove(cache)(key)
+          None
+        }
+        else {
+          Some((value, planned))
+        }
+      }.next()
+    }
+  }
+}
+
 class MonitoringCacheAccessor[K, T](monitor: CypherCacheHitMonitor[K]) extends CacheAccessor[K, T] {
 
   def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T): T = {

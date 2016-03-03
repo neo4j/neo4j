@@ -65,7 +65,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
   private val log = logProvider.getLog( getClass )
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
-  kernelMonitors.addMonitorListener( new StringCacheMonitor {
+  kernelMonitors.addMonitorListener(new StringCacheMonitor {
     override def cacheDiscard(query: String) {
       log.info(s"Discarded stale query from the query cache: $query")
     }
@@ -88,7 +88,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
   def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult = profile(query, params, QueryEngineProvider.embeddedSession)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any],session: QuerySession): ExtendedExecutionResult = {
+  def profile(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
     executionMonitor.startQueryExecution(session, query)
 
     val (preparedPlanExecution, txInfo) = planQuery(query)
@@ -147,42 +147,39 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
       val executionMode = preParsedQuery.executionMode
       val cacheKey = preParsedQuery.statementWithVersionAndPlanner
 
-      var n = 0
-      while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
-        // create transaction and query context
-        var touched = false
-        val isTopLevelTx = !txBridge.hasTransaction
-        val tx = graph.beginTx()
-        val kernelStatement = txBridge.get()
+    var n = 0
+    while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
+      // create transaction and query context
+      val isTopLevelTx = !txBridge.hasTransaction
+      val tx = graph.beginTx()
+      val kernelStatement = txBridge.get()
 
-        val (plan: ExecutionPlan, extractedParameters) = try {
-          // fetch plan cache
-          val cache: LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(kernelStatement, {
-            cacheMonitor.cacheFlushDetected(kernelStatement)
-            new LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
-          })
+      val ((plan: ExecutionPlan, extractedParameters), touched) = try {
+        // fetch plan cache
+        val cache = getOrCreateFromSchemaState(kernelStatement, {
+          cacheMonitor.cacheFlushDetected(kernelStatement)
+          val lruCache = new LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+          new QueryCache[String, (ExecutionPlan, Map[String, Any])](cacheAccessor, lruCache)
+        })
 
-          Iterator.continually {
-            cacheAccessor.getOrElseUpdate(cache)(cacheKey, {
-              touched = true
-              val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
-              parsedQuery.plan(kernelStatement, phaseTracer)
-            })
-          }.flatMap { case (candidatePlan, params) =>
-            if (!touched && candidatePlan.isStale(lastCommittedTxId, kernelStatement)) {
-              cacheAccessor.remove(cache)(cacheKey)
-              None
-            } else {
-              Some((candidatePlan, params))
-            }
-          }.next()
-        } catch {
-          case (t: Throwable) =>
-            kernelStatement.close()
-            tx.failure()
-            tx.close()
-            throw t
-        }
+        cache.getOrElseUpdate(cacheKey,
+          planParams => {
+            val stale: Boolean = planParams._1.isStale(lastCommittedTxId, kernelStatement)
+            println(stale)
+            stale
+          }, {
+            val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
+            parsedQuery.plan(kernelStatement, phaseTracer)
+          }
+        )
+      }
+      catch {
+        case (t: Throwable) =>
+          kernelStatement.close()
+          tx.failure()
+          tx.close()
+          throw t
+      }
 
         if (touched) {
           kernelStatement.close()

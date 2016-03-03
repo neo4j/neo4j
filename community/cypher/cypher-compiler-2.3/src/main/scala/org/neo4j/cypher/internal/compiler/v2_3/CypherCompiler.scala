@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v2_3.ast.{LabelName, NodePattern, Statement}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.{NodePattern, Statement}
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{BareNodeSyntaxDeprecatedNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v2_3.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition, SemanticTable, inSequence}
@@ -184,24 +184,15 @@ case class CypherCompiler(parser: CypherParser,
     PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger, plannerName)
   }
 
-  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext,
-                        tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
+  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext, tracer: CompilationPhaseTracer):
+  (ExecutionPlan, Map[String, Any]) = {
     val cache = provideCache(cacheAccessor, cacheMonitor, context)
-    var planned = false
-    val plan = Iterator.continually {
-      cacheAccessor.getOrElseUpdate(cache)(parsedQuery.statement, {
-        planned = true
+    val (executionPlan, _) = cache.getOrElseUpdate(parsedQuery.statement,
+      plan => plan.isStale(context.txIdProvider, context.statistics), {
         executionPlanBuilder.build(context, parsedQuery, tracer)
-      })
-    }.flatMap { plan =>
-      if (!planned && plan.isStale(context.txIdProvider, context.statistics)) {
-        cacheAccessor.remove(cache)(parsedQuery.statement)
-        None
-      } else {
-        Some(plan)
       }
-    }.next()
-    (plan, parsedQuery.extractedParams)
+    )
+    (executionPlan, parsedQuery.extractedParams)
   }
 
   private def syntaxDeprecationNotifications(statement: Statement) =
@@ -216,6 +207,7 @@ case class CypherCompiler(parser: CypherParser,
                            context: PlanContext) =
     context.getOrCreateFromSchemaState(cacheAccessor, {
       monitor.cacheFlushDetected(cacheAccessor)
-      planCacheFactory()
+      val lRUCache = planCacheFactory()
+      new QueryCache(cacheAccessor, lRUCache)
     })
 }
