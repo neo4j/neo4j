@@ -79,7 +79,7 @@ class ExecutionEngineIT extends CypherFunSuite {
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.0").newGraphDatabase()
 
     // when-then
-    intercept[Exception] {
+    an [Exception] should be thrownBy {
       db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
     }
   }

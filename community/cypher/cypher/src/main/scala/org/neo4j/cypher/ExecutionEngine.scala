@@ -148,8 +148,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         // fetch plan cache
         val cache = getOrCreateFromSchemaState(kernelStatement, {
           cacheMonitor.cacheFlushDetected(kernelStatement)
-          val lruCahche = new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
-          new QueryCache[String, (ExecutionPlan, Map[String, Any])](cacheAccessor, lruCahche)
+          val lruCache = new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+          new QueryCache[String, (ExecutionPlan, Map[String, Any])](cacheAccessor, lruCache)
         })
 
         cache.getOrElseUpdate(cacheKey,
