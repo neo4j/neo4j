@@ -546,4 +546,16 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     // THEN
     result.toList should equal(List(Map("type(r)" -> "T"), Map("type(r)" -> null)))
   }
+
+  test("type should fail nicely when not given a relationship")  {
+    // GIVEN
+    relate(createNode(), createNode(), "T")
+    val query: String = "MATCH (a)-[r]->() WITH [r, 1] as coll RETURN [x in coll | type(x) ]"
+
+    //Expect
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=compiled $query"))
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=interpreted $query"))
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=cost $query"))
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=rule $query"))
+  }
 }
