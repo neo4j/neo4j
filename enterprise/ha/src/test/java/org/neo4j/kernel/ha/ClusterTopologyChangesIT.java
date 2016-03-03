@@ -258,7 +258,8 @@ public class ClusterTopologyChangesIT
         Map<String,String> configMap = MapUtil.stringMap(
                 ClusterSettings.initial_hosts.name(), cluster.getInitialHostsConfigString(),
                 ClusterSettings.server_id.name(), String.valueOf( id.toIntegerIndex() ),
-                ClusterSettings.cluster_server.name(), "0.0.0.0:8888" );
+                ClusterSettings.cluster_server.name(), "0.0.0.0:8888",
+                ClusterClient.clusterJoinTimeout.name(), "60s");
 
         Config config = new Config( configMap, InternalAbstractGraphDatabase.Configuration.class,
                 GraphDatabaseSettings.class );

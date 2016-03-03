@@ -128,7 +128,8 @@ public class ClusterManager
     public static final int NF_OUT = 0x1, NF_IN = 0x2;
     public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
-            GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+            GraphDatabaseSettings.pagecache_memory.name(), "8m",
+            ClusterClient.clusterJoinTimeout.name(), "60s") );
 
     public interface StoreDirInitializer
     {
@@ -1161,6 +1162,7 @@ public class ClusterManager
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.server_id.name(), serverId + "",
                         ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort(),
+                        ClusterClient.clusterJoinTimeout.name(), "60s",
                         GraphDatabaseSettings.store_dir.name(),
                         new File( parent, "arbiter" + serverId ).getAbsolutePath() );
                 Config config1 = new Config( config, InternalAbstractGraphDatabase.Configuration.class,

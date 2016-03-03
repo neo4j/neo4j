@@ -186,6 +186,7 @@ public class StandaloneClusterClientIT
             config.put( cluster_server.name(), ":" + (5000 + i) );
             config.put( server_id.name(), "" + i );
             config.put( initial_hosts.name(), ":5001" );
+            config.put( ClusterClient.clusterJoinTimeout.name(), "60s" );
             Logging logging = new DevNullLoggingService();
             ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
             final ClusterClient client = new ClusterClient( new Monitors(), adapt( new Config( config ) ), logging,
