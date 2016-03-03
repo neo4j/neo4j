@@ -32,18 +32,15 @@ import org.neo4j.test.TargetDirectory;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
-
 public class TestClusterIndexDeletion
 {
     @Test
     public void givenClusterWithCreatedIndexWhenDeleteIndexOnMasterThenIndexIsDeletedOnSlave() throws Throwable
     {
         ClusterManager clusterManager =
-            new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
+            new ClusterManager( ClusterManager.clusterOfSize( 3 ),
                 TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
-                MapUtil.stringMap( HaSettings.ha_server.name(), ":6001-6005",
-                        HaSettings.tx_push_factor.name(), "2" ));
+                MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2" ));
         try
         {
             // Given
