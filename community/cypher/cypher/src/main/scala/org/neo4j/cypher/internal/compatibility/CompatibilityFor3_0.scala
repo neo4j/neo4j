@@ -69,7 +69,6 @@ object exceptionHandlerFor3_0 extends MapToPublicExceptions[CypherException] {
 
   def incomparableValuesException(lhs: String, rhs: String, cause: Throwable) = new IncomparableValuesException(lhs, rhs, cause)
 
-  def unknownLabelException(s: String, cause: Throwable) = new UnknownLabelException(s, cause)
 
   def patternException(message: String, cause: Throwable) = new PatternException(message, cause)
 
@@ -90,7 +89,6 @@ object exceptionHandlerFor3_0 extends MapToPublicExceptions[CypherException] {
 
   def entityNotFoundException(message: String, cause: Throwable) = throw new EntityNotFoundException(message, cause)
 
-  def hintException(message: String, cause: Throwable) = throw new HintException(message, cause)
 
   def cypherTypeException(message: String, cause: Throwable) = throw new CypherTypeException(message, cause)
 
@@ -98,9 +96,6 @@ object exceptionHandlerFor3_0 extends MapToPublicExceptions[CypherException] {
 
   override def shortestPathFallbackDisableRuntimeException(message: String, cause: Throwable): CypherException =
     throw new ExhaustiveShortestPathForbiddenException(message, cause)
-
-  def labelScanHintException(variable: String, label: String, message: String, cause: Throwable) =
-    throw new LabelScanHintException(variable, label, message, cause)
 
   def invalidSemanticException(message: String, cause: Throwable) = throw new InvalidSemanticsException(message, cause)
 

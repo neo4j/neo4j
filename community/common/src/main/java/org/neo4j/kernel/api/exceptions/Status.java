@@ -105,9 +105,6 @@ public interface Status
                 "transaction that has had schema modifications performed in it cannot be used to subsequently " +
                 "perform data operations, and vice versa." ),
 
-        ReleaseLocksFailed( DatabaseError, "The transaction was unable to release one or more of its locks." ),
-        AcquireLockTimeout( TransientError, "The transaction was unable to acquire a lock, for instance due to a " +
-                "timeout or the transaction thread being interrupted." ),
         LockSessionInvalid( TransientError, "The lock session under which this transaction was started is no longer valid." ),
 
         DeadlockDetected( TransientError, "This transaction, and at least one more transaction, has acquired locks " +
@@ -247,7 +244,6 @@ public interface Status
         DuplicateSchemaRule( DatabaseError, "The request referred to a schema rule that defined multiple times." ),
 
         LabelLimitReached( ClientError, "The maximum number of labels supported has been reached, no more labels can be created." ),
-        IndexLimitReached( ClientError, "The maximum number of index entries supported has been reached, no more entities can be indexed." ),
 
         ModifiedConcurrently( TransientError, "The database schema was modified while this transaction was running, the transaction should be retried." ),
 
