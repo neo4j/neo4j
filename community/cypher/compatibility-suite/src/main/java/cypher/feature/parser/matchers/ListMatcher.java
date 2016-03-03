@@ -36,15 +36,17 @@ public class ListMatcher implements ValueMatcher
         if ( value instanceof List )
         {
             List realList = (List) value;
-            boolean match = realList.size() == list.size();
-            if ( match )
+            if ( realList.size() == list.size() )
             {
                 for ( int i = 0; i < list.size(); ++i )
                 {
-                    match &= list.get( i ).matches( realList.get( i ) );
+                    if ( !list.get( i ).matches( realList.get( i ) ) )
+                    {
+                        return false;
+                    }
                 }
+                return true;
             }
-            return match;
         }
         return false;
     }
@@ -52,6 +54,6 @@ public class ListMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "ListMatcher for " + list.toString();
+        return "ListMatcher" + list.toString();
     }
 }

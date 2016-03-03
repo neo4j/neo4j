@@ -48,6 +48,6 @@ public class RelationshipMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "RelationshipMatcher [" + relationshipTypeName + "] " + propertyMatcher;
+        return "RelationshipMatcher[" + relationshipTypeName + "]" + propertyMatcher;
     }
 }

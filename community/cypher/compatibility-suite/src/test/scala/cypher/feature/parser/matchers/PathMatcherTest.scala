@@ -71,4 +71,17 @@ class PathMatcherTest extends ParsingTestSupport {
     pathMatcher shouldNot accept(expected)
   }
 
+  test("should not match a path with wrong link") {
+    val linkMatcher1 = new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY),
+                                           new NodeMatcher(Set.empty[String].asJava, EMPTY), true)
+    linkMatcher1.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
+    val pathMatcher = new PathMatcher(List(linkMatcher1).asJava)
+
+    pathMatcher shouldNot accept(path(pathLink(node(), relationship("T2"), node())))
+  }
+
+  test("should not match a non-path") {
+    new PathMatcher(new NodeMatcher(Set("L").asJava, EMPTY)) shouldNot accept("a string")
+  }
+
 }

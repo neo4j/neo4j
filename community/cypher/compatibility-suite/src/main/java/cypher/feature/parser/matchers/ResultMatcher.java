@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Result;
 
-public class ResultMatcher implements Matcher<Result>, Matcher.OrderedMatcher<Result>
+public class ResultMatcher implements Matcher<Result>
 {
     private final List<RowMatcher> rowMatchers;
 
@@ -61,7 +61,6 @@ public class ResultMatcher implements Matcher<Result>, Matcher.OrderedMatcher<Re
         return nothingLeftInMatcher && nothingLeftInReal;
     }
 
-    @Override
     public boolean matchesOrdered( Result value )
     {
         boolean matches = true;

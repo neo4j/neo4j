@@ -44,4 +44,8 @@ class ListMatcherTest extends ParsingTestSupport {
     new ListMatcher(asList(new ListMatcher(asList(new IntegerMatcher(0), new BooleanMatcher(false))), new StringMatcher(""))) should accept(asList(asList(0L, false), ""))
   }
 
+  test("should not match different lists") {
+    new ListMatcher(asList(new IntegerMatcher(-1L))) shouldNot accept(asList(1L))
+  }
+
 }

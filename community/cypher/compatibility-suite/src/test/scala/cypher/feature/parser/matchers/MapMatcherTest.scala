@@ -39,4 +39,8 @@ class MapMatcherTest extends ParsingTestSupport {
     new MapMatcher(Map("k" -> NULL_MATCHER, "k2" -> new BooleanMatcher(true)).asJava) shouldNot accept(Map("k" -> NULL_MATCHER))
   }
 
+  test("should not accept different maps") {
+    new MapMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value1")).asJava) shouldNot accept(Map("key" -> "value2").asJava)
+  }
+
 }

@@ -22,9 +22,4 @@ package cypher.feature.parser.matchers;
 public interface Matcher<T>
 {
     boolean matches( T value );
-
-    interface OrderedMatcher<T> extends Matcher<T>
-    {
-        boolean matchesOrdered( T value );
-    }
 }

@@ -64,9 +64,10 @@ abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAs
   def path(relationships: Relationship*): Path = {
     val path = mock(classOf[Path])
     when(path.length()).thenReturn(relationships.length)
+    println(relationships.toIterable.asJava)
     when(path.relationships()).thenReturn(relationships.toIterable.asJava)
     // Mockito bug makes mocks unable to refer to other mocks in stubs; can't inline this
-    val pathString = s"<${relationships.mkString}>"
+    val pathString = s"<${relationships.mkString(",")}>"
     when(path.toString).thenReturn(pathString)
     path
   }

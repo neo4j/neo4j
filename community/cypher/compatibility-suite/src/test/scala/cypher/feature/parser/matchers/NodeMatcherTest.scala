@@ -53,4 +53,8 @@ class NodeMatcherTest extends ParsingTestSupport {
 
     matcher shouldNot accept(node(properties = Map("key" -> List("").asJava)))
   }
+
+  test("should not match a non-node") {
+    new NodeMatcher(Set.empty[String].asJava, MapMatcher.EMPTY) shouldNot accept("a string")
+  }
 }

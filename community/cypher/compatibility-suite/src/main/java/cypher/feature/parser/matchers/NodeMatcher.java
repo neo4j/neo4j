@@ -41,19 +41,17 @@ public class NodeMatcher implements ValueMatcher
         if ( value instanceof Node )
         {
             Node node = (Node) value;
-            Iterable<Label> labels = node.getLabels();
-            boolean match = true;
             int nbrOfLabels = 0;
-            for ( Label l : labels )
+            for ( Label l : node.getLabels() )
             {
-                match &= labelNames.contains( l.name() );
+                if ( !labelNames.contains( l.name() ) )
+                {
+                    return false;
+                }
                 ++nbrOfLabels;
             }
-            match &= nbrOfLabels == labelNames.size();
 
-            match &= propertyMatcher.matches( node.getAllProperties() );
-
-            return match;
+            return labelNames.size() == nbrOfLabels && propertyMatcher.matches( node.getAllProperties() );
         }
         return false;
     }
@@ -61,6 +59,6 @@ public class NodeMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "NodeMatcher (" + labelNames + ") " + propertyMatcher;
+        return "NodeMatcher" + labelNames + propertyMatcher;
     }
 }

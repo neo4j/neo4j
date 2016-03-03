@@ -49,25 +49,28 @@ public class PathMatcher implements ValueMatcher
         if ( value instanceof Path )
         {
             Path path = (Path) value;
+            if ( path.length() != pathLinks.size() )
+            {
+                return false;
+            }
             if ( pathLinks.isEmpty() )
             {
-                boolean matches = path.length() == 0;
-                matches &= singleNodePath.matches( path.startNode() );
-                matches &= singleNodePath.matches( path.endNode() );
-                return matches;
+                return path.length() == 0
+                       && singleNodePath.matches( path.startNode() )
+                       && singleNodePath.matches( path.endNode() );
             }
             else
             {
-                boolean matches = path.length() == pathLinks.size();
-                if ( matches )
+                Iterator<Relationship> relationships = path.relationships().iterator();
+                for ( PathLinkMatcher pathLink : pathLinks )
                 {
-                    Iterator<Relationship> relationships = path.relationships().iterator();
-                    for ( PathLinkMatcher pathLink : pathLinks )
+                    Relationship next = relationships.next();
+                    if ( !pathLink.matches( next ) )
                     {
-                        pathLink.matches( relationships.next() );
+                        return false;
                     }
                 }
-                return matches;
+                return true;
             }
         }
         return false;
@@ -78,11 +81,11 @@ public class PathMatcher implements ValueMatcher
     {
         if ( pathLinks.isEmpty() )
         {
-            return "PathMatcher for " + singleNodePath;
+            return "PathMatcher" + singleNodePath;
         }
         else
         {
-            return "PathMatcher for " + pathLinks;
+            return "PathMatcher" + pathLinks;
         }
     }
 }

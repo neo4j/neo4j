@@ -255,8 +255,10 @@ class CypherMatchersCreator extends FeatureResultsBaseListener
         }
         else
         {
-            workload.push( new PathMatcher( new ArrayList<>( pathElements ) ) );
+            ArrayList<PathLinkMatcher> pathLinkMatchers = new ArrayList<>();
+            pathElements.descendingIterator().forEachRemaining( pathLinkMatchers::add );
             pathElements.clear();
+            workload.push( new PathMatcher( pathLinkMatchers ) );
         }
     }
 }

@@ -35,20 +35,23 @@ public class RowMatcher implements Matcher<Map<String,Object>>
     public boolean matches( Map<String,Object> value )
     {
         Set<String> keys = values.keySet();
-        boolean matches = keys.equals( value.keySet() );
-        if ( matches )
+        if ( keys.equals( value.keySet() ) )
         {
             for ( String key : keys )
             {
-                matches &= values.get( key ).matches( value.get( key ) );
+                if ( !values.get( key ).matches( value.get( key ) ) )
+                {
+                    return false;
+                }
             }
+            return true;
         }
-        return matches;
+        return false;
     }
 
     @Override
     public String toString()
     {
-        return "RowMatcher(" + values + ")";
+        return "RowMatcher" + values;
     }
 }

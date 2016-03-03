@@ -45,4 +45,25 @@ class PathLinkMatcherTest extends ParsingTestSupport {
     matcher shouldNot accept(pathLink(node(Seq("L")), relationship("T"), node()))
   }
 
+  test("should not match a different relationship") {
+    val matcher = new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY), new NodeMatcher(Set("L").asJava, EMPTY), true)
+    matcher.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
+
+    matcher shouldNot accept(pathLink(node(Seq("L")), relationship("T2"), node()))
+  }
+
+  test("should not match a different startNode") {
+    val matcher = new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L1").asJava, EMPTY), true)
+    matcher.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
+
+    matcher shouldNot accept(pathLink(node(Seq("L2")), relationship("T"), node()))
+  }
+
+  test("should not match a non-relationship") {
+    val matcher = new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L1").asJava, EMPTY), true)
+    matcher.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
+
+    matcher shouldNot accept("a string")
+  }
+
 }

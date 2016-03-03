@@ -41,18 +41,23 @@ public class PathLinkMatcher implements ValueMatcher
         if ( value instanceof Relationship )
         {
             Relationship real = (Relationship) value;
-            boolean matches = relMatcher.matches( real );
+            if ( !relMatcher.matches( real ) )
+            {
+                return false;
+            }
             if ( outgoing )
             {
-                matches &= leftNode.matches( real.getStartNode() );
-                matches &= rightNode.matches( real.getEndNode() );
+                if ( !leftNode.matches( real.getStartNode() ) || !rightNode.matches( real.getEndNode() ) )
+                {
+                    return false;
+                }
             }
-            else
+            // incoming
+            else if ( !leftNode.matches( real.getEndNode() ) || !rightNode.matches( real.getStartNode() ) )
             {
-                matches &= leftNode.matches( real.getEndNode() );
-                matches &= rightNode.matches( real.getStartNode() );
+                return false;
             }
-            return matches;
+            return true;
         }
         return false;
     }
@@ -65,9 +70,9 @@ public class PathLinkMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "PathLinkMatcher "
+        return "PathLinkMatcher <<"
                + leftNode + (outgoing ? "-" : "<-")
                + relMatcher + (outgoing ? "->" : "-")
-               + rightNode;
+               + rightNode + ">>";
     }
 }

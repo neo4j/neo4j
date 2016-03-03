@@ -39,18 +39,20 @@ public class MapMatcher implements ValueMatcher
     {
         if ( value instanceof Map )
         {
-            Map<String,Object> realMap = (Map<String,Object>) value;
+            Map realMap = (Map) value;
             Set<String> expectedKeys = map.keySet();
-            Set<String> actualKeys = realMap.keySet();
-            boolean match = expectedKeys.equals( actualKeys );
+            Set actualKeys = realMap.keySet();
 
-            if ( match )
+            if ( expectedKeys.equals( actualKeys ) )
             {
-                for ( String key : expectedKeys )
+                for ( Map.Entry<String,ValueMatcher> entry : map.entrySet() )
                 {
-                    match &= map.get( key ).matches( realMap.get( key ) );
+                    if ( !entry.getValue().matches( realMap.get( entry.getKey() ) ) )
+                    {
+                        return false;
+                    }
                 }
-                return match;
+                return true;
             }
         }
         return false;
@@ -59,6 +61,6 @@ public class MapMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "MapMatcher {" + map.toString();
+        return "MapMatcher" + map.toString();
     }
 }
