@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
  */
 class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 {
-    private static final int RECORD_SIZE = 48;
+    private static final int RECORD_SIZE = 64;
 
     protected PropertyRecordFormat()
     {
