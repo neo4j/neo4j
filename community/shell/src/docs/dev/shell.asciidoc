@@ -4,7 +4,7 @@ Neo4j Shell
 ===========
 
 Neo4j shell is a command-line shell for running Cypher queries.
-There's also commands to get information about the database.
+There are also commands to get information about the database.
 In addition, you can browse the graph, much like how the Unix shell along with commands like +cd+, +ls+ and +pwd+ can be used to browse your local file system.
 
 It's a nice tool for development and debugging.
@@ -133,7 +133,7 @@ So, it can infer the right values for the rights options.
 [[shell-options-enum]]
 == Enum options ==
 
-Some options expects a value which is one of the values in an enum, f.ex. direction part of relationship type filtering where there's +INCOMING+, +OUTGOING+ and +BOTH+.
+Some options expect a value which is one of the values in an enum, f.ex. direction part of relationship type filtering where there's +INCOMING+, +OUTGOING+ and +BOTH+.
 All such values can be supplied in an easier way.
 It's enough that you write the start of the value and the interpreter will find what you really meant.
 F.ex. +out+, +in+, +i+ or even +INCOMING+.
@@ -141,7 +141,7 @@ F.ex. +out+, +in+, +i+ or even +INCOMING+.
 [[shell-filters]]
 == Filters ==
 
-Some commands makes use of filters for varying purposes.
+Some commands make use of filters for varying purposes.
 F.ex. +-f+ in +ls+ and in +trav+.
 A filter is supplied as a http://www.json.org/[json] object (w/ or w/o the surrounding +{}+ brackets.
 Both keys and values can contain regular expressions for a more flexible matching.

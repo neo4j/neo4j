@@ -29,7 +29,7 @@ The included code examples are executed when Neo4j is built and tested.
 Also, the REST API request and response examples are captured from real interaction with a Neo4j server.
 Thus, the examples are always in sync with how Neo4j actually works.
 
-There's other documentation resources besides the manual as well, see <<resources>>.
+There are other documentation resources besides the manual as well, see <<resources>>.
 
 _Who should read this?_
 

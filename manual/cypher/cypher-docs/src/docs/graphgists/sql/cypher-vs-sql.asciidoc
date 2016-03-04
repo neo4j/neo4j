@@ -32,7 +32,7 @@ In the example, we will use the labels +Movie+ and +Person+.
 When using Neo4j, related entities can be represented directly by using relationships.
 There's no need to deal with foreign keys to handle the relationships, the database will take care of such mechanics.
 Also, the relationships always have full referential integrity.
-There's no constraints to enable for this, as it's not optional; it's really part of the underlying data model.
+There are no constraints to enable for this, as it's not optional; it's really part of the underlying data model.
 Relationships always have a type, and we will differentiate the different kinds of relationships by using the types +ACTED_IN+, +DIRECTED+, +PRODUCED+.
 
 == Sample Data ==

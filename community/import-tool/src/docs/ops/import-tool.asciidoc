@@ -63,7 +63,7 @@ LABEL::
 [[import-tool-header-format-rels]]
 === Relationships
 
-For relationship data sources, there's three mandatory fields:
+For relationship data sources, there are three mandatory fields:
 
 TYPE::
   The relationship type to use for the relationship.
