@@ -56,6 +56,5 @@ public class ArrayByteChannel implements ReadableByteChannel
     @Override
     public void close() throws IOException
     {
-
     }
 }

@@ -237,7 +237,7 @@ public class StoreAccess
     protected <FAILURE extends Exception> void apply( RecordStore.Processor<FAILURE> processor, RecordStore<?> store )
             throws FAILURE
     {
-        processor.applyFiltered( store, RecordStore.IN_USE );
+        processor.applyFiltered( store );
     }
 
     public synchronized void close()

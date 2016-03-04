@@ -24,12 +24,12 @@ import java.util.Collection;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -505,8 +505,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
                                     continue scan;
                                 }
                             }
+                            return record;
                         }
-                        return record;
                     }
                     return null;
                 }

@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 
 public class StoreProcessorTest
 {
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldProcessAllTheRecordsInAStore() throws Exception
     {
@@ -64,7 +64,7 @@ public class StoreProcessorTest
         verify( recordStore, never() ).getRecord( eq( 3L ), any( NodeRecord.class ), any( RecordLoad.class ) );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldStopProcessingRecordsWhenSignalledToStop() throws Exception
     {
@@ -78,16 +78,16 @@ public class StoreProcessorTest
                 .thenAnswer( new ReadNodeAnswer( false, 0, 0 ) );
         when( recordStore.getRecord( eq( 1L ), any( NodeRecord.class ), any( RecordLoad.class ) ) )
                 .thenAnswer( new ReadNodeAnswer( false, 0, 0 ) );
-        when( recordStore.getRecord( eq( 2L ), any( NodeRecord.class ), any( RecordLoad.class ) ) )
-                .thenAnswer( new ReadNodeAnswer( false, 0, 0 )
-        {
-            @Override
-            public NodeRecord answer( InvocationOnMock invocation ) throws Throwable
-            {
-                processor.stop();
-                return super.answer( invocation );
-            }
-        } );
+        when( recordStore.getRecord( eq( 2L ), any( NodeRecord.class ), any( RecordLoad.class ) ) ).thenAnswer(
+                new ReadNodeAnswer( false, 0, 0 )
+                {
+                    @Override
+                    public NodeRecord answer( InvocationOnMock invocation ) throws Throwable
+                    {
+                        processor.stop();
+                        return super.answer( invocation );
+                    }
+                } );
 
         // when
         processor.applyFiltered( recordStore );

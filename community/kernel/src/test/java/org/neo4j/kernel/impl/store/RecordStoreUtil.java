@@ -50,6 +50,7 @@ public class RecordStoreUtil
 
             NodeRecord record = (NodeRecord) invocation.getArguments()[1];
             record.setId( ((Number)invocation.getArguments()[0]).longValue() );
+            record.setInUse( true );
             record.setDense( dense );
             record.setNextRel( nextRel );
             record.setNextProp( nextProp );

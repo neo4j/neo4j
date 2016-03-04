@@ -102,7 +102,8 @@ public class ConsistencyCheckTasks
             tasks.add( create( CheckStage.Stage2_RS_Labels.name(), nativeStores.getRelationshipStore(),
                     processor, ROUND_ROBIN ) );
             //NodeStore pass - just cache nextRel and inUse
-            tasks.add( new CacheTask.CacheNextRel( CheckStage.Stage3_NS_NextRel, cacheAccess, Scanner.scan( nativeStores.getNodeStore() ) ) );
+            tasks.add( new CacheTask.CacheNextRel( CheckStage.Stage3_NS_NextRel, cacheAccess,
+                    Scanner.scan( nativeStores.getNodeStore() ) ) );
             //RelationshipStore pass - check nodes inUse, FirstInFirst, FirstInSecond using cached info
             processor = multiPass.processor( CheckStage.Stage4_RS_NextRel, NODES );
             multiPass.reDecorateRelationship( processor, RelationshipRecordCheck.relationshipRecordCheckBackwardPass(
