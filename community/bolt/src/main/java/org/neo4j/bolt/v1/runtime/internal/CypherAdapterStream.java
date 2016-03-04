@@ -173,6 +173,7 @@ public class CypherAdapterStream implements RecordStream
                 notificationMap.put( "code", notification.getCode() );
                 notificationMap.put( "title", notification.getTitle() );
                 notificationMap.put( "description", notification.getDescription() );
+                notificationMap.put( "severity", notification.getSeverity().toString() );
 
                 InputPosition pos = notification.getPosition(); // position is optional
                 if( !pos.equals( InputPosition.empty ) )
