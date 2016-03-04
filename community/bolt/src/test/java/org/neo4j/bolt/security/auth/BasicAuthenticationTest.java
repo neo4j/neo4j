@@ -26,6 +26,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.function.Supplier;
+
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -44,12 +46,14 @@ public class BasicAuthenticationTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private final Supplier<String> identifier = () -> "UNIQUE";
+
     @Test
     public void shouldNotDoAnythingOnSuccess() throws AuthenticationException
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier  );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         //Expect nothing
@@ -66,7 +70,7 @@ public class BasicAuthenticationTest
         Log log = mock( Log.class );
         LogProvider logProvider = mock( LogProvider.class );
         when( logProvider.getLog( BasicAuthentication.class ) ).thenReturn( log );
-        BasicAuthentication authentication = new BasicAuthentication( manager, logProvider );
+        BasicAuthentication authentication = new BasicAuthentication( manager, logProvider, identifier );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.FAILURE );
 
         // Expect
@@ -86,7 +90,7 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
         when( manager.authenticate( anyString(), anyString() ) )
                 .thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
@@ -104,7 +108,7 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // Expect
@@ -121,7 +125,7 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         //Expect nothing
@@ -136,7 +140,7 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
         when( manager.authenticate( anyString(), anyString() ) )
                 .thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
@@ -152,7 +156,7 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.FAILURE );
 
         // Expect
@@ -171,7 +175,7 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect
@@ -188,7 +192,7 @@ public class BasicAuthenticationTest
     {
         // Given
         BasicAuthManager manager = mock( BasicAuthManager.class );
-        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ) );
+        BasicAuthentication authentication = new BasicAuthentication( manager, mock( LogProvider.class ), identifier );
         when( manager.authenticate( anyString(), anyString() ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         // Expect

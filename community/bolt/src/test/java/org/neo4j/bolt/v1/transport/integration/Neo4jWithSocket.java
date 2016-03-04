@@ -31,8 +31,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.bolt.security.auth.AuthUtils;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.OPTIONAL;
@@ -41,6 +44,7 @@ import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
 public class Neo4jWithSocket implements TestRule
 {
     private final Consumer<Map<Setting<?>,String>> configure;
+    private StoreId storeId;
 
     public Neo4jWithSocket()
     {
@@ -51,6 +55,12 @@ public class Neo4jWithSocket implements TestRule
     {
         this.configure = configure;
     }
+
+    public String uniqueIdentier()
+    {
+        return AuthUtils.uniqueIdentifier( storeId );
+    }
+
 
     @Override
     public Statement apply( final Statement statement, Description description )
@@ -66,7 +76,8 @@ public class Neo4jWithSocket implements TestRule
                 settings.put( BoltKernelExtension.Settings.tls_key_file, tempPath( "key", ".key" ) );
                 settings.put( BoltKernelExtension.Settings.tls_certificate_file, tempPath( "cert", ".cert" ) );
                 configure.accept( settings );
-                final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase(settings);
+                final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase( settings );
+                storeId = ((GraphDatabaseFacade) gdb).storeId();
                 try
                 {
                     statement.evaluate();

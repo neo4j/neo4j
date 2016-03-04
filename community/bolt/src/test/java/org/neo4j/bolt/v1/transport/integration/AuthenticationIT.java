@@ -98,7 +98,7 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgFailure( Status.Security.CredentialsExpired,
-                "The credentials have expired and need to be updated." ) ) );
+                String.format( "The credentials have expired and need to be updated. (ID:%s)", server.uniqueIdentier() ) ) ) );
     }
 
     @Test
@@ -115,7 +115,7 @@ public class AuthenticationIT
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgFailure( Status.Security.AuthenticationFailed,
-                "The client provided an incorrect username and/or password." ) ) );
+                String.format( "The client provided an incorrect username and/or password. (ID:%s)", server.uniqueIdentier()) ) ) );
     }
 
     @Test
@@ -141,7 +141,7 @@ public class AuthenticationIT
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgFailure( Status.Security.AuthenticationFailed,
-                "The client provided an incorrect username and/or password." ) ) );
+                String.format( "The client provided an incorrect username and/or password. (ID:%s)", server.uniqueIdentier()) ) ) );
 
         // But the new password works fine
         reconnect();
