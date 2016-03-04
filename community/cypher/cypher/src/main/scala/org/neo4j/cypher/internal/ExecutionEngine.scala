@@ -143,16 +143,13 @@ class ExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider
             new QueryCache(cacheAccessor, lruCache)
           })
 
-          cache.getOrElseUpdate(cacheKey, queryText,
-            planParams => {
-              val stale: Boolean = planParams._1.isStale(lastCommittedTxId, tc)
-              println(stale)
-              stale
-            }, {
-              val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
-              parsedQuery.plan(tc, phaseTracer)
-            }
-          )
+          def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
+          def producePlan() = {
+            val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
+            parsedQuery.plan(tc, phaseTracer)
+          }
+
+          cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
         }
         catch {
           case (t: Throwable) =>
