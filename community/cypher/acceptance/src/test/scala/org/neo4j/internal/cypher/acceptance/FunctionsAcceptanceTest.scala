@@ -566,4 +566,62 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     // THEN
     result.toList should equal(List(Map("id(r)" -> expected)))
   }
+
+  test("type should work in both runtimes")  {
+    // GIVEN
+    relate(createNode(), createNode(), "T")
+
+    // WHEN
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]->() RETURN type(r)")
+
+    // THEN
+    result.toList should equal(List(Map("type(r)" -> "T")))
+  }
+
+  test("nested type should work in both runtimes")  {
+    val intermediate = createNode()
+    // GIVEN
+    relate(createNode(), intermediate, "T1")
+    relate(intermediate, createNode(), "T2")
+
+    // WHEN
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r1]->()-[r2]->() RETURN type(r1), type(r2)")
+
+    // THEN
+    result.toList should equal(List(Map("type(r1)" -> "T1", "type(r2)" -> "T2")))
+  }
+
+  test("type should handle optional when null")  {
+    // GIVEN
+    createNode()
+
+    // WHEN
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) OPTIONAL MATCH (a)-[r:NOT_THERE]->() RETURN type(r)")
+
+    // THEN
+    result.toList should equal(List(Map("type(r)" -> null)))
+  }
+
+  test("type should handle optional when both null and match")  {
+    // GIVEN
+    relate(createNode(), createNode(), "T")
+
+    // WHEN
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) OPTIONAL MATCH (a)-[r:T]->() RETURN type(r)")
+
+    // THEN
+    result.toList should equal(List(Map("type(r)" -> "T"), Map("type(r)" -> null)))
+  }
+
+  test("type should fail nicely when not given a relationship")  {
+    // GIVEN
+    relate(createNode(), createNode(), "T")
+    val query: String = "MATCH (a)-[r]->() WITH [r, 1] as coll RETURN [x in coll | type(x) ]"
+
+    //Expect
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=compiled $query"))
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER runtime=interpreted $query"))
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=cost $query"))
+    a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=rule $query"))
+  }
 }

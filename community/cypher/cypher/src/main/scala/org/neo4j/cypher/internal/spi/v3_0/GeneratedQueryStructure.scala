@@ -27,7 +27,7 @@ import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen._
-import org.neo4j.codegen.source.SourceVisitor
+import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, InternalResultVisitor, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext, TransactionalContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, ParameterNotFoundException, SemanticDirection, symbols}
@@ -47,7 +47,7 @@ import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.kernel.api.{ReadOperations, Statement, StatementTokenNameLookup, TokenNameLookup}
+import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.NodeManager
@@ -100,7 +100,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         throwsException(typeParameter("E")))) { method =>
         using(method.tryBlock()) { body =>
           body.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
-          body.assign(typeRef[RelationshipDataExtractor], "rel", Templates.newRelationshipDataExtractor)
           block(Method(fields, body, new AuxGenerator(packageName, generator)))
           body.expression(Expression.invoke(body.self(), fields.success))
           using(body.finallyBlock()) { then =>
@@ -166,12 +165,14 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   def lowerType(cType: CypherType): TypeReference = cType match {
     case symbols.CTNode => typeRef[Long]
     case symbols.CTRelationship => typeRef[Long]
+    case symbols.CTString => typeRef[String]
     case symbols.CTAny => typeRef[Object]
   }
 
   def nullValue(cType: CypherType) = cType match {
     case symbols.CTNode => Expression.constant(-1L)
     case symbols.CTRelationship => Expression.constant(-1L)
+    case symbols.CTString => Expression.constant(null)
     case symbols.CTAny => Expression.constant(null)
   }
 }
@@ -187,13 +188,16 @@ private case class Fields(closer: FieldReference,
                           success: MethodReference)
 
 private class AuxGenerator(val packageName: String, val generator: codegen.CodeGenerator) {
+
+  import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure._
+
   private val types: mutable.Map[Map[String, CypherType], TypeReference] = mutable.Map.empty
   private var nameId = 0
 
   def typeReference(structure: Map[String, CypherType]): TypeReference = {
     types.getOrElseUpdate(structure, using(generator.generateClass(packageName, newName())) { clazz =>
       structure.foreach {
-        case (fieldName, fieldType) => clazz.field(GeneratedQueryStructure.lowerType(fieldType), fieldName)
+        case (fieldName, fieldType) => clazz.field(lowerType(fieldType), fieldName)
       }
       clazz.handle()
     })
@@ -208,7 +212,8 @@ private class AuxGenerator(val packageName: String, val generator: codegen.CodeG
 private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator, tracing: Boolean = true,
                           event: Option[String] = None, var locals:Map[String,LocalVariable]=Map.empty)(implicit context: CodeGenContext)
   extends MethodStructure[Expression] {
-  import GeneratedQueryStructure.typeRef
+  import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure._
+
 
   private case class HashTable(valueType: TypeReference, listType: TypeReference, tableType: TypeReference,
                                get: MethodReference, put: MethodReference, add: MethodReference)
@@ -243,26 +248,34 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   override def nextNode(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, Expression.invoke(generator.load(iterVar), Methods.nextLong))
 
+  override def createRelExtractor(relVar: String) =
+    generator.assign(typeRef[RelationshipDataExtractor], relExtractor(relVar), Templates.newRelationshipDataExtractor)
+
+
   override def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String,
                                        relVar: String) = {
-    val startNode = Expression.invoke(generator.load("rel"), Methods.startNode)
-    val endNode = Expression.invoke(generator.load("rel"), Methods.endNode)
+    val extractor = relExtractor(relVar)
+    val startNode = Expression.invoke(generator.load(extractor), Methods.startNode)
+    val endNode = Expression.invoke(generator.load(extractor), Methods.endNode)
     generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
       Expression.invoke(generator.load(iterVar), Methods.nextLong),
-      generator.load("rel")))
+      generator.load(extractor)))
     generator.assign(typeRef[Long], toNodeVar, DirectionConverter.toGraphDb(direction) match {
       case Direction.INCOMING => startNode
       case Direction.OUTGOING => endNode
       case Direction.BOTH => Expression.ternary(Expression.eq(startNode, generator.load(fromNodeVar)), endNode, startNode)
     })
-    generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load("rel"), Methods.relationship))
+    generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load(extractor), Methods.relationship))
   }
 
+  private def relExtractor(relVar: String) = s"${relVar}Extractor"
+
   override def nextRelationship(iterVar: String, ignored: SemanticDirection, relVar: String) = {
+    val extractor = relExtractor(relVar)
     generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
       Expression.invoke(generator.load(iterVar), Methods.nextLong),
-      generator.load("rel")))
-    generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load("rel"), Methods.relationship))
+      generator.load(extractor)))
+    generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load(extractor), Methods.relationship))
   }
 
   override def allNodesScan(iterVar: String) =
@@ -289,7 +302,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     }
 
   override def forEach(varName: String, cypherType: CypherType, iterable: Expression)(block: MethodStructure[Expression] => Unit) =
-    using(generator.forEach(Parameter.param(GeneratedQueryStructure.lowerType(cypherType), varName), iterable)) { body =>
+    using(generator.forEach(Parameter.param(lowerType(cypherType), varName), iterable)) { body =>
       block(copy(generator = body))
     }
 
@@ -298,6 +311,9 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       block(copy(generator = body))
     }
   }
+
+  override def ternaryOperator(test: Expression, onTrue: Expression, onFalse: Expression): Expression =
+    Expression.ternary(test, onTrue, onFalse)
 
   override def returnSuccessfully() {
     generator.expression(Expression.invoke(generator.self(), fields.success))
@@ -338,7 +354,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = {
     Expression.ternary(
-      Expression.eq(GeneratedQueryStructure.nullValue(cypherType), generator.load(varName)),
+      Expression.eq(nullValue(cypherType), generator.load(varName)),
       Expression.constant(null),
       onSuccess)
   }
@@ -377,21 +393,21 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def not(value: Expression): Expression = Expression.not(value)
 
-  override def ternaryNot(value: Expression): Expression = Expression.invoke(Methods.not, value)
+  override def threeValuedNot(value: Expression): Expression = Expression.invoke(Methods.not, value)
 
-  override def ternaryEquals(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.ternaryEquals, lhs, rhs)
+  override def threeValuedEquals(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.ternaryEquals, lhs, rhs)
 
   override def eq(lhs: Expression, rhs: Expression) = Expression.eq(lhs, rhs)
 
   override def or(lhs: Expression, rhs: Expression) = Expression.or(lhs, rhs)
 
-  override def ternaryOr(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.or, lhs, rhs)
+  override def threeValuedOr(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.or, lhs, rhs)
 
   override def markAsNull(varName: String, cypherType: CypherType) =
-    generator.assign(GeneratedQueryStructure.lowerType(cypherType), varName, GeneratedQueryStructure.nullValue(cypherType))
+    generator.assign(lowerType(cypherType), varName, nullValue(cypherType))
 
   override def notNull(varName: String, cypherType: CypherType) =
-    Expression.not(Expression.eq(GeneratedQueryStructure.nullValue(cypherType), generator.load(varName)))
+    Expression.not(Expression.eq(nullValue(cypherType), generator.load(varName)))
 
 
   override def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection) = {
@@ -478,7 +494,6 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     val returnType: TypeReference = joinTableType(resultType)
     generator.assign(returnType, resultVar, Expression.invoke(generator.self(),MethodReference.methodReference(generator.owner(),returnType, methodName)))
     using(generator.classGenerator().generateMethod(returnType, methodName)) { body =>
-      body.assign(typeRef[RelationshipDataExtractor], "rel", Templates.newRelationshipDataExtractor)
       block(copy(generator = body, event = None))
       body.returns(body.load(resultVar))
     }
@@ -518,7 +533,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       generator.expression(Expression.invoke(generator.load(tableVar), Methods.countingTablePut, generator.load(keyVar),
         Expression.ternary(
           Expression.eq(generator.load(countName), Expression
-            .get(GeneratedQueryStructure.staticField[LongKeyIntValueTable, Int]("NULL"))),
+            .get(staticField[LongKeyIntValueTable, Int]("NULL"))),
           Expression.constant(1),
           Expression.add(generator.load(countName), Expression.constant(1)))))
     case LongsToCountTable =>
@@ -572,7 +587,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (local, field) =>
-              val fieldType = GeneratedQueryStructure.lowerType(structure(field))
+              val fieldType = lowerType(structure(field))
               forEach.assign(fieldType, local, Expression.get(forEach.load(elementName),FieldReference.field(hashTable.valueType, fieldType, field)))
           }
           block(copy(generator=forEach))
@@ -589,7 +604,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (local, field) =>
-              val fieldType = GeneratedQueryStructure.lowerType(structure(field))
+              val fieldType = lowerType(structure(field))
               forEach.assign(fieldType, local, Expression.get(forEach.load(elementName),FieldReference.field(hashTable.valueType, fieldType, field)))
           }
           block(copy(generator=forEach))
@@ -648,12 +663,28 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     generator.assign(localVariable, Expression.constant(null))
   }
 
+  override def declare(varName: String, cypherType: CypherType) = {
+    val localVariable = generator.declare(lowerType(cypherType), varName)
+    locals = locals + (varName -> localVariable)
+    generator.assign(localVariable, nullValue(cypherType))
+  }
+
   override def hasLabel(nodeVar: String, labelVar: String, predVar: String) =  {
     val local = locals(predVar)
     Templates.handleExceptions(generator, fields.ro) { inner =>
       val invoke = Expression.invoke(readOperations, Methods.nodeHasLabel, inner.load(nodeVar), inner.load(labelVar))
       inner.assign(local, invoke)
       generator.load(predVar)
+    }
+  }
+
+  override def relType(relVar: String, typeVar: String) =  {
+    val variable = locals(typeVar)
+    val typeOfRel = Expression.invoke(generator.load(relExtractor(relVar)), Methods.typeOf)
+    Templates.handleExceptions(generator, fields.ro) { inner =>
+      val invoke = Expression.invoke(readOperations, Methods.relationshipTypeGetName, typeOfRel)
+      inner.assign(variable, invoke)
+      generator.load(variable.name())
     }
   }
 
@@ -742,7 +773,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   }
 
   private def field(structure: Map[String, CypherType], fieldType: CypherType, fieldName: String) = {
-    FieldReference.field(aux.typeReference(structure), GeneratedQueryStructure.lowerType(fieldType), fieldName)
+    FieldReference.field(aux.typeReference(structure), lowerType(fieldType), fieldName)
   }
 }
 
@@ -759,8 +790,9 @@ private object Methods {
   val arrayAsList = method[MapUtil, util.Map[String, Object]]("map", typeRef[Array[Object]])
   val relationshipVisit = method[RelationshipIterator, Boolean]("relationshipVisit", typeRef[Long], typeRef[RelationshipVisitor[RuntimeException]])
   val relationship = method[RelationshipDataExtractor, Long]("relationship", typeRef[Long])
-  val startNode = method[RelationshipIterator, Long]("startNode")
-  val endNode = method[RelationshipIterator, Long]("endNode")
+  val startNode = method[RelationshipDataExtractor, Long]("startNode")
+  val endNode = method[RelationshipDataExtractor, Long]("endNode")
+  val typeOf = method[RelationshipDataExtractor, Int]("type")
   val nodeGetAllRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction])
   val nodeGetRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
   val allConnectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Long], typeRef[Direction])
@@ -783,6 +815,7 @@ private object Methods {
   val not = method[CompiledConversionUtils, java.lang.Boolean]("not", typeRef[Object])
   val loadParameter = method[CompiledConversionUtils, java.lang.Object]("loadParameter", typeRef[Object])
   val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
+  val relationshipTypeGetName = method[ReadOperations, String]("relationshipTypeGetName", typeRef[Int])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Object]("nodeGetProperty")
   val nodesGetFromIndexLookup = method[ReadOperations, PrimitiveLongIterator]("nodesGetFromIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
@@ -824,8 +857,8 @@ private object Templates {
       handle.throwException(Expression.invoke(
         Expression.newInstance(typeRef[CypherExecutionException]),
         MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
-        Expression.invoke(handle.load("e"), GeneratedQueryStructure.method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
-          Expression.invoke(
+        Expression.invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
+                          Expression.invoke(
             Expression.newInstance(typeRef[StatementTokenNameLookup]),
             MethodReference.constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
             Expression.get(handle.self(), ro))),
