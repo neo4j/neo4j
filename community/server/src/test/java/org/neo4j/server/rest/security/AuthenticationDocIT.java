@@ -80,8 +80,8 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
         JsonNode firstError = data.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.AuthorizationFailed" ) );
-        assertThat( firstError.get( "message" ).asText(), equalTo( "No authorization header supplied." ) );
+        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.Unauthorized" ) );
+        assertThat( firstError.get( "message" ).asText(), equalTo( "No authentication header supplied." ) );
     }
 
     @Test
@@ -129,7 +129,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
         JsonNode firstError = data.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.AuthorizationFailed" ) );
+        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.Unauthorized" ) );
         assertThat( firstError.get( "message" ).asText(), equalTo( "Invalid username or password." ) );
     }
 
@@ -155,7 +155,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         // Then
         JsonNode data = JsonHelper.jsonNode( response.entity() );
         JsonNode firstError = data.get( "errors" ).get( 0 );
-        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.AuthorizationFailed" ) );
+        assertThat( firstError.get( "code" ).asText(), equalTo( "Neo.ClientError.Security.Forbidden" ) );
         assertThat( firstError.get( "message" ).asText(), equalTo( "User is required to change their password." ) );
         assertThat( data.get( "password_change" ).asText(), equalTo( passwordURL( "neo4j" ) ) );
     }
@@ -188,7 +188,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         // Then
         assertThat( response.status(), equalTo( 400 ) );
         assertThat( response.get( "errors" ).get( 0 ).get( "code" ).asText(), equalTo( "Neo.ClientError.Request.InvalidFormat" ) );
-        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText(), equalTo( "Invalid Authorization header." ) );
+        assertThat( response.get( "errors" ).get( 0 ).get( "message" ).asText(), equalTo( "Invalid authentication header." ) );
     }
 
     @Test
@@ -286,20 +286,20 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         // When no header
         HTTP.Response response = HTTP.request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(401));
-        assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.AuthorizationFailed"));
-        assertThat(response.get("errors").get(0).get("message").asText(), equalTo("No authorization header supplied."));
+        assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.Unauthorized"));
+        assertThat(response.get("errors").get(0).get("message").asText(), equalTo("No authentication header supplied."));
         assertThat(response.header( HttpHeaders.WWW_AUTHENTICATE ), equalTo("Basic realm=\"Neo4j\""));
 
         // When malformed header
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, "This makes no sense" ).request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(400));
         assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Request.InvalidFormat"));
-        assertThat(response.get("errors").get(0).get( "message" ).asText(), equalTo("Invalid Authorization header."));
+        assertThat(response.get("errors").get(0).get( "message" ).asText(), equalTo("Invalid authentication header."));
 
         // When invalid credential
         response = HTTP.withHeaders( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "incorrect" ) ).request( method, server.baseUri().resolve( path ).toString(), payload );
         assertThat(response.status(), equalTo(401));
-        assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.AuthorizationFailed"));
+        assertThat(response.get("errors").get(0).get("code").asText(), equalTo("Neo.ClientError.Security.Unauthorized"));
         assertThat(response.get("errors").get(0).get("message").asText(), equalTo("Invalid username or password."));
         assertThat(response.header(HttpHeaders.WWW_AUTHENTICATE ), equalTo("Basic realm=\"Neo4j\""));
 

@@ -51,8 +51,8 @@ public class BasicAuthentication implements Authentication
     {
         if ( !SCHEME.equals( authToken.get( SCHEME_KEY ) ) )
         {
-            throw new AuthenticationException( Status.Security.AuthenticationFailed, identifier.get(),
-                    "Authorization token must contain: '" + SCHEME_KEY + " : " + SCHEME + "'" );
+            throw new AuthenticationException( Status.Security.Unauthorized, identifier.get(),
+                    "Authentication token must contain: '" + SCHEME_KEY + " : " + SCHEME + "'" );
         }
 
         String user = safeCast( PRINCIPAL, authToken );
@@ -79,7 +79,7 @@ public class BasicAuthentication implements Authentication
             throw new AuthenticationException( Status.Security.AuthenticationRateLimit, identifier.get() );
         default:
             log.warn( "Failed authentication attempt for '%s'", user);
-            throw new AuthenticationException( Status.Security.AuthenticationFailed, identifier.get() );
+            throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
         }
     }
 
@@ -95,11 +95,11 @@ public class BasicAuthentication implements Authentication
             }
             catch ( IOException e )
             {
-                throw new AuthenticationException( Status.Security.AuthenticationFailed, identifier.get(), e.getMessage(), e );
+                throw new AuthenticationException( Status.Security.Unauthorized, identifier.get(), e.getMessage(), e );
             }
             break;
         default:
-            throw new AuthenticationException( Status.Security.AuthenticationFailed, identifier.get() );
+            throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
         }
     }
 
@@ -108,7 +108,7 @@ public class BasicAuthentication implements Authentication
         Object value = authToken.get( key );
         if ( value == null || !(value instanceof String) )
         {
-            throw new AuthenticationException( Status.Security.AuthenticationFailed, identifier.get(),
+            throw new AuthenticationException( Status.Security.Unauthorized, identifier.get(),
                     "The value associated with the key `" + key + "` must be a String but was: " +
                     (value == null ? "null" : value.getClass().getSimpleName()));
         }

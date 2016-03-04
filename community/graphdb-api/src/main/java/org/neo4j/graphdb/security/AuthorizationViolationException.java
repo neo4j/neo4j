@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public class AuthorizationViolationException extends RuntimeException implements Status.HasStatus
 {
-    private final Status statusCode = Status.Security.AccessViolation;
+    private final Status statusCode = Status.Security.Forbidden;
 
     public AuthorizationViolationException( String msg )
     {
