@@ -69,11 +69,14 @@ Neo4j comes with a handful of pre-packaged procedures ready to be used:
 
 [options="header", cols="m,m,d"]
 |===
-| Procedure name        | Command to invoke procedure     | What it does
-| ListProcedures        | CALL sys.db.procedures()        | List all procedures in the database.
-| ListLabels            | CALL sys.db.labels()            | List all labels in the database.
-| ListRelationshipTypes | CALL sys.db.relationshipTypes() | List all relationship types in the database.
-| ListPropertyKeys      | CALL sys.db.propertyKeys()      | List all property keys in the database.
+| Procedure name        | Command to invoke procedure | What it does
+| ListProcedures        | CALL sys.procedures()       | List all procedures in the system.
+| ListComponents        | CALL sys.components()       | List components in the system, and their versions.
+| ListLabels            | CALL db.labels()            | List all labels in the database.
+| ListRelationshipTypes | CALL db.relationshipTypes() | List all relationship types in the database.
+| ListPropertyKeys      | CALL db.propertyKeys()      | List all property keys in the database.
+| ListIndexes           | CALL db.indexes()           | List all indexes in the database.
+| ListConstraints       | CALL db.constraints()       | List all constraints in the database.
 |===
 
 
@@ -415,16 +418,13 @@ public class FullTextIndex
      * which is <i>required</i> if you want to perform updates to the graph in your
      * procedure.
      *
-     * Two, it returns {@code void} rather than a stream. This is simply a short-hand
-     * for saying our procedure always returns an empty stream of empty records.
-     *
      * @param nodeId the id of the node to index
      * @param propKeys a list of property keys to index, only the ones the node
      *                 actually contains will be added
      */
     @Procedure
     @PerformsWrites
-    public void index( @Name("nodeId") long nodeId,
+    public Stream<EmptyRecord> index( @Name("nodeId") long nodeId,
                        @Name("properties") List<String> propKeys )
     {
         Node node = db.getNodeById( nodeId );
@@ -450,6 +450,8 @@ public class FullTextIndex
                 index.add( node, property.getKey(), property.getValue() );
             }
         }
+
+        return Stream.empty();
     }
 
 
@@ -485,6 +487,15 @@ public class FullTextIndex
         {
             this.nodeId = node.getId();
         }
+    }
+
+    /**
+     * All procedures output records - but it is ok to output records
+     * with no fields, like this.
+     */
+    public static class EmptyRecord
+    {
+
     }
 
     private String indexName( String label )
