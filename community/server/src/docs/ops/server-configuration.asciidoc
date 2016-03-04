@@ -146,14 +146,19 @@ Failure to transmit both `X-Forwarded-Host` and `X-Forwarded-Proto` headers will
 
 == Enabling logging from the garbage collector ==
 
-To get garbage collection logging output you have to pass the corresponding option to the server JVM executable by setting the following value in _conf/neo4j-wrapper.conf_:
+To get garbage collection logging output you have to enable GC logging by setting the following value in _conf/neo4j.conf_:
 [source,properties]
 ----
-dbms.jvm.additional=-Xloggc:data/log/neo4j-gc.log
+dbms.logs.gc.enabled=true
 ----
-This line is already present and needs uncommenting.
 Note also that logging is not directed to console.
-You will find the logging statements in _data/log/ne4j-gc.log_ or whatever directory you set the option to.
+You will find the logging statements in _data/log/gc.log_ or whatever directory you set the option to.
+
+To set specific options for garbage collection logging, use the setting _dbms.logs.gc.options_ and pass the options that should be passed to the JVM. The following example shows the default value:
+[source,properties]
+----
+dbms.logs.gc.options=-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution
+----
 
 [[server-browser-config]]
 == Web Interface configuration settings ==
