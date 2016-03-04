@@ -122,6 +122,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
                         }
                         ReplicatedContent content = entryCursor.get().content();
                         onCommitted( content, index );
+                        index++;
                     }
                 }
                 lastApplied = entryLog.commitIndex();
