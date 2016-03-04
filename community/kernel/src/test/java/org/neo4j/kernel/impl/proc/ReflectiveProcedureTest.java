@@ -42,7 +42,6 @@ import org.neo4j.procedure.Procedure;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
@@ -170,17 +169,6 @@ public class ReflectiveProcedureTest
 
         // When
         compile( PrivateConstructorProcedure.class );
-    }
-
-    @Test
-    public void shouldAllowVoidOutput() throws Throwable
-    {
-        // When
-        CallableProcedure proc = compile( ProcedureWithVoidOutput.class ).get( 0 );
-
-        // Then
-        assertEquals( 0, proc.signature().outputSignature().size() );
-        assertFalse( proc.apply( null, new Object[0] ).hasNext() );
     }
 
     @Test
@@ -441,24 +429,24 @@ public class ReflectiveProcedureTest
     public static class ProcedureWithOverriddenName
     {
         @Procedure("org.mystuff.thisisActuallyTheName")
-        public void somethingThatShouldntMatter()
+        public Stream<MyOutputRecord> somethingThatShouldntMatter()
         {
-
+            return Stream.empty();
         }
 
         @Procedure("singleName")
-        public void blahDoesntMatterEither()
+        public Stream<MyOutputRecord> blahDoesntMatterEither()
         {
-
+            return Stream.empty();
         }
     }
 
     public static class ProcedureWithSingleName
     {
         @Procedure("singleName")
-        public void blahDoesntMatterEither()
+        public Stream<MyOutputRecord> blahDoesntMatterEither()
         {
-
+            return Stream.empty();
         }
     }
 
