@@ -350,11 +350,11 @@ public class Cluster
         return edgeServers.iterator().next();
     }
 
-    public CoreGraphDatabase getLeader()
+    public CoreGraphDatabase getDbWithRole( Role role )
     {
         for ( CoreGraphDatabase coreServer : coreServers )
         {
-            if ( coreServer.getRole().equals( Role.LEADER ) )
+            if ( coreServer.getRole().equals( role ) )
             {
                 return coreServer;
             }
@@ -362,21 +362,26 @@ public class Cluster
         return null;
     }
 
-    public CoreGraphDatabase findLeader( long leaderWaitTimeout ) throws NoLeaderFoundException
+    public CoreGraphDatabase awaitLeader( long timeoutMillis ) throws TimeoutException
     {
-        long leaderWaitEndTime = leaderWaitTimeout + System.currentTimeMillis();
-        CoreGraphDatabase leader;
-        while ( (leader = getLeader()) == null && (System.currentTimeMillis() < leaderWaitEndTime) )
+        return awaitCoreGraphDatabaseWithRole( timeoutMillis, Role.LEADER );
+    }
+
+    public CoreGraphDatabase awaitCoreGraphDatabaseWithRole( long timeoutMillis, Role role ) throws TimeoutException
+    {
+        long endTimeMillis = timeoutMillis + System.currentTimeMillis();
+
+        CoreGraphDatabase db;
+        while ( (db = getDbWithRole( role ) ) == null && (System.currentTimeMillis() < endTimeMillis) )
         {
-            LockSupport.parkNanos( MILLISECONDS.toNanos( 1000 ) );
+            LockSupport.parkNanos( MILLISECONDS.toNanos( 100 ) );
         }
 
-        if ( leader == null )
+        if ( db == null )
         {
-            throw new NoLeaderFoundException();
+            throw new TimeoutException();
         }
-
-        return leader;
+        return db;
     }
 
     public int numberOfCoreServers()

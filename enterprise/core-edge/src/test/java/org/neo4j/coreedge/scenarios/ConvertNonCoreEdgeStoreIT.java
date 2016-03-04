@@ -83,7 +83,7 @@ public class ConvertNonCoreEdgeStoreIT
         cluster = Cluster.start( dbDir, 3, 0 );
 
         // when
-        GraphDatabaseService coreDB = cluster.findLeader( 5000 );
+        GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );
 
         try ( Transaction tx = coreDB.beginTx() )
         {

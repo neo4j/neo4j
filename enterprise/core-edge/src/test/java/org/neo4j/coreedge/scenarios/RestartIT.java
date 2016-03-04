@@ -134,7 +134,7 @@ public class RestartIT
         cluster = Cluster.start( dbDir, 2, 1 );
 
         // when
-        final GraphDatabaseService coreDB = cluster.findLeader( 5000 );
+        final GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );
 
         try ( Transaction tx = coreDB.beginTx() )
         {
