@@ -93,6 +93,7 @@ object Function {
     functions.ToLower,
     functions.ToString,
     functions.ToUpper,
+    functions.Properties,
     functions.Trim,
     functions.Type,
     functions.Upper
