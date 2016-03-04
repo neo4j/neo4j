@@ -217,7 +217,7 @@ setup_java_opts() {
 
   JAVA_GC_LOGGING_OPTS=""
   if [ "${dbms_logs_gc_enabled:-}" = "true" ]; then
-      JAVA_GC_LOGGING_OPTS="-Xloggc:data/log/neo4j-gc.log ${dbms_logs_gc_options}";
+      JAVA_GC_LOGGING_OPTS="-Xloggc:data/log/gc.log ${dbms_logs_gc_options}";
   fi
   
   JAVA_OPTS="-server"
