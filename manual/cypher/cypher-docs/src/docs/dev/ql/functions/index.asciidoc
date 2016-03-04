@@ -5,13 +5,13 @@ Functions
 This chapter contains information on all functions in Cypher.
 Note that related information exists in <<query-operators>>.
 
-NOTE: Most functions in Cypher will return +NULL+ if an input parameter is +NULL+.
+NOTE: Most functions in Cypher will return `NULL` if an input parameter is `NULL`.
 
 [[query-predicates]]
 == Predicates ==
 
 Predicates are boolean functions that return true or false for a given set of input.
-They are most commonly used to filter out subgraphs in the +WHERE+ part of a query.
+They are most commonly used to filter out subgraphs in the `WHERE` part of a query.
 
 See also <<query-operators-comparison>>.
 
@@ -40,7 +40,7 @@ Scalar functions return a single value.
 [IMPORTANT]
 The `length()` and `size()` functions are quite similar, and so it is important to take note of the difference.
 Due to backwards compatibility, `length()` currently works on four types: strings, paths, lists and pattern expressions.
-However, for clarity it is recommended to only use `LENGTH` on strings and paths, and use the new `size()` function on lists and pattern expressions.
+However, for clarity it is recommended to only use `length()` on strings and paths, and use the new `size()` function on lists and pattern expressions.
 `length()` on those types may be deprecated in future.
 
 .Graph
@@ -182,7 +182,7 @@ include::tan.asciidoc[]
 == String functions ==
 
 These functions all operate on string expressions only, and will return an error if used on any other values.
-The exception to this rule is `TOSTRING()`, which also accepts numbers and booleans.
+The exception to this rule is `toString()`, which also accepts numbers and booleans.
 
 See also <<query-operators-string>>.
 
