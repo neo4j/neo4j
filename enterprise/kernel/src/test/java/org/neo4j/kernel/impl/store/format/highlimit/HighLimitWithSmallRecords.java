@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 /**
  * A {@link HighLimit} record format that forces records to be split in two units more often than the original format.
@@ -39,6 +41,28 @@ public class HighLimitWithSmallRecords extends HighLimit
 
     private HighLimitWithSmallRecords()
     {
+    }
+
+    public static void enable()
+    {
+        FeatureToggles.set( InternalRecordFormatSelector.class, InternalRecordFormatSelector.FORMAT_TOGGLE_NAME, NAME );
+        RecordFormats formats = InternalRecordFormatSelector.select();
+        if ( !HighLimitWithSmallRecords.class.equals( formats.getClass() ) )
+        {
+            throw new AssertionError( "Failed to enable " + NAME + " format via feature toggle. Selected: " + formats );
+        }
+    }
+
+    public static boolean isEnabled()
+    {
+        String toggleValue = FeatureToggles.getString( InternalRecordFormatSelector.class,
+                InternalRecordFormatSelector.FORMAT_TOGGLE_NAME, "" );
+        return NAME.equals( toggleValue );
+    }
+
+    public static void disable()
+    {
+        FeatureToggles.clear( InternalRecordFormatSelector.class, InternalRecordFormatSelector.FORMAT_TOGGLE_NAME );
     }
 
     @Override

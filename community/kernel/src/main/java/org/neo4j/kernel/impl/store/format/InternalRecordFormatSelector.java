@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.apache.commons.lang3.StringUtils;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
@@ -31,6 +33,7 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterables.concat;
@@ -43,6 +46,8 @@ import static org.neo4j.helpers.collection.Iterables.map;
  */
 public class InternalRecordFormatSelector
 {
+    public static final String FORMAT_TOGGLE_NAME = "formatKey";
+
     private static final String COMMUNITY_KEY = LowLimitV3_0.NAME;
     private static final RecordFormats FALLBACK = LowLimitV3_0.RECORD_FORMATS;
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
@@ -65,7 +70,8 @@ public class InternalRecordFormatSelector
 
     public static RecordFormats select( Config config, LogService logging )
     {
-        String key = config.get( GraphDatabaseFacadeFactory.Configuration.record_format );
+        String key = readRecordFormatKey( config );
+
         for ( RecordFormats.Factory candidate : loadAdditionalFormats() )
         {
             String candidateId = candidate.getKeys().iterator().next();
@@ -112,5 +118,12 @@ public class InternalRecordFormatSelector
             }
         }
         throw new IllegalArgumentException( "Unknown store version '" + storeVersion + "'" );
+    }
+
+    private static String readRecordFormatKey( Config config )
+    {
+        String toggleValue = FeatureToggles.getString( InternalRecordFormatSelector.class, FORMAT_TOGGLE_NAME, "" );
+        String configValue = config.get( GraphDatabaseFacadeFactory.Configuration.record_format );
+        return StringUtils.defaultIfBlank( toggleValue, configValue );
     }
 }

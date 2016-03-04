@@ -33,6 +33,10 @@ public class HighLimitWithSmallRecordsFactory extends RecordFormats.Factory
     @Override
     public RecordFormats newInstance()
     {
-        return HighLimitWithSmallRecords.RECORD_FORMATS;
+        if ( HighLimitWithSmallRecords.isEnabled() )
+        {
+            return HighLimitWithSmallRecords.RECORD_FORMATS;
+        }
+        return HighLimit.RECORD_FORMATS;
     }
 }

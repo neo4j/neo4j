@@ -39,7 +39,6 @@ import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -67,6 +66,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -162,10 +162,11 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
         public TransactionRepresentation representation( IdGenerator idGenerator, int masterId, int authorId,
-                                                         long lastCommittedTx, NodeStore nodes )
+                                                         long lastCommittedTx, NeoStores neoStores )
         {
-            TransactionWriter writer = new TransactionWriter();
-            transactionData( new TransactionDataBuilder( writer, nodes ), idGenerator );
+            TransactionWriter writer = new TransactionWriter( neoStores );
+            transactionData( new TransactionDataBuilder( writer, neoStores.getNodeStore() ), idGenerator );
+            idGenerator.updateCorrespondingIdGenerators( neoStores );
             return writer.representation( new byte[0], masterId, authorId, startTimestamp, lastCommittedTx,
                    currentTimeMillis() );
         }
@@ -231,6 +232,13 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         public int propertyKey()
         {
             return propKeyId++;
+        }
+
+        public void updateCorrespondingIdGenerators( NeoStores neoStores )
+        {
+            neoStores.getNodeStore().setHighestPossibleIdInUse( nodeId );
+            neoStores.getRelationshipStore().setHighestPossibleIdInUse( relId );
+            neoStores.getRelationshipGroupStore().setHighestPossibleIdInUse( relGroupId );
         }
     }
 
@@ -404,10 +412,12 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             dependencyResolver.resolveDependency( StorageEngine.class ) );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
-            NodeStore nodes = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                    .testAccessNeoStores().getNodeStore();
+
+            NeoStores neoStores = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                    .testAccessNeoStores();
+
             TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittedTransactionId(), nodes );
+                    transactionIdStore.getLastCommittedTransactionId(), neoStores );
             commitProcess.commit( new TransactionToApply( representation ), CommitEvent.NULL,
                     TransactionApplicationMode.EXTERNAL );
         }
