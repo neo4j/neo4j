@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.transactional.integration;
 
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -183,6 +185,164 @@ public class TransactionMatchers
                     {
                         JsonNode node = meta.next();
                         assertThat( node.get( "deleted" ).asBoolean(), equalTo( Boolean.FALSE ) );
+                    }
+                    return true;
+                }
+                catch ( JsonParseException e )
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+            }
+        };
+    }
+
+    public static Matcher<? super HTTP.Response> rowContainsDeletedEntitiesInPath( final int nodes, final int rels )
+    {
+        return new TypeSafeMatcher<HTTP.Response>()
+        {
+            @Override
+            protected boolean matchesSafely( HTTP.Response response )
+            {
+                try
+                {
+                    Iterator<JsonNode> meta = getJsonNodeWithName( response, "meta" ).iterator();
+
+                    int nodeCounter = 0;
+                    int relCounter = 0;
+                    assertTrue( "Expected to find a JSON node, but there was none", meta.hasNext() );
+                    JsonNode node = meta.next();
+                    assertTrue( "Expected the node to be a list (for a path)", node.isArray() );
+                    for ( JsonNode inner : node )
+                    {
+                        String type = inner.get( "type" ).getTextValue();
+                        switch ( type )
+                        {
+                        case "node":
+                            if ( inner.get( "deleted" ).asBoolean() )
+                            {
+                                ++nodeCounter;
+                            }
+                            break;
+                        case "relationship":
+                            if ( inner.get( "deleted" ).asBoolean() )
+                            {
+                                ++relCounter;
+                            }
+                            break;
+                        default:
+                            fail( "Unexpected type: " + type );
+                            break;
+                        }
+                    }
+                    assertEquals( nodes, nodeCounter );
+                    assertEquals( rels, relCounter );
+                    return true;
+                }
+                catch ( JsonParseException e )
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+            }
+        };
+    }
+
+    public static Matcher<? super HTTP.Response> rowContainsMetaNodesAtIndex( int... indexes )
+    {
+        return new TypeSafeMatcher<HTTP.Response>()
+        {
+            @Override
+            protected boolean matchesSafely( HTTP.Response response )
+            {
+                return assertElementAtMetaIndex( response, indexes, "node" );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+            }
+        };
+    }
+
+    public static Matcher<? super HTTP.Response> rowContainsMetaRelsAtIndex( int... indexes )
+    {
+        return new TypeSafeMatcher<HTTP.Response>()
+        {
+            @Override
+            protected boolean matchesSafely( HTTP.Response response )
+            {
+                return assertElementAtMetaIndex( response, indexes, "relationship" );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+            }
+        };
+    }
+
+    private static boolean assertElementAtMetaIndex( HTTP.Response response, int[] indexes, String element )
+    {
+        try
+        {
+            Iterator<JsonNode> meta = getJsonNodeWithName( response, "meta" ).iterator();
+
+            int i = 0;
+            for ( int metaIndex = 0; meta.hasNext() && i < indexes.length; metaIndex++ )
+            {
+                JsonNode node = meta.next();
+                if ( !node.isNull() )
+                {
+                    String type = node.get( "type" ).getTextValue();
+                    if ( type.equals( element ) )
+                    {
+                        assertEquals( "Expected " + element + " to be at indexes " + Arrays.toString( indexes ) +
+                                      ", but found it at " + metaIndex, indexes[i], metaIndex );
+                        ++i;
+                    }
+                    else
+                    {
+                        assertNotEquals( "Expected " + element + " at index " + metaIndex + ", but found " + type,
+                                indexes[i],
+                                metaIndex );
+                    }
+                }
+            }
+            return i == indexes.length;
+        }
+        catch ( JsonParseException e )
+        {
+            return false;
+        }
+    }
+
+    public static Matcher<? super HTTP.Response> rowContainsAMetaListAtIndex( int index )
+    {
+        return new TypeSafeMatcher<HTTP.Response>()
+        {
+            @Override
+            protected boolean matchesSafely( HTTP.Response response )
+            {
+                try
+                {
+                    Iterator<JsonNode> meta = getJsonNodeWithName( response, "meta" ).iterator();
+
+                    for ( int metaIndex = 0; meta.hasNext(); metaIndex++ )
+                    {
+                        JsonNode node = meta.next();
+                        if ( metaIndex == index )
+                        {
+                            assertTrue( node.isArray() );
+                        }
                     }
                     return true;
                 }
