@@ -67,7 +67,7 @@ public class FieldInjections
             }
             catch ( Throwable e )
             {
-                throw new ProcedureException( Status.Procedure.CallFailed, e,
+                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
                         "Unable to inject component to field `%s`, please ensure it is public and non-final: %s",
                         field.getName(), e.getMessage() );
             }
@@ -93,7 +93,7 @@ public class FieldInjections
                 {
                     if( field.isAnnotationPresent( Context.class ))
                     {
-                        throw new ProcedureException( Status.Procedure.FailedRegistration,
+                        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                                  "The field `%s` in the class named `%s` is annotated as a @Context field,%n" +
                                 "but it is static. @Context fields must be public, non-final and non-static,%n" +
                                 "because they are reset each time a procedure is invoked.",
@@ -117,7 +117,7 @@ public class FieldInjections
             ComponentRegistry.Provider<?> provider = components.providerFor( field.getType() );
             if( provider == null )
             {
-                throw new ProcedureException( Status.Procedure.FailedRegistration,
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Unable to set up injection for procedure `%s`, the field `%s` " +
                         "has type `%s` which is not a known injectable component.",
                         cls.getSimpleName(), field.getName(), field.getType());
@@ -128,7 +128,7 @@ public class FieldInjections
         }
         catch ( IllegalAccessException e )
         {
-            throw new ProcedureException( Status.Procedure.FailedRegistration,
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Unable to set up injection for `%s`, failed to access field `%s`: %s",
                     e, cls.getSimpleName(), field.getName(), e.getMessage() );
         }
@@ -138,7 +138,7 @@ public class FieldInjections
     {
         if( !field.isAnnotationPresent( Context.class ) )
         {
-            throw new ProcedureException(  Status.Procedure.FailedRegistration,
+            throw new ProcedureException(  Status.Procedure.ProcedureRegistrationFailed,
                     "Field `%s` on `%s` is not annotated as a @"+Context.class.getSimpleName()+" and is not static. " +
                     "If you want to store state along with your procedure, please use a static field.",
                     field.getName(), cls.getSimpleName() );
@@ -146,7 +146,7 @@ public class FieldInjections
 
         if( !Modifier.isPublic( field.getModifiers() ) || Modifier.isFinal( field.getModifiers() ) )
         {
-            throw new ProcedureException(  Status.Procedure.FailedRegistration,
+            throw new ProcedureException(  Status.Procedure.ProcedureRegistrationFailed,
                     "Field `%s` on `%s` must be non-final and public.",
                     field.getName(), cls.getSimpleName() );
 

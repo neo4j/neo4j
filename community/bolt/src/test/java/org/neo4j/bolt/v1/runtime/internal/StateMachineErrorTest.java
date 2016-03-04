@@ -85,7 +85,7 @@ public class StateMachineErrorTest
         machine.run( "this is nonsense", EMPTY_PARAMS, null, responses );
 
         // Then
-        assertThat( responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
+        assertThat( responses.next(), failedWith( Status.Statement.SyntaxError ) );
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
     }
 
@@ -121,7 +121,7 @@ public class StateMachineErrorTest
         machine.pullAll( null, failingCallback );
 
         // Then
-        assertThat( failingCallback.next(), failedWith( Status.General.UnknownFailure ) );
+        assertThat( failingCallback.next(), failedWith( Status.General.UnknownError ) );
         assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
     }
 

@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-import static org.neo4j.kernel.api.exceptions.Status.General.UnknownFailure;
+import static org.neo4j.kernel.api.exceptions.Status.General.UnknownError;
 
 public class ExceptionRepresentationTest
 {
@@ -60,7 +60,7 @@ public class ExceptionRepresentationTest
     public void shouldRenderErrorsWithNeo4jStatusCode() throws Exception
     {
         // Given
-        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownFailure, "Hello" ) { });
+        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" ) { });
 
         // When
         JsonNode out = serialize( rep );
@@ -74,7 +74,7 @@ public class ExceptionRepresentationTest
     public void shoudExcludeLegacyFormatIfAsked() throws Exception
     {
         // Given
-        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownFailure, "Hello" ) { }, /*legacy*/false);
+        ExceptionRepresentation rep = new ExceptionRepresentation( new KernelException( UnknownError, "Hello" ) { }, /*legacy*/false);
 
         // When
         JsonNode out = serialize( rep );

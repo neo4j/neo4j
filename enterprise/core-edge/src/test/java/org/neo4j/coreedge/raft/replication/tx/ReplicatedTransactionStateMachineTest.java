@@ -149,7 +149,7 @@ public class ReplicatedTransactionStateMachineTest
         }
         catch ( TransactionFailureException e )
         {
-            assertEquals( Status.Transaction.LockSessionInvalid, e.status() );
+            assertEquals( Status.Transaction.LockSessionExpired, e.status() );
         }
     }
 

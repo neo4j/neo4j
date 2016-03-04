@@ -319,7 +319,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
-        assertErrors( result, Status.Statement.InvalidSyntax );
+        assertErrors( result, Status.Statement.SyntaxError );
     }
 
     @Test

@@ -32,7 +32,7 @@ public class NoSuchConstraintException extends SchemaKernelException
 
     public NoSuchConstraintException( PropertyConstraint constraint )
     {
-        super( Status.Schema.NoSuchConstraint, format( message, constraint ) );
+        super( Status.Schema.ConstraintNotFound, format( message, constraint ) );
         this.constraint = constraint;
     }
 

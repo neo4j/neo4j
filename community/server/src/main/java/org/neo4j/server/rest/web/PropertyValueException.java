@@ -35,6 +35,6 @@ public class PropertyValueException extends BadInputException
     @Override
     public Status status()
     {
-        return Status.Statement.InvalidArguments;
+        return Status.Statement.ArgumentError;
     }
 }

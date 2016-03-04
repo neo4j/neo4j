@@ -128,7 +128,7 @@ public class TransientErrorIT extends AbstractRestFunctionalTestBase
 
         // request fails because specified CSV resource is invalid
         assertThat( second.status(), is( 200 ) );
-        assertThat( second, hasErrors( Status.Statement.ExternalResourceFailure ) );
+        assertThat( second, hasErrors( Status.Statement.ExternalResourceFailed ) );
 
         // transaction was rolled back on the previous step and we can't commit it
         HTTP.Response commit = POST( second.stringFromContent( "commit" ) );

@@ -51,7 +51,7 @@ public class ProcedureRegistry
 
         if ( procedures.putIfAbsent( name, proc ) != null )
         {
-            throw new ProcedureException( Status.Procedure.FailedRegistration,
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Unable to register procedure, because the name `%s` is already in use.", name );
         }
     }
@@ -64,7 +64,7 @@ public class ProcedureRegistry
         {
             if ( !names.add( field.name() ) )
             {
-                throw new ProcedureException( Status.Procedure.FailedRegistration,
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Procedure `%s` cannot be registered, because it contains a duplicated " + fieldType + " field, '%s'. " +
                         "You need to rename or remove one of the duplicate fields.", signature.toString(), field.name() );
             }
@@ -94,7 +94,7 @@ public class ProcedureRegistry
 
     private ProcedureException noSuchProcedure( ProcedureSignature.ProcedureName name )
     {
-        return new ProcedureException( Status.Procedure.NoSuchProcedure,
+        return new ProcedureException( Status.Procedure.ProcedureNotFound,
                 "There is no procedure with the name `%s` registered for this database instance. " +
                 "Please ensure you've spelled the procedure name correctly and that the " +
                 "procedure is properly deployed.", name );

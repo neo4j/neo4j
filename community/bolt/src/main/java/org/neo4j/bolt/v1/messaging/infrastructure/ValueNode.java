@@ -63,7 +63,7 @@ public class ValueNode
         long numFields = unpacker.unpackStructHeader();
         char signature = unpacker.unpackStructSignature();
         if( signature != Neo4jPack.NODE ) {
-            throw new BoltIOException( Status.Request.InvalidFormat, "Expected a node structure, recieved 0x" + Integer.toHexString( signature ) );
+            throw new BoltIOException( Status.Request.InvalidFormat, "Expected a node structure, received 0x" + Integer.toHexString( signature ) );
         }
         if( numFields != STRUCT_FIELD_COUNT ) {
             throw new BoltIOException( Status.Request.InvalidFormat, "Node structures should have " + STRUCT_FIELD_COUNT

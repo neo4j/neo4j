@@ -185,11 +185,11 @@ public class RestfulGraphDatabaseTest
 
         Response setAllNodePropertiesResponse = service.setAllNodeProperties( parseLong( wilma ), "{\"name\":\"Fred\"}" );
         assertEquals( 409, setAllNodePropertiesResponse.getStatus() );
-        assertEquals( Schema.ConstraintViolation.code().serialize(), singleErrorCode( setAllNodePropertiesResponse ) );
+        assertEquals( Schema.ConstraintValidationFailed.code().serialize(), singleErrorCode( setAllNodePropertiesResponse ) );
 
         Response singleNodePropertyResponse = service.setNodeProperty( parseLong( wilma ), "name", "\"Fred\"" );
         assertEquals( 409, singleNodePropertyResponse.getStatus() );
-        assertEquals( Schema.ConstraintViolation.code().serialize(), singleErrorCode( singleNodePropertyResponse ) );
+        assertEquals( Schema.ConstraintValidationFailed.code().serialize(), singleErrorCode( singleNodePropertyResponse ) );
     }
 
     private String createPerson( final String name ) throws JsonParseException
@@ -278,7 +278,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.createNode( "{\"foo\" : {\"bar\" : \"baz\"}}" );
 
         assertEquals( 400, response.getStatus() );
-        assertEquals( Statement.InvalidArguments.code().serialize(), singleErrorCode( response ) );
+        assertEquals( Statement.ArgumentError.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -340,7 +340,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.setAllNodeProperties( helper.createNode(),
                 "{\"foo\" : {\"bar\" : \"baz\"}}" );
         assertEquals( 400, response.getStatus() );
-        assertEquals( Statement.InvalidArguments.code().serialize(), singleErrorCode( response ) );
+        assertEquals( Statement.ArgumentError.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -390,7 +390,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.deleteNode( id );
 
         assertEquals( 409, response.getStatus() );
-        assertEquals( Schema.ConstraintViolation.code().serialize(), singleErrorCode( response ) );
+        assertEquals( Schema.ConstraintValidationFailed.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -451,7 +451,7 @@ public class RestfulGraphDatabaseTest
         long nodeId = helper.createNode();
         Response response = service.getNodeProperty( nodeId, "foo" );
         assertEquals( 404, response.getStatus() );
-        assertEquals( Statement.NoSuchProperty.code().serialize(), singleErrorCode( response ) );
+        assertEquals( Statement.PropertyNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -584,7 +584,7 @@ public class RestfulGraphDatabaseTest
                 "{\"to\" : \"" + BASE_URI + endNode
                         + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : {\"bar\" : \"baz\"}}}" );
         assertEquals( 400, response.getStatus() );
-        assertEquals( Statement.InvalidArguments.code().serialize(), singleErrorCode( response ) );
+        assertEquals( Statement.ArgumentError.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -644,7 +644,7 @@ public class RestfulGraphDatabaseTest
         helper.setNodeProperties( nodeId, properties );
         Response response = service.deleteNodeProperty( nodeId, "baz" );
         assertEquals( 404, response.getStatus() );
-        assertEquals( Statement.NoSuchProperty.code().serialize(), singleErrorCode( response ) );
+        assertEquals( Statement.PropertyNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -714,7 +714,7 @@ public class RestfulGraphDatabaseTest
         long relationshipId = helper.createRelationship( "knows" );
         Response response = service.getRelationshipProperty( relationshipId, "some-key" );
         assertEquals( 404, response.getStatus() );
-        assertEquals( Statement.NoSuchProperty.code().serialize(), singleErrorCode( response ) );
+        assertEquals( Statement.PropertyNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -936,7 +936,7 @@ public class RestfulGraphDatabaseTest
         long relationshipId = helper.createRelationship( "KNOWS" );
         Response response = service.deleteRelationshipProperty( relationshipId, "foo" );
         assertEquals( 404, response.getStatus() );
-        assertEquals( Statement.NoSuchProperty.code().serialize(), singleErrorCode( response ) );
+        assertEquals( Statement.PropertyNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -1129,7 +1129,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.addToNodeIndex( "unique-nodes", "", "",
                 JsonHelper.createJsonFrom( postBody ) );
         assertEquals( 400, response.getStatus() );
-        assertEquals( Statement.InvalidArguments.code().serialize(), singleErrorCode( response ) );
+        assertEquals( Statement.ArgumentError.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test

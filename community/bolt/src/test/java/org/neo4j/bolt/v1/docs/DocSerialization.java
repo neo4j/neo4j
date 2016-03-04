@@ -100,7 +100,7 @@ public class DocSerialization
                                 " ^\"}" ) )
         {
             // Hard-coded special case, because we don't handle this message automatically yet
-            writer.handleFailureMessage( Status.Statement.InvalidSyntax,
+            writer.handleFailureMessage( Status.Statement.SyntaxError,
                     "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))\n" +
                     "\"This will cause a syntax error\"\n" +
                     " ^" );

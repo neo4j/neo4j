@@ -34,6 +34,6 @@ public class NoSuchPropertyException extends Exception implements Status.HasStat
     @Override
     public Status status()
     {
-        return Status.Statement.NoSuchProperty;
+        return Status.Statement.PropertyNotFound;
     }
 }

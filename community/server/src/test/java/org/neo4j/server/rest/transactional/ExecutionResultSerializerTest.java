@@ -413,7 +413,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         }
         catch ( RuntimeException e )
         {
-            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailure, e ) ) );
+            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailed, e ) ) );
         }
         serializer.finish();
 
@@ -450,7 +450,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         }
         catch ( RuntimeException e )
         {
-            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailure, e ) ) );
+            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailed, e ) ) );
         }
         serializer.finish();
 

@@ -34,7 +34,7 @@ class SyntaxException(message: String, val query:String,  val offset: Option[Int
 
   override def getMessage = toString
 
-  override val status = Status.Statement.InvalidSyntax
+  override val status = Status.Statement.SyntaxError
 
   private def findErrorLine(idx: Int, message: List[String]): String =
     message.toList match {

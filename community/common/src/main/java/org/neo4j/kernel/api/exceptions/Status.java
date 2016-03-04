@@ -44,17 +44,40 @@ import static org.neo4j.kernel.api.exceptions.Status.Classification.TransientErr
 public interface Status
 {
     /*
-     * A note on naming: Since these are public status codes and users will base error handling on them, please take
-     * care to place them in correct categories and assign them correct classifications. Also make sure you are not
-     * introducing duplicates.
-     *
-     * If you are unsure, contact Jake or Tobias before making modifications.
-     */
+
+    On naming...
+
+    These are public status codes and users' error handling will rely on the precise names. Therefore, please take
+    care over categorisation and classification and make sure not to introduce duplicates.
+
+    Broadly, the naming convention here uses one of three types of name:
+
+    1. For unexpected events, name with a leading noun followed by a short problem term in the past tense. For example,
+       EntityNotFound or LockSessionExpired. As a variant, names may omit the leading noun; in this case, the current
+       ongoing operation is implied.
+
+    2. For conditions that prevent the current ongoing operation from being performed (or being performed correctly),
+       start with a leading noun (as above) and follow with an adjective. For example, DatabaseUnavailable. The
+       leading noun may again be omitted and additionally a clarifying suffix may be added. For example,
+       ForbiddenOnReadOnlyDatabase.
+
+    3. For more general errors which have a well-understood or generic term available, the form XxxError may be used.
+       For example, SyntaxError or TokenNameError.
+
+    Where possible, evaluate naming decisions based on the order of the items above. Therefore, if it is possible to
+    provide a type (1) name, do so, otherwise fall back to type (2) or type (3)
+
+    Side note about HTTP: where possible, borrow words or terms from HTTP status codes. Be careful to make sure these
+    use a similar meaning however as a major benefit of doing this is to ease communication of concepts to users.
+
+    If you are unsure, please contact the Driver Team.
+
+    */
 
     enum Network implements Status
     {
         // transient
-        UnknownFailure( TransientError, "An unknown network failure occurred, a retry may resolve the issue." );
+        CommunicationError( TransientError, "An unknown network failure occurred, a retry may resolve the issue." );
         private final Code code;
 
         @Override
@@ -69,14 +92,18 @@ public interface Status
         }
     }
 
+    // TODO: rework the names and uses of Invalid and InvalidFormat and reconsider their categorisation (ClientError
+    // TODO: MUST be resolvable by the user, do we need ProtocolError/DriverError?)
     enum Request implements Status
     {
         // client
-        Invalid( ClientError, "The client provided an invalid request." ),
-        InvalidFormat( ClientError, "The client provided a request that was missing required fields, or had values " +
-                "that are not allowed." ),
-        NotInTransaction( ClientError, "The request cannot be performed outside of a transaction, and there is no " +
-                                       "transaction present to use. Wrap your request in a transaction and retry." );
+        Invalid( ClientError,  // TODO: see above
+                "The client provided an invalid request." ),
+        InvalidFormat( ClientError,  // TODO: see above
+                "The client provided a request that was missing required fields, or had values that are not allowed." ),
+        TransactionRequired( ClientError,
+                "The request cannot be performed outside of a transaction, and there is no transaction present to " +
+                "use. Wrap your request in a transaction and retry." );
         private final Code code;
 
         @Override
@@ -93,33 +120,48 @@ public interface Status
 
     enum Transaction implements Status
     {
-        UnknownId( ClientError, "The request referred to a transaction that does not exist."),
-        ConcurrentRequest( ClientError, "There were concurrent requests accessing the same transaction, which is not " +
-                "allowed." ),
-        CouldNotBegin( DatabaseError,    "The database was unable to start the transaction." ),
-        CouldNotRollback( DatabaseError, "The database was unable to roll back the transaction." ),
-        CouldNotCommit( DatabaseError,   "The database was unable to commit the transaction." ),
-        CouldNotWriteToLog( DatabaseError, "The database was unable to write transaction to log." ),
+        // client errors
+        TransactionNotFound( ClientError,
+                "The request referred to a transaction that does not exist."),
+        TransactionAccessedConcurrently( ClientError,
+                "There were concurrent requests accessing the same transaction, which is not allowed." ),
+        ForbiddenDueToTransactionType( ClientError,
+                "The transaction is of the wrong type to service the request. For instance, a transaction that has " +
+                "had schema modifications performed in it cannot be used to subsequently perform data operations, " +
+                "and vice versa." ),
+        TransactionTerminated( ClientError,
+                "The current transaction has been marked as terminated, meaning no more interactions with it are " +
+                "allowed. There are several reasons this happens - the client might have asked for the transaction " +
+                "to be terminated, an operator might have asked for the database to be shut down, or the current " +
+                "instance is about to go through a cluster role switch. Simply retry your operation in a new " +
+                "transaction."),
+        TransactionEventHandlerFailed( ClientError,
+                "A transaction event handler threw an exception. The transaction will be rolled back." ),
+        TransactionValidationFailed( ClientError,
+                "Transaction changes did not pass validation checks" ),
+        TransactionHookFailed( ClientError,
+                "Transaction hook failure." ),
+        TransactionMarkedAsFailed( ClientError,
+                "Transaction was marked as both successful and failed. Failure takes precedence and so this " +
+                "transaction was rolled back although it may have looked like it was going to be committed" ),
 
-        InvalidType( ClientError, "The transaction is of the wrong type to service the request. For instance, a " +
-                "transaction that has had schema modifications performed in it cannot be used to subsequently " +
-                "perform data operations, and vice versa." ),
+        // database errors
+        TransactionStartFailed( DatabaseError,
+                "The database was unable to start the transaction." ),
+        TransactionRollbackFailed( DatabaseError,
+                "The database was unable to roll back the transaction." ),
+        TransactionCommitFailed( DatabaseError,
+                "The database was unable to commit the transaction." ),
+        TransactionLogError( DatabaseError,
+                "The database was unable to write transaction to log." ),
 
-        LockSessionInvalid( TransientError, "The lock session under which this transaction was started is no longer valid." ),
-
-        DeadlockDetected( TransientError, "This transaction, and at least one more transaction, has acquired locks " +
-        "in a way that it will wait indefinitely, and the database has aborted it. Retrying this transaction " +
-        "will most likely be successful."),
-
-        Terminated( ClientError,
-                "The current transaction has been marked as terminated, meaning no more " +
-                "interactions with it are allowed. There are several reasons this happens - " +
-                "the client might have asked for the transaction to be terminated, an operator " +
-                "might have asked for the database to be shut down, or the current instance " +
-                "is about to go through a cluster role switch. Simply retry your operation in a " +
-                "new transaction."),
-
-
+        // transient errors
+        LockSessionExpired( TransientError,
+                "The lock session under which this transaction was started is no longer valid." ),
+        DeadlockDetected( TransientError,
+                "This transaction, and at least one more transaction, has acquired locks in a way that it will wait " +
+                "indefinitely, and the database has aborted it. Retrying this transaction will most likely be " +
+                "successful."),
         InstanceStateChanged( TransientError,
                 "Transactions rely on assumptions around the state of the Neo4j instance they " +
                 "execute on. For instance, transactions in a cluster may expect that " +
@@ -128,18 +170,7 @@ public interface Status
                 "assumptions the instance has made about how to execute the transaction " +
                 "to be violated - meaning the transaction must be rolled " +
                 "back. If you see this error, you should retry your operation in a new transaction."),
-
-        EventHandlerThrewException( ClientError, "A transaction event handler threw an exception. The transaction " +
-        "will be rolled back." ),
-
-        ValidationFailed( ClientError, "Transaction changes did not pass validation checks" ),
-        ConstraintsChanged( TransientError, "Database constraints changed since the start of this transaction" ),
-        HookFailed( ClientError, "Transaction hook failure." ),
-        MarkedAsFailed( ClientError, "Transaction was marked as both successful and failed. Failure takes precedence" +
-                " and so this transaction was rolled back although it may have looked like it was going to be " +
-                "committed" ),
-        ;
-
+        ConstraintsChanged( TransientError, "Database constraints changed since the start of this transaction" );
 
         private final Code code;
 
@@ -157,45 +188,73 @@ public interface Status
 
     enum Statement implements Status
     {
-        // client
-        InvalidSyntax( ClientError, "The statement contains invalid or unsupported syntax." ),
-        InvalidSemantics( ClientError, "The statement is syntactically valid, but expresses something that the " +
-                "database cannot do." ),
-        ParameterMissing( ClientError, "The statement is referring to a parameter that was not provided in the " +
-                "request." ),
-        ConstraintViolation( ClientError, "A constraint imposed by the statement is violated by the data in the " +
-                "database." ),
-        EntityNotFound( ClientError,      "The statement is directly referring to an entity that does not exist." ),
-        NoSuchProperty( ClientError, "The statement is referring to a property that does not exist." ),
-        NoSuchLabel( ClientError, "The statement is referring to a label that does not exist."),
-        InvalidType( ClientError,         "The statement is attempting to perform operations on values with types that " +
-                "are not supported by the operation." ),
-        InvalidArguments( ClientError, "The statement is attempting to perform operations using invalid arguments"),
-        ArithmeticError( ClientError,     "Invalid use of arithmetic, such as dividing by zero." ),
-        // database
-        ExecutionFailure( DatabaseError, "The database was unable to execute the statement." ),
-        ExternalResourceFailure( TransientError, "The external resource is not available"),
-        CartesianProduct( ClientNotification, "This query builds a cartesian product between disconnected patterns." ),
-        PlannerUnsupportedWarning( ClientNotification, "This query is not supported by the COST planner." ),
-        RuntimeUnsupportedWarning( ClientNotification, "This query is not supported by the compiled runtime." ),
-        DeprecationWarning( ClientNotification, "This feature is deprecated and will be removed in future versions." ),
-        JoinHintUnfulfillableWarning( ClientNotification, "The database was unable to plan a hinted join." ),
-        JoinHintUnsupportedWarning( ClientNotification, "Queries with join hints are not supported by the RULE planner." ),
-        DynamicPropertyWarning( ClientNotification, "Queries using dynamic properties will use neither index seeks " +
-                                                    "nor index scans for those properties" ),
-        EagerWarning(ClientNotification, "The execution plan for this query contains the Eager operator, " +
-                                         "which forces all dependent data to be materialized in main memory " +
-                                         "before proceeding"),
-        IndexMissingWarning( ClientNotification, "Adding a schema index may speed up this query." ),
-        LabelMissingWarning( ClientNotification, "The provided label is not in the database." ),
-        RelTypeMissingWarning( ClientNotification, "The provided relationship type is not in the database." ),
-        PropertyNameMissingWarning( ClientNotification, "The provided property name is not in the database" ),
-        UnboundedPatternWarning( ClientNotification, "The provided pattern is unbounded, consider adding an upper limit to the number of node hops."  ),
-        ExhaustiveShortestPathWarning( ClientNotification, "Exhaustive shortest path has been planned for your query " +
-                                                           "that means that shortest path graph algorithm might not be " +
-                                                           "used to find the shortest path.  Hence an exhaustive " +
-                                                           "enumeration of all paths might be used in order to find " +
-                                                           "the requested shortest path." );
+        // client errors
+        SyntaxError( ClientError,
+                "The statement contains invalid or unsupported syntax." ),
+        SemanticError( ClientError,
+                "The statement is syntactically valid, but expresses something that the database cannot do." ),
+        ParameterMissing( ClientError,
+                "The statement is referring to a parameter that was not provided in the request." ),
+        ConstraintVerificationFailed( ClientError,
+                "A constraint imposed by the statement is violated by the data in the database." ),
+        EntityNotFound( ClientError,
+                "The statement is directly referring to an entity that does not exist." ),
+        PropertyNotFound( ClientError,
+                "The statement is referring to a property that does not exist." ),
+        LabelNotFound( ClientError,
+                "The statement is referring to a label that does not exist."),
+        TypeError( ClientError,
+                "The statement is attempting to perform operations on values with types that are not supported by " +
+                "the operation." ),
+        ArgumentError( ClientError,
+                "The statement is attempting to perform operations using invalid arguments"),
+        ArithmeticError( ClientError,
+                "Invalid use of arithmetic, such as dividing by zero." ),
+
+        // database errors
+        ExecutionFailed( DatabaseError,
+                "The database was unable to execute the statement." ),
+
+        // transient errors
+        ExternalResourceFailed( TransientError,
+                "Access to an external resource failed"),
+
+        // client notifications (performance)
+        CartesianProductWarning( ClientNotification,
+                "This query builds a cartesian product between disconnected patterns." ),
+        DynamicPropertyWarning( ClientNotification,
+                "Queries using dynamic properties will use neither index seeks nor index scans for those properties" ),
+        EagerOperatorWarning(ClientNotification,
+                "The execution plan for this query contains the Eager operator, which forces all dependent data to " +
+                "be materialized in main memory before proceeding"),
+        JoinHintUnfulfillableWarning( ClientNotification,
+                "The database was unable to plan a hinted join." ),
+        NoApplicableIndexWarning( ClientNotification,
+                "Adding a schema index may speed up this query." ),
+        UnboundedVariableLengthPatternWarning( ClientNotification,
+                "The provided pattern is unbounded, consider adding an upper limit to the number of node hops." ),
+        ExhaustiveShortestPathWarning( ClientNotification,
+                "Exhaustive shortest path has been planned for your query that means that shortest path graph " +
+                "algorithm might not be used to find the shortest path. Hence an exhaustive enumeration of all paths " +
+                "might be used in order to find the requested shortest path." ),
+
+        // client notifications (not supported/deprecated)
+        PlannerUnsupportedWarning( ClientNotification,
+                "This query is not supported by the COST planner." ),
+        RuntimeUnsupportedWarning( ClientNotification,
+                "This query is not supported by the compiled runtime." ),
+        FeatureDeprecationWarning( ClientNotification,
+                "This feature is deprecated and will be removed in future versions." ),
+        JoinHintUnsupportedWarning( ClientNotification,
+                "Queries with join hints are not supported by the RULE planner." ),
+
+        // client notifications (unknown tokens)
+        UnknownLabelWarning( ClientNotification,
+                "The provided label is not in the database." ),
+        UnknownRelationshipTypeWarning( ClientNotification,
+                "The provided relationship type is not in the database." ),
+        UnknownPropertyKeyWarning( ClientNotification,
+                "The provided property key is not in the database" );
 
         private final Code code;
 
@@ -213,39 +272,52 @@ public interface Status
 
     enum Schema implements Status
     {
-        /** A constraint in the database was violated by the query. */
-        ConstraintViolation( ClientError, "A constraint imposed by the database was violated." ),
-        NoSuchIndex( ClientError, "The request (directly or indirectly) referred to an index that does not exist." ),
-        NoSuchConstraint( ClientError, "The request (directly or indirectly) referred to a constraint that does " +
-                "not exist." ),
-        IndexCreationFailure( DatabaseError, "Failed to create an index."),
-        ConstraintAlreadyExists( ClientError, "Unable to perform operation because it would clash with a pre-existing" +
-                " constraint." ),
-        IndexAlreadyExists( ClientError, "Unable to perform operation because it would clash with a pre-existing " +
-                "index." ),
-        IndexDropFailure( DatabaseError, "The database failed to drop a requested index." ),
+        // client errors
+        ConstraintAlreadyExists( ClientError,
+                "Unable to perform operation because it would clash with a pre-existing constraint." ),
+        ConstraintNotFound( ClientError,
+                "The request (directly or indirectly) referred to a constraint that does not exist." ),
+        ConstraintValidationFailed( ClientError,
+                "A constraint imposed by the database was violated." ),
+        ConstraintVerificationFailed( ClientError,
+                "Unable to create constraint because data that exists in the database violates it." ),
+        IndexAlreadyExists( ClientError,
+                "Unable to perform operation because it would clash with a pre-existing index." ),
+        IndexNotFound( ClientError,
+                "The request (directly or indirectly) referred to an index that does not exist." ),
+        ForbiddenOnConstraintIndex( ClientError,
+                "A requested operation can not be performed on the specified index because the index is part of a " +
+                "constraint. If you want to drop the index, for instance, you must drop the constraint." ),
+        TokenNameError( ClientError,
+                "A token name, such as a label, relationship type or property key, used is not valid. Tokens cannot " +
+                        "be empty strings and cannot be null." ),
 
-        ConstraintVerificationFailure( ClientError, "Unable to create constraint because data that exists in the " +
-        "database violates it." ),
-        ConstraintCreationFailure( DatabaseError, "Creating a requested constraint failed." ),
-        ConstraintDropFailure( DatabaseError, "The database failed to drop a requested constraint." ),
+        // database errors
+        ConstraintCreationFailed( DatabaseError,
+                "Creating a requested constraint failed." ),
+        ConstraintDropFailed( DatabaseError,
+                "The database failed to drop a requested constraint." ),
+        IndexCreationFailed( DatabaseError,
+                "Failed to create an index."),
+        IndexDropFailed( DatabaseError,
+                "The database failed to drop a requested index." ),
+        LabelAccessFailed( DatabaseError,
+                "The request accessed a label that did not exist." ),
+        LabelLimitReached( DatabaseError,
+                "The maximum number of labels supported has been reached, no more labels can be created." ),
+        PropertyKeyAccessFailed( DatabaseError,
+                "The request accessed a property that does not exist." ),
+        RelationshipTypeAccessFailed( DatabaseError,
+                "The request accessed a relationship type that does not exist." ),
+        SchemaRuleAccessFailed( DatabaseError,
+                "The request referred to a schema rule that does not exist." ),
+        SchemaRuleDuplicateFound( DatabaseError,
+                "The request referred to a schema rule that is defined multiple times." ),
 
-        IllegalTokenName( ClientError, "A token name, such as a label, relationship type or property key, used is " +
-                "not valid. Tokens cannot be empty strings and cannot be null." ),
-
-        IndexBelongsToConstraint(
-            ClientError, "A requested operation can not be performed on the specified index because the index is " +
-            "part of a constraint. If you want to drop the index, for instance, you must drop the constraint." ),
-
-        NoSuchLabel( DatabaseError, "The request accessed a label that did not exist." ),
-        NoSuchPropertyKey( DatabaseError, "The request accessed a property that does not exist." ),
-        NoSuchRelationshipType( DatabaseError, "The request accessed a relationship type that does not exist." ),
-        NoSuchSchemaRule( DatabaseError, "The request referred to a schema rule that does not exist." ),
-        DuplicateSchemaRule( DatabaseError, "The request referred to a schema rule that defined multiple times." ),
-
-        LabelLimitReached( ClientError, "The maximum number of labels supported has been reached, no more labels can be created." ),
-
-        ModifiedConcurrently( TransientError, "The database schema was modified while this transaction was running, the transaction should be retried." ),
+        // transient errors
+        SchemaModifiedConcurrently( TransientError,
+                "The database schema was modified while this transaction was running, the transaction should be " +
+                "retried." ),
 
         ;
 
@@ -265,7 +337,8 @@ public interface Status
 
     enum LegacyIndex implements Status
     {
-        NoSuchIndex( ClientError, "The request (directly or indirectly) referred to a index that does not exist." )
+        LegacyIndexNotFound( ClientError,
+                "The request (directly or indirectly) referred to a legacy index that does not exist." )
 
         ;
 
@@ -285,11 +358,16 @@ public interface Status
 
     enum Procedure implements Status
     {
-        FailedRegistration( ClientError, "The database failed to register a procedure, refer to the associated error message for details." ),
-        NoSuchProcedure( ClientError, "A request referred to a procedure that is not registered with this database instance. If you are deploying custom " +
-                                      "procedures in a cluster setup, ensure all instances in the cluster have the procedure jar file deployed." ),
-        CallFailed( ClientError, "Failed to invoke a procedure. See the detailed error description for exact cause." ),
-        TypeError( ClientError, "A procedure is using or receiving a value of an invalid type." )
+        ProcedureRegistrationFailed( ClientError,
+                "The database failed to register a procedure, refer to the associated error message for details." ),
+        ProcedureNotFound( ClientError,
+                "A request referred to a procedure that is not registered with this database instance. If you are " +
+                "deploying custom procedures in a cluster setup, ensure all instances in the cluster have the " +
+                "procedure jar file deployed." ),
+        ProcedureCallFailed( ClientError,
+                "Failed to invoke a procedure. See the detailed error description for exact cause." ),
+        TypeError( ClientError,
+                "A procedure is using or receiving a value of an invalid type." )
         ;
 
         private final Code code;
@@ -306,7 +384,7 @@ public interface Status
         }
     }
 
-    enum Security implements Status
+    enum Security implements Status  // TODO: rework by the Security Team before these are updated
     {
         // client
         CredentialsExpired( ClientError, "The credentials have expired and need to be updated." ),
@@ -332,14 +410,23 @@ public interface Status
 
     enum General implements Status
     {
-        ReadOnly( ClientError, "This is a read only database, writing or modifying the database is not allowed." ),
-        // database
-        FailedIndex( DatabaseError, "The request (directly or indirectly) referred to an index that is in a failed " +
-        "state. The index needs to be dropped and recreated manually." ),
-        UnknownFailure( DatabaseError, "An unknown failure occurred." ),
-        DatabaseUnavailable( TransientError, "The database is not currently available to serve your request, refer to the database logs for more details. Retrying your request at a later time may succeed." ),
+        // client errors
+        ForbiddenOnReadOnlyDatabase( ClientError,
+                "This is a read only database, writing or modifying the database is not allowed." ),
 
-        CorruptSchemaRule( DatabaseError, "A malformed schema rule was encountered. Please contact your support representative." ),
+        // database errors
+        IndexCorruptionDetected( DatabaseError,
+                "The request (directly or indirectly) referred to an index that is in a failed state. The index " +
+                "needs to be dropped and recreated manually." ),
+        SchemaCorruptionDetected( DatabaseError,
+                "A malformed schema rule was encountered. Please contact your support representative." ),
+        UnknownError( DatabaseError,
+                "An unknown failure occurred." ),
+
+        // transient errors
+        DatabaseUnavailable( TransientError,
+                "The database is not currently available to serve your request, refer to the database logs for more " +
+                "details. Retrying your request at a later time may succeed." ),
 
         ;
 

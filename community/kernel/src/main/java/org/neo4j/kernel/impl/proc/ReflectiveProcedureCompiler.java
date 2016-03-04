@@ -92,7 +92,7 @@ public class ReflectiveProcedureCompiler
         }
         catch ( Exception e )
         {
-            throw new ProcedureException( Status.Procedure.FailedRegistration, e,
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
                     "Failed to compile procedure defined in `%s`: %s", procDefinition.getSimpleName(), e.getMessage() );
         }
     }
@@ -126,7 +126,7 @@ public class ReflectiveProcedureCompiler
         }
         catch ( IllegalAccessException | NoSuchMethodException e )
         {
-            throw new ProcedureException( Status.Procedure.FailedRegistration, e,
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
                     "Unable to find a usable public no-argument constructor in the class `%s`. " +
                     "Please add a valid, public constructor, recompile the class and try again.",
                     procDefinition.getSimpleName() );
@@ -191,7 +191,7 @@ public class ReflectiveProcedureCompiler
             {
                 int numberOfDeclaredArguments = signature.inputSignature().size();
                 if (numberOfDeclaredArguments != input.length) {
-                    throw new ProcedureException( Status.Procedure.CallFailed,
+                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
                             "Procedure `%s` takes %d arguments but %d was provided.",
                             signature.name(),
                             numberOfDeclaredArguments, input.length );
@@ -220,7 +220,13 @@ public class ReflectiveProcedureCompiler
             }
             catch ( Throwable throwable )
             {
-                throw new ProcedureException( Status.Procedure.CallFailed, throwable,
+                String message = throwable.getMessage();
+                if( message == null )
+                {
+                    message = String.format("`%s` was thrown when invoking the procedure.",
+                            throwable.getClass().getName());
+                }
+                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                         "Failed to invoke procedure `%s`: %s", signature.name(), "Caused by: " + throwable );
             }
         }
@@ -243,7 +249,7 @@ public class ReflectiveProcedureCompiler
                 }
                 catch( RuntimeException e )
                 {
-                    throw new ProcedureException( Status.Procedure.CallFailed, e,
+                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
                             "Failed to call procedure `%s`: %s", signature, e.getMessage() );
                 }
             }
@@ -258,7 +264,7 @@ public class ReflectiveProcedureCompiler
                 }
                 catch( RuntimeException e )
                 {
-                    throw new ProcedureException( Status.Procedure.CallFailed, e,
+                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
                             "Failed to call procedure `%s`: %s", signature, e.getMessage() );
                 }
             }

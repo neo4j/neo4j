@@ -26,6 +26,6 @@ public class IndexNotFoundKernelException extends KernelException
 {
     public IndexNotFoundKernelException( String msg )
     {
-        super( Status.Schema.NoSuchIndex, msg );
+        super( Status.Schema.IndexNotFound, msg );
     }
 }

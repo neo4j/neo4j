@@ -38,7 +38,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory.createImmutableReplicatedTransaction;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotCommit;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 
 public class ReplicatedTransactionCommitProcess implements TransactionCommitProcess
 {
@@ -100,7 +100,7 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
                 {
                     if ( hasNeverReplicated )
                     {
-                        throw new TransactionFailureException( CouldNotCommit, "Failed to replicate transaction", e );
+                        throw new TransactionFailureException( TransactionCommitFailed, "Failed to replicate transaction", e );
                     }
                     log.warn( "Transaction replication failed, but a previous attempt may have succeeded," +
                             "so commit process must keep waiting for possible success.", e );

@@ -23,6 +23,6 @@ public class InvalidTransactionTypeKernelException extends KernelException
 {
     public InvalidTransactionTypeKernelException(String message)
     {
-        super( Status.Transaction.InvalidType, (Throwable) null, message );
+        super( Status.Transaction.ForbiddenDueToTransactionType, (Throwable) null, message );
     }
 }
