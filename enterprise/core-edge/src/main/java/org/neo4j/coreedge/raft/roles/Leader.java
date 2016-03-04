@@ -74,6 +74,7 @@ public class Leader implements RaftMessageHandler
                     break;
                 }
 
+                outcome.steppingDown();
                 outcome.setNextRole( FOLLOWER );
                 Heart.beat( ctx, outcome, (Heartbeat<MEMBER>) message );
                 break;
@@ -105,6 +106,7 @@ public class Leader implements RaftMessageHandler
                 else
                 {
                     // There is a new leader in a later term, we should revert to follower. (§5.1)
+                    outcome.steppingDown();
                     outcome.setNextRole( FOLLOWER );
                     Appending.handleAppendEntriesRequest( ctx, outcome, req );
                     break;
@@ -123,6 +125,7 @@ public class Leader implements RaftMessageHandler
                 else if ( res.term() > ctx.term() )
                 {
                     outcome.setNextTerm( res.term() );
+                    outcome.steppingDown();
                     outcome.setNextRole( FOLLOWER );
                     outcome.replaceFollowerStates( new FollowerStates<>() );
                     break;
@@ -181,6 +184,7 @@ public class Leader implements RaftMessageHandler
 
                 if ( req.term() > ctx.term() )
                 {
+                    outcome.steppingDown();
                     outcome.setNextRole( FOLLOWER );
                     Voting.handleVoteRequest( ctx, outcome, req );
                     break;

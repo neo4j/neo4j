@@ -42,7 +42,6 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -54,12 +53,16 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesResponse;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterables.single;
 
 @RunWith(MockitoJUnitRunner.class)
 public class LeaderTest
@@ -339,9 +342,9 @@ public class LeaderTest
         Outcome<RaftTestMember> outcome = leader.handle( message, state, log() );
 
         // then
-        assertEquals( 0, Iterables.count( outcome.getOutgoingMessages() ) );
-        assertEquals( FOLLOWER, outcome.getNewRole() );
-        assertEquals( 0, Iterables.count( outcome.getLogCommands() ) );
+        assertEquals( 0, count( outcome.getOutgoingMessages() ) );
+        assertEquals( FOLLOWER, outcome.getRole() );
+        assertEquals( 0, count( outcome.getLogCommands() ) );
         assertEquals( state.term() + 1, outcome.getTerm() );
     }
 
@@ -376,18 +379,19 @@ public class LeaderTest
 
         Leader leader = new Leader();
 
-        RaftMessages.NewEntry.Request<RaftTestMember> newEntryRequest = new RaftMessages.NewEntry.Request<>( member( 9 ), CONTENT );
+        RaftMessages.NewEntry.Request<RaftTestMember> newEntryRequest = new RaftMessages.NewEntry.Request<>( member(
+                9 ), CONTENT );
 
         // when
         Outcome<RaftTestMember> outcome = leader.handle( newEntryRequest, state, log() );
         //state.update( outcome );
 
         // then
-        AppendLogEntry logCommand = (AppendLogEntry) Iterables.single( outcome.getLogCommands() );
+        AppendLogEntry logCommand = (AppendLogEntry) single( outcome.getLogCommands() );
         assertEquals( 0, logCommand.index );
         assertEquals( 0, logCommand.entry.term() );
 
-        ShipCommand.NewEntry shipCommand = (ShipCommand.NewEntry) Iterables.single( outcome.getShipCommands() );
+        ShipCommand.NewEntry shipCommand = (ShipCommand.NewEntry) single( outcome.getShipCommands() );
 
         assertEquals( shipCommand, new ShipCommand.NewEntry( -1, -1, new RaftLogEntry( 0, CONTENT ) ) );
     }
@@ -416,7 +420,7 @@ public class LeaderTest
                 new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0, 0 ), state, log() );
 
         // then
-        assertThat( Iterables.firstOrNull( outcome.getLogCommands() ), instanceOf( CommitCommand.class ) );
+        assertThat( firstOrNull( outcome.getLogCommands() ), instanceOf( CommitCommand.class ) );
         assertEquals( 0, outcome.getLeaderCommit() );
     }
 

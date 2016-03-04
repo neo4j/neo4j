@@ -79,7 +79,7 @@ public class FollowerTest
         state.update( outcome );
 
         // then
-        assertEquals( CANDIDATE, outcome.getNewRole() );
+        assertEquals( CANDIDATE, outcome.getRole() );
 
         assertNotNull( messageFor( outcome, member1 ) );
         assertNotNull( messageFor( outcome, member2 ) );
@@ -100,7 +100,7 @@ public class FollowerTest
         Outcome outcome = follower.handle( new Election<>( myself ), state, log() );
 
         // then
-        assertEquals( CANDIDATE, outcome.getNewRole() );
+        assertEquals( CANDIDATE, outcome.getRole() );
     }
 
     @Test

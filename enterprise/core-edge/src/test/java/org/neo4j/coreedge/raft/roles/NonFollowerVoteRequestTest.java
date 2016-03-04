@@ -71,7 +71,7 @@ public class NonFollowerVoteRequestTest
 
         // then
         assertFalse( ((RaftMessages.Vote.Response) messageFor( outcome, member1 )).voteGranted() );
-        assertEquals( role, outcome.getNewRole() );
+        assertEquals( role, outcome.getRole() );
     }
 
     @Test
@@ -88,7 +88,7 @@ public class NonFollowerVoteRequestTest
 
         // then
         assertFalse( ((RaftMessages.Vote.Response) messageFor( outcome, member1 )).voteGranted() );
-        assertEquals( role, outcome.getNewRole() );
+        assertEquals( role, outcome.getRole() );
     }
 
     public RaftState<RaftTestMember> newState() throws IOException
