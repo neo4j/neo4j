@@ -76,6 +76,7 @@ public class CoreServerReplicationIT
         if ( cluster != null )
         {
             cluster.shutdown();
+            cluster = null;
         }
     }
 
@@ -87,7 +88,7 @@ public class CoreServerReplicationIT
         cluster = Cluster.start( dbDir, 3, 0 );
 
         // when
-        GraphDatabaseService coreDB = cluster.findLeader( 5000 );
+        GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );
 
         try ( Transaction tx = coreDB.beginTx() )
         {
@@ -134,7 +135,7 @@ public class CoreServerReplicationIT
         cluster.addCoreServerWithServerId( 3, 4 );
 
         // when
-        GraphDatabaseService coreDB = cluster.findLeader( 5000 );
+        GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );
 
         try ( Transaction tx = coreDB.beginTx() )
         {
@@ -145,7 +146,7 @@ public class CoreServerReplicationIT
 
         cluster.addCoreServerWithServerId( 4, 5 );
 
-        coreDB = cluster.findLeader( 5000 );
+        coreDB = cluster.awaitLeader( 5000 );
 
         try ( Transaction tx = coreDB.beginTx() )
         {
@@ -181,7 +182,7 @@ public class CoreServerReplicationIT
     {
         File dbDir = dir.directory();
         cluster = Cluster.start( dbDir, 3, 0 );
-        CoreGraphDatabase leader = cluster.findLeader( 5000 );
+        CoreGraphDatabase leader = cluster.awaitLeader( 5000 );
         try ( Transaction tx = leader.beginTx() )
         {
             Node node = leader.createNode();
@@ -190,7 +191,7 @@ public class CoreServerReplicationIT
         }
 
         cluster.removeCoreServer( leader );
-        final GraphDatabaseService newLeader = cluster.findLeader( 5000 );
+        final GraphDatabaseService newLeader = cluster.awaitLeader( 5000 );
         ThrowingSupplier<Boolean, Exception> creationSuccess = () -> {
             try ( Transaction tx = newLeader.beginTx() )
             {
@@ -241,7 +242,7 @@ public class CoreServerReplicationIT
         // when
         for ( int i = 0; i < 15; i++ )
         {
-            CoreGraphDatabase leader = cluster.findLeader( 5000 );
+            CoreGraphDatabase leader = cluster.awaitLeader( 5000 );
 
             try ( Transaction tx = leader.beginTx() )
             {
