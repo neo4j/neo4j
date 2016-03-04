@@ -391,6 +391,14 @@ public abstract class GraphDatabaseSettings
     @Description("Path of the logs directory")
     public static final Setting<File> logs_directory = setting("dbms.directories.logs", PATH, NO_DEFAULT);
 
+    @Description("Enable GC Logging")
+    public static final Setting<Boolean> gc_logging_enabled = setting("dbms.logs.gc.enabled", BOOLEAN, FALSE);
+
+    @Description("GC Logging Options")
+    public static final Setting<String> gc_logging_options = setting("dbms.logs.gc.options", STRING, "" +
+            "-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime " +
+            "-XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution");
+
     @Internal
     public static final Setting<File> log_queries_filename = derivedSetting("dbms.querylog.filename",
             logs_directory,

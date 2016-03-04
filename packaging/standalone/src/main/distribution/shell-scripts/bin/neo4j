@@ -215,9 +215,16 @@ setup_java_opts() {
   [[ "${dbms_memory_heap_initial_size:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xms${dbms_memory_heap_initial_size}m"
   [[ "${dbms_memory_heap_max_size:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xmx${dbms_memory_heap_max_size}m"
 
+  JAVA_GC_LOGGING_OPTS=""
+  if [ "${dbms_logs_gc_enabled:-}" = "true" ]; then
+      JAVA_GC_LOGGING_OPTS="-Xloggc:data/log/neo4j-gc.log ${dbms_logs_gc_options}";
+  fi
+  
   JAVA_OPTS="-server"
   [[ "${JAVA_MEMORY_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_MEMORY_OPTS}"
   [[ "${dbms_jvm_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${dbms_jvm_additional}"
+  [[ "${JAVA_GC_LOGGING_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_GC_LOGGING_OPTS}"
+
   return 0
 }
 

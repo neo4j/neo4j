@@ -48,6 +48,14 @@ for run_command in run_console run_daemon; do
     ${run_command} &&
     test_expect_java_arg ':$(neo4j_home)/plugins/*'
   "
+
+  test_expect_success "should set gc logging options when gc log is enabled" "
+    clear_config &&
+    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
+    set_config 'dbms.logs.gc.options' '-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution' neo4j.conf &&
+    ${run_command} &&
+    test_expect_java_arg '-Xloggc:data/log/neo4j-gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution'
+  "
 done
 
 test_expect_success "should set heap size constraints when checking version" "
