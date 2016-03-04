@@ -47,7 +47,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  * <p/>
  * It is abstract in order for subclasses to specify their own {@link org.neo4j.kernel.impl.factory.EditionModule}
  * implementations. Subclasses also have to set the edition name
- * in overridden version of {@link #newFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)},
+ * in overridden version of {@link #initFacade(File, Map, GraphDatabaseFacadeFactory.Dependencies, GraphDatabaseFacade)},
  * which is used for logging and similar.
  * <p/>
  * To create test versions of databases, override an edition factory (e.g. {@link org.neo4j.kernel.impl.factory
@@ -105,7 +105,7 @@ public abstract class GraphDatabaseFacadeFactory
      */
     public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, final Dependencies dependencies )
     {
-        return newFacade( storeDir, params, dependencies, new GraphDatabaseFacade() );
+        return initFacade( storeDir, params, dependencies, new GraphDatabaseFacade() );
     }
 
     /**
@@ -118,7 +118,7 @@ public abstract class GraphDatabaseFacadeFactory
      * @param graphDatabaseFacade the already created facade which needs initialisation
      * @return the initialised {@link GraphDatabaseFacade}
      */
-    public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, final Dependencies dependencies,
+    public GraphDatabaseFacade initFacade( File storeDir, Map<String, String> params, final Dependencies dependencies,
                                           final GraphDatabaseFacade graphDatabaseFacade )
     {
         PlatformModule platform = createPlatform( storeDir, params, dependencies, graphDatabaseFacade );
@@ -128,7 +128,7 @@ public abstract class GraphDatabaseFacadeFactory
         CoreAPIAvailabilityGuard coreAPIAvailabilityGuard = edition.coreAPIAvailabilityGuard;
 
         // Start it
-        graphDatabaseFacade.init( new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ) );
+        graphDatabaseFacade.init( new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard ), edition.spi() );
 
         Throwable error = null;
         try

@@ -38,7 +38,7 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 {
     public HighlyAvailableGraphDatabase( File storeDir, Map<String,String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        newHighlyAvailableFacadeFactory().newFacade( storeDir, params, dependencies, this );
+        newHighlyAvailableFacadeFactory().initFacade( storeDir, params, dependencies, this );
     }
 
     protected HighlyAvailableFacadeFactory newHighlyAvailableFacadeFactory()

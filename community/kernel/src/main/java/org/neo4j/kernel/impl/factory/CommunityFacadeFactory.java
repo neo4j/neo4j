@@ -34,10 +34,10 @@ import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 public class CommunityFacadeFactory extends GraphDatabaseFacadeFactory
 {
     @Override
-    public GraphDatabaseFacade newFacade( File storeDir, Map<String,String> params, Dependencies dependencies,
+    public GraphDatabaseFacade initFacade( File storeDir, Map<String,String> params, Dependencies dependencies,
             GraphDatabaseFacade graphDatabaseFacade )
     {
-        return super.newFacade( storeDir, params, newDependencies( dependencies ).settingsClasses(
+        return super.initFacade( storeDir, params, newDependencies( dependencies ).settingsClasses(
                 asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) ),
                 graphDatabaseFacade );
     }

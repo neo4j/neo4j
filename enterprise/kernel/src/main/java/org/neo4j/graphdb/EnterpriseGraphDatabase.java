@@ -54,6 +54,6 @@ public class EnterpriseGraphDatabase extends GraphDatabaseFacade
     public EnterpriseGraphDatabase( File storeDir, Map<String,String> params,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        new EnterpriseFacadeFactory().newFacade( storeDir, params, dependencies, this );
+        new EnterpriseFacadeFactory().initFacade( storeDir, params, dependencies, this );
     }
 }
