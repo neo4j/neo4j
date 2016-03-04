@@ -13,7 +13,7 @@ The mathematical operators are `+`, `-`, `*`, `/` and `%`, `^`.
 The comparison operators are `=`, `<>`, `<`, `>`, `<=`, `>=`, `IS NULL`, and `IS NOT NULL`.
 See <<cypher-comparison>> on how they behave.
 
-The operators `STARTS WITH`, `ENDS WITH` and `CONTAINS` can be used to search for a string value by it's content.
+The operators `STARTS WITH`, `ENDS WITH` and `CONTAINS` can be used to search for a string value by its content.
 
 [[query-operators-boolean]]
 == Boolean operators ==
