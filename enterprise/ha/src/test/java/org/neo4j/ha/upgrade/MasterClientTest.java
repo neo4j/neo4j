@@ -23,9 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
@@ -70,7 +67,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -174,7 +170,7 @@ public class MasterClientTest
 
     private MasterClient214 newMasterClient214( StoreId storeId ) throws Throwable
     {
-        return life.add( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
+        return life.add( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, NO_OP_RESPONSE_UNPACKER,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
                 monitors.newMonitor( RequestMonitor.class, MasterClient214.class ), logEntryReader ) );
@@ -182,7 +178,7 @@ public class MasterClientTest
 
     private MasterClient214 newMasterClient214( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
     {
-        return life.add( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
+        return life.add( new MasterClient214( MASTER_SERVER_HOST, MASTER_SERVER_PORT, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
                 monitors.newMonitor( RequestMonitor.class, MasterClient214.class ), logEntryReader ) );

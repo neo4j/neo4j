@@ -403,7 +403,7 @@ public class HighAvailabilityMemberStateMachineTest
                     }
                 } );
         when( masterClient.toString() ).thenReturn( "TheExpectedMasterClient!" );
-        when( masterClientResolver.instantiate( anyString(), anyInt(), anyString(), any( Monitors.class ),
+        when( masterClientResolver.instantiate( anyString(), anyInt(), any( Monitors.class ),
                 any( StoreId.class ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
         final CountDownLatch latch = new CountDownLatch( 2 );

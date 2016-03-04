@@ -52,12 +52,11 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
 
     static final long BIG_READ_TIMEOUT = 40 * 1000;
 
-    public BackupClient( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
-            LogProvider logProvider, StoreId storeId, long timeout,
+    public BackupClient( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, long timeout,
             ResponseUnpacker unpacker, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor,
             LogEntryReader<ReadableClosablePositionAwareChannel> reader )
     {
-        super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId, FRAME_LENGTH,
+        super( hostNameOrIp, port, logProvider, storeId, FRAME_LENGTH,
                 new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), timeout,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, unpacker,
                 byteCounterMonitor, requestMonitor, reader );

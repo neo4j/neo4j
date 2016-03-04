@@ -49,10 +49,10 @@ public class DefaultSlaveFactory implements SlaveFactory
     }
 
     @Override
-    public Slave newSlave( LifeSupport life, ClusterMember clusterMember, String originHostNameOrIp, int originPort )
+    public Slave newSlave( LifeSupport life, ClusterMember clusterMember )
     {
         return life.add( new SlaveClient( clusterMember.getInstanceId(), clusterMember.getHAUri().getHost(),
-                clusterMember.getHAUri().getPort(), originHostNameOrIp, logProvider, storeId,
+                clusterMember.getHAUri().getPort(), logProvider, storeId,
                 2, // and that's 1 too many, because we push from the master from one thread only anyway
                 chunkSize, monitors.newMonitor( ByteCounterMonitor.class, SlaveClient.class ),
                 monitors.newMonitor( RequestMonitor.class, SlaveClient.class ), entryReader.get() ) );

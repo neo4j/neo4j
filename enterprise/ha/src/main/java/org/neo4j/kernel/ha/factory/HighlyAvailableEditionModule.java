@@ -536,9 +536,8 @@ public class HighlyAvailableEditionModule
                 logging.getInternalLogProvider(), monitors, config.get( HaSettings.com_chunk_size ).intValue(),
                 logEntryReader ) );
 
-        HostnamePort me = config.get( ClusterSettings.cluster_server );
         Slaves slaves = dependencies.satisfyDependency( paxosLife.add( new HighAvailabilitySlaves( members,
-                clusterClient, slaveFactory, me ) ) );
+                clusterClient, slaveFactory ) ) );
 
         TransactionPropagator transactionPropagator = new TransactionPropagator( TransactionPropagator.from( config ),
                 logging.getInternalLog( TransactionPropagator.class ), slaves, new CommitPusher( jobScheduler ) );
