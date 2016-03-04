@@ -553,6 +553,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]) =
     callProcedure(name, args, transactionalContext.statement.dataWriteOperations().procedureCallWrite )
 
+  override def callDbmsProcedure(name: ProcedureName, args: Seq[Any]) =
+    callProcedure(name, args, transactionalContext.statement.dbmsOperations().procedureCallDbms )
+
   private def callProcedure(name: ProcedureName, args: Seq[Any],
                             call: (proc.ProcedureSignature.ProcedureName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]) = {
     val kn = new proc.ProcedureSignature.ProcedureName(name.namespace.asJava, name.name)

@@ -21,6 +21,8 @@ package org.neo4j.bolt.security.auth;
 
 import java.util.Map;
 
+import org.neo4j.kernel.api.security.AccessMode;
+
 /**
  * Authenticate a given token.
  * <p>
@@ -43,14 +45,12 @@ public interface Authentication
      * @param authToken The token to be authenticated.
      * @throws AuthenticationException If authentication failed.
      */
-    void authenticate( Map<String,Object> authToken ) throws AuthenticationException;
+    AccessMode authenticate( Map<String,Object> authToken ) throws AuthenticationException;
 
     /**
      * Allows all tokens to authenticate.
      */
-    Authentication NONE = authToken -> {
-        //Do nothing
-    };
+    Authentication NONE = authToken -> AccessMode.Static.FULL;
 
     String SCHEME_KEY = "scheme";
     String PRINCIPAL = "principal";

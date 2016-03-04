@@ -41,7 +41,7 @@ import org.neo4j.bolt.v1.runtime.integration.RecordingCallback;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -195,9 +195,9 @@ public class ResetFuzzTest
         }
 
         @Override
-        public void authenticate( Map<String,Object> authToken ) throws AuthenticationException
+        public AccessMode authenticate( Map<String,Object> authToken ) throws AuthenticationException
         {
-
+            return AccessMode.Static.FULL;
         }
 
         @Override

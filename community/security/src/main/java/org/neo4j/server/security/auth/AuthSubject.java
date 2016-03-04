@@ -17,16 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.executionplan
+package org.neo4j.server.security.auth;
 
-sealed trait InternalQueryType
+import java.io.IOException;
 
-case object READ_ONLY extends InternalQueryType
+import org.neo4j.kernel.api.security.AccessMode;
 
-case object READ_WRITE extends InternalQueryType
+public interface AuthSubject extends AccessMode
+{
+    void logout();
 
-case object WRITE extends InternalQueryType
+    AuthenticationResult getAuthenticationResult();
 
-case object SCHEMA_WRITE extends InternalQueryType
-
-case object DBMS extends InternalQueryType
+    boolean setPassword( String password ) throws IOException;
+}

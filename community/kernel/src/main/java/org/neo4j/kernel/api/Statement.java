@@ -58,4 +58,9 @@ public interface Statement extends Resource
      * and it's of a different type, e.g {@link #dataWriteOperations()}.
      */
     SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException;
+
+    /**
+     * @return interface exposing all DBMS operations.
+     */
+    DbmsOperations dbmsOperations();
 }

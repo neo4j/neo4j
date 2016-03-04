@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.kernel.api.DbmsOperations;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -113,6 +114,12 @@ public class KernelStatement implements TxStateHolder, Statement
                     String.format( "Schema operations are not allowed for `%s` transactions.", transaction.mode().name() ) );
         }
         transaction.upgradeToSchemaWrites();
+        return facade;
+    }
+
+    @Override
+    public DbmsOperations dbmsOperations()
+    {
         return facade;
     }
 

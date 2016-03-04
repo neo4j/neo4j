@@ -24,13 +24,25 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.server.security.auth.AuthSubject;
+import org.neo4j.server.security.auth.AuthenticationResult;
+import org.neo4j.server.security.auth.AuthenticationStrategy;
+import org.neo4j.server.security.auth.BasicAuthManager;
+import org.neo4j.server.security.auth.BasicAuthSubject;
+import org.neo4j.server.security.auth.FileUserRepository;
+import org.neo4j.server.security.auth.User;
+import org.neo4j.server.security.auth.UserRepository;
 
+import static junit.framework.TestCase.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
@@ -43,7 +55,6 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
     public void listAllLabels() throws Throwable
     {
         // Given
-
         DataWriteOperations ops = dataWriteOperationsInNewTransaction();
         long nodeId = ops.nodeCreate();
         int labelId = ops.labelGetOrCreateForName( "MyLabel" );
@@ -55,6 +66,22 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyLabel"} ) ) );
+    }
+
+    @Test
+    public void failWhenCallingListAllLabelsInDbmsMode() throws Throwable
+    {
+        try
+        {
+            // When
+            RawIterator<Object[],ProcedureException> stream = dbmsOperationsInNewTransaction().procedureCallDbms( procedureName( "db", "labels" ), new Object[0] );
+            fail( "Should have failed." );
+        }
+        catch (Exception e)
+        {
+            // Then
+            assertThat( e.getClass(), equalTo( AuthorizationViolationException.class ) );
+        }
     }
 
     @Test
@@ -70,6 +97,22 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyProp"} ) ) );
+    }
+
+    @Test
+    public void failWhenCallingListPropertyKeysInDbmsMode() throws Throwable
+    {
+        try
+        {
+            // When
+            RawIterator<Object[],ProcedureException> stream = dbmsOperationsInNewTransaction().procedureCallDbms( procedureName( "db", "propertyKeys" ), new Object[0] );
+            fail( "Should have failed." );
+        }
+        catch (Exception e)
+        {
+            // Then
+            assertThat( e.getClass(), equalTo( AuthorizationViolationException.class ) );
+        }
     }
 
     @Test
@@ -89,6 +132,22 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
     }
 
     @Test
+    public void failWhenCallingListRelationshipTypesInDbmsMode() throws Throwable
+    {
+        try
+        {
+            // When
+            RawIterator<Object[],ProcedureException> stream = dbmsOperationsInNewTransaction().procedureCallDbms( procedureName( "db", "relationshipTypes" ), new Object[0] );
+            fail( "Should have failed." );
+        }
+        catch (Exception e)
+        {
+            // Then
+            assertThat( e.getClass(), equalTo( AuthorizationViolationException.class ) );
+        }
+    }
+
+    @Test
     public void listProcedures() throws Throwable
     {
         // When
@@ -103,7 +162,69 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)"} ),
                 equalTo( new Object[]{"sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
                 equalTo( new Object[]{"sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?)"} ),
-                equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)"})
+                equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)"}),
+                equalTo( new Object[]{"sys.auth.changePassword", "sys.auth.changePassword(password :: STRING?) :: ()"})
         ));
+    }
+
+    @Test
+    public void failWhenCallingListProceduresInDbmsMode() throws Throwable
+    {
+        try
+        {
+            // When
+            RawIterator<Object[],ProcedureException> stream =
+                    dbmsOperationsInNewTransaction()
+                            .procedureCallDbms( procedureName( "sys", "procedures" ), new Object[0] );
+            assertThat( "This should never get here", 1 == 2 );
+        }
+        catch (Exception e)
+        {
+            // Then
+            assertThat( e.getClass(), equalTo( AuthorizationViolationException.class ) );
+        }
+    }
+
+    @Test
+    public void callChangePasswordWithAccessModeInDbmsMode() throws Throwable
+    {
+        // Given
+        Object[] inputArray = new Object[1];
+        inputArray[0] = "newPassword";
+
+        UserRepository userRepository = mock( FileUserRepository.class );
+        BasicAuthManager authManager = new BasicAuthManager( userRepository, mock( AuthenticationStrategy.class ) );
+        when( userRepository.isValidName( "neo4j" ) ).thenReturn( true );
+        User user = authManager.newUser( "neo4j", "neo4j", true );
+        when( userRepository.findByName( "neo4j" ) ).thenReturn( user );
+        AuthSubject authSubject = new BasicAuthSubject( authManager, user, AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
+
+        // When
+        RawIterator < Object[],ProcedureException> stream = dbmsOperationsWithAuthSubjectInNewTransaction( authSubject )
+                .procedureCallDbms( procedureName( "sys", "auth", "changePassword" ), inputArray );
+
+        // Then
+        assertThat( asList( stream ), contains( equalTo( new Object[]{ true } ) ) );
+    }
+
+    @Test
+    public void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
+    {
+        try
+        {
+            // Given
+            Object[] inputArray = new Object[1];
+            inputArray[0] = "newPassword";
+
+            // When
+            RawIterator<Object[],ProcedureException> stream = dbmsOperationsInNewTransaction()
+                    .procedureCallDbms( procedureName( "sys", "auth", "changePassword" ), inputArray );
+            fail( "Should have failed." );
+        }
+        catch ( Exception e )
+        {
+            // Then
+            assertThat( e.getClass(), equalTo( AuthorizationViolationException.class ) );
+        }
     }
 }

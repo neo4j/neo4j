@@ -37,6 +37,14 @@ public interface AuthManager
     AuthenticationResult authenticate( String username, String password );
 
     /**
+     * Log in using the provided username and password
+     * @param username The name of the user
+     * @param password The password of the user
+     * @return An AuthSubject representing the newly logged-in user
+     */
+    AuthSubject login( String username, String password );
+
+    /**
      * Create a new user with the provided credentials.
      * @param username The name of the user.
      * @param initialPassword The initial password.
@@ -81,6 +89,54 @@ public interface AuthManager
         public AuthenticationResult authenticate( String username, String password )
         {
             return AuthenticationResult.SUCCESS;
+        }
+
+        @Override
+        public AuthSubject login( String username, String password )
+        {
+            return new AuthSubject()
+            {
+                @Override
+                public void logout()
+                {
+                }
+
+                @Override
+                public AuthenticationResult getAuthenticationResult()
+                {
+                    return AuthenticationResult.SUCCESS;
+                }
+
+                @Override
+                public boolean setPassword( String password ) throws IOException
+                {
+                    return true;
+                }
+
+                @Override
+                public boolean allowsReads()
+                {
+                    return true;
+                }
+
+                @Override
+                public boolean allowsWrites()
+                {
+                    return true;
+                }
+
+                @Override
+                public boolean allowsSchemaWrites()
+                {
+                    return true;
+                }
+
+                @Override
+                public String name()
+                {
+                    return "";
+                }
+            };
         }
 
         @Override

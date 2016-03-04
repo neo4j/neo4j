@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.DbmsOperations;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -78,6 +79,20 @@ public abstract class KernelIntegrationTest
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ );
         statement = transaction.acquireStatement();
         return statement.readOperations();
+    }
+
+    protected DbmsOperations dbmsOperationsInNewTransaction() throws TransactionFailureException
+    {
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        statement = transaction.acquireStatement();
+        return statement.dbmsOperations();
+    }
+
+    protected DbmsOperations dbmsOperationsWithAuthSubjectInNewTransaction(AccessMode accessMode) throws TransactionFailureException
+    {
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, accessMode );
+        statement = transaction.acquireStatement();
+        return statement.dbmsOperations();
     }
 
     protected void commit() throws TransactionFailureException

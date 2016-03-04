@@ -70,7 +70,7 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         try
                         {
-                            ctx.spi.authenticate( authToken );
+                            ctx.accessMode = ctx.spi.authenticate( authToken );
                             ctx.spi.udcRegisterClient( clientName );
                             return IDLE;
                         }
@@ -98,7 +98,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.currentTransaction = ctx.spi.beginTransaction( explicit, AccessMode.Static.FULL );
+                        ctx.currentTransaction = ctx.spi.beginTransaction( explicit, ctx.accessMode );
                         return IN_TRANSACTION;
                     }
 
@@ -493,6 +493,7 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     private final String id = UUID.randomUUID().toString();
+    private AccessMode accessMode;
 
     /** A re-usable statement metadata instance that always represents the currently running statement */
     private final StatementMetadata currentStatementMetadata = new StatementMetadata()
@@ -554,7 +555,7 @@ public class SessionStateMachine implements Session, SessionState
         void unbindTransactionFromCurrentThread();
         RecordStream run( SessionStateMachine ctx, String statement, Map<String, Object> params )
                 throws KernelException;
-        void authenticate( Map<String, Object> authToken ) throws AuthenticationException;
+        AccessMode authenticate( Map<String, Object> authToken ) throws AuthenticationException;
         void udcRegisterClient( String clientName );
         Statement currentStatement();
     }
@@ -568,6 +569,7 @@ public class SessionStateMachine implements Session, SessionState
     public SessionStateMachine( SPI spi )
     {
         this.spi = spi;
+        this.accessMode = AccessMode.Static.NONE;
     }
 
     @Override

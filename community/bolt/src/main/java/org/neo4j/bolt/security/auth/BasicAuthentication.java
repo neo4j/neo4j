@@ -23,9 +23,12 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.auth.AuthSubject;
 import org.neo4j.server.security.auth.BasicAuthManager;
 
 /**
@@ -37,6 +40,7 @@ public class BasicAuthentication implements Authentication
     private final static String SCHEME = "basic";
     private final Log log;
     private final Supplier<String> identifier;
+    private AuthSubject authSubject;
 
 
     public BasicAuthentication( BasicAuthManager authManager, LogProvider logProvider, Supplier<String> identifier )
@@ -47,7 +51,7 @@ public class BasicAuthentication implements Authentication
     }
 
     @Override
-    public void authenticate( Map<String,Object> authToken ) throws AuthenticationException
+    public AccessMode authenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
         if ( !SCHEME.equals( authToken.get( SCHEME_KEY ) ) )
         {
@@ -59,17 +63,18 @@ public class BasicAuthentication implements Authentication
         String password = safeCast( CREDENTIALS, authToken );
         if ( authToken.containsKey( NEW_CREDENTIALS ) )
         {
-            update( user, password, safeCast( NEW_CREDENTIALS, authToken ) );
+            return update( user, password, safeCast( NEW_CREDENTIALS, authToken ) );
         }
         else
         {
-            authenticate( user, password );
+            return authenticate( user, password );
         }
     }
 
-    private void authenticate( String user, String password ) throws AuthenticationException
+    private AccessMode authenticate( String user, String password ) throws AuthenticationException
     {
-        switch ( authManager.authenticate( user, password ) )
+        authSubject = authManager.login( user, password );
+        switch ( authSubject.getAuthenticationResult() )
         {
         case SUCCESS:
             break;
@@ -81,17 +86,23 @@ public class BasicAuthentication implements Authentication
             log.warn( "Failed authentication attempt for '%s'", user);
             throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
         }
+        return authSubject;
     }
 
-    private void update( String user, String password, String newPassword ) throws AuthenticationException
+    private AccessMode update( String user, String password, String newPassword ) throws AuthenticationException
     {
-        switch ( authManager.authenticate( user, password ) )
+        authSubject = authManager.login( user, password );
+        switch ( authSubject.getAuthenticationResult() )
         {
         case SUCCESS:
         case PASSWORD_CHANGE_REQUIRED:
             try
             {
-                authManager.setPassword( user, newPassword );
+                authManager.setPassword( authSubject, user, newPassword );
+            }
+            catch ( AuthorizationViolationException e )
+            {
+                throw new AuthenticationException( Status.Security.Forbidden, identifier.get(), e.getMessage(), e );
             }
             catch ( IOException e )
             {
@@ -101,6 +112,7 @@ public class BasicAuthentication implements Authentication
         default:
             throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
         }
+        return authSubject;
     }
 
     private String safeCast( String key, Map<String,Object> authToken ) throws AuthenticationException
