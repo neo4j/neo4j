@@ -23,9 +23,14 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -37,7 +42,10 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -52,6 +60,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.test.ThreadTestUtils.forkFuture;
 
 public class CheckPointerImplTest
 {
@@ -255,12 +264,81 @@ public class CheckPointerImplTest
         verify( storageEngine ).flushAndForce( limiter );
     }
 
+    @Test
+    public void mustFlushAsFastAsPossibleDuringForceCheckPoint() throws Exception
+    {
+        AtomicBoolean doneRush = new AtomicBoolean();
+        Rush rush = () -> doneRush.set( true );
+        when( flushControl.beginTemporaryRush() ).thenReturn( rush );
+        mockTxIdStore();
+        CheckPointerImpl checkPointer = checkPointer();
+        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+        assertTrue( doneRush.get() );
+    }
 
-    // TODO must flush as fast as possible during force check point
-    // TODO must flush as fast as possible during try check point
-    // TODO must request fastest possible flush when force check point is called during background check point
-    // TODO must flush at background rate during background check point
-    // TODO must flush at background rate during background check point after forced check point
+    @Test
+    public void mustFlushAsFastAsPossibleDuringTryCheckPoint() throws Exception
+    {
+        AtomicBoolean doneRush = new AtomicBoolean();
+        Rush rush = () -> doneRush.set( true );
+        when( flushControl.beginTemporaryRush() ).thenReturn( rush );
+        mockTxIdStore();
+        CheckPointerImpl checkPointer = checkPointer();
+        checkPointer.tryCheckPoint( INFO );
+        assertTrue( doneRush.get() );
+    }
+
+    private void verifyAsyncActionCausesConcurrentFlushingRush(
+            ThrowingConsumer<CheckPointerImpl,IOException> asyncAction ) throws Exception
+    {
+        AtomicLong rushCounter = new AtomicLong();
+        AtomicLong observedRushCount = new AtomicLong();
+        BinaryLatch backgroundCheckPointStartedLatch = new BinaryLatch();
+        BinaryLatch forceCheckPointStartLatch = new BinaryLatch();
+
+        mockTxIdStore();
+        CheckPointerImpl checkPointer = checkPointer();
+
+        when( flushControl.beginTemporaryRush() ).thenAnswer( (invocation) -> {
+            rushCounter.getAndIncrement();
+            forceCheckPointStartLatch.release();
+            return (Rush) rushCounter::getAndDecrement;
+        } );
+        when( flushControl.getIOLimiter() ).thenReturn( IOLimiter.unlimited() );
+
+        doAnswer( invocation -> {
+            backgroundCheckPointStartedLatch.release();
+            forceCheckPointStartLatch.await();
+            long newValue = rushCounter.get();
+            observedRushCount.set( newValue );
+            return null;
+        } ).when( storageEngine ).flushAndForce( IOLimiter.unlimited() );
+
+        Future<Object> forceCheckPointer = forkFuture( () -> {
+            backgroundCheckPointStartedLatch.await();
+            asyncAction.accept( checkPointer );
+            return null;
+        } );
+
+        when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true );
+        checkPointer.checkPointIfNeeded( INFO );
+        forceCheckPointer.get();
+        assertThat( observedRushCount.get(), is( 1L ) );
+    }
+
+    @Test(timeout = 5000)
+    public void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
+    {
+        verifyAsyncActionCausesConcurrentFlushingRush(
+                checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) );
+    }
+
+    @Test(timeout = 5000)
+    public void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
+    {
+        verifyAsyncActionCausesConcurrentFlushingRush(
+                checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) );
+    }
 
     private CheckPointerImpl checkPointer( Lock lock )
     {

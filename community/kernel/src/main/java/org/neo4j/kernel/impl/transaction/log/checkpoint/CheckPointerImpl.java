@@ -106,22 +106,9 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long forceCheckPoint( TriggerInfo info ) throws IOException
     {
-        lock.lock();
-        try
+        try ( Rush ignore = flushControl.beginTemporaryRush() )
         {
-            return doCheckPoint( info, LogCheckPointEvent.NULL );
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public long tryCheckPoint( TriggerInfo info ) throws IOException
-    {
-        if ( lock.tryLock() )
-        {
+            lock.lock();
             try
             {
                 return doCheckPoint( info, LogCheckPointEvent.NULL );
@@ -131,18 +118,37 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
                 lock.unlock();
             }
         }
-        else
+    }
+
+    @Override
+    public long tryCheckPoint( TriggerInfo info ) throws IOException
+    {
+        try ( Rush ignore = flushControl.beginTemporaryRush() )
         {
-            lock.lock();
-            try
+            if ( lock.tryLock() )
             {
-                msgLog.info( info.describe( lastCheckPointedTx ) +
-                             " Check pointing was already running, completed now" );
-                return lastCheckPointedTx;
+                try
+                {
+                    return doCheckPoint( info, LogCheckPointEvent.NULL );
+                }
+                finally
+                {
+                    lock.unlock();
+                }
             }
-            finally
+            else
             {
-                lock.unlock();
+                lock.lock();
+                try
+                {
+                    msgLog.info( info.describe( lastCheckPointedTx ) +
+                                 " Check pointing was already running, completed now" );
+                    return lastCheckPointedTx;
+                }
+                finally
+                {
+                    lock.unlock();
+                }
             }
         }
     }
