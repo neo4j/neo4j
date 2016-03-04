@@ -558,7 +558,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
-    result.columnAs[String]("prop").toList should equal(Seq(smallValue, "5" ,"5"))
+    result.columnAs[String]("prop").toList should equal(Seq(smallValue, "5", "5"))
     result should use("NodeIndexSeekByRange")
   }
 
@@ -1024,7 +1024,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
-    result should evaluateTo(List(Map("c" -> size/2)))
+    result should evaluateTo(List(Map("c" -> size / 2)))
     result shouldNot use("NodeIndexSeekByRange")
   }
 
@@ -1037,7 +1037,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
-    result should evaluateTo(List(Map("c" -> size/2)))
+    result should evaluateTo(List(Map("c" -> size / 2)))
     result shouldNot use("NodeIndexSeekByRange")
   }
 
@@ -1059,13 +1059,13 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query = s"MATCH (a)-->(b:Label) WHERE ${size/2} < b.prop RETURN count(a) as c"
+    val query = s"MATCH (a)-->(b:Label) WHERE ${size / 2} < b.prop RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
     assert(size > 20)
     result should use("NodeIndexSeekByRange")
-    result should evaluateTo(List(Map("c" -> (size/2))))
+    result should evaluateTo(List(Map("c" -> (size / 2))))
   }
 
   test("should use index seek by range with double inequalities") {
@@ -1080,6 +1080,29 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     assert(size > 20)
     result should use("NodeIndexSeekByRange")
     result should evaluateTo(List(Map("c" -> (size - 20))))
+  }
+
+  test("should use the index of inequality range scans") {
+    graph.inTx {
+      (1 to 60).foreach { i =>
+        createLabeledNode(Map("gender" -> "male"), "Person")
+      }
+      (1 to 30).foreach { i =>
+        createLabeledNode(Map("gender" -> "female"), "Person")
+      }
+      (1 to 2).foreach { i =>
+        createLabeledNode("Person")
+      }
+    }
+
+    graph.createIndex("Person", "gender")
+
+    val result = graph.execute("CYPHER PROFILE MATCH (a:Person) WHERE a.gender > 'female' RETURN count(a) as c")
+
+    import scala.collection.JavaConverters._
+    result.asScala.toList.map(_.asScala) should equal(List(Map("c" -> 60)))
+    result.getExecutionPlanDescription.toString should include("NodeIndexSeekByRange")
+    result.close()
   }
 
   private def createTestModelBigEnoughToConsiderPickingIndexSeek: Int = {
