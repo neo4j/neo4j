@@ -19,12 +19,12 @@
  */
 package org.neo4j.server;
 
+import java.net.URI;
+
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.net.URI;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -39,6 +39,7 @@ import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
@@ -67,7 +68,7 @@ public class NeoServerJAXRSDocIT extends ExclusiveServerTestBase
         server = ServerHelper.createNonPersistentServer( builder );
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
-        JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() );
+        JaxRsResponse response = new RestRequest().get( functionalTestHelper.managementUri() );
         assertEquals( 200, response.getStatus() );
         response.close();
     }

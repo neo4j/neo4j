@@ -88,7 +88,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 
             // when
             String query = "?implicitlyDisabled" + randomString();
-            JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() + query );
+            JaxRsResponse response = new RestRequest().get( functionalTestHelper.managementUri() + query );
             assertThat( response.getStatus(), is( 200 ) );
             response.close();
 
@@ -132,7 +132,7 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
 
             // when
-            JaxRsResponse response = new RestRequest().get( functionalTestHelper.webAdminUri() + query );
+            JaxRsResponse response = new RestRequest().get( functionalTestHelper.managementUri() + query );
             assertThat( response.getStatus(), is( 200 ) );
             response.close();
 

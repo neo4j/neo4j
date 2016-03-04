@@ -48,7 +48,6 @@ public class WebAdminModule implements ServerModule
         if ( config.get( ServerSettings.webadmin_enabled ) )
         {
             String serverMountPoint = managementApiUri().toString();
-            webServer.addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
             webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );
         }
     }
@@ -66,9 +65,5 @@ public class WebAdminModule implements ServerModule
     @Override
     public void stop()
     {
-        if ( config.get( ServerSettings.webadmin_enabled ) )
-        {
-            webServer.removeStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
-        }
     }
 }
