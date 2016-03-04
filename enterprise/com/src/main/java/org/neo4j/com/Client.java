@@ -111,7 +111,11 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.maxUnusedChannels = maxConcurrentChannels;
         this.comExceptionHandler = getNoOpComExceptionHandler();
         this.destination = new InetSocketAddress( destinationHostNameOrIp, destinationPort );
-        origin = originHostNameOrIp == null ? null : new InetSocketAddress( originHostNameOrIp, 0);
+        if (originHostNameOrIp == null || originHostNameOrIp.equals("0.0.0.0")) {
+            origin = null;
+        } else {
+            origin = new InetSocketAddress( originHostNameOrIp, 0);
+        }
         this.protocol = createProtocol( chunkSize, protocolVersion.getApplicationProtocol() );
         this.responseUnpacker = responseUnpacker;
 
