@@ -64,7 +64,7 @@ public class ProcessMessage implements Action
             newClusterState.queues.put( outgoingMessage.to(), outboundQueue );
         }
 
-        newClusterState.roles.put( member, outcome.getNewRole() );
+        newClusterState.roles.put( member, outcome.getRole() );
         newClusterState.states.put( member, newMemberState );
         newClusterState.queues.put( member, inboundQueue );
         return newClusterState;

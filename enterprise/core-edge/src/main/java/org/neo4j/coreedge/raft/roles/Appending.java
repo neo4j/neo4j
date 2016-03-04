@@ -64,7 +64,7 @@ public class Appending
         long baseIndex = request.prevLogIndex() + 1;
         int offset;
 
-                /* Find possible truncation point. */
+        /* Find possible truncation point. */
         for ( offset = 0; offset < request.entries().length; offset++ )
         {
             long logTerm = state.entryLog().readEntryTerm( baseIndex + offset );

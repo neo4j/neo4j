@@ -105,6 +105,7 @@ public class Candidate implements RaftMessageHandler
                     Appending.appendNewEntry( ctx, outcome, new NewLeaderBarrier() );
 
                     outcome.setLastLogIndexBeforeWeBecameLeader( ctx.entryLog().appendIndex() );
+                    outcome.electedLeader();
                     outcome.setNextRole( LEADER );
                 }
                 break;
