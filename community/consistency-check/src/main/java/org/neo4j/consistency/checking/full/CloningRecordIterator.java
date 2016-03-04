@@ -21,25 +21,36 @@ package org.neo4j.consistency.checking.full;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Resource;
+import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-public class CloningRecordIterable<R extends AbstractBaseRecord> implements Iterable<R>
+public class CloningRecordIterator<R extends AbstractBaseRecord> extends PrefetchingResourceIterator<R>
 {
-    private final Iterable<R> actual;
+    private final Iterator<R> actualIterator;
 
-    public CloningRecordIterable( Iterable<R> actual )
+    public CloningRecordIterator( Iterator<R> actualIterator )
     {
-        this.actual = actual;
+        this.actualIterator = actualIterator;
     }
 
     @Override
-    public Iterator<R> iterator()
+    protected R fetchNextOrNull()
     {
-        return new CloningRecordIterator<>( actual.iterator() );
+        return actualIterator.hasNext() ? (R) actualIterator.next().clone() : null;
     }
 
-    public static <R extends AbstractBaseRecord> Iterable<R> cloned( Iterable<R> actual )
+    @Override
+    public void close()
     {
-        return new CloningRecordIterable<>( actual );
+        if ( actualIterator instanceof Resource )
+        {
+            ((Resource)actualIterator).close();
+        }
+    }
+
+    public static <R extends AbstractBaseRecord> Iterator<R> cloned( Iterator<R> iterator )
+    {
+        return new CloningRecordIterator<>( iterator );
     }
 }

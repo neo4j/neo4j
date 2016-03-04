@@ -19,8 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.util.function.Predicate;
-
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.AbstractStoreProcessor;
 import org.neo4j.consistency.checking.CheckDecorator;
@@ -32,6 +30,8 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicLabelConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.statistics.Counts;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.DEFAULT_QUEUE_SIZE;
-import static org.neo4j.consistency.checking.full.CloningRecordIterable.cloned;
+import static org.neo4j.consistency.checking.full.CloningRecordIterator.cloned;
 import static org.neo4j.consistency.checking.full.RecordDistributor.distributeRecords;
 import static org.neo4j.kernel.impl.store.RecordStore.Scanner.scan;
 
@@ -208,8 +208,7 @@ public class StoreProcessor extends AbstractStoreProcessor
 
     public <R extends AbstractBaseRecord> void applyFilteredParallel( final RecordStore<R> store,
             final ProgressListener progressListener, int numberOfThreads, long recordsPerCpu,
-            final QueueDistributor<R> distributor,
-            Predicate<? super R>... filters )
+            final QueueDistributor<R> distributor )
             throws Exception
     {
         cacheAccess.prepareForProcessingOfSingleStore( recordsPerCpu );
@@ -229,7 +228,12 @@ public class StoreProcessor extends AbstractStoreProcessor
                 store.accept( StoreProcessor.this, record );
             }
         };
-        distributeRecords( numberOfThreads, getClass().getSimpleName(), qSize,
-                cloned( scan( store, stage.isForward(), filters ) ), progressListener, processor, distributor );
+
+        ResourceIterable<R> scan = scan( store, stage.isForward() );
+        try ( ResourceIterator<R> records = scan.iterator() )
+        {
+            distributeRecords( numberOfThreads, getClass().getSimpleName(), qSize,
+                    cloned( records ), progressListener, processor, distributor );
+        }
     }
 }

@@ -54,4 +54,45 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
      * @return whether or not that record is in use.
      */
     boolean next( long id );
+
+    class Delegator<R extends AbstractBaseRecord> implements RecordCursor<R>
+    {
+        private final RecordCursor<R> actual;
+
+        public Delegator( RecordCursor<R> actual )
+        {
+            this.actual = actual;
+        }
+
+        @Override
+        public R get()
+        {
+            return actual.get();
+        }
+
+        @Override
+        public boolean next()
+        {
+            return actual.next();
+        }
+
+        @Override
+        public void close()
+        {
+            actual.close();
+        }
+
+        @Override
+        public RecordCursor<R> init( long id, RecordLoad mode, PageCursor pageCursor )
+        {
+            actual.init( id, mode, pageCursor );
+            return this;
+        }
+
+        @Override
+        public boolean next( long id )
+        {
+            return actual.next( id );
+        }
+    }
 }

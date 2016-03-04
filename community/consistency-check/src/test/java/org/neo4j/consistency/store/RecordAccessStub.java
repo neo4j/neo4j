@@ -61,6 +61,8 @@ import static org.mockito.Mockito.mock;
 
 import static java.util.Collections.singletonMap;
 
+import static org.neo4j.helpers.collection.IteratorUtil.resourceIterable;
+
 public class RecordAccessStub implements RecordAccess
 {
     public static final int SCHEMA_RECORD_TYPE = 255;
@@ -212,14 +214,14 @@ public class RecordAccessStub implements RecordAccess
     public void populateCache()
     {
         CacheTask action = new CacheTask.CacheNextRel( CheckStage.Stage3_NS_NextRel, cacheAccess,
-                new IterableWrapper<NodeRecord,Delta<NodeRecord>>( nodes.values() )
+                resourceIterable( new IterableWrapper<NodeRecord,Delta<NodeRecord>>( nodes.values() )
         {
             @Override
             protected NodeRecord underlyingObjectToObject( Delta<NodeRecord> node )
             {
                 return node.newRecord;
             }
-        } );
+        } ) );
         action.run();
     }
 
