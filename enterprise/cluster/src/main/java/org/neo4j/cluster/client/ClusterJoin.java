@@ -155,8 +155,7 @@ public class ClusterJoin
                 {
                     try
                     {
-                        console.log( "Joined cluster:" +
-                                clusterConfig.get( config.getClusterJoinTimeout(), TimeUnit.MILLISECONDS ) );
+                        console.log( "Joined cluster:" + clusterConfig.get(config.getClusterJoinTimeout(), TimeUnit.MILLISECONDS ));
                         return;
                     }
                     catch ( InterruptedException e )

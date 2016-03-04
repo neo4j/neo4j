@@ -397,11 +397,7 @@ public class NetworkSender
         SocketAddress destination = new InetSocketAddress( clusterUri.getHost(),
                 clusterUri.getPort() == -1 ? config.defaultPort() : clusterUri.getPort() );
         // We must specify the origin address in case the server has multiple IPs per interface
-        SocketAddress origin = null;
-        if ( me.getHost() != null && !me.getHost().equals( "0.0.0.0" ) )
-        {
-            origin = new InetSocketAddress( me.getHost(), 0 );
-        }
+        SocketAddress origin = new InetSocketAddress( me.getHost(), 0 );
 
         msgLog.info( "Attempting to connect from " + origin + " to " + destination );
         ChannelFuture channelFuture = clientBootstrap.connect( destination, origin );

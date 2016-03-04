@@ -19,14 +19,15 @@
  */
 package org.neo4j.test.ha;
 
-import java.net.InetAddress;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.net.InetAddress;
+
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.client.Clusters;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -42,7 +43,9 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
 
 public class ClusterTest
 {
@@ -52,9 +55,10 @@ public class ClusterTest
     @Test
     public void testCluster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterOfSize( 3 ),
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
                 TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
-                MapUtil.stringMap(HaSettings.tx_push_factor.name(), "2"));
+                MapUtil.stringMap(HaSettings.ha_server.name(), ":6001-6005",
+                                  HaSettings.tx_push_factor.name(), "2"));
         try
         {
             clusterManager.start();
@@ -92,10 +96,19 @@ public class ClusterTest
     public void testClusterWithHostnames() throws Throwable
     {
         String hostName = InetAddress.getLocalHost().getHostName();
+        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
+        for ( int i = 0; i < 3; i++ )
+        {
+            cluster.getMembers().add( new Clusters.Member( hostName +":"+(5001 + i), true ) );
+        }
 
-        ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterOfSize( hostName, 3 ),
+        final Clusters clusters = new Clusters();
+        clusters.getClusters().add( cluster );
+
+        ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
                 TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
-                MapUtil.stringMap( HaSettings.tx_push_factor.name(), "2" ));
+                MapUtil.stringMap( HaSettings.ha_server.name(), hostName+":6001-6005",
+                        HaSettings.tx_push_factor.name(), "2" ));
         try
         {
             clusterManager.start();
@@ -126,9 +139,18 @@ public class ClusterTest
     @Test
     public void testClusterWithWildcardIP() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterOfSize( 3 ),
+        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
+        for ( int i = 0; i < 3; i++ )
+        {
+            cluster.getMembers().add( new Clusters.Member( (5001 + i), true ) );
+        }
+
+        final Clusters clusters = new Clusters();
+        clusters.getClusters().add( cluster );
+
+        ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
                 TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
-                MapUtil.stringMap( HaSettings.ha_server.name(), "0.0.0.0:6001-9999",
+                MapUtil.stringMap( HaSettings.ha_server.name(), "0.0.0.0:6001-6005",
                         HaSettings.tx_push_factor.name(), "2" ));
         try
         {
@@ -268,7 +290,7 @@ public class ClusterTest
     @Test
     public void given4instanceClusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( ClusterManager.clusterOfSize( 4 ),
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ),
                 TargetDirectory.forTest( getClass() ).cleanDirectory( "4instances" ), MapUtil.stringMap() );
         try
         {

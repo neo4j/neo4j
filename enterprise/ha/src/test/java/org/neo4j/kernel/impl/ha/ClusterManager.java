@@ -41,7 +41,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -63,7 +62,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
@@ -127,10 +125,9 @@ public class ClusterManager
     }
 
     public static final int NF_OUT = 0x1, NF_IN = 0x2;
-    public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
+
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
-            GraphDatabaseSettings.pagecache_memory.name(), "8m",
-            ClusterClient.clusterJoinTimeout.name(), "60s") );
+            GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
 
     public interface StoreDirInitializer
     {
@@ -226,75 +223,25 @@ public class ClusterManager
      */
     public static Provider clusterOfSize( int memberCount )
     {
-        return clusterOfSize( "127.0.0.1", memberCount );
-    }
-
-    /**
-     * Provides a cluster specification with default values on specified hostname
-     *
-     * @param hostname the hostname/ip-address to bind to
-     * @param memberCount the total number of members in the cluster to start.
-     */
-    public static Provider clusterOfSize( String hostname, int memberCount )
-    {
-        //noinspection unchecked
-        return clustersOfSize( Pair.of( hostname, memberCount ) );
-    }
-
-    /**
-     * Provides cluster specifications with default values, but unique names/ports
-     * @param clusterSizes the sizes of the clusters
-     */
-    public static Provider clustersOfSize( final int... clusterSizes )
-    {
-        Pair[] clusters = new Pair[clusterSizes.length];
-        for ( int i = 0; i < clusterSizes.length; i++ )
-        {
-            clusters[i] = Pair.of( "127.0.0.1", clusterSizes[i] );
-        }
-        //noinspection unchecked
-        return clustersOfSize( clusters );
-    }
-
-    /**
-     * /**
-     * Provides cluster specifications with default values, but unique names/ports
-     * @param clusterHostsAndSizes the hostnames and sizes of the clusters
-     */
-    public static Provider clustersOfSize( Pair<String, Integer>... clusterHostsAndSizes )
-    {
-        final Clusters clusters = new Clusters();
+        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
         HashSet<Integer> takenPorts = new HashSet<>();
-
-        for (int clusterCount = 0; clusterCount < clusterHostsAndSizes.length; clusterCount++)
+        try
         {
-            Clusters.Cluster cluster;
-            // Just to avoid having to fix lots of hardcoded tests
-            if (clusterCount == 0) {
-                cluster = new Clusters.Cluster( "neo4j.ha" );
-            } else {
-                cluster = new Clusters.Cluster( "neo4j.ha" + clusterCount );
-            }
-
-            String hostname = clusterHostsAndSizes[clusterCount].first();
-            int memberCount = clusterHostsAndSizes[clusterCount].other();
-
-            try
+            for ( int i = 0; i < memberCount; i++ )
             {
-                for ( int i = 0; i < memberCount; i++ )
-                {
-                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                    takenPorts.add( port );
-                    cluster.getMembers().add( new Clusters.Member( hostname + ":" + port, true ) );
-                }
-                clusters.getClusters().add( cluster );
-            }
-            catch ( IOException e )
-            {
-                // you can't throw a normal exception in a TestRule
-                throw new AssertionError( "Failed to find an open port" );
+                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                takenPorts.add( port );
+                cluster.getMembers().add( new Clusters.Member( port, true ) );
             }
         }
+        catch ( IOException e )
+        {
+            // you can't throw a normal exception in a TestRule
+            throw new AssertionError( "Failed to find an open port" );
+        }
+
+        final Clusters clusters = new Clusters();
+        clusters.getClusters().add( cluster );
         return provided( clusters );
     }
 
@@ -614,7 +561,7 @@ public class ClusterManager
                 {
                     try
                     {
-                        member.get( DEFAULT_TIMEOUT_SECONDS ).beginTx().close();
+                        member.get().beginTx().close();
                     }
                     catch ( TransactionFailureException e )
                     {
@@ -843,15 +790,15 @@ public class ClusterManager
             untilThen = executor.submit( starter );
         }
 
-        public HighlyAvailableGraphDatabase get( long timeoutSeconds )
+        public HighlyAvailableGraphDatabase get()
         {
             if ( result == null )
             {
                 try
                 {
-                    result = untilThen.get( timeoutSeconds, TimeUnit.SECONDS );
+                    result = untilThen.get();
                 }
-                catch ( InterruptedException | ExecutionException | TimeoutException e )
+                catch ( InterruptedException | ExecutionException e )
                 {
                     throw new RuntimeException( e );
                 }
@@ -987,8 +934,7 @@ public class ClusterManager
             }
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
-                insertInitialData( member.get( DEFAULT_TIMEOUT_SECONDS ), name, member.get( DEFAULT_TIMEOUT_SECONDS )
-                        .getConfig().get( ClusterSettings.server_id ) );
+                insertInitialData( member.get(), name, member.get().getConfig().get( ClusterSettings.server_id ) );
             }
         }
 
@@ -1009,7 +955,7 @@ public class ClusterManager
         {
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
-                member.get( DEFAULT_TIMEOUT_SECONDS ).shutdown();
+                member.get().shutdown();
             }
         }
 
@@ -1023,7 +969,7 @@ public class ClusterManager
                 @Override
                 public HighlyAvailableGraphDatabase apply( HighlyAvailableGraphDatabaseProxy from )
                 {
-                    return from.get( DEFAULT_TIMEOUT_SECONDS );
+                    return from.get();
                 }
             }, members.values() );
         }
@@ -1076,7 +1022,7 @@ public class ClusterManager
          */
         public HighlyAvailableGraphDatabase getMemberByServerId( InstanceId serverId )
         {
-            HighlyAvailableGraphDatabase db = members.get( serverId ).get( DEFAULT_TIMEOUT_SECONDS );
+            HighlyAvailableGraphDatabase db = members.get( serverId ).get();
             if ( db == null )
             {
                 throw new IllegalStateException( "Db " + serverId + " not found at the moment in " + name +
@@ -1108,7 +1054,7 @@ public class ClusterManager
         {
             for ( HighlyAvailableGraphDatabaseProxy highlyAvailableGraphDatabaseProxy : members.values() )
             {
-                if ( highlyAvailableGraphDatabaseProxy.get( DEFAULT_TIMEOUT_SECONDS ).equals( db ) )
+                if ( highlyAvailableGraphDatabaseProxy.get().equals( db ) )
                 {
                     return;
                 }
@@ -1182,7 +1128,7 @@ public class ClusterManager
                 builder.setConfig( ClusterSettings.initial_hosts, initialHosts.toString() );
                 builder.setConfig( ClusterSettings.server_id, serverId + "" );
                 builder.setConfig( ClusterSettings.cluster_server, "0.0.0.0:" + clusterPort );
-                builder.setConfig( HaSettings.ha_server, member.getHostname() + ":" + haPort );
+                builder.setConfig( HaSettings.ha_server, ":" + haPort );
                 builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
                 builder.setConfig( commonConfig );
                 if ( instanceConfig.containsKey( serverId.toIntegerIndex() ) )
@@ -1202,7 +1148,7 @@ public class ClusterManager
                     @Override
                     public void stop() throws Throwable
                     {
-                        graphDatabase.get( DEFAULT_TIMEOUT_SECONDS ).shutdown();
+                        graphDatabase.get().shutdown();
                     }
                 } );
             }
@@ -1213,7 +1159,6 @@ public class ClusterManager
                         ClusterSettings.initial_hosts.name(), initialHosts.toString(),
                         ClusterSettings.server_id.name(), serverId + "",
                         ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort(),
-                        ClusterClient.clusterJoinTimeout.name(), "60s",
                         GraphDatabaseSettings.store_dir.name(),
                         new File( parent, "arbiter" + serverId ).getAbsolutePath() );
                 Config config1 = new Config( config, InternalAbstractGraphDatabase.Configuration.class,

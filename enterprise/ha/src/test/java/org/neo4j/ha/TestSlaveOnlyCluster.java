@@ -41,7 +41,9 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
 
 public class TestSlaveOnlyCluster
 {
@@ -106,7 +108,7 @@ public class TestSlaveOnlyCluster
     private ClusterManager createCluster( String dirname, int... slaveIds ) throws URISyntaxException
     {
         final File dir = directory.cleanDirectory( dirname );
-        final ClusterManager.Provider provider = ClusterManager.clusterOfSize( 3 );
+        final ClusterManager.Provider provider = fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() );
         final Map<Integer, Map<String, String>> instanceConfig = new HashMap<>( slaveIds.length );
         for ( int slaveId : slaveIds )
         {
