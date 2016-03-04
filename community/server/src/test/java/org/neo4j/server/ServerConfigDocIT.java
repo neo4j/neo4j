@@ -70,8 +70,8 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldPickupRelativeUrisForWebAdminAndWebAdminRest() throws IOException
     {
-        String webAdminDataUri = "/a/different/webadmin/data/uri/";
-        String webAdminManagementUri = "/a/different/webadmin/management/uri/";
+        String webAdminDataUri = "/a/different/data/uri/";
+        String webAdminManagementUri = "/a/different/management/uri/";
 
         server = server().withRelativeWebDataAdminUriPath( webAdminDataUri )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
@@ -142,7 +142,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldDisableWebadminWhenAskedTo() throws IOException
+    public void shouldDisableWebadminConsoleWhenAskedTo() throws IOException
     {
         // Given
         server = server().withProperty( ServerSettings.webadmin_enabled.name(), "false" )
@@ -151,7 +151,6 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         server.start();
 
         // When & then
-        assertEquals( 404, new RestRequest().get( "http://localhost:7474/webadmin" ).getStatus() );
         assertEquals( 404, new RestRequest().get( "http://localhost:7474/db/manage/server/console" ).getStatus() );
     }
 

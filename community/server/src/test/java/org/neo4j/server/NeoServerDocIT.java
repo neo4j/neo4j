@@ -41,7 +41,7 @@ public class NeoServerDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRedirectRootToWebadmin() throws Exception
+    public void shouldRedirectRootToBrowser() throws Exception
     {
         assertFalse( server().baseUri()
                 .toString()

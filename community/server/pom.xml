@@ -337,38 +337,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-        <excludes>
-          <exclude>webadmin-html/index.html</exclude>
-        </excludes>
-        <filtering>false</filtering>
-      </resource>
-
-      <resource>
-        <directory>src/main/resources/</directory>
-        <includes>
-          <include>webadmin-html/index.html</include>
-        </includes>
-        <filtering>true</filtering>
-      </resource>
-
-      <resource>
-        <directory>${project.build.directory}/generated-sources</directory>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <targetPath>META-INF</targetPath>
-        <includes>
-          <include>NOTICE.txt</include>
-          <include>LICENSE.txt</include>
-          <include>CHANGES.txt</include>
-          <include>LICENSES.txt</include>
-        </includes>
-      </resource>
-    </resources>
-
     <plugins>
 
       <!-- Development execution -->
@@ -398,19 +366,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
-          <execution>
-            <id>static-web</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <attach>true</attach>
-              <descriptors>
-                <descriptor>src/main/assemblies/static-web.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
           <execution>
             <id>sources</id>
             <phase>package</phase>
@@ -454,11 +409,6 @@
             <include>src/**/*.scala</include>
             <include>src/**/*.xml</include>
           </includes>
-          <excludes>
-            <exclude>**/lib/*.js</exclude>
-            <exclude>**/lib/**/*.js</exclude>
-            <exclude>**/webadmin-html/**</exclude>
-          </excludes>
           <mapping>
             <scala>JAVADOC_STYLE</scala>
           </mapping>
@@ -480,7 +430,6 @@
                 </manifest>
               </archive>
               <excludes>
-                <exclude>webadmin-html/**</exclude>
                 <exclude>lib/**</exclude>
               </excludes>
             </configuration>
@@ -711,82 +660,6 @@
           <value>all</value>
         </property>
       </activation>
-    </profile>
-
-    <profile>
-      <id>neodev</id>
-      <!-- Expands the number of things skipped by the neodev profile defined in parent-central pom. This is meant to be used by maven exec, it does not guarantee producing working artifacts. -->
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>static-web</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>skip-brew</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.voltvoodoo</groupId>
-            <artifactId>brew</artifactId>
-            <executions>
-              <execution>
-                <id>compile-webadmin</id>
-                <phase>none</phase>
-              </execution>
-              <execution>
-                <id>minify-webadmin</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>com.github.searls</groupId>
-            <artifactId>jasmine-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>webadmin-specs</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <!-- Firefox is default implementation, set in properties at the top of this file. -->
-    <profile>
-      <id>chrome-mac</id>
-      <properties>
-        <webdriver.implementation>Chrome</webdriver.implementation>
-      </properties>
-    </profile>
-    <profile>
-      <id>sauce-labs-firefox-windows</id>
-      <properties>
-        <webdriver.implementation>SauceLabsFirefoxWindows</webdriver.implementation>
-      </properties>
-    </profile>
-    <profile>
-      <id>sauce-labs-chrome-windows</id>
-      <properties>
-        <webdriver.implementation>SauceLabsChromeWindows</webdriver.implementation>
-      </properties>
-    </profile>
-    <profile>
-      <id>sauce-labs-internet-explorer-windows</id>
-      <properties>
-        <webdriver.implementation>SauceLabsInternetExplorerWindows</webdriver.implementation>
-      </properties>
     </profile>
 
     <profile>
