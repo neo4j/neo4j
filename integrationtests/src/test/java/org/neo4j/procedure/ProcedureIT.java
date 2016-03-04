@@ -108,7 +108,8 @@ public class ProcedureIT
         //Expect
         exception.expect( QueryExecutionException.class );
         exception.expectMessage(
-                "Failed to invoke procedure `org.neo4j.procedure.simpleArgument`: Procedure `org.neo4j.procedure.simpleArgument` takes 1 arguments but 0 was provided.");
+                "Failed to invoke procedure `org.neo4j.procedure.simpleArgument`: Caused by: org.neo4j.kernel.api.exceptions.ProcedureException: " +
+                "Procedure `org.neo4j.procedure.simpleArgument` takes 1 arguments but 0 was provided.");
         // When
         try ( Transaction ignore = db.beginTx() )
         {
@@ -227,6 +228,22 @@ public class ProcedureIT
 
             // When
             result.next();
+        }
+    }
+
+    @Test
+    public void shouldShowCauseOfError() throws Throwable
+    {
+        // Given
+        // run in tx to avoid having to wait for tx rollback on shutdown
+        try( Transaction ignore = db.beginTx() )
+        {
+            // Expect
+            exception.expect( QueryExecutionException.class );
+            exception.expectMessage(
+                    "Failed to invoke procedure `org.neo4j.procedure.indexOutOfBounds`: Caused by: java.lang.ArrayIndexOutOfBoundsException: 4" );
+            // When
+            db.execute( "CALL org.neo4j.procedure.indexOutOfBounds" );
         }
     }
 
@@ -442,7 +459,7 @@ public class ProcedureIT
     {
         // Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Failed to invoke procedure `org.neo4j.procedure.shutdown`: `java.lang.UnsupportedOperationException` was thrown when invoking the procedure." );
+        exception.expectMessage( "Failed to invoke procedure `org.neo4j.procedure.shutdown`: Caused by: java.lang.UnsupportedOperationException" );
 
         try ( Transaction ignore = db.beginTx() )
         {
@@ -635,6 +652,14 @@ public class ProcedureIT
         public Stream<Output> throwsExceptionInStream()
         {
             return Stream.generate( () -> { throw new RuntimeException( "Kaboom" ); } );
+        }
+
+        @Procedure
+        public Stream<Output> indexOutOfBounds()
+        {
+            int[] ints = {1, 2, 3};
+            int foo = ints[4];
+            return Stream.of( new Output(  ));
         }
 
         @Procedure
