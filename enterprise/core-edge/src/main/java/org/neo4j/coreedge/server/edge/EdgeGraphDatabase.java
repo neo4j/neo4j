@@ -38,6 +38,6 @@ public class EdgeGraphDatabase extends GraphDatabaseFacade
     public EdgeGraphDatabase( File storeDir, Map<String, String> params, Dependencies
             dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
-        new EnterpriseEdgeFacadeFactory( discoveryServiceFactory ).newFacade( storeDir, params, dependencies, this );
+        new EnterpriseEdgeFacadeFactory( discoveryServiceFactory ).initFacade( storeDir, params, dependencies, this );
     }
 }

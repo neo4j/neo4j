@@ -39,7 +39,7 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
                               GraphDatabaseFacadeFactory.Dependencies dependencies,
                               DiscoveryServiceFactory discoveryServiceFactory )
     {
-        new EnterpriseCoreFacadeFactory( discoveryServiceFactory ).newFacade( storeDir, params, dependencies, this );
+        new EnterpriseCoreFacadeFactory( discoveryServiceFactory ).initFacade( storeDir, params, dependencies, this );
 
         // See same thing in HighlyAvailableGraphDatabase for details
         raft = getDependencyResolver().resolveDependency( RaftInstance.class );

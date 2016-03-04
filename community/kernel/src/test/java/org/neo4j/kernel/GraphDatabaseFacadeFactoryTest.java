@@ -78,7 +78,7 @@ public class GraphDatabaseFacadeFactoryTest
         try
         {
             // When
-            db.newFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
+            db.initFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
         catch ( RuntimeException exception )
@@ -100,7 +100,7 @@ public class GraphDatabaseFacadeFactoryTest
         try
         {
             // When
-            db.newFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
+            db.initFacade( dir.graphDbDir(), Collections.<String,String>emptyMap(), deps, mockFacade );
             fail( "Should have thrown " + RuntimeException.class );
         }
         catch ( RuntimeException exception )

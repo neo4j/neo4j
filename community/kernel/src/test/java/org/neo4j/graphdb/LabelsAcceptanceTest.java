@@ -645,7 +645,7 @@ public class LabelsAcceptanceTest
                                     {
                                         return new ImpermanentPlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade );
                                     }
-                                }.newFacade( storeDir, params, dependencies, this );
+                                }.initFacade( storeDir, params, dependencies, this );
                             }
                         };
                     }
