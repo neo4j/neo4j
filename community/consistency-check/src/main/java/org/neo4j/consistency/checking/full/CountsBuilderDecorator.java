@@ -125,8 +125,8 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
     {
         this.storeAccess = storeAccess;
         this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
-        this.nodeCountBuildCondition = new MultiPassAvoidanceCondition<>();
-        this.relationshipCountBuildCondition = new MultiPassAvoidanceCondition<>();
+        this.nodeCountBuildCondition = new MultiPassAvoidanceCondition<>( 0 );
+        this.relationshipCountBuildCondition = new MultiPassAvoidanceCondition<>( 1 );
     }
 
     @Override
@@ -330,28 +330,25 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
 
     private static class MultiPassAvoidanceCondition<T extends AbstractBaseRecord> implements Predicate<T>
     {
-        private boolean used;
-        private boolean done;
+        // Stage which this condition is active, starting from 0, mimicing the CheckStage ordinal
+        private final int activeStage;
+        // The same thread updates this every time, the TaskExecutor. Other threads read it
+        private volatile int stage = -1;
+
+        public MultiPassAvoidanceCondition( int activeStage )
+        {
+            this.activeStage = activeStage;
+        }
 
         public void prepare()
         {
-            if ( used )
-            {
-                done = true;
-            }
+            stage++;
         }
 
         @Override
         public boolean test( T record )
         {
-            try
-            {
-                return !done;
-            }
-            finally
-            {
-                used = true;
-            }
+            return stage == activeStage;
         }
     }
 
