@@ -20,9 +20,8 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.IoProducerStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.Math.min;
@@ -31,18 +30,15 @@ import static java.lang.Math.min;
  * Reads from {@link RelationshipStore} backwards and produces batches of {@link RelationshipRecord} for others
  * to process.
  */
-public class ReadRelationshipRecordsBackwardsStep extends IoProducerStep
+public class ReadRelationshipRecordsBackwardsStep extends ReadRecordsStep<RelationshipRecord>
 {
-    private final RelationshipStore store;
-    private final long highId;
     private long id;
 
     public ReadRelationshipRecordsBackwardsStep( StageControl control, Configuration config,
             RelationshipStore store )
     {
-        super( control, config );
-        this.store = store;
-        this.highId = this.id = store.getHighId();
+        super( control, config, store );
+        id = highId;
     }
 
     @Override
@@ -52,8 +48,8 @@ public class ReadRelationshipRecordsBackwardsStep extends IoProducerStep
         RelationshipRecord[] batch = new RelationshipRecord[size];
         for ( int i = 0; i < size; i++ )
         {
-            batch[i] = new RelationshipRecord( --id );
-            store.getRecord( batch[i].getId(), batch[i], RecordLoad.CHECK );
+            cursor.next( --id );
+            batch[i] = record.clone();
         }
         return size > 0 ? batch : null;
     }
@@ -61,6 +57,6 @@ public class ReadRelationshipRecordsBackwardsStep extends IoProducerStep
     @Override
     protected long position()
     {
-        return (highId-id) * store.getRecordSize();
+        return (highId - id) * store.getRecordSize();
     }
 }
