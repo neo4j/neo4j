@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -36,7 +35,7 @@ import org.neo4j.shell.ShellSettings;
 
 import static java.util.Arrays.asList;
 
-import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class ConfigLoader
@@ -103,8 +102,11 @@ public class ConfigLoader
     {
         config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
         config.putIfAbsent( GraphDatabaseSettings.logs_directory.name(), "logs" );
-        config.putIfAbsent( connector( 0, BoltKernelExtension.Settings.enabled ).name(), "true" );
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
+
+        // TODO: This should not be here, it's a temporary workaround for the windows packages
+        //       this means we override and enable a bolt connector if there is not one explicitly set to disabled
+        config.putIfAbsent( boltConnector( "0" ).enabled.name(), "true" );
     }
 
     private static Map<String, String> loadFromFile( Log log, File file )

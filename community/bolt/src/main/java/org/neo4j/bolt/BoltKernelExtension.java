@@ -28,10 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -39,6 +37,7 @@ import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.Netty4LogBridge;
 import org.neo4j.bolt.transport.NettyServer;
+import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.v1.runtime.MonitoredSessions;
 import org.neo4j.bolt.v1.runtime.Sessions;
@@ -51,11 +50,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigGroups;
-import org.neo4j.kernel.configuration.ConfigValues;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -68,15 +66,13 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 
-import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.OPTIONAL;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
+import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 import static org.neo4j.kernel.configuration.Settings.ANY;
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
-import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 
@@ -88,20 +84,6 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 {
     public static class Settings
     {
-        public static final Function<ConfigValues,List<Configuration>> connector_group =
-                ConfigGroups.groups( "dbms.connector" );
-
-        @Description( "Enable Neo4j Bolt" )
-        public static final Setting<Boolean> enabled = setting( "enabled", BOOLEAN, "false" );
-
-        @Description( "Set the encryption level for Neo4j Bolt protocol ports" )
-        public static final Setting<EncryptionLevel> tls_level =
-                setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() );
-
-        @Description( "Host and port for the Neo4j Bolt Protocol" )
-        public static final Setting<HostnamePort> socket_address =
-                setting( "address", HOSTNAME_PORT, "localhost:7687" );
-
         @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
         public static Setting<File> tls_certificate_file = setting(
                 "dbms.security.tls_certificate_file", PATH, "neo4j-home/ssl/snakeoil.cert" );
@@ -115,51 +97,6 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 setting( "org.neo4j.server.webserver.address", STRING,
                         "localhost", illegalValueMessage( "Must be a valid hostname", org.neo4j.kernel.configuration
                                 .Settings.matches( ANY ) ) );
-
-
-        public static <T> Setting<T> connector( int i, Setting<T> setting )
-        {
-            String name = String.format( "dbms.connector.%s", i );
-            return new Setting<T>()
-            {
-                @Override
-                public String name()
-                {
-                    return String.format( "%s.%s", name, setting.name() );
-                }
-
-                @Override
-                public String getDefaultValue()
-                {
-                    return setting.getDefaultValue();
-                }
-
-                @Override
-                public T apply( Function<String,String> settings )
-                {
-                    return setting.apply( settings );
-                }
-
-                @Override
-                public int hashCode()
-                {
-                    return name().hashCode();
-                }
-
-                @Override
-                public boolean equals( Object obj )
-                {
-                    return obj instanceof Setting<?> && ((Setting<?>) obj).name().equals( name() );
-                }
-            };
-        }
-    }
-
-    public enum EncryptionLevel
-    {
-        REQUIRED,
-        OPTIONAL,
-        DISABLED
     }
 
     public interface Dependencies
@@ -206,40 +143,36 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                                         dependencies.txBridge() ) ),
                                 scheduler, logging ), Clock.systemUTC() );
 
-        List<NettyServer.ProtocolInitializer> connectors = new ArrayList<>();
+        List<ProtocolInitializer> connectors = config
+                .view( enumerate( GraphDatabaseSettings.Connector.class ) )
+                .map( BoltConnector::new )
+                .filter( (connConfig) -> "bolt".equals(config.get( connConfig.type ))
+                                        && config.get( connConfig.enabled ) )
+                .map( (connConfig) -> {
+                    SslContext sslCtx;
+                    boolean requireEncryption = false;
+                    switch ( config.get( connConfig.encryption_level ) )
+                    {
+                    // self signed cert should be generated when encryption is REQUIRED or OPTIONAL on the server
+                    // while no cert is generated if encryption is DISABLED
+                    case REQUIRED:
+                        requireEncryption = true;
+                        // no break here
+                    case OPTIONAL:
+                        sslCtx = createSslContext( config, log );
+                        break;
+                    default:
+                        // case DISABLED:
+                        sslCtx = null;
+                        break;
+                    }
 
-        List<Configuration> view = config.view( Settings.connector_group );
-        for ( Configuration connector : view )
-        {
-            final HostnamePort socketAddress = connector.get( Settings.socket_address );
-
-            if ( connector.get( Settings.enabled ) )
-            {
-                SslContext sslCtx;
-                boolean requireEncryption = false;
-                switch ( connector.get( Settings.tls_level ) )
-                {
-                // self signed cert should be generated when encryption is REQUIRED or OPTIONAL on the server
-                // while no cert is generated if encryption is DISABLED
-                case REQUIRED:
-                    requireEncryption = true;
-                    // no break here
-                case OPTIONAL:
-                    KeyStoreInformation keyStore = createKeyStore( config, log );
-                    sslCtx = SslContextBuilder.forServer( keyStore.getCertificatePath(), keyStore.getPrivateKeyPath() )
-                            .build();
-                    break;
-                default:
-                    // case DISABLED:
-                    sslCtx = null;
-                    break;
-                }
-
-                connectors.add( new SocketTransport( socketAddress, sslCtx, logging.getInternalLogProvider(),
-                        newVersions( logging,
-                                requireEncryption ? new EncryptionRequiredSessions( sessions ) : sessions) ) );
-            }
-        }
+                    return new SocketTransport( config.get( connConfig.address ),
+                            sslCtx, logging.getInternalLogProvider(),
+                            newVersions( logging, requireEncryption ?
+                                                  new EncryptionRequiredSessions( sessions ) : sessions) );
+                })
+                .collect( toList() );
 
         if ( connectors.size() > 0 )
         {
@@ -248,6 +181,22 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         }
 
         return life;
+    }
+
+    private SslContext createSslContext( Config config, Log log )
+    {
+        try
+        {
+            KeyStoreInformation keyStore = createKeyStore( config, log );
+            return SslContextBuilder
+                    .forServer( keyStore.getCertificatePath(), keyStore.getPrivateKeyPath() )
+                    .build();
+        }
+        catch(IOException | OperatorCreationException | GeneralSecurityException e )
+        {
+            throw new RuntimeException( "Failed to initilize SSL encryption support, which is required to start this " +
+                                        "connector. Error was: " + e.getMessage(), e );
+        }
     }
 
     private PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> newVersions( LogService logging,

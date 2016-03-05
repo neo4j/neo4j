@@ -31,8 +31,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.AbstractNeoServer;
 
-import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.socket_address;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 public class InProcessServerControls implements ServerControls
 {
@@ -50,7 +49,7 @@ public class InProcessServerControls implements ServerControls
     @Override
     public URI boltURI()
     {
-        HostnamePort address = server.getConfig().get( connector( 0, socket_address ) );
+        HostnamePort address = server.getConfig().get( boltConnector( "0" ).address );
         return URI.create( "bolt://" + address.getHost() + ":" + address.getPort() );
     }
 

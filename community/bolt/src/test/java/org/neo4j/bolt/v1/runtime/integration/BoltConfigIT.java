@@ -22,7 +22,6 @@ package org.neo4j.bolt.v1.runtime.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
@@ -35,11 +34,11 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.REQUIRED;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.REQUIRED;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 public class BoltConfigIT
 {
@@ -47,11 +46,11 @@ public class BoltConfigIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket(
             settings -> {
-                settings.put( connector(0, BoltKernelExtension.Settings.enabled), "true");
-                settings.put( connector(0, BoltKernelExtension.Settings.socket_address), "localhost:7888");
-                settings.put( connector(1, BoltKernelExtension.Settings.enabled), "true");
-                settings.put( connector(1, BoltKernelExtension.Settings.socket_address), "localhost:7687");
-                settings.put( connector(1, BoltKernelExtension.Settings.tls_level), REQUIRED.name() );
+                settings.put( boltConnector("0").enabled, "true" );
+                settings.put( boltConnector("0").address, "localhost:7888" );
+                settings.put( boltConnector("1").enabled, "true" );
+                settings.put( boltConnector("1").address, "localhost:7687" );
+                settings.put( boltConnector("1").encryption_level, REQUIRED.name() );
             } );
 
     @Test

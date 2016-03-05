@@ -38,8 +38,8 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.OPTIONAL;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 public class Neo4jWithSocket implements TestRule
 {
@@ -71,8 +71,8 @@ public class Neo4jWithSocket implements TestRule
             public void evaluate() throws Throwable
             {
                 Map<Setting<?>, String> settings = new HashMap<>();
-                settings.put( connector( 0, BoltKernelExtension.Settings.enabled ), "true" );
-                settings.put( connector( 0, BoltKernelExtension.Settings.tls_level ), OPTIONAL.name() );
+                settings.put( boltConnector( "0" ).enabled, "true" );
+                settings.put( boltConnector( "0" ).encryption_level, OPTIONAL.name() );
                 settings.put( BoltKernelExtension.Settings.tls_key_file, tempPath( "key", ".key" ) );
                 settings.put( BoltKernelExtension.Settings.tls_certificate_file, tempPath( "cert", ".cert" ) );
                 configure.accept( settings );

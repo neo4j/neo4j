@@ -26,10 +26,8 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.bolt.BoltKernelExtension;
-import org.neo4j.bolt.BoltKernelExtension.EncryptionLevel;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
 
@@ -163,15 +161,6 @@ public interface ServerSettings
 
     @Description("Timeout for idle transactions.")
     Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
-
-    @Description("Enable the Bolt protocol")
-    Setting<Boolean> bolt_enabled = BoltKernelExtension.Settings.enabled;
-
-    @Description("Set the encryption level for Neo4j Bolt protocol ports")
-    Setting<EncryptionLevel> bolt_tls_level = BoltKernelExtension.Settings.tls_level;
-
-    @Description("Host and port for Bolt protocol")
-    Setting<HostnamePort> bolt_socket_address = BoltKernelExtension.Settings.socket_address;
 
     @Internal
     Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" );

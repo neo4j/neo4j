@@ -26,9 +26,12 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
+import org.neo4j.kernel.configuration.Group;
+import org.neo4j.kernel.configuration.GroupSettingSupport;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Title;
@@ -37,8 +40,30 @@ import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.logging.Level;
 
 import static java.lang.String.valueOf;
-
-import static org.neo4j.kernel.configuration.Settings.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.kernel.configuration.Settings.ANY;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
+import static org.neo4j.kernel.configuration.Settings.DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.DOUBLE;
+import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
+import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.LONG;
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
+import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
+import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.matches;
+import static org.neo4j.kernel.configuration.Settings.max;
+import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -431,6 +456,68 @@ public abstract class GraphDatabaseSettings
 
     @Internal
     public static final Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
+
+    // Bolt Settings
+
+    @Group("dbms.connector")
+    public static class Connector
+    {
+        @Description( "Enable this connector" )
+        public final Setting<Boolean> enabled;
+
+        @Description( "Connector type, for instance `bolt` to configure a Bolt connector." )
+        public final Setting<String> type;
+
+        // Note: Be careful about adding things here that does not apply to all connectors,
+        //       consider future options like non-tcp transports, making `address` a bad choice
+        //       as a setting that applies to every connector, for instance.
+
+        protected final GroupSettingSupport group;
+
+        // For sub-classes, we provide this protected constructor that allows overriding
+        // the default 'type' setting value.
+        protected Connector( String key, String typeDefault )
+        {
+            group = new GroupSettingSupport( Connector.class, key );
+            enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );
+            type = group.scope( setting( "type", STRING, typeDefault ) );
+        }
+    }
+
+    public static class BoltConnector extends Connector
+    {
+        @Description( "Encryption level to require this connector to use" )
+        public final Setting<EncryptionLevel> encryption_level;
+
+        @Description( "Address the connector should bind to" )
+        public final Setting<HostnamePort> address;
+
+        public BoltConnector(String key)
+        {
+            super(key, /* type=*/"bolt");
+            encryption_level = group.scope(
+                    setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ));
+            address = group.scope( setting( "address", HOSTNAME_PORT, "localhost:7687" ) );
+        }
+
+        public enum EncryptionLevel
+        {
+            REQUIRED,
+            OPTIONAL,
+            DISABLED
+        }
+    }
+
+    /**
+     * Short-hand for creating a new Bolt connector settings group.
+     * Use this to configure a new or modify an existing Bolt connector.
+     * @param key a unique identifier for this connector
+     * @return an object that can be used to set configuration for the Bolt connector with the given key
+     */
+    public static BoltConnector boltConnector( String key )
+    {
+        return new BoltConnector( key );
+    }
 
     /**
      * Uses the default selected record format to figure out the correct dynamic record data size to create
