@@ -75,6 +75,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
@@ -496,12 +497,10 @@ public class ImportTool
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
-            private static final int WRITE_BUFFER_SIZE_FOR_TEST = 1024 * 1024 * 8; // 8 MiB
-
             @Override
-            public int writeBufferSize()
+            public long pageSize()
             {
-                return defaultSettingsSuitableForTests? WRITE_BUFFER_SIZE_FOR_TEST : super.writeBufferSize();
+                return defaultSettingsSuitableForTests ? kibiBytes( 32 ) : super.pageSize();
             }
 
             @Override

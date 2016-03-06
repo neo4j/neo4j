@@ -39,7 +39,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingPropertyRecordAccess;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.Math.max;
-import static org.neo4j.unsafe.impl.batchimport.Batch.EMPTY;
 
 /**
  * Writes {@link RECORD entity batches} to the underlying stores. Also makes final composition of the
@@ -141,8 +140,6 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
 
         monitor.entitiesWritten( records[0].getClass(), records.length-skipped );
         monitor.propertiesWritten( propertyBlockCursor );
-
-        sender.send( EMPTY ); // allow for the store flusher step right after us to execute
     }
 
     private void reassignDynamicRecordIds( PropertyBlock[] blocks, int offset, int length )

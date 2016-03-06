@@ -63,6 +63,5 @@ public class NodeStage extends Stage
         add( new LabelScanStorePopulationStep( control(), config, labelScanStore ) );
         add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
                 writeMonitor, storeUpdateMonitor ) );
-        add( new StoreFlusherStep( control(), config, nodeStore, propertyStore ) );
     }
 }
