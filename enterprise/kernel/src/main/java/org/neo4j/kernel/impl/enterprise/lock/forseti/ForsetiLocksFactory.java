@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
-@Service.Implementation(Locks.Factory.class)
+@Service.Implementation( Locks.Factory.class )
 public class ForsetiLocksFactory extends Locks.Factory
 {
     public ForsetiLocksFactory()
