@@ -21,12 +21,10 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.IoProducerStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static java.lang.Math.min;
-
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
  * Reads from {@link NodeStore} and produces batches of {@link NodeRecord} for others to process.
@@ -34,29 +32,25 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  * Future: Would be quite efficient just get a page cursor and read inUse+labelField and store
  * all labelField values of a batch in one long[] or similar, instead of passing on a NodeRecord[].
  */
-public class ReadNodeRecordsStep extends IoProducerStep
+public class ReadNodeRecordsStep extends ReadRecordsStep<NodeRecord>
 {
-    private final NodeStore nodeStore;
-    private final long highId;
     private long id;
 
     public ReadNodeRecordsStep( StageControl control, Configuration config, NodeStore nodeStore )
     {
-        super( control, config );
-        this.nodeStore = nodeStore;
-        this.highId = nodeStore.getHighId();
+        super( control, config, nodeStore );
     }
 
     @Override
     protected Object nextBatchOrNull( long ticket, int batchSize )
     {
-        int size = (int) min( batchSize, highId-id );
+        int size = (int) min( batchSize, highId - id );
         NodeRecord[] batch = new NodeRecord[size];
         for ( int i = 0; i < size; i++ )
         {
             // We don't want null in batch[i], a record, whether used or unused is what we want
-            nodeStore.getRecord( id, batch[i] = nodeStore.newRecord(), CHECK );
-            id++;
+            cursor.next( id++ );
+            batch[i] = record.clone();
         }
         return size > 0 ? batch : null;
     }
@@ -64,6 +58,6 @@ public class ReadNodeRecordsStep extends IoProducerStep
     @Override
     protected long position()
     {
-        return id * nodeStore.getRecordSize();
+        return id * store.getRecordSize();
     }
 }

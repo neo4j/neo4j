@@ -22,28 +22,23 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.IoProducerStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Reads from {@link RelationshipStore} and produces batches of startNode,type,endNode values for
  * others to process. The result is one long[] with all values in.
  */
-public class ReadRelationshipCountsDataStep extends IoProducerStep
+public class ReadRelationshipCountsDataStep extends ReadRecordsStep<RelationshipRecord>
 {
-    private final RelationshipStore store;
-    private final RelationshipRecord record = new RelationshipRecord( -1 );
-    private final long highestId;
     private long id = -1;
+    private final long highestId;
 
-    public ReadRelationshipCountsDataStep( StageControl control, Configuration config,
-            RelationshipStore store )
+    public ReadRelationshipCountsDataStep( StageControl control, Configuration config, RelationshipStore store )
     {
-        super( control, config );
-        this.store = store;
-        this.highestId = store.getHighestPossibleIdInUse();
+        super( control, config, store );
+        this.highestId = highId - 1;
     }
 
     @Override
@@ -58,7 +53,7 @@ public class ReadRelationshipCountsDataStep extends IoProducerStep
         int i = 0;
         for ( ; i < batchSize && ++id <= highestId; )
         {
-            if ( store.getRecord( id, record, RecordLoad.CHECK ).inUse() )
+            if ( cursor.next( id ) )
             {
                 int index = i++ * 3;
                 batch[index++] = record.getFirstNode();
