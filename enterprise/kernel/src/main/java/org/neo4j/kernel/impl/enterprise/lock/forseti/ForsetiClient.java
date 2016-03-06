@@ -156,7 +156,7 @@ public class ForsetiClient implements Locks.Client
             if(heldCount != -1)
             {
                 // We already have a lock on this, just increment our local reference counter.
-                heldShareLocks.put( resourceId, heldCount + 1 );
+                heldShareLocks.put( resourceId, Math.incrementExact( heldCount ) );
                 return;
             }
 
@@ -263,7 +263,7 @@ public class ForsetiClient implements Locks.Client
             if(heldCount != -1)
             {
                 // We already have a lock on this, just increment our local reference counter.
-                heldLocks.put( resourceId, heldCount + 1 );
+                heldLocks.put( resourceId, Math.incrementExact( heldCount ) );
                 return;
             }
 
@@ -321,7 +321,7 @@ public class ForsetiClient implements Locks.Client
             if(heldCount != -1)
             {
                 // We already have a lock on this, just increment our local reference counter.
-                heldLocks.put( resourceId, heldCount + 1 );
+                heldLocks.put( resourceId, Math.incrementExact( heldCount ) );
                 return true;
             }
 
@@ -376,7 +376,7 @@ public class ForsetiClient implements Locks.Client
             if ( heldCount != -1 )
             {
                 // We already have a lock on this, just increment our local reference counter.
-                heldShareLocks.put( resourceId, heldCount + 1 );
+                heldShareLocks.put( resourceId, Math.incrementExact( heldCount ) );
                 return true;
             }
 
@@ -705,10 +705,19 @@ public class ForsetiClient implements Locks.Client
 
         if(lockCount > 1)
         {
-            localLocks.put( resourceId, lockCount-1 );
+            localLocks.put( resourceId, decrementExactToZero( lockCount ) );
             return true;
         }
         return false;
+    }
+
+    private static int decrementExactToZero( int value )
+    {
+        if ( value == 0 )
+        {
+            throw new ArithmeticException();
+        }
+        return value - 1;
     }
 
     /** Attempt to upgrade a share lock to an exclusive lock, grabbing the share lock if we don't hold it. */

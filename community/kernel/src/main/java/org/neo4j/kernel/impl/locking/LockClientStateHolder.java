@@ -136,6 +136,6 @@ public final class LockClientStateHolder
 
     private int statusWithUpdatedClients( int clientState, int delta )
     {
-        return getStatus( clientState ) | (getActiveClients( clientState ) + delta);
+        return getStatus( clientState ) | Math.addExact(getActiveClients( clientState ), delta);
     }
 }
