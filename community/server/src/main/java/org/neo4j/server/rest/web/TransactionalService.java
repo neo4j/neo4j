@@ -45,7 +45,10 @@ import org.neo4j.server.rest.transactional.TransactionHandle;
 import org.neo4j.server.rest.transactional.TransactionTerminationHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
+import org.neo4j.udc.UsageData;
 
+import static org.neo4j.udc.UsageDataKeys.Features.http_tx_endpoint;
+import static org.neo4j.udc.UsageDataKeys.features;
 
 /**
  * This does basic mapping from HTTP to {@link org.neo4j.server.rest.transactional.TransactionFacade}, and should not
@@ -55,11 +58,13 @@ import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 public class TransactionalService
 {
     private final TransactionFacade facade;
+    private final UsageData usage;
     private final TransactionUriScheme uriScheme;
 
-    public TransactionalService( @Context TransactionFacade facade, @Context UriInfo uriInfo )
+    public TransactionalService( @Context TransactionFacade facade, @Context UriInfo uriInfo, @Context UsageData usage )
     {
         this.facade = facade;
+        this.usage = usage;
         this.uriScheme = new TransactionUriBuilder( uriInfo );
     }
 
@@ -71,6 +76,7 @@ public class TransactionalService
     {
         try
         {
+            usage.get( features ).flag( http_tx_endpoint );
             TransactionHandle transactionHandle = facade.newTransactionHandle( uriScheme, false, AccessMode.FULL );
             return createdResponse( transactionHandle, executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request ) );
         }

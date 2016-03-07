@@ -91,8 +91,8 @@ public interface JobScheduler extends Lifecycle
      * This is an exhaustive list of job types that run in the database. It should be expanded as needed for new groups
      * of jobs.
      *
-     * For now, this does naming only, but it will allow us to define per-group configuration, such as how to handle
-     * failures, shared threads and (later on) affinity strategies.
+     * For now, this does minimal configuration, but opens up for things like common
+     * failure handling, shared threads and affinity strategies.
      */
     class Groups
     {
@@ -150,6 +150,11 @@ public interface JobScheduler extends Lifecycle
          * Reporting thread for Metrics events
          */
         public static final Group metricsEvent = new Group( "MetricsEvent", POOLED );
+
+        /**
+         * UDC timed events.
+         */
+        public static Group udc  = new Group( "UsageDataCollection", POOLED );
     }
 
     interface JobHandle

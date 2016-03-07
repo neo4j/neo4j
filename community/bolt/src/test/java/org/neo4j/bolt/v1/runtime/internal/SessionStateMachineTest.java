@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -57,7 +58,7 @@ public class SessionStateMachineTest
     private final ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private final Transaction tx = mock( TopLevelTransaction.class );
     private final KernelTransaction ktx = mock( KernelTransaction.class );
-    private final UsageData usageData = new UsageData();
+    private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
     private final StatementRunner runner = mock( StatementRunner.class );
     private final SessionStateMachine machine = new SessionStateMachine(
             usageData, db, txBridge, runner, NullLogService.getInstance(), Authentication.NONE );

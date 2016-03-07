@@ -66,11 +66,13 @@ public class TestSessions implements TestRule, Sessions
                 gdb = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
                 Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
                 DependencyResolver resolver = gdb.getDependencyResolver();
-                ThreadToStatementContextBridge txBridge =
-                        resolver.resolveDependency( ThreadToStatementContextBridge.class );
-                StandardSessions sessions = life.add( new StandardSessions( gdb, new UsageData(),
-                        NullLogService.getInstance(), txBridge ) );
-                actual = new ThreadedSessions( sessions, scheduler, NullLogService.getInstance() );
+                StandardSessions sessions = life.add(
+                        new StandardSessions( gdb, new UsageData( scheduler ), NullLogService.getInstance(),
+                                resolver.resolveDependency( ThreadToStatementContextBridge.class ))
+                );
+                actual = new ThreadedSessions(
+                        sessions,
+                        scheduler, NullLogService.getInstance() );
 
                 life.start();
                 try

@@ -37,6 +37,10 @@ import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.udc.UsageData;
+
+import static org.neo4j.udc.UsageDataKeys.Features.http_cypher_endpoint;
+import static org.neo4j.udc.UsageDataKeys.features;
 
 @Path("/cypher")
 public class CypherService
@@ -50,15 +54,17 @@ public class CypherService
     private static final String PROFILE_PARAM = "profile";
 
     private final CypherExecutor cypherExecutor;
+    private final UsageData usage;
     private final OutputFormat output;
     private final InputFormat input;
 
     public CypherService( @Context CypherExecutor cypherExecutor, @Context InputFormat input,
-                          @Context OutputFormat output )
+                          @Context OutputFormat output, @Context UsageData usage )
     {
         this.cypherExecutor = cypherExecutor;
         this.input = input;
         this.output = output;
+        this.usage = usage;
     }
 
     public OutputFormat getOutputFormat()
@@ -74,6 +80,7 @@ public class CypherService
                            @QueryParam( INCLUDE_PLAN_PARAM ) boolean includePlan,
                            @QueryParam( PROFILE_PARAM ) boolean profile) throws BadInputException {
 
+        usage.get( features ).flag( http_cypher_endpoint );
         Map<String,Object> command = input.readMap( body );
 
         if( !command.containsKey(QUERY_KEY) ) {

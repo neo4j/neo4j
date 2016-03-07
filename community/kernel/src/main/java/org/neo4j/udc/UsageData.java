@@ -21,6 +21,12 @@ package org.neo4j.udc;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static java.util.concurrent.TimeUnit.DAYS;
+import static org.neo4j.kernel.impl.util.JobScheduler.Groups.udc;
+
 /**
  * An in-memory storage location for usage metadata.
  * Any component is allowed to publish it's usage date here, and it can be any object,
@@ -29,9 +35,16 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * This service is meant as a diagnostic and informational tool, notably used by UDC.
  */
-public class UsageData
+public class UsageData extends LifecycleAdapter
 {
     private final ConcurrentHashMap<UsageDataKey, Object> store = new ConcurrentHashMap<>();
+    private final JobScheduler scheduler;
+    private JobScheduler.JobHandle featureDecayJob;
+
+    public UsageData( JobScheduler scheduler )
+    {
+        this.scheduler = scheduler;
+    }
 
     public <T> void set( UsageDataKey<T> key, T value )
     {
@@ -58,4 +71,18 @@ public class UsageData
         return (T) o;
     }
 
+    @Override
+    public void stop() throws Throwable
+    {
+        if( featureDecayJob != null )
+        {
+            featureDecayJob.cancel( false );
+        }
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        featureDecayJob = scheduler.schedule( udc, get( UsageDataKeys.features )::sweep, 1, DAYS );
+    }
 }

@@ -48,6 +48,7 @@ import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
 import static org.neo4j.ext.udc.UdcConstants.DATABASE_MODE;
 import static org.neo4j.ext.udc.UdcConstants.DISTRIBUTION;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
+import static org.neo4j.ext.udc.UdcConstants.FEATURES;
 import static org.neo4j.ext.udc.UdcConstants.HEAP_SIZE;
 import static org.neo4j.ext.udc.UdcConstants.ID;
 import static org.neo4j.ext.udc.UdcConstants.LABEL_IDS_IN_USE;
@@ -146,6 +147,8 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         add( udcFields, RELATIONSHIP_IDS_IN_USE, determineRelationshipIdsInUse() );
         add( udcFields, LABEL_IDS_IN_USE, determineLabelIdsInUse() );
         add( udcFields, PROPERTY_IDS_IN_USE, determinePropertyIdsInUse() );
+
+        add( udcFields, FEATURES, usageData.get( UsageDataKeys.features ).asHex() );
 
         udcFields.putAll( determineSystemProperties() );
         return udcFields;

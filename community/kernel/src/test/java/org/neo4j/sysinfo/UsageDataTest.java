@@ -21,10 +21,12 @@ package org.neo4j.sysinfo;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKey;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.udc.UsageDataKey.key;
 
 public class UsageDataTest
@@ -33,7 +35,7 @@ public class UsageDataTest
     public void shouldPutAndRetrieve() throws Throwable
     {
         // Given
-        UsageData ms = new UsageData();
+        UsageData ms = new UsageData( mock( JobScheduler.class ) );
         UsageDataKey<String> key = key( "hello" );
 
         // When

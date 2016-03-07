@@ -80,6 +80,7 @@ import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
+import org.neo4j.udc.UsageData;
 
 import static java.lang.Math.round;
 import static java.lang.String.format;
@@ -544,6 +545,8 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new TransactionFilter( database ) );
         singletons.add( new LoggingProvider( logProvider ) );
         singletons.add( providerForSingleton( logProvider.getLog( NeoServer.class ), Log.class ) );
+
+        singletons.add( providerForSingleton( resolveDependency( UsageData.class ), UsageData.class ) );
 
         return singletons;
     }

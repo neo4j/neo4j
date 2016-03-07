@@ -34,9 +34,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.internal.StoreLocker;
-import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -54,6 +51,9 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
+import org.neo4j.kernel.internal.StoreLocker;
+import org.neo4j.kernel.internal.StoreLockerLifecycleAdapter;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -126,8 +126,6 @@ public class PlatformModule
 
         this.storeDir = providedStoreDir.getAbsoluteFile();
 
-        // Database system information, used by UDC
-        dependencies.satisfyDependency( new UsageData() );
 
         fileSystem = dependencies.satisfyDependency( createFileSystemAbstraction() );
 
@@ -136,6 +134,9 @@ public class PlatformModule
         dependencies.satisfyDependency( monitors );
 
         jobScheduler = life.add( dependencies.satisfyDependency( createJobScheduler() ) );
+
+        // Database system information, used by UDC
+        dependencies.satisfyDependency( life.add( new UsageData( jobScheduler ) ) );
 
         // If no logging was passed in from the outside then create logging and register
         // with this life

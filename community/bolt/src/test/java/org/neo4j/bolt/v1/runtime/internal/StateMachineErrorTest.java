@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -51,6 +52,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.failedWith;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class StateMachineErrorTest
 {
@@ -60,6 +62,7 @@ public class StateMachineErrorTest
     private ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private StatementRunner runner = mock( StatementRunner.class );
     private TopLevelTransaction tx = mock( TopLevelTransaction.class );
+    private JobScheduler scheduler = mock(JobScheduler.class );
 
     @Before
     public void setup()
@@ -88,9 +91,9 @@ public class StateMachineErrorTest
 
     private SessionStateMachine newIdleMachine()
     {
-        SessionStateMachine machine = new SessionStateMachine( new UsageData(), db, txBridge, runner, NullLogService
+        SessionStateMachine machine = new SessionStateMachine( new UsageData( scheduler ), db, txBridge, runner, NullLogService
                 .getInstance(), Authentication.NONE );
-        machine.init( "FunClient", Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
+        machine.init( "FunClient", map(), null, Session.Callback.NO_OP );
         return machine;
     }
 
@@ -218,8 +221,8 @@ public class StateMachineErrorTest
     {
         // Given
         RecordingCallback messages = new RecordingCallback();
-        SessionStateMachine machine = new SessionStateMachine( new UsageData(), db, txBridge, runner, NullLogService
-                .getInstance(), Authentication.NONE  );
+        SessionStateMachine machine = new SessionStateMachine( new UsageData( scheduler ), db, txBridge, runner, NullLogService
+                .getInstance(), Authentication.NONE );
 
         // When
         machine.run( "RETURN 1", null, null, messages );
