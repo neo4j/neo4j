@@ -72,6 +72,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      *   - the #release() method releases resources acquired in #initialize() or during the transaction's life time
      */
 
+    /**
+     * It is not allowed for the same transaction to perform database writes as well as schema writes.
+     * This enum tracks the current write state of the transaction, allowing it to transition from
+     * no writes (NONE) to data writes (DATA) or schema writes (SCHEMA), but it cannot transition between
+     * DATA and SCHEMA without throwing an InvalidTransactionTypeKernelException. Note that this behavior
+     * is orthogonal to the AccessMode which manages what the transaction or statement is allowed to do
+     * based on authorization.
+     */
     private enum TransactionWriteState
     {
         NONE,
@@ -126,12 +134,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TransactionState txState;
     private LegacyIndexTransactionState legacyIndexTransactionState;
-    private TransactionWriteState writeState; // Tracks current state of transaction, which will upgrade to WRITE or SCHEMA mode when necessary
+    private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
     private final KernelStatement currentStatement;
     private final StorageStatement storageStatement;
     private CloseListener closeListener;
-    private AccessMode accessMode; // Defines whether a transaction/statement is allowed to perform read, write or schema commands
+    private AccessMode accessMode;
     private Locks.Client locks;
     private boolean beforeHookInvoked;
     private boolean closing, closed;
