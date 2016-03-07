@@ -209,13 +209,14 @@ public class ReflectiveProcedureCompiler
 
                 Object rs = procedureMethod.invokeWithArguments( args );
 
-                if( rs != null )
+                // This also handles VOID
+                if ( rs == null )
                 {
-                    return new MappingIterator( ((Stream<?>) rs).iterator() );
+                    return asRawIterator( emptyIterator() );
                 }
                 else
                 {
-                    return asRawIterator( emptyIterator() );
+                    return new MappingIterator( ((Stream<?>) rs).iterator() );
                 }
             }
             catch ( Throwable throwable )
