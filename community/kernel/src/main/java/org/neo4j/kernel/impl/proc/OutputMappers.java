@@ -81,6 +81,15 @@ public class OutputMappers
         }
     }
 
+    public static OutputMapper VOID_MAPPER = new OutputMapper( new FieldSignature[0], new FieldMapper[0] )
+    {
+        @Override
+        public List<FieldSignature> signature()
+        {
+            return ProcedureSignature.VOID;
+        }
+    };
+
     /**
      * Extracts field value from an instance and converts it to a Neo4j typed value.
      */
@@ -122,7 +131,7 @@ public class OutputMappers
      * Build an output mapper for the return type of a given method.
      *
      * @param method the procedure method
-     * @return an outputmapper for the return type of the method.
+     * @return an output mapper for the return type of the method.
      * @throws ProcedureException
      */
     public OutputMapper mapper( Method method ) throws ProcedureException
@@ -130,7 +139,7 @@ public class OutputMappers
         Class<?> cls = method.getReturnType();
         if( cls == Void.class || cls == void.class )
         {
-            return new OutputMapper( new FieldSignature[0], new FieldMapper[0] );
+            return OutputMappers.VOID_MAPPER;
         }
 
         if ( cls != Stream.class )

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.proc;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -36,6 +37,8 @@ import static java.util.Collections.unmodifiableList;
  */
 public class ProcedureSignature
 {
+    public static List<FieldSignature> VOID = unmodifiableList( new ArrayList<>() );
+
     public static class ProcedureName
     {
         private final String[] namespace;
@@ -158,7 +161,7 @@ public class ProcedureSignature
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
-        this.outputSignature = unmodifiableList( outputSignature );
+        this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList( outputSignature );
         this.mode = mode;
     }
 
@@ -184,6 +187,11 @@ public class ProcedureSignature
         return outputSignature;
     }
 
+    public boolean isVoid()
+    {
+        return outputSignature == VOID;
+    }
+
     @Override
     public boolean equals( Object o )
     {
@@ -195,7 +203,8 @@ public class ProcedureSignature
         return
            name.equals( that.name ) &&
            inputSignature.equals( that.inputSignature ) &&
-           outputSignature.equals( that.outputSignature );
+           outputSignature.equals( that.outputSignature ) &&
+           isVoid() == that.isVoid();
     }
 
     @Override
@@ -208,15 +217,22 @@ public class ProcedureSignature
     public String toString()
     {
         String strInSig = inputSignature == null ? "..." : Iterables.toString( inputSignature, ", " );
-        String strOutSig = outputSignature == null ? "..." : Iterables.toString( outputSignature, ", " );
-        return String.format( "%s(%s) :: (%s)", name, strInSig, strOutSig );
+        if ( isVoid() )
+        {
+            return String.format( "%s(%s) :: VOID", name, strInSig );
+        }
+        else
+        {
+            String strOutSig = outputSignature == null ? "..." : Iterables.toString( outputSignature, ", " );
+            return String.format( "%s(%s) :: (%s)", name, strInSig, strOutSig );
+        }
     }
 
     public static class Builder
     {
         private final ProcedureName name;
         private final List<FieldSignature> inputSignature = new LinkedList<>();
-        private final List<FieldSignature> outputSignature = new LinkedList<>();
+        private List<FieldSignature> outputSignature = new LinkedList<>();
         private Mode mode = Mode.READ_ONLY;
 
         public Builder( String[] namespace, String name )
@@ -241,6 +257,12 @@ public class ProcedureSignature
         public Builder out( String name, AnyType type )
         {
             outputSignature.add( new FieldSignature( name, type ) );
+            return this;
+        }
+
+        public Builder out( List<FieldSignature> fields )
+        {
+            outputSignature = fields;
             return this;
         }
 
