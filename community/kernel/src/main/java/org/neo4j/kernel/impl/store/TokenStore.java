@@ -65,7 +65,7 @@ public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
             String storeVersion )
     {
         super( file, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
-                recordFormat, storeVersion, NO_STORE_HEADER_FORMAT );
+                recordFormat, NO_STORE_HEADER_FORMAT, storeVersion );
         this.nameStore = nameStore;
         this.tokenFactory = tokenFactory;
     }

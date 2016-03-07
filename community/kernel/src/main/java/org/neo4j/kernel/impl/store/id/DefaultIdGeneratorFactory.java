@@ -36,12 +36,10 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
     {
-        long maxValue = idType.getMaxValue();
         boolean aggressiveReuse = idType.allowAggressiveReuse();
-        IdGenerator generator = instantiate( fs, fileName, grabSize, maxValue,
-                aggressiveReuse, highId );
+        IdGenerator generator = instantiate( fs, fileName, grabSize, maxId, aggressiveReuse, highId );
         generators.put( idType, generator );
         return generator;
     }

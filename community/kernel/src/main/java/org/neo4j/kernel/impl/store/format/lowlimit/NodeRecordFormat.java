@@ -46,6 +46,11 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
     }
 
     @Override
+    public long getMaxId()
+    {
+        return getMaxId( LowLimitFormatSettings.NODE_RECORD_MAXIMUM_ID_BITS );
+    }
+
     public void read( NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
             throws IOException
     {

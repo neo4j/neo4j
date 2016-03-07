@@ -71,6 +71,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     protected final Log log;
     protected PagedFile storeFile;
     protected final String storeVersion;
+    protected final RecordFormat<RECORD> recordFormat;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
@@ -100,6 +101,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
             PageCache pageCache,
             LogProvider logProvider,
             String typeDescriptor,
+            RecordFormat<RECORD> recordFormat,
             String storeVersion )
     {
         this.storageFileName = fileName;
@@ -108,6 +110,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         this.pageCache = pageCache;
         this.idType = idType;
         this.typeDescriptor = typeDescriptor;
+        this.recordFormat = recordFormat;
         this.storeVersion = storeVersion;
         this.log = logProvider.getLog( getClass() );
     }
@@ -627,7 +630,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
      */
     protected IdGenerator openIdGenerator( File fileName, int grabSize )
     {
-        return idGeneratorFactory.open( fileName, grabSize, getIdType(), scanForHighId() );
+        return idGeneratorFactory.open( fileName, grabSize, getIdType(), scanForHighId(), recordFormat.getMaxId() );
     }
 
     /**

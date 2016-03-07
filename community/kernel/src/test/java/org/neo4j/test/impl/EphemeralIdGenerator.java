@@ -39,7 +39,7 @@ public class EphemeralIdGenerator implements IdGenerator
         protected final Map<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
 
         @Override
-        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
         {
             IdGenerator generator = generators.get( idType );
             if ( generator == null )

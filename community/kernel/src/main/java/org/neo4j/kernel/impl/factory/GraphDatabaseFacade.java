@@ -83,7 +83,6 @@ import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -100,12 +99,8 @@ import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PRO
  * implementation, this provides users with
  * a clean facade to interact with the database.
  */
-public class GraphDatabaseFacade
-        implements GraphDatabaseAPI
+public class GraphDatabaseFacade implements GraphDatabaseAPI
 {
-    private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
-    private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
-
     private Schema schema;
     private IndexManager indexManager;
     private NodeProxy.NodeActions nodeActions;
@@ -256,7 +251,7 @@ public class GraphDatabaseFacade
     @Override
     public Node getNodeById( long id )
     {
-        if ( id < 0 || id > MAX_NODE_ID )
+        if ( id < 0 )
         {
             throw new NotFoundException( format( "Node %d not found", id ),
                     new EntityNotFoundException( EntityType.NODE, id ) );
@@ -276,7 +271,7 @@ public class GraphDatabaseFacade
     @Override
     public Relationship getRelationshipById( long id )
     {
-        if ( id < 0 || id > MAX_RELATIONSHIP_ID )
+        if ( id < 0 )
         {
             throw new NotFoundException( format( "Relationship %d not found", id ),
                     new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );

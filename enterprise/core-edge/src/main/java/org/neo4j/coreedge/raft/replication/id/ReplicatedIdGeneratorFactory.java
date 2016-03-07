@@ -48,7 +48,7 @@ public class ReplicatedIdGeneratorFactory extends LifecycleAdapter implements Id
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
     {
         SwitchableRaftIdGenerator previous = generators.remove( idType );
         if ( previous != null )
@@ -56,10 +56,8 @@ public class ReplicatedIdGeneratorFactory extends LifecycleAdapter implements Id
             previous.close();
         }
 
-        long maxValue = idType.getMaxValue();
         boolean aggressiveReuse = idType.allowAggressiveReuse();
-        IdGenerator initialIdGenerator =
-                new IdGeneratorImpl( fs, fileName, grabSize, maxValue, aggressiveReuse, highId );
+        IdGenerator initialIdGenerator = new IdGeneratorImpl( fs, fileName, grabSize, maxId, aggressiveReuse, highId );
         SwitchableRaftIdGenerator switchableIdGenerator =
                 new SwitchableRaftIdGenerator( initialIdGenerator, idType, idRangeAcquirer, logProvider );
         if ( replicatedMode )

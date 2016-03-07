@@ -33,4 +33,10 @@ public class RelationshipTypeTokenRecordFormat extends TokenRecordFormat<Relatio
     {
         return new RelationshipTypeTokenRecord( -1 );
     }
+
+    @Override
+    public long getMaxId()
+    {
+        return getMaxId( LowLimitFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS );
+    }
 }

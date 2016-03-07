@@ -17,15 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
+package org.neo4j.kernel.impl.store.format.lowlimit;
 
-import java.io.File;
-
-public interface IdGeneratorFactory
+/**
+ * Common low limit format settings.
+ */
+final class LowLimitFormatSettings
 {
-    IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId );
+    static final int NODE_RECORD_MAXIMUM_ID_BITS = 35;
+    static final int RELATIONSHIP_MAXIMUM_ID_BITS = 35;
+    static final int PROPERTY_RECORD_MAXIMUM_ID_BITS = 36;
+    static final int DYNAMIC_RECORD_MAXIMUM_ID_BITS = 36;
+    static final int LABEL_TOKEN_MAXIMUM_ID_BITS = 32;
+    static final int PROPERTY_TOKEN_MAXIMUM_ID_BITS = 32;
+    static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = 16;
+    static final int RELATIONSHIP_GROUP_MAXIMUM_ID_BITS = 35;
 
-    void create( File filename, long highId, boolean throwIfFileExists );
-
-    IdGenerator get( IdType idType );
+    private LowLimitFormatSettings()
+    {
+    }
 }

@@ -142,4 +142,10 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     {
         return record.getNextBlock();
     }
+
+    @Override
+    public long getMaxId()
+    {
+        return getMaxId( LowLimitFormatSettings.DYNAMIC_RECORD_MAXIMUM_ID_BITS );
+    }
 }

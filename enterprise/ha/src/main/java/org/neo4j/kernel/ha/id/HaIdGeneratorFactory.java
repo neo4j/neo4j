@@ -61,7 +61,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
     {
         HaIdGenerator previous = generators.remove( idType );
         if ( previous != null )
@@ -73,7 +73,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         switch ( globalState )
         {
         case MASTER:
-            initialIdGenerator = localFactory.open( fileName, grabSize, idType, highId );
+            initialIdGenerator = localFactory.open( fileName, grabSize, idType, highId, maxId );
             break;
         case SLAVE:
             // Initially we may call switchToSlave() before calling open, so we need this additional
@@ -84,7 +84,8 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         default:
             throw new IllegalStateException( globalState.name() );
         }
-        HaIdGenerator haIdGenerator = new HaIdGenerator( initialIdGenerator, fs, fileName, grabSize, idType, globalState );
+        HaIdGenerator haIdGenerator = new HaIdGenerator( initialIdGenerator, fileName, grabSize, idType,
+                                    globalState, maxId );
         generators.put( idType, haIdGenerator );
         return haIdGenerator;
     }
@@ -140,21 +141,21 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
     private class HaIdGenerator implements IdGenerator
     {
         private volatile IdGenerator delegate;
-        private final FileSystemAbstraction fs;
         private final File fileName;
         private final int grabSize;
         private final IdType idType;
         private volatile IdGeneratorState state;
+        private long maxId;
 
-        HaIdGenerator( IdGenerator initialDelegate, FileSystemAbstraction fs, File fileName, int grabSize,
-                       IdType idType, IdGeneratorState initialState )
+        HaIdGenerator( IdGenerator initialDelegate, File fileName, int grabSize,
+                IdType idType, IdGeneratorState initialState, long maxId )
         {
             delegate = initialDelegate;
-            this.fs = fs;
             this.fileName = fileName;
             this.grabSize = grabSize;
             this.idType = idType;
             this.state = initialState;
+            this.maxId = maxId;
             log.debug( "Instantiated HaIdGenerator for " + initialDelegate + " " + idType + ", " + initialState );
         }
 
@@ -177,7 +178,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 delegate.delete();
 
                 localFactory.create( fileName, highId, false );
-                delegate = localFactory.open( fileName, grabSize, idType, highId );
+                delegate = localFactory.open( fileName, grabSize, idType, highId, maxId );
                 log.debug( "Instantiated master delegate " + delegate + " of type " + idType + " with highid " + highId );
             }
             else
