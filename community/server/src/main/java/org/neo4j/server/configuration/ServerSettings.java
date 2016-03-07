@@ -33,18 +33,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.DURATION;
-import static org.neo4j.kernel.configuration.Settings.EMPTY;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.min;
-import static org.neo4j.kernel.configuration.Settings.port;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.Settings.*;
 
 @Description("Settings used by the server configuration")
 public interface ServerSettings
@@ -154,6 +143,14 @@ public interface ServerSettings
     @Description("Path to a logback configuration file for HTTP request logging.")
     Setting<File> http_log_config_file = setting( "org.neo4j.server.http.log.config", new HttpLogSetting(),
             NO_DEFAULT );
+
+    @Description("Enable GC Logging")
+    Setting<Boolean> gc_logging_enabled = setting("dbms.logs.gc.enabled", BOOLEAN, FALSE);
+
+    @Description("GC Logging Options")
+    Setting<String> gc_logging_options = setting("dbms.logs.gc.options", STRING, "" +
+            "-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime " +
+            "-XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution");
 
     @Description("Timeout for idle transactions.")
     Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
