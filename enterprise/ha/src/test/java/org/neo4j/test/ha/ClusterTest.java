@@ -84,7 +84,7 @@ public class ClusterTest
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.safeShutdown();
         }
     }
 
@@ -119,7 +119,7 @@ public class ClusterTest
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.safeShutdown();
         }
     }
 
@@ -153,7 +153,7 @@ public class ClusterTest
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.safeShutdown();
         }
     }
 
@@ -175,7 +175,7 @@ public class ClusterTest
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.safeShutdown();
         }
     }
 
@@ -294,7 +294,7 @@ public class ClusterTest
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.safeShutdown();
         }
     }
 

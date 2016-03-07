@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -90,7 +90,7 @@ public class TestFailover
         repairKit.repair();
         Thread.sleep( 3000 ); // give repaired instance chance to cleanly rejoin and exit faster
 
-        clusterManager.stop();
+        clusterManager.safeShutdown();
     }
 
     @Test

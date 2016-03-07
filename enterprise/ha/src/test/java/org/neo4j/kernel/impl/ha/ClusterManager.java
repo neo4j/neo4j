@@ -717,6 +717,23 @@ public class ClusterManager
         life.shutdown();
     }
 
+    /**
+     * Shutdown the cluster and catch any exceptions which might be thrown as a result. If an exception is thrown,
+     * the stacktrace is printed.
+     *
+     * This is intended for unit tests where a failure in cluster shutdown might mask the actual error in the test.
+     */
+    public void safeShutdown() {
+        try
+        {
+            shutdown();
+        }
+        catch ( Throwable throwable )
+        {
+            throwable.printStackTrace();
+        }
+    }
+
     @SuppressWarnings( "unchecked" )
     private <T> T instance( Class<T> classToFind, Iterable<?> from )
     {
