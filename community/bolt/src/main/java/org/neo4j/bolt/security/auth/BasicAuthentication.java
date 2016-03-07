@@ -100,7 +100,7 @@ public class BasicAuthentication implements Authentication
         case PASSWORD_CHANGE_REQUIRED:
             try
             {
-                authManager.setPassword( authSubject, user, newPassword );
+                authSubject.setPassword( newPassword );
             }
             catch ( AuthorizationViolationException e )
             {
