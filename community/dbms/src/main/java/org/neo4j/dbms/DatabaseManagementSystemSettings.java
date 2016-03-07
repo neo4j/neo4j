@@ -33,7 +33,7 @@ public interface DatabaseManagementSystemSettings
     @Description("Path of the data directory")
     Setting<File> data_directory = Settings.setting( "dbms.directories.data", Settings.PATH, "data" );
     @Internal
-    Setting<File> database_path = Settings.derivedSetting( "dbms.internal.derived.directories.database",
+    Setting<File> database_path = Settings.derivedSetting( "unsupported.dbms.directories.database",
             data_directory, active_database,
             ( data, current ) -> new File( new File( data, "databases" ), current ),
             Settings.PATH );

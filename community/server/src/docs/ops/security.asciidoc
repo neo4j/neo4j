@@ -152,8 +152,8 @@ ProxyPass /test balancer://mycluster
 
 The Cypher `LOAD CSV` clause can load files from the filesystem, and its default configuration allows any file on the system to be read using a `file:///` URL.
 This presents a security vulnerability in production environments where database users should not otherwise have access to files on the system.
-For production deployments, configure the <<config_dbms.security.load_csv_file_url_root>> setting, which will make all files identified in a `file:///` URL relative to the specified directory, similarly to how a unix chroot works.
-Alternatively, set the <<config_allow_file_urls>> setting to false, which disables the use of `file:///` URLs entirely.
+For production deployments, configure the <<config_dbms.directories.import>> setting, which will make all files identified in a `file:///` URL relative to the specified directory, similarly to how a unix chroot works.
+Alternatively, set the <<config_dbms.security.allow_csv_import_from_file_urls>> setting to false, which disables the use of `file:///` URLs entirely.
 Further information can be found in <<query-load-csv>>.
 
 == Neo4j Web Interface Security

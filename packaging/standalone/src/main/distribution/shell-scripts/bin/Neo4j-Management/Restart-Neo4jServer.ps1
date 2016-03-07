@@ -88,7 +88,7 @@ Function Restart-Neo4jServer
     
     if ($ServiceName -eq '')
     {
-      $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'wrapper.name')
+      $setting = ($thisServer | Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.windows_service_name')
       if ($setting -ne $null) { $ServiceName = $setting.Value }
     }
 

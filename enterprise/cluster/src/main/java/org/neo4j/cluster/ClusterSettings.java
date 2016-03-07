@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.Internal;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -70,7 +71,8 @@ public class ClusterSettings
     public static final Setting<InstanceId> server_id = setting( "ha.server_id", INSTANCE_ID, MANDATORY );
 
     @Description( "The name of a cluster." )
-    public static final Setting<String> cluster_name = setting( "ha.cluster_name", STRING, "neo4j.ha",
+    @Internal
+    public static final Setting<String> cluster_name = setting( "unsupported.ha.cluster_name", STRING, "neo4j.ha",
             illegalValueMessage( "must be a valid cluster name", matches( ANY ) ) );
 
     @Description( "A comma-separated list of other members of the cluster to join." )
@@ -141,5 +143,6 @@ public class ClusterSettings
     @Description( "Timeout for waiting for other members to finish a role election. Defaults to ha.paxos_timeout." )
     public static final Setting<Long> election_timeout = setting( "ha.election_timeout", DURATION, paxos_timeout );
 
-    public static final Setting<String> instance_name = setting("ha.instance_name", STRING, (String) null);
+    @Internal
+    public static final Setting<String> instance_name = setting("unsupported.ha.instance_name", STRING, (String) null);
 }

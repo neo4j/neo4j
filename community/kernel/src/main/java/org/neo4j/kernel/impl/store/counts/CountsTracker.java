@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
@@ -43,8 +44,6 @@ import org.neo4j.kernel.impl.store.kvstore.RotationMonitor;
 import org.neo4j.kernel.impl.store.kvstore.RotationTimerFactory;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
-import java.util.Optional;
-
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
@@ -118,7 +117,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
                         headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
         }, new RotationTimerFactory( Clock.SYSTEM_CLOCK,
-                config.get( GraphDatabaseSettings.store_interval_log_rotation_wait_time ) ), 16, 16, HEADER_FIELDS );
+                config.get( GraphDatabaseSettings.counts_store_rotation_timeout ) ), 16, 16, HEADER_FIELDS );
     }
 
     public CountsTracker setInitializer( final DataInitializer<Updater> initializer )

@@ -14,10 +14,10 @@ Neo4j {neo4j-version} does not support rolling upgrades.
 
 == Upgrade the master
  . Install Neo4j {neo4j-version} on the master, keeping the database files untouched.
- . Disable HA in the configuration, by setting `org.neo4j.server.database.mode=SINGLE` in `neo4j.conf`.
+ . Disable HA in the configuration, by setting `dbms.mode=SINGLE` in `neo4j.conf`.
  . <<deployment-upgrading,Upgrade as described for a single instance of Neo4j>>
  . When upgrade has finished, shut down Neo4j again.
- . Re-enable HA in the configuration by setting `org.neo4j.server.database.mode=HA` in `neo4j.conf`.
+ . Re-enable HA in the configuration by setting `dbms.mode=HA` in `neo4j.conf`.
  . Make a full backup of the Neo4j database.
    Please note that backups from before the upgrade are no longer valid for update via the incremental online backup. 
    Therefore it is important to perform a _full backup_, using an empty target directory, at this point.

@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,6 +27,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
@@ -46,9 +46,8 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.AccessMode;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -63,6 +62,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -468,7 +468,9 @@ public class NeoStoresTest
     public void testSetBlockSize() throws Exception
     {
         File storeDir = dir.directory( "small_store" );
-        initializeStores( storeDir, stringMap( "string_block_size", "62", "array_block_size", "302" ) );
+        initializeStores( storeDir, stringMap(
+                "unsupported.dbms.block_size.strings", "62",
+                "unsupported.dbms.block_size.array_properties", "302" ) );
         assertEquals( 62 + DynamicRecordFormat.RECORD_HEADER_SIZE,
                 pStore.getStringStore().getRecordSize() );
         assertEquals( 302 + DynamicRecordFormat.RECORD_HEADER_SIZE,

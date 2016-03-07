@@ -9,7 +9,7 @@ Each HTTP request can include a list of statements, and for convenience you can 
 
 The server guards against orphaned transactions by using a timeout.
 If there are no requests for a given transaction within the timeout period, the server will roll it back.
-You can configure the timeout in the server configuration, by setting `org.neo4j.server.transaction.timeout` to the number of seconds before timeout.
+You can configure the timeout in the server configuration, by setting `dbms.transaction_timeout` to the number of seconds before timeout.
 The default timeout is 60 seconds.
 
 The key difference between the transactional HTTP endpoint for Cypher and the Cypher endpoint (see <<rest-api-cypher>>) is the ability to use the same transaction across multiple HTTP requests.

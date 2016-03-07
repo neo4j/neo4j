@@ -181,7 +181,7 @@ public class Settings
                 {
                     // Derived settings are intended not to be overridden and we should throw an exception here. However
                     // we temporarily need to allow the Desktop app to override the value of the derived setting
-                    // dbms.internal.derived.directories.database because we are not yet in a position to rework it to
+                    // unsupported.dbms.directories.database because we are not yet in a position to rework it to
                     // conform to the standard directory structure layout.
                     return overrideConverter.apply( override );
                 }

@@ -124,7 +124,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
      * a change where reading property chains incurs read locks on {@link LockService}.
      */
     private static final Setting<Boolean> use_read_locks_on_property_reads =
-            setting( "experimental.use_read_locks_on_property_reads", BOOLEAN, TRUE );
+            setting( "unsupported.dbms.use_read_locks_on_property_reads", BOOLEAN, TRUE );
 
     private final StoreReadLayer storeLayer;
     private final IndexingService indexingService;

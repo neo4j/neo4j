@@ -109,7 +109,7 @@ public class CoreEdgeClusterSettings
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "core_edge.expected_core_cluster_size", INTEGER, "3" );
 
-    @Description("Timeout for taking remote (write) locks on slaves. Defaults to ha.read_timeout.")
+    @Description("Timeout for taking remote (write) locks on slaves.")
     public static final Setting<Long> lock_read_timeout =
             setting( "core_edge.lock_read_timeout", DURATION, "20s" );
 

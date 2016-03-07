@@ -87,7 +87,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         server.start();
         gen.get().addSnippet(
                 "config",
-                "\n[source,properties]\n----\norg.neo4j.server.rest.security_rules=my.rules" +
+                "\n[source,properties]\n----\ndbms.security.http_authorization_classes=my.rules" +
                         ".PermanentlyFailingSecurityRule\n----\n" );
         gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRule.class,
                 "failingRule" );
@@ -192,7 +192,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         gen.get()
                 .addSnippet(
                         "config",
-                        "\n[source,properties]\n----\norg.neo4j.server.rest.security_rules=my.rules" +
+                        "\n[source,properties]\n----\ndbms.security.http_authorization_classes=my.rules" +
                                 ".PermanentlyFailingSecurityRuleWithWildcardPath\n----\n" );
 
         gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRuleWithWildcardPath.class,
@@ -239,7 +239,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         server.start();
         gen.get().addSnippet(
                 "config",
-                "\n[source,properties]\n----\norg.neo4j.server.rest.security_rules=my.rules" +
+                "\n[source,properties]\n----\ndbms.security.http_authorization_classes=my.rules" +
                         ".PermanentlyFailingSecurityRuleWithComplexWildcardPath\n----\n");
         gen.get().addTestSourceSnippets( PermanentlyFailingSecurityRuleWithComplexWildcardPath.class,
                 "failingRuleWithComplexWildcardPath" );

@@ -151,7 +151,7 @@ public class KernelDataTest
         // then
         catch ( IllegalStateException e )
         {
-            assertEquals( "There is already a kernel started with forced_kernel_id='myInstance'.", e.getMessage() );
+            assertEquals( "There is already a kernel started with unsupported.dbms.kernel_id='myInstance'.", e.getMessage() );
         }
     }
 

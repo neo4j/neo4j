@@ -61,7 +61,7 @@ We also need to tell Neo4j where to look for the extension by adding some config
 [source]
 ------
 #Comma separated list of JAXRS packages containing JAXRS Resource, one package name for each mountpoint.
-org.neo4j.server.thirdparty_jaxrs_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
+dbms.unmanaged_extension_classes=org.neo4j.examples.server.unmanaged=/examples/unmanaged
 ------
 
 Our hello method will now respond to +GET+ requests at the URI: +http://\{neo4j_server}:\{neo4j_port}/examples/unmanaged/helloworld/\{nodeId}+. e.g.

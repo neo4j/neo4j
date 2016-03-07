@@ -108,7 +108,7 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 
 # HA - High Availability
 # SINGLE - Single mode, default.
-org.neo4j.server.database.mode=HA
+dbms.mode=HA
 
 # Let the webserver only listen on the specified IP.
 org.neo4j.server.webserver.address=0.0.0.0
@@ -130,7 +130,7 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 
 # HA - High Availability
 # SINGLE - Single mode, default.
-org.neo4j.server.database.mode=HA
+dbms.mode=HA
 
 # Let the webserver only listen on the specified IP.
 org.neo4j.server.webserver.address=0.0.0.0
@@ -152,7 +152,7 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 
 # HA - High Availability
 # SINGLE - Single mode, default.
-org.neo4j.server.database.mode=HA
+dbms.mode=HA
 
 # Let the webserver only listen on the specified IP.
 org.neo4j.server.webserver.address=0.0.0.0
@@ -206,7 +206,7 @@ For more HA related configuration options take a look at <<ha-configuration>>.
 
 If you want to start a cluster similar to the one described above, but for development and testing purposes, it is convenient to run all Neo4j instances on the same machine.
 This is easy to achieve, although it requires some additional configuration as the defaults will conflict with each other.
-Furthermore, the default `dbms.pagecache.memory` assumes that Neo4j has the machine to itself.
+Furthermore, the default `dbms.memory.pagecache.size` assumes that Neo4j has the machine to itself.
 If we in this example assume that the machine has 4 gigabytes of memory, and that each JVM consumes 500 megabytes of memory, then we can allocate 500 megabytes of memory to the page cache of each server.
 
 === Download and configure
@@ -222,10 +222,10 @@ Neo4j instance #1 -- ~/neo4j-01::
 .conf/neo4j.conf
 ----
 # Reduce the default page cache memory allocation
-dbms.pagecache.memory=500m
+dbms.memory.pagecache.size=500m
 
 # Port to listen to for incoming backup requests.
-online_backup_server = 127.0.0.1:6366
+dbms.backup.address = 127.0.0.1:6366
 
 # Unique server id for this Neo4j instance
 # can not be negative id and must be unique
@@ -244,7 +244,7 @@ ha.server = 127.0.0.1:6363
 
 # HA - High Availability
 # SINGLE - Single mode, default.
-org.neo4j.server.database.mode=HA
+dbms.mode=HA
 
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7474
@@ -259,10 +259,10 @@ Neo4j instance #2 -- ~/neo4j-02::
 .conf/neo4j.conf
 ----
 # Reduce the default page cache memory allocation
-dbms.pagecache.memory=500m
+dbms.memory.pagecache.size=500m
 
 # Port to listen to for incoming backup requests.
-online_backup_server = 127.0.0.1:6367
+dbms.backup.address = 127.0.0.1:6367
 
 # Unique server id for this Neo4j instance
 # can not be negative id and must be unique
@@ -281,7 +281,7 @@ ha.server = 127.0.0.1:6364
 
 # HA - High Availability
 # SINGLE - Single mode, default.
-org.neo4j.server.database.mode=HA
+dbms.mode=HA
 
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7475
@@ -296,10 +296,10 @@ Neo4j instance #3 -- ~/neo4j-03::
 .conf/neo4j.conf
 ----
 # Reduce the default page cache memory allocation
-dbms.pagecache.memory=500m
+dbms.memory.pagecache.size=500m
 
 # Port to listen to for incoming backup requests.
-online_backup_server = 127.0.0.1:6368
+dbms.backup.address = 127.0.0.1:6368
 
 # Unique server id for this Neo4j instance
 # can not be negative id and must be unique
@@ -318,7 +318,7 @@ ha.server = 127.0.0.1:6365
 
 # HA - High Availability
 # SINGLE - Single mode, default.
-org.neo4j.server.database.mode=HA
+dbms.mode=HA
 
 # http port (for all data, administrative, and UI access)
 org.neo4j.server.webserver.port=7476

@@ -31,8 +31,8 @@ public class MonitorGc implements Lifecycle
 {
     public static class Configuration
     {
-        public static final Setting<Long> gc_monitor_wait_time = setting( "gc_monitor_wait_time", DURATION, "100ms" );
-        public static final Setting<Long> gc_monitor_threshold = setting("gc_monitor_threshold", DURATION, "200ms" );
+        public static final Setting<Long> gc_monitor_wait_time = setting( "unsupported.dbms.gc_monitor_wait_time", DURATION, "100ms" );
+        public static final Setting<Long> gc_monitor_threshold = setting("unsupported.dbms.gc_monitor_threshold", DURATION, "200ms" );
     }
 
     private final Config config;

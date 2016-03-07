@@ -15,7 +15,7 @@ In those cases WADL generation may be enabled by adding to _neo4j.conf_:
 
 [source]
 ----
-unsupported_wadl_generation_enabled=true
+unsupported.dbms.wadl_generation_enabled=true
 ----
 
 [CAUTION]

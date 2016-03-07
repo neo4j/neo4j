@@ -113,7 +113,7 @@ public class GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                config.put( "ephemeral", "false" );
+                config.put( "unsupported.dbms.ephemeral", "false" );
                 GraphDatabaseFacadeFactory.Dependencies dependencies = state.databaseDependencies();
                 return GraphDatabaseFactory.this.newDatabase( storeDir, config, dependencies );
             }

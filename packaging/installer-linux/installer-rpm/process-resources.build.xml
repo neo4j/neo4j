@@ -22,7 +22,7 @@
             />
 
     <replace file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-wrapper.conf"
-             token="neo4j.ext.udc.source=tarball"
-             value="neo4j.ext.udc.source=rpm"/>
+             token="unsupported.dbms.udc.source=tarball"
+             value="unsupported.dbms.udc.source=rpm"/>
 
 </project>

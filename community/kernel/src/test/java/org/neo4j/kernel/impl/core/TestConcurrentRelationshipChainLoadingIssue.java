@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,13 +26,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.assertEquals;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
@@ -42,8 +40,9 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.relationship_grab_size;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 /**
@@ -70,7 +69,6 @@ public class TestConcurrentRelationshipChainLoadingIssue
     private void tryToTriggerRelationshipLoadingStoppingMidWay( int denseNodeThreshold ) throws Throwable
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( relationship_grab_size, "" + relCount/2 )
                 .setConfig( dense_node_threshold, "" + denseNodeThreshold )
                 .newGraphDatabase();
         Node node = createNodeWithRelationships( db );
@@ -119,23 +117,18 @@ public class TestConcurrentRelationshipChainLoadingIssue
         ExecutorService executor = newCachedThreadPool();
         final CountDownLatch startSignal = new CountDownLatch( 1 );
         int threads = getRuntime().availableProcessors();
-        final List<Throwable> errors = Collections.synchronizedList( new ArrayList<Throwable>() );
+        final List<Throwable> errors = Collections.synchronizedList( new ArrayList<>() );
         for ( int i = 0; i < threads; i++ )
         {
-            executor.submit( new Runnable()
-            {
-                @Override
-                public void run()
+            executor.submit( () -> {
+                awaitStartSignalAndRandomTimeLonger( startSignal );
+                try ( Transaction ignored = db.beginTx() )
                 {
-                    awaitStartSignalAndRandomTimeLonger( startSignal );
-                    try ( Transaction transaction = db.beginTx() )
-                    {
-                        assertEquals( relCount, count( node.getRelationships() ) );
-                    }
-                    catch ( Throwable e )
-                    {
-                        errors.add( e );
-                    }
+                    assertEquals( relCount, count( node.getRelationships() ) );
+                }
+                catch ( Throwable e )
+                {
+                    errors.add( e );
                 }
             } );
         }

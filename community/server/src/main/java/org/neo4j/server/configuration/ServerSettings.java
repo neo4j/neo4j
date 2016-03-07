@@ -60,15 +60,17 @@ public interface ServerSettings
     String SERVER_CONFIG_FILE = "config/neo4j.conf";
 
     @Description("Maximum request header size")
+    @Internal
     Setting<Integer> maximum_request_header_size =
-            setting( "org.neo4j.server.webserver.max.request.header", INTEGER, "20480" );
+            setting( "unsupported.dbms.max_http_request_header_size", INTEGER, "20480" );
 
     @Description("Maximum response header size")
+    @Internal
     Setting<Integer> maximum_response_header_size =
-            setting( "org.neo4j.server.webserver.max.response.header", INTEGER, "20480" );
+            setting( "unsupported.dbms.max_http_response_header_size", INTEGER, "20480" );
 
     @Description("Comma-seperated list of custom security rules for Neo4j to use.")
-    Setting<List<String>> security_rules = setting( "org.neo4j.server.rest.security_rules", STRING_LIST, EMPTY );
+    Setting<List<String>> security_rules = setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
 
     @Description("Http port for the Neo4j REST API.")
     Setting<Integer> webserver_port = setting( "org.neo4j.server.webserver.port", INTEGER, "7474", port );
@@ -77,19 +79,20 @@ public interface ServerSettings
     Setting<String> webserver_address = BoltKernelExtension.Settings.webserver_address;
 
     @Description("Number of Neo4j worker threads.")
-    Setting<Integer> webserver_max_threads = setting( "org.neo4j.server.webserver.maxthreads",
+    Setting<Integer> webserver_max_threads = setting( "dbms.threads.worker_count",
             INTEGER, "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ), min( 1 ) );
 
     @Description("If execution time limiting is enabled in the database, this configures the maximum request execution time.")
+    @Internal
     Setting<Long> webserver_limit_execution_time =
-            setting( "org.neo4j.server.webserver.limit.executiontime", DURATION, NO_DEFAULT );
+            setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
 
     @Description("Console engines for the legacy webadmin administration")
     Setting<List<String>> management_console_engines = setting(
             "org.neo4j.server.manage.console_engines", STRING_LIST, "SHELL" );
 
     @Description("Comma-separated list of <classname>=<mount point> for unmanaged extensions.")
-    Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "org.neo4j.server.thirdparty_jaxrs_classes",
+    Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "dbms.unmanaged_extension_classes",
             new Function<String, List<ThirdPartyJaxRsPackage>>()
             {
                 @Override
@@ -153,7 +156,7 @@ public interface ServerSettings
             NO_DEFAULT );
 
     @Description("Timeout for idle transactions.")
-    Setting<Long> transaction_timeout = setting( "org.neo4j.server.transaction.timeout", DURATION, "60s" );
+    Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
 
     @Description("Enable the Bolt protocol")
     Setting<Boolean> bolt_enabled = BoltKernelExtension.Settings.enabled;
@@ -176,11 +179,11 @@ public interface ServerSettings
     Setting<URI> browser_path = setting( "org.neo4j.server.webadmin.browser.uri", Settings.URI, "/browser/" );
 
     @Internal
-    Setting<Boolean> script_sandboxing_enabled = setting("org.neo4j.server.script.sandboxing.enabled",
+    Setting<Boolean> script_sandboxing_enabled = setting("unsupported.dbms.security.script_sandboxing_enabled",
             BOOLEAN, TRUE );
 
     @Internal
-    Setting<Boolean> wadl_enabled = setting( "unsupported_wadl_generation_enabled", BOOLEAN,
+    Setting<Boolean> wadl_enabled = setting( "unsupported.dbms.wadl_generation_enabled", BOOLEAN,
             FALSE );
 
     @Internal

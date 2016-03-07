@@ -78,20 +78,20 @@ public abstract class GraphDatabaseFacadeFactory
 
     public static class Configuration
     {
-        public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
-        public static final Setting<String> ephemeral_keep_logical_logs = setting( "keep_logical_logs", STRING, "1 " +
+        public static final Setting<Boolean> ephemeral = setting( "unsupported.dbms.ephemeral", Settings.BOOLEAN, Settings.FALSE );
+        public static final Setting<String> ephemeral_keep_logical_logs = setting( "dbms.tx_log.rotation.retention_policy", STRING, "1 " +
                 "files", illegalValueMessage( "must be `true`/`false` or of format '<number><optional unit> <type>' " +
                 "for example `100M size` for " +
                 "limiting logical log space on disk to 100Mb," +
                 " or `200k txs` for limiting the number of transactions to keep to 200 000", matches( ANY ) ) );
 
         // Kept here to have it not be publicly documented.
-        public static final Setting<String> lock_manager = setting( "lock_manager", Settings.STRING, "" );
-        public static final Setting<String> record_format = setting( "record_format", Settings.STRING, "" );
+        public static final Setting<String> lock_manager = setting( "unsupported.dbms.lock_manager", Settings.STRING, "" );
+        public static final Setting<String> record_format = setting( "unsupported.dbms.record_format", Settings.STRING, "" );
         public static final Setting<String> tracer =
-                setting( "dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
+                setting( "unsupported.dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
 
-        public static final Setting<String> editionName = setting( "edition", Settings.STRING,
+        public static final Setting<String> editionName = setting( "unsupported.dbms.edition", Settings.STRING,
                 Edition.unknown.toString() );
     }
 

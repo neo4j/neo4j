@@ -122,7 +122,7 @@ public class BatchInsertDocTest
     {
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<>();
-        config.put( "dbms.pagecache.memory", "512m" );
+        config.put( "dbms.memory.pagecache.size", "512m" );
         BatchInserter inserter = BatchInserters.inserter(
                 new File( "target/batchinserter-example-config" ).getAbsolutePath(), config );
         // Insert data here ... and then shut down:
@@ -136,7 +136,7 @@ public class BatchInsertDocTest
         try ( Writer fw = fileSystem.openAsWriter( new File( "target/docs/batchinsert-config" ).getAbsoluteFile(),
                 StandardCharsets.UTF_8, false ) )
         {
-            fw.append( "dbms.pagecache.memory=8m" );
+            fw.append( "dbms.memory.pagecache.size=8m" );
         }
 
         // START SNIPPET: configFileInsert

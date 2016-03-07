@@ -5,7 +5,7 @@ test_description="Test differences running the arbiter"
 . ./lib/sharness.sh
 fake_install
 
-set_config 'org.neo4j.server.database.mode' 'ARBITER' neo4j.conf
+set_config 'dbms.mode' 'ARBITER' neo4j.conf
 touch "$(neo4j_home)/lib/neo4j-server-enterprise-0.0.0.jar"
 
 test_expect_success "should start successfully" "

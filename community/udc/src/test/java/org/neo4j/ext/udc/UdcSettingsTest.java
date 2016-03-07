@@ -40,7 +40,7 @@ import static org.neo4j.helpers.Configuration.DEFAULT;
 @RunWith(Parameterized.class)
 public class UdcSettingsTest
 {
-    public static final String UDC_DISABLE = "neo4j.ext.udc.disable";
+    public static final String UDC_DISABLE = "dbms.udc.disable";
     public final @Rule Configuration configuration = new Configuration();
 
     @Parameterized.Parameters(name="{0}")

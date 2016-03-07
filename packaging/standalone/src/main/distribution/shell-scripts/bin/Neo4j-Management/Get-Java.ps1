@@ -152,7 +152,7 @@ Function Get-Java
     # Shell arguments for the Neo4jServer and Arbiter classes
     if ($PsCmdlet.ParameterSetName -eq 'ServerInvoke')
     {
-      $setting = ($Neo4jServer | Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'org.neo4j.server.database.mode')
+      $setting = ($Neo4jServer | Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.mode')
 
       if ($setting -eq $null)
       {

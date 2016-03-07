@@ -16,7 +16,7 @@ test_expect_success "should read port and address from config" "
 "
 
 test_expect_success "should write a specific message in HA mode" "
-  set_config 'org.neo4j.server.database.mode' 'HA' neo4j.conf &&
+  set_config 'dbms.mode' 'HA' neo4j.conf &&
   test_expect_stdout_matching 'This HA instance will be operational once it has joined the cluster' run_daemon
 "
 

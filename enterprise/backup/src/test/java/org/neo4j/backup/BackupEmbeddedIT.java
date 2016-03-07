@@ -19,18 +19,17 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -56,15 +55,14 @@ public class BackupEmbeddedIT
     @Rule
     public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
 
-    public final File backupPath = testDirectory.directory( "backup-db" );
-    private String ip;
+    private static final String ip = "127.0.0.1";
+    private final File backupPath = testDirectory.directory( "backup-db" );
 
     @Before
     public void before() throws Exception
     {
         if ( SystemUtils.IS_OS_WINDOWS ) return;
         FileUtils.deleteDirectory( backupPath );
-        ip = InetAddress.getLocalHost().getHostAddress();
     }
 
     @SuppressWarnings("deprecation")

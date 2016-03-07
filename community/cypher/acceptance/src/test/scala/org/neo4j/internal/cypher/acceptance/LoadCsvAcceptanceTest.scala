@@ -361,7 +361,7 @@ class LoadCsvAcceptanceTest
 
     intercept[LoadExternalResourceException] {
       new ExecutionEngine(db).execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line CREATE (a {name:line[0]})")
-    }.getMessage should endWith(": configuration property 'allow_file_urls' is false")
+    }.getMessage should endWith(": configuration property 'dbms.security.allow_csv_import_from_file_urls' is false")
   }
 
   test("should restrict file urls to be rooted within an authorized directory") {

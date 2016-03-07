@@ -164,16 +164,16 @@ public class CommunityServerBuilder
 
         if ( autoIndexedNodeKeys != null && autoIndexedNodeKeys.length > 0 )
         {
-            properties.put( "node_auto_indexing", "true" );
+            properties.put( "dbms.auto_index.nodes.enabled", "true" );
             String propertyKeys = org.apache.commons.lang.StringUtils.join( autoIndexedNodeKeys, "," );
-            properties.put( "node_keys_indexable", propertyKeys );
+            properties.put( "dbms.auto_index.nodes.keys", propertyKeys );
         }
 
         if ( autoIndexedRelationshipKeys != null && autoIndexedRelationshipKeys.length > 0 )
         {
-            properties.put( "relationship_auto_indexing", "true" );
+            properties.put( "dbms.auto_index.relationships.enabled", "true" );
             String propertyKeys = org.apache.commons.lang.StringUtils.join( autoIndexedRelationshipKeys, "," );
-            properties.put( "relationship_keys_indexable", propertyKeys );
+            properties.put( "dbms.auto_index.relationships.keys", propertyKeys );
         }
 
         if ( securityRuleClassNames != null && securityRuleClassNames.length > 0 )

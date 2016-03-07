@@ -50,7 +50,7 @@ public class ServerStartupErrorsTest
         logging.assertExactly( inLog( "console" )
                 .error( "Neo4j cannot be started, because the database files require upgrading and upgrades are " +
                         "disabled in configuration. Please set '%s' to 'true' in your configuration file and try " +
-                        "again.", "allow_store_upgrade" ) );
+                        "again.", "dbms.allow_format_migration" ) );
 
     }
 }

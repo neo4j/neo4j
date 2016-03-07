@@ -171,11 +171,11 @@ Function Initialize-Neo4jServer
 "neo4j.conf","False","dbms.security.auth_enabled","$((-not $DisableAuthentication).ToString().ToLower())",""
 "neo4j.conf","False","org.neo4j.server.webserver.https.enabled","$($EnableHTTPS.ToString().ToLower())",""
 "neo4j.conf","False","org.neo4j.server.webserver.https.port","$($HTTPSPort)",""
-"neo4j.conf","False","remote_shell_enabled","$($EnableRemoteShell.ToString().ToLower())",""
-"neo4j.conf","False","remote_shell_port","$($RemoteShellPort)",""
+"neo4j.conf","False","dbms.shell.enabled","$($EnableRemoteShell.ToString().ToLower())",""
+"neo4j.conf","False","dbms.shell.port","$($RemoteShellPort)",""
 "neo4j.conf","False","org.neo4j.server.webserver.address","$($ListenOnIPAddress)",""
-"neo4j.conf","False","online_backup_enabled","$(-not $DisableOnlineBackup -and ($OnlineBackupServer -ne ''))",""
-"neo4j.conf","False","online_backup_server","$($OnlineBackupServer)",""
+"neo4j.conf","False","dbms.backup.enabled","$(-not $DisableOnlineBackup -and ($OnlineBackupServer -ne ''))",""
+"neo4j.conf","False","dbms.backup.address","$($OnlineBackupServer)",""
 "@ | ConvertFrom-CSV | `
       ForEach-Object -Process { $_.Neo4jHome = $thisServer.Home; if ($_.Value -ne '') { Write-Output $_} } | `
       Set-Neo4jSetting

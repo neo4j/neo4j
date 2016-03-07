@@ -26,8 +26,8 @@
             </copy>
 
             <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j-wrapper.conf"
-                     token="neo4j.ext.udc.source=tarball"
-                     value="neo4j.ext.udc.source=debian"/>
+                     token="unsupported.dbms.udc.source=tarball"
+                     value="unsupported.dbms.udc.source=debian"/>
 
             <chmod perm="700">
                 <fileset dir="${project.build.outputDirectory}/@{name}">

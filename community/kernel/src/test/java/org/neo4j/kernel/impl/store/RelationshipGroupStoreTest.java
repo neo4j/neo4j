@@ -132,7 +132,7 @@ public class RelationshipGroupStoreTest
 
     private void newDb( int denseNodeThreshold )
     {
-        db = new ImpermanentGraphDatabase( MapUtil.stringMap( "dense_node_threshold", "" + denseNodeThreshold ) );
+        db = new ImpermanentGraphDatabase( MapUtil.stringMap( "dbms.relationship_grouping_threshold", "" + denseNodeThreshold ) );
         fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
     }
 

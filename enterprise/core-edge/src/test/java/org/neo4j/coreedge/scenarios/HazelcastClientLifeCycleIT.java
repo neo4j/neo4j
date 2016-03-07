@@ -107,7 +107,7 @@ public class HazelcastClientLifeCycleIT
 //    private Config getConfig( String initialHosts )
 //    {
 //        Map<String, String> params = stringMap();
-//        params.put( "org.neo4j.server.database.mode", "CORE_EDGE" );
+//        params.put( "dbms.mode", "CORE_EDGE" );
 //        params.put( ClusterSettings.cluster_name.name(), Cluster.CLUSTER_NAME );
 //        params.put( ClusterSettings.server_id.name(), String.valueOf( 99 ) );
 //        params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialHosts );

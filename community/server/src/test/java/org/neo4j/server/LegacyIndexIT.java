@@ -59,7 +59,7 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
     public void startServer() throws NoSuchAlgorithmException, KeyManagementException, IOException
     {
         server = server().withHttpsEnabled()
-                .withProperty( "remote_shell_enabled", "false" )
+                .withProperty( "dbms.shell.enabled", "false" )
                 .withProperty( "dbms.security.auth_enabled", "false" )
                 .withProperty( ServerSettings.maximum_response_header_size.name(), "5000" )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
