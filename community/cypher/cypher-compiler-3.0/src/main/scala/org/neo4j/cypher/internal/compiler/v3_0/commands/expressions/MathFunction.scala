@@ -242,7 +242,7 @@ case class TanFunction(argument: Expression) extends NullSafeMathFunction(argume
 }
 
 case class RandFunction() extends Expression {
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.random
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Double = math.random
 
   override def arguments = Seq()
 
