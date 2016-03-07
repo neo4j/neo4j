@@ -516,24 +516,6 @@
         <!--$NO-MVN-MAN-VER$-->
         <executions>
           <execution>
-            <phase>process-classes</phase>
-            <configuration>
-              <target>
-                <taskdef
-                    resource="net/sf/antcontrib/antcontrib.properties"
-                    classpathref="maven.plugin.classpath"/>
-
-                <!-- Inject version-specific things (codename, version etc.)
-                     into webadmin -->
-                <!--<ant antfile="src/build/webadmin-branding.ant.xml"/>-->
-
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-          <execution>
             <id>generate-source-based-documentation</id>
             <phase>process-classes</phase>
             <configuration>

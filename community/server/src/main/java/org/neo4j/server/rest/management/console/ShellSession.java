@@ -28,7 +28,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
-import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;

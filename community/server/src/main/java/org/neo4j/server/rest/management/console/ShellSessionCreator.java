@@ -24,8 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.webadmin.console.ConsoleSessionCreator;
-import org.neo4j.server.webadmin.console.ScriptSession;
 
 public class ShellSessionCreator implements ConsoleSessionCreator
 {

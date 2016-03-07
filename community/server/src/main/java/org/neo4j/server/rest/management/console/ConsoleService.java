@@ -45,8 +45,6 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ValueRepresentation;
-import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
-import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.repr.ConsoleServiceRepresentation;
 

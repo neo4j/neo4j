@@ -31,9 +31,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.webadmin.console.ConsoleSessionCreator;
-import org.neo4j.server.webadmin.console.ConsoleSessionFactory;
-import org.neo4j.server.webadmin.console.ScriptSession;
 
 public class SessionFactoryImpl implements ConsoleSessionFactory
 {

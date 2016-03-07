@@ -39,7 +39,7 @@ import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.SecurityRulesModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
-import org.neo4j.server.modules.WebAdminModule;
+import org.neo4j.server.modules.ConsoleModule;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.management.console.ConsoleService;
@@ -75,7 +75,7 @@ public class CommunityNeoServer extends AbstractNeoServer
                 new RESTApiModule( webServer, database, getConfig(), getDependencyResolver(), logProvider ),
                 new ManagementApiModule( webServer, getConfig() ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), logProvider, this ),
-                new WebAdminModule( webServer, getConfig() ),
+                new ConsoleModule( webServer, getConfig() ),
                 new Neo4jBrowserModule( webServer ),
                 new AuthorizationModule( webServer, authManagerSupplier, logProvider, getConfig(), getUriWhitelist() ),
                 new SecurityRulesModule( webServer, getConfig(), logProvider ) );

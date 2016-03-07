@@ -28,12 +28,12 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.WebServer;
 
-public class WebAdminModule implements ServerModule
+public class ConsoleModule implements ServerModule
 {
     private final WebServer webServer;
     private Config config;
 
-    public WebAdminModule( WebServer webServer, Config config )
+    public ConsoleModule( WebServer webServer, Config config )
     {
         this.webServer = webServer;
         this.config = config;

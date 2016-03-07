@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.webadmin.console.ScriptSession;
 
 public class CypherSession implements ScriptSession
 {
