@@ -107,8 +107,13 @@ case class ResolvedCall(signature: ProcedureSignature,
   }
 
   private def resultCheck: SemanticCheck =
-    if (declaredResults)
+    // CALL of VOID procedure => No need to name arguments, even in query
+    if (signature.outputSignature.isEmpty)
+      success
+    // CALL ... YIELD ... => Check named outputs
+    else if (declaredResults)
       callResults.foldSemanticCheck(_.semanticCheck(callOutputTypes))
+    // CALL wo YIELD of non-VOID procedure in query => Error
     else
       error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)", position))
 
