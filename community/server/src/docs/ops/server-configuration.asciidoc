@@ -146,7 +146,7 @@ Failure to transmit both `X-Forwarded-Host` and `X-Forwarded-Proto` headers will
 
 == Enabling logging from the garbage collector ==
 
-To get garbage collection logging output you have to enable GC logging by setting the following value in _conf/neo4j.conf_:
+To get garbage collection logging output you have to enable GC logging by setting the following value in _neo4j.conf_:
 [source,properties]
 ----
 dbms.logs.gc.enabled=true
