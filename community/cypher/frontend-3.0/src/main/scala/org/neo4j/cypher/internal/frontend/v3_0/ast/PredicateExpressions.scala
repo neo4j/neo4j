@@ -169,6 +169,8 @@ sealed trait InequalityExpression extends Expression with BinaryOperatorExpressi
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
+  def includeEquality: Boolean
+
   def negated: InequalityExpression
   def swapped: InequalityExpression
 
@@ -177,29 +179,37 @@ sealed trait InequalityExpression extends Expression with BinaryOperatorExpressi
 }
 
 final case class LessThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends InequalityExpression {
-  override def canonicalOperatorSymbol = "<"
+  override val canonicalOperatorSymbol = "<"
 
-  def negated: InequalityExpression = GreaterThanOrEqual(lhs, rhs)(position)
-  def swapped: InequalityExpression = GreaterThan(rhs, lhs)(position)
+  override val includeEquality = false
+
+  override def negated: InequalityExpression = GreaterThanOrEqual(lhs, rhs)(position)
+  override def swapped: InequalityExpression = GreaterThan(rhs, lhs)(position)
 }
 
 final case class LessThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends InequalityExpression {
-  override def canonicalOperatorSymbol = "<="
+  override val canonicalOperatorSymbol = "<="
 
-  def negated: InequalityExpression = GreaterThan(lhs, rhs)(position)
-  def swapped: InequalityExpression = GreaterThanOrEqual(rhs, lhs)(position)
+  override val includeEquality = true
+
+  override def negated: InequalityExpression = GreaterThan(lhs, rhs)(position)
+  override def swapped: InequalityExpression = GreaterThanOrEqual(rhs, lhs)(position)
 }
 
 final case class GreaterThan(lhs: Expression, rhs: Expression)(val position: InputPosition) extends InequalityExpression {
-  override def canonicalOperatorSymbol = ">"
+  override val canonicalOperatorSymbol = ">"
 
-  def negated: InequalityExpression = LessThanOrEqual(lhs, rhs)(position)
-  def swapped: InequalityExpression = LessThan(rhs, lhs)(position)
+  override val includeEquality = false
+
+  override def negated: InequalityExpression = LessThanOrEqual(lhs, rhs)(position)
+  override def swapped: InequalityExpression = LessThan(rhs, lhs)(position)
 }
 
 final case class GreaterThanOrEqual(lhs: Expression, rhs: Expression)(val position: InputPosition) extends InequalityExpression {
-  override def canonicalOperatorSymbol = ">="
+  override val canonicalOperatorSymbol = ">="
 
-  def negated: InequalityExpression = LessThan(lhs, rhs)(position)
-  def swapped: InequalityExpression = LessThanOrEqual(rhs, lhs)(position)
+  override val includeEquality = true
+
+  override def negated: InequalityExpression = LessThan(lhs, rhs)(position)
+  override def swapped: InequalityExpression = LessThanOrEqual(rhs, lhs)(position)
 }

@@ -169,6 +169,8 @@ case class InequalityRangeSeekable(ident: Variable, propertyKeyName: PropertyKey
       case LessThanOrEqual(_, value) => Right(InclusiveBound(value))
     })
 
+  def hasEquality: Boolean = expr.inequalities.map(_.includeEquality).reduceLeft(_ || _)
+
   def asQueryExpression: QueryExpression[Expression] =
     RangeQueryExpression(InequalitySeekRangeWrapper(range)(ident.position))
 }

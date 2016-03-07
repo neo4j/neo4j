@@ -238,6 +238,8 @@ sealed trait NonEmptyList[+T] {
     }
   }
 
+  def size: Int
+
   final def toSet[X >: T]: Set[X] = foldLeft(Set.empty[X])(_ + _)
   final def toSeq: Seq[T] = foldLeft(Seq.empty[T])(_ :+ _)
   final def toList: List[T] = foldLeft(List.empty[T])(_ :+ _)
@@ -302,6 +304,7 @@ final case class Fby[+T](head: T, tail: NonEmptyList[T]) extends NonEmptyList[T]
   override def hasTail: Boolean = true
   override def isLast: Boolean = false
   override def toString = s"${head.toString}, ${tail.toString}"
+  override def size = 1 + tail.size
 }
 
 final case class Last[+T](head: T) extends NonEmptyList[T] {
@@ -309,4 +312,5 @@ final case class Last[+T](head: T) extends NonEmptyList[T] {
   override def hasTail: Boolean = false
   override def isLast: Boolean = true
   override def toString = s"${head.toString}"
+  override def size = 1
 }

@@ -23,13 +23,13 @@ import java.math
 import java.math.RoundingMode
 
 import org.neo4j.cypher.internal.compiler.v3_0.PrefixRange
-import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.compiler.v3_0.planner.Selections
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, Selectivity}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.Selections
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics._
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, LabelId}
+import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, SemanticTable}
 
 trait Expression2Selectivity {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
@@ -184,10 +184,17 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
                                                        (implicit semanticTable: SemanticTable): Selectivity = {
     val name = seekable.ident.name
     val propertyKeyName = seekable.expr.property.propertyKey
-    val equality = math.BigDecimal.valueOf(calculateSelectivityForPropertyEquality(name, None, selections, propertyKeyName).factor)
+    val equalitySelectivity = calculateSelectivityForPropertyEquality(name, Some(1), selections, propertyKeyName).factor
+
+    val equality = math.BigDecimal.valueOf(equalitySelectivity)
     val factor = math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
-    val slack = BigDecimalCombiner.negate(equality).multiply(factor)
-    val result = Selectivity.of(equality.add(slack).doubleValue()).getOrElse(Selectivity.ONE)
+    val negatedEquality = BigDecimalCombiner.negate(equality)
+
+    val base = if (seekable.hasEquality) equality else math.BigDecimal.valueOf(0)
+    val selectivity = base.add(BigDecimalCombiner.andTogetherBigDecimals(
+      Seq(math.BigDecimal.valueOf(seekable.expr.inequalities.size), factor, negatedEquality)
+    ).get)
+    val result = Selectivity.of(selectivity.doubleValue()).getOrElse(Selectivity.ONE)
     result
   }
 

@@ -85,7 +85,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val result = calculator(n_gt_3_and_lt_4.expr)
 
-    result.factor should equal(0.03)
+    result.factor should equal(0.06)
   }
 
   test("Should optimize selectivity with respect to prefix length for STARTS WITH predicates") {
