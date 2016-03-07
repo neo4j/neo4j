@@ -108,7 +108,7 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
         }
         else
         {
-            markFirstByteAsUnused( cursor );
+            markAsUnused( cursor );
         }
     }
 }

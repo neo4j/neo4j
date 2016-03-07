@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.id.IdSequence;
@@ -49,7 +50,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR
  * <ol>
  * <li>0x1: inUse [0=unused, 1=used]</li>
  * <li>0x2: record unit [0=single record, 1=multiple records]</li>
- * <li>0x4: record unit type [0=first, 1=consecutive]
+ * <li>0x4: record unit type [1=first, 0=consecutive]
  * <li>0x8 - 0x80 other flags for this record specific to each type</li>
  * </ol>
  *
@@ -187,7 +188,29 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         }
         else
         {
-            markFirstByteAsUnused( primaryCursor );
+            markAsUnused( primaryCursor, storeFile, record, recordSize );
+        }
+    }
+
+    /*
+     * Use this instead of {@link #markFirstByteAsUnused(PageCursor)} to mark both record units,
+     * if record has a reference to a secondary unit.
+     */
+    protected void markAsUnused( PageCursor cursor, PagedFile storeFile, RECORD record, int recordSize )
+            throws IOException
+    {
+        markAsUnused( cursor );
+        if ( record.hasSecondaryUnitId() )
+        {
+            long secondaryUnitId = record.getSecondaryUnitId();
+            long pageIdForSecondaryRecord = pageIdForRecord( secondaryUnitId, storeFile.pageSize(), recordSize );
+            int offsetForSecondaryId = offsetForId( secondaryUnitId, storeFile.pageSize(), recordSize );
+            if ( !cursor.next( pageIdForSecondaryRecord ) )
+            {
+                throw new UnderlyingStorageException( "Couldn't move to secondary page " + pageIdForSecondaryRecord );
+            }
+            cursor.setOffset( offsetForSecondaryId );
+            markAsUnused( cursor );
         }
     }
 

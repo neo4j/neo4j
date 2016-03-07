@@ -90,7 +90,7 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
         }
         else
         {
-            markFirstByteAsUnused( cursor );
+            markAsUnused( cursor );
         }
     }
 

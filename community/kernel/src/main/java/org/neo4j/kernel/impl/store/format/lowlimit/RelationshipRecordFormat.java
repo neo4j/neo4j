@@ -170,7 +170,7 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
         }
         else
         {
-            markFirstByteAsUnused( cursor );
+            markAsUnused( cursor );
         }
     }
 }

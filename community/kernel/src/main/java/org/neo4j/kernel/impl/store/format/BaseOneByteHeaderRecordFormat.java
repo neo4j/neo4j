@@ -43,7 +43,7 @@ public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseR
         this.inUseBitMaskForFirstByte = inUseBitMaskForFirstByte;
     }
 
-    protected void markFirstByteAsUnused( PageCursor cursor )
+    protected void markAsUnused( PageCursor cursor )
     {
         byte inUseByte = cursor.getByte( cursor.getOffset() );
         inUseByte &= ~inUseBitMaskForFirstByte;
