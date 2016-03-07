@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -86,7 +87,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         try ( CountsAccessor.IndexStatsUpdater updater = counts.updateIndexCounts() )
         {
             updater.replaceIndexSample( labelId, propertyKeyId, uniqueElements, maxUniqueElements );
-            updater.replaceIndexUpdateAndSize( labelId, propertyKeyId, 0l, indexSize );
+            updater.replaceIndexUpdateAndSize( labelId, propertyKeyId, 0L, indexSize );
         }
     }
 
@@ -108,46 +109,11 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             final IntPredicate labelIdFilter, IntPredicate propertyKeyIdFilter,
-            final Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
+            final Visitor<NodePropertyUpdates, FAILURE> propertyUpdatesVisitor,
             final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor )
     {
-        final long allNodes = nodeStore.getHighId();
-
-        return new NodeStoreScan<FAILURE>( nodeStore, locks, allNodes )
-        {
-            @Override
-            protected void process( NodeRecord node ) throws FAILURE
-            {
-                long[] labels = parseLabelsField( node ).get( this.nodeStore );
-                if ( labels.length == 0 )
-                {
-                    // This node has no labels at all
-                    return;
-                }
-
-                if ( labelUpdateVisitor != null )
-                {
-                    // Notify the label update visitor
-                    labelUpdateVisitor.visit( labelChanges( node.getId(), EMPTY_LONG_ARRAY, labels ) );
-                }
-
-                if ( propertyUpdateVisitor != null && containsAnyLabel( labelIdFilter, labels ) )
-                {
-                    // Notify the property update visitor
-                    properties: for ( PropertyBlock property : properties( node ) )
-                    {
-                        int propertyKeyId = property.getKeyIndexId();
-                        if ( propertyKeyIdFilter.test( propertyKeyId ) )
-                        {
-                            // This node has a property of interest to us
-                            NodePropertyUpdate update = add( node.getId(), propertyKeyId, valueOf( property ), labels );
-                            propertyUpdateVisitor.visit( update );
-                            continue properties;
-                        }
-                    }
-                }
-            }
-        };
+        return new StoreViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelUpdateVisitor,
+                propertyUpdatesVisitor, labelIdFilter, propertyKeyIdFilter );
     }
 
     @Override
@@ -202,25 +168,6 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         return Property.noNodeProperty( nodeId, propertyKeyId );
     }
 
-    private Object valueOf( PropertyBlock property )
-    {
-        // Make sure the value is loaded, even if it's of a "heavy" kind.
-        propertyStore.ensureHeavy( property );
-        return property.getType().getValue( property, propertyStore );
-    }
-
-    private Iterable<PropertyBlock> properties( final NodeRecord node )
-    {
-        return new Iterable<PropertyBlock>()
-        {
-            @Override
-            public Iterator<PropertyBlock> iterator()
-            {
-                return new PropertyBlockIterator( node );
-            }
-        };
-    }
-
     private static boolean containsAnyLabel( IntPredicate labelIdFilter, long[] labels )
     {
         for ( long candidate : labels )
@@ -231,42 +178,6 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             }
         }
         return false;
-    }
-
-    private class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>
-    {
-        private final Iterator<PropertyRecord> records;
-        private Iterator<PropertyBlock> blocks = Iterators.emptyIterator();
-
-        PropertyBlockIterator( NodeRecord node )
-        {
-            long firstPropertyId = node.getNextProp();
-            if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
-            {
-                records = Iterators.emptyIterator();
-            }
-            else
-            {
-                records = propertyStore.getPropertyRecordChain( firstPropertyId ).iterator();
-            }
-        }
-
-        @Override
-        protected PropertyBlock fetchNextOrNull()
-        {
-            for (; ; )
-            {
-                if ( blocks.hasNext() )
-                {
-                    return blocks.next();
-                }
-                if ( !records.hasNext() )
-                {
-                    return null;
-                }
-                blocks = records.next().iterator();
-            }
-        }
     }
 
     abstract static class NodeStoreScan<FAILURE extends Exception> implements StoreScan<FAILURE>
@@ -325,6 +236,116 @@ public class NeoStoreIndexStoreView implements IndexStoreView
 
             // nothing to do 100% completed
             return PopulationProgress.DONE;
+        }
+    }
+
+    static class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStoreScan<FAILURE>
+    {
+        private PropertyStore propertyStore;
+        private final Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor;
+        private final Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor;
+        private final IntPredicate labelIdFilter;
+        private final IntPredicate propertyKeyIdFilter;
+        private NodePropertyUpdates updates;
+
+        StoreViewNodeStoreScan( NodeStore nodeStore, LockService locks, PropertyStore propertyStore,
+                Visitor<NodeLabelUpdate,FAILURE>
+                labelUpdateVisitor, Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor,
+                IntPredicate labelIdFilter, IntPredicate propertyKeyIdFilter )
+        {
+            super( nodeStore, locks, nodeStore.getHighId() );
+            this.propertyStore = propertyStore;
+            this.labelUpdateVisitor = labelUpdateVisitor;
+            this.propertyUpdatesVisitor = propertyUpdatesVisitor;
+            this.labelIdFilter = labelIdFilter;
+            this.propertyKeyIdFilter = propertyKeyIdFilter;
+            updates = new NodePropertyUpdates();
+        }
+
+        @Override
+        protected void process( NodeRecord node ) throws FAILURE
+        {
+            long[] labels = parseLabelsField( node ).get( this.nodeStore );
+            if ( labels.length == 0 )
+            {
+                // This node has no labels at all
+                return;
+            }
+
+            if ( labelUpdateVisitor != null )
+            {
+                // Notify the label update visitor
+                labelUpdateVisitor.visit( labelChanges( node.getId(), EMPTY_LONG_ARRAY, labels ) );
+            }
+
+            if ( propertyUpdatesVisitor != null && containsAnyLabel( labelIdFilter, labels ) )
+            {
+
+                updates.initForNodeId( node.getId() );
+                // Notify the property update visitor
+                for ( PropertyBlock property : properties( node ) )
+                {
+                    int propertyKeyId = property.getKeyIndexId();
+                    if ( propertyKeyIdFilter.test( propertyKeyId ) )
+                    {
+                        // This node has a property of interest to us
+                        updates.add( propertyKeyId, valueOf( property ), labels );
+                    }
+                }
+                if ( updates.containsUpdates() )
+                {
+                    propertyUpdatesVisitor.visit( updates );
+                    updates.reset();
+                }
+            }
+        }
+
+        private Iterable<PropertyBlock> properties( final NodeRecord node )
+        {
+            return () -> new PropertyBlockIterator( node );
+        }
+
+        private Object valueOf( PropertyBlock property )
+        {
+            // Make sure the value is loaded, even if it's of a "heavy" kind.
+            propertyStore.ensureHeavy( property );
+            return property.getType().getValue( property, propertyStore );
+        }
+
+        private class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>
+        {
+            private final Iterator<PropertyRecord> records;
+            private Iterator<PropertyBlock> blocks = Iterators.emptyIterator();
+
+            PropertyBlockIterator( NodeRecord node )
+            {
+                long firstPropertyId = node.getNextProp();
+                if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
+                {
+                    records = Iterators.emptyIterator();
+                }
+                else
+                {
+                    records = propertyStore.getPropertyRecordChain( firstPropertyId ).iterator();
+                }
+            }
+
+            @Override
+            protected PropertyBlock fetchNextOrNull()
+            {
+                for (; ; )
+                {
+                    if ( blocks.hasNext() )
+                    {
+                        return blocks.next();
+                    }
+                    if ( !records.hasNext() )
+                    {
+                        return null;
+                    }
+                    blocks = records.next().iterator();
+                }
+            }
         }
     }
 }

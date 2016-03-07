@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -143,7 +144,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void add( List<NodePropertyUpdate> updates )
+    public void add( Collection<NodePropertyUpdate> updates )
     {
         throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
     }
@@ -437,6 +438,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         final FlippableIndexProxy flipper;
         final FailedIndexProxyFactory failedIndexProxyFactory;
         final String indexUserDescription;
+        private Collection<NodePropertyUpdate> applicableUpdates = new ArrayList<>();
 
         IndexPopulation(
                 IndexPopulator populator,
@@ -463,20 +465,28 @@ public class MultipleIndexPopulator implements IndexPopulator
                     populator, failure( t ), indexCountsRemover, logProvider ) );
         }
 
-        private void add( NodePropertyUpdate update )
+        private void addAll( Collection<NodePropertyUpdate> updates )
                 throws IndexEntryConflictException, IOException
         {
-            if ( isApplicable( update ) )
+            for ( NodePropertyUpdate update : updates )
             {
-                populator.includeSample( update );
-                addApplicable( update );
+                if ( isApplicable( update ) )
+                {
+                    populator.includeSample( update );
+                    applicableUpdates.add( update );
+                }
+            }
+            if ( !applicableUpdates.isEmpty() )
+            {
+                addApplicable( applicableUpdates );
+                applicableUpdates.clear();
             }
         }
 
-        protected void addApplicable( NodePropertyUpdate update )
+        void addApplicable( Collection<NodePropertyUpdate> updates )
                 throws IOException, IndexEntryConflictException
         {
-            populator.add( Collections.singletonList( update ) );
+            populator.add( updates );
         }
 
         private boolean isApplicable( NodePropertyUpdate update )
@@ -500,19 +510,20 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    private class NodePopulationVisitor implements Visitor<NodePropertyUpdate,IndexPopulationFailedKernelException>
+    private class NodePopulationVisitor implements Visitor<NodePropertyUpdates,
+            IndexPopulationFailedKernelException>
     {
         @Override
-        public boolean visit( NodePropertyUpdate update ) throws IndexPopulationFailedKernelException
+        public boolean visit( NodePropertyUpdates updates ) throws IndexPopulationFailedKernelException
         {
-            add( update );
-            populateFromQueue( update.getNodeId() );
+            add( updates );
+            populateFromQueue( updates.getNodeId() );
             return false;
         }
 
-        private void add( NodePropertyUpdate update )
+        private void add( NodePropertyUpdates updates )
         {
-            forEachPopulation( population -> population.add( update ) );
+            forEachPopulation( population -> population.addAll( updates.getPropertyUpdates() ) );
         }
     }
 }

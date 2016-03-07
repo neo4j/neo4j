@@ -74,6 +74,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -498,12 +499,10 @@ public class BatchInserterImpl implements BatchInserter
             populators[i].create();
         }
 
-        Visitor<NodePropertyUpdate, IOException> propertyUpdateVisitor = new Visitor<NodePropertyUpdate,IOException>()
-        {
-            @Override
-            public boolean visit( NodePropertyUpdate update ) throws IOException
+        Visitor<NodePropertyUpdates, IOException> propertyUpdateVisitor = updates -> {
+            // Do a lookup from which property has changed to a list of indexes worried about that property.
+            for ( NodePropertyUpdate update : updates.getPropertyUpdates() )
             {
-                // Do a lookup from which property has changed to a list of indexes worried about that property.
                 int propertyKeyInQuestion = update.getPropertyKeyId();
                 for ( int i = 0; i < propertyKeyIds.length; i++ )
                 {
@@ -522,8 +521,8 @@ public class BatchInserterImpl implements BatchInserter
                         }
                     }
                 }
-                return true;
             }
+            return true;
         };
 
         InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor();

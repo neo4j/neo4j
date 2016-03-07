@@ -26,10 +26,9 @@ import org.junit.Test;
 import org.mockito.Matchers;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -78,13 +77,13 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
-import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -121,7 +120,7 @@ public class IndexPopulationJobTest
 
         verify( populator ).create();
         verify( populator ).includeSample( update );
-        verify( populator ).add( singletonList( update ) );
+        verify( populator ).add( anyListOf(NodePropertyUpdate.class) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
@@ -168,9 +167,8 @@ public class IndexPopulationJobTest
 
         verify( populator ).create();
         verify( populator ).includeSample( update1 );
-        verify( populator ).add( Collections.singletonList( update1 ) );
         verify( populator ).includeSample( update2 );
-        verify( populator ).add( Collections.singletonList( update2 ) );
+        verify( populator, times( 2 ) ).add( anyListOf(NodePropertyUpdate.class ) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
@@ -258,7 +256,7 @@ public class IndexPopulationJobTest
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
-                Matchers.<Visitor<NodePropertyUpdate,RuntimeException>>any(),
+                Matchers.<Visitor<NodePropertyUpdates,RuntimeException>>any(),
                 Matchers.<Visitor<NodeLabelUpdate,RuntimeException>>any()) )
                 .thenReturn(storeScan );
 
@@ -456,7 +454,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( List<NodePropertyUpdate> updates )
+        public void add( Collection<NodePropertyUpdate> updates )
         {
             for ( NodePropertyUpdate update : updates )
             {
@@ -532,7 +530,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( List<NodePropertyUpdate> updates )
+        public void add( Collection<NodePropertyUpdate> updates )
         {
             for ( NodePropertyUpdate update : updates )
             {

@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -87,7 +88,6 @@ import org.neo4j.test.DoubleLatch;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -98,6 +98,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -212,7 +213,7 @@ public class IndexingServiceTest
         when( populator.newPopulatingUpdater( storeView ) ).thenReturn( updater );
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        doAnswer( afterAwaiting( latch ) ).when( populator ).add( any() );
+        doAnswer( afterAwaiting( latch ) ).when( populator ).add( anyList() );
 
         IndexingService indexingService =
                 newIndexingServiceWithMockedDependencies( populator, accessor, withData( add( 1, "value1" ) ) );
@@ -240,8 +241,7 @@ public class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
-        order.verify( populator ).add( singletonList( add( 1, "value1" ) ) );
-
+        order.verify( populator ).add( Mockito.anyListOf (NodePropertyUpdate.class));
 
         // invoked from indexAllNodes(), empty because the id we added (2) is bigger than the one we indexed (1)
         //
@@ -848,7 +848,7 @@ public class IndexingServiceTest
         }
 
         @Override
-        public void add( List<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+        public void add( Collection<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
         {
             latch.awaitStart();
         }
@@ -945,16 +945,21 @@ public class IndexingServiceTest
         @Override
         public StoreScan<IndexPopulationFailedKernelException> answer( InvocationOnMock invocation ) throws Throwable
         {
-            final Visitor<NodePropertyUpdate,IndexPopulationFailedKernelException> visitor =
+            final Visitor<NodePropertyUpdates,IndexPopulationFailedKernelException> visitor =
                     visitor( invocation.getArguments()[2] );
             return new StoreScan<IndexPopulationFailedKernelException>()
             {
+                NodePropertyUpdates propertyUpdates = new NodePropertyUpdates();
+
                 @Override
                 public void run() throws IndexPopulationFailedKernelException
                 {
                     for ( NodePropertyUpdate update : updates )
                     {
-                        visitor.visit( update );
+                        propertyUpdates.initForNodeId( update.getNodeId() );
+                        propertyUpdates.add( update );
+                        visitor.visit( propertyUpdates );
+                        propertyUpdates.reset();
                     }
                 }
 
@@ -973,7 +978,7 @@ public class IndexingServiceTest
         }
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
-        private static Visitor<NodePropertyUpdate, IndexPopulationFailedKernelException> visitor( Object v )
+        private static Visitor<NodePropertyUpdates, IndexPopulationFailedKernelException> visitor( Object v )
         {
             return (Visitor) v;
         }
