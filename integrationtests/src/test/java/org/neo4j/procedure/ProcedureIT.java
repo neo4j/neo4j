@@ -103,7 +103,7 @@ public class ProcedureIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage("Procedure call does not provide the required number of arguments (1)  (line 1, column 1 (offset: 0))");
+        exception.expectMessage("Procedure call does not provide the required number of arguments (1) (line 1, column 1 (offset: 0))");
         // When
         try ( Transaction ignore = db.beginTx() )
         {

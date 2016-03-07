@@ -54,7 +54,31 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
     resolved.callResultIndices should equal(Seq(0 -> "x", 1 -> "y"))
+  }
 
+  test("should resolve void CALL my.proc.foo") {
+    val unresolved = UnresolvedCall(ns, name, None, None)(pos)
+    val signatureInputs = Seq(FieldSignature("a", CTInteger))
+    val signatureOutputs = None
+    val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, ProcedureReadOnlyAccess)
+    val callArguments = Seq(Parameter("a", CTAny)(pos))
+    val callResults = Seq.empty
+
+    val resolved = ResolvedCall(_ => signature)(unresolved)
+
+    resolved should equal(
+      ResolvedCall(
+        signature,
+        callArguments,
+        callResults,
+        declaredArguments = false,
+        declaredResults = false
+      )(pos)
+    )
+
+    QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
+    resolved.callResultTypes should equal(Seq.empty)
+    resolved.callResultIndices should equal(Seq.empty)
   }
 
   test("should resolve CALL my.proc.foo YIELD x, y") {
@@ -105,6 +129,31 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
     resolved.callResultTypes should equal(Seq("x" -> CTInteger, "y" -> CTList(CTNode)))
     resolved.callResultIndices should equal(Seq(0 -> "x", 1 -> "y"))
+  }
+
+  test("should resolve void CALL my.proc.foo(a)") {
+    val signatureInputs = Seq(FieldSignature("a", CTInteger))
+    val signatureOutputs = None
+    val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, ProcedureReadOnlyAccess)
+    val callArguments = Seq(Parameter("a", CTAny)(pos))
+    val callResults = Seq.empty
+    val unresolved = UnresolvedCall(ns, name, Some(callArguments), None)(pos)
+
+    val resolved = ResolvedCall(_ => signature)(unresolved)
+
+    resolved should equal(
+      ResolvedCall(
+        signature,
+        callArguments,
+        callResults,
+        declaredArguments = true,
+        declaredResults = false
+      )(pos)
+    )
+
+    QualifiedProcedureName(unresolved) should equal(resolved.qualifiedName)
+    resolved.callResultTypes should equal(Seq.empty)
+    resolved.callResultIndices should equal(Seq.empty)
   }
 
   test("should resolve CALL my.proc.foo(a) YIELD x, y AS z") {
