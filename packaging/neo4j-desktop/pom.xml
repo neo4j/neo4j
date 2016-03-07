@@ -30,13 +30,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server</artifactId>
-      <version>${project.version}</version>
-      <classifier>static-web</classifier>
-    </dependency>
-
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>

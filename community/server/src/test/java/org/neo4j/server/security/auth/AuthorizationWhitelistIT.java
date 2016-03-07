@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.security.auth;
 
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
@@ -54,7 +54,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldWhitelistWebadmin() throws Exception
+    public void shouldNotWhitelistWebadminConsole() throws Exception
     {
         // Given
         server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
@@ -63,8 +63,8 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
         server.start();
 
         // Then I should be able to access the webadmin
-        HTTP.Response response = HTTP.GET( server.baseUri().resolve( "webadmin/index.html" ).toString() );
-        assertThat( response.status(), equalTo( 200 ) );
+        HTTP.Response response = HTTP.GET( server.baseUri().resolve( "db/manage/server/console" ).toString() );
+        assertThat( response.status(), equalTo( 401 ) );
     }
 
     @Test
