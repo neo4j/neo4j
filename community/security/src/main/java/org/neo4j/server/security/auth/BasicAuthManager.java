@@ -77,14 +77,14 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
     {
         assertAuthEnabled();
         User user = users.findByName( username );
-        AuthenticationResult result;
-        if ( user == null )
-        {
-            result = AuthenticationResult.FAILURE;
-        }
-        else
+        AuthenticationResult result = AuthenticationResult.FAILURE;
+        if ( user != null )
         {
             result = authStrategy.authenticate( user, password );
+            if ( result == AuthenticationResult.SUCCESS && user.passwordChangeRequired() )
+            {
+                result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+            }
         }
         return new BasicAuthSubject( this, user, result );
     }
