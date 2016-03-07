@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ExtendedExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, PropertyContainer}
+import org.neo4j.graphdb.{Result, Node, PropertyContainer}
 import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -107,16 +107,16 @@ abstract class ExecutionEngineFunSuite
     }
   }
 
-  def shouldHaveWarnings(result: ExtendedExecutionResult, statusCodes: List[Status]) {
-    val resultCodes = result.notifications.map(_.getCode)
+  def shouldHaveWarnings(result: Result, statusCodes: List[Status]) {
+    val resultCodes = result.getNotifications.asScala.map(_.getCode)
     statusCodes.foreach(statusCode => resultCodes should contain(statusCode.code.serialize()))
   }
 
-  def shouldHaveWarning(result: ExtendedExecutionResult, notification: Status) {
+  def shouldHaveWarning(result: Result, notification: Status) {
     shouldHaveWarnings(result, List(notification))
   }
 
-  def shouldHaveNoWarnings(result: ExtendedExecutionResult) {
+  def shouldHaveNoWarnings(result: Result) {
     shouldHaveWarnings(result, List())
   }
 }

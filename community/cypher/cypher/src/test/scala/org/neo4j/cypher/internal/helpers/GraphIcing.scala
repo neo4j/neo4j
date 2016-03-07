@@ -47,7 +47,7 @@ trait GraphIcing {
 
   implicit class RichGraphDatabaseQueryService(graphService: GraphDatabaseQueryService) {
 
-    private var graph = graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
+    private val graph = graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def getAllNodes() = graph.getAllNodes
 

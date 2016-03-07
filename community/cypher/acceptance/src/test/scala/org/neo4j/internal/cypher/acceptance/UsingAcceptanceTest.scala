@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
+import org.neo4j.graphdb.schema.Schema
+import org.neo4j.graphdb.{QueryExecutionException, Result}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -106,67 +108,65 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {
     runWithConfig() {
-      engine =>
-        engine.execute("CREATE INDEX ON :Person(name)", Map.empty[String, Object], graph.session())
+      db =>
+        db.execute("CREATE INDEX ON :Person(name)")
         shouldHaveNoWarnings(
-          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+          db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
         )
     }
   }
 
   test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled") {
     runWithConfig() {
-      engine =>
-        shouldHaveWarning(
-          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session()),
-          Status.Schema.NoSuchIndex)
+      db =>
+        val result = db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
+        shouldHaveWarning(result, Status.Schema.NoSuchIndex)
     }
   }
 
   test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned off") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
-      engine =>
-        shouldHaveWarning(
-          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session()),
-          Status.Schema.NoSuchIndex)
+      db =>
+        val result = db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
+        shouldHaveWarning(result, Status.Schema.NoSuchIndex)
     }
   }
 
   test("should generate an error if executing a query using EXPLAIN and a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        intercept[IndexHintException](
-          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
-        )
+      db =>
+        intercept[QueryExecutionException](
+          db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
+        ).getStatusCode should equal("Neo.ClientError.Schema.NoSuchIndex")
     }
   }
 
   test("should generate an error if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        intercept[IndexHintException](
-          engine.execute(s"MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
-        )
+      db =>
+        intercept[QueryExecutionException](
+          db.execute(s"MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
+        ).getStatusCode should equal("Neo.ClientError.Schema.NoSuchIndex")
     }
   }
 
   test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, and hint errors are turned on") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        engine.execute("CREATE INDEX ON :Person(email)", Map.empty[String, Object], graph.session())
-        intercept[SyntaxException](
-          engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
-        )
+      db =>
+        db.execute("CREATE INDEX ON :Person(email)")
+        intercept[QueryExecutionException](
+          db.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n")
+        ).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
     }
   }
 
   test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, even when hint errors are not turned on") {
     runWithConfig() {
-      engine =>
-        engine.execute("CREATE INDEX ON :Person(email)", Map.empty[String, Object], graph.session())
-        intercept[SyntaxException](
-          engine.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
-        )
+      db =>
+        db.execute("CREATE INDEX ON :Person(email)")
+        intercept[QueryExecutionException](
+          db.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n")
+        ).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
     }
   }
 
@@ -319,7 +319,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     runWithConfig() {
       engine =>
         shouldHaveNoWarnings(
-          engine.execute(s"EXPLAIN MATCH (n:Person) USING SCAN n:Person WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+          engine.execute(s"EXPLAIN MATCH (n:Person) USING SCAN n:Person WHERE n.name = 'John' RETURN n")
         )
     }
   }
@@ -327,9 +327,9 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should succeed if executing a query using both 'USING SCAN' and 'USING INDEX' if index exists") {
     runWithConfig() {
       engine =>
-        engine.execute("CREATE INDEX ON :Person(name)", Map.empty[String, Object], graph.session())
+        engine.execute("CREATE INDEX ON :Person(name)")
         shouldHaveNoWarnings(
-          engine.execute(s"EXPLAIN MATCH (n:Person)-[:WORKS_FOR]->(c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
+          engine.execute(s"EXPLAIN MATCH (n:Person)-[:WORKS_FOR]->(c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n")
         )
     }
   }
@@ -337,10 +337,10 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should fail outright if executing a query using a 'USING SCAN' and 'USING INDEX' on the same variable, even if index exists") {
     runWithConfig() {
       engine =>
-        engine.execute("CREATE INDEX ON :Person(name)", Map.empty[String, Object], graph.session())
-        intercept[SyntaxException](
-          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) USING SCAN n:Person WHERE n.name = 'John' RETURN n", Map.empty[String, Object], graph.session())
-        )
+        engine.execute("CREATE INDEX ON :Person(name)")
+        intercept[QueryExecutionException](
+          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) USING SCAN n:Person WHERE n.name = 'John' RETURN n")
+        ).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
     }
   }
 
@@ -693,25 +693,22 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
   private def verifyJoinHintUnfulfillableOnRunWithConfig(initQuery: String, query: String, expectedResult: Any): Unit = {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
-      engine =>
-        engine.execute(initQuery, Map.empty[String, Object], graph.session())
-        val result = engine.execute(query, Map.empty[String, Object], graph.session())
+      db =>
+        db.execute(initQuery)
+        val result = db.execute(query)
         shouldHaveNoWarnings(result)
-        result.toList should equal(expectedResult)
+        import scala.collection.JavaConverters._
+        result.asScala.toList.map(_.asScala) should equal(expectedResult)
 
-        val explainResult = engine.execute(s"EXPLAIN $query", Map.empty[String, Object], graph.session())
+        val explainResult = db.execute(s"EXPLAIN $query")
         shouldHaveWarning(explainResult, Status.Statement.JoinHintUnfulfillableWarning)
     }
 
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        engine.execute(initQuery, Map.empty[String, Object], graph.session())
-        intercept[JoinHintException](
-          engine.execute(query, Map.empty[String, Object], graph.session())
-        )
-        intercept[JoinHintException](
-          engine.execute(s"EXPLAIN $query", Map.empty[String, Object], graph.session())
-        )
+      db =>
+        db.execute(initQuery)
+        intercept[QueryExecutionException](db.execute(query)).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailure")
+        intercept[QueryExecutionException](db.execute(s"EXPLAIN $query")).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailure")
     }
   }
 
