@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.ArrayUtil.contains;
@@ -59,9 +60,11 @@ public class DirectRecordStoreMigrator
     }
 
     public void migrate( File fromStoreDir, RecordFormats fromFormat, File toStoreDir, RecordFormats toFormat,
-            StoreType[] types, StoreType... additionalTypesToOpen )
+            MigrationProgressMonitor.Section progressMonitor, StoreType[] types, StoreType... additionalTypesToOpen )
     {
         StoreType[] storesToOpen = ArrayUtil.concat( types, additionalTypesToOpen );
+        progressMonitor.start( storesToOpen.length );
+
         try (
             NeoStores fromStores = new StoreFactory( fromStoreDir, config, new DefaultIdGeneratorFactory( fs ),
                     pageCache, fs, NullLogProvider.getInstance(), fromFormat ).openNeoStores( true, storesToOpen );
@@ -76,6 +79,7 @@ public class DirectRecordStoreMigrator
                 if ( type.isRecordStore() )
                 {
                     migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ) );
+                    progressMonitor.progress( 1 );
                 }
             }
         }

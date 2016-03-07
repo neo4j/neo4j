@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.storemigration.monitoring;
 
 public class SilentMigrationProgressMonitor implements MigrationProgressMonitor
 {
-    private static final Section SECTION = new Section()
+    public static final Section NO_OP_SECTION = new Section()
     {
         @Override
         public void progress( long add )
@@ -47,7 +47,7 @@ public class SilentMigrationProgressMonitor implements MigrationProgressMonitor
     @Override
     public Section startSection( String name )
     {
-        return SECTION;
+        return NO_OP_SECTION;
     }
 
     @Override
