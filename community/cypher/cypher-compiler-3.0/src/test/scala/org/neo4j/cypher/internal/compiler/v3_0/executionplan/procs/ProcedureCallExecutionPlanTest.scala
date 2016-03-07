@@ -82,14 +82,14 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   private val readSignature = ProcedureSignature(
     QualifiedProcedureName(Seq.empty, "foo"),
     Seq(FieldSignature("a", symbols.CTInteger)),
-    Seq(FieldSignature("b", symbols.CTInteger)),
+    Some(Seq(FieldSignature("b", symbols.CTInteger))),
     ProcedureReadOnlyAccess
   )
 
   private val writeSignature =  ProcedureSignature(
     QualifiedProcedureName(Seq.empty, "foo"),
     Seq(FieldSignature("a", symbols.CTInteger)),
-    Seq(FieldSignature("b", symbols.CTInteger)),
+    Some(Seq(FieldSignature("b", symbols.CTInteger))),
     ProcedureReadWriteAccess
   )
 
