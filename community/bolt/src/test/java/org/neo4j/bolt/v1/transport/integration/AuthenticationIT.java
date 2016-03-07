@@ -114,8 +114,8 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.AuthenticationFailed,
-                String.format( "The client provided an incorrect username and/or password. (ID:%s)", server.uniqueIdentier()) ) ) );
+        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized,
+                String.format( "The client is unauthorized due to authentication failure. (ID:%s)", server.uniqueIdentier()) ) ) );
     }
 
     @Test
@@ -140,8 +140,8 @@ public class AuthenticationIT
                         init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.AuthenticationFailed,
-                String.format( "The client provided an incorrect username and/or password. (ID:%s)", server.uniqueIdentier()) ) ) );
+        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized,
+                String.format( "The client is unauthorized due to authentication failure. (ID:%s)", server.uniqueIdentier()) ) ) );
 
         // But the new password works fine
         reconnect();

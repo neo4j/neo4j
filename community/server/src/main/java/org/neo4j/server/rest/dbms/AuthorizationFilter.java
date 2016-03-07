@@ -147,19 +147,19 @@ public class AuthorizationFilter implements Filter
     private static final ThrowingConsumer<HttpServletResponse, IOException> noHeader =
             error(  401,
                     map( "errors", singletonList( map(
-                            "code", Status.Security.AuthorizationFailed.code().serialize(),
-                            "message", "No authorization header supplied." ) ) ) );
+                            "code", Status.Security.Unauthorized.code().serialize(),
+                            "message", "No authentication header supplied." ) ) ) );
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> badHeader =
             error(  400,
                     map( "errors", singletonList( map(
                             "code", Status.Request.InvalidFormat.code().serialize(),
-                            "message", "Invalid Authorization header." ) ) ) );
+                            "message", "Invalid authentication header." ) ) ) );
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> invalidCredential =
             error(  401,
                     map( "errors", singletonList( map(
-                            "code", Status.Security.AuthorizationFailed.code().serialize(),
+                            "code", Status.Security.Unauthorized.code().serialize(),
                             "message", "Invalid username or password." ) ) ) );
 
     private static final ThrowingConsumer<HttpServletResponse, IOException> tooManyAttempts =
@@ -172,7 +172,7 @@ public class AuthorizationFilter implements Filter
     {
         return error( 403,
                 map( "errors", singletonList( map(
-                        "code", Status.Security.AuthorizationFailed.code().serialize(),
+                        "code", Status.Security.Forbidden.code().serialize(),
                         "message", String.format("Unauthorized access violation: %s.", message ) ) ) ) );
     }
 
@@ -181,7 +181,7 @@ public class AuthorizationFilter implements Filter
         URI path = UriBuilder.fromUri( baseURL ).path( format( "/user/%s/password", username ) ).build();
         return error( 403,
                 map( "errors", singletonList( map(
-                        "code", Status.Security.AuthorizationFailed.code().serialize(),
+                        "code", Status.Security.Forbidden.code().serialize(),
                         "message", "User is required to change their password." ) ), "password_change", path.toString() ) );
     }
 

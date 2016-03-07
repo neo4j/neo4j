@@ -313,13 +313,12 @@ public interface Status
     enum Security implements Status
     {
         // client
-        AuthenticationFailed( ClientError, "The client provided an incorrect username and/or password." ),
         CredentialsExpired( ClientError, "The credentials have expired and need to be updated." ),
-        AuthorizationFailed( ClientError, "The client does not have privileges to perform the operation requested." ),
+        Unauthorized( ClientError, "The client is unauthorized due to authentication failure." ),
         AuthenticationRateLimit( ClientError, "The client has provided incorrect authentication details too many times in a row." ),
         ModifiedConcurrently( TransientError, "The user was modified concurrently to this request." ),
         EncryptionRequired( ClientError, "A TLS encrypted connection is required." ),
-        AccessViolation( ClientError, "An attempt was made to perform an unauthorized action." );
+        Forbidden( ClientError, "An attempt was made to perform an unauthorized action." );
 
         private final Code code;
 

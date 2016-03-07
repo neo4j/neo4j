@@ -75,8 +75,8 @@ public class BasicAuthenticationTest
 
         // Expect
         exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.AuthenticationFailed ) );
-        exception.expectMessage( "The client provided an incorrect username and/or password." );
+        exception.expect( hasStatus( Status.Security.Unauthorized ) );
+        exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
         authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", "secret" ) );
@@ -161,8 +161,8 @@ public class BasicAuthenticationTest
 
         // Expect
         exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.AuthenticationFailed ) );
-        exception.expectMessage( "The client provided an incorrect username and/or password." );
+        exception.expect( hasStatus( Status.Security.Unauthorized ) );
+        exception.expectMessage( "The client is unauthorized due to authentication failure." );
 
         // When
         // When
@@ -180,8 +180,8 @@ public class BasicAuthenticationTest
 
         // Expect
         exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.AuthenticationFailed ) );
-        exception.expectMessage( "Authorization token must contain: 'scheme : basic'" );
+        exception.expect( hasStatus( Status.Security.Unauthorized ) );
+        exception.expectMessage( "Authentication token must contain: 'scheme : basic'" );
 
         // When
         authentication.authenticate( map( "scheme", "UNKNOWN", "principal", "bob", "credentials", "secret" ) );
@@ -197,7 +197,7 @@ public class BasicAuthenticationTest
 
         // Expect
         exception.expect( AuthenticationException.class );
-        exception.expect( hasStatus( Status.Security.AuthenticationFailed ) );
+        exception.expect( hasStatus( Status.Security.Unauthorized ) );
         exception.expectMessage(
                 "The value associated with the key `principal` must be a String but was: SingletonList" );
 
