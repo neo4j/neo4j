@@ -31,9 +31,17 @@ object ResolvedCall {
     val UnresolvedCall(_, _, declaredArguments, declaredResults) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(QualifiedProcedureName(unresolved))
-    val callArguments = declaredArguments.getOrElse(signature.inputSignature.map { field => Parameter(field.name, CTAny)(position) })
-    val callResults = declaredResults.getOrElse(signature.outputSignature.map { field => ProcedureResultItem(Variable(field.name)(position))(position) })
+    val callArguments = declaredArguments.getOrElse(signatureArguments(signature, position))
+    val callResults = declaredResults.getOrElse(signatureResults(signature, position))
     ResolvedCall(signature, callArguments, callResults, declaredArguments.nonEmpty, declaredResults.nonEmpty)(position)
+  }
+
+  def signatureArguments(signature: ProcedureSignature, position: InputPosition): Seq[Parameter] = {
+    signature.inputSignature.map { field => Parameter(field.name, CTAny)(position) }
+  }
+
+  def signatureResults(signature: ProcedureSignature, position: InputPosition): Seq[ProcedureResultItem] = {
+    signature.outputSignature.getOrElse(Seq.empty).map { field => ProcedureResultItem(Variable(field.name)(position))(position) }
   }
 }
 
@@ -68,7 +76,7 @@ case class ResolvedCall(signature: ProcedureSignature,
     callResults.map(_.variable.name).toList
 
   def callResultIndices: Seq[(Int, String)] = {
-    val outputIndices: Map[String, Int] = signature.outputSignature.map(_.name).zip(signature.outputSignature.indices).toMap
+    val outputIndices: Map[String, Int] = signature.outputSignature.map { outputs => outputs.map(_.name).zip(outputs.indices).toMap }.getOrElse(Map.empty)
     callResults.map(result => outputIndices(result.outputName) -> result.variable.name)
   }
 
@@ -105,5 +113,5 @@ case class ResolvedCall(signature: ProcedureSignature,
       error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)", position))
 
   private val callOutputTypes: Map[String, CypherType] =
-    signature.outputSignature.map { field => field.name -> field.typ }.toMap
+    signature.outputSignature.map { _.map { field => field.name -> field.typ }.toMap }.getOrElse(Map.empty)
 }

@@ -131,7 +131,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
     val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
-    val output = ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
+    val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))))
     val mode = asCypherProcMode(ks.mode())
 
     ProcedureSignature(name, input, output, mode)
