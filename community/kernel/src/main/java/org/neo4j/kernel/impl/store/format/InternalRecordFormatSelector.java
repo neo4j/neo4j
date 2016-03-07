@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.map;
 
@@ -75,19 +74,19 @@ public class InternalRecordFormatSelector
                 // We specified config to select this format specifically and we found it
                 return candidate.newInstance();
             }
-            else if ( key.equals( "" ) )
+            else if ( "".equals( key ) )
             {
                 // No specific config, just return the first format we found from service loading
                 return loggedSelection( candidate.newInstance(), candidateId, logging );
             }
         }
 
-        if ( key.equals( COMMUNITY_KEY ) )
+        if ( COMMUNITY_KEY.equals( key ) )
         {
             // We specified config to select the community format
             return FALLBACK;
         }
-        if ( key.equals( "" ) )
+        if ( "".equals( key ) )
         {
             // No specific config, just return the community fallback
             return loggedSelection( FALLBACK, COMMUNITY_KEY, logging );
@@ -105,7 +104,7 @@ public class InternalRecordFormatSelector
 
     public static RecordFormats fromVersion( String storeVersion )
     {
-        Iterable<RecordFormats> additionalFormats = map( factory -> factory.newInstance(),
+        Iterable<RecordFormats> additionalFormats = map( Factory::newInstance,
                 loadAdditionalFormats() );
         for ( RecordFormats format : concat( KNOWN_FORMATS, additionalFormats ) )
         {

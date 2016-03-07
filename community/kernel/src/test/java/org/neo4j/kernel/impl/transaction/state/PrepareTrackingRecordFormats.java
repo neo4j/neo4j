@@ -198,6 +198,12 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
+        public long getMaxId()
+        {
+            return actual.getMaxId();
+        }
+
+        @Override
         public boolean equals( Object otherFormat )
         {
             return actual.equals( otherFormat );

@@ -78,4 +78,10 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
     {
         return Record.NULL_REFERENCE.intValue();
     }
+
+    @Override
+    public long getMaxId()
+    {
+        return 0;
+    }
 }

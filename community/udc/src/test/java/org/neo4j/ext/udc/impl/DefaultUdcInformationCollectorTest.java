@@ -140,7 +140,7 @@ public class DefaultUdcInformationCollectorTest
         }
 
         @Override
-        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
         {
             return get( idType );
         }

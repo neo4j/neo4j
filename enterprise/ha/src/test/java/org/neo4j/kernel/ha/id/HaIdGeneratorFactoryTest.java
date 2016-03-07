@@ -29,6 +29,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -165,7 +166,7 @@ public class HaIdGeneratorFactoryTest
         File idFile = new File( "my.id" );
         // ... opening an id generator as master
         fac.create( idFile, 10, true );
-        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10 );
+        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10, HighLimit.RECORD_FORMATS.node().getMaxId() );
         assertTrue( fs.fileExists( idFile ) );
         idGenerator.close();
 
@@ -186,7 +187,7 @@ public class HaIdGeneratorFactoryTest
         fac.create( idFile, 10, true );
 
         // WHEN
-        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10 );
+        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10, HighLimit.RECORD_FORMATS.node().getMaxId() );
 
         // THEN
         assertFalse( "Id file should've been deleted by now", fs.fileExists( idFile ) );
@@ -226,7 +227,7 @@ public class HaIdGeneratorFactoryTest
     private IdGenerator switchToSlave()
     {
         fac.switchToSlave();
-        IdGenerator gen = fac.open( new File( "someFile" ), 10, IdType.NODE, 1 );
+        IdGenerator gen = fac.open( new File( "someFile" ), 10, IdType.NODE, 1, HighLimit.RECORD_FORMATS.node().getMaxId() );
         masterDelegate.setDelegate( master );
         return gen;
     }

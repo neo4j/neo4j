@@ -49,7 +49,6 @@ import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
@@ -112,10 +111,10 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -164,8 +163,6 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 @Deprecated
 public class BatchInserterImpl implements BatchInserter
 {
-    private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
-
     private final LifeSupport life;
     private final NeoStores neoStores;
     private final IndexConfigStore indexStore;
@@ -212,31 +209,9 @@ public class BatchInserterImpl implements BatchInserter
 
     private final LabelTokenStore labelTokenStore;
     private final Locks.Client noopLockClient = new NoOpClient();
+    private RecordFormats recordFormats;
+    private final long maxNodeId;
 
-
-    /**
-     * @deprecated use {@link #BatchInserterImpl(File, Map)} instead
-     */
-    @Deprecated
-    BatchInserterImpl( String storeDir,
-                       Map<String, String> stringParams ) throws IOException
-    {
-        this( new File( FileUtils.fixSeparatorsInPath( storeDir ) ), stringParams );
-    }
-
-    /**
-     * @deprecated use {@link #BatchInserterImpl(File, FileSystemAbstraction, Map, Iterable)} instead
-     */
-    @Deprecated
-    BatchInserterImpl( String storeDir, final FileSystemAbstraction fileSystem,
-                       Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
-    {
-        this( new File( FileUtils.fixSeparatorsInPath( storeDir ) ),
-                fileSystem,
-                stringParams,
-                kernelExtensions
-        );
-    }
 
     BatchInserterImpl( File storeDir,
                        Map<String, String> stringParams ) throws IOException
@@ -244,7 +219,7 @@ public class BatchInserterImpl implements BatchInserter
         this( storeDir,
               new DefaultFileSystemAbstraction(),
               stringParams,
-              Collections.<KernelExtensionFactory<?>>emptyList()
+              Collections.emptyList()
         );
     }
 
@@ -271,8 +246,11 @@ public class BatchInserterImpl implements BatchInserter
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
+        recordFormats = InternalRecordFormatSelector.select( config, logService );
+        maxNodeId = recordFormats.node().getMaxId();
+
         StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,
-                logService.getInternalLogProvider(), InternalRecordFormatSelector.select(config, logService) );
+                logService.getInternalLogProvider(), recordFormats );
 
         if ( dump )
         {
@@ -820,7 +798,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public void createNode( long id, Map<String, Object> properties, Label... labels )
     {
-        if ( id < 0 || id > MAX_NODE_ID )
+        if ( id < 0 || id > maxNodeId )
         {
             throw new IllegalArgumentException( "id=" + id );
         }
@@ -851,15 +829,10 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public Iterable<Label> getNodeLabels( final long node )
     {
-        return new Iterable<Label>()
-        {
-            @Override
-            public Iterator<Label> iterator()
-            {
-                NodeRecord record = getNodeRecord( node ).forReadingData();
-                long[] labels = parseLabelsField( record ).get( nodeStore );
-                return map( labelIdToLabelFunction, PrimitiveLongCollections.iterator( labels ) );
-            }
+        return () -> {
+            NodeRecord record = getNodeRecord( node ).forReadingData();
+            long[] labels = parseLabelsField( record ).get( nodeStore );
+            return map( labelIdToLabelFunction, PrimitiveLongCollections.iterator( labels ) );
         };
     }
 

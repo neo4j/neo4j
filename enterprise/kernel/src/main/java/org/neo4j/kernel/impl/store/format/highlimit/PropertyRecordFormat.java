@@ -120,4 +120,10 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
     {
         return record.getNextProp();
     }
+
+    @Override
+    public long getMaxId()
+    {
+        return getMaxId( HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
+    }
 }

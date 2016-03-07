@@ -21,39 +21,28 @@ package org.neo4j.kernel.impl.store.id;
 
 public enum IdType
 {
-    NODE( 35, false ),
-    RELATIONSHIP( 35, false ),
-    PROPERTY( 36, true ),
-    STRING_BLOCK( 36, true ),
-    ARRAY_BLOCK( 36, true ),
+    NODE( false ),
+    RELATIONSHIP( false ),
+    PROPERTY( true ),
+    STRING_BLOCK( true ),
+    ARRAY_BLOCK( true ),
     PROPERTY_KEY_TOKEN( false ),
     PROPERTY_KEY_TOKEN_NAME( false ),
-    RELATIONSHIP_TYPE_TOKEN( 16, false ),
+    RELATIONSHIP_TYPE_TOKEN( false ),
     RELATIONSHIP_TYPE_TOKEN_NAME( false ),
     LABEL_TOKEN( false ),
     LABEL_TOKEN_NAME( false ),
     NEOSTORE_BLOCK( false ),
-    SCHEMA( 35, false ),
-    NODE_LABELS( 35, true ),
-    RELATIONSHIP_GROUP( 35, false );
+    SCHEMA( false ),
+    NODE_LABELS( true ),
+    RELATIONSHIP_GROUP( false );
 
-    private final long max;
     private final boolean allowAggressiveReuse;
+
 
     IdType( boolean allowAggressiveReuse )
     {
-        this( 32, allowAggressiveReuse );
-    }
-
-    IdType( int bits, boolean allowAggressiveReuse )
-    {
         this.allowAggressiveReuse = allowAggressiveReuse;
-        this.max = (long)Math.pow( 2, bits )-1;
-    }
-
-    public long getMaxValue()
-    {
-        return this.max;
     }
 
     public boolean allowAggressiveReuse()

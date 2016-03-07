@@ -30,9 +30,6 @@ import org.neo4j.server.web.WebServer;
 
 public class WebAdminModule implements ServerModule
 {
-    private static final String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
-    private static final String DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
-
     private final WebServer webServer;
     private Config config;
 
@@ -48,7 +45,6 @@ public class WebAdminModule implements ServerModule
         if ( config.get( ServerSettings.webadmin_enabled ) )
         {
             String serverMountPoint = managementApiUri().toString();
-            webServer.addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
             webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );
         }
     }
@@ -66,9 +62,5 @@ public class WebAdminModule implements ServerModule
     @Override
     public void stop()
     {
-        if ( config.get( ServerSettings.webadmin_enabled ) )
-        {
-            webServer.removeStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
-        }
     }
 }

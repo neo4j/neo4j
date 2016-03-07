@@ -215,7 +215,7 @@ public class NodeStoreTest
         // When & then
         assertTrue( store.isInUse( exists ) );
         assertFalse( store.isInUse( deleted ) );
-        assertFalse( store.isInUse( IdType.NODE.getMaxValue() ) );
+        assertFalse( store.isInUse( nodeStore.recordFormat.getMaxId() ) );
     }
 
     @Test

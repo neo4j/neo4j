@@ -19,11 +19,11 @@
  */
 package org.neo4j.server;
 
-import org.junit.After;
-import org.junit.Test;
-
 import java.io.IOException;
 import javax.ws.rs.core.MediaType;
+
+import org.junit.After;
+import org.junit.Test;
 
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.test.server.HTTP.POST;
 
@@ -69,8 +70,8 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     @Test
     public void shouldPickupRelativeUrisForWebAdminAndWebAdminRest() throws IOException
     {
-        String webAdminDataUri = "/a/different/webadmin/data/uri/";
-        String webAdminManagementUri = "/a/different/webadmin/management/uri/";
+        String webAdminDataUri = "/a/different/data/uri/";
+        String webAdminManagementUri = "/a/different/management/uri/";
 
         server = server().withRelativeWebDataAdminUriPath( webAdminDataUri )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
@@ -130,19 +131,18 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldEnableWebadminByDefault() throws IOException
+    public void shouldEnableWebadminConsoleByDefault() throws IOException
     {
         // Given
         server = server().usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() ).build();
         server.start();
 
         // When & then
-        assertEquals( 200, new RestRequest().get( "http://localhost:7474/webadmin" ).getStatus() );
         assertEquals( 200, new RestRequest().get( "http://localhost:7474/db/manage/server/console" ).getStatus() );
     }
 
     @Test
-    public void shouldDisableWebadminWhenAskedTo() throws IOException
+    public void shouldDisableWebadminConsoleWhenAskedTo() throws IOException
     {
         // Given
         server = server().withProperty( ServerSettings.webadmin_enabled.name(), "false" )
@@ -151,7 +151,6 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
         server.start();
 
         // When & then
-        assertEquals( 404, new RestRequest().get( "http://localhost:7474/webadmin" ).getStatus() );
         assertEquals( 404, new RestRequest().get( "http://localhost:7474/db/manage/server/console" ).getStatus() );
     }
 

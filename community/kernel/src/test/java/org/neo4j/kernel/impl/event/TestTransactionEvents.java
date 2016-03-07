@@ -44,7 +44,6 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -100,14 +99,10 @@ public class TestTransactionEvents
         { /* Good */
         }
 
-        assertTrue( handler1 == db.registerTransactionEventHandler(
-                handler1 ) );
-        assertTrue( handler2 == db.registerTransactionEventHandler(
-                handler2 ) );
-        assertTrue( handler1 == db.unregisterTransactionEventHandler(
-                handler1 ) );
-        assertTrue( handler2 == db.unregisterTransactionEventHandler(
-                handler2 ) );
+        assertTrue( handler1 == db.registerTransactionEventHandler( handler1 ) );
+        assertTrue( handler2 == db.registerTransactionEventHandler( handler2 ) );
+        assertTrue( handler1 == db.unregisterTransactionEventHandler( handler1 ) );
+        assertTrue( handler2 == db.unregisterTransactionEventHandler( handler2 ) );
 
         db.registerTransactionEventHandler( handler1 );
         try ( Transaction tx = db.beginTx() )
@@ -376,9 +371,9 @@ public class TestTransactionEvents
             node2 = db.createNode();
             rel = node1.createRelationshipTo( node2, RelTypes.TXEVENT );
             node1.setProperty( "test1", "stringvalue" );
-            node1.setProperty( "test2", 1l );
+            node1.setProperty( "test2", 1L );
             rel.setProperty( "test1", "stringvalue" );
-            rel.setProperty( "test2", 1l );
+            rel.setProperty( "test2", 1L );
             rel.setProperty( "test3", new int[] { 1, 2, 3 } );
             tx.success();
         }
@@ -386,7 +381,6 @@ public class TestTransactionEvents
         db.registerTransactionEventHandler( handler );
         try ( Transaction tx = db.beginTx() )
         {
-            GraphDatabaseAPI dbApi = dbRule.getGraphDatabaseAPI();
             rel.delete();
             node1.delete();
             node2.delete();
@@ -394,8 +388,8 @@ public class TestTransactionEvents
         }
         assertEquals( "stringvalue", handler.nodeProps.get( "test1" ) );
         assertEquals( "stringvalue", handler.relProps.get( "test1" ) );
-        assertEquals( 1l , handler.nodeProps.get( "test2" ) );
-        assertEquals( 1l , handler.relProps.get( "test2" ) );
+        assertEquals( 1L, handler.nodeProps.get( "test2" ) );
+        assertEquals( 1L, handler.relProps.get( "test2" ) );
         int[] intArray = (int[]) handler.relProps.get( "test3" );
         assertEquals( 3, intArray.length );
         assertEquals( 1, intArray[0] );
@@ -461,7 +455,7 @@ public class TestTransactionEvents
         }
     }
 
-    private static enum RelTypes implements RelationshipType
+    private enum RelTypes implements RelationshipType
     {
         TXEVENT
     }

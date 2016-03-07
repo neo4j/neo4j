@@ -51,7 +51,6 @@ public class LowLimitV2_0 extends BaseRecordFormats
     @Override
     public RecordFormat<RelationshipRecord> relationship()
     {
-        // Yes, uses the same relationship record format as 1.9
         return new RelationshipRecordFormatV2_0();
     }
 

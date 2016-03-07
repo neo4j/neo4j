@@ -19,10 +19,6 @@
  */
 package org.neo4j.server;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -34,12 +30,17 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.test.server.HTTP.GET;
 import static org.neo4j.test.server.HTTP.POST;
@@ -100,16 +101,6 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         // Then
         assertThat( server.getHttpsEnabled(), is( true ) );
         assertThat( GET(httpsUri).status(), is( 200 ) );
-    }
-
-    @Test
-    public void webadminShouldBeRetrievableViaSsl() throws Exception
-    {
-        // When
-        server.start();
-
-        // Then
-        assertThat( GET(httpsUri + "webadmin/" ).status(), is( 200 ) );
     }
 
     @Test

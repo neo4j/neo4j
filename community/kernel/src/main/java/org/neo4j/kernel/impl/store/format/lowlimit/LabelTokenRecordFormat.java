@@ -33,4 +33,10 @@ public class LabelTokenRecordFormat extends TokenRecordFormat<LabelTokenRecord>
     {
         return new LabelTokenRecord( -1 );
     }
+
+    @Override
+    public long getMaxId()
+    {
+        return getMaxId( LowLimitFormatSettings.LABEL_TOKEN_MAXIMUM_ID_BITS );
+    }
 }

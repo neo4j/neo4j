@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.NeoStoreActualRecord;
@@ -135,12 +136,11 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
     private final CappedLogger transactionCloseWaitLogger;
 
     MetaDataStore( File fileName, Config conf,
-                   IdGeneratorFactory idGeneratorFactory,
-                   PageCache pageCache, LogProvider logProvider,
-                   String storeVersion )
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache, LogProvider logProvider, RecordFormat<NeoStoreActualRecord> recordFormat, String storeVersion )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
-                TYPE_DESCRIPTOR, storeVersion );
+                TYPE_DESCRIPTOR, recordFormat, storeVersion );
         this.transactionCloseWaitLogger = new CappedLogger( logProvider.getLog( MetaDataStore.class ) );
         transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clock.SYSTEM_CLOCK );
     }

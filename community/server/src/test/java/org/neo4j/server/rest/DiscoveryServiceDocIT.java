@@ -78,7 +78,7 @@ public class DiscoveryServiceDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRedirectToWebadminOnHtmlRequest() throws Exception
+    public void shouldRedirectOnHtmlRequest() throws Exception
     {
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );

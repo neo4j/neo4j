@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.security;
 
+import java.net.URI;
+import javax.ws.rs.core.MediaType;
+
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.net.URI;
-import javax.ws.rs.core.MediaType;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
@@ -126,8 +126,7 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
     {
         // given
         server = CommunityServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
-                NoAccessToDatabaseSecurityRule.class.getCanonicalName(),
-                NoAccessToWebAdminSecurityRule.class.getCanonicalName() )
+                NoAccessToDatabaseSecurityRule.class.getCanonicalName())
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
@@ -135,12 +134,9 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
 
         // when
         gen.get().expectedStatus( 401 ).get( functionalTestHelper.dataUri() ).response();
-        gen.get().expectedStatus( 401 ).expectedType( MediaType.TEXT_HTML_TYPE )
-                .get( functionalTestHelper.webAdminUri() ).response();
 
         // then
         assertTrue( NoAccessToDatabaseSecurityRule.wasInvoked() );
-        assertTrue(NoAccessToWebAdminSecurityRule.wasInvoked());
     }
 
     @Test

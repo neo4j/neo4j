@@ -95,5 +95,11 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     public int hashCode()
     {
         return getClass().hashCode();
+
+    }
+
+    protected long getMaxId(int bits)
+    {
+        return (1L << bits) - 1;
     }
 }

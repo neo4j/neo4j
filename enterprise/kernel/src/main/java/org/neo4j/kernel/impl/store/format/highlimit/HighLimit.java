@@ -42,6 +42,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
  */
 public class HighLimit extends BaseRecordFormats
 {
+    /**
+     * Default maximum number of bits that can be used to represent id
+     */
+    static final int DEFAULT_MAXIMUM_BITS_PER_ID = 50;
+
     public static final RecordFormats RECORD_FORMATS = new HighLimit();
     // Enterprise.HighLimit.Zero
     public static final String STORE_VERSION = "vE.H.0";

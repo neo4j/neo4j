@@ -49,4 +49,10 @@ public class PropertyKeyTokenRecordFormat extends TokenRecordFormat<PropertyKeyT
         cursor.putInt( record.getPropertyCount() );
         cursor.putInt( record.getNameId() );
     }
+
+    @Override
+    public long getMaxId()
+    {
+        return getMaxId( LowLimitFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS );
+    }
 }

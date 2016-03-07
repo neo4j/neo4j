@@ -313,12 +313,6 @@
       <version>${windows-wrapper.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>static-web</classifier>
-    </dependency>
-    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-import-tool</artifactId>
       <version>${neo4j.version}</version>

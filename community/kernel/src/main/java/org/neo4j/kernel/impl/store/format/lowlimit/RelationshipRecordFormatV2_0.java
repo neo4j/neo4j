@@ -99,4 +99,10 @@ class RelationshipRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<Relatio
     {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public long getMaxId()
+    {
+        return LowLimitFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS;
+    }
 }

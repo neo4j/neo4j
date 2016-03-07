@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -63,9 +65,10 @@ public class CommonAbstractStoreTest
         when( pageCache.map( eq( storeFile ), anyInt() ) ).thenReturn( storePagedFile );
         IdGenerator idGenerator = mock(
                 IdGenerator.class );
-        when( idGeneratorFactory.open( any( File.class ), anyInt(), eq( idType ), anyInt() ) )
+        when( idGeneratorFactory.open( any( File.class ), anyInt(), eq( idType ), anyInt(), anyInt() ) )
                 .thenReturn( idGenerator );
-        CommonAbstractStore store = new TheStore( storeFile, config, idType, idGeneratorFactory, pageCache, LOG );
+        RecordFormat recordFormat = Mockito.mock( RecordFormat.class );
+        CommonAbstractStore store = new TheStore( storeFile, config, idType, idGeneratorFactory, pageCache, LOG, recordFormat );
         store.initialise( false );
 
         // this is needed to forget all interaction with the mocks during the construction of the store
@@ -84,9 +87,10 @@ public class CommonAbstractStoreTest
     private static class TheStore extends CommonAbstractStore
     {
         public TheStore( File fileName, Config configuration, IdType idType, IdGeneratorFactory idGeneratorFactory,
-                PageCache pageCache, LogProvider logProvider )
+                PageCache pageCache, LogProvider logProvider, RecordFormat recordFormat )
         {
-            super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType", "v1" );
+            super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
+                    recordFormat, "v1" );
         }
 
         @Override
