@@ -64,10 +64,6 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
             }
             update( record );
         }
-
-        // Flush after each batch.
-        // We get vectored, sequential IO when we write with flush, plus it makes future page faulting faster.
-        store.flush();
         recordsUpdated += batch.length;
     }
 

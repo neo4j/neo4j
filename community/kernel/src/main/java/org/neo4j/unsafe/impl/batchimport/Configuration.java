@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
-import static java.lang.Math.round;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
  * User controlled configuration for a {@link BatchImporter}.
@@ -36,21 +36,19 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
     String BAD_FILE_NAME = "bad.log";
 
     /**
-     * Memory dedicated to buffering data to be written.
-     */
-    int writeBufferSize();
-
-    /**
-     * The number of relationships threshold for considering a node dense.
+     * @return number of relationships threshold for considering a node dense.
      */
     int denseNodeThreshold();
+
+    /**
+     * @return page size for the page cache managing the store.
+     */
+    long pageSize();
 
     class Default
             extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
             implements Configuration
     {
-        private static final int DEFAULT_PAGE_SIZE = 1024 * 8;
-
         @Override
         public int batchSize()
         {
@@ -58,23 +56,9 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         }
 
         @Override
-        public int writeBufferSize()
+        public long pageSize()
         {
-            // Do a little calculation here where the goal of the returned value is that if a file channel
-            // would be seen as a batch itself (think asynchronous writing) there would be created roughly
-            // as many as the other types of batches.
-            int averageRecordSize = 40; // Gut-feel estimate
-            int batchesToBuffer = 1000;
-            int maxWriteBufferSize = batchSize() * averageRecordSize * batchesToBuffer;
-            int writeBufferSize = (int) Math.min( maxWriteBufferSize, Runtime.getRuntime().maxMemory() / 5);
-            return roundToClosest( writeBufferSize, DEFAULT_PAGE_SIZE * 30 );
-        }
-
-        private int roundToClosest( int value, int divisible )
-        {
-            double roughCount = (double) value / divisible;
-            int count = (int) round( roughCount );
-            return divisible*count;
+            return mebiBytes( 8 );
         }
 
         @Override
@@ -112,9 +96,9 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         }
 
         @Override
-        public int writeBufferSize()
+        public long pageSize()
         {
-            return defaults.writeBufferSize();
+            return defaults.pageSize();
         }
 
         @Override
