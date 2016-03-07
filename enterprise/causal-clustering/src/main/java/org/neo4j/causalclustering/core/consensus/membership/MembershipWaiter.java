@@ -38,12 +38,12 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
  * Waits until member has "fully joined" the raft membership.
  * We consider a member fully joined where:
  * <ul>
- *     <li>It is a member of the voting group
- *     (its opinion will count towards leader elections and committing entries), and</li>
- *     <li>It is sufficiently caught up with the leader,
- *     so that long periods of unavailability are unlikely, should the leader fail.</li>
+ * <li>It is a member of the voting group
+ * (its opinion will count towards leader elections and committing entries), and</li>
+ * <li>It is sufficiently caught up with the leader,
+ * so that long periods of unavailability are unlikely, should the leader fail.</li>
  * </ul>
- *
+ * <p>
  * To determine whether the member is sufficiently caught up, we check periodically how far behind we are,
  * once every {@code maxCatchupLag}. If the leader is always moving forwards we will never fully catch up,
  * so all we look for is that we have caught up with where the leader was the <i>previous</i> time
@@ -55,15 +55,17 @@ public class MembershipWaiter
     private final JobScheduler jobScheduler;
     private final Supplier<DatabaseHealth> dbHealthSupplier;
     private final long maxCatchupLag;
+    private LeaderCommitWaiter<MEMBER> waiter;
     private final Log log;
 
     public MembershipWaiter( MemberId myself, JobScheduler jobScheduler, Supplier<DatabaseHealth> dbHealthSupplier,
-            long maxCatchupLag, LogProvider logProvider )
+            long maxCatchupLag, LeaderCommitWaiter<MemberId> leaderCommitWaiter, LogProvider logProvider )
     {
         this.myself = myself;
         this.jobScheduler = jobScheduler;
         this.dbHealthSupplier = dbHealthSupplier;
         this.maxCatchupLag = maxCatchupLag;
+        this.waiter = leaderCommitWaiter;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -73,11 +75,17 @@ public class MembershipWaiter
 
         Evaluator evaluator = new Evaluator( raft, catchUpFuture, dbHealthSupplier );
 
-        JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
-                new JobScheduler.Group( getClass().toString(), POOLED ),
-                evaluator, maxCatchupLag, MILLISECONDS );
+        jobScheduler.schedule( new JobScheduler.Group( getClass().toString(), POOLED ), () -> {
+            while ( waiter.keepWaiting(raftState) )
+            {
+                waiter.waitMore();
+            }
+            JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
+                    new JobScheduler.Group( getClass().toString(), POOLED ),
+                    evaluator, maxCatchupLag, MILLISECONDS );
 
-        catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
+            catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
+        } );
 
         return catchUpFuture;
     }
@@ -132,6 +140,8 @@ public class MembershipWaiter
             if ( lastLeaderCommit != -1 )
             {
                 caughtUpWithLeader = localCommit >= lastLeaderCommit;
+                log.info( "%s Caught up?: %b  %d => %d (%d behind)%n", myself, caughtUpWithLeader, localCommit,
+                        lastLeaderCommit, lastLeaderCommit - localCommit );
             }
             lastLeaderCommit = state.leaderCommit();
             if ( lastLeaderCommit != -1 )
@@ -147,4 +157,5 @@ public class MembershipWaiter
             return caughtUpWithLeader;
         }
     }
+
 }
