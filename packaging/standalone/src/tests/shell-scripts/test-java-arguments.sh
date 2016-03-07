@@ -57,6 +57,13 @@ for run_command in run_console run_daemon; do
     test_expect_java_arg '-Xloggc:$(neo4j_home)/data/log/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution'
   "
 
+  test_expect_success "should set default gc logging options when none are provided" "
+    clear_config &&
+    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
+    ${run_command} &&
+    test_expect_java_arg '-Xloggc:$(neo4j_home)/data/log/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution'
+  "
+
   test_expect_success "should set gc logging rotation options" "
     clear_config &&
     set_config 'dbms.logs.gc.rotation.size' '10m' neo4j.conf &&

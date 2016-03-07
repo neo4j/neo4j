@@ -217,6 +217,7 @@ setup_java_opts() {
 
   JAVA_GC_LOGGING_OPTS=""
   if [ "${dbms_logs_gc_enabled:-}" = "true" ]; then
+      [[ ${dbms_logs_gc_options:-} ]] || dbms_logs_gc_options="-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution"
       JAVA_GC_LOGGING_OPTS="-Xloggc:${NEO4J_LOG}/gc.log ${dbms_logs_gc_options}";
   fi
   if [ "${dbms_logs_gc_rotation_size:-}" -a "${dbms_logs_gc_rotation_keep_number:-}" ]; then
