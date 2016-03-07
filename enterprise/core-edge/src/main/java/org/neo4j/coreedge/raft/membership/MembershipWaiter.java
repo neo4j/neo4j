@@ -34,12 +34,12 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
  * Waits until member has "fully joined" the raft membership.
  * We consider a member fully joined where:
  * <ul>
- *     <li>It is a member of the voting group
- *     (its opinion will count towards leader elections and committing entries), and</li>
- *     <li>It is sufficiently caught up with the leader,
- *     so that long periods of unavailability are unlikely, should the leader fail.</li>
+ * <li>It is a member of the voting group
+ * (its opinion will count towards leader elections and committing entries), and</li>
+ * <li>It is sufficiently caught up with the leader,
+ * so that long periods of unavailability are unlikely, should the leader fail.</li>
  * </ul>
- *
+ * <p>
  * To determine whether the member is sufficiently caught up, we check periodically how far behind we are,
  * once every {@code maxCatchupLag}. If the leader is always moving forwards we will never fully catch up,
  * so all we look for is that we have caught up with where the leader was the <i>previous</i> time
@@ -50,13 +50,16 @@ public class MembershipWaiter<MEMBER>
     private final MEMBER myself;
     private final JobScheduler jobScheduler;
     private final long maxCatchupLag;
+    private LeaderCommitWaiter<MEMBER> waiter;
     private final Log log;
 
-    public MembershipWaiter( MEMBER myself, JobScheduler jobScheduler, long maxCatchupLag, LogProvider logProvider )
+    public MembershipWaiter( MEMBER myself, JobScheduler jobScheduler, long maxCatchupLag, LogProvider logProvider,
+                             LeaderCommitWaiter<MEMBER> leaderCommitWaiter )
     {
         this.myself = myself;
         this.jobScheduler = jobScheduler;
         this.maxCatchupLag = maxCatchupLag;
+        this.waiter = leaderCommitWaiter;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -64,11 +67,17 @@ public class MembershipWaiter<MEMBER>
     {
         CompletableFuture<Boolean> catchUpFuture = new CompletableFuture<>();
 
-        JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
-                new JobScheduler.Group( getClass().toString(), POOLED ),
-                new Evaluator( raftState, catchUpFuture ), maxCatchupLag, MILLISECONDS );
+        jobScheduler.schedule( new JobScheduler.Group( getClass().toString(), POOLED ), () -> {
+            while ( waiter.keepWaiting(raftState) )
+            {
+                waiter.waitMore();
+            }
+            JobScheduler.JobHandle jobHandle = jobScheduler.scheduleRecurring(
+                    new JobScheduler.Group( getClass().toString(), POOLED ),
+                    new Evaluator( raftState, catchUpFuture ), maxCatchupLag, MILLISECONDS );
 
-        catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
+            catchUpFuture.whenComplete( ( result, e ) -> jobHandle.cancel( true ) );
+        } );
 
         return catchUpFuture;
     }
@@ -89,7 +98,7 @@ public class MembershipWaiter<MEMBER>
 
         public void run()
         {
-            if ( iAmAVotingMember() && caughtUpWithLeader())
+            if ( iAmAVotingMember() && caughtUpWithLeader() )
             {
                 catchUpFuture.complete( true );
             }
@@ -108,13 +117,19 @@ public class MembershipWaiter<MEMBER>
             if ( lastLeaderCommit != -1 )
             {
                 caughtUpWithLeader = localCommit >= lastLeaderCommit;
+                log.info( "%s Caught up?: %b  %d => %d (%d behind)%n", myself, caughtUpWithLeader, localCommit,
+                        lastLeaderCommit, lastLeaderCommit - localCommit );
             }
+            else
+            {
+                log.info( "%s Caught up with no leader commit?: %b  %d => %d %n", myself, caughtUpWithLeader,
+                        localCommit, lastLeaderCommit );
+            }
+
             lastLeaderCommit = raftState.leaderCommit();
             if ( lastLeaderCommit != -1 )
             {
-                log.info( "%s Catchup: %d => %d (%d behind)%n",
-                        myself,
-                        localCommit, lastLeaderCommit,
+                log.info( "%s Catchup: %d => %d (%d behind)%n", myself, localCommit, lastLeaderCommit,
                         lastLeaderCommit - localCommit );
             }
             else
@@ -125,4 +140,5 @@ public class MembershipWaiter<MEMBER>
             return caughtUpWithLeader;
         }
     }
+
 }

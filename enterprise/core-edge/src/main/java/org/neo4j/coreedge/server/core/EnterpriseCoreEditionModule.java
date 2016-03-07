@@ -47,8 +47,10 @@ import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
+import org.neo4j.coreedge.raft.membership.LeaderCommitWaiter;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
+import org.neo4j.coreedge.catchup.ThreadSleeper;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.net.LoggingInbound;
 import org.neo4j.coreedge.raft.net.LoggingOutbound;
@@ -315,7 +317,8 @@ public class EnterpriseCoreEditionModule
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         MembershipWaiter<CoreMember> membershipWaiter =
-                new MembershipWaiter<>( myself, platformModule.jobScheduler, electionTimeout * 4, logProvider );
+                new MembershipWaiter<>( myself, platformModule.jobScheduler, electionTimeout * 4, logProvider,
+                        new LeaderCommitWaiter<>( new ThreadSleeper() ) );
 
         ReplicatedIdGeneratorFactory replicatedIdGeneratorFactory =
                 createIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider );
