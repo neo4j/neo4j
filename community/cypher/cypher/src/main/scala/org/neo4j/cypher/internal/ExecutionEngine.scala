@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTr
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession, TransactionalContext}
@@ -136,6 +137,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
         // create transaction and query context
         val tc = externalTransactionalContext.provideContext()
 
+        // Temporarily change access mode during query planning
+        val revertable = tc.restrict(AccessMode.Static.READ)
+
         val ((plan: ExecutionPlan, extractedParameters), touched) = try {
           // fetch plan cache
           val cache = getOrCreateFromSchemaState(tc.readOperations, {
@@ -156,6 +160,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
           case (t: Throwable) =>
             tc.close(success = false)
             throw t
+        } finally {
+          revertable.close()
         }
 
         if (touched) {

@@ -132,7 +132,7 @@ public class SessionStateMachine implements Session, SessionState
                         // NOTE: If we move away from doing implicit transactions this
                         // way, we need a different way to kill statements running in implicit
                         // transactions, because we do that by calling #terminate() on this tx.
-                        ctx.currentTransaction = ctx.spi.beginTransaction( implicit, AccessMode.Static.FULL );
+                        ctx.currentTransaction = ctx.spi.beginTransaction( implicit, ctx.accessMode );
                         return IN_TRANSACTION;
                     }
 

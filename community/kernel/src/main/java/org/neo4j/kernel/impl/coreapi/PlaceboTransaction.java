@@ -90,4 +90,10 @@ public class PlaceboTransaction implements InternalTransaction
     {
         return currentTransaction.get().mode();
     }
+
+    @Override
+    public KernelTransaction.Revertable restrict( AccessMode mode )
+    {
+        return currentTransaction.get().restrict( mode );
+    }
 }

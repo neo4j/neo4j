@@ -79,7 +79,9 @@ public class BasicAuthentication implements Authentication
         case SUCCESS:
             break;
         case PASSWORD_CHANGE_REQUIRED:
-            throw new AuthenticationException( Status.Security.CredentialsExpired, identifier.get() );
+            // TODO: We just return OK for now, but we should notify the client with an appropriate message
+            //throw new AuthenticationException( Status.Security.CredentialsExpired, identifier.get() );
+            break;
         case TOO_MANY_ATTEMPTS:
             throw new AuthenticationException( Status.Security.AuthenticationRateLimit, identifier.get() );
         default:

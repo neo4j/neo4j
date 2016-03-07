@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, ExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
+import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.{KernelTransaction, ReadOperations, Statement}
 import org.neo4j.kernel.configuration.Config
@@ -244,6 +245,8 @@ class LazyTest extends ExecutionEngineFunSuite {
 
     val tx = fakeGraph.beginTransaction(KernelTransaction.Type.`implicit`, AccessMode.Static.FULL)
     val context = new Neo4jTransactionalContext(service, tx, fakeStatement, new PropertyContainerLocker)
+    val revertableRestrict = mock[Revertable]
+    when(context.restrict(anyObject())).thenReturn(revertableRestrict)
     val session = QueryEngineProvider.embeddedSession(context)
 
     //When:

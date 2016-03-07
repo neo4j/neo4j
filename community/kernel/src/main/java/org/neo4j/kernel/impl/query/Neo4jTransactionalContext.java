@@ -161,4 +161,10 @@ public class Neo4jTransactionalContext implements TransactionalContext
     {
         return locker.exclusiveLock( () -> statement, p );
     }
+
+    @Override
+    public KernelTransaction.Revertable restrict( AccessMode accessMode )
+    {
+        return transaction.restrict( accessMode );
+    }
 }

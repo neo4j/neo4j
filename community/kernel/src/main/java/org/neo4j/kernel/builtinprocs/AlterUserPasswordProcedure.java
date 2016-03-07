@@ -20,26 +20,21 @@
 package org.neo4j.kernel.builtinprocs;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
-
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.server.security.auth.AuthSubject;
 
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.helpers.collection.Iterators.map;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 /**
@@ -69,7 +64,7 @@ public class AlterUserPasswordProcedure extends CallableProcedure.BasicProcedure
         try
         {
             boolean result = authSubject.setPassword( input[0].toString() );
-            return map( ( l ) -> new Object[]{l}, asRawIterator( Arrays.asList( result ).iterator() ) );
+            return map( ( l ) -> new Object[]{l}, asRawIterator( Collections.singletonList( result ).iterator() ) );
         }
         catch ( IOException e )
         {

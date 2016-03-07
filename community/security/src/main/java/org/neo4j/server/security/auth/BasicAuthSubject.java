@@ -91,6 +91,6 @@ public class BasicAuthSubject implements AuthSubject
     @Override
     public String name()
     {
-        return null;
+        return accessMode.name();
     }
 }

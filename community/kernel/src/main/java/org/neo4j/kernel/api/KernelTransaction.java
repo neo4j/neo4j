@@ -151,7 +151,7 @@ public interface KernelTransaction extends AutoCloseable
      */
     Type transactionType();
 
-    Revertable restrict( AccessMode read );
+    Revertable restrict( AccessMode mode );
 
     interface Revertable extends AutoCloseable
     {

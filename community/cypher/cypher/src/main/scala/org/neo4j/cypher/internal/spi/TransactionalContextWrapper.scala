@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.spi
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryTransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.KernelTransaction.Revertable
+import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -52,4 +54,6 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
   override def close(success: Boolean) { tc.close(success) }
+
+  def restrict(accessMode: AccessMode): Revertable = tc.restrict(accessMode)
 }

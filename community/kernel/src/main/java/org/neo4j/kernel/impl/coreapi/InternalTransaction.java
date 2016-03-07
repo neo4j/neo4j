@@ -27,4 +27,5 @@ public interface InternalTransaction extends Transaction
 {
     KernelTransaction.Type transactionType();
     AccessMode mode();
+    KernelTransaction.Revertable restrict( AccessMode mode );
 }
