@@ -27,24 +27,21 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode, _}
-import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, PeriodicCommitInOpenTransactionException}
+import org.neo4j.cypher.internal.frontend.v2_3.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
-import org.neo4j.cypher.internal.frontend.v2_3.notification.{LargeLabelWithLoadCsvNotification, EagerLoadCsvNotification, InternalNotification}
-import org.neo4j.function.Supplier
-import org.neo4j.function.Suppliers.singleton
+import org.neo4j.cypher.internal.frontend.v2_3.notification.InternalNotification
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{Statement => KernelStatement}
-import org.neo4j.kernel.impl.core.NodeManager
+
+import scala.annotation.tailrec
 
 
 trait RunnablePlan {
@@ -106,18 +103,18 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAc
   def build(planContext: PlanContext, inputQuery: PreparedQuery, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
     val executablePlan = pipeBuilder.producePlan(inputQuery, planContext, tracer)
     executablePlan match {
-      case Left(compiledPlan) => buildCompiled(compiledPlan, planContext, inputQuery)
-      case Right(pipeInfo) => buildInterpreted(pipeInfo, planContext, inputQuery)
+      case Left(compiledPlan) => buildCompiled(compiledPlan, inputQuery)
+      case Right(pipeInfo) => buildInterpreted(pipeInfo, inputQuery)
     }
   }
 
-  private def buildCompiled(compiledPlan: CompiledPlan, planContext: PlanContext, inputQuery: PreparedQuery) = {
+  private def buildCompiled(compiledPlan: CompiledPlan, inputQuery: PreparedQuery) = {
     new ExecutionPlan {
       val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, compiledPlan.fingerprint)
 
-      def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastCommittedTxId, statistics)
+      override def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastCommittedTxId, statistics)
 
-      def run(queryContext: QueryContext, kernelStatement: KernelStatement,
+      override def run(queryContext: QueryContext, kernelStatement: KernelStatement,
               executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
         val taskCloser = new TaskCloser
         taskCloser.addTask(queryContext.close)
@@ -137,17 +134,15 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAc
         }
       }
 
-      def plannerUsed: PlannerName = compiledPlan.plannerUsed
+      override def plannerUsed: PlannerName = compiledPlan.plannerUsed
 
-      def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
+      override def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
 
-      def runtimeUsed = CompiledRuntimeName
+      override def runtimeUsed = CompiledRuntimeName
 
-      def notifications = Seq.empty
+      override def notifications(planContext: PlanContext) = Seq.empty
     }
   }
-
-
 
   private def checkForNotifications(pipe: Pipe, planContext: PlanContext): Seq[InternalNotification] = {
     val notificationCheckers = Seq(checkForEagerLoadCsv,
@@ -156,8 +151,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAc
     notificationCheckers.flatMap(_(pipe))
   }
 
-
-  private def buildInterpreted(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuery) = {
+  private def buildInterpreted(pipeInfo: PipeInfo, inputQuery: PreparedQuery) = {
     val abstractQuery = inputQuery.abstractQuery
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
@@ -166,20 +160,21 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAc
     new ExecutionPlan {
       private val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, fp)
 
-      def run(queryContext: QueryContext, ignored: KernelStatement, planType: ExecutionMode, params: Map[String, Any]) =
-        func(queryContext, planType, params)
+     override def run(queryContext: QueryContext, ignored: KernelStatement, planType: ExecutionMode,
+                      params: Map[String, Any]) = func(queryContext, planType, params)
 
-      def isPeriodicCommit = periodicCommitInfo.isDefined
-      def plannerUsed = planner
-      def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
+      override def isPeriodicCommit = periodicCommitInfo.isDefined
+      override def plannerUsed = planner
+      override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
-      def runtimeUsed = InterpretedRuntimeName
+      override def runtimeUsed = InterpretedRuntimeName
 
-      def notifications = checkForNotifications(pipe, planContext)
+      override def notifications(planContext: PlanContext) = checkForNotifications(pipe, planContext)
     }
 
   }
 
+  @tailrec
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
     case in: PeriodicCommitQuery =>
       getQueryResultColumns(in.query, currentSymbols)

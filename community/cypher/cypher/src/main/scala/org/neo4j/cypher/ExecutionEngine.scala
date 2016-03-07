@@ -147,39 +147,38 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
       val executionMode = preParsedQuery.executionMode
       val cacheKey = preParsedQuery.statementWithVersionAndPlanner
 
-    var n = 0
-    while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
-      // create transaction and query context
-      val isTopLevelTx = !txBridge.hasTransaction
-      val tx = graph.beginTx()
-      val kernelStatement = txBridge.get()
+      var n = 0
+      while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
+        // create transaction and query context
+        val isTopLevelTx = !txBridge.hasTransaction
+        val tx = graph.beginTx()
+        val kernelStatement = txBridge.get()
 
-      val ((plan: ExecutionPlan, extractedParameters), touched) = try {
-        // fetch plan cache
-        val cache = getOrCreateFromSchemaState(kernelStatement, {
-          cacheMonitor.cacheFlushDetected(kernelStatement)
-          val lruCache = new LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
-          new QueryCache[String, (ExecutionPlan, Map[String, Any])](cacheAccessor, lruCache)
-        })
+        val ((plan: ExecutionPlan, extractedParameters), touched) = try {
+          // fetch plan cache
+          val cache = getOrCreateFromSchemaState(kernelStatement, {
+            cacheMonitor.cacheFlushDetected(kernelStatement)
+            val lruCache = new LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+            new QueryCache[String, (ExecutionPlan, Map[String, Any])](cacheAccessor, lruCache)
+          })
 
-        cache.getOrElseUpdate(cacheKey,
-          planParams => {
-            val stale: Boolean = planParams._1.isStale(lastCommittedTxId, kernelStatement)
-            println(stale)
-            stale
-          }, {
-            val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
-            parsedQuery.plan(kernelStatement, phaseTracer)
-          }
-        )
-      }
-      catch {
-        case (t: Throwable) =>
-          kernelStatement.close()
-          tx.failure()
-          tx.close()
-          throw t
-      }
+          cache.getOrElseUpdate(cacheKey,
+            planParams => {
+              val stale: Boolean = planParams._1.isStale(lastCommittedTxId, kernelStatement)
+              stale
+            }, {
+              val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
+              parsedQuery.plan(kernelStatement, phaseTracer)
+            }
+          )
+        }
+        catch {
+          case (t: Throwable) =>
+            kernelStatement.close()
+            tx.failure()
+            tx.close()
+            throw t
+        }
 
         if (touched) {
           kernelStatement.close()

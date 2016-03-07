@@ -172,7 +172,7 @@ trait CompatibilityFor2_3 {
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, tracer)
 
         // Log notifications/warnings from planning
-        planImpl.notifications.foreach(preParsedQuery.notificationLogger += _)
+        planImpl.notifications(planContext).foreach(preParsedQuery.notificationLogger += _)
 
         (new ExecutionPlanWrapper(planImpl), extractedParameters)
       }
