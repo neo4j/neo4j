@@ -110,71 +110,9 @@ include::range.asciidoc[]
 
 include::reduce.asciidoc[]
 
-:leveloffset: 1
-
-[[query-functions-mathematical]]
-== Mathematical functions ==
-
-These functions all operate on numerical expressions only, and will return an error if used on any other values.
-
-See also <<query-operators-mathematical>>.
-
-.Graph
-include::includes/cypher-functions-graph.asciidoc[]
-
 :leveloffset: 2
 
-include::abs.asciidoc[]
-
-include::acos.asciidoc[]
-
-include::asin.asciidoc[]
-
-include::atan.asciidoc[]
-
-include::atan2.asciidoc[]
-
-include::ceil.asciidoc[]
-
-include::cos.asciidoc[]
-
-include::cot.asciidoc[]
-
-include::degrees.asciidoc[]
-
-include::e.asciidoc[]
-
-include::exp.asciidoc[]
-
-include::floor.asciidoc[]
-
-include::haversin.asciidoc[]
-
-:leveloffset: 3
-
-include::spherical-distance-using-the-haversin-function.asciidoc[]
-
-:leveloffset: 2
-
-include::log.asciidoc[]
-
-include::log10.asciidoc[]
-
-include::pi.asciidoc[]
-
-include::radians.asciidoc[]
-
-include::rand.asciidoc[]
-
-include::round.asciidoc[]
-
-include::sign.asciidoc[]
-
-include::sin.asciidoc[]
-
-include::sqrt.asciidoc[]
-
-include::tan.asciidoc[]
+include::query-functions-mathematical.adoc[]
 
 :leveloffset: 1
 
