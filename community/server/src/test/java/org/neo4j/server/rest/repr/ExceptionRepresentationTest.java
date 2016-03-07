@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
 
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -33,9 +33,8 @@ import org.neo4j.server.rest.repr.formats.MapWrappingWriter;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.exceptions.Status.General.UnknownError;
 
 public class ExceptionRepresentationTest
@@ -66,7 +65,7 @@ public class ExceptionRepresentationTest
         JsonNode out = serialize( rep );
 
         // Then
-        assertThat(out.get("errors").get(0).get("code").asText(), equalTo("Neo.DatabaseError.General.UnknownFailure"));
+        assertThat(out.get("errors").get(0).get("code").asText(), equalTo("Neo.DatabaseError.General.UnknownError"));
         assertThat(out.get("errors").get(0).get("message").asText(), equalTo("Hello"));
     }
 
@@ -80,7 +79,7 @@ public class ExceptionRepresentationTest
         JsonNode out = serialize( rep );
 
         // Then
-        assertThat(out.get("errors").get(0).get("code").asText(), equalTo("Neo.DatabaseError.General.UnknownFailure"));
+        assertThat(out.get("errors").get(0).get("code").asText(), equalTo("Neo.DatabaseError.General.UnknownError"));
         assertThat(out.get("errors").get(0).get("message").asText(), equalTo("Hello"));
         assertThat(out.has( "message" ), equalTo(false));
     }

@@ -35,7 +35,6 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -754,7 +753,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalDocTestBase
                 assertTrue("Didn't find exactly one error", 1 == errors.size());
 
                 String errorCode = errors.get(0).get("code").getTextValue();
-                assertEquals( "Neo.ClientError.Statement.InvalidSemantics", errorCode );
+                assertEquals( "Neo.ClientError.Statement.SemanticError", errorCode );
             }
         } );
     }

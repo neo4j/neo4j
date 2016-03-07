@@ -301,13 +301,13 @@ we do not want a simple spelling mistake to roll it all back.
 .Example
 [source,bolt_packstream_type]
 ----
-Value: FAILURE { "code": "Neo.ClientError.Statement.InvalidSyntax", "message": "Invalid syntax." }
+Value: FAILURE { "code": "Neo.ClientError.Statement.SyntaxError", "message": "Invalid syntax." }
 
-B1 7F A2 84  63 6F 64 65  D0 27 4E 65  6F 2E 43 6C
+B1 7F A2 84  63 6F 64 65  D0 25 4E 65  6F 2E 43 6C
 69 65 6E 74  45 72 72 6F  72 2E 53 74  61 74 65 6D
-65 6E 74 2E  49 6E 76 61  6C 69 64 53  79 6E 74 61
-78 87 6D 65  73 73 61 67  65 8F 49 6E  76 61 6C 69
-64 20 73 79  6E 74 61 78  2E
+65 6E 74 2E  53 79 6E 74  61 78 45 72  72 6F 72 87
+6D 65 73 73  61 67 65 8F  49 6E 76 61  6C 69 64 20
+73 79 6E 74  61 78 2E
 ----
 
 ==== IGNORED

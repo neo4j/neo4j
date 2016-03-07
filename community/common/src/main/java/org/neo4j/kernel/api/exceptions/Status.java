@@ -421,7 +421,7 @@ public interface Status
         SchemaCorruptionDetected( DatabaseError,
                 "A malformed schema rule was encountered. Please contact your support representative." ),
         UnknownError( DatabaseError,
-                "An unknown failure occurred." ),
+                "An unknown error occurred." ),
 
         // transient errors
         DatabaseUnavailable( TransientError,

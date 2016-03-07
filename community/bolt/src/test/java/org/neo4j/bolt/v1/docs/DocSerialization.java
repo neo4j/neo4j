@@ -95,7 +95,7 @@ public class DocSerialization
                 pack( s, packer, writer );
             }
         }
-        else if ( value.equals( "FAILURE { \"code\": \"Neo.ClientError.Statement.InvalidSyntax\",                  \"message\": \"Invalid input 'T': expected" +
+        else if ( value.equals( "FAILURE { \"code\": \"Neo.ClientError.Statement.SyntaxError\",                  \"message\": \"Invalid input 'T': expected" +
                                 " <init> (line 1, column 1 (offset: 0))                          \"This will cause a syntax error\"                          " +
                                 " ^\"}" ) )
         {
