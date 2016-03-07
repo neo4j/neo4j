@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 case class ProcedureSignature(name: QualifiedProcedureName,
                               inputSignature: Seq[FieldSignature],
                               outputSignature: Option[Seq[FieldSignature]],
-                              accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess)
+                              accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess) {
+
+  def isVoid = outputSignature.isEmpty
+}
 
 object QualifiedProcedureName {
   def apply(unresolved: UnresolvedCall): QualifiedProcedureName =

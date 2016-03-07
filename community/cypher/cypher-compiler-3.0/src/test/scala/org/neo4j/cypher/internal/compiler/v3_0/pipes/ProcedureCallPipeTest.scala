@@ -43,6 +43,7 @@ class ProcedureCallPipeTest
       name = procedureName,
       callMode = LazyReadOnlyCallMode,
       argExprs = Seq(Variable("a")),
+      rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
       resultIndices = Seq(0 -> "r")
     )()(newMonitor)
@@ -78,6 +79,7 @@ class ProcedureCallPipeTest
       name = procedureName,
       callMode = EagerReadWriteCallMode,
       argExprs = Seq(Variable("a")),
+      rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
       resultIndices = Seq(0 -> "r")
     )()(newMonitor)
@@ -101,6 +103,36 @@ class ProcedureCallPipeTest
       ExecutionContext.from("a" ->1, "r" -> "take 1/1"),
       ExecutionContext.from("a" ->2, "r" -> "take 1/2"),
       ExecutionContext.from("a" ->2, "r" -> "take 2/2")
+    ))
+  }
+
+  test("should execute void procedure calls") {
+    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+
+    val pipe = ProcedureCallPipe(
+      source = lhs,
+      name = procedureName,
+      callMode = EagerReadWriteCallMode,
+      argExprs = Seq(Variable("a")),
+      rowProcessing = PassThroughRow,
+      resultSymbols = Seq.empty,
+      resultIndices = Seq.empty
+    )()(newMonitor)
+
+    val qtx = new QueryContext with QueryContextAdaptation {
+      override def isGraphKernelResultValue(v: Any): Boolean = false
+
+      override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
+        name should equal(procedureName)
+        args.length should be(1)
+        Iterator.empty
+      }
+    }
+
+    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
+      ExecutionContext.from("a" -> 1),
+      ExecutionContext.from("a" -> 2)
     ))
   }
 }

@@ -21,15 +21,10 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.util
 
-import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
-import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
 import org.neo4j.kernel.api.proc.Neo4jTypes
-import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 
-class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
+class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should be able to find labels from built-in-procedure") {
     // Given
@@ -83,6 +78,32 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
     // Then
     result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
+  }
+
+  test("should be able to call void procedure") {
+    //Given
+    registerVoidProc()
+
+    //When
+    val result = execute("MATCH (n) CALL sys.do_nothing() RETURN n")
+
+    // Then
+    result.toList shouldBe empty
+  }
+
+  test("should be able to call void procedure without swallowing rows") {
+    //Given
+    registerVoidProc()
+
+    createLabeledNode("A")
+    createLabeledNode("B")
+    createLabeledNode("C")
+
+    //When
+    val result = execute("MATCH (n) CALL sys.do_nothing() RETURN n")
+
+    // Then
+    result.toList.size shouldBe 3
   }
 
   test("should fail to shadow already bound identifier from a built-in-procedure") {
@@ -219,40 +240,4 @@ class InQueryProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
       java.util.Collections.singletonMap("out", stream)
     ))
   }
-
-  private def registerDummyProc(types: Neo4jTypes.AnyType*) = {
-
-    val builder = procedureSignature(Array("my", "first"), "proc")
-
-    for (i <- types.indices) {
-
-      builder
-        .in(s"in$i", types(i))
-        .out(s"out$i", types(i))
-    }
-
-    val proc = new BasicProcedure(builder.build) {
-      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
-        RawIterator.of[Array[AnyRef], ProcedureException](input)
-    }
-    kernel.registerProcedure(proc)
-  }
-
-  private def registerValueProc(value: AnyRef) = {
-    val builder = procedureSignature(Array("my", "first"), "value")
-    builder.out("out", Neo4jTypes.NTAny)
-
-    val proc = new BasicProcedure(builder.build) {
-      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
-        RawIterator.of[Array[AnyRef], ProcedureException](Array(value))
-    }
-    kernel.registerProcedure(proc)
-  }
-
-  override protected def initTest() {
-    super.initTest()
-    kernel = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
-  }
-
-  private var kernel: KernelAPI = null
 }
