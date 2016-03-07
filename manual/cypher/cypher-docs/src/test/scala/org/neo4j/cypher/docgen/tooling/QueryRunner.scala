@@ -162,7 +162,6 @@ class QueryRunner(formatter: (GraphDatabaseQueryService, InternalTransaction) =>
       case x =>
         throw new InternalException(s"Did not see this one coming $x")
     }
-    println(planString)
     ExecutionPlanRunResult(queryText, placeHolder, ExecutionPlan(planString))
   }
 }
