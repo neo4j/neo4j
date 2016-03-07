@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.UnresolvedCall
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
 case class ProcedureSignature(name: QualifiedProcedureName,
-                              inputSignature: Seq[FieldSignature] = Seq.empty,
-                              outputSignature: Seq[FieldSignature] = Seq.empty,
+                              inputSignature: Seq[FieldSignature],
+                              outputSignature: Option[Seq[FieldSignature]],
                               accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess)
 
 object QualifiedProcedureName {

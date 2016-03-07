@@ -72,7 +72,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any]) = {
     // close all statements
     taskCloser.close(success = true)
-    val columns = signature.outputSignature.seq.map(_.name).toList
+    val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
     new ExplainExecutionResult(columns, createNormalPlan, READ_ONLY, Set.empty)
   }
 
