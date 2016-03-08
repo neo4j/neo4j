@@ -54,6 +54,6 @@ public class BuiltInProcedures implements ThrowingConsumer<Procedures, Procedure
         procs.register( new ListComponentsProcedure( procedureName( "sys", "components" ), neo4jVersion ) );
 
         // These are 'sys.auth'-namespaced procedures; these deal with authentication and authorization-oriented operations
-        procs.register( new AlterUserPasswordProcedure( procedureName( "sys", "auth", "changePassword" ) ) );
+        procs.register( new AlterUserPasswordProcedure( procedureName( "sys", "changePassword" ) ) );
     }
 }

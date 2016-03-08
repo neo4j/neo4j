@@ -173,7 +173,7 @@ public class AuthenticationIT
 
         // When
         client.send( TransportTestUtil.chunk(
-                run( "CALL sys.auth.changePassword", Collections.singletonMap( "password", "secret" ) ),
+                run( "CALL sys.changePassword", Collections.singletonMap( "password", "secret" ) ),
                 pullAll() ) );
 
         // Then

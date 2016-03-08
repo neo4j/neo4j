@@ -145,7 +145,7 @@ public class BuiltInProceduresTest
             record( "db.labels", "db.labels() :: (label :: STRING?)" ),
             record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)" ),
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)" ),
-            record( "sys.auth.changePassword", "sys.auth.changePassword(password :: STRING?) :: ()" ),
+            record( "sys.changePassword", "sys.changePassword(password :: STRING?) :: ()" ),
             record( "sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?)" ),
             record( "sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)" )
         ) );

@@ -164,7 +164,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
                 equalTo( new Object[]{"sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?)"} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)"}),
-                equalTo( new Object[]{"sys.auth.changePassword", "sys.auth.changePassword(password :: STRING?) :: ()"})
+                equalTo( new Object[]{"sys.changePassword", "sys.changePassword(password :: STRING?) :: ()"})
         ));
     }
 
@@ -202,7 +202,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator < Object[],ProcedureException> stream = dbmsOperationsWithAuthSubjectInNewTransaction( authSubject )
-                .procedureCallDbms( procedureName( "sys", "auth", "changePassword" ), inputArray );
+                .procedureCallDbms( procedureName( "sys", "changePassword" ), inputArray );
 
         // Then
         assertThat( asList( stream ), emptyIterable() );
@@ -219,7 +219,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
 
             // When
             RawIterator<Object[],ProcedureException> stream = dbmsOperationsInNewTransaction()
-                    .procedureCallDbms( procedureName( "sys", "auth", "changePassword" ), inputArray );
+                    .procedureCallDbms( procedureName( "sys", "changePassword" ), inputArray );
             fail( "Should have failed." );
         }
         catch ( Exception e )
