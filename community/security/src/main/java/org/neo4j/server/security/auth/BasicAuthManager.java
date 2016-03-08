@@ -118,7 +118,7 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
         return users.findByName( username );
     }
 
-    public User setPassword( AuthSubject authSubject, String username, String password ) throws IOException
+    public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException
     {
         if ( !(authSubject instanceof BasicAuthSubject) )
         {
@@ -130,7 +130,10 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
         {
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
-        return setPassword( username, password );
+        if ( setPassword( username, password ) == null )
+        {
+            throw new IllegalArgumentException( "User " + username + " does not exist" );
+        }
     }
 
     @Override

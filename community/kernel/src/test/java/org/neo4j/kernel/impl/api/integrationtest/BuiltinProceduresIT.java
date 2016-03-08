@@ -40,6 +40,7 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -204,7 +205,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
                 .procedureCallDbms( procedureName( "sys", "auth", "changePassword" ), inputArray );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{ true } ) ) );
+        assertThat( asList( stream ), emptyIterable() );
     }
 
     @Test

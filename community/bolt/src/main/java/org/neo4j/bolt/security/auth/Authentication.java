@@ -45,12 +45,25 @@ public interface Authentication
      * @param authToken The token to be authenticated.
      * @throws AuthenticationException If authentication failed.
      */
-    AccessMode authenticate( Map<String,Object> authToken ) throws AuthenticationException;
+    AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException;
 
     /**
      * Allows all tokens to authenticate.
      */
-    Authentication NONE = authToken -> AccessMode.Static.FULL;
+    Authentication NONE = authToken -> new AuthenticationResult()
+    {
+        @Override
+        public AccessMode getAccessMode()
+        {
+            return AccessMode.Static.FULL;
+        }
+
+        @Override
+        public boolean credentialsExpired()
+        {
+            return false;
+        }
+    };
 
     String SCHEME_KEY = "scheme";
     String PRINCIPAL = "principal";

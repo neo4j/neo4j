@@ -17,17 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
-
-import java.io.IOException;
+package org.neo4j.bolt.security.auth;
 
 import org.neo4j.kernel.api.security.AccessMode;
 
-public interface AuthSubject extends AccessMode
+public interface AuthenticationResult
 {
-    void logout();
+    AccessMode getAccessMode();
 
-    AuthenticationResult getAuthenticationResult();
-
-    void setPassword( String password ) throws IOException;
+    boolean credentialsExpired();
 }

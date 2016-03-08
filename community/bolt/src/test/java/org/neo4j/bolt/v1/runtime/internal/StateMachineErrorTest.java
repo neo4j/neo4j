@@ -150,7 +150,7 @@ public class StateMachineErrorTest
         // Given
         RecordingCallback<StatementMetadata, Object> messages = new RecordingCallback<>();
         RecordingCallback<RecordStream, Object> pulling = new RecordingCallback<>();
-        RecordingCallback<Void, Object> initializing = new RecordingCallback<>();
+        RecordingCallback<Boolean, Object> initializing = new RecordingCallback<>();
 
         SessionStateMachine machine = newIdleMachine();
 

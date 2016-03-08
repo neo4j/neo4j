@@ -29,6 +29,8 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.security.auth.BasicAuthenticationResult;
 import org.neo4j.bolt.v1.messaging.MessageHandler;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.message.Message;
@@ -195,9 +197,9 @@ public class ResetFuzzTest
         }
 
         @Override
-        public AccessMode authenticate( Map<String,Object> authToken ) throws AuthenticationException
+        public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
         {
-            return AccessMode.Static.FULL;
+            return new BasicAuthenticationResult( AccessMode.Static.FULL, false );
         }
 
         @Override

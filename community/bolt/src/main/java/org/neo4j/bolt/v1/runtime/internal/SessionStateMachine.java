@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
@@ -70,13 +71,19 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         try
                         {
-                            ctx.accessMode = ctx.spi.authenticate( authToken );
+                            AuthenticationResult authResult = ctx.spi.authenticate( authToken );
+                            ctx.accessMode = authResult.getAccessMode();
+                            ctx.result( authResult.credentialsExpired() );
                             ctx.spi.udcRegisterClient( clientName );
                             return IDLE;
                         }
                         catch ( AuthenticationException e )
                         {
                             return error( ctx, new Neo4jError( e.status(), e.getMessage(), e ) );
+                        }
+                        catch ( Throwable e )
+                        {
+                            return error( ctx, e );
                         }
                     }
 
@@ -493,7 +500,6 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     private final String id = UUID.randomUUID().toString();
-    private AccessMode accessMode;
 
     /** A re-usable statement metadata instance that always represents the currently running statement */
     private final StatementMetadata currentStatementMetadata = new StatementMetadata()
@@ -529,6 +535,9 @@ public class SessionStateMachine implements Session, SessionState
     /** Callback attachment */
     private Object currentAttachment;
 
+    /** The current session auth state to be used for starting transactions */
+    private AccessMode accessMode;
+
     /** These are the "external" actions the state machine can take */
     private final SPI spi;
 
@@ -555,7 +564,7 @@ public class SessionStateMachine implements Session, SessionState
         void unbindTransactionFromCurrentThread();
         RecordStream run( SessionStateMachine ctx, String statement, Map<String, Object> params )
                 throws KernelException;
-        AccessMode authenticate( Map<String, Object> authToken ) throws AuthenticationException;
+        AuthenticationResult authenticate( Map<String, Object> authToken ) throws AuthenticationException;
         void udcRegisterClient( String clientName );
         Statement currentStatement();
     }
@@ -579,7 +588,7 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Void,A> callback )
+    public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Boolean,A> callback )
     {
         before( attachment, callback );
         try

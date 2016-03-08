@@ -17,17 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.bolt.v1.messaging.msgprocess;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.logging.Log;
 
-public interface AuthSubject extends AccessMode
+public class InitCallback extends MessageProcessingCallback<Boolean>
 {
-    void logout();
+    private final Map<String,Object> successMetadata = new HashMap<>();
 
-    AuthenticationResult getAuthenticationResult();
+    public InitCallback( Log log )
+    {
+        super( log );
+    }
 
-    void setPassword( String password ) throws IOException;
+    @Override
+    public void result( Boolean credentialsExpired, Void none ) throws Exception
+    {
+        if ( credentialsExpired )
+        {
+            successMetadata.put( "credentials_expired", credentialsExpired );
+        }
+    }
+
+    @Override
+    protected Map<String,Object> successMetadata()
+    {
+        return successMetadata;
+    }
+
+    @Override
+    protected void clearState()
+    {
+        super.clearState();
+        successMetadata.clear();
+    }
 }

@@ -108,9 +108,8 @@ public interface AuthManager
                 }
 
                 @Override
-                public boolean setPassword( String password ) throws IOException
+                public void setPassword( String password ) throws IOException
                 {
-                    return true;
                 }
 
                 @Override

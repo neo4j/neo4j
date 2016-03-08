@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthSubject;
@@ -51,7 +50,7 @@ public class BasicAuthentication implements Authentication
     }
 
     @Override
-    public AccessMode authenticate( Map<String,Object> authToken ) throws AuthenticationException
+    public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
         if ( !SCHEME.equals( authToken.get( SCHEME_KEY ) ) )
         {
@@ -71,16 +70,16 @@ public class BasicAuthentication implements Authentication
         }
     }
 
-    private AccessMode authenticate( String user, String password ) throws AuthenticationException
+    private AuthenticationResult authenticate( String user, String password ) throws AuthenticationException
     {
         authSubject = authManager.login( user, password );
+        boolean credentialsExpired = false;
         switch ( authSubject.getAuthenticationResult() )
         {
         case SUCCESS:
             break;
         case PASSWORD_CHANGE_REQUIRED:
-            // TODO: We just return OK for now, but we should notify the client with an appropriate message
-            //throw new AuthenticationException( Status.Security.CredentialsExpired, identifier.get() );
+            credentialsExpired = true;
             break;
         case TOO_MANY_ATTEMPTS:
             throw new AuthenticationException( Status.Security.AuthenticationRateLimit, identifier.get() );
@@ -88,10 +87,10 @@ public class BasicAuthentication implements Authentication
             log.warn( "Failed authentication attempt for '%s'", user);
             throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
         }
-        return authSubject;
+        return new BasicAuthenticationResult( authSubject, credentialsExpired );
     }
 
-    private AccessMode update( String user, String password, String newPassword ) throws AuthenticationException
+    private AuthenticationResult update( String user, String password, String newPassword ) throws AuthenticationException
     {
         authSubject = authManager.login( user, password );
         switch ( authSubject.getAuthenticationResult() )
@@ -114,7 +113,7 @@ public class BasicAuthentication implements Authentication
         default:
             throw new AuthenticationException( Status.Security.Unauthorized, identifier.get() );
         }
-        return authSubject;
+        return new BasicAuthenticationResult( authSubject, false );
     }
 
     private String safeCast( String key, Map<String,Object> authToken ) throws AuthenticationException

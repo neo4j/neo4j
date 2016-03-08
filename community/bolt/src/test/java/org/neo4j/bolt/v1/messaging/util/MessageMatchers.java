@@ -132,7 +132,7 @@ public class MessageMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "SUCCESS" );
+                description.appendText( "IGNORED" );
             }
         };
     }
@@ -154,7 +154,7 @@ public class MessageMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "SUCCESS" );
+                description.appendText( "FAILURE" );
             }
         };
     }

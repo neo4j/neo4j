@@ -100,10 +100,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        // TODO: The server will just return OK for now, but this should be changed to an appropriate message
-        //assertThat( client, eventuallyRecieves( msgFailure( Status.Security.CredentialsExpired,
-        //        String.format( "The credentials have expired and need to be updated. (ID:%s)", server.uniqueIdentier() ) ) ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
     }
 
     @Test
@@ -172,10 +169,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        // TODO: For now the server just returns OK when a password change is required, but this should be changed to an appropriate message
-        //assertThat( client, eventuallyRecieves( msgFailure( Status.Security.CredentialsExpired,
-        //        "The credentials have expired and need to be updated." ) ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -220,10 +214,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        // TODO: For now the server just returns OK when a password change is required, but this should be changed to an appropriate message
-        //assertThat( client, eventuallyRecieves( msgFailure( Status.Security.CredentialsExpired,
-        //        "The credentials have expired and need to be updated." ) ) );
-        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+        assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
 
         // When
         client.send( TransportTestUtil.chunk(

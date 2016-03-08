@@ -48,7 +48,7 @@ public class SessionWorkerFacade implements Session
 
     @Override
     public <A> void init( final String clientName, Map<String,Object> authToken, final A attachment,
-            final Callback<Void,A> callback )
+            final Callback<Boolean,A> callback )
     {
         queue( session -> session.init( clientName, authToken, attachment, callback ) );
     }

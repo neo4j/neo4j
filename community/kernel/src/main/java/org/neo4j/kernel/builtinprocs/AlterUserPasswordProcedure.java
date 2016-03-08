@@ -63,8 +63,8 @@ public class AlterUserPasswordProcedure extends CallableProcedure.BasicProcedure
 
         try
         {
-            boolean result = authSubject.setPassword( input[0].toString() );
-            return map( ( l ) -> new Object[]{l}, asRawIterator( Collections.singletonList( result ).iterator() ) );
+            authSubject.setPassword( input[0].toString() );
+            return map( ( l ) -> new Object[]{l}, asRawIterator( Collections.emptyIterator() ) );
         }
         catch ( IOException e )
         {

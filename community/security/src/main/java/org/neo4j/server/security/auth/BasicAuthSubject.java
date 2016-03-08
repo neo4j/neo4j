@@ -60,9 +60,9 @@ public class BasicAuthSubject implements AuthSubject
     }
 
     @Override
-    public boolean setPassword( String password ) throws IOException
+    public void setPassword( String password ) throws IOException
     {
-        return authManager.setPassword( this, user.name(), password ) != null;
+        authManager.setPassword( this, user.name(), password );
     }
 
     public boolean doesUsernameMatch( String username )
