@@ -68,6 +68,16 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
     kernel.registerProcedure(proc)
   }
 
+  protected def registerEmptyProc() = {
+    val builder = procedureSignature(Array("sys"), "return_nothing")
+
+    val proc = new BasicProcedure(builder.build) {
+      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+        RawIterator.empty()
+    }
+    kernel.registerProcedure(proc)
+  }
+
   override protected def initTest() {
     super.initTest()
     kernel = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])

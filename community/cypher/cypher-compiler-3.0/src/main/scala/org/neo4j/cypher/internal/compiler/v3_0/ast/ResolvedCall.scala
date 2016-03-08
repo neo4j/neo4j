@@ -108,7 +108,8 @@ case class ResolvedCall(signature: ProcedureSignature,
 
   private def resultCheck: SemanticCheck =
     // CALL of VOID procedure => No need to name arguments, even in query
-    if (signature.outputSignature.isEmpty)
+    // CALL of empty procedure => No need to name arguments, even in query
+    if (signature.outputFields.isEmpty)
       success
     // CALL ... YIELD ... => Check named outputs
     else if (declaredResults)
