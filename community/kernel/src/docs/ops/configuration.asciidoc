@@ -2,12 +2,10 @@
 = Configuration Settings Reference
 
 On this page you'll find the main configuration settings you can use with Neo4j.
-They can be set in <<file-locations, _neo4j.conf_>> when using the Neo4j Server (see <<server-configuration>>).
-If you use the embedded database, you can pass them in as a map (see <<tutorials-java-embedded-setup-config>>).
+They can be set in <<file-locations, _neo4j.conf_>> (for configuring the embedded database see <<tutorials-java-embedded-setup-config>>).
 
 For additional configuration settings, see:
 
-* <<server-configuration>>
 * <<config-org.neo4j.shell.ShellSettings>>
 * <<config-org.neo4j.kernel.ha.HaSettings>>
 * <<config-org.neo4j.cluster.ClusterSettings>>
@@ -16,6 +14,8 @@ For additional configuration settings, see:
 * <<config-org.neo4j.ext.udc.UdcSettings>>
 * <<config-org.neo4j.metrics.MetricsSettings>>
 
-
 include::configuration-attributes.asciidoc[]
 
+include::{importdir}/neo4j-server-docs-jar/ops/configuration-attributes.asciidoc[]
+
+include::{importdir}/neo4j-dbms-docs-jar/ops/configuration-attributes.asciidoc[]
