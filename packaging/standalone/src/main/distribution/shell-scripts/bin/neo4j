@@ -205,9 +205,9 @@ parse_config() {
 
 setup_paths() {
   [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
-  [[ "${NEO4J_LOG:-}" ]] || NEO4J_LOG="${NEO4J_HOME}/data/log"
   NEO4J_RUN="${NEO4J_HOME}/${dbms_directories_run:-run}"
   NEO4J_PIDFILE="${NEO4J_RUN}/neo4j.pid"
+  NEO4J_LOG="${NEO4J_HOME}/${dbms_directories_logs:-logs}"
   CONSOLE_LOG="${NEO4J_LOG}/neo4j.log"
 }
 
