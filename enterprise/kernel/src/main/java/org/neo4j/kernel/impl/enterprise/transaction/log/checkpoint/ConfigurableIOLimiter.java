@@ -32,7 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 
 public class ConfigurableIOLimiter implements IOLimiter
 {
-    private static final AtomicIntegerFieldUpdater<ConfigurableIOLimiter> rushUpdater =
+    private static final AtomicIntegerFieldUpdater<ConfigurableIOLimiter> disableCountUpdater =
             AtomicIntegerFieldUpdater.newUpdater( ConfigurableIOLimiter.class, "disabledCount" );
 
     private static final int NO_LIMIT = 0;
@@ -43,7 +43,7 @@ public class ConfigurableIOLimiter implements IOLimiter
     private final int iopq; // IOs per quantum
     private final ObjLongConsumer<Object> pauseNanos;
 
-    @SuppressWarnings( "unused" ) // Updated via rushUpdater
+    @SuppressWarnings( "unused" ) // Updated via disableCountUpdater
     private volatile int disabledCount;
 
     public ConfigurableIOLimiter( Config config )
@@ -116,13 +116,13 @@ public class ConfigurableIOLimiter implements IOLimiter
     @Override
     public void disableLimit()
     {
-        rushUpdater.getAndIncrement( this );
+        disableCountUpdater.getAndIncrement( this );
     }
 
     @Override
     public void enableLimit()
     {
-        rushUpdater.getAndDecrement( this );
+        disableCountUpdater.getAndDecrement( this );
     }
 
     private long currentTimeMillis()
