@@ -42,7 +42,7 @@ public interface EnterpriseServerSettings
 
     @SuppressWarnings("unused") // accessed from the browser
     @Description( "Configure the Neo4j Browser to store or not store user credentials." )
-    Setting<Boolean> browser_storeCredentials = setting( "dbms.browser.store_credentials", BOOLEAN, TRUE );
+    Setting<Boolean> browser_retainConnectionCredentials = setting( "dbms.browser.retain_connection_credentials", BOOLEAN, TRUE );
 
     @SuppressWarnings("unused") // accessed from the browser
     @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
