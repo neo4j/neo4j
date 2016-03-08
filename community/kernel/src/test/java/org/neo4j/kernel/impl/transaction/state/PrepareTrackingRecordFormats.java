@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
@@ -33,6 +34,7 @@ import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -52,6 +54,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     private final Set<PropertyKeyTokenRecord> propertyKeyTokenPrepare = new HashSet<>();
     private final Set<LabelTokenRecord> labelTokenPrepare = new HashSet<>();
     private final Set<RelationshipTypeTokenRecord> relationshipTypeTokenPrepare = new HashSet<>();
+    private final Set<MetaDataRecord> metaDataPrepare = new HashSet<>();
 
     public PrepareTrackingRecordFormats( RecordFormats actual )
     {
@@ -110,6 +113,12 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     public PrepareTrackingRecordFormat<DynamicRecord> dynamic()
     {
         return new PrepareTrackingRecordFormat<>( actual.dynamic(), dynamicPrepare );
+    }
+
+    @Override
+    public PrepareTrackingRecordFormat<MetaDataRecord> metaData()
+    {
+        return new PrepareTrackingRecordFormat<>( actual.metaData(), metaDataPrepare );
     }
 
     @Override

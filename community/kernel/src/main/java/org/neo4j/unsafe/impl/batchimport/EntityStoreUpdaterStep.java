@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -59,7 +60,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         void propertiesWritten( long count );
     }
 
-    private final CommonAbstractStore<RECORD> entityStore;
+    private final CommonAbstractStore<RECORD,? extends StoreHeader> entityStore;
     private final PropertyStore propertyStore;
     private final IoMonitor ioMonitor;
     private final PropertyCreator propertyCreator;
@@ -70,7 +71,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     private final ReusableIteratorCostume<PropertyBlock> blockIterator = new ReusableIteratorCostume<>();
 
     EntityStoreUpdaterStep( StageControl control, Configuration config,
-            CommonAbstractStore<RECORD> entityStore,
+            CommonAbstractStore<RECORD,? extends StoreHeader> entityStore,
             PropertyStore propertyStore, IoMonitor ioMonitor,
             Monitor monitor )
     {

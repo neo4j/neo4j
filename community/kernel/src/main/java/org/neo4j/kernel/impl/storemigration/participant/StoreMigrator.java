@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
+import org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
@@ -277,8 +278,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
         long lastClosedTxLogByteOffset =
                 MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
-        if ( lastClosedTxLogVersion != MetaDataStore.FIELD_NOT_PRESENT &&
-             lastClosedTxLogByteOffset != MetaDataStore.FIELD_NOT_PRESENT )
+        if ( lastClosedTxLogVersion != MetaDataRecordFormat.FIELD_NOT_PRESENT &&
+             lastClosedTxLogByteOffset != MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
             return new LogPosition( lastClosedTxLogVersion, lastClosedTxLogByteOffset );
         }

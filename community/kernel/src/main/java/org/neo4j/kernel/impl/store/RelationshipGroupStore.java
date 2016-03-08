@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.logging.LogProvider;
 
-public class RelationshipGroupStore extends ComposableRecordStore<RelationshipGroupRecord,IntStoreHeader>
+public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGroupRecord,IntStoreHeader>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipGroupStore";
 
@@ -53,11 +53,5 @@ public class RelationshipGroupStore extends ComposableRecordStore<RelationshipGr
             throws FAILURE
     {
         processor.processRelationshipGroup( this, record );
-    }
-
-    @Override
-    public void updateRecord( RelationshipGroupRecord record )
-    {
-        super.updateRecord( record );
     }
 }

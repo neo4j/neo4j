@@ -44,7 +44,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.record.NeoStoreActualRecord;
+import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -616,8 +616,8 @@ public class MetaDataStoreTest
         List<Long> actualValues = new ArrayList<>();
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            NeoStoreActualRecord record = store.newRecord();
-            try ( RecordCursor<NeoStoreActualRecord> cursor = store.newRecordCursor( record ) )
+            MetaDataRecord record = store.newRecord();
+            try ( RecordCursor<MetaDataRecord> cursor = store.newRecordCursor( record ) )
             {
                 store.placeRecordCursor( 0, cursor, RecordLoad.NORMAL );
                 long highId = store.getHighId();

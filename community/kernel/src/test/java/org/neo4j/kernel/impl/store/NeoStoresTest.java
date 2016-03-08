@@ -92,6 +92,7 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
+import static org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class NeoStoresTest
@@ -527,11 +528,11 @@ public class NeoStoresTest
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            assertEquals( MetaDataStore.FIELD_NOT_PRESENT, metaDataStore.getCreationTime() );
-            assertEquals( MetaDataStore.FIELD_NOT_PRESENT, metaDataStore.getRandomNumber() );
-            assertEquals( MetaDataStore.FIELD_NOT_PRESENT, metaDataStore.getCurrentLogVersion() );
-            assertEquals( MetaDataStore.FIELD_NOT_PRESENT, metaDataStore.getLastCommittedTransactionId() );
-            assertEquals( MetaDataStore.FIELD_NOT_PRESENT, metaDataStore.getStoreVersion() );
+            assertEquals( FIELD_NOT_PRESENT, metaDataStore.getCreationTime() );
+            assertEquals( FIELD_NOT_PRESENT, metaDataStore.getRandomNumber() );
+            assertEquals( FIELD_NOT_PRESENT, metaDataStore.getCurrentLogVersion() );
+            assertEquals( FIELD_NOT_PRESENT, metaDataStore.getLastCommittedTransactionId() );
+            assertEquals( FIELD_NOT_PRESENT, metaDataStore.getStoreVersion() );
             assertEquals( 8, metaDataStore.getGraphNextProp() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
         }

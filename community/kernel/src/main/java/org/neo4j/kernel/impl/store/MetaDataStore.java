@@ -30,9 +30,10 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
+import org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.record.NeoStoreActualRecord;
+import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -50,19 +51,18 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat.RECORD_SIZE;
 
-public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
+public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader>
         implements TransactionIdStore, LogVersionRepository
 {
     public static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
-    public static final long FIELD_NOT_PRESENT = -1;
     public static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
     /*
      *  9 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest
      *  constraint tx | upgrade time | upgrade id
      */
-    public static final int RECORD_SIZE = 9;
     public static final String DEFAULT_NAME = "neostore";
     // Positions of meta-data records
 
@@ -90,6 +90,11 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
         {
             this.id = id;
             this.description = description;
+        }
+
+        public int id()
+        {
+            return id;
         }
 
         public String description()
@@ -137,10 +142,11 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
 
     MetaDataStore( File fileName, Config conf,
             IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache, LogProvider logProvider, RecordFormat<NeoStoreActualRecord> recordFormat, String storeVersion )
+            PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
+            String storeVersion )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
-                TYPE_DESCRIPTOR, recordFormat, storeVersion );
+                TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion );
         this.transactionCloseWaitLogger = new CappedLogger( logProvider.getLog( MetaDataStore.class ) );
         transactionCloseWaitLogger.setTimeLimit( 30, SECONDS, Clock.SYSTEM_CLOCK );
     }
@@ -185,12 +191,6 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
         lastCommittingTxField.set( transactionId );
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
         highestCommittedTransaction.set( transactionId, checksum );
-    }
-
-    @Override
-    protected int determineRecordSize()
-    {
-        return RECORD_SIZE;
     }
 
     /**
@@ -250,6 +250,7 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
      */
     public static long getRecord( PageCache pageCache, File neoStore, Position recordPosition ) throws IOException
     {
+        MetaDataRecordFormat format = new MetaDataRecordFormat();
         try ( PagedFile pagedFile = pageCache.map( neoStore, getPageSize( pageCache ) ) )
         {
             if ( pagedFile.getLastPageId() >= 0 )
@@ -258,24 +259,22 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
                 {
                     if ( cursor.next() )
                     {
-                        byte recordByte;
-                        long record;
+                        MetaDataRecord record = new MetaDataRecord();
+                        record.setId( recordPosition.id );
                         do
                         {
-                            cursor.setOffset( RECORD_SIZE * recordPosition.id );
-                            recordByte = cursor.getByte();
-                            record = cursor.getLong();
+                            format.read( record, cursor, RecordLoad.CHECK, RECORD_SIZE, pagedFile );
+                            if ( record.inUse() )
+                            {
+                                return record.getValue();
+                            }
                         }
                         while ( cursor.shouldRetry() );
-                        if ( recordByte == Record.IN_USE.byteValue() )
-                        {
-                            return record;
-                        }
                     }
                 }
             }
         }
-        return FIELD_NOT_PRESENT;
+        return MetaDataRecordFormat.FIELD_NOT_PRESENT;
     }
 
     static int getPageSize( PageCache pageCache )
@@ -490,13 +489,17 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
 
     long getRecordValue( PageCursor cursor, Position position )
     {
-        int offset = position.id * getRecordSize();
-        cursor.setOffset( offset );
-        if ( cursor.getByte() == Record.IN_USE.byteValue() )
+        MetaDataRecord record = newRecord();
+        try
         {
-            return cursor.getLong();
+            record.setId( position.id );
+            recordFormat.read( record, cursor, RecordLoad.NORMAL, RECORD_SIZE, storeFile );
+            return record.getValue();
         }
-        return FIELD_NOT_PRESENT;
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
     }
 
     private void refreshFields()
@@ -533,17 +536,10 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
         // unclear from the outside which record id that refers to, so here we need to manage high id ourselves.
         setHighestPossibleIdInUse( id );
 
-        NeoStoreActualRecord record = new NeoStoreActualRecord();
+        MetaDataRecord record = new MetaDataRecord();
         record.initialize( true, value );
         record.setId( id );
         updateRecord( record );
-    }
-
-    @Override
-    protected void writeRecord( PageCursor cursor, NeoStoreActualRecord record )
-    {
-        cursor.putByte( Record.IN_USE.byteValue() );
-        cursor.putLong( record.getValue() );
     }
 
     private void setRecord( PageCursor cursor, Position position, long value ) throws IOException
@@ -799,43 +795,21 @@ public class MetaDataStore extends CommonAbstractStore<NeoStoreActualRecord>
     }
 
     @Override
-    public NeoStoreActualRecord newRecord()
+    public MetaDataRecord newRecord()
     {
-        return new NeoStoreActualRecord();
+        return new MetaDataRecord();
     }
 
     @Override
     public <FAILURE extends Exception> void accept(
-            org.neo4j.kernel.impl.store.RecordStore.Processor<FAILURE> processor, NeoStoreActualRecord record )
+            org.neo4j.kernel.impl.store.RecordStore.Processor<FAILURE> processor, MetaDataRecord record )
                     throws FAILURE
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void readRecord( PageCursor cursor, NeoStoreActualRecord record, RecordLoad mode )
-    {
-        int id = record.getIntId();
-        Position[] values = Position.values();
-        if ( id >= values.length )
-        {
-            record.initialize( false, FIELD_NOT_PRESENT );
-            return;
-        }
-
-        long value = getRecordValue( cursor, values[id] );
-        boolean inUse = value != FIELD_NOT_INITIALIZED && value != FIELD_NOT_PRESENT;
-        record.initialize( inUse, value );
-    }
-
-    @Override
-    protected boolean isInUse( PageCursor cursor )
-    {
-        return cursor.getByte() == Record.IN_USE.byteValue();
-    }
-
-    @Override
-    public void prepareForCommit( NeoStoreActualRecord record )
+    public void prepareForCommit( MetaDataRecord record )
     {   // No need to do anything with these records before commit
     }
 }

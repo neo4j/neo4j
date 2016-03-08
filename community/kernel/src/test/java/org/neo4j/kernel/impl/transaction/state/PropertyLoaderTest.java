@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -189,7 +190,7 @@ public class PropertyLoaderTest
     }
 
     private <R extends PrimitiveRecord> void setUpPropertyChain( long id, Class<R> recordClass,
-            CommonAbstractStore<R> store, int... propertyValues )
+            CommonAbstractStore<R,? extends StoreHeader> store, int... propertyValues )
     {
         when( store.getRecord( eq( id ), any( recordClass ), any( RecordLoad.class ) ) ).thenAnswer( new Answer<R>()
         {
