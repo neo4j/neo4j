@@ -35,6 +35,7 @@ import org.neo4j.shell.ShellSettings;
 
 import static java.util.Arrays.asList;
 
+import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class BaseServerConfigLoader
@@ -89,7 +90,7 @@ public class BaseServerConfigLoader
     {
         config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
         config.putIfAbsent( GraphDatabaseSettings.logs_directory.name(), "logs" );
-        config.putIfAbsent( BoltKernelExtension.Settings.enabled.name(), "true" );
+        config.putIfAbsent( connector( 0, BoltKernelExtension.Settings.enabled ).name(), "true" );
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
     }
 
