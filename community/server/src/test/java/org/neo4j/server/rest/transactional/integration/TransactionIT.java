@@ -37,11 +37,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.web.XForwardUtil;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
@@ -841,6 +842,25 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         //no transaction open anymore, we have failed
         assertThat( commit.status(), equalTo( 404 ) );
+    }
+
+    @Test
+    public void shouldWorkWhenHittingTheASTCacheInCypher() throws JsonParseException
+    {
+        // give a cached plan
+        Response response = http.POST( "/db/data/transaction/commit",
+                singleStatement( "MATCH (group:Group {name: \\\"AAA\\\"}) RETURN *" ) );
+
+        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
+
+        // when we hit the ast cache
+        response = http.POST( "/db/data/transaction/commit",
+                singleStatement( "MATCH (group:Group {name: \\\"BBB\\\"}) RETURN *" ) );
+
+        // then no errors (in particular no NPE)
+        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
     }
 
     private void assertPath( JsonNode jsonURIString, String path, String hostname, final String scheme )
