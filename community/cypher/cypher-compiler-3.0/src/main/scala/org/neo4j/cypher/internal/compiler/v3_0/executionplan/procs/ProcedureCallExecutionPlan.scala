@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, ProcedureCallMode, READ_ONLY}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{Counter, JavaResultValueConverter}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{Counter, RuntimeJavaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
@@ -89,9 +89,9 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   }
 
   private def evaluateArguments(ctx: QueryContext, params: Map[String, Any]): Seq[Any] = {
-    val converter = new JavaResultValueConverter(ctx.isGraphKernelResultValue)
+    val converter = new RuntimeJavaValueConverter(ctx.isGraphKernelResultValue)
     val state = new QueryState(ctx, ExternalCSVResource.empty, params)
-    argExprCommands.map(expr => converter.asDeepJavaResultValue(expr.apply(ExecutionContext.empty)(state)))
+    argExprCommands.map(expr => converter.asDeepJavaValue(expr.apply(ExecutionContext.empty)(state)))
   }
 
   private def createNormalPlan =

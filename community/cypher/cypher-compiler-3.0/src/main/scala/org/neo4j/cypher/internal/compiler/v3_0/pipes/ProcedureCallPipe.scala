@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{AllEffects, ProcedureCallMode}
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.ScalaCompatibility.asScalaCompatible
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, JavaResultValueConverter}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, RuntimeJavaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.Signature
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureSignature, QualifiedProcedureName}
@@ -58,18 +58,18 @@ case class ProcedureCallPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
-    val converter = new JavaResultValueConverter(state.query.isGraphKernelResultValue)
+    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
 
     rowProcessor(input, state, converter)
   }
 
-  private def internalCreateResultsByAppending(input: Iterator[ExecutionContext], state: QueryState, converter: JavaResultValueConverter): Iterator[ExecutionContext] = {
+  private def internalCreateResultsByAppending(input: Iterator[ExecutionContext], state: QueryState, converter: RuntimeJavaValueConverter): Iterator[ExecutionContext] = {
     val qtx = state.query
     val builder = Seq.newBuilder[(String, Any)]
     builder.sizeHint(resultIndices.length)
 
     input flatMap { input =>
-      val argValues = argExprs.map(arg => converter.asDeepJavaResultValue(arg(input)(state)))
+      val argValues = argExprs.map(arg => converter.asDeepJavaValue(arg(input)(state)))
       val results = callMode.call(qtx, name, argValues)
       results map { resultValues =>
         resultIndices foreach { case (k, v) =>
@@ -85,10 +85,10 @@ case class ProcedureCallPipe(source: Pipe,
     }
   }
 
-  private def internalCreateResultsByPassingThrough(input: Iterator[ExecutionContext], state: QueryState, converter: JavaResultValueConverter): Iterator[ExecutionContext] = {
+  private def internalCreateResultsByPassingThrough(input: Iterator[ExecutionContext], state: QueryState, converter: RuntimeJavaValueConverter): Iterator[ExecutionContext] = {
     val qtx = state.query
     input map { input =>
-      val argValues = argExprs.map(arg => converter.asDeepJavaResultValue(arg(input)(state)))
+      val argValues = argExprs.map(arg => converter.asDeepJavaValue(arg(input)(state)))
       val results = callMode.call(qtx, name, argValues)
       // the iterator here should be empty; we'll drain just in case
       while (results.hasNext) results.next()
