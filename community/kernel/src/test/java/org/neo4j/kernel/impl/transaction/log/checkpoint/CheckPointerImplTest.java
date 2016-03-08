@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.junit.Test;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -73,7 +74,7 @@ public class CheckPointerImplTest
     private final TransactionAppender appender = mock( TransactionAppender.class );
     private final DatabaseHealth health = mock( DatabaseHealth.class );
     private final CheckPointTracer tracer = mock( CheckPointTracer.class, RETURNS_MOCKS );
-    private final CheckPointFlushControl flushControl = mock( CheckPointFlushControl.class );
+    private IOLimiter limiter = mock( IOLimiter.class );
 
     private final long initialTransactionId = 2L;
     private final long transactionId = 42L;
@@ -113,7 +114,7 @@ public class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( storageEngine, times( 1 ) ).flushAndForce( null );
+        verify( storageEngine, times( 1 ) ).flushAndForce( limiter );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
@@ -139,7 +140,7 @@ public class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( storageEngine, times( 1 ) ).flushAndForce( null );
+        verify( storageEngine, times( 1 ) ).flushAndForce( limiter );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
@@ -165,7 +166,7 @@ public class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( storageEngine, times( 1 ) ).flushAndForce( null );
+        verify( storageEngine, times( 1 ) ).flushAndForce( limiter );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
@@ -250,10 +251,9 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void mustUseIoLimiterFromFlushControl() throws Throwable
+    public void mustUseIoLimiterFromFlushing() throws Throwable
     {
-        IOLimiter limiter = (stamp, ios, flushable) -> 42;
-        when( flushControl.getIOLimiter() ).thenReturn( limiter );
+        limiter = (stamp, ios, flushable) -> 42;
         when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true, false );
         mockTxIdStore();
         CheckPointerImpl checkPointing = checkPointer();
@@ -267,52 +267,95 @@ public class CheckPointerImplTest
     @Test
     public void mustFlushAsFastAsPossibleDuringForceCheckPoint() throws Exception
     {
-        AtomicBoolean doneRush = new AtomicBoolean();
-        Rush rush = () -> doneRush.set( true );
-        when( flushControl.beginTemporaryRush() ).thenReturn( rush );
+        AtomicBoolean doneDisablingLimits = new AtomicBoolean();
+        limiter = new IOLimiter()
+        {
+            @Override
+            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+                    throws IOException
+            {
+                return 0;
+            }
+
+            @Override
+            public void enableLimit()
+            {
+                doneDisablingLimits.set( true );
+            }
+        };
         mockTxIdStore();
         CheckPointerImpl checkPointer = checkPointer();
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
-        assertTrue( doneRush.get() );
+        assertTrue( doneDisablingLimits.get() );
     }
 
     @Test
     public void mustFlushAsFastAsPossibleDuringTryCheckPoint() throws Exception
     {
-        AtomicBoolean doneRush = new AtomicBoolean();
-        Rush rush = () -> doneRush.set( true );
-        when( flushControl.beginTemporaryRush() ).thenReturn( rush );
+
+        AtomicBoolean doneDisablingLimits = new AtomicBoolean();
+        limiter = new IOLimiter()
+        {
+            @Override
+            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+                    throws IOException
+            {
+                return 0;
+            }
+
+            @Override
+            public void enableLimit()
+            {
+                doneDisablingLimits.set( true );
+            }
+        };
         mockTxIdStore();
         CheckPointerImpl checkPointer = checkPointer();
         checkPointer.tryCheckPoint( INFO );
-        assertTrue( doneRush.get() );
+        assertTrue( doneDisablingLimits.get() );
     }
 
     private void verifyAsyncActionCausesConcurrentFlushingRush(
             ThrowingConsumer<CheckPointerImpl,IOException> asyncAction ) throws Exception
     {
-        AtomicLong rushCounter = new AtomicLong();
+        AtomicLong limitDisableCounter = new AtomicLong();
         AtomicLong observedRushCount = new AtomicLong();
         BinaryLatch backgroundCheckPointStartedLatch = new BinaryLatch();
         BinaryLatch forceCheckPointStartLatch = new BinaryLatch();
 
+        limiter = new IOLimiter()
+        {
+            @Override
+            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+                    throws IOException
+            {
+                return 0;
+            }
+
+            @Override
+            public void disableLimit()
+            {
+                limitDisableCounter.getAndIncrement();
+                forceCheckPointStartLatch.release();
+            }
+
+            @Override
+            public void enableLimit()
+            {
+                limitDisableCounter.getAndDecrement();
+            }
+        };
+
         mockTxIdStore();
         CheckPointerImpl checkPointer = checkPointer();
-
-        when( flushControl.beginTemporaryRush() ).thenAnswer( (invocation) -> {
-            rushCounter.getAndIncrement();
-            forceCheckPointStartLatch.release();
-            return (Rush) rushCounter::getAndDecrement;
-        } );
-        when( flushControl.getIOLimiter() ).thenReturn( IOLimiter.unlimited() );
 
         doAnswer( invocation -> {
             backgroundCheckPointStartedLatch.release();
             forceCheckPointStartLatch.await();
-            long newValue = rushCounter.get();
+            long newValue = limitDisableCounter.get();
             observedRushCount.set( newValue );
             return null;
-        } ).when( storageEngine ).flushAndForce( IOLimiter.unlimited() );
+        } ).when( storageEngine ).flushAndForce( limiter );
 
         Future<Object> forceCheckPointer = forkFuture( () -> {
             backgroundCheckPointStartedLatch.await();
@@ -343,7 +386,7 @@ public class CheckPointerImplTest
     private CheckPointerImpl checkPointer( Lock lock )
     {
         return new CheckPointerImpl( txIdStore, threshold, storageEngine, logPruning, appender, health,
-                NullLogProvider.getInstance(), tracer, flushControl, lock );
+                NullLogProvider.getInstance(), tracer, limiter, lock );
     }
 
     private CheckPointerImpl checkPointer()
@@ -388,5 +431,4 @@ public class CheckPointerImplTest
             }
         }
     }
-
 }

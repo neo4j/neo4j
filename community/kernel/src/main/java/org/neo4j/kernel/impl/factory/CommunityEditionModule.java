@@ -25,12 +25,10 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -52,8 +50,10 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.FullSpeedCheckPointFlushControl;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.KernelData;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
@@ -107,7 +107,7 @@ public class CommunityEditionModule extends EditionModule
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
-        checkPointFlushControl = new FullSpeedCheckPointFlushControl();
+        ioLimiter = IOLimiter.unlimited();
 
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 

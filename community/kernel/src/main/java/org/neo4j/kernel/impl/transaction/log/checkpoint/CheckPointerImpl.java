@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -43,7 +44,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final StorageEngine storageEngine;
     private final LogPruning logPruning;
     private final DatabaseHealth databaseHealth;
-    private final CheckPointFlushControl flushControl;
+    private final IOLimiter ioLimiter;
     private final Log msgLog;
     private final CheckPointTracer tracer;
     private final Lock lock;
@@ -59,7 +60,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             DatabaseHealth databaseHealth,
             LogProvider logProvider,
             CheckPointTracer tracer,
-            CheckPointFlushControl checkPointFlushControl )
+            IOLimiter ioLimiter )
     {
         this( transactionIdStore,
                 threshold,
@@ -69,7 +70,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
                 databaseHealth,
                 logProvider,
                 tracer,
-                checkPointFlushControl,
+                ioLimiter,
                 new ReentrantLock() );
     }
 
@@ -82,7 +83,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             DatabaseHealth databaseHealth,
             LogProvider logProvider,
             CheckPointTracer tracer,
-            CheckPointFlushControl flushControl,
+            IOLimiter ioLimiter,
             Lock lock )
     {
         this.appender = appender;
@@ -91,7 +92,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.storageEngine = storageEngine;
         this.logPruning = logPruning;
         this.databaseHealth = databaseHealth;
-        this.flushControl = flushControl;
+        this.ioLimiter = ioLimiter;
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
         this.tracer = tracer;
         this.lock = lock;
@@ -106,24 +107,24 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long forceCheckPoint( TriggerInfo info ) throws IOException
     {
-        try ( Rush ignore = flushControl.beginTemporaryRush() )
+        ioLimiter.disableLimit();
+        lock.lock();
+        try
         {
-            lock.lock();
-            try
-            {
-                return doCheckPoint( info, LogCheckPointEvent.NULL );
-            }
-            finally
-            {
-                lock.unlock();
-            }
+            return doCheckPoint( info, LogCheckPointEvent.NULL );
+        }
+        finally
+        {
+            lock.unlock();
+            ioLimiter.enableLimit();
         }
     }
 
     @Override
     public long tryCheckPoint( TriggerInfo info ) throws IOException
     {
-        try ( Rush ignore = flushControl.beginTemporaryRush() )
+        ioLimiter.disableLimit();
+        try
         {
             if ( lock.tryLock() )
             {
@@ -150,6 +151,10 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
                     lock.unlock();
                 }
             }
+        }
+        finally
+        {
+            ioLimiter.enableLimit();
         }
     }
 
@@ -195,7 +200,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          * earlier check point and replay from there all the log entries. Everything will be ok.
          */
         msgLog.info( prefix + " Starting store flush..." );
-        storageEngine.flushAndForce( flushControl.getIOLimiter() );
+        storageEngine.flushAndForce( ioLimiter );
         msgLog.info( prefix + " Store flush completed" );
 
         /*

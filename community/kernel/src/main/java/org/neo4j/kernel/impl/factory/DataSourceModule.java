@@ -198,7 +198,7 @@ public class DataSourceModule
                 platformModule.monitors,
                 platformModule.tracers,
                 procedures,
-                editionModule.checkPointFlushControl ) );
+                editionModule.ioLimiter ) );
         dataSourceManager.register( neoStoreDataSource );
 
         life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint;
 
 import org.junit.Test;
 
+import java.io.Flushable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -30,94 +31,117 @@ import java.util.function.ObjLongConsumer;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.Rush;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ConfigurableCheckPointFlushControlTest
+public class ConfigurableIOLimiterTest
 {
-    private ConfigurableCheckPointFlushControl control;
+    private ConfigurableIOLimiter limiter;
     private AtomicLong pauseNanosCounter;
+    private static final Flushable FLUSHABLE = () -> {};
 
-    private void createFlushControl( Config config )
+    private void createIOLimiter( Config config )
     {
         pauseNanosCounter = new AtomicLong();
         ObjLongConsumer<Object> pauseNanos = ( blocker, nanos ) -> pauseNanosCounter.getAndAdd( nanos );
-        control = new ConfigurableCheckPointFlushControl( config, pauseNanos );
+        limiter = new ConfigurableIOLimiter( config, pauseNanos );
     }
 
-    private void createFlushControl( int limit )
+    private void createIOLimiter( int limit )
     {
         Map<String, String> settings = stringMap(
                 GraphDatabaseSettings.check_point_iops_limit.name(), "" + limit );
-        createFlushControl( new Config( settings ) );
+        createIOLimiter( new Config( settings ) );
     }
 
     @Test
     public void mustNotPutLimitOnIOWhenNoLimitIsConfigured() throws Exception
     {
-        createFlushControl( Config.defaults() );
-        assertThat( control.getIOLimiter(), sameInstance( IOLimiter.unlimited() ) );
+        createIOLimiter( Config.defaults() );
+        assertUnlimited();
+    }
+
+    private void assertUnlimited() throws IOException
+    {
+        long pauseTime = pauseNanosCounter.get();
+        repeatedlyCallMaybeLimitIO( limiter, IOLimiter.INITIAL_STAMP, 1000000 );
+        assertThat( pauseNanosCounter.get(), is( pauseTime ) );
     }
 
     @Test
-    public void mustNotPutLimitOnIODuringTemporaryRushWhenNoLimitIsConfigured() throws Exception
+    public void mustNotPutLimitOnIOWhenLimitingIsDisabledAndNoLimitIsConfigured() throws Exception
     {
-        createFlushControl( Config.defaults() );
-        try ( Rush ignore = control.beginTemporaryRush() )
+        createIOLimiter( Config.defaults() );
+        limiter.disableLimit();
+        try
         {
-            assertThat( control.getIOLimiter(), sameInstance( IOLimiter.unlimited() ) );
-            //noinspection unused
-            try ( Rush ignore2 = control.beginTemporaryRush() )
+            assertUnlimited();
+            limiter.disableLimit();
+            try
             {
-                assertThat( control.getIOLimiter(), sameInstance( IOLimiter.unlimited() ) );
+                assertUnlimited();
             }
+            finally
+            {
+                limiter.enableLimit();
+            }
+        }
+        finally
+        {
+            limiter.enableLimit();
         }
     }
 
     @Test
     public void mustRestrictIORateToConfiguredLimit() throws Exception
     {
-        createFlushControl( 100 );
+        createIOLimiter( 100 );
 
         // Do 10*100 = 1000 IOs real quick, when we're limited to 100 IOPS.
-        IOLimiter ioLimiter = control.getIOLimiter();
         long stamp = IOLimiter.INITIAL_STAMP;
-        repeatedlyCallMaybeLimitIO( ioLimiter, stamp );
+        repeatedlyCallMaybeLimitIO( limiter, stamp, 10 );
 
         // This should have led to about 10 seconds of pause, minus the time we spent in the loop.
         // So let's say 9 seconds - experiments indicate this gives us about a 10x margin.
         assertThat( pauseNanosCounter.get(), greaterThan( TimeUnit.SECONDS.toNanos( 9 ) ) );
     }
 
-    private long repeatedlyCallMaybeLimitIO( IOLimiter ioLimiter, long stamp ) throws IOException
+    private long repeatedlyCallMaybeLimitIO( IOLimiter ioLimiter, long stamp, int iosPerIteration ) throws IOException
     {
         for ( int i = 0; i < 100; i++ )
         {
-            stamp = ioLimiter.maybeLimitIO( stamp, 10, () -> {} );
+            stamp = ioLimiter.maybeLimitIO( stamp, iosPerIteration, FLUSHABLE );
         }
         return stamp;
     }
 
     @Test
-    public void mustNotRestrictIOToConfiguredRateWhenRushing() throws Exception
+    public void mustNotRestrictIOToConfiguredRateWhenLimitIsDisabled() throws Exception
     {
-        createFlushControl( 100 );
+        createIOLimiter( 100 );
 
-        IOLimiter ioLimiter = control.getIOLimiter();
         long stamp = IOLimiter.INITIAL_STAMP;
-        try ( Rush ignore = control.beginTemporaryRush() )
+        limiter.disableLimit();
+        try
         {
-            stamp = repeatedlyCallMaybeLimitIO( ioLimiter, stamp );
-            try ( Rush ignore2 = control.beginTemporaryRush() )
+            stamp = repeatedlyCallMaybeLimitIO( limiter, stamp, 10 );
+            limiter.disableLimit();
+            try
             {
-                stamp = repeatedlyCallMaybeLimitIO( ioLimiter, stamp );
+                stamp = repeatedlyCallMaybeLimitIO( limiter, stamp, 10 );
             }
-            repeatedlyCallMaybeLimitIO( ioLimiter, stamp );
+            finally
+            {
+                limiter.enableLimit();
+            }
+            repeatedlyCallMaybeLimitIO( limiter, stamp, 10 );
+        }
+        finally
+        {
+            limiter.enableLimit();
         }
 
         // We should've spent no time rushing
