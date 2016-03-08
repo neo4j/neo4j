@@ -44,7 +44,7 @@ import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
 
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
-                                         var tx: Transaction,
+                                         private var tx: Transaction,
                                          val isTopLevelTx: Boolean,
                                          initialStatement: Statement)(implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(initialStatement) with QueryContext {
@@ -65,17 +65,21 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def close(success: Boolean) {
-    try {
-      statement.close()
+    if (isOpen) {
+      try {
+        statement.close()
 
-      if (success)
-        tx.success()
-      else
-        tx.failure()
-      tx.close()
-    }
-    finally {
-      open = false
+        if (success)
+          tx.success()
+        else
+          tx.failure()
+        tx.close()
+      }
+      finally {
+        statement = null
+        tx = null
+        open = false
+      }
     }
   }
 
