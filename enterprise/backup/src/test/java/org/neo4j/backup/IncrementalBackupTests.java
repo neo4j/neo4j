@@ -27,6 +27,7 @@ import org.junit.rules.TestName;
 
 import java.io.File;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -76,7 +77,7 @@ public class IncrementalBackupTests
     @Test
     public void shouldDoIncrementalBackup() throws Exception
     {
-        DbRepresentation initialDataSetRepresentation = createInitialDataSet2( serverPath );
+        DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         server = startServer( serverPath, "127.0.0.1:6362" );
 
         // START SNIPPET: onlineBackup
@@ -98,7 +99,50 @@ public class IncrementalBackupTests
     }
 
 
-    private DbRepresentation createInitialDataSet2( File path )
+    @Test
+    public void shouldNotServeTransactionsWithInvalidHighIds() throws Exception
+    {
+        /*
+         * This is in effect a high level test for an edge case that happens when a relationship group is
+         * created and deleted in the same tx. This can end up causing an IllegalArgumentException because
+         * the HighIdApplier used when applying incremental updates (batch transactions in general) will postpone
+         * processing of added/altered record ids but deleted ids will be processed on application. This can result
+         * in a deleted record causing an IllegalArgumentException even though it is not the highest id in the tx.
+         *
+         * The way we try to trigger this is:
+         * 0. In one tx, create a node with 49 relationships, belonging to two types.
+         * 1. In another tx, create another relationship on that node (making it dense) and then delete all
+         *    relationships of one type. This results in the tx state having a relationship group record that was
+         *    created in this tx and also set to not in use.
+         * 2. Receipt of this tx will have the offending rel group command apply its id before the groups that are
+         *    altered. This will try to update the high id with a value larger than what has been seen previously and
+         *    fail the update.
+         * The situation is resolved by a check added in TransactionRecordState which skips the creation of such
+         * commands.
+         * Note that this problem can also happen in HA slaves.
+         */
+        DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
+        server = startServer( serverPath, "127.0.0.1:6362" );
+
+        // START SNIPPET: onlineBackup
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
+
+        backup.full( backupPath.getPath() );
+
+        // END SNIPPET: onlineBackup
+        assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
+        shutdownServer( server );
+
+        DbRepresentation furtherRepresentation = createTransactiongWithWeirdRelationshipGroupRecord( serverPath );
+        server = startServer( serverPath, null );
+        // START SNIPPET: onlineBackup
+        backup.incremental( backupPath.getPath() );
+        // END SNIPPET: onlineBackup
+        assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
+        shutdownServer( server );
+    }
+
+    private DbRepresentation createInitialDataSet( File path )
     {
         db = startGraphDatabase( path );
         Transaction tx = db.beginTx();
@@ -129,6 +173,40 @@ public class IncrementalBackupTests
         hates.setProperty( "since", 1948 );
         tx.success();
         tx.finish();
+        DbRepresentation result = DbRepresentation.of( db );
+        db.shutdown();
+        return result;
+    }
+
+    private DbRepresentation createTransactiongWithWeirdRelationshipGroupRecord( File path )
+    {
+        db = startGraphDatabase( path );
+        int i = 0;
+        Node node;
+        DynamicRelationshipType typeToDelete = DynamicRelationshipType.withName( "A" );
+        DynamicRelationshipType theOtherType = DynamicRelationshipType.withName( "B" );
+        int defaultDenseNodeThreshold =
+                Integer.parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+            for ( ; i < defaultDenseNodeThreshold - 1; i++ )
+            {
+                node.createRelationshipTo( db.createNode(), theOtherType );
+            }
+            node.createRelationshipTo( db.createNode(), typeToDelete );
+            tx.success();
+        }
+        try( Transaction tx = db.beginTx() )
+        {
+            node.createRelationshipTo( db.createNode(), theOtherType );
+            for ( Relationship relationship : node.getRelationships( Direction.BOTH, typeToDelete ) )
+            {
+                relationship.delete();
+            }
+            tx.success();
+        }
         DbRepresentation result = DbRepresentation.of( db );
         db.shutdown();
         return result;
