@@ -4,6 +4,7 @@
 :manual-base-url: http://neo4j.com/docs/{neo4j-version}
 :manual-ha-upgrade-guide: {manual-base-url}/ha-upgrade-guide.html
 :manual-cypher-compatibility: {manual-base-url}/cypher-compatibility.html
+:manual-neo4j-admin-manpage: {manual-base-url}/re02.html
 :neo4j-releases-download-page: http://neo4j.com/download/other-releases
 
 This section describes upgrading a _single_ Neo4j instance.
@@ -54,7 +55,9 @@ available with Neo4j Enterprise, ensure that backups have completed successfully
 . Install Neo4j {neo4j-version}.
 . Review the settings in the files under configuration files in the previous installation, and transfer any custom settings to the {neo4j-version} installation.
   Be aware of settings that have changed name between versions.
-. Copy the database from the old installation (typically _data/graph.db_) into the new one (_data/databases/graph.db_).
+. Import your data from the old installation using `neo4j-admin import --mode=database --database=<database-name> --from=<source-directory>` (for details, see
+ifndef::upgradetext[<<neo4j-admin-manpage, the man page>>).]
+ifdef::upgradetext[the man page at {manual-neo4j-admin-manpage}).]
 . If the database is not called `graph.db`, set `dbms.active_database` in `neo4j.conf` to the name of the database.
 . Set `dbms.allow_format_migration=true` in `neo4j.conf` of the {neo4j-version} installation.
   Neo4j will fail to start without this configuration.

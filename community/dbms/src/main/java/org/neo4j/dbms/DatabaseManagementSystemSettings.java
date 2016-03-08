@@ -30,8 +30,11 @@ public interface DatabaseManagementSystemSettings
 {
     @Description("Name of the database to load")
     Setting<String> active_database = Settings.setting( "dbms.active_database", Settings.STRING, "graph.db" );
-    @Description("Path of the data directory")
+
+    @Description("Path of the data directory. You must not configure more than one Neo4j installation to use the " +
+            "same data directory.")
     Setting<File> data_directory = Settings.setting( "dbms.directories.data", Settings.PATH, "data" );
+
     @Internal
     Setting<File> database_path = Settings.derivedSetting( "unsupported.dbms.directories.database",
             data_directory, active_database,
