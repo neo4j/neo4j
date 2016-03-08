@@ -23,13 +23,12 @@ import java.io.File;
 import java.util.Collection;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.id.IdSequence;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -434,14 +433,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
             return into;
         }
 
-        public <R extends AbstractBaseRecord> void applyById( RecordStore<R> store, Iterable<Long> ids ) throws FAILURE
-        {
-            for ( R record : Scanner.scanById( store, ids ) )
-            {
-                store.accept( this, record );
-            }
-        }
-
         public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store,
                 Predicate<? super R>... filters ) throws FAILURE
         {
@@ -458,75 +449,22 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         private <R extends AbstractBaseRecord> void apply( RecordStore<R> store, ProgressListener progressListener,
                 Predicate<? super R>... filters ) throws FAILURE
         {
-            for ( R record : Scanner.scan( store, true, filters ) )
+            ResourceIterable<R> iterable = Scanner.scan( store, true, filters );
+            try ( ResourceIterator<R> scan = iterable.iterator() )
             {
-                if ( shouldStop )
+                while ( scan.hasNext() )
                 {
-                    break;
-                }
-
-                store.accept( this, record );
-                progressListener.set( record.getId() );
-            }
-            progressListener.done();
-        }
-    }
-
-    class Scanner
-    {
-        @SafeVarargs
-        public static <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
-                final Predicate<? super R>... filters )
-        {
-            return scan( store, true, filters );
-        }
-
-        @SafeVarargs
-        public static <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
-                final boolean forward, final Predicate<? super R>... filters )
-        {
-            return () -> new PrefetchingIterator<R>()
-            {
-                final PrimitiveLongIterator ids = new StoreIdIterator( store, forward );
-                final R record = store.newRecord();
-
-                @Override
-                protected R fetchNextOrNull()
-                {
-                    scan:
-                    while ( ids.hasNext() )
+                    R record = scan.next();
+                    if ( shouldStop )
                     {
-                        if ( store.getRecord( ids.next(), record, RecordLoad.CHECK ).inUse() )
-                        {
-                            for ( Predicate<? super R> filter : filters )
-                            {
-                                if ( !filter.test( record ) )
-                                {
-                                    continue scan;
-                                }
-                            }
-                            return record;
-                        }
+                        break;
                     }
-                    return null;
-                }
-            };
-        }
 
-        public static <R extends AbstractBaseRecord> Iterable<R> scanById( final RecordStore<R> store,
-                Iterable<Long> ids )
-        {
-            return new IterableWrapper<R,Long>( ids )
-            {
-                private final R record = store.newRecord();
-
-                @Override
-                protected R underlyingObjectToObject( Long id )
-                {
-                    store.getRecord( id, record, RecordLoad.FORCE );
-                    return record;
+                    store.accept( this, record );
+                    progressListener.set( record.getId() );
                 }
-            };
+                progressListener.done();
+            }
         }
     }
 

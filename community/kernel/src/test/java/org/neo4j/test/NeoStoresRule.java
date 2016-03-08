@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -51,10 +52,12 @@ public class NeoStoresRule extends ExternalResource
     private EphemeralFileSystemAbstraction efs;
     private PageCache pageCache;
     private StoreFactory storeFactory;
+    private final StoreType[] stores;
 
-    public NeoStoresRule( Class<?> testClass )
+    public NeoStoresRule( Class<?> testClass, StoreType... stores )
     {
         this.testClass = testClass;
+        this.stores = stores;
     }
 
     public NeoStores open( String... config )
@@ -81,7 +84,9 @@ public class NeoStoresRule extends ExternalResource
         Config configuration = new Config( stringMap( config ) );
         storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
                 pageCache, fs, NullLogProvider.getInstance(), format );
-        return neoStores = storeFactory.openAllNeoStores( true );
+        return neoStores = stores.length == 0
+                ? storeFactory.openAllNeoStores( true )
+                : storeFactory.openNeoStores( true, stores );
     }
 
     @Override

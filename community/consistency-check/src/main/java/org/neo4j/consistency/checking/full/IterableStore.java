@@ -22,18 +22,21 @@ package org.neo4j.consistency.checking.full;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-import static org.neo4j.consistency.checking.full.CloningRecordIterable.cloned;
-import static org.neo4j.kernel.impl.store.RecordStore.Scanner.scan;
+import static org.neo4j.consistency.checking.full.CloningRecordIterator.cloned;
+import static org.neo4j.kernel.impl.store.Scanner.scan;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class IterableStore<RECORD extends AbstractBaseRecord> implements BoundedIterable<RECORD>
 {
     private final RecordStore<RECORD> store;
     private final boolean forward;
+    private ResourceIterator<RECORD> iterator;
 
     public IterableStore( RecordStore<RECORD> store, boolean forward )
     {
@@ -50,12 +53,24 @@ public class IterableStore<RECORD extends AbstractBaseRecord> implements Bounded
     @Override
     public void close() throws IOException
     {
+        closeIterator();
+    }
+
+    private void closeIterator()
+    {
+        if ( iterator != null )
+        {
+            iterator.close();
+            iterator = null;
+        }
     }
 
     @Override
     public Iterator<RECORD> iterator()
     {
-        return cloned( scan( store, forward ) ).iterator();
+        closeIterator();
+        ResourceIterable<RECORD> iterable = scan( store, forward );
+        return cloned( iterator = iterable.iterator() );
     }
 
     public void warmUpCache()
