@@ -8,51 +8,40 @@ Import-Module "$src\Neo4j-Management.psm1"
 InModuleScope Neo4j-Management {
   Describe "Get-Neo4jSetting" {
   
-    Context "Invalid or missing default neo4j installation" {
-      Mock Get-Neo4jServer { return }
-      $result = Get-Neo4jSetting
-  
-      It "return null if missing default" {
-        $result | Should BeNullOrEmpty      
-      }
-      It "calls Get-Neo4Server" {
-        Assert-MockCalled Get-Neo4jServer -Times 1
-      }
-    }
-  
     Context "Invalid or missing specified neo4j installation" {
-      Mock Get-Neo4jServer { return } -ParameterFilter { $Neo4jServer -eq 'TestDrive:\some-dir-that-doesnt-exist' }
-      $result = Get-Neo4jSetting -Neo4jServer 'TestDrive:\some-dir-that-doesnt-exist'
+      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
+        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
+        'ServerVersion' = '3.0';
+        'ServerType' = 'Enterprise';
+        'DatabaseMode' = '';
+      })
+      $result = Get-Neo4jSetting -Neo4jServer $serverObject
   
       It "return null if invalid directory" {
         $result | Should BeNullOrEmpty      
       }
-      It "calls Get-Neo4Server" {
-        Assert-MockCalled Get-Neo4jServer -Times 1
-      }
     }
   
     Context "Invalid or missing server object" {
-      Mock Confirm-Neo4jServerObject { return $false }
-      
       It "throws error for an invalid server object" {
         { Get-Neo4jSetting -Neo4jServer (New-Object -TypeName PSCustomObject) -ErrorAction Stop } | Should Throw
-      }
-  
-      It "calls Confirm-Neo4jServerObject" {
-        Assert-MockCalled Confirm-Neo4jServerObject -Times 1
       }
     }
     
     Context "Missing configuration file" {
-      Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }
+      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
+        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
+        'ServerVersion' = '3.0';
+        'ServerType' = 'Enterprise';
+        'DatabaseMode' = '';
+      })
       Mock Test-Path { return $false }  
       Mock Test-Path { return $true } -ParameterFilter { ([string]$Path).EndsWith('neo4j.conf') }
       Mock Test-Path { return $false } -ParameterFilter { ([string]$Path).EndsWith('neo4j-wrapper.conf') }
       Mock Get-KeyValuePairsFromConfFile { return @{ "setting"="value"; } } -ParameterFilter { $Filename.EndsWith('neo4j.conf') }
-      Mock Get-KeyValuePairsFromConfFile { throw 'missing file' }             -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
+      Mock Get-KeyValuePairsFromConfFile { throw 'missing file' }           -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
       
-      $result = Get-Neo4jSetting
+      $result = Get-Neo4jSetting -Neo4jServer $serverObject
       
       It "ignore the missing file" {
         $result.Name | Should Be "setting"
@@ -61,12 +50,18 @@ InModuleScope Neo4j-Management {
     }
   
     Context "Simple configuration settings" {
-      Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }  
       Mock Test-Path { return $true }
       Mock Get-KeyValuePairsFromConfFile { return @{ "setting1"="value1"; } } -ParameterFilter { $Filename.EndsWith('neo4j.conf') }
       Mock Get-KeyValuePairsFromConfFile { return @{ "setting2"="value2"; } } -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
+
+      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
+        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
+        'ServerVersion' = '3.0';
+        'ServerType' = 'Enterprise';
+        'DatabaseMode' = '';
+      })
       
-      $result = Get-Neo4jSetting
+      $result = Get-Neo4jSetting -Neo4jServer $serverObject
       
       It "one setting per file" {
         $result.Count | Should Be 2
@@ -99,12 +94,17 @@ InModuleScope Neo4j-Management {
     }
   
     Context "Configuration settings with multiple values" {
-      Mock Get-Neo4jServer { return New-Object -TypeName PSCustomObject -Property (@{'Home' = 'TestDrive:\FakeDir'; 'ServerVersion' = '99.99'; 'ServerType' = 'Community'; }) }  
       Mock Test-Path { return $true }
       Mock Get-KeyValuePairsFromConfFile { return @{ "setting1"="value1"; "setting2"=@("value2","value3","value4"; ); } } -ParameterFilter { $Filename.EndsWith('neo4j.conf') }
       Mock Get-KeyValuePairsFromConfFile { return @{} } -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
-      
-      $result = Get-Neo4jSetting
+
+      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
+        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
+        'ServerVersion' = '3.0';
+        'ServerType' = 'Enterprise';
+        'DatabaseMode' = '';
+      })      
+      $result = Get-Neo4jSetting -Neo4jServer $serverObject
       
       # Parse the results and make sure the expected results are there
       $singleSetting = $null

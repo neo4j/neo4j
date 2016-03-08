@@ -15,6 +15,7 @@ out
 *.ipr
 *.iml
 .idea
+.vscode
 .DS_Store
 .shell_history
 .mailmap

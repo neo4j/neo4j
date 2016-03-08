@@ -9,29 +9,15 @@ InModuleScope Neo4j-Management {
   Describe "Get-Neo4jServer" {
 
     Context "Missing Neo4j installation" {
-      Mock Get-Neo4jHome { return }
-  
       It "throws an error if no default home" {
          { Get-Neo4jServer -ErrorAction Stop } | Should Throw       
       }
-      It "attempts to get the default home" {
-        Assert-MockCalled Get-Neo4jHome -Times 1
-      }    
     }
 
     Context "Invalid Neo4j installation" {
-      Mock Get-Neo4jHome { return "TestDrive:\SomePath" }
-      Mock Confirm-Neo4jHome { return $false }
-  
       It "throws an error if no default home" {
          { Get-Neo4jServer -ErrorAction Stop } | Should Throw       
       }
-      It "attempts to get the default home" {
-        Assert-MockCalled Get-Neo4jHome -Times 1
-      }
-      It "attempts to confirm the home" {
-        Assert-MockCalled Confirm-Neo4jHome -Times 1
-      }    
     }
 
     Context "Invalid Neo4j Server detection" {
@@ -58,7 +44,7 @@ InModuleScope Neo4j-Management {
     }
     
     Context "Valid Enterprise Neo4j installation" {
-      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j-ent' -ServerType 'Enterprise' -ServerVersion '99.99'
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j-ent' -ServerType 'Enterprise' -ServerVersion '99.99' -DatabaseMode 'Arbiter'
 
       $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j-ent' -ErrorAction Stop
 
@@ -67,6 +53,9 @@ InModuleScope Neo4j-Management {
       }
       It "detects correct version" {
          $neoServer.ServerVersion | Should Be "99.99"      
+      }
+      It "detects correct database mode" {
+         $neoServer.DatabaseMode | Should Be "Arbiter"      
       }
     }
 

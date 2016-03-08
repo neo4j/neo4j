@@ -19,27 +19,30 @@
 
 <#
 .SYNOPSIS
-Determines the default location of a Neo4j installation
+Invokes Neo4j Import utility
 
 .DESCRIPTION
-Determines the default location of a Neo4j installation using the environment variable NEO4J_HOME
+Invokes Neo4j Import utility
 
-.EXAMPLE
-Get-Neo4jHome
-
-Returns the path to the default Neo4j installation
-
-.LINK
-http://neo4j.com/docs/stable/server-installation.html#windows-console
+.PARAMETER CommandArgs
+Command line arguments to pass to import
 
 .OUTPUTS
-System.String
+System.Int32
+0 = Success
+non-zero = an error occured
+
+.NOTES
+Only supported on version 3.x Neo4j Community and Enterprise Edition databases
 
 #>
-Function Get-Neo4jHome
+Function Invoke-Neo4jImport
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
-  param ()
+  param (
+    [parameter(Mandatory=$false,ValueFromRemainingArguments=$true)]
+    [object[]]$CommandArgs = @()
+  )
   
   Begin
   {
@@ -47,8 +50,13 @@ Function Get-Neo4jHome
   
   Process
   {
-    $path = $Env:NEO4J_HOME
-    if ( ($path -ne $null) -and (Test-Path -Path $path) ) { Write-Output $path }
+    try {
+      Exit (Invoke-Neo4jUtility -Command 'Import' -CommandArgs $CommandArgs -ErrorAction 'Stop')      
+    }
+    catch {
+      $_
+      Exit 1
+    }
   }
   
   End

@@ -1,4 +1,4 @@
-@echo off
+@ECHO OFF
 rem Copyright (c) 2002-2015 "Neo Technology,"
 rem Network Engine for Objects in Lund AB [http://neotechnology.com]
 rem
@@ -17,11 +17,7 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-ECHO WARNING! This batch script has been deprecated. Please use the provided PowerShell scripts instead: http://neo4j.com/docs/stable/powershell.html 1>&2
+SETLOCAL
 
-set classpath="-DserverClasspath=lib/*.jar;plugins/**/*.jar;./conf*"
-set mainclass="-DserverMainClass=#{neo4j.mainClass}"
-set configFile="conf\neo4j-wrapper.conf"
-
-call "%~dps0base.bat" %1 %2 %3 %4 %5
-
+Powershell -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command "Import-Module '%~dp0Neo4j-Management.psd1'; Invoke-Neo4jImport %*"
+EXIT /B %ERRORLEVEL%

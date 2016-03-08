@@ -28,9 +28,9 @@ Install a Neo4j Server Windows Service
 An object representing a valid Neo4j Server object
 
 .EXAMPLE
-Install-Neo4jServer -Neo4jServer $ServerObject
+'C:\Neo4j' | Get-Neo4jServer | Install-Neo4jServer
 
-Install the Neo4j Windows Windows Service for the Neo4j installation at $ServerObject
+Install the Neo4j Windows Windows Service for the Neo4j installation at 'C:\Neo4j\neo4j-enterprise'
 
 .OUTPUTS
 System.Int32
@@ -55,19 +55,25 @@ Function Install-Neo4jServer
 
   Process
   {
+    $thisServer = $Neo4jServer
+
     # Get the Java information
     $JavaCMD = $null
     try {
-      $JavaCMD = Get-Java -Neo4jServer $Neo4jServer -ForServer -ErrorAction Stop
+      $JavaCMD = Get-Java -Neo4jServer $thisServer -ForServer -ErrorAction Stop
     }
     catch {
       $JavaCMD = $null
     }
-    if ($JavaCMD -eq $null) { Throw 'Unable to locate Java' }
+    if ($JavaCMD -eq $null)
+    {
+      Write-Error 'Unable to locate Java'
+      return 255
+    }
 
-    $Name = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+    $Name = Get-Neo4jWindowsServiceName -Neo4jServer $thisServer -ErrorAction Stop
     $DisplayName = "Neo4j Graph Database - $Name"
-    $Description = "Neo4j Graph Database - $($Neo4jServer.Home)"
+    $Description = "Neo4j Graph Database - $($thisServer.Home)"
     
     $binPath = "`"$($JavaCMD.java)`" $($JavaCMD.args -join ' ') $Name"    
 

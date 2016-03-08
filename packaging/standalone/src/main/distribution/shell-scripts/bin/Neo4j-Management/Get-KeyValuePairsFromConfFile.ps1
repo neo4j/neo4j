@@ -43,12 +43,13 @@ Function Get-KeyValuePairsFromConfFile
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
   param (
-    [Parameter(Mandatory=$true,ValueFromPipeline=$false)]
-    [string]$Filename
+    [Parameter(Mandatory=$false,ValueFromPipeline=$false)]
+    [string]$Filename = ''
   )
 
  Process
  {
+    if ($filename -eq '') { Throw "Filename must be specified"; return }
     $properties = @{}
     Get-Content -Path $filename -Filter $Filter | ForEach-Object -Process `
     {

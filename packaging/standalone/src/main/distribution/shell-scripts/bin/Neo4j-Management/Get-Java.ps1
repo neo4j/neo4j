@@ -25,16 +25,13 @@ Retrieves information about Java on the local machine to start Neo4j programs
 Retrieves information about Java on the local machine to start Neo4j services and utilites, tailored to the type of Neo4j edition
 
 .PARAMETER Neo4jServer
-The Neo4j Server Object
+An object representing a valid Neo4j Server object
 
 .PARAMETER ForServer
 Retrieve the Java command line to start a Neo4j Server
 
 .PARAMETER ForUtility
 Retrieve the Java command line to start a Neo4j utility such as Neo4j Shell.
-
-.PARAMETER AppName
-Application name used when invoking Java
 
 .PARAMETER StartingClass
 The name of the starting class when invoking Java
@@ -66,9 +63,6 @@ Function Get-Java
     [switch]$ForUtility
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
-    [string]$AppName
-
-    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='UtilityInvoke')]
     [string]$StartingClass    
   )
   
@@ -82,10 +76,14 @@ Function Get-Java
     $javaVersion = ''
     $javaCMD = ''
     
+    $EnvJavaHome = Get-Neo4jEnv 'JAVA_HOME'
+    $EnvClassPrefix = Get-Neo4jEnv 'CLASSPATH_PREFIX'
+    
     # Is JAVA specified in an environment variable
-    if (($javaPath -eq '') -and ($Env:JAVA_HOME -ne $null))
+    if (($javaPath -eq '') -and ($EnvJavaHome -ne $null))
     {
-      $javaPath = $Env:JAVA_HOME
+      $javaPath = $EnvJavaHome
+      # Modify the java path if a JRE install is detected
       if (Test-Path -Path "$javaPath\bin\javac.exe") { $javaPath = "$javaPath\jre" }
     }
 
@@ -146,47 +144,28 @@ Function Get-Java
     if ($javaPath -eq '') { Write-Error "Unable to determine the path to java.exe"; return $null }
     if ($javaCMD -eq '') { $javaCMD = "$javaPath\bin\java.exe" }
     if (-not (Test-Path -Path $javaCMD)) { Write-Error "Could not find java at $javaCMD"; return $null }
-  
+ 
     $ShellArgs = @()
+
+    Write-Verbose "Java detected at '$javaCMD'"
+    Write-Verbose "Java version detected as '$javaVersion'"
 
     # Shell arguments for the Neo4jServer and Arbiter classes
     if ($PsCmdlet.ParameterSetName -eq 'ServerInvoke')
     {
-      $setting = ($Neo4jServer | Get-Neo4jSetting -ConfigurationFile 'neo4j.conf' -Name 'dbms.mode')
+      if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseBootstrapper' }
+      if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityBootstrapper' }
+      if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.StandaloneClusterClient' }
 
-      if ($setting -eq $null)
-      {
-        $mode = 'SINGLE'
-      }
-      else
-      {
-        $mode = $setting.Value.ToUpper()
-      }
-
-      if ($mode -eq 'ARBITER')
-      {
-        $serverMainClass = 'org.neo4j.server.enterprise.StandaloneClusterClient'
-      }
-      else
-      {
-        $serverMainClass = ''
-        # Server Class Path for version 2.3 and above
-        if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseBootstrapper' }
-        if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityBootstrapper' }
-        # Server Class Path for version 2.2 and below
-        if ($Neo4jServer.ServerVersion -match '^(2\.2|2\.1|2\.0|1\.)')
-        {
-          $serverMainClass = 'org.neo4j.server.Bootstrapper'
-        }
-        if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
-      }
+      if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
 
       # Note -DserverMainClass must appear before -jar in the argument list.  Changing this order raises a Null Pointer Exception in the Windows Service Wrapper
       $ShellArgs = @( `
         "-DworkingDir=`"$($Neo4jServer.Home)`"" `
         ,"-Djava.util.logging.config.file=`"$($Neo4jServer.Home)\conf\windows-wrapper-logging.properties`"" `
         ,"-DconfigFile=`"conf/neo4j-wrapper.conf`"" `
-        ,"-DserverClasspath=`"lib/*.jar;plugins/**/*.jar;./conf*`"" `
+        ,"-Dfile.encoding=UTF-8" `
+        ,"-DserverClasspath=`"lib/*;plugins/*`"" `
         ,"-DserverMainClass=$($serverMainClass)" `
         ,"-jar","`"$($Neo4jServer.Home)\bin\windows-service-wrapper-5.jar`""
       )
@@ -195,19 +174,25 @@ Function Get-Java
     # Shell arguments for the utility classes e.g. Import, Shell
     if ($PsCmdlet.ParameterSetName -eq 'UtilityInvoke')
     {
-      # Get the default classpath jars
+      # Generate the commandline args
       $ClassPath = ''
-      $LibPath = Join-Path  -Path $Neo4jServer.Home -ChildPath 'lib'
-      Get-ChildItem -Path $LibPath | Where-Object { $_.Extension -eq '.jar'} | % {
+      # Enumerate all JARS in the lib directory and add to the class path
+      Get-ChildItem -Path (Join-Path  -Path $Neo4jServer.Home -ChildPath 'lib') | Where-Object { $_.Extension -eq '.jar'} | % {
+        $ClassPath += "`"$($_.FullName)`";"
+      }
+      # Enumerate all JARS in the bin directory and add to the class path
+      Get-ChildItem -Path (Join-Path  -Path $Neo4jServer.Home -ChildPath 'bin') | Where-Object { $_.Extension -eq '.jar'} | % {
         $ClassPath += "`"$($_.FullName)`";"
       }
       if ($ClassPath.Length -gt 0) { $ClassPath = $ClassPath.SubString(0, $ClassPath.Length-1) } # Strip the trailing semicolon if needed
 
       $ShellArgs = @()
-      if ($Env:JAVA_OPTS -ne $null) { $ShellArgs += $Env:JAVA_OPTS }
-      if ($Env:EXTRA_JVM_ARGUMENTS -ne $null) { $ShellArgs += $Env:EXTRA_JVM_ARGUMENTS }
-      $ShellArgs += "-classpath $($Env:CLASSPATH_PREFIX);$ClassPath"
-      $ShellArgs += $StartingClass
+      $ShellArgs += @("-classpath $($EnvClassPrefix);$ClassPath",
+                      "-Dbasedir=`"$($Neo4jServer.Home)`"", `
+                      '-Dfile.encoding=UTF-8')
+            
+      # Add the starting class
+      $ShellArgs += @($StartingClass)
     }
 
     Write-Output @{'java' = $javaCMD; 'args' = $ShellArgs}

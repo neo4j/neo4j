@@ -19,55 +19,58 @@
 
 <#
 .SYNOPSIS
-Stop a Neo4j Server Windows Service
+Retrieves the status for the Neo4j Windows Service
 
 .DESCRIPTION
-Stop a Neo4j Server Windows Service
+Retrieves the status for the Neo4j Windows Service
 
 .PARAMETER Neo4jServer
 An object representing a valid Neo4j Server object
 
 .EXAMPLE
-Stop-Neo4jServer -Neo4jServer $ServerObject
+Get-Neo4jStatus -Neo4jServer $ServerObject
 
-Stop the Neo4j Windows Windows Service for the Neo4j installation at $ServerObject
+Retrieves the status of the Windows Service for the Neo4j database at $ServerObject
 
 .OUTPUTS
 System.Int32
-0 = Service was stopped and not running
-non-zero = an error occured
+0 = Service is running
+3 = Service is not installed or is not running
 
 .NOTES
 This function is private to the powershell module
 
 #>
-Function Stop-Neo4jServer
+Function Get-Neo4jStatus
 {
-  [cmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium')]
+  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
   param (
     [Parameter(Mandatory=$true,ValueFromPipeline=$true)]
     [PSCustomObject]$Neo4jServer
-
   )
   
   Begin
   {
   }
-
-  Process
-  {
+  
+  Process {
     $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
-
-    Write-Verbose "Stopping the service.  This can take some time..."
-    $result = Stop-Service -Name $ServiceName -PassThru -ErrorAction Stop
+    $neoService = $null
+    try {
+      $neoService = Get-Service -Name $ServiceName -ErrorAction Stop
+    }
+    catch {
+      Write-Host "The Neo4j Windows Service '$ServiceName' is not installed"
+      return 3
+    }
     
-    if ($result.Status -eq 'Stopped') {
-      Write-Host "Neo4j windows service stopped"
+    if ($neoService.Status -eq 'Running') {
+      Write-Host "Neo4j is running"
       return 0
     }
     else {
-      Write-Host "Neo4j windows was sent the Stop command but is currently $($result.Status)"
-      return 2
+      Write-Host "Neo4j is not running.  Current status is $($neoService.Status)"
+      return 3
     }
   }
   

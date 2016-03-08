@@ -15,39 +15,51 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Module manifest for module 'Neo4j-Management'
-#
 
 
-@{
-ModuleVersion = '3.0.0'
+<#
+.SYNOPSIS
+Invokes Neo4j Shell utility
 
-GUID = '2a3e34b4-5564-488e-aaf6-f2cba3f7f05d'
+.DESCRIPTION
+Invokes Neo4j Shell utility
 
-Author = 'Network Engine for Objects'
+.PARAMETER CommandArgs
+Command line arguments to pass to shell
 
-CompanyName = 'Network Engine for Objects'
+.OUTPUTS
+System.Int32
+0 = Success
+non-zero = an error occured
 
-Copyright = 'http://neo4j.com/licensing/'
+.NOTES
+Only supported on version 3.x Neo4j Community and Enterprise Edition databases
 
-Description = 'Powershell module to manage a Neo4j instance on Windows'
-
-PowerShellVersion = '2.0'
-
-NestedModules = @('Neo4j-Management\Neo4j-Management.psm1')
-
-FunctionsToExport = @(
-'Invoke-Neo4j',
-'Invoke-Neo4jAdmin',
-'Invoke-Neo4jShell',
-'Invoke-Neo4jBackup',
-'Invoke-Neo4jImport'
-)
-
-CmdletsToExport = ''
-
-VariablesToExport = ''
-
-AliasesToExport = ''
+#>
+Function Invoke-Neo4jShell
+{
+  [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
+  param (
+    [parameter(Mandatory=$false,ValueFromRemainingArguments=$true)]
+    [object[]]$CommandArgs = @()
+  )
+  
+  Begin
+  {
+  }
+  
+  Process
+  {
+    try {
+      Exit (Invoke-Neo4jUtility -Command 'Shell' -CommandArgs $CommandArgs -ErrorAction 'Stop')      
+    }
+    catch {
+      $_
+      Exit 1
+    }
+  }
+  
+  End
+  {
+  }
 }

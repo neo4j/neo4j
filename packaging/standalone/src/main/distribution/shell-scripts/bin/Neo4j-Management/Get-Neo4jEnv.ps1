@@ -19,52 +19,47 @@
 
 <#
 .SYNOPSIS
-Confirms a file path is a valid Neo4j installation
+Retrieves an environment variable value
 
 .DESCRIPTION
-Confirms a file path is a valid Neo4j installation
+Retrieves an environment variable value.  This is a helper function which aids testing and mocking
 
-.PARAMETER Neo4jHome
-Full path to confirm
-
-.EXAMPLE
-'C:\Neo4j\neo4j-community' | Confirm-Neo4jHome 
-
-Confirm the path 'C:\Neo4j\neo4j-community' is a valid Neo4j installation
+.PARAMETER Name
+Name of the environment vairable
 
 .EXAMPLE
-Confirm-Neo4jHome 'C:\Neo4j\neo4j-community'
+Get-Neo4jEnv 'Neo4jHome'
 
-Confirm the path 'C:\Neo4j\neo4j-community' is a valid Neo4j installation
+Retrieves the Neo4jHome environment variable
 
 .OUTPUTS
-System.Boolean
+System.String
+Value of the environment variable
+
+Null
+Variable doesn't exist
 
 .NOTES
 This function is private to the powershell module
 
 #>
-Function Confirm-Neo4jHome 
+Function Get-Neo4jEnv
 {
   [cmdletBinding(SupportsShouldProcess=$false,ConfirmImpact='Low')]
   param (
-    [Parameter(Mandatory=$false,ValueFromPipeline=$true)]
-    [alias('Home')]
-    [string]$Neo4jHome = ''
+    [Parameter(Mandatory=$true,ValueFromPipeline=$false,Position=0)]
+    [String]$Name
   )
   
   Begin
   {
   }
-
-  Process
-  {
-    if ( ($Neo4jHome -eq '') -or ($Neo4jHome -eq $null) ) { return $false }
-
-    $testPath = $Neo4jHome
-    if (-not (Test-Path -Path $testPath)) { return $false }
-
-    return $true
+  
+  Process {
+    Get-ChildItem -Path Env: |
+      Where-Object { $_.Name.ToUpper() -eq $Name.ToUpper() } |
+      Select-Object -First 1 |
+      ForEach-Object { $_.Value }      
   }
   
   End
