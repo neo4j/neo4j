@@ -26,31 +26,22 @@ import java.util
 import _root_.cucumber.api.DataTable
 import _root_.cucumber.api.scala.{EN, ScalaDsl}
 import cypher.GlueSteps._
-import cypher.cucumber.DataTableConverter._
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
-import cypher.feature.parser.{Accepters, constructResultMatcher}
+import cypher.feature.parser.{Accepters, constructResultMatcher, parseParameters, statisticsParser}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{FunSuiteLike, Matchers}
 
-import scala.annotation.tailrec
-import scala.collection.JavaConverters._
-import scala.util.Try
-
 class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Accepters {
 
   val Background = new Step("Background")
 
-  var result: Result = null
+  // Stateful
   var graph: GraphDatabaseService = null
-
-  private def initEmpty() =
-    if (graph == null || !graph.isAvailable(1L)) {
-      val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-      graph = loadConfig(builder).newGraphDatabase()
-    }
+  var result: Result = null
+  var params: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
 
   Before() { _ =>
     initEmpty()
@@ -65,12 +56,14 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
     // do nothing, but necessary for the scala match
   }
 
-  Given(USING_DB) { (dbName: String) =>
+  Given(NAMED_GRAPH) { (dbName: String) =>
     val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
     graph = loadConfig(builder).newGraphDatabase()
   }
 
   Given(ANY) {
+    // We could do something fancy here, like randomising a state,
+    // in order to guarantee that we aren't implicitly relying on an empty db.
     initEmpty()
   }
 
@@ -83,15 +76,12 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
     graph.execute(query)
   }
 
-  When(EXECUTING_QUERY) { (query: String) =>
-    result = graph.execute(query)
+  And(PARAMETERS) { (values: DataTable) =>
+    params = parseParameters(values)
   }
 
-  When(RUNNING_PARAMETRIZED_QUERY) { (query: String, params: DataTable) =>
-    assert(!query.contains("cypher"), "init query should do specify pre parser options")
-    val p = params.toList[AnyRef]
-    assert(p.size == 1)
-    result = graph.execute(query, castParameters(p.head))
+  When(EXECUTING_QUERY) { (query: String) =>
+    result = graph.execute(query, params)
   }
 
   Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
@@ -110,11 +100,15 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
     result.hasNext shouldBe false
   }
 
-  private def castParameters(map: java.util.Map[String, Object]) = {
-    map.asScala.map { case (k, v) =>
-      k -> Try(Integer.valueOf(v.toString)).getOrElse(v)
-    }.asJava
+  And(SIDE_EFFECTS) { (expectations: DataTable) =>
+    statisticsParser(expectations) should acceptStatistics(result.getQueryStatistics)
   }
+
+  private def initEmpty() =
+    if (graph == null || !graph.isAvailable(1L)) {
+      val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+      graph = loadConfig(builder).newGraphDatabase()
+    }
 
   private def loadConfig(builder: GraphDatabaseBuilder): GraphDatabaseBuilder = {
     val directory: Path = Files.createTempDirectory("tls")
@@ -126,46 +120,22 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
     builder
   }
 
-  object sorter extends ((collection.Map[String, String], collection.Map[String, String]) => Boolean) {
-
-    def apply(left: collection.Map[String, String], right: collection.Map[String, String]): Boolean = {
-      val sortedKeys = left.keys.toList.sorted
-      compareByKey(left, right, sortedKeys)
-    }
-
-    @tailrec
-    private def compareByKey(left: collection.Map[String, String], right: collection.Map[String, String],
-                             keys: collection.Seq[String]): Boolean = {
-      if (keys.isEmpty)
-        left.size < right.size
-      else {
-        val key = keys.head
-        val l = left(key)
-        val r = right(key)
-        if (l == r)
-          compareByKey(left, right, keys.tail)
-        else l < r
-      }
-    }
-  }
-
 }
 
 object GlueSteps {
 
-  val USING_DB = """^using: (.*)$"""
-  val RUNNING_PARAMETRIZED_QUERY = """^running parametrized: (.*)$"""
-
-  // new constants:
-
+  // for Background
   val BACKGROUND = "^$"
 
   // for Given
   val ANY = "^any graph$"
   val EMPTY = "^an empty graph$"
+  val NAMED_GRAPH = """^the (.*) graph$"""
 
   // for And
   val INIT_QUERY = "^having executed: (.*)$"
+  val PARAMETERS = "^parameters are:$"
+  val SIDE_EFFECTS = "^the side effects should be:$"
 
   // for When
   val EXECUTING_QUERY = "^executing query: (.*)$"

@@ -18,53 +18,52 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-@db:cineast
 Feature: MatchAcceptanceTest
 
   Scenario: path query should return results in written order
     Given an empty graph
-      And having executed: CREATE (:label1)<-[:TYPE]-(:label2);
-    When executing query: MATCH (a:label1) RETURN (a)<--(:label2) AS p;
+      And having executed: CREATE (:label1)<-[:TYPE]-(:label2)
+    When executing query: MATCH (a:label1) RETURN (a)<--(:label2) AS p
     Then the result should be:
       | p                                |
       | [<(:label1)<-[:TYPE]-(:label2)>] |
 
   Scenario: longer path query should return results in written order
     Given an empty graph
-      And having executed: CREATE (:label1)<-[:T1]-(:label2)-[:T2]->(:label3);
-    When executing query: MATCH (a:label1) RETURN (a)<--(:label2)--() AS p;
+      And having executed: CREATE (:label1)<-[:T1]-(:label2)-[:T2]->(:label3)
+    When executing query: MATCH (a:label1) RETURN (a)<--(:label2)--() AS p
     Then the result should be:
       | p                                               |
       | [<(:label1)<-[:T1]-(:label2)-[:T2]->(:label3)>] |
 
   Scenario: Get node degree via length of pattern expression
     Given an empty graph
-      And having executed: CREATE (x:X), (x)-[:T]->(), (x)-[:T]->(), (x)-[:T]->();
-    When executing query: MATCH (a:X) RETURN length((a)-->()) as length;
+      And having executed: CREATE (x:X), (x)-[:T]->(), (x)-[:T]->(), (x)-[:T]->()
+    When executing query: MATCH (a:X) RETURN length((a)-->()) as length
     Then the result should be:
       | length |
       | 3      |
 
   Scenario: Get node degree via length of pattern expression that specifies a relationship type
     Given an empty graph
-      And having executed: CREATE (x:X), (x)-[:T]->(), (x)-[:T]->(), (x)-[:T]->(), (x)-[:AFFE]->();
-    When executing query: MATCH (a:X) RETURN length((a)-[:T]->()) as length;
+      And having executed: CREATE (x:X), (x)-[:T]->(), (x)-[:T]->(), (x)-[:T]->(), (x)-[:AFFE]->()
+    When executing query: MATCH (a:X) RETURN length((a)-[:T]->()) as length
     Then the result should be:
       | length |
       | 3      |
 
   Scenario: Get node degree via length of pattern expression that specifies multiple relationship types
     Given an empty graph
-      And having executed: CREATE (x:X), (x)-[:T]->(), (x)-[:T]->(), (x)-[:T]->(), (x)-[:AFFE]->();
-    When executing query: MATCH (a:X) RETURN length((a)-[:T|AFFE]->()) as length;
+      And having executed: CREATE (x:X), (x)-[:T]->(), (x)-[:T]->(), (x)-[:T]->(), (x)-[:AFFE]->()
+    When executing query: MATCH (a:X) RETURN length((a)-[:T|AFFE]->()) as length
     Then the result should be:
       | length |
       | 4      |
 
   Scenario: should be able to use multiple MATCH clauses to do a cartesian product
     Given an empty graph
-      And having executed: CREATE ({value: 1}), ({value: 2}), ({value: 3});
-    When executing query: MATCH (n), (m) RETURN n.value AS n, m.value AS m;
+      And having executed: CREATE ({value: 1}), ({value: 2}), ({value: 3})
+    When executing query: MATCH (n), (m) RETURN n.value AS n, m.value AS m
     Then the result should be:
       | n | m |
       | 1 | 1 |
@@ -80,19 +79,13 @@ Feature: MatchAcceptanceTest
   Scenario: should be able to use params in pattern matching predicates
     Given an empty graph
       And having executed: CREATE (:a)-[:A {foo: "bar"}]->(:b {name: 'me'})
-    When running parametrized: match (a)-[r]->(b) where r.foo =~ {param} return b
-      | param |
-      | bar   |
+      And parameters are:
+        | param |
+        | 'bar' |
+    When executing query: MATCH (a)-[r]->(b) WHERE r.foo =~ {param} RETURN b
     Then the result should be:
       | b                  |
       | (:b {name: 'me'})  |
-
-  Scenario: should make query from existing database
-    Given using: cineast
-    When executing query: MATCH (n) RETURN count(n)
-    Then the result should be:
-      | count(n) |
-      | 63084    |
 
   Scenario: should filter out based on node prop name
     Given an empty graph
