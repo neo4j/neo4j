@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
+import org.neo4j.helpers.MathUtil;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class LockResource
@@ -77,12 +78,12 @@ public class LockResource
 
     public void acquireReference()
     {
-        refCount++;
+        refCount = Math.incrementExact( refCount );
     }
 
     public int releaseReference()
     {
-        return --refCount;
+        return refCount = MathUtil.decrementExactNotPastZero( refCount );
     }
 
     public long resourceId()

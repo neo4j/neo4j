@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
+import org.neo4j.helpers.MathUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -99,12 +100,12 @@ class RWLock
 
         void incrementRequests()
         {
-            requests++;
+            requests = Math.incrementExact( requests );
         }
 
         void decrementRequests()
         {
-            requests--;
+            requests = MathUtil.decrementExactNotPastZero( requests );
         }
 
         boolean hasNoRequests()
@@ -151,7 +152,13 @@ class RWLock
 
     synchronized void mark()
     {
-        this.marked++;
+        marked = Math.incrementExact( marked );
+    }
+
+    /** synchronized by all caller methods */
+    private void unmark()
+    {
+        marked = MathUtil.decrementExactNotPastZero( marked );
     }
 
     synchronized boolean isMarked()
@@ -233,7 +240,7 @@ class RWLock
             interrupted();
             // if deadlocked, remove marking so lock is removed when empty
             tle.decrementRequests();
-            marked--;
+            unmark();
         }
     }
 
@@ -254,7 +261,7 @@ class RWLock
         finally
         {
             // if deadlocked, remove marking so lock is removed when empty
-            marked--;
+            unmark();
         }
     }
 
@@ -276,8 +283,8 @@ class RWLock
             throw new LockNotFoundException( "" + tx + " don't have readLock" );
         }
 
-        totalReadCount--;
-        tle.readCount--;
+        totalReadCount = MathUtil.decrementExactNotPastZero( totalReadCount );
+        tle.readCount = MathUtil.decrementExactNotPastZero( tle.readCount );
         if ( tle.isFree() )
         {
             ragManager.lockReleased( this, tx );
@@ -419,7 +426,7 @@ class RWLock
             interrupted();
             // if deadlocked, remove marking so lock is removed when empty
             tle.decrementRequests();
-            marked--;
+            unmark();
         }
     }
 
@@ -451,7 +458,7 @@ class RWLock
         finally
         {
             // if deadlocked, remove marking so lock is removed when empty
-            marked--;
+            unmark();
         }
     }
 
@@ -473,8 +480,8 @@ class RWLock
             throw new LockNotFoundException( "" + tx + " don't have writeLock" );
         }
 
-        totalWriteCount--;
-        tle.writeCount--;
+        totalWriteCount = MathUtil.decrementExactNotPastZero( totalWriteCount );
+        tle.writeCount = MathUtil.decrementExactNotPastZero( tle.writeCount );
         if ( tle.isFree() )
         {
             ragManager.lockReleased( this, tx );
@@ -587,7 +594,7 @@ class RWLock
 
     public synchronized long maxWaitTime()
     {
-        long max = 0l;
+        long max = 0L;
         for ( LockRequest thread : waitingThreadList )
         {
             if ( thread.since < max )
@@ -624,15 +631,15 @@ class RWLock
     private void registerReadLockAcquired( Object tx, TxLockElement tle )
     {
         registerLockAcquired( tx, tle );
-        totalReadCount++;
-        tle.readCount++;
+        totalReadCount = Math.incrementExact( totalReadCount );
+        tle.readCount = Math.incrementExact( tle.readCount );
     }
 
     private void registerWriteLockAcquired( Object tx, TxLockElement tle )
     {
         registerLockAcquired( tx, tle );
-        totalWriteCount++;
-        tle.writeCount++;
+        totalWriteCount = Math.incrementExact( totalWriteCount );
+        tle.writeCount = Math.incrementExact( tle.writeCount );
     }
 
     private void registerLockAcquired( Object tx, TxLockElement tle )

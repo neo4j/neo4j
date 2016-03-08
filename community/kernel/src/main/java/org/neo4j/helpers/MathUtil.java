@@ -89,5 +89,18 @@ public abstract class MathUtil
     {
         return - compareDoubleAgainstLong( rhs, lhs );
     }
+
+    /**
+     * Return an integer one less than the given integer, or throw {@link ArithmeticException} if the given integer is
+     * zero.
+     */
+    public static int decrementExactNotPastZero( int value )
+    {
+        if ( value == 0 )
+        {
+            throw new ArithmeticException( "integer underflow past zero" );
+        }
+        return value - 1;
+    }
 }
 

@@ -81,7 +81,7 @@ public final class LockClientStateHolder
                 return false;
             }
         }
-        while ( !clientState.compareAndSet( currentState, statusWithUpdatedClients( currentState, 1 ) ) );
+        while ( !clientState.compareAndSet( currentState, incrementActiveClients( currentState ) ) );
         return true;
     }
 
@@ -95,7 +95,7 @@ public final class LockClientStateHolder
         {
             currentState = clientState.get();
         }
-        while ( !clientState.compareAndSet( currentState, statusWithUpdatedClients( currentState, -1 ) ) );
+        while ( !clientState.compareAndSet( currentState, decrementActiveClients( currentState ) ) );
     }
 
     /**
@@ -136,8 +136,13 @@ public final class LockClientStateHolder
         return newStatus | getActiveClients( clientState );
     }
 
-    private int statusWithUpdatedClients( int clientState, int delta )
+    private int incrementActiveClients( int clientState )
     {
-        return getStatus( clientState ) | Math.addExact( getActiveClients( clientState ), delta );
+        return getStatus( clientState ) | Math.incrementExact( getActiveClients( clientState ) );
+    }
+
+    private int decrementActiveClients( int clientState )
+    {
+        return getStatus( clientState ) | Math.decrementExact( getActiveClients( clientState ) );
     }
 }
