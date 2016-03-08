@@ -23,11 +23,9 @@ import java.io.File;
 import java.util.Collection;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.id.IdSequence;
@@ -467,58 +465,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
                 }
                 progressListener.done();
             }
-        }
-    }
-
-    class Scanner
-    {
-        @SafeVarargs
-        public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store,
-                final Predicate<? super R>... filters )
-        {
-            return scan( store, true, filters );
-        }
-
-        @SafeVarargs
-        public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store,
-                final boolean forward, final Predicate<? super R>... filters )
-        {
-            return () -> new PrefetchingResourceIterator<R>()
-            {
-                final PrimitiveLongIterator ids = new StoreIdIterator( store, forward );
-                final RecordCursor<R> cursor = store.newRecordCursor( store.newRecord() );
-                {
-                    store.placeRecordCursor( 0, cursor, RecordLoad.CHECK );
-                }
-
-                @Override
-                protected R fetchNextOrNull()
-                {
-                    scan:
-                    while ( ids.hasNext() )
-                    {
-                        if ( cursor.next( ids.next() ) )
-                        {
-                            R record = cursor.get();
-                            for ( Predicate<? super R> filter : filters )
-                            {
-                                if ( !filter.test( record ) )
-                                {
-                                    continue scan;
-                                }
-                            }
-                            return record;
-                        }
-                    }
-                    return null;
-                }
-
-                @Override
-                public void close()
-                {
-                    cursor.close();
-                }
-            };
         }
     }
 

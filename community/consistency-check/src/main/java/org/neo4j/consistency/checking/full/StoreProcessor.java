@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.DEFAULT_QUEUE_SIZE;
 import static org.neo4j.consistency.checking.full.CloningRecordIterator.cloned;
 import static org.neo4j.consistency.checking.full.RecordDistributor.distributeRecords;
-import static org.neo4j.kernel.impl.store.RecordStore.Scanner.scan;
+import static org.neo4j.kernel.impl.store.Scanner.scan;
 
 /**
  * Full check works by spawning StoreProcessorTasks that call StoreProcessor. StoreProcessor.applyFiltered()

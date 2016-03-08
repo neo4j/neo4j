@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 import static org.neo4j.consistency.checking.full.CloningRecordIterator.cloned;
-import static org.neo4j.kernel.impl.store.RecordStore.Scanner.scan;
+import static org.neo4j.kernel.impl.store.Scanner.scan;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public class IterableStore<RECORD extends AbstractBaseRecord> implements BoundedIterable<RECORD>
