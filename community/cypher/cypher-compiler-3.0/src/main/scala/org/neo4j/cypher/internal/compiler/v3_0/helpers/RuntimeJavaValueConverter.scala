@@ -23,7 +23,7 @@ import java.util.{List => JavaList, Map => JavaMap}
 
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly.immutableMapValues
-import org.neo4j.graphdb.{Path, Relationship, Node}
+import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -32,22 +32,22 @@ import scala.collection.Map
 //
 // Main use: Converting parameters when using ExecutionEngine from scala
 //
-class JavaResultValueConverter(skip: Any => Boolean) {
+class RuntimeJavaValueConverter(skip: Any => Boolean) {
 
-  final def asDeepJavaResultMap[S](map: Map[S, Any]): JavaMap[S, Any] =
-    if (map == null) null else immutableMapValues(map, asDeepJavaResultValue).asJava: JavaMap[S, Any]
+  final def asDeepJavaMap[S](map: Map[S, Any]): JavaMap[S, Any] =
+    if (map == null) null else immutableMapValues(map, asDeepJavaValue).asJava: JavaMap[S, Any]
 
-  def asDeepJavaResultValue(value: Any): Any = value match {
+  def asDeepJavaValue(value: Any): Any = value match {
     case anything if skip(anything) => anything
-    case map: Map[_, _] => immutableMapValues(map, asDeepJavaResultValue).asJava: JavaMap[_, _]
-    case iterable: Iterable[_] => iterable.map(asDeepJavaResultValue).toSeq.asJava: JavaList[_]
-    case traversable: TraversableOnce[_] => traversable.map(asDeepJavaResultValue).toSeq.asJava: JavaList[_]
+    case map: Map[_, _] => immutableMapValues(map, asDeepJavaValue).asJava: JavaMap[_, _]
+    case iterable: Iterable[_] => iterable.map(asDeepJavaValue).toSeq.asJava: JavaList[_]
+    case traversable: TraversableOnce[_] => traversable.map(asDeepJavaValue).toSeq.asJava: JavaList[_]
     case anything => anything
   }
 
-  case class iteratorToVisitable[EX <: Exception](iterator: Iterator[Map[String, Any]]) {
+  case class feedIteratorToVisitable[EX <: Exception](iterator: Iterator[Map[String, Any]]) {
     def accept(visitor: InternalResultVisitor[EX]) = {
-      val row = new MapBasedResultRow()
+      val row = new MapBasedRow()
       var continue = true
       while (continue && iterator.hasNext) {
         row.map = iterator.next()
@@ -56,7 +56,7 @@ class JavaResultValueConverter(skip: Any => Boolean) {
     }
   }
 
-  private class MapBasedResultRow extends InternalResultRow {
+  private class MapBasedRow extends InternalResultRow {
     var map: Map[String, Any] = Map.empty
 
     override def getNode(key: String): Node = getWithType(key, classOf[Node])
@@ -72,7 +72,7 @@ class JavaResultValueConverter(skip: Any => Boolean) {
         case None =>
           throw new IllegalArgumentException("No column \"" + key + "\" exists")
         case Some(value) if clazz.isInstance(value) || value == null =>
-          clazz.cast(asDeepJavaResultValue(value))
+          clazz.cast(asDeepJavaValue(value))
         case Some(value) =>
           throw new NoSuchElementException("The current item in column \"" + key + "\" is not a " + clazz + ": \"" + value + "\"")
       }
