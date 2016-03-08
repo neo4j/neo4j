@@ -184,7 +184,6 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public KernelTransaction currentTransaction()
     {
-        availability.assertDatabaseAvailable();
         KernelTransaction tx = dataSource.threadToTransactionBridge.getKernelTransactionBoundToThisThread( false );
         if( tx == null )
         {
@@ -203,5 +202,11 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     public Statement currentStatement()
     {
         return dataSource.threadToTransactionBridge.get();
+    }
+
+    @Override
+    public void assertInUnterminatedTransaction()
+    {
+        dataSource.threadToTransactionBridge.assertInUnterminatedTransaction();
     }
 }

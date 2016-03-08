@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
@@ -113,7 +114,6 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     @Override
     public KernelTransaction currentTransaction()
     {
-        availability.assertDatabaseAvailable();
         assertSameThread();
         return transaction;
     }
@@ -199,5 +199,14 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     public KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void assertInUnterminatedTransaction()
+    {
+        if ( transaction.shouldBeTerminated() )
+        {
+            throw new TransactionTerminatedException();
+        }
     }
 }
