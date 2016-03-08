@@ -63,6 +63,28 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
     result.toList shouldBe empty
   }
 
+  test("should be able to call empty procedure") {
+    //Given
+    registerEmptyProc()
+
+    //When
+    val result = execute("CALL sys.return_nothing()")
+
+    // Then
+    result.toList shouldBe empty
+  }
+
+  test("should be able to call empty procedure without arguments") {
+    //Given
+    registerEmptyProc()
+
+    //When
+    val result = execute("CALL sys.return_nothing")
+
+    // Then
+    result.toList shouldBe empty
+  }
+
   test("db.labels work on an empty database") {
     // Given an empty database
     //When

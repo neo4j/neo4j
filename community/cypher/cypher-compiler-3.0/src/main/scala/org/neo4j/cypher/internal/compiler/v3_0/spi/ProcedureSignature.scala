@@ -27,6 +27,8 @@ case class ProcedureSignature(name: QualifiedProcedureName,
                               outputSignature: Option[Seq[FieldSignature]],
                               accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess) {
 
+  def outputFields = outputSignature.getOrElse(Seq.empty)
+
   def isVoid = outputSignature.isEmpty
 }
 

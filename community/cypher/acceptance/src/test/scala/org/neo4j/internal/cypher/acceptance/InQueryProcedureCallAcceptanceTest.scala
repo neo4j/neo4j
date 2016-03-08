@@ -80,6 +80,17 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
   }
 
+  test("should be able to call empty procedure") {
+    //Given
+    registerEmptyProc()
+
+    //When
+    val result = execute("CALL sys.return_nothing() RETURN 1")
+
+    // Then
+    result.toList shouldBe empty
+  }
+
   test("should be able to call void procedure") {
     //Given
     registerVoidProc()
