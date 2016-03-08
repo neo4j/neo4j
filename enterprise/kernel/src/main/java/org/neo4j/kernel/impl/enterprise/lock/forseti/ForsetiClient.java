@@ -708,22 +708,15 @@ public class ForsetiClient implements Locks.Client
 
         if ( lockCount > 1 )
         {
-            localLocks.put( resourceId, decrementExactToZero( lockCount ) );
+            localLocks.put( resourceId, lockCount - 1 );
             return true;
         }
         return false;
     }
 
-    private static int decrementExactToZero( int value )
-    {
-        if ( value == 0 )
-        {
-            throw new ArithmeticException();
-        }
-        return value - 1;
-    }
-
-    /** Attempt to upgrade a share lock to an exclusive lock, grabbing the share lock if we don't hold it. */
+    /**
+     * Attempt to upgrade a share lock to an exclusive lock, grabbing the share lock if we don't hold it.
+     **/
     private boolean tryUpgradeSharedToExclusive( ResourceType resourceType,
                                                  ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap,
                                                  long resourceId, SharedLock sharedLock )
