@@ -33,10 +33,6 @@ import java.io.IOException;
  * Normally, flushing a channel will just copy the dirty buffers into the OS page cache, but flushing is in this case
  * implying that the OS pages are cleared as well. In other words, the IOPSLimiter can make sure that the operating
  * system does not pile up too much IO work in its page cache, by flushing those caches as well on regular intervals.
- * <p/>
- * The {@link #maybeLimitIO(long, int, Flushable)} method takes and returns a stamp long value. This allows the
- * implementations to become stateless with respect to the individual flush, yet still keep context from one call to
- * the next.
  */
 public interface IOLimiter
 {
