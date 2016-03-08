@@ -61,7 +61,7 @@ for run_command in run_console run_daemon; do
     clear_config &&
     set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
     ${run_command} &&
-    test_expect_java_arg '-Xloggc:$(neo4j_home)/data/log/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution'
+    test_expect_java_arg '-Xloggc:$(neo4j_home)/data/log/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=20m'
   "
 
   test_expect_success "should set gc logging rotation options" "
@@ -69,7 +69,7 @@ for run_command in run_console run_daemon; do
     set_config 'dbms.logs.gc.rotation.size' '10m' neo4j.conf &&
     set_config 'dbms.logs.gc.rotation.keep_number' '8' neo4j.conf &&
     set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
-    set_config 'dbms.logs.gc.options' '-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution' neo4j.conf &&
+    set_config 'dbms.logs.gc.options' '-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution -XX:+UseGCLogFileRotation' neo4j.conf &&
 
     ${run_command} &&
     test_expect_java_arg '-Xloggc:$(neo4j_home)/data/log/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution'

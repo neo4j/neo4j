@@ -217,13 +217,13 @@ setup_java_opts() {
 
   JAVA_GC_LOGGING_OPTS=""
   if [ "${dbms_logs_gc_enabled:-}" = "true" ]; then
-      [[ ${dbms_logs_gc_options:-} ]] || dbms_logs_gc_options="-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution"
-      JAVA_GC_LOGGING_OPTS="-Xloggc:${NEO4J_LOG}/gc.log ${dbms_logs_gc_options}";
+      [[ ${dbms_logs_gc_options:-} ]] || dbms_logs_gc_options="-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution -XX:+UseGCLogFileRotation"
+      [[ ${dbms_logs_gc_rotation_size:-} ]] || dbms_logs_gc_rotation_size="20m"
+      [[ ${dbms_logs_gc_rotation_keep_number:-} ]] || dbms_logs_gc_rotation_keep_number="5"
+
+      JAVA_GC_LOGGING_OPTS="-Xloggc:${NEO4J_LOG}/gc.log ${dbms_logs_gc_options} -XX:NumberOfGCLogFiles=${dbms_logs_gc_rotation_keep_number} -XX:GCLogFileSize=${dbms_logs_gc_rotation_size}";
   fi
-  if [ "${dbms_logs_gc_rotation_size:-}" -a "${dbms_logs_gc_rotation_keep_number:-}" ]; then
-      JAVA_GC_LOGGING_OPTS="${JAVA_GC_LOGGING_OPTS} -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=${dbms_logs_gc_rotation_keep_number} -XX:GCLogFileSize=${dbms_logs_gc_rotation_size}";
-  fi
-  
+
   JAVA_OPTS="-server"
   [[ "${JAVA_MEMORY_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_MEMORY_OPTS}"
   [[ "${dbms_jvm_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${dbms_jvm_additional}"
