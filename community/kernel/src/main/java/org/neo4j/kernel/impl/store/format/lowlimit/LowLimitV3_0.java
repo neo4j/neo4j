@@ -36,6 +36,7 @@ public class LowLimitV3_0 extends BaseRecordFormats
 {
     public static final RecordFormats RECORD_FORMATS = new LowLimitV3_0();
     public static final String STORE_VERSION = "v0.A.7";
+    public static final String NAME = "community";
 
     public LowLimitV3_0()
     {

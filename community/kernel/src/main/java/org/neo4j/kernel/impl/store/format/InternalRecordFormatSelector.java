@@ -43,7 +43,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
  */
 public class InternalRecordFormatSelector
 {
-    private static final String COMMUNITY_KEY = "community";
+    private static final String COMMUNITY_KEY = LowLimitV3_0.NAME;
     private static final RecordFormats FALLBACK = LowLimitV3_0.RECORD_FORMATS;
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
             LowLimitV2_0.RECORD_FORMATS,
