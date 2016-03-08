@@ -174,11 +174,6 @@ public class CatchupGoalTrackerTest
             return 0;
         }
 
-        @Override public RaftLogEntry readLogEntry( long logIndex ) throws IOException
-        {
-            return null;
-        }
-
         @Override public long readEntryTerm( long logIndex ) throws IOException
         {
             return 0;

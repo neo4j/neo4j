@@ -28,6 +28,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
 public abstract class RaftLogContractTest
 {
@@ -75,7 +76,7 @@ public abstract class RaftLogContractTest
 
         assertThat( log.appendIndex(), is( 0L ) );
         assertThat( log.commitIndex(), is( -1L ) );
-        assertThat( log.readLogEntry( 0 ), equalTo( logEntry ) );
+        assertThat( readLogEntry( log, 0 ), equalTo( logEntry ) );
     }
 
     @Test
@@ -144,9 +145,9 @@ public abstract class RaftLogContractTest
         log.append( logEntryE );
 
         assertThat( log.appendIndex(), is( 2L ) );
-        assertThat( log.readLogEntry( 0 ), equalTo( logEntryA ) );
-        assertThat( log.readLogEntry( 1 ), equalTo( logEntryD ) );
-        assertThat( log.readLogEntry( 2 ), equalTo( logEntryE ) );
+        assertThat( readLogEntry( log, 0 ), equalTo( logEntryA ) );
+        assertThat( readLogEntry( log, 1 ), equalTo( logEntryD ) );
+        assertThat( readLogEntry( log, 2 ), equalTo( logEntryE ) );
     }
 
     @Test
@@ -163,8 +164,8 @@ public abstract class RaftLogContractTest
         log.truncate( 5 );
 
         assertThat( log.appendIndex(), is( 1L ) );
-        assertThat( log.readLogEntry( 0 ), equalTo( logEntryA ) );
-        assertThat( log.readLogEntry( 1 ), equalTo( logEntryB ) );
+        assertThat( readLogEntry( log, 0 ), equalTo( logEntryA ) );
+        assertThat( readLogEntry( log, 1 ), equalTo( logEntryB ) );
     }
 
     @Test
@@ -180,8 +181,8 @@ public abstract class RaftLogContractTest
 
         assertThat( log.appendIndex(), is( 1L ) );
 
-        assertThat( log.readLogEntry( 0 ), equalTo( logEntryA ) );
-        assertThat( log.readLogEntry( 1 ), equalTo( logEntryB ) );
+        assertThat( readLogEntry( log, 0 ), equalTo( logEntryA ) );
+        assertThat( readLogEntry( log, 1 ), equalTo( logEntryB ) );
     }
 
     @Test
@@ -275,7 +276,6 @@ public abstract class RaftLogContractTest
         long toTruncate = log.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 2 ) ) );
 
         // when
-        long lastAppended = log.append( new RaftLogEntry( 2, ReplicatedInteger.valueOf( 3 ) ) );
         log.truncate( toTruncate );
         log.commit( toCommit );
 

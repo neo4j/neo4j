@@ -26,11 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.coreedge.raft.log.RaftLogHelper;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.roles.Leader;
 import org.neo4j.coreedge.raft.roles.Role;
+
+import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
 public class ClusterSafetyViolations
 {
@@ -63,7 +66,7 @@ public class ClusterSafetyViolations
             {
                 if ( index <= memberState.entryLog().commitIndex() )
                 {
-                    RaftLogEntry memberLogEntry = memberState.entryLog().readLogEntry( index );
+                    RaftLogEntry memberLogEntry = readLogEntry( memberState.entryLog(), index );
                     if ( clusterLogEntry == null )
                     {
                         clusterLogEntry = memberLogEntry;

@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -98,7 +99,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
 
         // Then
         assertEquals( entryIndex, raftLog.appendIndex() );
-        assertEquals( content, raftLog.readLogEntry( entryIndex ).content() );
+        assertEquals( content, readLogEntry( raftLog, entryIndex ).content() );
         assertEquals( term, raftLog.readEntryTerm( entryIndex ) );
     }
 
@@ -118,11 +119,11 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
 
         // Then
         // entry 1 should be there
-        assertEquals( content1, raftLog.readLogEntry( entryIndex1 ).content() );
+        assertEquals( content1, readLogEntry( raftLog, entryIndex1 ).content() );
         assertEquals( term, raftLog.readEntryTerm( entryIndex1 ) );
 
         // entry 2 should be there also
-        assertEquals( content2, raftLog.readLogEntry( entryIndex2 ).content() );
+        assertEquals( content2, readLogEntry( raftLog, entryIndex2 ).content() );
         assertEquals( term, raftLog.readEntryTerm( entryIndex2 ) );
     }
 

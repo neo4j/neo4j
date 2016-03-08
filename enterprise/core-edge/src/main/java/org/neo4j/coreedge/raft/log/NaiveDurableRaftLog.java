@@ -233,8 +233,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         return commitIndex;
     }
 
-    @Override
-    public RaftLogEntry readLogEntry( long logIndex ) throws IOException
+    private RaftLogEntry readLogEntry( long logIndex ) throws IOException
     {
         Entry entry = readEntry( logIndex );
         ReplicatedContent content = null;

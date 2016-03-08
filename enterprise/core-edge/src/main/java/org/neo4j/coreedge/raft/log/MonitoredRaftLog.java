@@ -82,12 +82,6 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public RaftLogEntry readLogEntry( long logIndex ) throws IOException
-    {
-        return delegate.readLogEntry( logIndex );
-    }
-
-    @Override
     public long readEntryTerm( long logIndex ) throws IOException
     {
         return delegate.readEntryTerm( logIndex );

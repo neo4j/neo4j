@@ -75,8 +75,7 @@ public class InMemoryRaftLog implements RaftLog
         return commitIndex;
     }
 
-    @Override
-    public RaftLogEntry readLogEntry( long logIndex )
+    private RaftLogEntry readLogEntry( long logIndex )
     {
         if ( logIndex < 0 )
         {

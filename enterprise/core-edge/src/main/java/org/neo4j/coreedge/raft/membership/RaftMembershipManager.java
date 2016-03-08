@@ -41,11 +41,13 @@ import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptySet;
+
+import static org.neo4j.helpers.collection.Iterables.first;
 
 /**
  * This class drives raft membership changes by glueing together various components:
@@ -177,45 +179,39 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
 
     private void onTruncated() throws IOException
     {
-        Long logIndex = findLastMembershipEntry();
+        Pair<Long,RaftGroup<MEMBER>> lastMembershipEntry = findLastMembershipEntry();
 
-        if ( logIndex != null )
+        if ( lastMembershipEntry != null )
         {
-            RaftGroup<MEMBER> lastMembershipEntry = (RaftGroup<MEMBER>) entryLog.readLogEntry( logIndex ).content();
-            raftMembershipState.setVotingMembers( lastMembershipEntry.getMembers() );
-            raftMembershipState.logIndex( logIndex );
+            raftMembershipState.setVotingMembers( lastMembershipEntry.other().getMembers() );
+            raftMembershipState.logIndex( lastMembershipEntry.first().longValue() );
             stateStorage.persistStoreData( raftMembershipState );
+            uncommittedMemberChanges = lastMembershipEntry.first() <= entryLog.commitIndex() ? 0 : 1;
         }
         else
         {
-            raftMembershipState.setVotingMembers( Collections.<MEMBER>emptySet() );
-        }
-
-        uncommittedMemberChanges = 0;
-        for ( long i = entryLog.commitIndex() + 1; i <= entryLog.appendIndex(); i++ )
-        {
-            ReplicatedContent content = entryLog.readLogEntry( i ).content();
-            if ( content instanceof RaftGroup )
-            {
-                uncommittedMemberChanges++;
-            }
+            raftMembershipState.setVotingMembers( Collections.emptySet() );
+            uncommittedMemberChanges = 0;
         }
     }
 
-    private Long findLastMembershipEntry() throws IOException
+    private Pair<Long,RaftGroup<MEMBER>> findLastMembershipEntry() throws IOException
     {
-        for ( long logIndex = entryLog.appendIndex(); logIndex >= 0; logIndex-- )
+        Pair<Long,RaftGroup<MEMBER>> lastMembershipEntry = null;
+        long index = 0;
+        try( IOCursor<RaftLogEntry> cursor = entryLog.getEntryCursor( index ) )
         {
-            RaftLogEntry raftLogEntry = entryLog.readLogEntry( logIndex );
-
-            ReplicatedContent content = raftLogEntry.content();
-
-            if ( content instanceof RaftGroup )
+            while( cursor.next() )
             {
-                return logIndex;
+                ReplicatedContent content = cursor.get().content();
+                if ( content instanceof RaftGroup )
+                {
+                    lastMembershipEntry = Pair.of( index, (RaftGroup<MEMBER>) content );
+                }
+                index++;
             }
         }
-        return null;
+        return lastMembershipEntry;
     }
 
     public void setTargetMembershipSet( Set<MEMBER> targetMembers )
@@ -261,11 +257,11 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
     {
         if ( missingMembers().size() > 0 )
         {
-            membershipStateMachine.onMissingMember( Iterables.first( missingMembers() ) );
+            membershipStateMachine.onMissingMember( first( missingMembers() ) );
         }
         else if ( isSafeToRemoveMember() && superfluousMembers().size() > 0 )
         {
-            membershipStateMachine.onSuperfluousMember( Iterables.first( superfluousMembers() ) );
+            membershipStateMachine.onSuperfluousMember( first( superfluousMembers() ) );
         }
     }
 

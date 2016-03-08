@@ -209,8 +209,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         };
     }
 
-    @Override
-    public RaftLogEntry readLogEntry( long logIndex ) throws IOException
+    private RaftLogEntry readLogEntry( long logIndex ) throws IOException
     {
         RaftLogEntry entry = entryCache.get( logIndex );
         if( entry != null )

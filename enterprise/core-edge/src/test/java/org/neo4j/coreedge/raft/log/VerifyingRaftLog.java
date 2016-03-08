@@ -82,14 +82,6 @@ class VerifyingRaftLog implements RaftLog
     }
 
     @Override
-    public RaftLogEntry readLogEntry( long logIndex ) throws IOException
-    {
-        RaftLogEntry raftLogEntry = expected.readLogEntry( logIndex );
-        assertEquals( raftLogEntry, other.readLogEntry( logIndex ) );
-        return raftLogEntry;
-    }
-
-    @Override
     public long readEntryTerm( long logIndex ) throws IOException
     {
         long term = expected.readEntryTerm( logIndex );
@@ -137,7 +129,6 @@ class VerifyingRaftLog implements RaftLog
     private void directAssertions( InMemoryRaftLog expected, RaftLog other, long logIndex ) throws IOException
     {
         assertEquals( expected.readEntryTerm( logIndex ), other.readEntryTerm( logIndex ) );
-        assertEquals( expected.readLogEntry( logIndex ), other.readLogEntry( logIndex ) );
     }
 
     private void verifyTraversalUsingCursor( RaftLog expected, RaftLog other ) throws IOException
