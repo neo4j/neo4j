@@ -152,10 +152,10 @@ public interface ServerSettings
             "-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime " +
             "-XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution");
 
-    @Description("Number of GC logs to keep. This setting, and the related size setting are both required for GC logging.")
+    @Description("Number of GC logs to keep.")
     Setting<Integer> gc_logging_rotation_keep_number = setting("dbms.logs.gc.rotation.keep_number", INTEGER, "5");
 
-    @Description("Size of each GC log that is kept. This setting and the related keep_number setting are required for GC logging.")
+    @Description("Size of each GC log that is kept.")
     Setting<Long> gc_logging_rotation_size = setting("dbms.logs.rotation.gc.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
     @Description("Timeout for idle transactions.")
