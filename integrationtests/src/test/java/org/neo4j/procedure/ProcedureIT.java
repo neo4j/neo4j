@@ -241,7 +241,7 @@ public class ProcedureIT
             // Expect
             exception.expect( QueryExecutionException.class );
             exception.expectMessage(
-                    "Failed to invoke procedure `org.neo4j.procedure.indexOutOfBounds`: Caused by: java.lang.ArrayIndexOutOfBoundsException: 4" );
+                    "Failed to invoke procedure `org.neo4j.procedure.indexOutOfBounds`: Caused by: java.lang.ArrayIndexOutOfBoundsException" );
             // When
             db.execute( "CALL org.neo4j.procedure.indexOutOfBounds" );
         }
