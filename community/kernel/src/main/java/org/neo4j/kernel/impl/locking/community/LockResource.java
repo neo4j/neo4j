@@ -49,17 +49,8 @@ public class LockResource
         }
 
         LockResource that = (LockResource) o;
+        return resourceId == that.resourceId && resourceType.equals( that.resourceType );
 
-        if ( resourceId != that.resourceId )
-        {
-            return false;
-        }
-        if ( !resourceType.equals( that.resourceType ) )
-        {
-            return false;
-        }
-
-        return true;
     }
 
     @Override

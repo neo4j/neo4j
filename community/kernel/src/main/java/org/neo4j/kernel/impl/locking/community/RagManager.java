@@ -25,7 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -37,11 +36,11 @@ import org.neo4j.kernel.impl.util.ArrayMap;
  * wait and that may lead to a deadlock. So before the tx is put into wait mode
  * the {@link RagManager#checkWaitOn} method is invoked to check if a wait of
  * this transaction will lead to a deadlock.
- * <p>
+ * <p/>
  * The <CODE>checkWaitOn</CODE> throws a {@link DeadlockDetectedException} if
  * a deadlock would occur when the transaction would wait for the resource. That
  * will guarantee that a deadlock never occurs on a RWLock basis.
- * <p>
+ * <p/>
  * Think of the resource allocation graph as a graph. We have two node
  * types, resource nodes (R) and tx/process nodes (T). When a transaction
  * acquires lock on some resource a relationship is added from the resource to
@@ -71,14 +70,7 @@ public class RagManager
     private final Map<Object,List<Object>> resourceMap = new HashMap<>();
 
     private final ArrayMap<Object,Object> waitingTxMap =
-        new ArrayMap<>( (byte)5, false, true );
-
-    private final AtomicInteger deadlockCount = new AtomicInteger();
-
-    long getDeadlockCount()
-    {
-        return deadlockCount.longValue();
-    }
+            new ArrayMap<>( (byte) 5, false, true );
 
     synchronized void lockAcquired( Object resource, Object tx )
     {
@@ -124,13 +116,13 @@ public class RagManager
 
     // after invoke the transaction must wait on the resource
     synchronized void checkWaitOn( Object resource, Object tx )
-        throws DeadlockDetectedException
+            throws DeadlockDetectedException
     {
         List<Object> lockingTxList = resourceMap.get( resource );
         if ( lockingTxList == null )
         {
             throw new LockException( "Illegal resource[" + resource
-                + "], not found in map" );
+                                     + "], not found in map" );
         }
 
         if ( waitingTxMap.get( tx ) != null )
@@ -171,7 +163,7 @@ public class RagManager
             }
             graphStack.push( lockingTx );
             checkWaitOnRecursive( lockingTx, tx, checkedTransactions,
-                graphStack );
+                    graphStack );
             graphStack.pop();
         }
 
@@ -180,8 +172,8 @@ public class RagManager
     }
 
     private synchronized void checkWaitOnRecursive( Object lockingTx,
-            Object waitingTx, List<Object> checkedTransactions,
-            Stack<Object> graphStack ) throws DeadlockDetectedException
+                                                    Object waitingTx, List<Object> checkedTransactions,
+                                                    Stack<Object> graphStack ) throws DeadlockDetectedException
     {
         if ( lockingTx.equals( waitingTx ) )
         {
@@ -198,13 +190,13 @@ public class RagManager
                 }
                 else
                 {
-                    circle.append( " <-[:WAITING_FOR]- " ).append( lockingTx ).append( " <-[:HELD_BY]- " ).append( resource );
+                    circle.append( " <-[:WAITING_FOR]- " ).append( lockingTx ).append( " <-[:HELD_BY]- " )
+                          .append( resource );
                 }
             }
             while ( !graphStack.isEmpty() );
-            deadlockCount.incrementAndGet();
-            throw new DeadlockDetectedException( waitingTx +
-                " can't wait on resource " + resource + " since => " + circle );
+            throw new DeadlockDetectedException(
+                    waitingTx + " can't wait on resource " + resource + " since => " + circle );
         }
         checkedTransactions.add( lockingTx );
         Object resource = waitingTxMap.get( lockingTx );

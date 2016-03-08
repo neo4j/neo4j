@@ -42,20 +42,15 @@ public class CommunityLockManger implements Locks
     @Override
     public void accept( final Visitor visitor )
     {
-        manager.accept( new org.neo4j.helpers.collection.Visitor<RWLock, RuntimeException>()
-        {
-            @Override
-            public boolean visit( RWLock element ) throws RuntimeException
+        manager.accept( element -> {
+            Object resource = element.resource();
+            if ( resource instanceof LockResource )
             {
-                Object resource = element.resource();
-                if(resource instanceof LockResource)
-                {
-                    LockResource lockResource = (LockResource)resource;
-                    visitor.visit( lockResource.type(), lockResource.resourceId(),
-                            element.describe(), element.maxWaitTime(), System.identityHashCode( lockResource ) );
-                }
-                return false;
+                LockResource lockResource = (LockResource) resource;
+                visitor.visit( lockResource.type(), lockResource.resourceId(),
+                        element.describe(), element.maxWaitTime(), System.identityHashCode( lockResource ) );
             }
+            return false;
         } );
     }
 
