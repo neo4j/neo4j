@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, InternalQueryType}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, QueryContext, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, QueryContext, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, ExplainExecutionResult, ExplainMode, PlannerName, ProcedurePlannerName, ProcedureRuntimeName, RuntimeName}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 
 /**
   * Execution plan for performing pure side-effects, i.e. returning no data to the user.
+ *
   * @param name A name of the side-effect
   * @param queryType The type of the query
   * @param sideEffect The actual side-effect to be performed
@@ -56,7 +57,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
 
   override def plannerUsed: PlannerName = ProcedurePlannerName
 
-  override def notifications: Seq[InternalNotification] = Seq.empty
+  override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
 
   override def isPeriodicCommit: Boolean = false
 }

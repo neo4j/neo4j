@@ -19,15 +19,19 @@
  */
 package org.neo4j.cypher
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_0.CostBasedPlannerName
+import org.neo4j.cypher.internal.frontend.v3_0.notification.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.{Result, GraphDatabaseService, Label}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine {
@@ -225,6 +229,19 @@ class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine 
 
     // then
     // call to close actually worked
+  }
+
+  test("should not refer to stale plan context in the cached execution plans") {
+    // given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+
+    // when
+    db.execute("EXPLAIN MERGE (a:A) ON MATCH SET a.prop = 21  RETURN *").close()
+    db.execute("EXPLAIN    MERGE (a:A) ON MATCH SET a.prop = 42 RETURN *").close()
+
+    // then no exceptions have been thrown
+
+    db.shutdown()
   }
 
   private implicit class RichDb(db: GraphDatabaseService) extends GraphDatabaseCypherService(db) {

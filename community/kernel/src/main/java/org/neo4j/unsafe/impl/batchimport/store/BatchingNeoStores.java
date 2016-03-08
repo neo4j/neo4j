@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.io.File;
 import java.io.IOException;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -61,9 +63,10 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingP
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 
+import static java.lang.Math.min;
 import static java.lang.String.valueOf;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -92,10 +95,15 @@ public class BatchingNeoStores implements AutoCloseable
         this.fileSystem = fileSystem;
         this.logProvider = logService.getInternalLogProvider();
         this.storeDir = storeDir;
-        this.neo4jConfig = dbConfig.with(
-                stringMap(
-                        dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
-                        pagecache_memory.name(), valueOf( config.writeBufferSize() ) ),
+        long pageSize = config.pageSize();
+        // 30 is the minimum number of pages the page cache wants to keep free at all times.
+        // Having less than that might result in an evicted page will reading, which would mean
+        // unnecessary re-reading. Having slightly more leaves some leg room.
+        long optimalMappedMemorySize = pageSize * 40;
+        this.neo4jConfig = dbConfig.with( stringMap(
+                dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
+                pagecache_memory.name(), valueOf( applyEnvironmentLimitationsTo( optimalMappedMemorySize ) ),
+                mapped_memory_page_size.name(), valueOf( pageSize ) ),
                 GraphDatabaseSettings.class );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         this.pageCache = createPageCache( fileSystem, neo4jConfig, logProvider, tracer );
@@ -139,6 +147,27 @@ public class BatchingNeoStores implements AutoCloseable
         life.start();
         labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
                 HighestSelectionStrategy.getInstance() ).getLabelScanStore() );
+    }
+
+    /**
+     * An attempt to limit amount of memory used by the page cache in a severely limited environment.
+     * This shouldn't be a problem in most scenarios since the optimal mapped memory size is in the range
+     * of 100-200 MiB and so shouldn't impose a noticeable dent in memory usage.
+     *
+     * @param optimalMappedMemorySize amount of mapped memory that would be considered optimal for the import.
+     * @return in most cases the optimal size, although in some very limited environments a smaller size.
+     */
+    private long applyEnvironmentLimitationsTo( long optimalMappedMemorySize )
+    {
+        long freePhysicalMemory = OsBeanUtil.getFreePhysicalMemory();
+        if ( freePhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE )
+        {
+            // We have no idea how much free memory there is, let's simply go with what we'd like to have
+            return optimalMappedMemorySize;
+        }
+        // We got a hint about amount of free memory. Let's acquire tops a fifth of the free memory
+        // since other parts of the importer also needs memory to function.
+        return min( optimalMappedMemorySize, freePhysicalMemory / 5 );
     }
 
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,

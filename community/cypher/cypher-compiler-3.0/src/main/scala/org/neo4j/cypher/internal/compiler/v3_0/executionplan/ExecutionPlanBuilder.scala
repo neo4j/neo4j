@@ -39,6 +39,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 
+import scala.annotation.tailrec
+
 
 trait RunnablePlan {
   def apply(queryContext: QueryContext,
@@ -119,16 +121,16 @@ object InterpretedExecutionPlanBuilder {
     new ExecutionPlan {
       private val fingerprint = createFingerprintReference(fp)
 
-      def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) =
+      override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) =
         func(queryContext, planType, params)
 
-      def isPeriodicCommit = periodicCommitInfo.isDefined
-      def plannerUsed = planner
-      def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
+      override def isPeriodicCommit = periodicCommitInfo.isDefined
+      override def plannerUsed = planner
+      override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
-      def runtimeUsed = InterpretedRuntimeName
+      override def runtimeUsed = InterpretedRuntimeName
 
-      def notifications = checkForNotifications(pipe, planContext, config)
+      override def notifications(planContext: PlanContext) = checkForNotifications(pipe, planContext, config)
     }
   }
 
@@ -139,6 +141,7 @@ object InterpretedExecutionPlanBuilder {
     notificationCheckers.flatMap(_(pipe))
   }
 
+  @tailrec
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
     case in: PeriodicCommitQuery =>
       getQueryResultColumns(in.query, currentSymbols)

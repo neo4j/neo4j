@@ -176,7 +176,7 @@ trait CompatibilityFor3_0 {
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_3_0.get, planContext, tracer)
 
         // Log notifications/warnings from planning
-        planImpl.notifications.foreach(notificationLogger += _)
+        planImpl.notifications(planContext).foreach(notificationLogger += _)
 
         (new ExecutionPlanWrapper(planImpl), extractedParameters)
       }
@@ -210,14 +210,18 @@ trait CompatibilityFor3_0 {
     def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: ExtendedTransactionalContext): Boolean =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
   }
+
 }
 
 case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName)
                                        (implicit monitor: QueryExecutionMonitor, session: QuerySession)
   extends ExtendedExecutionResult {
+
   import org.neo4j.cypher.internal.compatibility.helpersv3_0._
 
-  def planDescriptionRequested = exceptionHandlerFor3_0.runSafely {inner.planDescriptionRequested}
+  def planDescriptionRequested = exceptionHandlerFor3_0.runSafely {
+    inner.planDescriptionRequested
+  }
 
   private def endQueryExecution() = {
     monitor.endSuccess(session) // this method is expected to be idempotent
@@ -226,7 +230,7 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
   def javaIterator: ResourceIterator[util.Map[String, Any]] = {
     val innerJavaIterator = inner.javaIterator
     exceptionHandlerFor3_0.runSafely {
-      if ( !innerJavaIterator.hasNext ) {
+      if (!innerJavaIterator.hasNext) {
         endQueryExecution()
       }
     }
@@ -235,23 +239,36 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
         endQueryExecution()
         innerJavaIterator.close()
       }
-      def next() = exceptionHandlerFor3_0.runSafely {innerJavaIterator.next}
-      def hasNext = exceptionHandlerFor3_0.runSafely{
+
+      def next() = exceptionHandlerFor3_0.runSafely {
+        innerJavaIterator.next
+      }
+
+      def hasNext = exceptionHandlerFor3_0.runSafely {
         val next = innerJavaIterator.hasNext
         if (!next) {
           endQueryExecution()
         }
         next
       }
-      def remove() =  exceptionHandlerFor3_0.runSafely{innerJavaIterator.remove()}
+
+      def remove() = exceptionHandlerFor3_0.runSafely {
+        innerJavaIterator.remove()
+      }
     }
   }
 
-  def columnAs[T](column: String) = exceptionHandlerFor3_0.runSafely{inner.columnAs[T](column)}
+  def columnAs[T](column: String) = exceptionHandlerFor3_0.runSafely {
+    inner.columnAs[T](column)
+  }
 
-  def columns = exceptionHandlerFor3_0.runSafely{inner.columns}
+  def columns = exceptionHandlerFor3_0.runSafely {
+    inner.columns
+  }
 
-  def javaColumns = exceptionHandlerFor3_0.runSafely{inner.javaColumns}
+  def javaColumns = exceptionHandlerFor3_0.runSafely {
+    inner.javaColumns
+  }
 
   def queryStatistics() = exceptionHandlerFor3_0.runSafely {
     val i = inner.queryStatistics()
@@ -269,11 +286,17 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
     )
   }
 
-  def dumpToString(writer: PrintWriter) = exceptionHandlerFor3_0.runSafely{inner.dumpToString(writer)}
+  def dumpToString(writer: PrintWriter) = exceptionHandlerFor3_0.runSafely {
+    inner.dumpToString(writer)
+  }
 
-  def dumpToString() = exceptionHandlerFor3_0.runSafely{inner.dumpToString()}
+  def dumpToString() = exceptionHandlerFor3_0.runSafely {
+    inner.dumpToString()
+  }
 
-  def javaColumnAs[T](column: String) = exceptionHandlerFor3_0.runSafely{inner.javaColumnAs[T](column)}
+  def javaColumnAs[T](column: String) = exceptionHandlerFor3_0.runSafely {
+    inner.javaColumnAs[T](column)
+  }
 
   def executionPlanDescription(): ExtendedPlanDescription =
     exceptionHandlerFor3_0.runSafely {
@@ -284,15 +307,17 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
           addArgument(PlannerImpl(planner.name)).
           addArgument(Runtime(runtime.toTextOutput)).
           addArgument(RuntimeImpl(runtime.name))
-    )
-  }
+      )
+    }
 
-  def close() = exceptionHandlerFor3_0.runSafely{
+  def close() = exceptionHandlerFor3_0.runSafely {
     endQueryExecution()
     inner.close()
   }
 
-  def next() = exceptionHandlerFor3_0.runSafely{ inner.next() }
+  def next() = exceptionHandlerFor3_0.runSafely {
+    inner.next()
+  }
 
   def hasNext = exceptionHandlerFor3_0.runSafely {
     val next = inner.hasNext
@@ -388,6 +413,7 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
   private implicit class ConvertibleCompilerInputPosition(pos: frontend.v3_0.InputPosition) {
     def asInputPosition = new InputPosition(pos.offset, pos.line, pos.column)
   }
+
 }
 
 case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, version: CypherVersion,
@@ -406,13 +432,21 @@ case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, ve
     inner.arguments.map { arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg) }.toMap
   }
 
-  def identifiers = exceptionHandlerFor3_0.runSafely { inner.orderedVariables.toSet }
+  def identifiers = exceptionHandlerFor3_0.runSafely {
+    inner.orderedVariables.toSet
+  }
 
-  override def hasProfilerStatistics = exceptionHandlerFor3_0.runSafely { inner.arguments.exists(_.isInstanceOf[DbHits]) }
+  override def hasProfilerStatistics = exceptionHandlerFor3_0.runSafely {
+    inner.arguments.exists(_.isInstanceOf[DbHits])
+  }
 
-  def name = exceptionHandlerFor3_0.runSafely { inner.name }
+  def name = exceptionHandlerFor3_0.runSafely {
+    inner.name
+  }
 
-  def asJava: PlanDescription = exceptionHandlerFor3_0.runSafely { asJava(self) }
+  def asJava: PlanDescription = exceptionHandlerFor3_0.runSafely {
+    asJava(self)
+  }
 
   override def toString: String = {
     val NL = System.lineSeparator()
@@ -423,9 +457,9 @@ case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, ve
 
   def asJava(in: ExtendedPlanDescription): PlanDescription = new PlanDescription {
     def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
-      def getDbHits: Long = extract { case DbHits(count) => count}
+      def getDbHits: Long = extract { case DbHits(count) => count }
 
-      def getRows: Long = extract { case Rows(count) => count}
+      def getRows: Long = extract { case Rows(count) => count }
 
       private def extract(f: PartialFunction[Argument, Long]): Long =
         inner.arguments.collectFirst(f).getOrElse(throw new InternalException("Don't have profiler stats"))

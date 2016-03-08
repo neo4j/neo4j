@@ -162,7 +162,7 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
 
         def runtimeUsed = CompiledRuntimeName
 
-        override def notifications: Seq[InternalNotification] = Seq.empty
+        override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
       }
     }
   }

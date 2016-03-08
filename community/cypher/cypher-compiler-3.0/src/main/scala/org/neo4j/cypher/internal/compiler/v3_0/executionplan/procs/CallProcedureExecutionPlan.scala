@@ -100,7 +100,7 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
     )
   }
 
-  override def notifications = Seq.empty
+  override def notifications(planContext: PlanContext) = Seq.empty
   override def isPeriodicCommit: Boolean = false
   override def runtimeUsed = ProcedureRuntimeName
   override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = false

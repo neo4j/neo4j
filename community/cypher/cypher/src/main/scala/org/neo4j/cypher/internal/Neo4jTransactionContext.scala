@@ -52,17 +52,21 @@ case class Neo4jTransactionContext(val graph: GraphDatabaseQueryService, initial
   override def isOpen = open
 
   override def close(success: Boolean): Unit = {
-    try {
-      _statement.close()
+    if (isOpen) {
+      try {
+        _statement.close()
 
-      if (success)
-        tx.success()
-      else
-        tx.failure()
-      tx.close()
-    }
-    finally {
-      open = false
+        if (success)
+          tx.success()
+        else
+          tx.failure()
+        tx.close()
+      }
+      finally {
+        _statement = null
+        tx = null
+        open = false
+      }
     }
   }
 

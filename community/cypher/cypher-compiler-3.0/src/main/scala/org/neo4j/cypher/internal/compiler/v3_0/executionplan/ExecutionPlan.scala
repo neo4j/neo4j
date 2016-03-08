@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{PlanContext, GraphStatistics, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, PlannerName, RuntimeName}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 
@@ -29,5 +29,5 @@ abstract class ExecutionPlan {
   def plannerUsed: PlannerName
   def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean
   def runtimeUsed: RuntimeName
-  def notifications: Seq[InternalNotification]
+  def notifications(planContext: PlanContext): Seq[InternalNotification]
 }
