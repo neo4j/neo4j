@@ -21,7 +21,6 @@ package org.neo4j.coreedge.raft.log;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.cursor.IOCursor;
 
 public interface ReadableRaftLog
@@ -53,16 +52,8 @@ public interface ReadableRaftLog
     long readEntryTerm( long logIndex ) throws IOException;
 
     /**
-     * Tells if a entry exists in the log at the supplied index.
-     *
-     * @param logIndex The index of the log entry.
-     * @return True if the entry exists, otherwise false.
-     */
-    boolean entryExists( long logIndex ) throws IOException;
-
-    /**
      * Returns an {@link IOCursor} of {@link RaftLogEntry}s from the specified index until the end of the log
      * @param fromIndex The log index at which the cursor should be positioned
      */
-    public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException;
+    IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException;
 }

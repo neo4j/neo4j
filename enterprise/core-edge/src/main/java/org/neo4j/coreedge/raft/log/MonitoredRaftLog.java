@@ -94,12 +94,6 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public boolean entryExists( long logIndex ) throws IOException
-    {
-        return delegate.entryExists( logIndex );
-    }
-
-    @Override
     public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
     {
         return delegate.getEntryCursor( fromIndex );

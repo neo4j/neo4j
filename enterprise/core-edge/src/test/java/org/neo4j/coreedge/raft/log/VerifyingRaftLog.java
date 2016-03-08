@@ -98,14 +98,6 @@ class VerifyingRaftLog implements RaftLog
     }
 
     @Override
-    public boolean entryExists( long logIndex ) throws IOException
-    {
-        boolean exists = expected.entryExists( logIndex );
-        assertEquals( exists, other.entryExists( logIndex ) );
-        return exists;
-    }
-
-    @Override
     public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
     {
         return other.getEntryCursor( fromIndex );
@@ -144,7 +136,6 @@ class VerifyingRaftLog implements RaftLog
 
     private void directAssertions( InMemoryRaftLog expected, RaftLog other, long logIndex ) throws IOException
     {
-        assertEquals( expected.entryExists( logIndex ), other.entryExists( logIndex ) );
         assertEquals( expected.readEntryTerm( logIndex ), other.readEntryTerm( logIndex ) );
         assertEquals( expected.readLogEntry( logIndex ), other.readLogEntry( logIndex ) );
     }

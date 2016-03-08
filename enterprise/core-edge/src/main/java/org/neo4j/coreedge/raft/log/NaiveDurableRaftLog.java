@@ -257,12 +257,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         return readEntry( logIndex ).term;
     }
 
-    @Override
-    public boolean entryExists( long logIndex )
-    {
-        return appendIndex >= logIndex;
-    }
-
     private static class Entry
     {
         private final long term;

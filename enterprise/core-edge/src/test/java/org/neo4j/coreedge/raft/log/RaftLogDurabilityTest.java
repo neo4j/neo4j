@@ -55,7 +55,6 @@ public class RaftLogDurabilityTest
         verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, myLog -> {
             assertThat( myLog.appendIndex(), is( 0L ) );
             assertThat( myLog.commitIndex(), is( -1L ) );
-            assertThat( myLog.entryExists( 0 ), is( true ) );
             assertThat( myLog.readLogEntry( 0 ), equalTo( logEntry ) );
         } );
     }
@@ -73,7 +72,6 @@ public class RaftLogDurabilityTest
         verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, myLog -> {
             assertThat( myLog.appendIndex(), is( 0L ) );
             assertThat( myLog.commitIndex(), is( 0L ) );
-            assertThat( myLog.entryExists( 0 ), is( true ) );
         } );
     }
 
@@ -93,14 +91,8 @@ public class RaftLogDurabilityTest
         log.append( logEntryB );
 
         assertThat( log.appendIndex(), is( 1L ) );
-
-        assertThat( log.entryExists( 0 ), is( true ) );
         assertThat( log.readLogEntry( 0 ), is( logEntryA ) );
-
-        assertThat( log.entryExists( 1 ), is( true ) );
         assertThat( log.readLogEntry( 1 ), is( logEntryB ) );
-
-        assertThat( log.entryExists( 2 ), is( false ) );
     }
 
     @Test
@@ -118,8 +110,6 @@ public class RaftLogDurabilityTest
 
         verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, myLog -> {
             assertThat( myLog.appendIndex(), is( 0L ) );
-            assertThat( myLog.entryExists( 0 ), is( true ) );
-            assertThat( myLog.entryExists( 1 ), is( false ) );
         } );
     }
 
@@ -149,10 +139,6 @@ public class RaftLogDurabilityTest
             assertThat( myLog.readLogEntry( 0 ), equalTo( logEntryA ) );
             assertThat( myLog.readLogEntry( 1 ), equalTo( logEntryD ) );
             assertThat( myLog.readLogEntry( 2 ), equalTo( logEntryE ) );
-            assertThat( myLog.entryExists( 0 ), is( true ) );
-            assertThat( myLog.entryExists( 1 ), is( true ) );
-            assertThat( myLog.entryExists( 2 ), is( true ) );
-            assertThat( myLog.entryExists( 3 ), is( false ) );
         } );
     }
 

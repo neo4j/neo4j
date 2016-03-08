@@ -122,12 +122,6 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public boolean entryExists( long logIndex )
-    {
-        return raftLog.containsKey( logIndex );
-    }
-
-    @Override
     public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
     {
         return new IOCursor<RaftLogEntry>()

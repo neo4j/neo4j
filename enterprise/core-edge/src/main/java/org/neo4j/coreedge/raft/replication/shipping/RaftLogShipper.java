@@ -399,7 +399,7 @@ public class RaftLogShipper<MEMBER>
         }
 
         RaftLogEntry[] logEntries;
-        if ( raftLog.entryExists( logIndex ) )
+        if ( logIndex <= raftLog.appendIndex() )
         {
             logEntries = new RaftLogEntry[]{ raftLog.readLogEntry( logIndex ) };
         }

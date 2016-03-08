@@ -265,12 +265,6 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     }
 
     @Override
-    public boolean entryExists( long logIndex ) throws IOException
-    {
-        return appendIndex.get() >= logIndex;
-    }
-
-    @Override
     public void init() throws Throwable
     {
         logFile.init();

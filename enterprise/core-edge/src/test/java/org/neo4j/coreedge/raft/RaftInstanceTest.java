@@ -546,12 +546,6 @@ public class RaftInstanceTest
         }
 
         @Override
-        public boolean entryExists( long logIndex )
-        {
-            return false;
-        }
-
-        @Override
         public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
         {
             if ( startExploding )

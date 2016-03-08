@@ -42,7 +42,6 @@ public abstract class RaftLogContractTest
         // then
         assertThat( log.appendIndex(), is( -1L ) );
         assertThat( log.commitIndex(), is( -1L ) );
-        assertThat( log.entryExists( 0 ), is( false ) );
         assertThat( log.readEntryTerm( 0 ), is( -1L ) );
         assertThat( log.readEntryTerm( -1 ), is( -1L ) );
     }
@@ -76,7 +75,6 @@ public abstract class RaftLogContractTest
 
         assertThat( log.appendIndex(), is( 0L ) );
         assertThat( log.commitIndex(), is( -1L ) );
-        assertThat( log.entryExists( 0 ), is( true ) );
         assertThat( log.readLogEntry( 0 ), equalTo( logEntry ) );
     }
 
@@ -89,7 +87,6 @@ public abstract class RaftLogContractTest
 
         assertThat( log.appendIndex(), is( -1L ) );
         assertThat( log.commitIndex(), is( -1L ) );
-        assertThat( log.entryExists( 0 ), is( false ) );
     }
 
     @Test
@@ -106,7 +103,6 @@ public abstract class RaftLogContractTest
 
         assertThat( log.appendIndex(), is( 0L ) );
         assertThat( log.commitIndex(), is( 0L ) );
-        assertThat( log.entryExists( 0 ), is( true ) );
     }
 
     @Test
@@ -121,14 +117,10 @@ public abstract class RaftLogContractTest
         log.append( logEntryB );
 
         assertThat( log.appendIndex(), is( 1L ) );
-        assertThat( log.entryExists( 0 ), is( true ) );
-        assertThat( log.entryExists( 1 ), is( true ) );
 
         log.truncate( 1 );
 
         assertThat( log.appendIndex(), is( 0L ) );
-        assertThat( log.entryExists( 0 ), is( true ) );
-        assertThat( log.entryExists( 1 ), is( false ) );
     }
 
     @Test
@@ -155,10 +147,6 @@ public abstract class RaftLogContractTest
         assertThat( log.readLogEntry( 0 ), equalTo( logEntryA ) );
         assertThat( log.readLogEntry( 1 ), equalTo( logEntryD ) );
         assertThat( log.readLogEntry( 2 ), equalTo( logEntryE ) );
-        assertThat( log.entryExists( 0 ), is( true ) );
-        assertThat( log.entryExists( 1 ), is( true ) );
-        assertThat( log.entryExists( 2 ), is( true ) );
-        assertThat( log.entryExists( 3 ), is( false ) );
     }
 
     @Test
@@ -231,8 +219,7 @@ public abstract class RaftLogContractTest
         log.truncate( toTruncate );
 
         // then
-        assertThat( log.entryExists( toCommit ), is( true ) );
-        assertThat( log.entryExists( toTruncate ), is( false ) );
+        assertThat( log.appendIndex(), is( toCommit ) );
         assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
     }
 
@@ -250,8 +237,7 @@ public abstract class RaftLogContractTest
         log.commit( toCommit );
 
         // then
-        assertThat( log.entryExists( toCommit ), is( true ) );
-        assertThat( log.entryExists( toTruncate ), is( false ) );
+        assertThat( log.appendIndex(), is( toCommit ) );
         assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
     }
 
@@ -274,9 +260,7 @@ public abstract class RaftLogContractTest
         log.commit( toCommit );
 
         // then
-        assertThat( log.entryExists( toCommit ), is( true ) );
-        assertThat( log.entryExists( lastAppended ), is( true ) );
-        assertThat( log.entryExists( toTruncate ), is( true ) ); // index is "reused"
+        assertThat( log.appendIndex(), is( lastAppended ) );
         assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
         assertThat( log.readEntryTerm( lastAppended ), is( 2L ) );
     }
@@ -296,9 +280,7 @@ public abstract class RaftLogContractTest
         log.commit( toCommit );
 
         // then
-        assertThat( log.entryExists( toCommit ), is( true ) );
-        assertThat( log.entryExists( lastAppended ), is( false ) );
-        assertThat( log.entryExists( toTruncate ), is( false ) );
+        assertThat( log.appendIndex(), is( toCommit ) );
         assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
     }
 
@@ -324,7 +306,7 @@ public abstract class RaftLogContractTest
         }
 
         // then
-        assertThat( log.entryExists( toCommit ), is( true ) );
+        assertThat( log.appendIndex(), is( toCommit ) );
     }
 
     @Test
@@ -350,7 +332,6 @@ public abstract class RaftLogContractTest
         }
 
         // then
-        assertThat( log.entryExists( toCommit ), is( true ) );
-        assertThat( log.entryExists( toTryToTruncate ), is( true ) );
+        assertThat( log.appendIndex(), is( toCommit ) );
     }
 }
