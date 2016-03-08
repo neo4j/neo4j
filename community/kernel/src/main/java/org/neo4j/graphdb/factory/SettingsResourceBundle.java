@@ -33,10 +33,9 @@ import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 
 /**
- * ResourceBundle for classes that use GraphDatabaseSetting, which use reflection to find its values.
- * <p>
- * This allows us to keep the descriptions in the Java code, so they are available in JavaDoc.
+ * @deprecated this will be removed in the next major release of Neo4j.
  */
+@Deprecated
 public class SettingsResourceBundle
         extends ResourceBundle
 {

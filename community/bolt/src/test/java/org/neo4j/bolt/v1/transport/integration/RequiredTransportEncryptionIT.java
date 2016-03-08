@@ -32,6 +32,8 @@ import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -49,7 +51,11 @@ public class RequiredTransportEncryptionIT
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket(
-            settings -> settings.put( boltConnector( "0" ).encryption_level, REQUIRED.name() ) );
+            settings -> {
+                Setting<GraphDatabaseSettings.BoltConnector.EncryptionLevel> encryption_level =
+                        boltConnector( "0" ).encryption_level;
+                settings.put( encryption_level, REQUIRED.name() );
+            } );
 
     @Parameterized.Parameter( 0 )
     public Factory<Connection> cf;

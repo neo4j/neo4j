@@ -465,8 +465,8 @@ public abstract class GraphDatabaseSettings
         @Description( "Enable this connector" )
         public final Setting<Boolean> enabled;
 
-        @Description( "Connector type, for instance `bolt` to configure a Bolt connector." )
-        public final Setting<String> type;
+        @Description( "Connector type. You should always set this to the connector type you want" )
+        public final Setting<ConnectorType> type;
 
         // Note: Be careful about adding things here that does not apply to all connectors,
         //       consider future options like non-tcp transports, making `address` a bad choice
@@ -480,10 +480,17 @@ public abstract class GraphDatabaseSettings
         {
             group = new GroupSettingSupport( Connector.class, key );
             enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );
-            type = group.scope( setting( "type", STRING, typeDefault ) );
+            type = group.scope( setting( "type", options( ConnectorType.class ), typeDefault ) );
+        }
+
+        public enum ConnectorType
+        {
+            BOLT
+            // Intention is to expand this to include all Neo4j port options
         }
     }
 
+    @Description( "Configuration options for connectors with type set to `BOLT`." )
     public static class BoltConnector extends Connector
     {
         @Description( "Encryption level to require this connector to use" )
@@ -494,7 +501,7 @@ public abstract class GraphDatabaseSettings
 
         public BoltConnector(String key)
         {
-            super(key, /* type=*/"bolt");
+            super(key, ConnectorType.BOLT.name() );
             encryption_level = group.scope(
                     setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ));
             address = group.scope( setting( "address", HOSTNAME_PORT, "localhost:7687" ) );

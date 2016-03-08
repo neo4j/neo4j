@@ -105,6 +105,26 @@ public class GroupSettingSupport
                 return inner.apply( ( key ) -> config.apply( scopeToGroup( key ) ) );
             }
 
+            @Override
+            public String toString()
+            {
+                return inner.toString();
+            }
+
+            @Override
+            public int hashCode()
+            {
+                return name().hashCode();
+            }
+
+            @Override
+            public boolean equals( Object obj )
+            {
+                return obj != null
+                       && obj instanceof Setting
+                       && name().equals( ((Setting) obj).name() );
+            }
+
             private String scopeToGroup( String key )
             {
                 return String.format( "%s.%s", GroupSettingSupport.this.key, key );

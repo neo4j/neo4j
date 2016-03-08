@@ -21,12 +21,14 @@ package org.neo4j.tooling;
 
 import java.io.File;
 
-import org.neo4j.kernel.configuration.ConfigAsciiDocGenerator;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.docs.SettingsDocumenter;
 
 /**
  * Generates Asciidoc for the GraphDatabaseSettings class.
+ * @deprecated this will be moved out of public API in the next major release of Neo4j
  */
+@Deprecated
 public class GenerateConfigDocumentation
 {
     public static void main( String[] args ) throws Exception
@@ -47,9 +49,8 @@ public class GenerateConfigDocumentation
         	System.out.println("Usage: GenerateConfigDocumentation CONFIG_BUNDLE_CLASS [output file]");
         	System.exit(0);
         }
-        
-        ConfigAsciiDocGenerator generator = new ConfigAsciiDocGenerator();
-        String doc = generator.generateDocsFor(bundleName);
+
+        String doc = new SettingsDocumenter().document( Class.forName( bundleName ) );
         
         if(output != null)
         {

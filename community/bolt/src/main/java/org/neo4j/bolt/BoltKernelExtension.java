@@ -68,6 +68,7 @@ import org.neo4j.udc.UsageData;
 
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.PATH;
@@ -146,8 +147,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         List<ProtocolInitializer> connectors = config
                 .view( enumerate( GraphDatabaseSettings.Connector.class ) )
                 .map( BoltConnector::new )
-                .filter( (connConfig) -> "bolt".equals(config.get( connConfig.type ))
-                                        && config.get( connConfig.enabled ) )
+                .filter( (connConfig) -> BOLT.equals( config.get( connConfig.type ) )
+                                         && config.get( connConfig.enabled ) )
                 .map( (connConfig) -> {
                     SslContext sslCtx;
                     boolean requireEncryption = false;

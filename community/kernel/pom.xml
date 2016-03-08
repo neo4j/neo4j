@@ -131,6 +131,10 @@ the relevant Commercial Agreement.
                   <arg value="org.neo4j.graphdb.factory.GraphDatabaseSettings" />
                   <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
                 </java>
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation" classpathref="maven.test.classpath" failonerror="true">
+                  <arg value="org.neo4j.graphdb.factory.GraphDatabaseSettings$BoltConnector" />
+                  <arg value="${project.build.directory}/docs/ops/configuration-attributes-bolt-connector.asciidoc" />
+                </java>
               </target>
             </configuration>
             <goals><goal>run</goal></goals>

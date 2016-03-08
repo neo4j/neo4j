@@ -1002,7 +1002,6 @@ public class Settings
                 }
             }
 
-
             return builder.toString();
         }
     }
