@@ -19,23 +19,32 @@
  */
 package org.neo4j.bolt.v1.docs;
 
+import org.junit.After;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.function.Supplier;
 
+import org.neo4j.bolt.v1.messaging.message.Message;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.impl.util.HexPrinter;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.message;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.dechunk;
+import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.recvOneMessage;
 
 @RunWith( Parameterized.class )
-public class BoltFullExchangesDocTest extends BoltFullDocTest
+public class BoltFullExchangesDocTest
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( settings -> {
@@ -50,7 +59,7 @@ public class BoltFullExchangesDocTest extends BoltFullDocTest
     public DocExchangeExample example;
 
     @Parameterized.Parameter( 2 )
-    public Supplier<Connection> client;
+    public Connection client;
 
     @Parameterized.Parameter( 3 )
     public HostnamePort address;
@@ -67,10 +76,8 @@ public class BoltFullExchangesDocTest extends BoltFullDocTest
                 "code[data-lang=\"bolt_exchange\"]",
                 DocExchangeExample.exchange_example ) )
         {
-            mappings.add( new Object[]{"Socket    - " + ex.name(), ex,
-                    (Supplier<Connection>) SecureSocketConnection::new, address});
-            mappings.add( new Object[]{"WebSocket - " + ex.name(), ex,
-                    (Supplier<Connection>) SecureWebSocketConnection::new , address} );
+            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), address} );
+            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new SecureWebSocketConnection(), address} );
         }
 
         for ( DocExchangeExample ex : DocsRepository.docs().read(
@@ -78,30 +85,95 @@ public class BoltFullExchangesDocTest extends BoltFullDocTest
                 "code[data-lang=\"bolt_exchange\"]",
                 DocExchangeExample.exchange_example ) )
         {
-            mappings.add( new Object[]{"Socket    - " + ex.name(), ex,
-                    (Supplier<Connection>) SecureSocketConnection::new, address});
-            mappings.add( new Object[]{"WebSocket - " + ex.name(), ex,
-                    (Supplier<Connection>) SecureWebSocketConnection::new , address} );
+            mappings.add( new Object[]{"Socket    - "+ex.name(), ex, new SecureSocketConnection(), address} );
+            mappings.add( new Object[]{"WebSocket - "+ex.name(), ex, new SecureWebSocketConnection(), address} );
         }
 
         return mappings;
     }
 
-    @Override
-    protected Connection createClient()
+    @After
+    public void shutdown() throws Exception
     {
-        return client.get();
+        client.disconnect();
     }
 
-    @Override
-    protected HostnamePort address()
+    @Test
+    public void serverShouldBehaveAsDocumented() throws Throwable
     {
-        return address;
+        for ( DocExchangeExample.Event event : example )
+        {
+            if ( event.from().equalsIgnoreCase( "client" ) )
+            {
+                // Play out a client action
+                switch ( event.type() )
+                {
+                case CONNECT:
+                    client.connect( address );
+                    break;
+                case DISCONNECT:
+                    client.disconnect();
+                    break;
+                case SEND:
+                    // Ensure the documented binary representation matches the human-readable version in the docs
+                    if ( event.hasHumanReadableValue() )
+                    {
+                        assertThat( "'" + event.humanReadableMessage() + "' should serialize to the documented " +
+                                    "binary data.",
+                                hex( event.payload() ),
+                                equalTo( hex( DocSerialization.packAndChunk( event.humanReadableMessage(), 64 ) ) ) );
+                    }
+                    client.send( event.payload() );
+                    break;
+                default:
+                    throw new RuntimeException( "Unknown client event: " + event.type() );
+                }
+            }
+            else if ( event.from().equalsIgnoreCase( "server" ) )
+            {
+                // Assert that the server does what the docs say
+                switch ( event.type() )
+                {
+                case DISCONNECT:
+                    // There's not really a good way to verify that the remote connection is closed, we can read and
+                    // time out, or write perhaps, but that's buggy and racy.. not sure how to test this on this
+                    // level.
+                    break;
+                case SEND:
+                    if ( event.hasHumanReadableValue() )
+                    {
+                        // Ensure the documented binary representation matches the human-readable version in the docs
+                        assertThat( "'" + event.humanReadableMessage() + "' should serialize to the documented " +
+                                    "binary data.",
+                                hex( event.payload() ),
+                                equalTo( hex( DocSerialization.packAndChunk( event.humanReadableMessage(), 1024 * 8 ) ) ) );
+
+                        // Ensure that the server replies as documented
+                        Message serverMessage = recvOneMessage( client );
+                        assertThat(
+                                "The message recieved from the server should match the documented binary representation. " +
+                                "Human-readable message is <" + event.humanReadableMessage() + ">, received message was: " + serverMessage,
+                                serverMessage,
+                                equalTo( message( dechunk( event.payload() ) ) ) );
+                    }
+                    else
+                    {
+                        // Raw data assertions - used for documenting the version negotiation, for instance
+                        assertThat( "The data recieved from the server should match the documented binary representation.",
+                                hex( client.recv( event.payload().length ) ),
+                                equalTo( hex( event.payload() ) ) );
+                    }
+
+                    break;
+                default:
+                    throw new RuntimeException( "Unknown server event: " + event.type() );
+                }
+            }
+        }
     }
 
-    @Override
-    protected DocExchangeExample example()
+    private static String hex( byte[] payload )
     {
-        return example;
+        return HexPrinter.hex( payload, 4, "  " );
     }
 }
