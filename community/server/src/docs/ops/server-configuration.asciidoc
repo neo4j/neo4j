@@ -43,18 +43,6 @@ org.neo4j.server.webserver.address=0.0.0.0
 
 For securing the Neo4j Server, see also <<operations-security>>
 
-Set the URI path for the REST data API through which the database is accessed. This should be a relative path.
-[source,properties]
-----
-org.neo4j.server.webadmin.data.uri=/db/data/
-----
-
-Setting the management URI for the administration API that the Webadmin tool uses. This should be a relative path.
-[source,properties]
-----
-org.neo4j.server.webadmin.management.uri=/db/manage
-----
-
 Force the server to use IPv4 network addresses, in 'conf/neo4j-wrapper.conf' under the section _Java Additional Parameters_ add a new paramter:
 [source,properties]
 ----
@@ -199,9 +187,9 @@ In _neo4j.conf_:
 [source,properties]
 ----
 # To disable all shells:
-org.neo4j.server.manage.console_engines=
+unsupported.dbms.console_module.engines=
 
 # To enable only the Neo4j Shell:
-org.neo4j.server.manage.console_engines=shell
+unsupported.dbms.console_module.engines=shell
 ----
 

@@ -42,7 +42,7 @@ public class WebAdminModule implements ServerModule
     @Override
     public void start()
     {
-        if ( config.get( ServerSettings.webadmin_enabled ) )
+        if ( config.get( ServerSettings.console_module_enabled ) )
         {
             String serverMountPoint = managementApiUri().toString();
             webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );

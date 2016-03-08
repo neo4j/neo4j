@@ -145,7 +145,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     public void shouldDisableWebadminConsoleWhenAskedTo() throws IOException
     {
         // Given
-        server = server().withProperty( ServerSettings.webadmin_enabled.name(), "false" )
+        server = server().withProperty( ServerSettings.console_module_enabled.name(), "false" )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();

@@ -45,7 +45,7 @@ public class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTest
     @Test
     public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception
     {
-        server = server().withProperty( ServerSettings.management_console_engines.name(), "" )
+        server = server().withProperty( ServerSettings.console_module_engines.name(), "" )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
