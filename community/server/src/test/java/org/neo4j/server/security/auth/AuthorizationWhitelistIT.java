@@ -54,7 +54,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldNotWhitelistWebadminConsole() throws Exception
+    public void shouldNotWhitelistConsoleService() throws Exception
     {
         // Given
         server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
@@ -62,7 +62,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
         // When
         server.start();
 
-        // Then I should be able to access the webadmin
+        // Then I should be able to access the console service
         HTTP.Response response = HTTP.GET( server.baseUri().resolve( "db/manage/server/console" ).toString() );
         assertThat( response.status(), equalTo( 401 ) );
     }

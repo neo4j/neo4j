@@ -53,10 +53,10 @@ public class DiscoveryService
     @Produces( MediaType.APPLICATION_JSON )
     public Response getDiscoveryDocument() throws URISyntaxException
     {
-        String webAdminManagementUri = configuration.get( ServerSettings.management_api_path ).getPath() + "/";
+        String managementUri = configuration.get( ServerSettings.management_api_path ).getPath() + "/";
         String dataUri = configuration.get( ServerSettings.rest_api_path ).getPath() + "/";
 
-        return outputFormat.ok( new DiscoveryRepresentation( webAdminManagementUri, dataUri ) );
+        return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri ) );
     }
 
     @GET

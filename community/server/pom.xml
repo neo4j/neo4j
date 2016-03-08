@@ -502,10 +502,6 @@
               <title>Server REST Interface</title>
               <packages>org.neo4j.server.rest:org.neo4j.server.rest.*</packages>
             </group>
-            <group>
-              <title>Server Admin Interface</title>
-              <packages>org.neo4j.server.webadmin:org.neo4j.server.webadmin.*</packages>
-            </group>
           </groups>
         </configuration>
       </plugin>

@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.console;
-
-import org.junit.Test;
+package org.neo4j.server.rest;
 
 import javax.servlet.http.HttpServletRequest;
+
+import org.junit.Test;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;

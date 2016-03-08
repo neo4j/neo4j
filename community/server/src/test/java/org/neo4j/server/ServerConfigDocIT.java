@@ -68,22 +68,22 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldPickupRelativeUrisForWebAdminAndWebAdminRest() throws IOException
+    public void shouldPickupRelativeUrisForMangementApiAndRestApi() throws IOException
     {
-        String webAdminDataUri = "/a/different/data/uri/";
-        String webAdminManagementUri = "/a/different/management/uri/";
+        String dataUri = "/a/different/data/uri/";
+        String managementUri = "/a/different/management/uri/";
 
-        server = server().withRelativeWebDataAdminUriPath( webAdminDataUri )
+        server = server().withRelativeRestApiUriPath( dataUri )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .withRelativeWebAdminUriPath( webAdminManagementUri )
+                .withRelativeManagementApiUriPath( managementUri )
                 .build();
         server.start();
 
-        JaxRsResponse response = new RestRequest().get( "http://localhost:7474" + webAdminDataUri,
+        JaxRsResponse response = new RestRequest().get( "http://localhost:7474" + dataUri,
                 MediaType.TEXT_HTML_TYPE );
         assertEquals( 200, response.getStatus() );
 
-        response = new RestRequest().get( "http://localhost:7474" + webAdminManagementUri );
+        response = new RestRequest().get( "http://localhost:7474" + managementUri );
         assertEquals( 200, response.getStatus() );
         response.close();
     }
@@ -131,7 +131,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldEnableWebadminConsoleByDefault() throws IOException
+    public void shouldEnablConsoleServiceByDefault() throws IOException
     {
         // Given
         server = server().usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() ).build();
@@ -142,7 +142,7 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldDisableWebadminConsoleWhenAskedTo() throws IOException
+    public void shouldDisableConsoleServiceWhenAskedTo() throws IOException
     {
         // Given
         server = server().withProperty( ServerSettings.console_module_enabled.name(), "false" )

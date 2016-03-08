@@ -110,8 +110,7 @@ neo4j-lucene-index::
 
 neo4j-server::
   The community version of http://neo4j.com/docs/milestone/reference-documentation.html[the Neo4j server].
-  It contains the functionality of the http://neo4j.com/docs/milestone/rest-api.html[REST API]
-  and http://neo4j.com/docs/milestone/tools-webadmin.html[the WebAdmin tool].
+  It contains the functionality of the http://neo4j.com/docs/milestone/rest-api.html[REST API].
 
 neo4j-community::
   The neo4j-community module is a historical alias for the neo4j module.
