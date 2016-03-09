@@ -83,6 +83,12 @@ public class ErrorReportingSession implements Session
     }
 
     @Override
+    public void interrupt()
+    {
+
+    }
+
+    @Override
     public void close()
     {
     }

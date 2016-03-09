@@ -113,6 +113,12 @@ public class MonitoredSessions implements Sessions
         }
 
         @Override
+        public void interrupt()
+        {
+            delegate.interrupt();
+        }
+
+        @Override
         public void close()
         {
             delegate.close();

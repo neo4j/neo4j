@@ -155,6 +155,22 @@ public interface Session extends AutoCloseable
      */
     <A> void reset( A attachment, Callback<Void,A> callback );
 
+    /**
+     * This is a special mechanism, it is the only method on this interface
+     * that is thread safe. When this is invoked, the machine will make attempts
+     * at interrupting any currently running action,
+     * and will then ignore all inbound messages until a {@link #reset(Object, Callback) reset}
+     * message is received. If this is called multiple times, an equivalent number
+     * of reset messages must be received before the SSM goes back to a good state.
+     *
+     * You can imagine this is as a "call ahead" mechanism used by RESET to
+     * cancel any statements ahead of it in line, without compromising the single-
+     * threaded processing of messages that the state machine does.
+     *
+     * This can be used to cancel a long-running statement or transaction.
+     */
+    void interrupt();
+
     @Override
     void close();
 }
