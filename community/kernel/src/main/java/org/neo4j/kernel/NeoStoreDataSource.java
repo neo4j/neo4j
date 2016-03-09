@@ -38,6 +38,7 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.TokenNameLookup;
@@ -161,8 +162,6 @@ import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFact
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
 {
-    private final Procedures procedures;
-
     private interface TransactionLogModule
     {
         LogicalTransactionStore logicalTransactionStore();
@@ -286,6 +285,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final ConstraintSemantics constraintSemantics;
+    private final Procedures procedures;
+    private final IOLimiter ioLimiter;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -331,7 +332,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             ConstraintSemantics constraintSemantics,
             Monitors monitors,
             Tracers tracers,
-            Procedures procedures )
+            Procedures procedures,
+            IOLimiter ioLimiter )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -359,6 +361,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.monitors = monitors;
         this.tracers = tracers;
         this.procedures = procedures;
+        this.ioLimiter = ioLimiter;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -643,7 +646,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
                 transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider,
-                tracers.checkPointTracer );
+                tracers.checkPointTracer, ioLimiter );
 
         long recurringPeriod = Math.min( timeMillisThreshold, TimeUnit.SECONDS.toMillis( 10 ) );
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, scheduler, recurringPeriod );

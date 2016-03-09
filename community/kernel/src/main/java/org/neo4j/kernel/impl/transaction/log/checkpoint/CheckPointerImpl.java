@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -40,26 +41,50 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
     private final CheckPointThreshold threshold;
-    private final StorageEngine storageEngine;;
+    private final StorageEngine storageEngine;
     private final LogPruning logPruning;
     private final DatabaseHealth databaseHealth;
+    private final IOLimiter ioLimiter;
     private final Log msgLog;
     private final CheckPointTracer tracer;
     private final Lock lock;
 
     private long lastCheckPointedTx;
 
-    public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
-            StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
-            LogProvider logProvider, CheckPointTracer tracer )
+    public CheckPointerImpl(
+            TransactionIdStore transactionIdStore,
+            CheckPointThreshold threshold,
+            StorageEngine storageEngine,
+            LogPruning logPruning,
+            TransactionAppender appender,
+            DatabaseHealth databaseHealth,
+            LogProvider logProvider,
+            CheckPointTracer tracer,
+            IOLimiter ioLimiter )
     {
-        this( transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider, tracer,
+        this( transactionIdStore,
+                threshold,
+                storageEngine,
+                logPruning,
+                appender,
+                databaseHealth,
+                logProvider,
+                tracer,
+                ioLimiter,
                 new ReentrantLock() );
     }
 
-    public CheckPointerImpl( TransactionIdStore transactionIdStore, CheckPointThreshold threshold,
-            StorageEngine storageEngine, LogPruning logPruning, TransactionAppender appender, DatabaseHealth databaseHealth,
-            LogProvider logProvider, CheckPointTracer tracer, Lock lock )
+    public CheckPointerImpl(
+            TransactionIdStore transactionIdStore,
+            CheckPointThreshold threshold,
+            StorageEngine storageEngine,
+            LogPruning logPruning,
+            TransactionAppender appender,
+            DatabaseHealth databaseHealth,
+            LogProvider logProvider,
+            CheckPointTracer tracer,
+            IOLimiter ioLimiter,
+            Lock lock )
     {
         this.appender = appender;
         this.transactionIdStore = transactionIdStore;
@@ -67,6 +92,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.storageEngine = storageEngine;
         this.logPruning = logPruning;
         this.databaseHealth = databaseHealth;
+        this.ioLimiter = ioLimiter;
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
         this.tracer = tracer;
         this.lock = lock;
@@ -81,6 +107,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long forceCheckPoint( TriggerInfo info ) throws IOException
     {
+        ioLimiter.disableLimit();
         lock.lock();
         try
         {
@@ -89,36 +116,45 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         finally
         {
             lock.unlock();
+            ioLimiter.enableLimit();
         }
     }
 
     @Override
     public long tryCheckPoint( TriggerInfo info ) throws IOException
     {
-        if ( lock.tryLock() )
+        ioLimiter.disableLimit();
+        try
         {
-            try
+            if ( lock.tryLock() )
             {
-                return doCheckPoint( info, LogCheckPointEvent.NULL );
+                try
+                {
+                    return doCheckPoint( info, LogCheckPointEvent.NULL );
+                }
+                finally
+                {
+                    lock.unlock();
+                }
             }
-            finally
+            else
             {
-                lock.unlock();
+                lock.lock();
+                try
+                {
+                    msgLog.info( info.describe( lastCheckPointedTx ) +
+                                 " Check pointing was already running, completed now" );
+                    return lastCheckPointedTx;
+                }
+                finally
+                {
+                    lock.unlock();
+                }
             }
         }
-        else
+        finally
         {
-            lock.lock();
-            try
-            {
-                msgLog.info( info.describe( lastCheckPointedTx ) +
-                             " Check pointing was already running, completed now" );
-                return lastCheckPointedTx;
-            }
-            finally
-            {
-                lock.unlock();
-            }
+            ioLimiter.enableLimit();
         }
     }
 
@@ -164,7 +200,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
          * earlier check point and replay from there all the log entries. Everything will be ok.
          */
         msgLog.info( prefix + " Starting store flush..." );
-        storageEngine.flushAndForce();
+        storageEngine.flushAndForce( ioLimiter );
         msgLog.info( prefix + " Store flush completed" );
 
         /*

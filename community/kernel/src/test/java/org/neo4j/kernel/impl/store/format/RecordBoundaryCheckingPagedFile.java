@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.format;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
@@ -64,6 +65,12 @@ public class RecordBoundaryCheckingPagedFile implements PagedFile
     public void flushAndForce() throws IOException
     {
         actual.flushAndForce();
+    }
+
+    @Override
+    public void flushAndForce( IOLimiter limiter ) throws IOException
+    {
+        actual.flushAndForce( limiter );
     }
 
     @Override

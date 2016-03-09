@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
@@ -69,6 +70,13 @@ class AdversarialPagedFile implements PagedFile
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
         delegate.flushAndForce();
+    }
+
+    @Override
+    public void flushAndForce( IOLimiter limiter ) throws IOException
+    {
+        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
+        delegate.flushAndForce( limiter );
     }
 
     @Override

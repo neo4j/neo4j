@@ -25,8 +25,13 @@ import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.DelegatingPageCache;
+import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -39,8 +44,10 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -95,6 +102,28 @@ public class RecordStorageEngineTest
         {
             assertNotNull( updater );
         }
+    }
+
+    @Test
+    public void mustFlushStoresWithGivenIOLimiter() throws Exception
+    {
+        IOLimiter limiter = (stamp, completedIOs, swapper) -> 0;
+        FileSystemAbstraction fs = fsRule.get();
+        AtomicReference<IOLimiter> observedLimiter = new AtomicReference<>();
+        PageCache pageCache = new DelegatingPageCache( pageCacheRule.getPageCache( fs ) )
+        {
+            @Override
+            public void flushAndForce( IOLimiter limiter ) throws IOException
+            {
+                super.flushAndForce( limiter );
+                observedLimiter.set( limiter );
+            }
+        };
+
+        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache ).build();
+        engine.flushAndForce( limiter );
+
+        assertThat( observedLimiter.get(), sameInstance( limiter ) );
     }
 
     private Exception executeFailingTransaction( RecordStorageEngine engine ) throws IOException

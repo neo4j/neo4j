@@ -165,18 +165,40 @@ public class DataSourceModule
         this.queryExecutor = queryExecutor::get;
         Procedures procedures = setupProcedures( platformModule, editionModule.coreAPIAvailabilityGuard );
 
-        neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource( storeDir, config,
-                editionModule.idGeneratorFactory, logging, platformModule.jobScheduler,
-                new NonTransactionalTokenNameLookup( editionModule.labelTokenHolder,
-                editionModule.relationshipTypeTokenHolder, editionModule.propertyKeyTokenHolder ),
-                deps, editionModule.propertyKeyTokenHolder, editionModule.labelTokenHolder, relationshipTypeTokenHolder,
-                editionModule.lockManager, schemaWriteGuard, transactionEventHandlers,
-                platformModule.monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
-                platformModule.transactionMonitor, databaseHealth,
+        NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup(
+                editionModule.labelTokenHolder,
+                editionModule.relationshipTypeTokenHolder,
+                editionModule.propertyKeyTokenHolder );
+        neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
+                storeDir,
+                config,
+                editionModule.idGeneratorFactory,
+                logging,
+                platformModule.jobScheduler,
+                tokenNameLookup,
+                deps,
+                editionModule.propertyKeyTokenHolder,
+                editionModule.labelTokenHolder,
+                relationshipTypeTokenHolder,
+                editionModule.lockManager,
+                schemaWriteGuard,
+                transactionEventHandlers,
+                platformModule.monitors.newMonitor( IndexingService.Monitor.class ),
+                fileSystem,
+                platformModule.transactionMonitor,
+                databaseHealth,
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
-                editionModule.headerInformationFactory, startupStatistics, guard,
-                editionModule.commitProcessFactory, autoIndexing, pageCache, editionModule.constraintSemantics,
-                platformModule.monitors, platformModule.tracers, procedures ) );
+                editionModule.headerInformationFactory,
+                startupStatistics,
+                guard,
+                editionModule.commitProcessFactory,
+                autoIndexing,
+                pageCache,
+                editionModule.constraintSemantics,
+                platformModule.monitors,
+                platformModule.tracers,
+                procedures,
+                editionModule.ioLimiter ) );
         dataSourceManager.register( neoStoreDataSource );
 
         life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );

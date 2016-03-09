@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.enterprise;
 
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -35,6 +36,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     {
         super( platformModule );
         platformModule.dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
+        ioLimiter = new ConfigurableIOLimiter( platformModule.config );
     }
 
     @Override

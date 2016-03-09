@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthManager;
@@ -74,6 +75,8 @@ public abstract class EditionModule
     public ConstraintSemantics constraintSemantics;
 
     public CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
+
+    public IOLimiter ioLimiter;
 
     protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver)
     {

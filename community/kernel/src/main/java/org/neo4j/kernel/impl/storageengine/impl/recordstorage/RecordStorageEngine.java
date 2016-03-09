@@ -30,6 +30,7 @@ import org.neo4j.concurrent.WorkSync;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -437,7 +438,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void flushAndForce()
+    public void flushAndForce( IOLimiter limiter )
     {
         indexingService.forceAll();
         labelScanStore.force();
@@ -445,7 +446,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             index.force();
         }
-        neoStores.flush();
+        neoStores.flush( limiter );
     }
 
     @Override

@@ -27,6 +27,7 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.enterprise.EnterpriseFacadeFactory;
@@ -68,6 +69,12 @@ public class ExternallyManagedPageCache implements PageCache
     public void flushAndForce() throws IOException
     {
         delegate.flushAndForce();
+    }
+
+    @Override
+    public void flushAndForce( IOLimiter limiter ) throws IOException
+    {
+        delegate.flushAndForce( limiter );
     }
 
     @Override

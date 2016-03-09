@@ -348,159 +348,167 @@ public class SequenceLockTest
     }
 
     @Test
-    public void uncontendedFreezeLockMustBeAvailable() throws Exception
+    public void uncontendedFlushLockMustBeAvailable() throws Exception
     {
-        assertTrue( lock.tryFreezeLock() );
+        assertTrue( lock.tryFlushLock() );
     }
 
     @Test
-    public void freezeLockMustNotInvalidateOptimisticReadLock() throws Exception
+    public void flushLockMustNotInvalidateOptimisticReadLock() throws Exception
     {
         long r = lock.tryOptimisticReadLock();
-        lock.tryFreezeLock();
-        lock.unlockFreeze();
+        lock.tryFlushLock();
+        lock.unlockFlush();
         assertTrue( lock.validateReadLock( r ) );
     }
 
     @Test
-    public void freezeLockMustFailWriteLock() throws Exception
+    public void flushLockMustNotFailWriteLock() throws Exception
     {
-        lock.tryFreezeLock();
-        assertFalse( lock.tryWriteLock() );
-    }
-
-    @Test
-    public void freezeLockMustFailExclusiveLock() throws Exception
-    {
-        lock.tryFreezeLock();
-        assertFalse( lock.tryExclusiveLock() );
-    }
-
-    @Test
-    public void cannotTakeFreezeLockIfAlreadyTaken() throws Exception
-    {
-        assertTrue( lock.tryFreezeLock() );
-        assertFalse( lock.tryFreezeLock() );
-    }
-
-    @Test
-    public void writeLockMustFailFreezeLock() throws Exception
-    {
-        lock.tryWriteLock();
-        assertFalse( lock.tryFreezeLock() );
-    }
-
-    @Test
-    public void exclusiveLockMustFailFreezeLock() throws Exception
-    {
-        lock.tryExclusiveLock();
-        assertFalse( lock.tryFreezeLock() );
-    }
-
-    @Test
-    public void unlockExclusiveAndTakeWriteLockMustFailFreezeLock() throws Exception
-    {
-        lock.tryExclusiveLock();
-        lock.unlockExclusiveAndTakeWriteLock();
-        assertFalse( lock.tryFreezeLock() );
-    }
-
-    @Test
-    public void freezeUnlockMustNotInvalidateOptimisticReadLock() throws Exception
-    {
-        long r = lock.tryOptimisticReadLock();
-        assertTrue( lock.tryFreezeLock() );
-        assertTrue( lock.validateReadLock( r ) );
-    }
-
-    @Test
-    public void optimisticReadLockMustValidateUnderFreezeLock() throws Exception
-    {
-        lock.tryFreezeLock();
-        long r = lock.tryOptimisticReadLock();
-        assertTrue( lock.validateReadLock( r ) );
-    }
-
-    @Test
-    public void freezeLockReleaseMustNotInvalidateOptimisticReadLock() throws Exception
-    {
-        lock.tryFreezeLock();
-        long r = lock.tryOptimisticReadLock();
-        lock.unlockFreeze();
-        assertTrue( lock.validateReadLock( r ) );
-    }
-
-    @Test( expected = IllegalMonitorStateException.class )
-    public void unmatchedUnlockFreezeMustThrow() throws Exception
-    {
-        lock.unlockFreeze();
-    }
-
-    @Test
-    public void uncontendedOptimisticReadLockMustBeAvailableAfterFreezeLock() throws Exception
-    {
-        lock.tryFreezeLock();
-        lock.unlockFreeze();
-        long r = lock.tryOptimisticReadLock();
-        assertTrue( lock.validateReadLock( r ) );
-    }
-
-    @Test
-    public void uncontendedWriteLockMustBeAvailableAfterFreezeLock() throws Exception
-    {
-        lock.tryFreezeLock();
-        lock.unlockFreeze();
+        lock.tryFlushLock();
         assertTrue( lock.tryWriteLock() );
     }
 
     @Test
-    public void uncontendedExclusiveLockMustBeAvailableAfterFreezeLock() throws Exception
+    public void flushLockMustFailExclusiveLock() throws Exception
     {
-        lock.tryFreezeLock();
-        lock.unlockFreeze();
+        lock.tryFlushLock();
+        assertFalse( lock.tryExclusiveLock() );
+    }
+
+    @Test
+    public void cannotTakeFlushLockIfAlreadyTaken() throws Exception
+    {
+        assertTrue( lock.tryFlushLock() );
+        assertFalse( lock.tryFlushLock() );
+    }
+
+    @Test
+    public void writeLockMustNotFailFlushLock() throws Exception
+    {
+        lock.tryWriteLock();
+        assertTrue( lock.tryFlushLock() );
+    }
+
+    @Test
+    public void exclusiveLockMustFailFlushLock() throws Exception
+    {
+        lock.tryExclusiveLock();
+        assertFalse( lock.tryFlushLock() );
+    }
+
+    @Test
+    public void unlockExclusiveAndTakeWriteLockMustNotFailFlushLock() throws Exception
+    {
+        lock.tryExclusiveLock();
+        lock.unlockExclusiveAndTakeWriteLock();
+        assertTrue( lock.tryFlushLock() );
+    }
+
+    @Test
+    public void flushUnlockMustNotInvalidateOptimisticReadLock() throws Exception
+    {
+        long r = lock.tryOptimisticReadLock();
+        assertTrue( lock.tryFlushLock() );
+        assertTrue( lock.validateReadLock( r ) );
+    }
+
+    @Test
+    public void optimisticReadLockMustValidateUnderFlushLock() throws Exception
+    {
+        lock.tryFlushLock();
+        long r = lock.tryOptimisticReadLock();
+        assertTrue( lock.validateReadLock( r ) );
+    }
+
+    @Test
+    public void flushLockReleaseMustNotInvalidateOptimisticReadLock() throws Exception
+    {
+        lock.tryFlushLock();
+        long r = lock.tryOptimisticReadLock();
+        lock.unlockFlush();
+        assertTrue( lock.validateReadLock( r ) );
+    }
+
+    @Test( expected = IllegalMonitorStateException.class )
+    public void unmatchedUnlockFlushMustThrow() throws Exception
+    {
+        lock.unlockFlush();
+    }
+
+    @Test
+    public void uncontendedOptimisticReadLockMustBeAvailableAfterFlushLock() throws Exception
+    {
+        lock.tryFlushLock();
+        lock.unlockFlush();
+        long r = lock.tryOptimisticReadLock();
+        assertTrue( lock.validateReadLock( r ) );
+    }
+
+    @Test
+    public void uncontendedWriteLockMustBeAvailableAfterFlushLock() throws Exception
+    {
+        lock.tryFlushLock();
+        lock.unlockFlush();
+        assertTrue( lock.tryWriteLock() );
+    }
+
+    @Test
+    public void uncontendedExclusiveLockMustBeAvailableAfterFlushLock() throws Exception
+    {
+        lock.tryFlushLock();
+        lock.unlockFlush();
         assertTrue( lock.tryExclusiveLock() );
     }
 
     @Test
-    public void uncontendedFreezeLockMustBeAvailableAfterWriteLock() throws Exception
+    public void uncontendedFlushLockMustBeAvailableAfterWriteLock() throws Exception
     {
         lock.tryWriteLock();
         lock.unlockWrite();
-        assertTrue( lock.tryFreezeLock() );
+        assertTrue( lock.tryFlushLock() );
     }
 
     @Test
-    public void uncontendedFreezeLockMustBeAvailableAfterExclusiveLock() throws Exception
+    public void uncontendedFlushLockMustBeAvailableAfterExclusiveLock() throws Exception
     {
         lock.tryExclusiveLock();
         lock.unlockExclusive();
-        assertTrue( lock.tryFreezeLock() );
+        assertTrue( lock.tryFlushLock() );
     }
 
     @Test
-    public void uncontendedFreezeLockMustBeAvailableAfterFreezeLock() throws Exception
+    public void uncontendedFlushLockMustBeAvailableAfterFlushLock() throws Exception
     {
-        lock.tryFreezeLock();
-        lock.unlockFreeze();
-        assertTrue( lock.tryFreezeLock() );
+        lock.tryFlushLock();
+        lock.unlockFlush();
+        assertTrue( lock.tryFlushLock() );
     }
 
     @Test
-    public void stampFromUnlockExclusiveMustBeValidUnderFreezeLock() throws Exception
+    public void stampFromUnlockExclusiveMustBeValidUnderFlushLock() throws Exception
     {
         lock.tryExclusiveLock();
         long r = lock.unlockExclusive();
-        lock.tryFreezeLock();
+        lock.tryFlushLock();
         assertTrue( lock.validateReadLock( r ) );
     }
 
     @Test
     public void toStringMustDescribeState() throws Exception
     {
-        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 0, S: 0]" ) );
+        assertThat( lock.toString(), is( "SequenceLock[Flush: 0, Excl: 0, Ws: 0, S: 0]" ) );
         lock.tryWriteLock();
-        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 1, S: 0]" ) );
+        assertThat( lock.toString(), is( "SequenceLock[Flush: 0, Excl: 0, Ws: 1, S: 0]" ) );
+        lock.tryFlushLock();
+        assertThat( lock.toString(), is( "SequenceLock[Flush: 1, Excl: 0, Ws: 1, S: 0]" ) );
         lock.unlockWrite();
-        assertThat( lock.toString(), is( "SequenceLock[Excl: 0, Ws: 0, S: 1]" ) );
+        assertThat( lock.toString(), is( "SequenceLock[Flush: 1, Excl: 0, Ws: 0, S: 1]" ) );
+        lock.unlockFlush();
+        assertThat( lock.toString(), is( "SequenceLock[Flush: 0, Excl: 0, Ws: 0, S: 1]" ) );
+        lock.tryExclusiveLock();
+        assertThat( lock.toString(), is( "SequenceLock[Flush: 0, Excl: 1, Ws: 0, S: 1]" ) );
+        lock.unlockExclusive();
+        assertThat( lock.toString(), is( "SequenceLock[Flush: 0, Excl: 0, Ws: 0, S: 2]" ) );
     }
 }
