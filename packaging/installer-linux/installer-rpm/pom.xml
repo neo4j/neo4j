@@ -134,7 +134,7 @@
                                 <groupname>neo4j</groupname>
                             </mapping>
                             <mapping>
-                                <directory>/usr/share/neo4j/data/log</directory>
+                                <directory>/usr/share/neo4j/logs</directory>
                                 <sources>
                                     <softlinkSource>
                                         <location>/var/log/neo4j</location>
