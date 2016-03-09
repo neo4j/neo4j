@@ -182,6 +182,7 @@ public class NodeRecord extends PrimitiveRecord
             }
             clone.dynamicLabelRecords = clonedLabelRecords;
         }
+        clone.setSecondaryUnitId( getSecondaryUnitId() );
         return clone;
     }
 }
