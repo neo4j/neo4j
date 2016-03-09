@@ -44,7 +44,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.CommunityBootstrapper.start;
+import static org.neo4j.server.Bootstrapper.start;
 
 public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 {

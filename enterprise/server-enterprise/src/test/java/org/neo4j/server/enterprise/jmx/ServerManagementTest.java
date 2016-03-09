@@ -28,8 +28,9 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.BaseServerConfigLoader;
+import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.test.CleanupRule;
@@ -57,7 +58,7 @@ public class ServerManagementTest
         String dataDirectory1 = baseDir.directory( "data1" ).getAbsolutePath();
         String dataDirectory2 = baseDir.directory( "data2" ).getAbsolutePath();
 
-        Config config = new BaseServerConfigLoader().loadConfig( null,
+        Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses ).loadConfig( null,
                 EnterpriseServerBuilder
                         .server()
                         .withDefaultDatabaseTuning()

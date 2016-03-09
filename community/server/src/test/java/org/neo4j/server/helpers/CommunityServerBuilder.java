@@ -38,9 +38,10 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.BaseServerConfigLoader;
+import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
@@ -103,8 +104,7 @@ public class CommunityServerBuilder
         final File configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        BaseServerConfigLoader configLoader = new BaseServerConfigLoader();
-        Config config = configLoader.loadConfig( null, configFile, log );
+        Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses ).loadConfig( null, configFile, log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
     }

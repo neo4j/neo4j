@@ -22,6 +22,7 @@ package org.neo4j.server.configuration;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.BoltKernelExtension;
@@ -38,8 +39,20 @@ import static java.util.Arrays.asList;
 import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
-public class BaseServerConfigLoader
+public class ConfigLoader
 {
+    private final SettingsClasses settingsClasses;
+
+    public ConfigLoader( SettingsClasses settingsClasses )
+    {
+        this.settingsClasses = settingsClasses;
+    }
+
+    public ConfigLoader( List<Class<?>> settingsClasses )
+    {
+        this( settings -> settingsClasses );
+    }
+
     public Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String, String>... configOverrides )
     {
         if ( log == null )
@@ -48,7 +61,7 @@ public class BaseServerConfigLoader
         }
 
         HashMap<String, String> settings = calculateSettings( configFile, legacyConfigFile, log, configOverrides );
-        Config config = new Config( settings, settingsClasses(settings) );
+        Config config = new Config( settings, settingsClasses.calculate( settings ) );
         config.setLogger( log );
         return config;
     }
@@ -119,5 +132,10 @@ public class BaseServerConfigLoader
 
         // Default to no user-defined config if no config was found
         return new HashMap<>();
+    }
+
+    public interface SettingsClasses
+    {
+        Iterable<Class<?>> calculate( HashMap<String, String> settings );
     }
 }

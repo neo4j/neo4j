@@ -19,19 +19,20 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.HashMap;
 
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Log;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
 
-import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE;
-import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE_KEY;
+import static java.util.Arrays.asList;
+
+import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
 
 public class EnterpriseBootstrapper extends CommunityBootstrapper
 {
@@ -52,8 +53,22 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
     }
 
     @Override
-    protected Config createConfig( Log log, File file, Pair<String,String>[] configOverrides ) throws IOException
+    protected Iterable<Class<?>> settingsClasses( HashMap<String, String> settings )
     {
-        return new EnterpriseServerConfigLoader().loadConfig( file, new File( System.getProperty( SERVER_CONFIG_FILE_KEY, SERVER_CONFIG_FILE ) ), log, configOverrides );
+        if ( isHAMode( settings ) )
+        {
+            return Iterables.concat(
+                    super.settingsClasses( settings ),
+                    asList( HaSettings.class, ClusterSettings.class ) );
+        }
+        else
+        {
+            return super.settingsClasses( settings );
+        }
+    }
+
+    private boolean isHAMode( HashMap<String, String> settings )
+    {
+        return new Config( settings, EnterpriseServerSettings.class ).get( mode ).equals( "HA" );
     }
 }

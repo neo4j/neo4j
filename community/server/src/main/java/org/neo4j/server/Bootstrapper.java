@@ -21,6 +21,7 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,16 +31,16 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.BaseServerConfigLoader;
+import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
 import static java.lang.String.format;
+
 import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE;
 import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE_KEY;
 
@@ -49,40 +50,32 @@ public abstract class Bootstrapper
     public static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;
     public static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
 
-    protected final LifeSupport life = new LifeSupport();
-    protected NeoServer server;
-    protected Config config;
+    private NeoServer server;
     private Thread shutdownHook;
-    protected GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
-
+    private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
     private Log log;
-    private String serverPort;
+    private String serverPort = "unknown port";
 
-    public static void main( String[] args )
+    /**
+     * Start a bootstrapper with the specified command-line arguments, returns a status code indicating success or
+     * failure outcomes.
+     */
+    public static int start( Bootstrapper boot, String[] argv )
     {
-        throw new UnsupportedOperationException(
-                "Invoking Bootstrapper#main() is no longer supported. If you see this error, please contact Neo4j " +
-                "support." );
+        ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
+        return boot.start( args.configFile(), args.configOverrides() );
     }
 
-    public int start( File configFile, Pair<String, String> ... configOverrides )
+    @SafeVarargs
+    public final int start( File configFile, Pair<String, String>... configOverrides )
     {
-        LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext().toOutputStream( System.out );
-
-        JULBridge.resetJUL();
-        Logger.getLogger( "" ).setLevel( Level.WARNING );
-        JULBridge.forwardTo( userLogProvider );
-        JettyLogBridge.setLogProvider( userLogProvider );
-
+        LogProvider userLogProvider = setupLogging();
         log = userLogProvider.getLog( getClass() );
 
-        serverPort = "unknown port";
         try
         {
-            config = createConfig( log, configFile, configOverrides );
+            Config config = createConfig( log, configFile, configOverrides );
             serverPort = String.valueOf( config.get( ServerSettings.webserver_port ) );
-            dependencies = dependencies.userLogProvider( userLogProvider );
-            life.start();
 
             checkCompatibility();
 
@@ -101,7 +94,7 @@ public abstract class Bootstrapper
         catch ( TransactionFailureException tfe )
         {
             String locationMsg = (server == null) ? "" : " Another process may be using database location " +
-                                                         server.getDatabase().getLocation();
+                    server.getDatabase().getLocation();
             log.error( format( "Failed to start Neo Server on port [%s].", serverPort ) + locationMsg, tfe );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }
@@ -111,14 +104,6 @@ public abstract class Bootstrapper
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
     }
-
-    private void checkCompatibility()
-    {
-        new JvmChecker( log, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
-    }
-
-    protected abstract NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
-            LogProvider userLogProvider );
 
     public int stop()
     {
@@ -132,8 +117,6 @@ public abstract class Bootstrapper
 
             removeShutdownHook();
 
-            life.shutdown();
-
             return 0;
         }
         catch ( Exception e )
@@ -144,23 +127,34 @@ public abstract class Bootstrapper
         }
     }
 
-    protected void removeShutdownHook()
-    {
-        if ( shutdownHook != null )
-        {
-            if ( !Runtime.getRuntime().removeShutdownHook( shutdownHook ) )
-            {
-                log.warn( "Unable to remove shutdown hook" );
-            }
-        }
-    }
-
     public NeoServer getServer()
     {
         return server;
     }
 
-    protected void addShutdownHook()
+    protected abstract NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
+                                                  LogProvider userLogProvider );
+
+    protected abstract Iterable<Class<?>> settingsClasses( HashMap<String, String> settings );
+
+    private LogProvider setupLogging()
+    {
+        LogProvider userLogProvider = FormattedLogProvider.withoutRenderingContext().toOutputStream( System.out );
+        JULBridge.resetJUL();
+        Logger.getLogger( "" ).setLevel( Level.WARNING );
+        JULBridge.forwardTo( userLogProvider );
+        JettyLogBridge.setLogProvider( userLogProvider );
+        dependencies = dependencies.userLogProvider( userLogProvider );
+        return userLogProvider;
+    }
+
+    private Config createConfig( Log log, File file, Pair<String, String>[] configOverrides ) throws IOException
+    {
+        File standardConfigFile = new File( System.getProperty( SERVER_CONFIG_FILE_KEY, SERVER_CONFIG_FILE ) );
+        return new ConfigLoader( this::settingsClasses ).loadConfig( file, standardConfigFile, log, configOverrides );
+    }
+
+    private void addShutdownHook()
     {
         shutdownHook = new Thread()
         {
@@ -174,20 +168,22 @@ public abstract class Bootstrapper
                 }
             }
         };
-        Runtime.getRuntime()
-                .addShutdownHook( shutdownHook );
+        Runtime.getRuntime().addShutdownHook( shutdownHook );
     }
 
-    /**
-     * Create a new config instance for the DBMS. For legacy reasons, this method contains convoluted logic to load an
-     * additional config file determined by a system property (neo4j.conf).
-     *
-     * It will also override defaults set in neo4j embedded (remote shell default on/off, query log file name). Whether
-     * it's correct to do that here is dubious, it makes it confusing in the documentation that the defaults do not
-     * match the behavior of the server.
-     */
-    protected Config createConfig( Log log, File file, Pair<String, String>[] configOverrides ) throws IOException
+    private void removeShutdownHook()
     {
-        return new BaseServerConfigLoader().loadConfig( file, new File( System.getProperty( SERVER_CONFIG_FILE_KEY, SERVER_CONFIG_FILE ) ), log, configOverrides );
+        if ( shutdownHook != null )
+        {
+            if ( !Runtime.getRuntime().removeShutdownHook( shutdownHook ) )
+            {
+                log.warn( "Unable to remove shutdown hook" );
+            }
+        }
+    }
+
+    private void checkCompatibility()
+    {
+        new JvmChecker( log, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
     }
 }
