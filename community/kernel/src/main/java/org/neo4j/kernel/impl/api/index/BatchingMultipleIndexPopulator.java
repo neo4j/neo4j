@@ -75,7 +75,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private static final String FLUSH_THREAD_NAME_PREFIX = "Index Population Flush Thread";
 
     private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
-    private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME, 100_000 );
+    private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME, 10_000 );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
     private final int BATCH_SIZE = FeatureToggles.getInteger( getClass(), BATCH_SIZE_NAME, 10_000 );
 
