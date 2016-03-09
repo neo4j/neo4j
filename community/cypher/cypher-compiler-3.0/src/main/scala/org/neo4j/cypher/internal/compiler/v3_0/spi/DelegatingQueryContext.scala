@@ -230,7 +230,11 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override type ReadOps = inner.ReadOps
 
+  override type DbmsOps = inner.DbmsOps
+
   override def readOperations: ReadOps = inner.readOperations
+
+  override def dbmsOperations: DbmsOps = inner.dbmsOperations
 
   override def commitAndRestartTx() { inner.commitAndRestartTx() }
 

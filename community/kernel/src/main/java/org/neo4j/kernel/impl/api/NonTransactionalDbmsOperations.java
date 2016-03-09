@@ -17,24 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.impl.proc.Procedures;
 
-/**
- * Defines all types of system-oriented operations - i.e. those which do not read from or write to the graph - that can be done from the {@link KernelAPI}.
- * An example of this is changing a user's password
- */
-public interface DbmsOperations
+public class NonTransactionalDbmsOperations implements DbmsOperations
 {
-    //=================================================
-    //== PROCEDURE OPERATIONS ==
-    //=================================================
 
-    /** Invoke a DBMS procedure by name */
-    RawIterator<Object[],ProcedureException> procedureCallDbms( ProcedureSignature.ProcedureName name, Object[] input,
-            AccessMode accessMode ) throws ProcedureException;
+    private final Procedures procedures;
+
+    public NonTransactionalDbmsOperations( Procedures procedures )
+    {
+        this.procedures = procedures;
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallDbms( ProcedureSignature.ProcedureName name,
+            Object[] input, AccessMode accessMode ) throws ProcedureException
+    {
+        CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
+        ctx.put( CallableProcedure.Context.ACCESS_MODE, accessMode );
+        return procedures.call( ctx, name, input );
+    }
+
 }

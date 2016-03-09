@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.DbmsOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -38,6 +39,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final ThreadToStatementContextBridge txBridge;
     private final KernelTransaction.Type transactionType;
     private final AccessMode mode;
+    private final DbmsOperations dbmsOperations;
 
     private InternalTransaction transaction;
     private Statement statement;
@@ -55,12 +57,19 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.statement = initialStatement;
         this.locker = locker;
         this.txBridge = graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        this.dbmsOperations = graph.getDependencyResolver().resolveDependency( DbmsOperations.class );
     }
 
     @Override
     public ReadOperations readOperations()
     {
         return statement.readOperations();
+    }
+
+    @Override
+    public DbmsOperations dbmsOperations()
+    {
+        return dbmsOperations;
     }
 
     @Override
@@ -163,8 +172,14 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public KernelTransaction.Revertable restrict( AccessMode accessMode )
+    public KernelTransaction.Revertable restrictCurrentTransaction( AccessMode accessMode )
     {
         return transaction.restrict( accessMode );
+    }
+
+    @Override
+    public AccessMode accessMode()
+    {
+        return mode;
     }
 }

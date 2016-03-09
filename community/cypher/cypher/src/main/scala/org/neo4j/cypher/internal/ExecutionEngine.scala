@@ -138,7 +138,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
         val tc = externalTransactionalContext.provideContext()
 
         // Temporarily change access mode during query planning
-        val revertable = tc.restrict(AccessMode.Static.READ)
+        val revertable = tc.restrictCurrentTransaction(AccessMode.Static.READ)
 
         val ((plan: ExecutionPlan, extractedParameters), touched) = try {
           // fetch plan cache

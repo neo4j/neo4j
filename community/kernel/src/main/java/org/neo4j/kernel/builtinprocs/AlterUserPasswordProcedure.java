@@ -54,7 +54,7 @@ public class AlterUserPasswordProcedure extends CallableProcedure.BasicProcedure
     @Override
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        AccessMode accessMode = ctx.get( Context.KERNEL_TRANSACTION ).mode();
+        AccessMode accessMode = ctx.get( Context.ACCESS_MODE );
         if ( !(accessMode instanceof AuthSubject) )
         {
             throw new AuthorizationViolationException( "Invalid attempt to change the password" );
@@ -69,7 +69,7 @@ public class AlterUserPasswordProcedure extends CallableProcedure.BasicProcedure
         catch ( IOException e )
         {
             throw new ProcedureException( Status.Security.Forbidden, e,
-                    "The password was not able to be changed for the provided username");
+                    "Failed to change the password for the provided username" );
         }
     }
 }

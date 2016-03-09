@@ -196,8 +196,11 @@ trait Operations[T <: PropertyContainer] {
 trait QueryTransactionalContext {
 
   type ReadOps
+  type DbmsOps
 
   def readOperations: ReadOps
+
+  def dbmsOperations: DbmsOps
 
   def isTopLevelTx: Boolean
 

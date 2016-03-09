@@ -25,12 +25,14 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.api.{DbmsOperations, ReadOperations, Statement}
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
 
   override type ReadOps = ReadOperations
+
+  override type DbmsOps = DbmsOperations
 
   def provideContext(): TransactionalContextWrapper = TransactionalContextWrapper(tc.provideContext())
 
@@ -49,11 +51,15 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   override def readOperations: ReadOperations = tc.readOperations()
 
+  override def dbmsOperations: DbmsOperations = tc.dbmsOperations()
+
   override def commitAndRestartTx() { tc.commitAndRestartTx() }
 
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
   override def close(success: Boolean) { tc.close(success) }
 
-  def restrict(accessMode: AccessMode): Revertable = tc.restrict(accessMode)
+  def restrictCurrentTransaction(accessMode: AccessMode): Revertable = tc.restrictCurrentTransaction(accessMode)
+
+  def accessMode: AccessMode = tc.accessMode
 }

@@ -31,7 +31,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.DbmsOperations;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
@@ -91,7 +90,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
-public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations, DbmsOperations
+public class OperationsFacade implements ReadOperations, DataWriteOperations, SchemaWriteOperations
 {
     private final KernelTransaction tx;
     private final KernelStatement statement;
@@ -1098,21 +1097,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     // </SchemaWrite>
-
-    // <DBMS>
-
-    @Override
-    public RawIterator<Object[],ProcedureException> procedureCallDbms( ProcedureName name,
-            Object[] input ) throws ProcedureException
-    {
-        statement.assertOpen();
-
-        CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
-        ctx.put( CallableProcedure.Context.KERNEL_TRANSACTION, tx );
-        return procedures.call( ctx, name, input );
-    }
-
-    // </DBMS>
 
     // <Locking>
     @Override

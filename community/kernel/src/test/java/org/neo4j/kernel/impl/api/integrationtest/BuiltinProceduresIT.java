@@ -27,14 +27,8 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.server.security.auth.AuthSubject;
-import org.neo4j.server.security.auth.AuthenticationResult;
-import org.neo4j.server.security.auth.AuthenticationStrategy;
-import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.BasicAuthSubject;
-import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.auth.User;
-import org.neo4j.server.security.auth.UserRepository;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,7 +37,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
@@ -75,13 +69,14 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         try
         {
             // When
-            RawIterator<Object[],ProcedureException> stream = dbmsOperationsInNewTransaction().procedureCallDbms( procedureName( "db", "labels" ), new Object[0] );
+            RawIterator<Object[],ProcedureException> stream = dbmsOperations().procedureCallDbms( procedureName( "db", "labels" ), new Object[0],
+                    AccessMode.Static.NONE );
             fail( "Should have failed." );
         }
         catch (Exception e)
         {
             // Then
-            assertThat( e.getClass(), equalTo( AuthorizationViolationException.class ) );
+            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
         }
     }
 
@@ -106,13 +101,13 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         try
         {
             // When
-            RawIterator<Object[],ProcedureException> stream = dbmsOperationsInNewTransaction().procedureCallDbms( procedureName( "db", "propertyKeys" ), new Object[0] );
+            RawIterator<Object[],ProcedureException> stream = dbmsOperations().procedureCallDbms( procedureName( "db", "propertyKeys" ), new Object[0], AccessMode.Static.NONE );
             fail( "Should have failed." );
         }
         catch (Exception e)
         {
             // Then
-            assertThat( e.getClass(), equalTo( AuthorizationViolationException.class ) );
+            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
         }
     }
 
@@ -138,13 +133,13 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         try
         {
             // When
-            RawIterator<Object[],ProcedureException> stream = dbmsOperationsInNewTransaction().procedureCallDbms( procedureName( "db", "relationshipTypes" ), new Object[0] );
+            RawIterator<Object[],ProcedureException> stream = dbmsOperations().procedureCallDbms( procedureName( "db", "relationshipTypes" ), new Object[0], AccessMode.Static.NONE );
             fail( "Should have failed." );
         }
         catch (Exception e)
         {
             // Then
-            assertThat( e.getClass(), equalTo( AuthorizationViolationException.class ) );
+            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
         }
     }
 
@@ -175,14 +170,15 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         {
             // When
             RawIterator<Object[],ProcedureException> stream =
-                    dbmsOperationsInNewTransaction()
-                            .procedureCallDbms( procedureName( "sys", "procedures" ), new Object[0] );
+                    dbmsOperations()
+                            .procedureCallDbms( procedureName( "sys", "procedures" ), new Object[0],
+                                    AccessMode.Static.NONE );
             assertThat( "This should never get here", 1 == 2 );
         }
         catch (Exception e)
         {
             // Then
-            assertThat( e.getClass(), equalTo( AuthorizationViolationException.class ) );
+            assertThat( e.getClass(), equalTo( ProcedureException.class ) );
         }
     }
 
@@ -192,19 +188,14 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         // Given
         Object[] inputArray = new Object[1];
         inputArray[0] = "newPassword";
-
-        UserRepository userRepository = mock( FileUserRepository.class );
-        BasicAuthManager authManager = new BasicAuthManager( userRepository, mock( AuthenticationStrategy.class ) );
-        when( userRepository.isValidName( "neo4j" ) ).thenReturn( true );
-        User user = authManager.newUser( "neo4j", "neo4j", true );
-        when( userRepository.findByName( "neo4j" ) ).thenReturn( user );
-        AuthSubject authSubject = new BasicAuthSubject( authManager, user, AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
+        AuthSubject authSubject = mock( AuthSubject.class );
 
         // When
-        RawIterator < Object[],ProcedureException> stream = dbmsOperationsWithAuthSubjectInNewTransaction( authSubject )
-                .procedureCallDbms( procedureName( "sys", "changePassword" ), inputArray );
+        RawIterator < Object[],ProcedureException> stream = dbmsOperations()
+                .procedureCallDbms( procedureName( "sys", "changePassword" ), inputArray, authSubject );
 
         // Then
+        verify( authSubject ).setPassword( (String) inputArray[0] );
         assertThat( asList( stream ), emptyIterable() );
     }
 
@@ -218,8 +209,9 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
             inputArray[0] = "newPassword";
 
             // When
-            RawIterator<Object[],ProcedureException> stream = dbmsOperationsInNewTransaction()
-                    .procedureCallDbms( procedureName( "sys", "changePassword" ), inputArray );
+            RawIterator<Object[],ProcedureException> stream = dbmsOperations()
+                    .procedureCallDbms( procedureName( "sys", "changePassword" ), inputArray,
+                            AccessMode.Static.NONE );
             fail( "Should have failed." );
         }
         catch ( Exception e )

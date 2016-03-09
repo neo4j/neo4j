@@ -245,8 +245,8 @@ class LazyTest extends ExecutionEngineFunSuite {
 
     val tx = fakeGraph.beginTransaction(KernelTransaction.Type.`implicit`, AccessMode.Static.FULL)
     val context = new Neo4jTransactionalContext(service, tx, fakeStatement, new PropertyContainerLocker)
-    val revertableRestrict = mock[Revertable]
-    when(context.restrict(anyObject())).thenReturn(revertableRestrict)
+    val revertable = mock[Revertable]
+    when(context.restrictCurrentTransaction(anyObject())).thenReturn(revertable)
     val session = QueryEngineProvider.embeddedSession(context)
 
     //When:

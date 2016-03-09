@@ -232,7 +232,6 @@ public class BuiltInProceduresTest
 
         when(tx.acquireStatement()).thenReturn( statement );
         when(statement.readOperations()).thenReturn( read );
-        when(statement.dbmsOperations()).thenReturn( dbms );
 
         when(read.propertyKeyGetAllTokens()).thenAnswer( asTokens(propKeys) );
         when(read.labelsGetAllTokens()).thenAnswer( asTokens(labels) );
