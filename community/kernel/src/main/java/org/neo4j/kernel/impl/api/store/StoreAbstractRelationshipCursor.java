@@ -116,6 +116,12 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
                 relationshipRecord.getSecondNode() : relationshipRecord.getFirstNode();
     }
 
+    /**
+     * Acquires a read lock for the relationship in this cursor and then re-reads the record to get consistent data.
+     * This method should be called <strong>before</strong> accessing other fields of the entity record.
+     *
+     * @return the {@link Lock} that must be closed after all related data have been read.
+     */
     private Lock shortLivedReadLock()
     {
         Lock lock = lockService.acquireRelationshipLock( relationshipRecord.getId(), LockService.LockType.READ_LOCK );
@@ -150,12 +156,14 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return allPropertyCursor.get().init( relationshipRecord.getNextProp(), shortLivedReadLock() );
+        Lock lock = shortLivedReadLock();
+        return allPropertyCursor.get().init( relationshipRecord.getNextProp(), lock );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return singlePropertyCursor.get().init( relationshipRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
+        Lock lock = shortLivedReadLock();
+        return singlePropertyCursor.get().init( relationshipRecord.getNextProp(), propertyKeyId, lock );
     }
 }
