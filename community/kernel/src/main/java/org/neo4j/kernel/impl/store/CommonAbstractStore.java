@@ -1114,8 +1114,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                         record.setId( currentId );
                         long pageId = pageIdForRecord( currentId );
                         int offset = offsetForId( currentId );
-                        if ( pageId == pageCursor.getCurrentPageId() ||
-                                pageCursor.next( pageId ) )
+                        if ( pageCursor.next( pageId ) )
                         {
                             do
                             {

@@ -57,8 +57,8 @@ public class PropertyRecordTest
         record.setPropertyBlock( blockB );
 
         // Then the record should only contain a single block, because blockB overwrote blockA
-        List<PropertyBlock> propertyBlocks = Iterables.asList( (Iterable<PropertyBlock>)record );
-        assertThat( propertyBlocks, hasItem( blockB ));
+        List<PropertyBlock> propertyBlocks = Iterables.asList( (Iterable<PropertyBlock>) record );
+        assertThat( propertyBlocks, hasItem( blockB ) );
         assertThat( propertyBlocks, hasSize( 1 ) );
     }
 
@@ -119,7 +119,43 @@ public class PropertyRecordTest
         assertFalse( iterator.hasNext() );
 
         // and THEN there should only be the non-removed blocks left
-        assertEquals( blocks, Iterables.asSet( (Iterable<PropertyBlock>) record ) );
+        assertEquals( blocks, Iterables.asSet( record ) );
+    }
+
+    @Test
+    public void addLoadedBlock()
+    {
+        PropertyRecord record = new PropertyRecord( 42 );
+
+        addBlock( record, 1, 2 );
+        addBlock( record, 3, 4 );
+
+        List<PropertyBlock> blocks = Iterables.asList( record );
+        assertEquals( 2, blocks.size() );
+        assertEquals( 1, blocks.get( 0 ).getKeyIndexId() );
+        assertEquals( 2, blocks.get( 0 ).getSingleValueInt() );
+        assertEquals( 3, blocks.get( 1 ).getKeyIndexId() );
+        assertEquals( 4, blocks.get( 1 ).getSingleValueInt() );
+    }
+
+    @Test
+    public void addLoadedBlockFailsWhenTooManyBlocksAdded()
+    {
+        PropertyRecord record = new PropertyRecord( 42 );
+
+        addBlock( record, 1, 2 );
+        addBlock( record, 3, 4 );
+        addBlock( record, 5, 6 );
+        addBlock( record, 7, 8 );
+
+        try
+        {
+            addBlock( record, 9, 10 );
+            fail( "Exception expected " );
+        }
+        catch ( Throwable ignored )
+        {
+        }
     }
 
     private void assertIteratorRemoveThrowsIllegalState( Iterator<PropertyBlock> iterator )
@@ -131,6 +167,16 @@ public class PropertyRecordTest
         }
         catch ( IllegalStateException e )
         {   // OK
+        }
+    }
+
+    private static void addBlock( PropertyRecord record, int key, int value )
+    {
+        PropertyBlock block = new PropertyBlock();
+        PropertyStore.encodeValue( block, key, value, null, null );
+        for ( long valueBlock : block.getValueBlocks() )
+        {
+            record.addLoadedBlock( valueBlock );
         }
     }
 }
