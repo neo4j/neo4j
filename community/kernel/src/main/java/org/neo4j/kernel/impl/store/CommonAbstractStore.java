@@ -1048,20 +1048,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    /**
-     * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
-     *
-     * The record passed to the NodeRecordScanner is reused instead of reallocated for every record, so it must be
-     * cloned if you want to save it for later.
-     * @param visitor {@link Visitor} notified about all records.
-     * @throws IOException on error reading from store.
-     */
-    public void scanAllRecords( Visitor<RECORD,IOException> visitor ) throws IOException
+    @Override
+    public <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor ) throws EXCEPTION
     {
         try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
         {
             long highId = getHighId();
-            placeRecordCursor( getNumberOfReservedLowIds(), cursor, CHECK );
+            cursor.acquire( getNumberOfReservedLowIds(), CHECK );
             for ( long id = getNumberOfReservedLowIds(); id < highId; id++ )
             {
                 if ( cursor.next( id ) )
@@ -1080,7 +1073,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
         {
             List<RECORD> recordList = new LinkedList<>();
-            placeRecordCursor( firstId, cursor, mode );
+            cursor.acquire( firstId, mode );
             while ( cursor.next() )
             {
                 recordList.add( (RECORD) cursor.get().clone() );
@@ -1164,12 +1157,19 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             }
 
             @Override
-            public RecordCursor<RECORD> init( long id, RecordLoad mode, PageCursor pageCursor )
+            public RecordCursor<RECORD> acquire( long id, RecordLoad mode )
             {
                 assert this.pageCursor == null;
                 this.currentId = id;
                 this.mode = mode;
-                this.pageCursor = pageCursor;
+                try
+                {
+                    this.pageCursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK );
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( e );
+                }
                 return this;
             }
         };
@@ -1199,22 +1199,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         // just setting one byte or bit in that record.
         record.setInUse( false );
         cursor.setOffset( offset );
-    }
-
-    @Override
-    public RecordCursor<RECORD> placeRecordCursor( final long id, final RecordCursor<RECORD> cursor,
-            final RecordLoad mode )
-    {
-        try
-        {
-            PageCursor pageCursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_READ_LOCK );
-            cursor.init( id, mode, pageCursor );
-            return cursor;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
     }
 
     @Override

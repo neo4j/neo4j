@@ -51,7 +51,7 @@ abstract class StoreScanAsInputIterable<INPUT extends InputEntity,RECORD extends
     @Override
     public InputIterator<INPUT> iterator()
     {
-        store.placeRecordCursor( 0, cursor, CHECK );
+        cursor.acquire( 0, CHECK );
         return new InputIterator.Adapter<INPUT>()
         {
             private final long highId = store.getHighId();

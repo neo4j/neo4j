@@ -36,19 +36,29 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
 {
     /**
-     * Initialize this cursor, placing it at record {@code id} and using the given {@link PageCursor} and
-     * {@link RecordLoad} for loading record data.
+     * Acquires this cursor, placing it at record {@code id} {@link RecordLoad} for loading record data.
      *
-     * @param id record id to start at. Records chains can be followed using
-     * {@link RecordStore#getNextRecordReference(AbstractBaseRecord)}.
+     * @param id record id to start at.
      * @param mode {@link RecordLoad} for loading.
-     * @param pageCursor {@link PageCursor} for the source of the data.
      * @return this record cursor.
      */
-    RecordCursor<R> init( long id, RecordLoad mode, PageCursor pageCursor );
+    RecordCursor<R> acquire( long id, RecordLoad mode );
 
     /**
-     * An additional way of placing this cursor at an arbitrary record id.
+     * Moves to the next record and reads it. If this is the first call since {@link #acquire(long, RecordLoad)}
+     * the record specified in acquire will be read, otherwise the next record in the chain,
+     * {@link RecordStore#getNextRecordReference(AbstractBaseRecord)}.
+     * The read record can be accessed using {@link #get()}.
+     *
+     * @return whether or not that record is in use.
+     */
+    @Override
+    boolean next();
+
+    /**
+     * An additional way of placing this cursor at an arbitrary record id. This is useful when stride,
+     * as opposed to following record chains, is controlled from the outside.
+     * The read record can be accessed using {@link #get()}.
      *
      * @param id record id to place cursor at.
      * @return whether or not that record is in use.
@@ -83,9 +93,9 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
         }
 
         @Override
-        public RecordCursor<R> init( long id, RecordLoad mode, PageCursor pageCursor )
+        public RecordCursor<R> acquire( long id, RecordLoad mode )
         {
-            actual.init( id, mode, pageCursor );
+            actual.acquire( id, mode );
             return this;
         }
 

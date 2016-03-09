@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.function.Predicate;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
@@ -146,17 +147,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
     RecordCursor<RECORD> newRecordCursor( RECORD record );
 
     /**
-     * Places a {@link #newRecordCursor(AbstractBaseRecord) previously instantiated} {@link RecordCursor}
-     * at the given {@code id}. So that the next call to {@link RecordCursor#next()} reads that record.
-     *
-     * @param id record id to place the cursor at.
-     * @param cursor the {@link RecordCursor} to place.
-     * @param mode {@link RecordLoad} mode to use when reading records.
-     * @return the {@link RecordCursor} that was passed in.
-     */
-    RecordCursor<RECORD> placeRecordCursor( long id, RecordCursor<RECORD> cursor, RecordLoad mode );
-
-    /**
      * Returns another record id which the given {@code record} references and which a {@link RecordCursor}
      * would follow and read next.
      *
@@ -242,6 +232,16 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      */
     void prepareForCommit( RECORD record );
 
+    /**
+     * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
+     *
+     * The record passed to the NodeRecordScanner is reused instead of reallocated for every record, so it must be
+     * cloned if you want to save it for later.
+     * @param visitor {@link Visitor} notified about all records.
+     * @throws Exception on error reading from store.
+     */
+    <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor ) throws EXCEPTION;
+
     Predicate<AbstractBaseRecord> IN_USE = AbstractBaseRecord::inUse;
 
     class Delegator<R extends AbstractBaseRecord> implements RecordStore<R>
@@ -276,12 +276,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public RecordCursor<R> newRecordCursor( R record )
         {
             return actual.newRecordCursor( record );
-        }
-
-        @Override
-        public RecordCursor<R> placeRecordCursor( long id, RecordCursor<R> cursor, RecordLoad mode )
-        {
-            return actual.placeRecordCursor( id, cursor, mode );
         }
 
         @Override
@@ -383,6 +377,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public void prepareForCommit( R record )
         {
             actual.prepareForCommit( record );
+        }
+
+        @Override
+        public <EXCEPTION extends Exception> void scanAllRecords( Visitor<R,EXCEPTION> visitor ) throws EXCEPTION
+        {
+            actual.scanAllRecords( visitor );
         }
     }
 

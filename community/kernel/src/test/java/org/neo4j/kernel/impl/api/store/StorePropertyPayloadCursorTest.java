@@ -491,11 +491,10 @@ public class StorePropertyPayloadCursorTest
         DynamicRecord dynamicRecord = new DynamicRecord( 42 );
         dynamicRecord.setData( new byte[]{1, 1, 1, 1, 1} );
         when( recordCursor.get() ).thenReturn( dynamicRecord );
+        when( recordCursor.acquire( anyLong(), any( RecordLoad.class ) ) ).thenReturn( recordCursor );
 
         S store = mock( clazz );
-        when( store.newRecordCursor( any( DynamicRecord.class ) ) ).thenReturn( mock( RecordCursor.class ) );
-        when( store.placeRecordCursor( anyLong(), any( RecordCursor.class ), any( RecordLoad.class ) ) )
-                .thenReturn( recordCursor );
+        when( store.newRecordCursor( any( DynamicRecord.class ) ) ).thenReturn( recordCursor );
 
         return store;
     }

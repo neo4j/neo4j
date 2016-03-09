@@ -60,7 +60,7 @@ public class Scanner
             this.filters = filters;
             this.ids = new StoreIdIterator( store, forward );
             this.cursor = store.newRecordCursor( store.newRecord() );
-            store.placeRecordCursor( 0, cursor, RecordLoad.CHECK );
+            cursor.acquire( 0, RecordLoad.CHECK );
         }
 
         @Override
