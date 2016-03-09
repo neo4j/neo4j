@@ -16,9 +16,11 @@ Here in the installation directory, you'll find:
 
 * bin - scripts and other executables
 * conf - server configuration
-* data - database, log, and other variable files
+* data - database
 * lib - libraries
 * plugins - user extensions
+* logs - log files
+* import - location of files for LOAD CSV
 
 Make it go
 ----------
