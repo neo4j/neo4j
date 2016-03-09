@@ -26,8 +26,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -44,6 +47,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -70,8 +74,10 @@ import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -195,6 +201,53 @@ public class TransactionRecordStateTest
         assertCommand( commandIterator.next(), Command.RelationshipGroupCommand.class );
         assertCommand( commandIterator.next(), NodeCommand.class );
         assertFalse( commandIterator.hasNext() );
+    }
+
+    @Test
+    public void shouldIgnoreRelationshipGroupCommandsForGroupThatIsCreatedAndDeletedInThisTx() throws Exception
+    {
+        /*
+         * This test verifies that there are no transaction commands generated for a state diff that contains a
+         * relationship group that is created and deleted in this tx. This case requires special handling because
+         * relationship groups can be created and then deleted from disjoint code paths. Look at
+         * TransactionRecordState.extractCommands() for more details.
+         *
+         * The test setup looks complicated but all it does is mock properly a NeoStoreTransactionContext to
+         * return an Iterable<RecordSet< that contains a RelationshipGroup record which has been created in this
+         * tx and also is set notInUse.
+         */
+        // Given
+        NeoStore neoStore = newNeoStore();
+        NeoStoreTransactionContext context = mock( NeoStoreTransactionContext.class, RETURNS_MOCKS );
+
+        RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecordsMock = mock( RecordAccess.class );
+
+        Command.RelationshipGroupCommand theCommand = new Command.RelationshipGroupCommand();
+        RelationshipGroupRecord theRecord = new RelationshipGroupRecord( 1, 1 );
+        theRecord.setInUse( false ); // this is where we set the record to be not in use
+        theCommand.init( theRecord );
+
+        LinkedList<RecordAccess.RecordProxy<Long, RelationshipGroupRecord, Integer>> commands =
+                new LinkedList<>();
+
+        RecordAccess.RecordProxy<Long, RelationshipGroupRecord, Integer> theProxyMock = mock( RecordAccess.RecordProxy.class );
+        when( theProxyMock.isCreated() ).thenReturn( true ); // and this is where it is set to be created in this tx
+        when( theProxyMock.forReadingLinkage() ).thenReturn( theRecord );
+        commands.add( theProxyMock );
+
+        when( relGroupRecordsMock.changes() ).thenReturn( commands );
+        when( context.getRelGroupRecords() ).thenReturn( relGroupRecordsMock );
+        when( relGroupRecordsMock.changeSize() ).thenReturn( 1 ); // necessary for passingan assertion in recordState
+
+        TransactionRecordState recordState =
+                new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
+
+        // When
+        Set<Command> resultingCommands = new HashSet<>();
+        recordState.extractCommands( resultingCommands );
+
+        // Then
+        assertTrue( resultingCommands.isEmpty() );
     }
 
     @Test

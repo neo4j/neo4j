@@ -80,6 +80,8 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
         RECORD getBefore();
 
         boolean isChanged();
+
+        boolean isCreated();
     }
 
     /**
