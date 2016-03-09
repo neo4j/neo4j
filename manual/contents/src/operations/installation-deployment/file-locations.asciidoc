@@ -6,12 +6,24 @@ Some of these paths are configurable; see <<configuration-settings>> for details
 
 [options="header"]
 |===
-|Package               |Configuration                                  |Data
-|Linux or OS X tarball |_<neo4j-root>/conf/neo4j.conf_                 |_<neo4j-root>/data_
-|Windows zip           |_<neo4j-root>\conf\neo4j.conf_                 |_<neo4j-root>\data_
-|Debian/Ubuntu .deb    |_/etc/neo4j/neo4j.conf_                        |_/var/lib/neo4j_
-|Windows desktop       |_%APPDATA%\Neo4j Community Edition\neo4j.conf_ |_%APPDATA%\Neo4j Community Edition_
-|OS X desktop          |_$\{HOME\}/Documents/Neo4j/neo4j.conf_         |_$\{HOME\}/Documents/Neo4j_
+|Package               |Configuration                                  |Data                                |Logs
+|Linux or OS X tarball |_<neo4j-root>/conf/neo4j.conf_                 |_<neo4j-root>/data_                 |_<neo4j-root>/logs_
+|Windows zip           |_<neo4j-root>\conf\neo4j.conf_                 |_<neo4j-root>\data_                 |_<neo4j-root>\logs_
+|Debian/Ubuntu .deb    |_/etc/neo4j/neo4j.conf_                        |_/var/lib/neo4j_                    |_/var/log/neo4j_
+|Windows desktop       |_%APPDATA%\Neo4j Community Edition\neo4j.conf_ |_%APPDATA%\Neo4j Community Edition_ |_%APPDATA%\Neo4j Community Edition\logs_
+|OS X desktop          |_$\{HOME\}/Documents/Neo4j/neo4j.conf_         |_$\{HOME\}/Documents/Neo4j_         |_$\{HOME\}/Documents/Neo4j/logs_
 |===
 
-Please note that the data directory is internal to Neo4j and its structure subject to change between versions without notice.
+Please note that the structure directories and files in the data directory is internal to Neo4j and subject to change between versions without notice.
+
+== Log Files
+
+[options="header"]
+|===
+|Filename    |Description
+|_neo4j.log_ |The standard log, where general information about Neo4j is written.
+|_debug.log_ |Information useful when debugging problems with Neo4j.
+|_http.log_  |Request log for the HTTP API.
+|_gc.log_    |Garbage Collection logging provided by the JVM.
+|_query.log_ |Log of executed queries that takes longer than a specified threshold. (Enterprise only.)
+|===
