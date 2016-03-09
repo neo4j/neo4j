@@ -394,17 +394,41 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public ResourceIterable<RelationshipType> getAllRelationshipTypes()
     {
-        return all( TokenAccess.RELATIONSHIP_TYPES );
+        return allInUse( TokenAccess.RELATIONSHIP_TYPES );
     }
 
     @Override
     public ResourceIterable<Label> getAllLabels()
     {
-        return all( TokenAccess.LABELS );
+        return allInUse( TokenAccess.LABELS );
     }
 
     @Override
     public ResourceIterable<String> getAllPropertyKeys()
+    {
+        return allInUse( TokenAccess.PROPERTY_KEYS );
+    }
+
+    private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
+    {
+        assertTransactionOpen();
+        return () -> tokens.inUse( spi.currentStatement() );
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllExistingRelationshipTypes()
+    {
+        return all( TokenAccess.RELATIONSHIP_TYPES );
+    }
+
+    @Override
+    public ResourceIterable<Label> getAllExistingLabelsInUseAndNot()
+    {
+        return all( TokenAccess.LABELS );
+    }
+
+    @Override
+    public ResourceIterable<String> getAllExistingPropertyKeysInUseAndNot()
     {
         return all( TokenAccess.PROPERTY_KEYS );
     }
@@ -412,7 +436,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private <T> ResourceIterable<T> all( final TokenAccess<T> tokens )
     {
         assertTransactionOpen();
-        return () -> tokens.inUse( spi.currentStatement() );
+        return () -> tokens.all( spi.currentStatement() );
     }
 
     @Override
