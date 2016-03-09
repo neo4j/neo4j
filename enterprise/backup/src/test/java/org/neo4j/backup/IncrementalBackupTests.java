@@ -223,7 +223,7 @@ public class IncrementalBackupTests
     private GraphDatabaseService startGraphDatabase( File path )
     {
         return new TestGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( path.getPath() ).
+                newEmbeddedDatabaseBuilder( path ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                 setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
                 newGraphDatabase();
@@ -231,7 +231,7 @@ public class IncrementalBackupTests
 
     private ServerInterface startServer( File path, String serverAddress ) throws Exception
     {
-        ServerInterface server = new EmbeddedServer( path.getPath(), serverAddress );
+        ServerInterface server = new EmbeddedServer( path, serverAddress );
         server.awaitStarted();
         return server;
     }

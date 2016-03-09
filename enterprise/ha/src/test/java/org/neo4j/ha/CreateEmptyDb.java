@@ -19,9 +19,10 @@
  */
 package org.neo4j.ha;
 
+import org.junit.Ignore;
+
 import java.io.File;
 
-import org.junit.Ignore;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 @Ignore("Not a test")
@@ -29,16 +30,11 @@ public class CreateEmptyDb
 {
     public static void main( String[] args )
     {
-        at( args[0] );
-    }
-
-    public static void at( String storeDir )
-    {
-        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
+        at( new File( args[0] ) );
     }
 
     public static void at( File storeDir )
     {
-        at( storeDir.getAbsolutePath() );
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
     }
 }

@@ -36,11 +36,10 @@ class DataImportTest extends CypherFunSuite {
   // This test creates a database
   ignore("createDatabase") {
     val sourceDir = new File("/Users/ata/Downloads/apa/ml-10M100K")
-    val targetDir = "target/perf-graph.db"
-    val dir = new File(targetDir)
-    deleteAll(dir)
+    val targetDir = new File("target/perf-graph.db")
+    deleteAll(targetDir)
 
-    dir.exists() should equal(false)
+    targetDir.exists() should equal(false)
 
     val (inserter, moviesId, moviesTitles, indexProvider, typeIdx) = createInserters(targetDir)
 
@@ -82,7 +81,7 @@ class DataImportTest extends CypherFunSuite {
     moviesId
   }
 
-  private def createInserters(targetDir: String) = {
+  private def createInserters(targetDir: File) = {
     val inserter = BatchInserters.inserter(targetDir)
     val indexProvider = new LuceneBatchInserterIndexProviderNewImpl(inserter)
 

@@ -132,7 +132,7 @@ public class UdcExtensionImplTest
     {
         // When
         graphdb = new TestGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( path.directory( "should-record-failures" ).getPath() ).
+                newEmbeddedDatabaseBuilder( path.directory( "should-record-failures" ) ).
                 loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
                 setConfig( UdcSettings.first_delay, "100" ).
                 setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).

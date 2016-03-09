@@ -96,8 +96,9 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
   }
 
   private def createDbWithFailedIndex: GraphDatabaseService = {
-    new File("target/test-data/impermanent-db").deleteAll()
-    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db"))
+    val storeDir = new File("target/test-data/impermanent-db")
+    storeDir.deleteAll()
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(storeDir))
     eengine = new ExecutionEngine(graph)
     execute("CREATE INDEX ON :Person(name)")
     execute("create (:Person {name:42})")
@@ -114,7 +115,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     stream.write(65)
     stream.close()
 
-    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db"))
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(storeDir))
     eengine = new ExecutionEngine(graph)
     graph.getGraphDatabaseService
   }

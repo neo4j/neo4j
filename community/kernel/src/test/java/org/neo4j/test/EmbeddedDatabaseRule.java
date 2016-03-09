@@ -19,10 +19,10 @@
  */
 package org.neo4j.test;
 
+import org.junit.rules.TemporaryFolder;
+
 import java.io.File;
 import java.io.IOException;
-
-import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -145,9 +145,9 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     }
 
     @Override
-    protected GraphDatabaseBuilder newBuilder(GraphDatabaseFactory factory )
+    protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return factory.newEmbeddedDatabaseBuilder( temp.root().getAbsolutePath() );
+        return factory.newEmbeddedDatabaseBuilder( temp.root().getAbsoluteFile() );
     }
 
     @Override

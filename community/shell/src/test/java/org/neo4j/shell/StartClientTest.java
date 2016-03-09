@@ -19,18 +19,19 @@
  */
 package org.neo4j.shell;
 
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.rmi.RemoteException;
-
-import org.apache.commons.lang3.StringUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -51,7 +52,6 @@ import static org.mockito.Mockito.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class StartClientTest
@@ -160,8 +160,7 @@ public class StartClientTest
         StartClient startClient = new StartClient( out, err )
         {
             @Override
-            protected GraphDatabaseShellServer getGraphDatabaseShellServer( String dbPath, boolean readOnly,
-                    String configFile ) throws RemoteException
+            protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly, String configFile ) throws RemoteException
             {
                 return databaseShellServer;
             }

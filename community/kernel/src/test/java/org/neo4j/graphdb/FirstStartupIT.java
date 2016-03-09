@@ -22,6 +22,8 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -37,7 +39,7 @@ public class FirstStartupIT
     public void shouldBeEmptyWhenFirstStarted() throws Exception
     {
         // When
-        String storeDir = testDir.absolutePath();
+        File storeDir = testDir.absolutePath();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
         // Then

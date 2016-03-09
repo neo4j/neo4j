@@ -129,7 +129,7 @@ public class RebuildFromLogsTest
 
     private GraphDatabaseAPI db( File rebuiltPath )
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( rebuiltPath.getAbsolutePath() );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( rebuiltPath );
     }
 
     enum Transaction

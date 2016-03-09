@@ -279,7 +279,7 @@ public class TestBackup
         GraphDatabaseService db = null;
         try
         {
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
                 newGraphDatabase();
 
@@ -326,7 +326,7 @@ public class TestBackup
         GraphDatabaseService db = null;
         try
         {
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
                 newGraphDatabase();
 
@@ -361,7 +361,7 @@ public class TestBackup
     {
         String key = "name";
         String value = "Neo";
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath ).
             setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
             newGraphDatabase();
 
@@ -403,8 +403,8 @@ public class TestBackup
     @Test
     public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
     {
-        String sourcePath = "target/var/serverdb-lock";
-        FileUtils.deleteDirectory( new File( sourcePath ) );
+        File sourcePath = new File( "target/var/serverdb-lock" );
+        FileUtils.deleteDirectory( sourcePath );
 
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath ).
             setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
@@ -494,11 +494,11 @@ public class TestBackup
         return DbRepresentation.of( db );
     }
 
-    private static void assertStoreIsLocked( String path )
+    private static void assertStoreIsLocked( File path )
     {
         try
         {
-            new TestGraphDatabaseFactory().newEmbeddedDatabase( path).shutdown();
+            new TestGraphDatabaseFactory().newEmbeddedDatabase( path ).shutdown();
             fail( "Could start up database in same process, store not locked" );
         }
         catch ( RuntimeException ex )
@@ -523,7 +523,7 @@ public class TestBackup
     }
 
     @SuppressWarnings( "serial" )
-    private static class LockProcess extends SubProcess<StartupChecker, String> implements StartupChecker
+    private static class LockProcess extends SubProcess<StartupChecker, File> implements StartupChecker
     {
         private volatile Object state;
 
@@ -540,7 +540,7 @@ public class TestBackup
         }
 
         @Override
-        protected void startup( String path ) throws Throwable
+        protected void startup( File path ) throws Throwable
         {
             GraphDatabaseService db = null;
             try
@@ -576,7 +576,7 @@ public class TestBackup
 
     private ServerInterface startServer( File path ) throws Exception
     {
-        ServerInterface server = new EmbeddedServer( path.getPath(), "127.0.0.1:6362" );
+        ServerInterface server = new EmbeddedServer( path, "127.0.0.1:6362" );
         server.awaitStarted();
         servers.add( server );
         return server;

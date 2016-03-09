@@ -65,7 +65,7 @@ public class BatchInserterImplTest
         File file = testDirectory.graphDbDir();
 
         // When
-        BatchInserter inserter = BatchInserters.inserter( file.getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( file.getAbsoluteFile() );
 
         // Then
         assertThat( new File( file, StoreLocker.STORE_LOCK_FILENAME ).exists(), equalTo( true ) );
@@ -83,7 +83,7 @@ public class BatchInserterImplTest
         // When
         try
         {
-            BatchInserters.inserter( parent.getAbsolutePath() );
+            BatchInserters.inserter( parent.getAbsoluteFile() );
 
             // Then
             fail();

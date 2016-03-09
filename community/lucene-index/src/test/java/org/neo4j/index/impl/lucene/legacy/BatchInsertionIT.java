@@ -23,6 +23,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class BatchInsertionIT
     public void shouldIndexNodesWithMultipleLabels() throws Exception
     {
         // Given
-        String path = dbRule.getStoreDirAbsolutePath();
+        File path = new File( dbRule.getStoreDirAbsolutePath() );
         BatchInserter inserter = BatchInserters.inserter( path );
 
         inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
@@ -82,7 +83,8 @@ public class BatchInsertionIT
     public void shouldNotIndexNodesWithWrongLabel() throws Exception
     {
         // Given
-        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDirAbsolutePath() );
+        File file = new File( dbRule.getStoreDirAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( file );
 
         inserter.createNode( map("name", "Bob"), label( "User" ), label("Admin"));
 
@@ -107,7 +109,8 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDirAbsolutePath() );
+        File file = new File( dbRule.getStoreDirAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( file );
         long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
 
         final Object finalValue = 87;
@@ -132,7 +135,8 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDirAbsolutePath() );
+        File file = new File( dbRule.getStoreDirAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( file );
         long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
 
         final Object finalValue1 = 87;
@@ -161,7 +165,8 @@ public class BatchInsertionIT
     @Test
     public void testInsertionSpeed() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDirAbsolutePath() );
+        File file = new File( dbRule.getStoreDirAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( file );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         BatchInserterIndex index = provider.nodeIndex( "yeah", EXACT_CONFIG );
         index.setCacheCapacity( "key", 1000000 );

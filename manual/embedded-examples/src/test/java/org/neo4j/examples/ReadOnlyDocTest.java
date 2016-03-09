@@ -55,14 +55,11 @@ public class ReadOnlyDocTest
         {
             FileUtils.deleteRecursively( dir );
         }
-        new GraphDatabaseFactory().newEmbeddedDatabase(
-                "target/read-only-db/location" )
-                                  .shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabase( dir ).shutdown();
         // START SNIPPET: createReadOnlyInstance
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                "target/read-only-db/location" )
-                                            .setConfig( GraphDatabaseSettings.read_only, "true" )
-                                            .newGraphDatabase();
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
+                .setConfig( GraphDatabaseSettings.read_only, "true" )
+                .newGraphDatabase();
         // END SNIPPET: createReadOnlyInstance
     }
 

@@ -19,19 +19,21 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.subprocess.SubProcess;
 
-public class ServerProcess extends SubProcess<ServerInterface, Pair<String, String>> implements ServerInterface
+public class ServerProcess extends SubProcess<ServerInterface, Pair<File, String>> implements ServerInterface
 {
     private volatile transient GraphDatabaseService db;
 
     @Override
-    public void startup( Pair<String, String> config ) throws Throwable
+    public void startup( Pair<File, String> config ) throws Throwable
     {
-        String storeDir = config.first();
+        File storeDir = config.first();
         String backupConfigValue = config.other();
         if ( backupConfigValue == null )
         {

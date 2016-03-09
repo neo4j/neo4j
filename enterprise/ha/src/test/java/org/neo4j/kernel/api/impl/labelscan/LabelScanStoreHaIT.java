@@ -25,14 +25,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -111,33 +108,28 @@ public class LabelScanStoreHaIT
     public void setup()
     {
         KernelExtensionFactory<?> testExtension = new LuceneLabelScanStoreExtension( 100, monitor );
-        HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
+        TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
         factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( testExtension ) );
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
                 .withDbFactory( factory )
-                .withStoreDirInitializer( new ClusterManager.StoreDirInitializer()
-        {
-            @Override
-            public void initializeStoreDir( int serverId, File storeDir ) throws IOException
-            {
-                if ( serverId == 1 )
-                {
-                    GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase(
-                            storeDir.getAbsolutePath() );
-                    try
+                .withStoreDirInitializer( ( serverId, storeDir ) -> {
+                    if ( serverId == 1 )
                     {
-                        createSomeLabeledNodes( db,
-                                new Label[] {Labels.First},
-                                new Label[] {Labels.First, Labels.Second},
-                                new Label[] {Labels.Second} );
+                        GraphDatabaseService db =
+                                new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsoluteFile() );
+                        try
+                        {
+                            createSomeLabeledNodes( db,
+                                    new Label[] {Labels.First},
+                                    new Label[] {Labels.First, Labels.Second},
+                                    new Label[] {Labels.Second} );
+                        }
+                        finally
+                        {
+                            db.shutdown();
+                        }
                     }
-                    finally
-                    {
-                        db.shutdown();
-                    }
-                }
-            }
-        } ).build();
+                } ).build();
         life.add( clusterManager );
         life.start();
         cluster = clusterManager.getDefaultCluster();

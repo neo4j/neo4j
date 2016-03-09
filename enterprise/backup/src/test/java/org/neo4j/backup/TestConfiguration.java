@@ -19,12 +19,12 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.configuration.Settings;
@@ -38,14 +38,14 @@ public class TestConfiguration
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    private static final String SOURCE_DIR = "target/db";
+    private static final File SOURCE_DIR = new File( "target/db" );
     private static final String BACKUP_DIR = "target/full-backup";
     private static final String HOST_ADDRESS = "127.0.0.1";
 
     @Before
     public void before() throws Exception
     {
-        FileUtils.deleteDirectory( new File( SOURCE_DIR ) );
+        FileUtils.deleteDirectory( SOURCE_DIR );
         FileUtils.deleteDirectory( new File( BACKUP_DIR ) );
     }
 

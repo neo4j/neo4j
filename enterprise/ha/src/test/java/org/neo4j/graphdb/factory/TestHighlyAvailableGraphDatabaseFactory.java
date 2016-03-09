@@ -19,6 +19,9 @@
  */
 package org.neo4j.graphdb.factory;
 
+import java.util.Collections;
+
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 
 public class TestHighlyAvailableGraphDatabaseFactory extends HighlyAvailableGraphDatabaseFactory
@@ -29,5 +32,22 @@ public class TestHighlyAvailableGraphDatabaseFactory extends HighlyAvailableGrap
         super.configure( builder );
         builder.setConfig( ClusterManager.CONFIG_FOR_SINGLE_JVM_CLUSTER );
         builder.setConfig( GraphDatabaseSettings.store_internal_log_level, "DEBUG" );
+    }
+
+    public TestHighlyAvailableGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    {
+        getCurrentState().addKernelExtensions( newKernelExtensions );
+        return this;
+    }
+
+    public TestHighlyAvailableGraphDatabaseFactory addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
+    {
+        return addKernelExtensions( Collections.singletonList( newKernelExtension ) );
+    }
+
+    public TestHighlyAvailableGraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    {
+        getCurrentState().setKernelExtensions( newKernelExtensions );
+        return this;
     }
 }

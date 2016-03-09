@@ -32,7 +32,7 @@ public class DontShutdownClient
 {
     public static void main( String[] args ) throws Exception
     {
-        String path = args[0];
+        File path = new File( args[0] );
         File configFile = createDefaultConfigFile( path );
         GraphDatabaseShellServer server = new GraphDatabaseShellServer( path, false, configFile.getAbsolutePath() );
         new SameJvmClient( new HashMap<>(), server,

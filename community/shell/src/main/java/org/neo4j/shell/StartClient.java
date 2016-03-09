@@ -263,8 +263,8 @@ public class StartClient
 
     private void startLocal( Args args, CtrlCHandler signalHandler )
     {
-        String dbPath = args.get( ARG_PATH, null );
-        if ( dbPath == null )
+        String path = args.get( ARG_PATH, null );
+        if ( path == null )
         {
             err.println( "ERROR: To start a local Neo4j service and a " +
                          "shell client on top of that you need to supply a path to a " +
@@ -277,7 +277,7 @@ public class StartClient
         try
         {
             boolean readOnly = args.getBoolean( ARG_READONLY, false, true );
-            tryStartLocalServerAndClient( dbPath, readOnly, args, signalHandler );
+            tryStartLocalServerAndClient( new File( path ), readOnly, args, signalHandler );
         }
         catch ( Exception e )
         {
@@ -285,11 +285,11 @@ public class StartClient
         }
     }
 
-    private void tryStartLocalServerAndClient( String dbPath, boolean readOnly, Args args,
-            CtrlCHandler signalHandler ) throws Exception
+    private void tryStartLocalServerAndClient( File path, boolean readOnly, Args args, CtrlCHandler signalHandler )
+            throws Exception
     {
         String configFile = args.get( ARG_CONFIG, null );
-        final GraphDatabaseShellServer server = getGraphDatabaseShellServer( dbPath, readOnly, configFile );
+        final GraphDatabaseShellServer server = getGraphDatabaseShellServer( path, readOnly, configFile );
         Runtime.getRuntime().addShutdownHook( new Thread()
         {
             @Override
@@ -301,7 +301,7 @@ public class StartClient
 
         if ( !isCommandLine( args ) )
         {
-            out.println( "NOTE: Local Neo4j graph database service at '" + dbPath + "'" );
+            out.println( "NOTE: Local Neo4j graph database service at '" + path + "'" );
         }
         ShellClient client = ShellLobby.newClient( server, getSessionVariablesFromArgs( args ),
                 new SystemOutput( out ), signalHandler );
@@ -310,10 +310,10 @@ public class StartClient
         shutdownIfNecessary( server );
     }
 
-    protected GraphDatabaseShellServer getGraphDatabaseShellServer( String dbPath, boolean readOnly, String configFile )
+    protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly, String configFile )
             throws RemoteException
     {
-        return new GraphDatabaseShellServer( factory, dbPath, readOnly, configFile );
+        return new GraphDatabaseShellServer( factory, path, readOnly, configFile );
     }
 
     private void shutdownIfNecessary( ShellServer server )

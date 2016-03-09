@@ -150,18 +150,18 @@ public class UniqueIndexRecoveryTests
     private void restart( File newStore )
     {
         db.shutdown();
-        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( newStore.getAbsolutePath() );
+        db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( newStore.getAbsoluteFile() );
     }
 
-    private File snapshot( final String path ) throws IOException
+    private File snapshot( final File path ) throws IOException
     {
         File snapshotDir = new File( path, "snapshot-" + new Random().nextInt() );
-        FileUtils.copyRecursively( new File( path ), snapshotDir, new FileFilter()
+        FileUtils.copyRecursively( path, snapshotDir, new FileFilter()
         {
             @Override
             public boolean accept( File pathName )
             {
-                String subPath = pathName.getAbsolutePath().substring( path.length() ).replace( File.separatorChar, '/' );
+                String subPath = pathName.getAbsolutePath().substring( path.getPath().length() ).replace( File.separatorChar, '/' );
                 if ( "/store_lock".equals( subPath ) )
                 {
                     return false; // since the db is running, exclude the 'store_lock' file

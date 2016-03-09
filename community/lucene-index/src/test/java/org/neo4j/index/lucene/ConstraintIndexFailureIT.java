@@ -78,7 +78,7 @@ public class ConstraintIndexFailureIT
 
     private GraphDatabaseService startDatabase()
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.directory().getAbsolutePath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.directory().getAbsoluteFile() );
     }
 
     private void dbWithConstraint()

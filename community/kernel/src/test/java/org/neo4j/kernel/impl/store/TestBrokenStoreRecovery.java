@@ -54,7 +54,7 @@ public class TestBrokenStoreRecovery
         trimFileToSize( new File( storeDir, "neostore.propertystore.db" ), 42 );
         File log = new File( storeDir, PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" );
         trimFileToSize( log, 78 );
-        new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() ).shutdown();
+        new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsoluteFile() ).shutdown();
     }
 
     @Rule

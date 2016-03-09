@@ -29,7 +29,7 @@ public class DontShutdownLocalServer
 {
     public static void main( String[] args ) throws Exception
     {
-        String path = args[0];
+        File path = new File( args[0] );
         File configFile = createDefaultConfigFile( path );
         new GraphDatabaseShellServer( path, false, configFile.getAbsolutePath() );
         // Intentionally don't shutdown the server

@@ -96,9 +96,8 @@ public class StoreMigratorFrom21IT
 
         File dir = MigrationTestUtils.find21FormatStoreDirectoryWithDuplicateProperties( storeDir.directory() );
 
-        GraphDatabaseBuilder builder =
-                new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() ).setConfig(
-                        GraphDatabaseSettings.allow_store_upgrade, "true" );
+        GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
+                        .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
         GraphDatabaseService database = builder.newGraphDatabase();
         database.shutdown();
         ConsistencyCheckService service = new ConsistencyCheckService();

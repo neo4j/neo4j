@@ -22,6 +22,7 @@ package org.neo4j.kernel.internal;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -86,7 +87,7 @@ public class StoreLockerLifecycleAdapterTest
         return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir() );
     }
 
-    private String storeDir()
+    private File storeDir()
     {
         return directory.absolutePath();
     }

@@ -30,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.enterprise.EnterpriseFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -92,31 +93,46 @@ public class ExternallyManagedPageCache implements PageCache
     /**
      * Create a GraphDatabaseFactory that will build EmbeddedGraphDatabase instances that all use the given page cache.
      */
-    public static GraphDatabaseFactory graphDatabaseFactoryWithPageCache( final PageCache delegatePageCache )
+    public static GraphDatabaseFactoryWithPageCacheFactory graphDatabaseFactoryWithPageCache( final PageCache delegatePageCache )
     {
-        return new GraphDatabaseFactory()
-        {
-            @Override
-            protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
-                                                        GraphDatabaseFacadeFactory.Dependencies dependencies )
-            {
-                return new EnterpriseFacadeFactory()
-                {
-                    @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
-                    {
-                        return new PlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade )
-                        {
+        return new GraphDatabaseFactoryWithPageCacheFactory( delegatePageCache);
+    }
 
-                            @Override
-                            protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers )
-                            {
-                                return new ExternallyManagedPageCache( delegatePageCache );
-                            }
-                        };
-                    }
-                }.newFacade( storeDir, config, dependencies );
-            }
-        };
+    public static class GraphDatabaseFactoryWithPageCacheFactory extends GraphDatabaseFactory
+    {
+        private final PageCache delegatePageCache;
+
+        public GraphDatabaseFactoryWithPageCacheFactory( PageCache delegatePageCache )
+        {
+            this.delegatePageCache = delegatePageCache;
+        }
+
+        @Override
+        protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config,
+                GraphDatabaseFacadeFactory.Dependencies dependencies )
+        {
+            return new EnterpriseFacadeFactory()
+            {
+                @Override
+                protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                {
+                    return new PlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade )
+                    {
+
+                        @Override
+                        protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers )
+                        {
+                            return new ExternallyManagedPageCache( delegatePageCache );
+                        }
+                    };
+                }
+            }.newFacade( storeDir, config, dependencies );
+        }
+
+        public GraphDatabaseFactoryWithPageCacheFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+        {
+            getCurrentState().setKernelExtensions( newKernelExtensions );
+            return this;
+        }
     }
 }

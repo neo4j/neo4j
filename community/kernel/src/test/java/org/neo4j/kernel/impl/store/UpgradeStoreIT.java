@@ -304,7 +304,7 @@ public class UpgradeStoreIT
 
     private GraphDatabaseService startDb( File path )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( path.getAbsolutePath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( path.getAbsoluteFile() );
     }
 
     private void startAndStopDb( File path )
@@ -314,7 +314,7 @@ public class UpgradeStoreIT
 
     private GraphDatabaseBuilder builderFor( File path )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path.getAbsolutePath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path.getAbsoluteFile() );
     }
 
     private void setOlderNeoStoreVersion( File path ) throws IOException

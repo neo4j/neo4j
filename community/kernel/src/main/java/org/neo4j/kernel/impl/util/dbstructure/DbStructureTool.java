@@ -57,7 +57,7 @@ public class DbStructureTool
                 generatedClassWithPackage
         );
 
-        GraphDatabaseService graph = new GraphDatabaseFactory().newEmbeddedDatabase( dbDir );
+        GraphDatabaseService graph = new GraphDatabaseFactory().newEmbeddedDatabase( new File( dbDir ) );
         try
         {
             if ( writeToFile )

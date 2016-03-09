@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 public class DbRepresentation
 {
-    private final Map<Long, NodeRep> nodes = new TreeMap<>();
+    private final Map<Long,NodeRep> nodes = new TreeMap<>();
     private long highestNodeId;
     private long highestRelationshipId;
 
@@ -50,7 +50,7 @@ public class DbRepresentation
     {
         return of( db, true );
     }
-    
+
     public static DbRepresentation of( GraphDatabaseService db, boolean includeIndexes )
     {
         try ( Transaction ignore = db.beginTx() )
@@ -71,11 +71,10 @@ public class DbRepresentation
     {
         return of( storeDir, true );
     }
-    
+
     public static DbRepresentation of( File storeDir, boolean includeIndexes )
     {
-        GraphDatabaseBuilder builder =
-                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getPath() );
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         GraphDatabaseService db = builder.newGraphDatabase();
         try
         {
@@ -92,7 +91,7 @@ public class DbRepresentation
     {
         return compareWith( (DbRepresentation) obj ).isEmpty();
     }
-    
+
     public Collection<String> compareWith( DbRepresentation other )
     {
         Collection<String> diffList = new ArrayList<>();
@@ -107,11 +106,11 @@ public class DbRepresentation
             }
             node.compareWith( otherNode, diff );
         }
-        
+
         for ( Long id : other.nodes.keySet() )
         {
             if ( !nodes.containsKey( id ) )
-                diff.add( "Other has node " + id + " which I don't" );
+            { diff.add( "Other has node " + id + " which I don't" ); }
         }
         return diffList;
     }
@@ -131,10 +130,10 @@ public class DbRepresentation
     private static class NodeRep
     {
         private final PropertiesRep properties;
-        private final Map<Long, PropertiesRep> outRelationships = new HashMap<>();
+        private final Map<Long,PropertiesRep> outRelationships = new HashMap<>();
         private final long highestRelationshipId;
         private final long id;
-        private final Map<String, Map<String, Serializable>> index;
+        private final Map<String,Map<String,Serializable>> index;
 
         NodeRep( GraphDatabaseService db, Node node, boolean includeIndexes )
         {
@@ -150,21 +149,21 @@ public class DbRepresentation
             this.index = includeIndexes ? checkIndex( db ) : null;
         }
 
-        private Map<String, Map<String, Serializable>> checkIndex( GraphDatabaseService db )
+        private Map<String,Map<String,Serializable>> checkIndex( GraphDatabaseService db )
         {
-            Map<String, Map<String, Serializable>> result = new HashMap<>();
-            for (String indexName : db.index().nodeIndexNames())
+            Map<String,Map<String,Serializable>> result = new HashMap<>();
+            for ( String indexName : db.index().nodeIndexNames() )
             {
-                Map<String, Serializable> thisIndex = new HashMap<>();
+                Map<String,Serializable> thisIndex = new HashMap<>();
                 Index<Node> tempIndex = db.index().forNodes( indexName );
-                for (Map.Entry<String, Serializable> property : properties.props.entrySet())
+                for ( Map.Entry<String,Serializable> property : properties.props.entrySet() )
                 {
                     IndexHits<Node> content = tempIndex.get( property.getKey(), property.getValue() );
-                    if (content.hasNext())
+                    if ( content.hasNext() )
                     {
-                        for (Node hit : content)
+                        for ( Node hit : content )
                         {
-                            if (hit.getId() == id)
+                            if ( hit.getId() == id )
                             {
                                 thisIndex.put( property.getKey(), property.getValue() );
                                 break;
@@ -186,7 +185,7 @@ public class DbRepresentation
         private void compareIndex( NodeRep other, DiffReport diff )
         {
             if ( other.index == index )
-                return;
+            { return; }
             Collection<String> allIndexes = new HashSet<>();
             allIndexes.addAll( index.keySet() );
             allIndexes.addAll( other.index.keySet() );
@@ -202,35 +201,37 @@ public class DbRepresentation
                     diff.add( this + " isn't indexed in " + indexName + " for other" );
                     continue;
                 }
-                        
-                Map<String, Serializable> thisIndex = index.get( indexName );
-                Map<String, Serializable> otherIndex = other.index.get( indexName );
-                
+
+                Map<String,Serializable> thisIndex = index.get( indexName );
+                Map<String,Serializable> otherIndex = other.index.get( indexName );
+
                 if ( thisIndex.size() != otherIndex.size() )
                 {
-                    diff.add( "other index had a different mapping count than me for node " + this + " mine:" + thisIndex + ", other:" + otherIndex );
+                    diff.add( "other index had a different mapping count than me for node " + this + " mine:" +
+                              thisIndex + ", other:" + otherIndex );
                     continue;
                 }
-                
-                for ( Map.Entry<String, Serializable> indexEntry : thisIndex.entrySet() )
+
+                for ( Map.Entry<String,Serializable> indexEntry : thisIndex.entrySet() )
                 {
                     if ( !indexEntry.getValue().equals(
                             otherIndex.get( indexEntry.getKey() ) ) )
                     {
                         diff.add( "other index had a different value indexed for " + indexEntry.getKey() + "=" +
-                                indexEntry.getValue() + ", namely " + otherIndex.get( indexEntry.getKey() ) + " for " + this );
+                                  indexEntry.getValue() + ", namely " + otherIndex.get( indexEntry.getKey() ) +
+                                  " for " + this );
                     }
                 }
             }
         }
-        
+
         protected void compareWith( NodeRep other, DiffReport diff )
         {
             if ( other.id != id )
-                diff.add( "Id differs mine:" + id + ", other:" + other.id );
+            { diff.add( "Id differs mine:" + id + ", other:" + other.id ); }
             properties.compareWith( other.properties, diff );
             if ( index != null && other.index != null )
-                compareIndex( other, diff );
+            { compareIndex( other, diff ); }
             compareRelationships( other, diff );
         }
 
@@ -246,11 +247,11 @@ public class DbRepresentation
                 }
                 rel.compareWith( otherRel, diff );
             }
-            
+
             for ( Long id : other.outRelationships.keySet() )
             {
                 if ( !outRelationships.containsKey( id ) )
-                    diff.add( "Other has relationship " + id + " which I don't" );
+                { diff.add( "Other has relationship " + id + " which I don't" ); }
             }
         }
 
@@ -258,11 +259,11 @@ public class DbRepresentation
         public int hashCode()
         {
             int result = 7;
-            result += properties.hashCode()*7;
-            result += outRelationships.hashCode()*13;
+            result += properties.hashCode() * 7;
+            result += outRelationships.hashCode() * 13;
             result += id * 17;
             if ( index != null )
-                result += index.hashCode() * 19;
+            { result += index.hashCode() * 19; }
             return result;
         }
 
@@ -275,7 +276,7 @@ public class DbRepresentation
 
     private static class PropertiesRep
     {
-        private final Map<String, Serializable> props = new HashMap<>();
+        private final Map<String,Serializable> props = new HashMap<>();
         private final String entityToString;
         private final long entityId;
 
@@ -305,7 +306,7 @@ public class DbRepresentation
         {
             boolean equals = props.equals( other.props );
             if ( !equals )
-                diff.add( "Properties diff for " + entityToString + " mine:" + props + ", other:" + other.props );
+            { diff.add( "Properties diff for " + entityToString + " mine:" + props + ", other:" + other.props ); }
             return equals;
         }
 
@@ -321,12 +322,12 @@ public class DbRepresentation
             return props.toString();
         }
     }
-    
+
     private interface DiffReport
     {
         void add( String report );
     }
-    
+
     private static class CollectionDiffReport implements DiffReport
     {
         private final Collection<String> collection;
@@ -335,7 +336,7 @@ public class DbRepresentation
         {
             this.collection = collection;
         }
-        
+
         @Override
         public void add( String report )
         {

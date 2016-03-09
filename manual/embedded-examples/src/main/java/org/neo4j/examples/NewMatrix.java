@@ -43,7 +43,7 @@ public class NewMatrix
         CODED_BY
     }
 
-    private static final String MATRIX_DB = "target/matrix-new-db";
+    private static final File MATRIX_DB = new File( "target/matrix-new-db" );
     private GraphDatabaseService graphDb;
     private long matrixNodeId;
 
@@ -58,7 +58,7 @@ public class NewMatrix
 
     public void setUp() throws IOException
     {
-        FileUtils.deleteRecursively( new File( MATRIX_DB ) );
+        FileUtils.deleteRecursively( MATRIX_DB );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( MATRIX_DB );
         registerShutdownHook();
         createNodespace();

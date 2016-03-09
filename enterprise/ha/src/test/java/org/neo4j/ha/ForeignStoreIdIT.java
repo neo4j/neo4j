@@ -48,19 +48,19 @@ public class ForeignStoreIdIT
         // GIVEN
         // -- one instance running
         firstInstance = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( testDirectory.directory( "1" ).getAbsolutePath() )
+                .newEmbeddedDatabaseBuilder( testDirectory.directory( "1" ) )
                 .setConfig( server_id, "1" )
                 .setConfig( cluster_server, "127.0.0.1:5001" )
                 .setConfig( ha_server, "127.0.0.1:6031" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .newGraphDatabase();
         // -- another instance preparing to join with a store with a different store ID
-        String foreignDbStoreDir = createAnotherStore( testDirectory.directory( "2" ), 0 );
+        File foreignDbStoreDir = createAnotherStore( testDirectory.directory( "2" ), 0 );
 
         // WHEN
         // -- the other joins
         foreignInstance = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( foreignDbStoreDir )
+                .newEmbeddedDatabaseBuilder( foreignDbStoreDir )
                 .setConfig( server_id, "2" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .setConfig( cluster_server, "127.0.0.1:5002" )
@@ -80,7 +80,7 @@ public class ForeignStoreIdIT
         // GIVEN
         // -- one instance running
         firstInstance = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( testDirectory.directory( "1" ).getAbsolutePath() )
+                .newEmbeddedDatabaseBuilder( testDirectory.directory( "1" ) )
                 .setConfig( server_id, "1" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .setConfig( cluster_server, "127.0.0.1:5001" )
@@ -88,12 +88,12 @@ public class ForeignStoreIdIT
                 .newGraphDatabase();
         createNodes( firstInstance, 3, "first" );
         // -- another instance preparing to join with a store with a different store ID
-        String foreignDbStoreDir = createAnotherStore( testDirectory.directory( "2" ), 1 );
+        File foreignDbStoreDir = createAnotherStore( testDirectory.directory( "2" ), 1 );
 
         // WHEN
         // -- the other joins
         foreignInstance = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( foreignDbStoreDir )
+                .newEmbeddedDatabaseBuilder( foreignDbStoreDir )
                 .setConfig( server_id, "2" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
                 .setConfig( cluster_server, "127.0.0.1:5002" )
@@ -139,13 +139,12 @@ public class ForeignStoreIdIT
         }
     }
 
-    private String createAnotherStore( File directory, int transactions )
+    private File createAnotherStore( File directory, int transactions )
     {
-        String storeDir = directory.getAbsolutePath();
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
         createNodes( db, transactions, "node" );
         db.shutdown();
-        return storeDir;
+        return directory;
     }
 
     private void createNodes( GraphDatabaseService db, int transactions, String prefix )

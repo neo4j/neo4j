@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,7 +43,7 @@ public class SchemaRecoveryIT
     public void schemaTransactionsShouldSurviveRecovery() throws Exception
     {
         // given
-        String storeDir = testDirectory.absolutePath();
+        File storeDir = testDirectory.absolutePath();
         Process process = new CreateConstraintButDoNotShutDown().start( storeDir );
         process.waitForSchemaTransactionCommitted();
         SubProcess.kill( process );
@@ -81,13 +82,13 @@ public class SchemaRecoveryIT
         void waitForSchemaTransactionCommitted() throws InterruptedException;
     }
 
-    static class CreateConstraintButDoNotShutDown extends SubProcess<Process, String> implements Process
+    static class CreateConstraintButDoNotShutDown extends SubProcess<Process, File> implements Process
     {
         // Would use a CountDownLatch but fields of this class need to be serializable.
         private volatile boolean started = false;
 
         @Override
-        protected void startup( String storeDir ) throws Throwable
+        protected void startup( File storeDir ) throws Throwable
         {
             GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
             try ( Transaction transaction = database.beginTx() )

@@ -1307,8 +1307,7 @@ public class ClusterManager
                 {
                     storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
                 }
-                GraphDatabaseBuilder builder =
-                        dbFactory.newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() );
+                GraphDatabaseBuilder builder = dbFactory.newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() );
                 builder.setConfig( ClusterSettings.cluster_name, name );
                 builder.setConfig( ClusterSettings.initial_hosts, initialHosts.toString() );
                 builder.setConfig( ClusterSettings.server_id, serverId + "" );

@@ -18,6 +18,7 @@
  */
 package org.neo4j.examples.orderedpath;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,7 +41,7 @@ public class OrderedPath
 {
     private static final RelationshipType REL1 = withName( "REL1" ), REL2 = withName( "REL2" ),
             REL3 = withName( "REL3" );
-    static final String DB_PATH = "target/neo4j-orderedpath-db";
+    static final File DB_PATH = new File( "target/neo4j-orderedpath-db" );
     GraphDatabaseService db;
 
     public OrderedPath( GraphDatabaseService db )
@@ -64,7 +65,7 @@ public class OrderedPath
             Node B = db.createNode();
             Node C = db.createNode();
             Node D = db.createNode();
-    
+
             A.createRelationshipTo( C, REL2 );
             C.createRelationshipTo( D, REL3 );
             A.createRelationshipTo( B, REL1 );

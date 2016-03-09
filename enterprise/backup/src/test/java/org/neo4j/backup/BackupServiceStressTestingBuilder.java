@@ -164,7 +164,7 @@ public class BackupServiceStressTestingBuilder
         public Integer call() throws Exception
         {
             final GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                    storeDir.getAbsolutePath() ).setConfig( OnlineBackupSettings.online_backup_server,
+                    storeDir.getAbsoluteFile() ).setConfig( OnlineBackupSettings.online_backup_server,
                     backupHostname + ":" + backupPort ).setConfig( GraphDatabaseSettings.keep_logical_logs, "true" )
                     .newGraphDatabase();
 

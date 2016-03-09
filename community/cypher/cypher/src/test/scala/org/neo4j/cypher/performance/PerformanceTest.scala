@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.performance
 
+import java.io.File
 import java.util.Collections
 
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -34,7 +35,7 @@ class PerformanceTest extends CypherFunSuite {
 
   override def beforeEach() {
     super.beforeEach()
-    db = new GraphDatabaseFactory().newEmbeddedDatabase("target/db")
+    db = new GraphDatabaseFactory().newEmbeddedDatabase(new File("target/db"))
   }
 
   override def afterEach() {

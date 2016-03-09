@@ -87,8 +87,7 @@ public class JmxDocTest
     {
         File storeDir = test.graphDbDir();
         GraphDatabaseBuilder builder =
-                new TestHighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder(
-                        storeDir.getAbsolutePath() );
+                new TestHighlyAvailableGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         d1b = builder.setConfig( ClusterSettings.server_id, "1" )
                      .setConfig( "jmx.port", "9913" )
                      .setConfig( ClusterSettings.initial_hosts, ":5001" )

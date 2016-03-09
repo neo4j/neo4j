@@ -379,7 +379,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   private def executionResults: Seq[DataSetResults] = (for ((dataSet, queries) <- queriesByDataSet) yield {
     val (dataSetName, dataSetDir) = dataSet
-    val db = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase(dataSetDir))
+    val db = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase(new File(dataSetDir)))
     try {
       val queryResults = for ((queryName, queryText) <- queries) yield {
         val results = for ((compilerName, compilerCreator) <- compilers) yield {
