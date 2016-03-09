@@ -42,11 +42,11 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.indexOf;
 import static org.neo4j.helpers.collection.Iterables.sort;
-import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.shell.Continuation.INPUT_COMPLETE;
 
 public class Schema extends TransactionProvidingApp
@@ -245,7 +245,7 @@ public class Schema extends TransactionProvidingApp
             if ( schema.getIndexState( index ) != IndexState.ONLINE )
             {
                 out.println( String.format( "Awaiting :%s ON %s %s", index.getLabel().name(),
-                        toList( index.getPropertyKeys() ), IndexState.ONLINE ) );
+                        asList( index.getPropertyKeys() ), IndexState.ONLINE ) );
                 schema.awaitIndexOnline( index, 10000, TimeUnit.DAYS );
             }
         }

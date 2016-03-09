@@ -24,61 +24,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.RawIterator;
-import org.neo4j.function.ThrowingFunction;
+import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
-import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 
-/**
- * TODO: Combine this and {@link IteratorUtil} into one class
- */
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
+
 public final class Iterables
 {
-    private static Iterable EMPTY = new Iterable()
-    {
-        Iterator iterator = new Iterator()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return false;
-            }
-
-            @Override
-            public Object next()
-            {
-                throw new NoSuchElementException();
-            }
-
-            @Override
-            public void remove()
-            {
-            }
-        };
-
-        @Override
-        public Iterator iterator()
-        {
-            return iterator;
-        }
-    };
-
     @SuppressWarnings("unchecked")
     public static <T> Iterable<T> empty()
     {
         return EMPTY;
     }
-
 
     public static <T> Iterable<T> limit( final int limitItems, final Iterable<T> iterable )
     {
@@ -188,39 +156,9 @@ public final class Iterables
         return collection;
     }
 
-    public static long count( Iterable<?> iterable )
-    {
-        long c = 0;
-        for ( Iterator<?> iterator = iterable.iterator(); iterator.hasNext(); iterator.next() )
-        {
-            c++;
-        }
-        return c;
-    }
-
     public static <X> Iterable<X> filter( Predicate<? super X> specification, Iterable<X> i )
     {
         return new FilterIterable<>( i, specification );
-    }
-
-    public static <X> Iterator<X> filter( Predicate<? super X> specification, Iterator<X> i )
-    {
-        return new FilterIterable.FilterIterator<>( i, specification );
-    }
-
-    public static <X> X first( Iterable<? extends X> i )
-    {
-        Iterator<? extends X> iter = i.iterator();
-        if ( iter.hasNext() )
-        {
-            return iter.next();
-        }
-        return null;
-    }
-
-    public static <X> X single( Iterable<? extends X> i )
-    {
-        return IteratorUtil.single( i );
     }
 
     public static <X> Iterable<X> skip( final int skip, final Iterable<X> iterable )
@@ -244,21 +182,9 @@ public final class Iterables
         };
     }
 
-    public static <X> X last( Iterable<? extends X> i )
-    {
-        Iterator<? extends X> iter = i.iterator();
-        X item = null;
-        while ( iter.hasNext() )
-        {
-            item = iter.next();
-        }
-
-        return item;
-    }
-
     public static <X> Iterable<X> reverse( Iterable<X> iterable )
     {
-        List<X> list = toList( iterable );
+        List<X> list = asList( iterable );
         Collections.reverse( list );
         return list;
     }
@@ -266,7 +192,7 @@ public final class Iterables
     @SafeVarargs
     public static <X, I extends Iterable<? extends X>> Iterable<X> flatten( I... multiIterator )
     {
-        return new FlattenIterable<>( asList(multiIterator) );
+        return new FlattenIterable<>( Arrays.asList(multiIterator) );
     }
 
     public static <X, S extends Iterable<? extends X>, I extends Iterable<S>> Iterable<X> flattenIterable(
@@ -279,14 +205,7 @@ public final class Iterables
     public static <T> Iterable<T> mix( final Iterable<T>... iterables )
     {
         return () -> {
-            final Iterable<Iterator<T>> iterators = toList( map( new Function<Iterable<T>, Iterator<T>>()
-            {
-                @Override
-                public Iterator<T> apply( Iterable<T> iterable )
-                {
-                    return iterable.iterator();
-                }
-            }, asList(iterables) ) );
+            final Iterable<Iterator<T>> iterators = asList( map( Iterable::iterator, Arrays.asList(iterables) ) );
 
             return new Iterator<T>()
             {
@@ -348,45 +267,11 @@ public final class Iterables
         return new MapIterable<>( from, function );
     }
 
-    public static <FROM, TO> Iterator<TO> map( Function<? super FROM, ? extends TO> function, Iterator<FROM> from )
-    {
-        return new MapIterable.MapIterator<>( from, function );
-    }
-
-    public static <FROM, TO, EX extends Exception> RawIterator<TO, EX> map(
-            ThrowingFunction<? super FROM, ? extends TO, EX> function, RawIterator<FROM, EX> from )
-    {
-        return new RawMapIterator<>( from, function );
-    }
-
-    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator( Iterator<T> iter )
-    {
-        return new RawIterator<T,EX>()
-        {
-            @Override
-            public boolean hasNext() throws EX
-            {
-                return iter.hasNext();
-            }
-
-            @Override
-            public T next() throws EX
-            {
-                return iter.next();
-            }
-        };
-    }
-
-    public static <FROM, TO> Iterator<TO> flatMap( Function<? super FROM, ? extends Iterator<TO>> function, Iterator<FROM> from )
-    {
-        return new CombiningIterator<>( map(function, from) );
-    }
-
     @SafeVarargs
     @SuppressWarnings("unchecked")
     public static <T, C extends T> Iterable<T> iterable( C... items )
     {
-        return (Iterable<T>) asList(items);
+        return (Iterable<T>) Arrays.asList(items);
     }
 
     @SuppressWarnings("unchecked")
@@ -399,39 +284,12 @@ public final class Iterables
     @SuppressWarnings("unchecked")
     public static <T> Iterable<T> concat( Iterable<? extends T>... iterables )
     {
-        return concat( asList( (Iterable<T>[]) iterables ) );
+        return concat( Arrays.asList( (Iterable<T>[]) iterables ) );
     }
 
     public static <T> Iterable<T> concat( final Iterable<Iterable<T>> iterables )
     {
         return new CombiningIterable<>( iterables );
-    }
-
-    @SafeVarargs
-    @SuppressWarnings("unchecked")
-    public static <T> Iterator<T> concat( Iterator<? extends T>... iterables )
-    {
-        return concat( Arrays.asList( (Iterator<T>[]) iterables ).iterator() );
-    }
-
-    public static <T> ResourceIterator<T> concatResourceIterators( Iterable<ResourceIterator<T>> iteratorList )
-    {
-        return concatResourceIterators( iteratorList.iterator() );
-    }
-
-    public static <T> ResourceIterator<T> concatResourceIterators( Iterator<ResourceIterator<T>> iterators )
-    {
-        return new CombiningResourceIterator<>(iterators);
-    }
-
-    public static <T> Iterator<T> concat( Iterator<Iterator<T>> iterators )
-    {
-        return new CombiningIterator<>(iterators);
-    }
-
-    public static <FROM, TO> Function<FROM, TO> cast()
-    {
-        return from -> (TO) from;
     }
 
     public static <T, C extends T> Iterable<T> prepend( final C item, final Iterable<T> iterable )
@@ -525,35 +383,20 @@ public final class Iterables
         return new CacheIterable<>( iterable );
     }
 
-    public static <T> List<T> toList( Iterable<T> iterable )
+    public static Object[] asArray( Iterable<Object> iterable )
     {
-        return addAll( new ArrayList<T>(), iterable );
-    }
-
-    public static <T> List<T> toList( Iterator<T> iterator)
-    {
-        List<T> list = new ArrayList<>(  );
-        while ( iterator.hasNext() )
-        {
-            list.add(iterator.next());
-        }
-        return list;
-    }
-
-    public static Object[] toArray( Iterable<Object> iterable )
-    {
-        return toArray( Object.class, iterable );
+        return asArray( Object.class, iterable );
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T[] toArray( Class<T> componentType, Iterable<T> iterable )
+    public static <T> T[] asArray( Class<T> componentType, Iterable<T> iterable )
     {
         if ( iterable == null )
         {
             return null;
         }
 
-        List<T> list = toList( iterable );
+        List<T> list = asList( iterable );
         return list.toArray( (T[]) Array.newInstance( componentType, list.size() ) );
     }
 
@@ -564,16 +407,6 @@ public final class Iterables
             return (ResourceIterable<T>) iterable;
         }
         return () -> asResourceIterator( iterable.iterator() );
-    }
-
-    public static <T> ResourceIterable<T> asResourceIterable( final ResourceIterator<T> it )
-    {
-        return () -> it;
-    }
-
-    public static <T> Set<T> toSet( Iterable<T> iterable )
-    {
-        return addAll( new HashSet<T>(), iterable );
     }
 
     public static String toString( Iterable<?> values, String separator )
@@ -591,185 +424,245 @@ public final class Iterables
         return sb.toString();
     }
 
-    private static class MapIterable<FROM, TO>
-            implements Iterable<TO>
+    /**
+     * Returns the given iterable's first element or {@code null} if no
+     * element found.
+     *
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the first element in the {@code iterable}, or {@code null} if no
+     * element found.
+     */
+    public static <T> T firstOrNull( Iterable<T> iterable )
     {
-        private final Iterable<FROM> from;
-        private final Function<? super FROM, ? extends TO> function;
-
-        public MapIterable( Iterable<FROM> from, Function<? super FROM, ? extends TO> function )
-        {
-            this.from = from;
-            this.function = function;
-        }
-
-        @Override
-        public Iterator<TO> iterator()
-        {
-            return new MapIterator<>( from.iterator(), function );
-        }
-
-        static class MapIterator<FROM, TO>
-                implements Iterator<TO>
-        {
-            private final Iterator<FROM> fromIterator;
-            private final Function<? super FROM, ? extends TO> function;
-
-            public MapIterator( Iterator<FROM> fromIterator, Function<? super FROM, ? extends TO> function )
-            {
-                this.fromIterator = fromIterator;
-                this.function = function;
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return fromIterator.hasNext();
-            }
-
-            @Override
-            public TO next()
-            {
-                FROM from = fromIterator.next();
-
-                return function.apply( from );
-            }
-
-            @Override
-            public void remove()
-            {
-                fromIterator.remove();
-            }
-        }
+        return Iterators.firstOrNull( iterable.iterator() );
     }
 
-    private static class RawMapIterator<FROM, TO, EX extends Exception>
-            implements RawIterator<TO, EX>
+    /**
+     * Returns the given iterable's first element. If no element is found a
+     * {@link NoSuchElementException} is thrown.
+     *
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the first element in the {@code iterable}.
+     * @throws NoSuchElementException if no element found.
+     */
+    public static <T> T first( Iterable<T> iterable )
     {
-        private final RawIterator<FROM, EX> fromIterator;
-        private final ThrowingFunction<? super FROM, ? extends TO, EX> function;
-
-        public RawMapIterator( RawIterator<FROM, EX> fromIterator, ThrowingFunction<? super FROM, ? extends TO, EX> function )
-        {
-            this.fromIterator = fromIterator;
-            this.function = function;
-        }
-
-        @Override
-        public boolean hasNext() throws EX
-        {
-            return fromIterator.hasNext();
-        }
-
-        @Override
-        public TO next() throws EX
-        {
-            FROM from = fromIterator.next();
-            return function.apply( from );
-        }
-
-        @Override
-        public void remove()
-        {
-            fromIterator.remove();
-        }
+        return Iterators.first( iterable.iterator() );
     }
 
-    private static class FilterIterable<T>
-            implements Iterable<T>
+    /**
+     * Returns the given iterable's last element or {@code null} if no
+     * element found.
+     *
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the last element in the {@code iterable}, or {@code null} if no
+     * element found.
+     */
+    public static <T> T lastOrNull( Iterable<T> iterable )
     {
-        private final Iterable<T> iterable;
-
-        private final Predicate<? super T> specification;
-
-        public FilterIterable( Iterable<T> iterable, Predicate<? super T> specification )
-        {
-            this.iterable = iterable;
-            this.specification = specification;
-        }
-
-        @Override
-        public Iterator<T> iterator()
-        {
-            return new FilterIterator<>( iterable.iterator(), specification );
-        }
-
-        static class FilterIterator<T>
-                implements Iterator<T>
-        {
-            private final Iterator<T> iterator;
-
-            private final Predicate<? super T> specification;
-
-            private T currentValue;
-            boolean finished = false;
-            boolean nextConsumed = true;
-
-            public FilterIterator( Iterator<T> iterator, Predicate<? super T> specification )
-            {
-                this.specification = specification;
-                this.iterator = iterator;
-            }
-
-            public boolean moveToNextValid()
-            {
-                boolean found = false;
-                while ( !found && iterator.hasNext() )
-                {
-                    T currentValue = iterator.next();
-                    boolean satisfies = specification.test( currentValue );
-
-                    if ( satisfies )
-                    {
-                        found = true;
-                        this.currentValue = currentValue;
-                        nextConsumed = false;
-                    }
-                }
-                if ( !found )
-                {
-                    finished = true;
-                }
-                return found;
-            }
-
-            @Override
-            public T next()
-            {
-                if ( !nextConsumed )
-                {
-                    nextConsumed = true;
-                    return currentValue;
-                }
-                else
-                {
-                    if ( !finished )
-                    {
-                        if ( moveToNextValid() )
-                        {
-                            nextConsumed = true;
-                            return currentValue;
-                        }
-                    }
-                }
-                throw new NoSuchElementException( "This iterator is exhausted." );
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return !finished && (!nextConsumed || moveToNextValid());
-            }
-
-            @Override
-            public void remove()
-            {
-            }
-        }
+        return Iterators.lastOrNull( iterable.iterator() );
     }
 
-    private static class FlattenIterable<T, I extends Iterable<? extends T>>
-            implements Iterable<T>
+    /**
+     * Returns the given iterable's last element. If no element is found a
+     * {@link NoSuchElementException} is thrown.
+     *
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the last element in the {@code iterable}.
+     * @throws NoSuchElementException if no element found.
+     */
+    public static <T> T last( Iterable<T> iterable )
+    {
+        return Iterators.last( iterable.iterator() );
+    }
+
+    /**
+     * Returns the given iterable's single element or {@code null} if no
+     * element found. If there is more than one element in the iterable a
+     * {@link NoSuchElementException} will be thrown.
+     *
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
+     * has been retrieved, or failed to be retrieved.
+     *
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the single element in {@code iterable}, or {@code null} if no
+     * element found.
+     * @throws NoSuchElementException if more than one element was found.
+     */
+    public static <T> T singleOrNull( Iterable<T> iterable )
+    {
+        return Iterators.singleOrNull( iterable.iterator() );
+    }
+
+    /**
+     * Returns the given iterable's single element. If there are no elements
+     * or more than one element in the iterable a {@link NoSuchElementException}
+     * will be thrown.
+     *
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
+     * has been retrieved, or failed to be retrieved.
+     *
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @return the single element in the {@code iterable}.
+     * @throws NoSuchElementException if there isn't exactly one element.
+     */
+    public static <T> T single( Iterable<T> iterable )
+    {
+        return Iterators.single( iterable.iterator() );
+    }
+
+    /**
+     * Returns the given iterable's single element or {@code itemIfNone} if no
+     * element found. If there is more than one element in the iterable a
+     * {@link NoSuchElementException} will be thrown.
+     *
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
+     * has been retrieved, or failed to be retrieved.
+     *
+     * @param <T> the type of elements in {@code iterable}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @param itemIfNone item to use if none is found
+     * @return the single element in {@code iterable}, or {@code null} if no
+     * element found.
+     * @throws NoSuchElementException if more than one element was found.
+     */
+    public static <T> T single( Iterable<T> iterable, T itemIfNone )
+    {
+        return Iterators.single( iterable.iterator(), itemIfNone );
+    }
+
+    /**
+     * Returns the iterator's n:th item from the end of the iteration.
+     * If the iterator has got less than n-1 items in it
+     * {@link NoSuchElementException} is thrown.
+     *
+     * @param <T> the type of elements in {@code iterator}.
+     * @param iterable the {@link Iterable} to get elements from.
+     * @param n the n:th item from the end to get.
+     * @return the iterator's n:th item from the end of the iteration.
+     * @throws NoSuchElementException if the iterator contains less than n-1 items.
+     */
+    public static <T> T fromEnd( Iterable<T> iterable, int n )
+    {
+        return Iterators.fromEnd( iterable.iterator(), n );
+    }
+
+    /**
+     * Adds all the items in {@code iterator} to {@code collection}.
+     * @param <C> the type of {@link Collection} to add to items to.
+     * @param <T> the type of items in the collection and iterator.
+     * @param iterable the {@link Iterator} to grab the items from.
+     * @param collection the {@link Collection} to add the items to.
+     * @return the {@code collection} which was passed in, now filled
+     * with the items from {@code iterator}.
+     */
+    public static <C extends Collection<T>,T> C addToCollection( Iterable<T> iterable,
+            C collection )
+    {
+        return Iterators.addToCollection( iterable.iterator(), collection );
+    }
+
+    /**
+     * Counts the number of items in the {@code iterator} by looping
+     * through it.
+     * @param <T> the type of items in the iterator.
+     * @param iterable the {@link Iterable} to count items in.
+     * @return the number of items found in {@code iterable}.
+     */
+    public static <T> long count( Iterable<T> iterable )
+    {
+        return count( iterable, Predicates.alwaysTrue() );
+    }
+
+    /**
+     * Counts the number of filtered items in the {@code iterable} by looping through it.
+     *
+     * @param <T> the type of items in the iterator.
+     * @param iterable the {@link Iterable} to count items in.
+     * @param filter the filter to test items against
+     * @return the number of found in {@code iterable}.
+     */
+    public static <T> long count( Iterable<T> iterable, Predicate<T> filter )
+    {
+        return Iterators.count( iterable.iterator(), filter );
+    }
+
+    /**
+     * Creates a collection from an iterable.
+     *
+     * @param iterable The iterable to create the collection from.
+     * @param <T> The generic type of both the iterable and the collection.
+     * @return a collection containing all items from the iterable.
+     */
+    public static <T> Collection<T> asCollection( Iterable<T> iterable )
+    {
+        return addToCollection( iterable, new ArrayList<T>() );
+    }
+
+    public static <T> List<T> asList( Iterable<T> iterator )
+    {
+        return addToCollection( iterator, new ArrayList<T>() );
+    }
+
+    public static <T, U> Map<T, U> asMap( Iterable<Pair<T, U>> pairs )
+    {
+        Map<T, U> map = new HashMap<>();
+        for (Pair<T, U> pair: pairs) {
+            map.put(pair.first(), pair.other());
+        }
+        return map;
+    }
+
+    /**
+     * Creates a {@link Set} from an {@link Iterable}.
+     *
+     * @param iterable The items to create the set from.
+     * @param <T> The generic type of items.
+     * @return a set containing all items from the {@link Iterable}.
+     */
+    public static <T> Set<T> asSet( Iterable<T> iterable )
+    {
+        return addToCollection( iterable, new HashSet<T>() );
+    }
+
+    /**
+     * Creates a {@link Set} from an {@link Iterable}.
+     *
+     * @param iterable The items to create the set from.
+     * @param <T> The generic type of items.
+     * @return a set containing all items from the {@link Iterable}.
+     */
+    public static <T> Set<T> asUniqueSet( Iterable<T> iterable )
+    {
+        return Iterators.addToCollectionUnique( iterable, new HashSet<T>() );
+    }
+
+    public static Iterable<Long> asIterable( final long... array )
+    {
+        return () -> Iterators.asIterator( array );
+    }
+
+    @SafeVarargs
+    public static <T> Iterable<T> asIterable( final T... array )
+    {
+        return () -> Iterators.iterator( array );
+    }
+
+    public static <T> ResourceIterable<T> resourceIterable( final Iterable<T> iterable )
+    {
+        return () -> Iterators.resourceIterator( iterable.iterator(), Resource.EMPTY );
+    }
+
+    private static class FlattenIterable<T, I extends Iterable<? extends T>> implements Iterable<T>
     {
         private final Iterable<I> iterable;
 
@@ -840,8 +733,7 @@ public final class Iterables
         }
     }
 
-    private static class CacheIterable<T>
-            implements Iterable<T>
+    private static class CacheIterable<T> implements Iterable<T>
     {
         private final Iterable<T> iterable;
         private Iterable<T> cache;
@@ -942,33 +834,48 @@ public final class Iterables
             return Collections.emptyList();
         }
 
-        return () -> IteratorUtil.iterator( item );
+        return () -> Iterators.iterator( item );
     }
 
     @SuppressWarnings( "rawtypes" )
     public static <T, S extends Comparable> Iterable<T> sort( Iterable<T> iterable, final Function<T, S> compareFunction )
     {
-        List<T> list = toList( iterable );
+        List<T> list = asList( iterable );
         Collections.sort( list, ( o1, o2 ) -> compareFunction.apply( o1 ).compareTo( compareFunction.apply( o2 ) ) );
         return list;
     }
 
     public static String join( String joinString, Iterable<?> iter )
     {
-        return join( joinString, iter.iterator() );
+        return Iterators.join( joinString, iter.iterator() );
     }
 
-    public static String join( String joinString, Iterator<?> iter )
+    private static Iterable EMPTY = new Iterable()
     {
-        StringBuilder sb = new StringBuilder();
-        while(iter.hasNext())
+        Iterator iterator = new Iterator()
         {
-            sb.append( iter.next().toString() );
-            if(iter.hasNext())
+            @Override
+            public boolean hasNext()
             {
-                sb.append( joinString );
+                return false;
             }
+
+            @Override
+            public Object next()
+            {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public void remove()
+            {
+            }
+        };
+
+        @Override
+        public Iterator iterator()
+        {
+            return iterator;
         }
-        return sb.toString();
-    }
+    };
 }

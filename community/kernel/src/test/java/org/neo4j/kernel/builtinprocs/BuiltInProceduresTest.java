@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -52,7 +53,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION;
 
 public class BuiltInProceduresTest
@@ -265,6 +265,6 @@ public class BuiltInProceduresTest
     {
         CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
         ctx.put( KERNEL_TRANSACTION, tx );
-        return asList( procs.call( ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args ) );
+        return Iterators.asList( procs.call( ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args ) );
     }
 }

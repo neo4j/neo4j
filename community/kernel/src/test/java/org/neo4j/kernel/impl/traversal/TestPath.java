@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -29,12 +30,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.Uniqueness;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 import static org.neo4j.kernel.Traversal.traversal;
 
@@ -76,20 +77,20 @@ public class TestPath extends TraversalTestBase
     @Test
     public void reverseNodes() throws Exception
     {
-        Path path = first( traversal().evaluator( atDepth( 0 ) ).traverse( a ) );
+        Path path = Iterables.first( traversal().evaluator( atDepth( 0 ) ).traverse( a ) );
         assertContains( path.reverseNodes(), a );
         
-        path = first( traversal().evaluator( atDepth( 4 ) ).traverse( a ) );
+        path = Iterables.first( traversal().evaluator( atDepth( 4 ) ).traverse( a ) );
         assertContainsInOrder( path.reverseNodes(), e, d, c, b, a );
     }
 
     @Test
     public void reverseRelationships() throws Exception
     {
-        Path path = first( traversal().evaluator( atDepth( 0 ) ).traverse( a ) );
+        Path path = Iterables.first( traversal().evaluator( atDepth( 0 ) ).traverse( a ) );
         assertFalse( path.reverseRelationships().iterator().hasNext() );
         
-        path = first( traversal().evaluator( atDepth( 4 ) ).traverse( a ) );
+        path = Iterables.first( traversal().evaluator( atDepth( 4 ) ).traverse( a ) );
         Node[] expectedNodes = new Node[] { e, d, c, b, a };
         int index = 0;
         for ( Relationship rel : path.reverseRelationships() )
@@ -102,30 +103,30 @@ public class TestPath extends TraversalTestBase
     {
         TraversalDescription side = traversal().uniqueness( Uniqueness.NODE_PATH );
         BidirectionalTraversalDescription bidirectional = bidirectionalTraversal().mirroredSides( side );
-        Path bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        Path bidirectionalPath = Iterables.first( bidirectional.traverse( a, e ) );
         assertPathIsCorrect( bidirectionalPath );
         
-        assertEquals( a, first( bidirectional.traverse( a, e ) ).startNode() );
+        assertEquals( a, Iterables.first( bidirectional.traverse( a, e ) ).startNode() );
         
         // White box testing below: relationships(), nodes(), reverseRelationships(), reverseNodes()
         // does cache the start node if not already cached, so just make sure they to it properly.
-        bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        bidirectionalPath = Iterables.first( bidirectional.traverse( a, e ) );
         bidirectionalPath.relationships();
         assertEquals( a, bidirectionalPath.startNode() );
 
-        bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        bidirectionalPath = Iterables.first( bidirectional.traverse( a, e ) );
         bidirectionalPath.nodes();
         assertEquals( a, bidirectionalPath.startNode() );
 
-        bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        bidirectionalPath = Iterables.first( bidirectional.traverse( a, e ) );
         bidirectionalPath.reverseRelationships();
         assertEquals( a, bidirectionalPath.startNode() );
 
-        bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        bidirectionalPath = Iterables.first( bidirectional.traverse( a, e ) );
         bidirectionalPath.reverseNodes();
         assertEquals( a, bidirectionalPath.startNode() );
 
-        bidirectionalPath = first( bidirectional.traverse( a, e ) );
+        bidirectionalPath = Iterables.first( bidirectional.traverse( a, e ) );
         bidirectionalPath.iterator();
         assertEquals( a, bidirectionalPath.startNode() );
     }

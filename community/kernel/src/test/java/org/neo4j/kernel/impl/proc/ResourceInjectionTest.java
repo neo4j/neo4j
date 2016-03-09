@@ -26,16 +26,15 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Procedure;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -51,7 +50,7 @@ public class ResourceInjectionTest
         CallableProcedure proc = compile( ProcedureWithInjectedAPI.class ).get( 0 );
 
         // Then
-        List<Object[]> out = IteratorUtil.asList( proc.apply( new CallableProcedure.BasicContext(), new Object[0] ) );
+        List<Object[]> out = Iterators.asList( proc.apply( new CallableProcedure.BasicContext(), new Object[0] ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( (new Object[]{"Bonnie"}) ) );

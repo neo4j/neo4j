@@ -43,7 +43,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allAvailabilityGuardsReleased;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
@@ -73,11 +73,11 @@ public class LabelScanStoreHaIT
         }
     }
 
-    private int numberOfNodesHavingLabel( GraphDatabaseService db, Label label )
+    private long numberOfNodesHavingLabel( GraphDatabaseService db, Label label )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            int count = count( db.findNodes( label ) );
+            long count = count( db.findNodes( label ) );
             tx.success();
             return count;
         }

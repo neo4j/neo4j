@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -112,7 +113,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -210,7 +210,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             indexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, schemaIndexProviderMap,
                     indexStoreView, tokenNameLookup,
-                    toList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,
+                    Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,
                     indexingServiceMonitor, schemaStateChangeCallback );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
@@ -418,7 +418,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void loadSchemaCache()
     {
-        List<SchemaRule> schemaRules = toList( neoStores.getSchemaStore().loadAllSchemaRules() );
+        List<SchemaRule> schemaRules = Iterators.asList( neoStores.getSchemaStore().loadAllSchemaRules() );
         schemaCache.load( schemaRules );
     }
 

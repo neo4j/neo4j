@@ -47,6 +47,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
@@ -66,7 +67,6 @@ import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.toMap;
 import static org.neo4j.server.rest.web.Surface.PATH_LABELS;
 import static org.neo4j.server.rest.web.Surface.PATH_NODES;
@@ -1796,7 +1796,7 @@ public class RestfulGraphDatabase
             return output.badRequest( new IllegalArgumentException( "Single property key assumed" ) );
         }
 
-        String property = single( properties );
+        String property = Iterables.single( properties );
         try
         {
             if ( actions.dropSchemaIndex( labelName, property ) )

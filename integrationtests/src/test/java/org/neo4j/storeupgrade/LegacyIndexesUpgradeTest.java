@@ -50,8 +50,9 @@ import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.*;
+import static org.neo4j.helpers.collection.Iterators.single;
+import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.EXACT_CONFIG;
+import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.FULLTEXT_CONFIG;
 
 public class LegacyIndexesUpgradeTest
 {

@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,12 +31,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -51,10 +51,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
 public class SchemaTransactionStateTest
 {
@@ -68,10 +67,10 @@ public class SchemaTransactionStateTest
         IndexDescriptor rule = txContext.indexCreate( state, labelId1, key1 );
 
         // THEN
-        assertEquals( asSet( rule ), IteratorUtil.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
+        assertEquals( asSet( rule ), Iterators.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
         verify( store ).indexesGetForLabel( labelId1 );
 
-        assertEquals( asSet( rule ), IteratorUtil.asSet( txContext.indexesGetAll( state ) ) );
+        assertEquals( asSet( rule ), Iterators.asSet( txContext.indexesGetAll( state ) ) );
         verify( store ).indexesGetAll();
 
         verifyNoMoreInteractions( store );
@@ -88,13 +87,13 @@ public class SchemaTransactionStateTest
         IndexDescriptor rule2 = txContext.indexCreate( state, labelId2, key2 );
 
         // THEN
-        assertEquals( asSet( rule1 ), IteratorUtil.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
+        assertEquals( asSet( rule1 ), Iterators.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
         verify( store ).indexesGetForLabel( labelId1 );
 
-        assertEquals( asSet( rule2 ), IteratorUtil.asSet( txContext.indexesGetForLabel( state, labelId2 ) ) );
+        assertEquals( asSet( rule2 ), Iterators.asSet( txContext.indexesGetForLabel( state, labelId2 ) ) );
         verify( store ).indexesGetForLabel( labelId2 );
 
-        assertEquals( asSet( rule1, rule2 ), IteratorUtil.asSet( txContext.indexesGetAll( state ) ) );
+        assertEquals( asSet( rule1, rule2 ), Iterators.asSet( txContext.indexesGetAll( state ) ) );
         verify( store ).indexesGetAll();
 
         verifyNoMoreInteractions( store );
@@ -111,7 +110,7 @@ public class SchemaTransactionStateTest
         IndexDescriptor rule2 = txContext.indexCreate( state, labelId1, key2 );
 
         // THEN
-        assertEquals( asSet( rule1, rule2 ), IteratorUtil.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
+        assertEquals( asSet( rule1, rule2 ), Iterators.asSet( txContext.indexesGetForLabel( state, labelId1 ) ) );
     }
 
     @Test

@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.Collection;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.server.rest.transactional.TransactionStateChecker;
-
-import java.util.Collection;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -155,7 +155,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
         }
         else
         {
-            Collection<String> labels = IteratorUtil.asCollection( new IterableWrapper<String,Label>( node.getLabels() )
+            Collection<String> labels = Iterables.asCollection( new IterableWrapper<String,Label>( node.getLabels() )
             {
                 @Override
                 protected String underlyingObjectToObject( Label label )

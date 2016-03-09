@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ReflectiveProcedureTest

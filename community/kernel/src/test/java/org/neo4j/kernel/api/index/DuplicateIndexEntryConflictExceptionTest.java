@@ -22,9 +22,8 @@ package org.neo4j.kernel.api.index;
 import org.junit.Test;
 
 import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class DuplicateIndexEntryConflictExceptionTest
 {

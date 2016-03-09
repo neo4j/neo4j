@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,10 +28,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -39,11 +40,9 @@ import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 /**
  * This isn't a deterministic test, but instead tries to trigger a race condition
@@ -95,7 +94,7 @@ public class TestConcurrentRelationshipChainLoadingIssue
     private void loadNode( GraphDatabaseAPI db, Node node )
     {
         try (Transaction ignored = db.beginTx()) {
-            count( node.getRelationships() );
+            Iterables.count( node.getRelationships() );
         }
     }
 

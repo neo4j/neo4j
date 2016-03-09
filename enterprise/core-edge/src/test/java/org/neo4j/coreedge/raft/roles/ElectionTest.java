@@ -25,16 +25,16 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.neo4j.coreedge.raft.ControlledRenewableTimeoutService;
-import org.neo4j.coreedge.raft.RaftInstanceBuilder;
-import org.neo4j.coreedge.raft.membership.RaftTestGroup;
-import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
+import org.neo4j.coreedge.raft.RaftInstanceBuilder;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
+import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -45,13 +45,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteResponse;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ElectionTest

@@ -34,6 +34,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -62,8 +63,7 @@ import org.neo4j.register.Registers;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.indexPopulation;
@@ -410,7 +410,7 @@ public class IndexingService extends LifecycleAdapter
         else
         {
             throw new IllegalStateException(
-                    "Can't apply index updates " + toList( updates ) + " while indexing service is " + state );
+                    "Can't apply index updates " + asList( updates ) + " while indexing service is " + state );
         }
     }
 
@@ -745,7 +745,7 @@ public class IndexingService extends LifecycleAdapter
             snapshots.add( indexProxy.snapshotFiles() );
         }
 
-        return concatResourceIterators( snapshots.iterator() );
+        return Iterators.concatResourceIterators( snapshots.iterator() );
     }
 
     private IndexPopulationJob newIndexPopulationJob()

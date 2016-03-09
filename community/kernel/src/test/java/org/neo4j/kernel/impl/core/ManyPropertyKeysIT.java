@@ -30,6 +30,7 @@ import java.util.Collection;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.AccessMode;
@@ -52,7 +53,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 /**
  * Tests for handling many property keys (even after restart of database)
@@ -133,7 +133,7 @@ public class ManyPropertyKeysIT
             record.setInUse( true );
             Collection<DynamicRecord> nameRecords = store.allocateNameRecords( PropertyStore.encodeString( key( i ) ) );
             record.addNameRecords( nameRecords );
-            record.setNameId( (int) first( nameRecords ).getId() );
+            record.setNameId( (int) Iterables.first( nameRecords ).getId() );
             store.updateRecord( record );
         }
         neoStores.close();

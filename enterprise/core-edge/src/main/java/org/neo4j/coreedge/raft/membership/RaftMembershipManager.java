@@ -41,12 +41,11 @@ import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptySet;
-
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 /**
  * This class drives raft membership changes by glueing together various components:
@@ -262,11 +261,11 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
     {
         if ( missingMembers().size() > 0 )
         {
-            membershipStateMachine.onMissingMember( first( missingMembers() ) );
+            membershipStateMachine.onMissingMember( Iterables.first( missingMembers() ) );
         }
         else if ( isSafeToRemoveMember() && superfluousMembers().size() > 0 )
         {
-            membershipStateMachine.onSuperfluousMember( first( superfluousMembers() ) );
+            membershipStateMachine.onSuperfluousMember( Iterables.first( superfluousMembers() ) );
         }
     }
 

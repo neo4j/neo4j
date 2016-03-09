@@ -29,14 +29,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Listener;
 
 public class ElectionUtil
 {
     public static <T> T waitForLeaderAgreement( Iterable<RaftInstance<T>> validRafts, long maxTimeMillis ) throws InterruptedException, TimeoutException
     {
-        int viewCount = IteratorUtil.count( validRafts );
+        long viewCount = Iterables.count( validRafts );
 
         Map<T,T> leaderViews = new HashMap<>();
         CompletableFuture<T> futureAgreedLeader = new CompletableFuture<>();
@@ -64,7 +64,8 @@ public class ElectionUtil
         }
     }
 
-    private static <T> Runnable leaderViewUpdatingListener( RaftInstance<T> raft, Iterable<RaftInstance<T>> validRafts, Map<T,T> leaderViews, int viewCount, CompletableFuture<T> futureAgreedLeader )
+    private static <T> Runnable leaderViewUpdatingListener( RaftInstance<T> raft, Iterable<RaftInstance<T>>
+            validRafts, Map<T,T> leaderViews, long viewCount, CompletableFuture<T> futureAgreedLeader )
     {
         Listener<T> listener = newLeader -> {
             synchronized ( leaderViews )
@@ -91,7 +92,7 @@ public class ElectionUtil
         return () -> raft.unregisterListener( listener );
     }
 
-    private static <T> boolean allAgreeOnLeader( Map<T,T> leaderViews, int viewCount, T leader )
+    private static <T> boolean allAgreeOnLeader( Map<T,T> leaderViews, long viewCount, T leader )
     {
         if ( leaderViews.size() != viewCount )
         {

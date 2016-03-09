@@ -44,8 +44,9 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -152,7 +153,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -743,7 +743,7 @@ public class BatchInserterImpl implements BatchInserter
     {
         if ( properties == null || properties.isEmpty() )
         {
-            return IteratorUtil.emptyIterator();
+            return Iterators.emptyIterator();
         }
         return new IteratorWrapper<PropertyBlock, Map.Entry<String,Object>>( properties.entrySet().iterator() )
         {
@@ -1034,7 +1034,7 @@ public class BatchInserterImpl implements BatchInserter
         record.setCreated();
         Collection<DynamicRecord> keyRecords =
                 propertyKeyTokenStore.allocateNameRecords( encodeString( stringKey ) );
-        record.setNameId( (int) first( keyRecords ).getId() );
+        record.setNameId( (int) Iterables.first( keyRecords ).getId() );
         record.addNameRecords( keyRecords );
         propertyKeyTokenStore.updateRecord( record );
         propertyKeyTokens.addToken( new Token( stringKey, keyId ) );
@@ -1049,7 +1049,7 @@ public class BatchInserterImpl implements BatchInserter
         record.setCreated();
         Collection<DynamicRecord> keyRecords =
                 labelTokenStore.allocateNameRecords( encodeString( stringKey ) );
-        record.setNameId( (int) first( keyRecords ).getId() );
+        record.setNameId( (int) Iterables.first( keyRecords ).getId() );
         record.addNameRecords( keyRecords );
         labelTokenStore.updateRecord( record );
         labelTokens.addToken( new Token( stringKey, keyId ) );
@@ -1063,7 +1063,7 @@ public class BatchInserterImpl implements BatchInserter
         record.setInUse( true );
         record.setCreated();
         Collection<DynamicRecord> nameRecords = relationshipTypeTokenStore.allocateNameRecords( encodeString( name ) );
-        record.setNameId( (int) first( nameRecords ).getId() );
+        record.setNameId( (int) Iterables.first( nameRecords ).getId() );
         record.addNameRecords( nameRecords );
         relationshipTypeTokenStore.updateRecord( record );
         relationshipTypeTokens.addToken( new RelationshipTypeToken( name, id ) );

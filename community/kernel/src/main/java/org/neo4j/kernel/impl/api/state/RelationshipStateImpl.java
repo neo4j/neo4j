@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
@@ -90,25 +91,25 @@ public class RelationshipStateImpl extends PropertyContainerStateImpl implements
             @Override
             public Iterator<StorageProperty> addedProperties()
             {
-                return IteratorUtil.emptyIterator();
+                return Iterators.emptyIterator();
             }
 
             @Override
             public Iterator<StorageProperty> changedProperties()
             {
-                return IteratorUtil.emptyIterator();
+                return Iterators.emptyIterator();
             }
 
             @Override
             public Iterator<Integer> removedProperties()
             {
-                return IteratorUtil.emptyIterator();
+                return Iterators.emptyIterator();
             }
 
             @Override
             public Iterator<StorageProperty> addedAndChangedProperties()
             {
-                return IteratorUtil.emptyIterator();
+                return Iterators.emptyIterator();
             }
 
             @Override

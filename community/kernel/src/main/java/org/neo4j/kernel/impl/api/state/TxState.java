@@ -1204,10 +1204,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     {
         if ( createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty() )
         {
-
-            return map( constraint -> {
-                return new IndexDescriptor( constraint.label(), constraint.propertyKey() );
-            }, createdConstraintIndexesByConstraint.keySet() );
+            return map( constraint -> new IndexDescriptor( constraint.label(), constraint.propertyKey() ),
+                    createdConstraintIndexesByConstraint.keySet() );
         }
         return Iterables.empty();
     }

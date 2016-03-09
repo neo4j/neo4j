@@ -38,7 +38,7 @@ import java.util.Set;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
@@ -70,8 +70,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.kernel.api.properties.Property.booleanProperty;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
@@ -164,7 +163,7 @@ public class TxStateTest
         Set<Long> nodes = state.nodesWithLabelChanged( 2 ).getRemoved();
 
         // THEN
-        assertEquals( asSet( 0L, 2L ), asSet( nodes ) );
+        assertEquals( asSet( 0L, 2L ), Iterables.asSet( nodes ) );
     }
 
     //endregion
@@ -927,7 +926,7 @@ public class TxStateTest
         state.nodeDoDelete( nodeId );
 
         // Then
-        assertThat( asSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
+        assertThat( Iterables.asSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
     }
 
     @Test
@@ -1435,7 +1434,7 @@ public class TxStateTest
             }
             else
             {
-                RelationshipItem relationship = IteratorUtil
+                RelationshipItem relationship = Iterables
                         .fromEnd( committedRelationships.values(), random.nextInt( committedRelationships.size() ) );
                 state.relationshipDoDelete( relationship.id(), relationship.type(), relationship.startNode(),
                         relationship.endNode() );

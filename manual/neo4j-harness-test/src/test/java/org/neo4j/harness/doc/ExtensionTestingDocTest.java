@@ -18,35 +18,30 @@
  */
 package org.neo4j.harness.doc;
 
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.function.Function;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
-import org.junit.Rule;
-import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
-
-import java.util.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.ServerControls;
-import org.neo4j.harness.TestServerBuilders;
 import org.neo4j.harness.TestServerBuilder;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.harness.TestServerBuilders;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.HTTP;
-import org.neo4j.server.ServerTestUtils;
 
-import org.neo4j.server.configuration.ServerSettings;
-
-import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
-
-import static org.junit.Assert.*;
 
 public class ExtensionTestingDocTest
 {
@@ -106,7 +101,7 @@ public class ExtensionTestingDocTest
             Result result = server.graph().execute( "MATCH (n:User) return n" );
 
             // Then
-            assertEquals( 1, IteratorUtil.count( result ) );
+            assertEquals( 1, count( result ) );
         }
     }
     // END SNIPPET: testExtension

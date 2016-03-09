@@ -38,11 +38,9 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.Iterables.asList;
 
-class HeartbeatContextImpl
-    extends AbstractContextImpl
-    implements HeartbeatContext
+class HeartbeatContextImpl extends AbstractContextImpl implements HeartbeatContext
 {
     // HeartbeatContext
     private Set<InstanceId> failed = new HashSet<InstanceId>();
@@ -313,7 +311,7 @@ class HeartbeatContextImpl
                                           Executor executor )
     {
         return new HeartbeatContextImpl( me, commonStateSnapshot, logging, timeouts, new HashSet<>(failed),
-                new HashMap<>(nodeSuspicions), new ArrayList<>(toList(heartBeatListeners)), executor );
+                new HashMap<>(nodeSuspicions), new ArrayList<>( asList(heartBeatListeners)), executor );
     }
 
     @Override

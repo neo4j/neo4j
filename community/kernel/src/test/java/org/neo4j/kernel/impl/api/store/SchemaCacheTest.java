@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import org.junit.Test;
-
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -46,10 +47,12 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
-import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule
+        .nodePropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule
+        .relPropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
 public class SchemaCacheTest
@@ -66,9 +69,9 @@ public class SchemaCacheTest
         SchemaCache cache = new SchemaCache( new StandardConstraintSemantics(), rules );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), asSet( cache.schemaRulesForLabel( 0 ) ) );
-        assertEquals( asSet( witch ), asSet( cache.schemaRulesForLabel( 3 ) ) );
-        assertEquals( asSet( rules ), asSet( cache.schemaRules() ) );
+        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.schemaRulesForLabel( 0 ) ) );
+        assertEquals( asSet( witch ), Iterables.asSet( cache.schemaRulesForLabel( 3 ) ) );
+        assertEquals( Iterables.asSet( rules ), Iterables.asSet( cache.schemaRules() ) );
     }
 
     @Test
@@ -83,7 +86,7 @@ public class SchemaCacheTest
         cache.addSchemaRule( gretel );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), asSet( cache.schemaRulesForLabel( 0 ) ) );
+        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.schemaRulesForLabel( 0 ) ) );
     }
 
     @Test
@@ -97,7 +100,7 @@ public class SchemaCacheTest
         cache.addSchemaRule( gretel );
 
         // THEN
-        assertEquals( asSet( hans, gretel ), asSet( cache.schemaRules() ) );
+        assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.schemaRules() ) );
     }
 
     @Test
@@ -180,7 +183,7 @@ public class SchemaCacheTest
         // then
         assertEquals(
                 asList( new UniquenessConstraint( 1, 2 ) ),
-                IteratorUtil.asList( cache.constraints() ) );
+                Iterators.asList( cache.constraints() ) );
     }
 
     @Test

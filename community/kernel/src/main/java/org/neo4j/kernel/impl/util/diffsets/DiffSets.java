@@ -30,8 +30,6 @@ import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveLongIterator;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 /**
  * Given a sequence of add and removal operations, instances of DiffSets track
  * which elements need to actually be added and removed at minimum from some
@@ -74,7 +72,7 @@ public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongIterator> implemen
     public DiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
         return new DiffSets<>(
-                asSet( Iterables.filter( addedFilter, added( false ) ) ),
-                asSet( removed( false ) ) );
+                Iterables.asSet( Iterables.filter( addedFilter, added( false ) ) ),
+                Iterables.asSet( removed( false ) ) );
     }
 }

@@ -34,7 +34,7 @@ import java.util.Iterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 
 /**
  * Iterator over Lucene index files for a particular {@link IndexCommit snapshot}.

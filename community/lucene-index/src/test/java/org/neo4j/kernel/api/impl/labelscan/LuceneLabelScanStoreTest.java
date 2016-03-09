@@ -45,7 +45,7 @@ import java.util.TreeSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -69,28 +69,25 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.Iterators.iterator;
+import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
 @RunWith( Parameterized.class )
 public class LuceneLabelScanStoreTest
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     private static final long[] NO_LABELS = new long[0];
     private final BitmapDocumentFormat documentFormat;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static List<Object[]> parameterizedWithStrategies()
+    public static List<BitmapDocumentFormat> parameterizedWithStrategies()
     {
-        return asList(
-                new Object[]{BitmapDocumentFormat._32},
-                new Object[]{BitmapDocumentFormat._64}
-        );
+        return asList( BitmapDocumentFormat._32, BitmapDocumentFormat._64 );
     }
-
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     private final Random random = new Random();
     private DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
@@ -380,8 +377,8 @@ public class LuceneLabelScanStoreTest
         start();
 
         int nodeId = 42;
-        write( IteratorUtil.iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
-        write( IteratorUtil.iterator( labelChanges( 41, NO_LABELS, new long[]{labelId3, labelId2} ) ) );
+        write( Iterators.iterator( labelChanges( nodeId, NO_LABELS, new long[]{labelId1, labelId2} ) ) );
+        write( Iterators.iterator( labelChanges( 41, NO_LABELS, new long[]{labelId3, labelId2} ) ) );
 
         // WHEN
         LabelScanReader reader = store.newReader();

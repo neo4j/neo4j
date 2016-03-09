@@ -37,7 +37,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -222,7 +222,7 @@ public class RecoveryIT
     {
         try ( ResourceIterator<Node> nodes = db.findNodes( label, property, value ) )
         {
-            return IteratorUtil.single( nodes );
+            return Iterators.single( nodes );
         }
     }
 

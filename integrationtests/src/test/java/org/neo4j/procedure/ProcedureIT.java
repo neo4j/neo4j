@@ -39,6 +39,7 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.AssertableLogProvider;
@@ -55,7 +56,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -448,7 +448,8 @@ public class ProcedureIT
         try (Transaction tx = db.beginTx())
         {
             long nodeId = db.createNode().getId();
-            Node node = single( db.execute( "CALL org.neo4j.procedure.node", map( "id", nodeId ) ).columnAs( "node" ) );
+            Node node = Iterators.single( db.execute( "CALL org.neo4j.procedure.node", map( "id", nodeId ) ).columnAs(
+                    "node" ) );
             node.setProperty( "name", "Stefan" );
             tx.success();
         }

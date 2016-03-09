@@ -19,16 +19,17 @@
  */
 package org.neo4j.shell;
 
-import java.io.Serializable;
-import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.regex.Pattern;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.omg.CORBA.SystemException;
 
+import java.io.Serializable;
+import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.regex.Pattern;
+
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -36,11 +37,8 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.regex.Pattern.compile;
-
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 
 public class TestTransactionApps
 {
@@ -161,7 +159,7 @@ public class TestTransactionApps
                 }
             }
             assertTrue( "Was expecting a line matching '" + lineThatMustExist + "', but didn't find any from out of " +
-                    asCollection( output ), found != negative );
+                        Iterables.asCollection( output ), found != negative );
         }
     }
 

@@ -21,16 +21,18 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
 import java.util.function.Predicate;
+
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+
+import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 
 public class PropertyContainerStateImpl implements PropertyContainerState
 {
@@ -156,7 +158,7 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     public Iterator<Integer> removedProperties()
     {
         return removedProperties != null ? removedProperties.keySet().iterator()
-                : IteratorUtil.<Integer>emptyIterator();
+                : Iterators.<Integer>emptyIterator();
     }
 
     @Override
@@ -172,7 +174,7 @@ public class PropertyContainerStateImpl implements PropertyContainerState
             if ( out != null )
             {
                 out = new CombiningIterator<>(
-                        IteratorUtil.iterator( out, changedProperties.values().iterator() ) );
+                        Iterators.iterator( out, changedProperties.values().iterator() ) );
             }
             else
             {
@@ -192,12 +194,12 @@ public class PropertyContainerStateImpl implements PropertyContainerState
             if ( addedProperties != null && !addedProperties.isEmpty() )
             {
                 iterator = new CombiningIterator<>(
-                        IteratorUtil.iterator( iterator, addedProperties.values().iterator() ) );
+                        Iterators.iterator( iterator, addedProperties.values().iterator() ) );
             }
             if ( changedProperties != null && !changedProperties.isEmpty() )
             {
                 iterator = new CombiningIterator<>(
-                        IteratorUtil.iterator( iterator, changedProperties.values().iterator() ) );
+                        Iterators.iterator( iterator, changedProperties.values().iterator() ) );
             }
         }
 

@@ -25,10 +25,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.collection.IteratorUtil;
 
 import static org.neo4j.examples.socnet.RelTypes.NEXT;
 import static org.neo4j.examples.socnet.RelTypes.STATUS;
+import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 
 public class StatusUpdate
 {
@@ -63,7 +63,7 @@ public class StatusUpdate
 
         Traverser traverser = traversalDescription.traverse( getUnderlyingNode() );
 
-        return IteratorUtil.singleOrNull( traverser.iterator() ).endNode();
+        return singleOrNull( traverser.iterator() ).endNode();
     }
 
     public String getStatusText()

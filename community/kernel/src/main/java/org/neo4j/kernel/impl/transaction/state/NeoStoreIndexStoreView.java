@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -236,14 +236,14 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     private class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>
     {
         private final Iterator<PropertyRecord> records;
-        private Iterator<PropertyBlock> blocks = IteratorUtil.emptyIterator();
+        private Iterator<PropertyBlock> blocks = Iterators.emptyIterator();
 
         PropertyBlockIterator( NodeRecord node )
         {
             long firstPropertyId = node.getNextProp();
             if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
             {
-                records = IteratorUtil.emptyIterator();
+                records = Iterators.emptyIterator();
             }
             else
             {

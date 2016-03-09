@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateEntitySchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
@@ -45,8 +46,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule.Kind;
 
 import static org.neo4j.function.Functions.cast;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
@@ -180,8 +179,9 @@ public class SchemaStorage implements SchemaRuleAccess
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
-        return map( ruleConversion, filter( rule -> ruleType.isAssignableFrom( AbstractSchemaRule.getRuleClass( rule.getKind() ) ) &&
-                                            predicate.test( (R) rule ), loadAllSchemaRules() ) );
+        return Iterators.map( ruleConversion, Iterators
+                .filter( rule -> ruleType.isAssignableFrom( AbstractSchemaRule.getRuleClass( rule.getKind() ) ) &&
+                                 predicate.test( (R) rule ), loadAllSchemaRules() ) );
     }
 
     public <R extends SchemaRule, T> Iterator<T> schemaRules(
@@ -189,13 +189,13 @@ public class SchemaStorage implements SchemaRuleAccess
     {
         @SuppressWarnings("unchecked"/*the predicate ensures that this is safe*/)
         Function<SchemaRule, T> ruleConversion = (Function) conversion;
-        return map( ruleConversion, filter( ruleClass::isInstance, loadAllSchemaRules() ) );
+        return Iterators.map( ruleConversion, Iterators.filter( ruleClass::isInstance, loadAllSchemaRules() ) );
     }
 
     public <R extends SchemaRule> Iterator<R> schemaRules( final Class<R> ruleClass )
     {
         @SuppressWarnings({"UnnecessaryLocalVariable", "unchecked"/*the predicate ensures that this cast is safe*/})
-        Iterator<R> result = (Iterator)filter( ruleClass::isInstance, loadAllSchemaRules() );
+        Iterator<R> result = (Iterator) Iterators.filter( ruleClass::isInstance, loadAllSchemaRules() );
         return result;
     }
 

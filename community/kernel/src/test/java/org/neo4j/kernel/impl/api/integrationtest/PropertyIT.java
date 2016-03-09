@@ -19,13 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Iterator;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -44,8 +41,7 @@ import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.kernel.api.properties.Property.byteArrayProperty;
 import static org.neo4j.kernel.api.properties.Property.property;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;

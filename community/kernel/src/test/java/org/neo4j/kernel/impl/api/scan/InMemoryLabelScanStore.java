@@ -42,7 +42,7 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Collections.singletonList;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 
 public class InMemoryLabelScanStore implements LabelScanStore
 {

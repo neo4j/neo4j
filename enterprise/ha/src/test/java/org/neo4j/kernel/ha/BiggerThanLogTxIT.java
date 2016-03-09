@@ -30,11 +30,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.TransactionTemplate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 
 public class BiggerThanLogTxIT
@@ -60,7 +60,7 @@ public class BiggerThanLogTxIT
     {
         // GIVEN
         GraphDatabaseService slave = cluster.getAnySlave();
-        int initialNodeCount = nodeCount( slave );
+        long initialNodeCount = nodeCount( slave );
 
         // WHEN
         cluster.info( "Before commit large" );
@@ -85,7 +85,7 @@ public class BiggerThanLogTxIT
     {
         // GIVEN
         GraphDatabaseService slave = cluster.getAnySlave();
-        int initialNodeCount = nodeCount( slave );
+        long initialNodeCount = nodeCount( slave );
 
         // WHEN
         int nodeCount = commitLargeTx( cluster.getMaster() );
@@ -108,17 +108,17 @@ public class BiggerThanLogTxIT
         }
     }
 
-    private int nodeCount( GraphDatabaseService db )
+    private long nodeCount( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            int count = count( db.getAllNodes() );
+            long count = Iterables.count( db.getAllNodes() );
             tx.success();
             return count;
         }
     }
 
-    private void assertAllMembersHasNodeCount( int expectedNodeCount )
+    private void assertAllMembersHasNodeCount( long expectedNodeCount )
     {
         for ( GraphDatabaseService db : cluster.getAllMembers() )
         {
@@ -136,7 +136,7 @@ public class BiggerThanLogTxIT
                         throw new RuntimeException( e );
                     }
 
-                    int count = nodeCount( db );
+                    long count = nodeCount( db );
                     if (expectedNodeCount == count)
                         break;
 

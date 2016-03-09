@@ -22,28 +22,25 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.function.Function;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
-import java.util.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.EnterpriseTestServerBuilders;
-import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.harness.ServerControls;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.harness.TestServerBuilder;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.assertEquals;
-
-import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.ServerTestUtils;
-
-import static org.neo4j.server.ServerTestUtils.getRelativePath;
+import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 
 public class ExtensionTestingDocTest
@@ -104,7 +101,7 @@ public class ExtensionTestingDocTest
             Result result = server.graph().execute( "MATCH (n:User) return n" );
 
             // Then
-            assertEquals( 1, IteratorUtil.count( result ) );
+            assertEquals( 1, count( result ) );
         }
     }
     // END SNIPPET: testEnterpriseExtension

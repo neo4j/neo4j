@@ -26,12 +26,11 @@ import org.neo4j.coreedge.raft.roles.Role;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.state.explorer.ClusterSafetyViolations.inconsistentCommittedLogEntries;
 import static org.neo4j.coreedge.raft.state.explorer.ClusterSafetyViolations.multipleLeadersInSameTerm;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.coreedge.server.RaftTestMember.member;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ClusterSafetyViolationsTest
 {

@@ -33,7 +33,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileUtils;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.helpers.collection.Iterators.loop;
 
 public class EmbeddedNeo4jWithNewIndexing
 {

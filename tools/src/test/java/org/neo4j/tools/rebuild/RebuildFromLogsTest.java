@@ -38,8 +38,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
@@ -185,7 +185,7 @@ public class RebuildFromLogsTest
 
         private static Node firstNode( GraphDatabaseService graphDb )
         {
-            return Iterables.first( graphDb.getAllNodes() );
+            return Iterables.firstOrNull( graphDb.getAllNodes() );
         }
 
         private final Transaction[] dependencies;

@@ -24,9 +24,8 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.coreedge.server.RaftTestMember.member;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ComparableRaftStateTest
 {

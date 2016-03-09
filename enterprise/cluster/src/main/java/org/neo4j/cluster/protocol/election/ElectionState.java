@@ -34,7 +34,7 @@ import org.neo4j.cluster.statemachine.State;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 
 /**
  * State machine that implements the {@link Election} API.
@@ -99,7 +99,7 @@ public enum ElectionState
                             if ( context.isInCluster() )
                             {
                                 // Only the first alive server should try elections. Everyone else waits
-                                List<InstanceId> aliveInstances = Iterables.toList(context.getAlive());
+                                List<InstanceId> aliveInstances = Iterables.asList(context.getAlive());
                                 Collections.sort( aliveInstances );
                                 boolean isElector = aliveInstances.indexOf( context.getMyId() ) == 0;
 
@@ -211,10 +211,10 @@ public enum ElectionState
                                 }
                                 else
                                 {
-                                    List<InstanceId> aliveInstances = Iterables.toList( context.getAlive() );
+                                    List<InstanceId> aliveInstances = Iterables.asList( context.getAlive() );
                                     Collections.sort( aliveInstances );
                                     outgoing.offer( message.setHeader( Message.TO,
-                                            context.getUriForId( first( aliveInstances ) ).toString() ) );
+                                            context.getUriForId( firstOrNull( aliveInstances ) ).toString() ) );
                                 }
                             }
                             break;

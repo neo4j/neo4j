@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.UUID;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.UUID;
 
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
@@ -47,8 +47,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class CoreReplicatedContentByteBufferMarshalTest
 {

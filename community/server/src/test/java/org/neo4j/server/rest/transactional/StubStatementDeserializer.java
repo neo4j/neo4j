@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-
 import java.io.ByteArrayInputStream;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+
+import static org.neo4j.helpers.collection.Iterators.iterator;
 
 public class StubStatementDeserializer extends StatementDeserializer
 {
@@ -38,7 +38,7 @@ public class StubStatementDeserializer extends StatementDeserializer
 
     public static StubStatementDeserializer statements( Statement... statements )
     {
-        return new StubStatementDeserializer( IteratorUtil.<Neo4jError>emptyIterator(), iterator( statements ) );
+        return new StubStatementDeserializer( Iterators.<Neo4jError>emptyIterator(), iterator( statements ) );
     }
 
     public StubStatementDeserializer( Iterator<Neo4jError> errors, Iterator<Statement> statements )

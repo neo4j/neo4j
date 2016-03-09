@@ -41,6 +41,7 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -59,7 +60,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
@@ -156,7 +156,7 @@ public class TransactionConstraintsIT
 
     private HighlyAvailableGraphDatabase getSlaveOnlySlave()
     {
-        HighlyAvailableGraphDatabase db = first( cluster.getAllMembers() );
+        HighlyAvailableGraphDatabase db = Iterables.first( cluster.getAllMembers() );
         assertEquals( SLAVE_ONLY_ID, cluster.getServerId( db ).toIntegerIndex() );
         assertFalse( db.isMaster() );
         return db;

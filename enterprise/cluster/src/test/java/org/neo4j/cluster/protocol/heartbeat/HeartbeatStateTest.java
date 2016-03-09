@@ -19,12 +19,12 @@
  */
 package org.neo4j.cluster.protocol.heartbeat;
 
-import java.net.URI;
-import java.util.concurrent.Executor;
-
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
+
+import java.net.URI;
+import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.DelayedDirectExecutor;
 import org.neo4j.cluster.InstanceId;
@@ -81,7 +81,7 @@ public class HeartbeatStateTest
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
-                new HeartbeatMessage.SuspicionsState( Iterables.toSet( Iterables.<InstanceId, InstanceId>iterable( instanceId ) ) ) );
+                new HeartbeatMessage.SuspicionsState( Iterables.asSet( Iterables.<InstanceId, InstanceId>iterable( instanceId ) ) ) );
         received.setHeader( Message.FROM, "cluster://2" ).setHeader( Message.INSTANCE_ID, "2" );
 
         // When
@@ -112,7 +112,7 @@ public class HeartbeatStateTest
 
         HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         Message received = Message.internal( HeartbeatMessage.suspicions,
-                new HeartbeatMessage.SuspicionsState( Iterables.toSet( Iterables.<InstanceId, InstanceId>iterable( myId, foreignId ) ) ) );
+                new HeartbeatMessage.SuspicionsState( Iterables.asSet( Iterables.<InstanceId, InstanceId>iterable( myId, foreignId ) ) ) );
         received.setHeader( Message.FROM, "cluster://2" ).setHeader( Message.INSTANCE_ID, "2" );
 
         // When

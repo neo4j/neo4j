@@ -32,7 +32,7 @@ public class ExceptionHandlingIterableTest {
 
     @Test(expected = IllegalStateException.class)
     public void testHandleExceptionOnIteratorCreation() {
-        IteratorUtil.count(new ExceptionHandlingIterable(new Iterable() {
+        Iterables.count( new ExceptionHandlingIterable( new Iterable() {
             public Iterator iterator() {
                 throw new RuntimeException("exception on iterator");
             }
@@ -45,7 +45,7 @@ public class ExceptionHandlingIterableTest {
     }
     @Test(expected = IllegalStateException.class)
     public void testHandleExceptionOnNext() {
-        IteratorUtil.count(new ExceptionHandlingIterable(new Iterable() {
+        Iterables.count( new ExceptionHandlingIterable( new Iterable() {
             public Iterator iterator() {
                 return new Iterator() {
                     public boolean hasNext() {
@@ -70,7 +70,7 @@ public class ExceptionHandlingIterableTest {
     }
     @Test(expected = IllegalStateException.class)
     public void testHandleExceptionOnHasNext() {
-        IteratorUtil.count(new ExceptionHandlingIterable(new Iterable() {
+        Iterables.count( new ExceptionHandlingIterable( new Iterable() {
             public Iterator iterator() {
                 return new Iterator() {
                     public boolean hasNext() {

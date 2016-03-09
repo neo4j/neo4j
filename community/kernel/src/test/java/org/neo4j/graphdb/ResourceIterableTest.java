@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import static java.util.Arrays.asList;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIterator;
 
 public class ResourceIterableTest

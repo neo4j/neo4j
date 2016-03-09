@@ -23,15 +23,13 @@ import org.junit.Test;
 
 import java.util.Iterator;
 
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.storageengine.api.StorageProperty;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class PropertyContainerStateImplTest
@@ -49,7 +47,7 @@ public class PropertyContainerStateImplTest
         Iterator<StorageProperty> added = state.addedProperties();
 
         // Then
-        assertThat( IteratorUtil.asList( added ),
+        assertThat( Iterators.asList( added ),
                 equalTo( asList( stringProperty( 2, "Hello" ) ) ) );
     }
 
@@ -66,7 +64,7 @@ public class PropertyContainerStateImplTest
         Iterator<StorageProperty> added = state.addedProperties();
 
         // Then
-        assertThat( IteratorUtil.asList( added ),
+        assertThat( Iterators.asList( added ),
                 equalTo( asList( stringProperty( 1, "WAT" ), stringProperty( 2, "Hello" ) ) ) );
     }
 
@@ -81,7 +79,7 @@ public class PropertyContainerStateImplTest
         state.addProperty( stringProperty( 4, "another value" ) );
 
         // Then
-        assertThat( IteratorUtil.asList( state.changedProperties() ),
+        assertThat( Iterators.asList( state.changedProperties() ),
                 equalTo( asList( stringProperty( 4, "another value" ) ) ) );
         assertFalse( state.addedProperties().hasNext() );
         assertFalse( state.removedProperties().hasNext() );

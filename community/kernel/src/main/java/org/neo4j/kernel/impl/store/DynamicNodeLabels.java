@@ -24,13 +24,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.lang.String.format;
-
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.LabelIdArray.filter;
@@ -172,7 +171,7 @@ public class DynamicNodeLabels implements NodeLabels
 
     public static long dynamicPointer( Collection<DynamicRecord> newRecords )
     {
-        return 0x8000000000L | first( newRecords ).getId();
+        return 0x8000000000L | Iterables.first( newRecords ).getId();
     }
 
     private static void setNotInUse( Collection<DynamicRecord> changedDynamicRecords )

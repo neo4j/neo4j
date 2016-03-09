@@ -153,7 +153,7 @@ public class DocSerialization
                                 (Map<String, Object>) args.get( 1 ) );
                         break;
                     case "RECORD":
-                        writer.handleRecordMessage( new ImmutableRecord( Iterables.toArray(
+                        writer.handleRecordMessage( new ImmutableRecord( Iterables.asArray(
                                 Object.class, (List<Object>) args.get( 0 ) ) ) );
                         break;
                     case "SUCCESS":

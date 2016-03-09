@@ -107,10 +107,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
 
 public class DatabaseActions
@@ -233,7 +230,7 @@ public class DatabaseActions
 
     public Representation getAllPropertyKeys()
     {
-        Collection<ValueRepresentation> propKeys = asSet( map( new Function<String,ValueRepresentation>()
+        Collection<ValueRepresentation> propKeys = Iterables.asSet( map( new Function<String,ValueRepresentation>()
         {
             @Override
             public ValueRepresentation apply( String key )
@@ -1441,7 +1438,7 @@ public class DatabaseActions
     public ListRepresentation getAllLabels( boolean inUse )
     {
         ResourceIterable<Label> labels = inUse ? graphDb.getAllLabels() : GlobalGraphOperations.at( graphDb ).getAllLabels();
-        Collection<ValueRepresentation> labelNames = asSet( map( new Function<Label,ValueRepresentation>()
+        Collection<ValueRepresentation> labelNames = Iterables.asSet( map( new Function<Label,ValueRepresentation>()
         {
             @Override
             public ValueRepresentation apply( Label label )
@@ -1504,7 +1501,7 @@ public class DatabaseActions
         for ( IndexDefinition index : graphDb.schema().getIndexes( label( labelName ) ) )
         {
             // TODO Assumption about single property key
-            if ( propertyKey.equals( single( index.getPropertyKeys() ) ) )
+            if ( propertyKey.equals( Iterables.single( index.getPropertyKeys() ) ) )
             {
                 index.drop();
                 found = true;
@@ -1528,9 +1525,9 @@ public class DatabaseActions
 
     public boolean dropPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
     {
-        final Set<String> propertyKeysSet = asSet( propertyKeys );
+        final Set<String> propertyKeysSet = Iterables.asSet( propertyKeys );
         ConstraintDefinition constraint =
-                singleOrNull( filteredNodeConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) ) );
+                Iterables.singleOrNull( filteredNodeConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) ) );
         if ( constraint != null )
         {
             constraint.drop();
@@ -1540,9 +1537,9 @@ public class DatabaseActions
 
     public boolean dropNodePropertyExistenceConstraint( String labelName, Iterable<String> propertyKeys )
     {
-        final Set<String> propertyKeysSet = asSet( propertyKeys );
+        final Set<String> propertyKeysSet = Iterables.asSet( propertyKeys );
         ConstraintDefinition constraint =
-                singleOrNull( filteredNodeConstraints( labelName, nodePropertyExistenceFilter( propertyKeysSet ) ) );
+                Iterables.singleOrNull( filteredNodeConstraints( labelName, nodePropertyExistenceFilter( propertyKeysSet ) ) );
         if ( constraint != null )
         {
             constraint.drop();
@@ -1552,8 +1549,8 @@ public class DatabaseActions
 
     public boolean dropRelationshipPropertyExistenceConstraint( String typeName, Iterable<String> propertyKeys )
     {
-        final Set<String> propertyKeysSet = asSet( propertyKeys );
-        ConstraintDefinition constraint = singleOrNull( filteredRelationshipConstraints( typeName,
+        final Set<String> propertyKeysSet = Iterables.asSet( propertyKeys );
+        ConstraintDefinition constraint = Iterables.singleOrNull( filteredRelationshipConstraints( typeName,
                 relationshipPropertyExistenceFilter( propertyKeysSet ) ) );
         if ( constraint != null )
         {
@@ -1564,7 +1561,7 @@ public class DatabaseActions
 
     public ListRepresentation getNodePropertyExistenceConstraint( String labelName, Iterable<String> propertyKeys )
     {
-        Set<String> propertyKeysSet = asSet( propertyKeys );
+        Set<String> propertyKeysSet = Iterables.asSet( propertyKeys );
         Iterable<ConstraintDefinition> constraints =
                 filteredNodeConstraints( labelName, nodePropertyExistenceFilter( propertyKeysSet ) );
         if ( constraints.iterator().hasNext() )
@@ -1583,7 +1580,7 @@ public class DatabaseActions
     public ListRepresentation getRelationshipPropertyExistenceConstraint( String typeName,
             Iterable<String> propertyKeys )
     {
-        Set<String> propertyKeysSet = asSet( propertyKeys );
+        Set<String> propertyKeysSet = Iterables.asSet( propertyKeys );
         Iterable<ConstraintDefinition> constraints =
                 filteredRelationshipConstraints( typeName, relationshipPropertyExistenceFilter( propertyKeysSet ) );
         if ( constraints.iterator().hasNext() )
@@ -1601,7 +1598,7 @@ public class DatabaseActions
 
     public ListRepresentation getPropertyUniquenessConstraint( String labelName, Iterable<String> propertyKeys )
     {
-        Set<String> propertyKeysSet = asSet( propertyKeys );
+        Set<String> propertyKeysSet = Iterables.asSet( propertyKeys );
         Iterable<ConstraintDefinition> constraints =
                 filteredNodeConstraints( labelName, propertyUniquenessFilter( propertyKeysSet ) );
         if ( constraints.iterator().hasNext() )
@@ -1649,19 +1646,19 @@ public class DatabaseActions
     private Predicate<ConstraintDefinition> propertyUniquenessFilter( final Set<String> propertyKeysSet )
     {
         return item -> item.isConstraintType( ConstraintType.UNIQUENESS ) &&
-               propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
+               propertyKeysSet.equals( Iterables.asSet( item.getPropertyKeys() ) );
     }
 
     private Predicate<ConstraintDefinition> nodePropertyExistenceFilter( final Set<String> propertyKeysSet )
     {
         return item -> item.isConstraintType( ConstraintType.NODE_PROPERTY_EXISTENCE ) &&
-               propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
+               propertyKeysSet.equals( Iterables.asSet( item.getPropertyKeys() ) );
     }
 
     private Predicate<ConstraintDefinition> relationshipPropertyExistenceFilter( final Set<String> propertyKeysSet )
     {
         return item -> item.isConstraintType( ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE ) &&
-               propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
+               propertyKeysSet.equals( Iterables.asSet( item.getPropertyKeys() ) );
     }
 
     public ListRepresentation getConstraints()

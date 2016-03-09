@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -163,6 +163,6 @@ public class UpdatePullerSwitchIT
     private void checkNodeWithLabelExists( HighlyAvailableGraphDatabase database, String label  )
     {
         ResourceIterator<Node> slaveNodes = database.findNodes( Label.label( label ) );
-        assertEquals( 1, Iterables.toList( slaveNodes ).size() );
+        assertEquals( 1, Iterators.asList( slaveNodes ).size() );
     }
 }

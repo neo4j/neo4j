@@ -120,8 +120,8 @@ import static org.neo4j.consistency.checking.full.FullCheckIntegrationTest.Consi
 import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.helpers.collection.Iterables.asIterable;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;

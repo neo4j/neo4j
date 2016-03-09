@@ -36,7 +36,8 @@ import java.util.Set;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -45,13 +46,10 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
+import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
-import static java.util.Collections.singletonMap;
-
 import static org.neo4j.function.Functions.map;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class TestDynamicStore
@@ -117,7 +115,7 @@ public class TestDynamicStore
         DynamicArrayStore store = createDynamicArrayStore();
         Collection<DynamicRecord> records = new ArrayList<>();
         store.allocateRecordsFromBytes( records, new byte[10] );
-        long blockId = first( records ).getId();
+        long blockId = Iterables.first( records ).getId();
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );
@@ -150,7 +148,7 @@ public class TestDynamicStore
         char[] chars = new char[STR.length()];
         STR.getChars( 0, STR.length(), chars, 0 );
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, chars, IteratorUtil.<DynamicRecord>emptyIterator() );
+        store.allocateRecords( records, chars, Iterators.<DynamicRecord>emptyIterator() );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );
@@ -193,14 +191,14 @@ public class TestDynamicStore
             {
                 byte bytes[] = createRandomBytes( random );
                 Collection<DynamicRecord> records = new ArrayList<>();
-                store.allocateRecords( records, bytes, IteratorUtil.<DynamicRecord>emptyIterator() );
+                store.allocateRecords( records, bytes, Iterators.<DynamicRecord>emptyIterator() );
                 for ( DynamicRecord record : records )
                 {
                     assert !set.contains( record.getId() );
                     store.updateRecord( record );
                     set.add( record.getId() );
                 }
-                long blockId = first( records ).getId();
+                long blockId = Iterables.first( records ).getId();
                 idsTaken.add( blockId );
                 byteData.put( blockId, bytes );
                 currentCount++;
@@ -235,12 +233,12 @@ public class TestDynamicStore
     private long create( DynamicArrayStore store, Object arrayToStore )
     {
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords( records, arrayToStore, IteratorUtil.<DynamicRecord>emptyIterator() );
+        store.allocateRecords( records, arrayToStore, Iterators.<DynamicRecord>emptyIterator() );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );
         }
-        return first( records ).getId();
+        return Iterables.first( records ).getId();
     }
 
     @Test

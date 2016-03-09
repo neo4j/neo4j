@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.util.MutableDouble;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
+import static org.neo4j.helpers.collection.Iterators.firstOrNull;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 import static org.neo4j.kernel.Traversal.traversal;
 

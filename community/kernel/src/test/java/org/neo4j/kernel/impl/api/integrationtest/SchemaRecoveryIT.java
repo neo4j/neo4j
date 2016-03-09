@@ -28,13 +28,13 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
 public class SchemaRecoveryIT
 {
@@ -64,7 +64,7 @@ public class SchemaRecoveryIT
     {
         try ( Transaction ignored = database.beginTx() )
         {
-            return asList( database.schema().getConstraints() );
+            return Iterables.asList( database.schema().getConstraints() );
         }
     }
 
@@ -72,7 +72,7 @@ public class SchemaRecoveryIT
     {
         try ( Transaction ignored = database.beginTx() )
         {
-            return asList( database.schema().getIndexes() );
+            return Iterables.asList( database.schema().getIndexes() );
         }
     }
 

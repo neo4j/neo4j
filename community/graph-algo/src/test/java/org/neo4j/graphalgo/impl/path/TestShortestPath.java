@@ -42,6 +42,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.impl.StandardExpander;
 import org.neo4j.graphdb.traversal.BranchState;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.MutableInteger;
 
 import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
@@ -56,7 +57,6 @@ import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class TestShortestPath extends Neo4jAlgoTestCase
 {
@@ -366,12 +366,12 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         final Node a = graph.getNode( "a" );
         final Node e = graph.getNode( "e" );
         final PathExpander expander = PathExpanders.forTypeAndDirection( R1, OUTGOING );
-        testShortestPathFinder( finder -> assertEquals( 4, count( finder.findAllPaths( a, e ) ) ), expander, 10, 10 );
+        testShortestPathFinder( finder -> assertEquals( 4, Iterables.count( finder.findAllPaths( a, e ) ) ), expander, 10, 10 );
         for ( int i = 4; i >= 1; i-- )
         {
             final int count = i;
             testShortestPathFinder( finder -> assertEquals(
-                    count, count( finder.findAllPaths( a, e ) ) ), expander, 10, count );
+                    count, Iterables.count( finder.findAllPaths( a, e ) ) ), expander, 10, count );
         }
     }
 

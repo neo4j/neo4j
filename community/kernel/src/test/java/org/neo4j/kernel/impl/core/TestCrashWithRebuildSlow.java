@@ -38,14 +38,15 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -58,7 +59,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
@@ -121,7 +121,7 @@ public class TestCrashWithRebuildSlow
             {
                 nameCount++;
                 assertThat( node, inTx( newDb, hasProperty( "name" ), true ) );
-                relCount += count( node.getRelationships( Direction.OUTGOING ) );
+                relCount += Iterables.count( node.getRelationships( Direction.OUTGOING ) );
             }
 
             assertEquals( 16, nameCount );

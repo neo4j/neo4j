@@ -34,7 +34,7 @@ import java.util.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.helpers.collection.Iterables.append;
-import static org.neo4j.helpers.collection.Iterables.toArray;
+import static org.neo4j.helpers.collection.Iterables.asArray;
 
 /**
  * This can be used to create monitor instances using a Dynamic Proxy, which when invoked can delegate to any number of
@@ -103,7 +103,7 @@ public class Monitors
     public synchronized <T> T newMonitor( Class<T> monitorClass, Class<?> owningClass, String... tags )
     {
         Iterable<String> tagIer = append( owningClass.getName(), Iterables.<String,String>iterable( tags ) );
-        String[] tagArray = toArray( String.class, tagIer );
+        String[] tagArray = asArray( String.class, tagIer );
         return newMonitor( monitorClass, tagArray );
     }
 

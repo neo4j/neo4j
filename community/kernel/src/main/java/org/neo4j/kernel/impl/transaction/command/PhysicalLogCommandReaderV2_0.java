@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -43,7 +44,6 @@ import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
@@ -261,7 +261,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
         // read and ignore transaction id which is not used anymore
         channel.getLong();
         SchemaRule rule =
-                first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter ) : readSchemaRule( recordsBefore );
+                Iterables.first( recordsAfter ).inUse() ? readSchemaRule( recordsAfter ) : readSchemaRule( recordsBefore );
         return new Command.SchemaRuleCommand( recordsBefore, recordsAfter, rule );
     }
 
@@ -444,12 +444,12 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
 
     private SchemaRule readSchemaRule( Collection<DynamicRecord> recordsBefore )
     {
-        assert first( recordsBefore ).inUse() : "Asked to deserialize schema records that were not in use.";
+        assert Iterables.first( recordsBefore ).inUse() : "Asked to deserialize schema records that were not in use.";
         SchemaRule rule;
         ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
         try
         {
-            rule = AbstractSchemaRule.deserialize( first( recordsBefore ).getId(), deserialized );
+            rule = AbstractSchemaRule.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
         }
         catch ( MalformedSchemaRuleException e )
         {

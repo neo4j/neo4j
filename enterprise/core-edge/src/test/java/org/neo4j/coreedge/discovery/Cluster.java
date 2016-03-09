@@ -49,9 +49,8 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
-
 import static org.neo4j.concurrent.Futures.combine;
-import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class Cluster
@@ -314,7 +313,7 @@ public class Cluster
 
     public void addCoreServerWithServerId( int serverId, int intendedClusterSize )
     {
-        Config config = first( coreServers ).getDependencyResolver().resolveDependency( Config.class );
+        Config config = firstOrNull( coreServers ).getDependencyResolver().resolveDependency( Config.class );
         List<AdvertisedSocketAddress> advertisedAddress = config.get( CoreEdgeClusterSettings
                 .initial_core_cluster_members );
 

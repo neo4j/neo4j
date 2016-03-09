@@ -29,7 +29,7 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class PropertyChangesTest
 {

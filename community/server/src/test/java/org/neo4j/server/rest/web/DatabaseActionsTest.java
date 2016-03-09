@@ -79,10 +79,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.nodeUriToId;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
@@ -1169,7 +1168,7 @@ public class DatabaseActionsTest
         // THEN
         assertEquals(
                 asSet( labelName1, labelName2 ),
-                asSet( labels ) );
+                Iterables.asSet( labels ) );
     }
 
     @Test
@@ -1189,7 +1188,7 @@ public class DatabaseActionsTest
         }
 
         // THEN
-        assertEquals( asSet( node1, node2 ), asSet( Iterables.map( from -> {
+        assertEquals( asSet( node1, node2 ), Iterables.asSet( Iterables.map( from -> {
             Map<?, ?> nodeMap = (Map<?, ?>) from;
             return nodeUriToId( (String) nodeMap.get( "self" ) );
         }, representation ) ) );
@@ -1233,8 +1232,8 @@ public class DatabaseActionsTest
         try ( Transaction transaction = graph.beginTx() )
         {
             Iterable<IndexDefinition> defs = graphdbHelper.getSchemaIndexes( labelName );
-            assertEquals( 1, count( defs ) );
-            assertEquals( propertyKey, first( first( defs ).getPropertyKeys() ) );
+            assertEquals( 1, Iterables.count( defs ) );
+            assertEquals( propertyKey, firstOrNull( firstOrNull( defs ).getPropertyKeys() ) );
         }
     }
 
@@ -1251,7 +1250,7 @@ public class DatabaseActionsTest
         // THEN
         try ( Transaction transaction = graph.beginTx() )
         {
-            assertFalse( "Index should have been dropped", asSet( graphdbHelper.getSchemaIndexes( labelName ) )
+            assertFalse( "Index should have been dropped", Iterables.asSet( graphdbHelper.getSchemaIndexes( labelName ) )
                     .contains( index ) );
         }
     }
@@ -1291,7 +1290,7 @@ public class DatabaseActionsTest
         try ( Transaction tx = graph.beginTx() )
         {
             Iterable<ConstraintDefinition> defs = graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey );
-            assertEquals( asSet( propertyKey ), asSet( single( defs ).getPropertyKeys() ) );
+            assertEquals( asSet( propertyKey ), Iterables.asSet( single( defs ).getPropertyKeys() ) );
             tx.success();
         }
     }
@@ -1309,7 +1308,7 @@ public class DatabaseActionsTest
 
         // THEN
         assertFalse( "Constraint should have been dropped",
-                asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) ).contains( index ) );
+                Iterables.asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) ).contains( index ) );
     }
 
     @Test

@@ -36,8 +36,8 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyListOf;
 
 public class AccessUniqueLuceneIndexTest
 {
@@ -75,7 +75,7 @@ public class AccessUniqueLuceneIndexTest
 
         // then
         assertEquals( asList( 1l ), getAllNodes( indexStorage, "value2" ) );
-        assertEquals( emptyListOf( Long.class ), getAllNodes( indexStorage, "value1" ) );
+        assertEquals( emptyList(), getAllNodes( indexStorage, "value1" ) );
     }
 
     @Test
@@ -100,8 +100,8 @@ public class AccessUniqueLuceneIndexTest
 
         // then
         assertEquals( asList( 1l ), getAllNodes( indexStorage, "value1" ) );
-        assertEquals( emptyListOf( Long.class ), getAllNodes( indexStorage, "value2" ) );
-        assertEquals( emptyListOf( Long.class ), getAllNodes( indexStorage, "value3" ) );
+        assertEquals( emptyList(), getAllNodes( indexStorage, "value2" ) );
+        assertEquals( emptyList(), getAllNodes( indexStorage, "value3" ) );
         assertEquals( asList( 3l ), getAllNodes( indexStorage, "value3b" ) );
         assertEquals( asList( 4l ), getAllNodes( indexStorage, "value4" ) );
     }

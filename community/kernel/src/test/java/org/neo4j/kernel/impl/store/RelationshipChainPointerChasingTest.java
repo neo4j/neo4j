@@ -36,8 +36,7 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.Iterables.toArray;
+import static org.neo4j.helpers.collection.Iterables.asArray;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 /**
@@ -82,7 +81,7 @@ public class RelationshipChainPointerChasingTest
         Relationship[] relationships;
         try ( Transaction tx = db.beginTx() )
         {
-            relationships = toArray( Relationship.class, node.getRelationships() );
+            relationships = asArray( Relationship.class, node.getRelationships() );
             tx.success();
         }
 

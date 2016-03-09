@@ -49,15 +49,16 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.SuppressOutput;
@@ -81,11 +82,8 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.withMessage;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.tooling.GlobalGraphOperations.at;
@@ -195,14 +193,14 @@ public class ImportToolTest
         // THEN
         try ( Transaction tx = dbRule.beginTx() )
         {
-            int nodeCount = count( at( dbRule ).getAllNodes() );
+            long nodeCount = Iterables.count( at( dbRule ).getAllNodes() );
             assertEquals( 4097, nodeCount );
 
             tx.success();
             ResourceIterator<Node> nodes = dbRule.findNodes( DynamicLabel.label( "FIRST 4096" ) );
-            assertEquals (1, IteratorUtil.asList(nodes).size() );
+            assertEquals (1, Iterators.asList(nodes).size() );
             nodes = dbRule.findNodes( DynamicLabel.label( "SECOND 4096" ) );
-            assertEquals( 1, IteratorUtil.asList( nodes ).size() );
+            assertEquals( 1, Iterators.asList( nodes ).size() );
         }
     }
 
@@ -373,7 +371,7 @@ public class ImportToolTest
                 }
             }
 
-            int nodeCount = count( at( dbRule ).getAllNodes() );
+            long nodeCount = Iterables.count( at( dbRule ).getAllNodes() );
             assertEquals( 10, nodeCount );
             tx.success();
         }
@@ -759,7 +757,7 @@ public class ImportToolTest
             {
                 assertTrue( node.hasProperty( "name" ) );
                 nodeCount++;
-                assertEquals( 1, count( node.getRelationships() ) );
+                assertEquals( 1, Iterables.count( node.getRelationships() ) );
             }
             assertEquals( 6, nodeCount );
             tx.success();
@@ -1079,10 +1077,10 @@ public class ImportToolTest
                 }
                 else
                 {
-                    assertNotNull( single( filter( nodeFilter( id ), allNodes.iterator() ) ) );
+                    assertNotNull( Iterators.single( Iterators.filter( nodeFilter( id ), allNodes.iterator() ) ) );
                 }
             }
-            assertEquals( anonymousCount, count( filter( nodeFilter( "" ), allNodes.iterator() ) ) );
+            assertEquals( anonymousCount, count( Iterators.filter( nodeFilter( "" ), allNodes.iterator() ) ) );
             tx.success();
         }
     }
@@ -1111,23 +1109,23 @@ public class ImportToolTest
     public void shouldPrintReferenceLinkOnDataImportErrors() throws Exception
     {
         shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
-                IteratorUtil.iterator( new RelationshipDataLine( "1", "", "type", "name" ) ),
+                Iterators.iterator( new RelationshipDataLine( "1", "", "type", "name" ) ),
                 "Relationship missing mandatory field 'END_ID', read more about relationship " +
                 "format in the manual:  http://neo4j.com/docs/" + Version.getKernel().getReleaseVersion() +
                 "/import-tool-header-format.html#import-tool-header-format-rels" );
         shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
-                IteratorUtil.iterator( new RelationshipDataLine( "", "1", "type", "name" ) ),
+                Iterators.iterator( new RelationshipDataLine( "", "1", "type", "name" ) ),
                 "Relationship missing mandatory field 'START_ID', read more" +
                 " about relationship format in the manual:  http://neo4j.com/docs/" +
                 Version.getKernel().getReleaseVersion() +
                 "/import-tool-header-format.html#import-tool-header-format-rels" );
         shouldPrintReferenceLinkAsPartOfErrorMessage( nodeIds(),
-                IteratorUtil.iterator( new RelationshipDataLine( "1", "2", "", "name" ) ),
+                Iterators.iterator( new RelationshipDataLine( "1", "2", "", "name" ) ),
                 "Relationship missing mandatory field 'TYPE', read more about relationship " +
                 "format in the manual:  http://neo4j.com/docs/" + Version.getKernel().getReleaseVersion() +
                 "/import-tool-header-format.html#import-tool-header-format-rels" );
         shouldPrintReferenceLinkAsPartOfErrorMessage( Arrays.asList( "1", "1" ),
-                IteratorUtil.iterator( new RelationshipDataLine( "1", "2", "type", "name" ) ),
+                Iterators.iterator( new RelationshipDataLine( "1", "2", "type", "name" ) ),
                 "Duplicate input ids that would otherwise clash can be put into separate id space, read more " +
                 "about how to use id spaces in the manual: http://neo4j.com/docs/" +
                 Version.getKernel().getReleaseVersion() +
@@ -1172,7 +1170,7 @@ public class ImportToolTest
         try ( Transaction tx = db.beginTx() )
         {
             ResourceIterator<Node> allNodes = db.getAllNodes().iterator();
-            Node node = IteratorUtil.single( allNodes );
+            Node node = Iterators.single( allNodes );
             allNodes.close();
 
             assertEquals( "This is a line with\nnewlines in", node.getProperty( "name" ) );
@@ -1219,8 +1217,8 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = single( db.getAllNodes() );
-            assertEquals( "three", single( node.getPropertyKeys() ) );
+            Node node = Iterables.single( db.getAllNodes() );
+            assertEquals( "three", Iterables.single( node.getPropertyKeys() ) );
             tx.success();
         }
     }
@@ -1672,14 +1670,10 @@ public class ImportToolTest
 
     private Relationship findRelationship( Node startNode, final Node endNode, final RelationshipDataLine relationship )
     {
-        return singleOrNull( filter( new Predicate<Relationship>()
-        {
-            @Override
-            public boolean test( Relationship item )
-            {
-                return item.getEndNode().equals( endNode ) && item.getProperty( "name" ).equals( relationship.name );
-            }
-        }, startNode.getRelationships( withName( relationship.type ) ).iterator() ) );
+        return Iterators.singleOrNull( Iterators.filter(
+                item -> item.getEndNode().equals( endNode ) &&
+                        item.getProperty( "name" ).equals( relationship.name ),
+                startNode.getRelationships( withName( relationship.type ) ).iterator() ) );
     }
 
     private Map<String,Node> allNodesById( GraphDatabaseService db )

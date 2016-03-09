@@ -30,9 +30,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.Statement;
@@ -69,15 +72,14 @@ import static org.neo4j.graphdb.Neo4jMatchers.hasNoLabels;
 import static org.neo4j.graphdb.Neo4jMatchers.hasNoNodes;
 import static org.neo4j.graphdb.Neo4jMatchers.hasNodes;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.helpers.collection.IteratorUtil.asEnumNameSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class LabelsAcceptanceTest
 {
-    public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     private enum Labels implements Label
     {
@@ -243,7 +245,9 @@ public class LabelsAcceptanceTest
         }
 
         // THEN
-        assertThat( node, inTx( db, hasLabels( asEnumNameSet( Labels.class ) ) ));
+
+        Set<String> names = Stream.of( Labels.values() ).map( Labels::name ).collect( Collectors.toSet() );
+        assertThat( node, inTx( db, hasLabels( names ) ));
     }
 
     @Test
@@ -396,19 +400,12 @@ public class LabelsAcceptanceTest
         // When
         try (Transaction tx = db.beginTx())
         {
-            labels = toList( db.getAllLabels() );
+            labels = asList( db.getAllLabels() );
         }
 
         // Then
         assertEquals( 2, labels.size() );
-        assertThat( map( new Function<Label,String>()
-        {
-            @Override
-            public String apply( Label label )
-            {
-                return label.name();
-            }
-        }, labels ), hasItems( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() ) );
+        assertThat( map( Label::name, labels ), hasItems( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() ) );
     }
 
     @Test
@@ -439,7 +436,7 @@ public class LabelsAcceptanceTest
         // THEN
         try (Transaction transaction = db.beginTx())
         {
-            assertEquals( 0, count( db.getAllNodes() ) );
+            assertEquals( 0, Iterables.count( db.getAllNodes() ) );
         }
     }
 

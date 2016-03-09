@@ -19,31 +19,32 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import static java.lang.Math.pow;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.core.BigStoreIT.machineIsOkToRunThisTest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.Math.pow;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.core.BigStoreIT.machineIsOkToRunThisTest;
 
 public class BigBatchStoreIT implements RelationshipType
 {
@@ -128,7 +129,7 @@ public class BigBatchStoreIT implements RelationshipType
         assertEquals( relBelowTheLine, edb.getNodeById( idBelow ).getSingleRelationship( this, Direction.OUTGOING ).getId() );
         assertEquals( relAboveTheLine, edb.getNodeById( idBelow ).getSingleRelationship( this, Direction.INCOMING ).getId() );
         assertEquals(   asSet( asList( edb.getRelationshipById( relBelowTheLine ), edb.getRelationshipById( relAboveTheLine ) ) ),
-                        asSet( asCollection( edb.getNodeById( idBelow ).getRelationships() ) ) );
+                        asSet( Iterables.asCollection( edb.getNodeById( idBelow ).getRelationships() ) ) );
         edb.shutdown();
         db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get() );
     }

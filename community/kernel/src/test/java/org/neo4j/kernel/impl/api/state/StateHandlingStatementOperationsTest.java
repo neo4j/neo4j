@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collections;
-import java.util.Set;
-
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -63,9 +64,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asIterable;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
@@ -114,7 +114,7 @@ public class StateHandlingStatementOperationsTest
         when( txState.hasChanges() ).thenReturn( true );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-                .thenAnswer( invocation -> IteratorUtil.iterator( constraint ) );
+                .thenAnswer( invocation -> Iterators.iterator( constraint ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
 
         // when
@@ -132,12 +132,12 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-                .thenAnswer( invocation -> IteratorUtil.emptyIterator() );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquePropertyConstraintCreate( state, 10, 66 );
 
         // when
-        Set<NodePropertyConstraint> result = asSet(
+        Set<NodePropertyConstraint> result = Iterables.asSet(
                 asIterable( context.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) ) );
 
         // then
@@ -154,19 +154,19 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-                .thenAnswer( invocation -> IteratorUtil.emptyIterator() );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetForLabelAndPropertyKey( 11, 99 ) )
-                .thenAnswer( invocation -> IteratorUtil.emptyIterator() );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetForLabel( 10 ) )
-                .thenAnswer( invocation -> IteratorUtil.emptyIterator() );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetForLabel( 11 ) )
-                .thenAnswer( invocation -> IteratorUtil.iterator( constraint1 ) );
+                .thenAnswer( invocation -> Iterators.iterator( constraint1 ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquePropertyConstraintCreate( state, 10, 66 );
         context.uniquePropertyConstraintCreate( state, 11, 99 );
 
         // when
-        Set<NodePropertyConstraint> result = asSet( asIterable( context.constraintsGetForLabel( state, 11 ) ) );
+        Set<NodePropertyConstraint> result = Iterables.asSet( asIterable( context.constraintsGetForLabel( state, 11 ) ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );
@@ -182,16 +182,16 @@ public class StateHandlingStatementOperationsTest
         TransactionState txState = new TxState();
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
-                .thenAnswer( invocation -> IteratorUtil.emptyIterator() );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetForLabelAndPropertyKey( 11, 99 ) )
-                .thenAnswer( invocation -> IteratorUtil.emptyIterator() );
+                .thenAnswer( invocation -> Iterators.emptyIterator() );
         when( inner.constraintsGetAll() )
-                .thenAnswer( invocation -> IteratorUtil.iterator( constraint2 ) );
+                .thenAnswer( invocation -> Iterators.iterator( constraint2 ) );
         StateHandlingStatementOperations context = newTxStateOps( inner );
         context.uniquePropertyConstraintCreate( state, 10, 66 );
 
         // when
-        Set<PropertyConstraint> result = asSet( asIterable( context.constraintsGetAll( state ) ) );
+        Set<PropertyConstraint> result = Iterables.asSet( asIterable( context.constraintsGetAll( state ) ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );

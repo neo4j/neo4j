@@ -44,7 +44,7 @@ import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.Iterators.addToCollection;
 
 /**
  * Encapsulates executing statements in a transaction, committing the transaction, or rolling it back.

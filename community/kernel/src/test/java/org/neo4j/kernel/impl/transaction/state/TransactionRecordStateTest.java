@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,15 +32,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -97,14 +98,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
@@ -312,7 +311,7 @@ public class TransactionRecordStateTest
         assertEquals(
                 asSet( add( nodeId, propertyKey1, value1, labelIds ), add( nodeId, propertyKey2, value2, labelIds ) ),
 
-                asSet( indexUpdates ) );
+                Iterables.asSet( indexUpdates ) );
     }
 
     @Test
@@ -338,7 +337,7 @@ public class TransactionRecordStateTest
         // THEN
         assertEquals( asSet( add( nodeId, propertyKey1, value1, new long[]{labelId2} ),
                 add( nodeId, propertyKey2, value2, new long[]{labelId2} ),
-                add( nodeId, propertyKey2, value2, new long[]{labelId1} ) ), asSet( indexUpdates ) );
+                add( nodeId, propertyKey2, value2, new long[]{labelId1} ) ), Iterables.asSet( indexUpdates ) );
     }
 
     @Test
@@ -366,7 +365,7 @@ public class TransactionRecordStateTest
         assertEquals( asSet( remove( nodeId, propertyKey1, value1, labelIds ),
                 remove( nodeId, propertyKey2, value2, labelIds ) ),
 
-                asSet( indexUpdates ) );
+                Iterables.asSet( indexUpdates ) );
     }
 
     @Test
@@ -395,7 +394,7 @@ public class TransactionRecordStateTest
         assertEquals( asSet( remove( nodeId, propertyKey1, value1, new long[]{labelId1, labelId2} ),
                 remove( nodeId, propertyKey2, value2, new long[]{labelId2} ) ),
 
-                asSet( indexUpdates ) );
+                Iterables.asSet( indexUpdates ) );
     }
 
     @Test
@@ -424,7 +423,7 @@ public class TransactionRecordStateTest
                 remove( nodeId, propertyKey1, value1, new long[]{labelId2} ),
                 remove( nodeId, propertyKey2, value2, new long[]{labelId2} ) ),
 
-                asSet( indexUpdates ) );
+                Iterables.asSet( indexUpdates ) );
     }
 
     @Test
@@ -452,7 +451,7 @@ public class TransactionRecordStateTest
         assertEquals( asSet( change( nodeId, propertyKey1, value1, EMPTY_LONG_ARRAY, newValue1, EMPTY_LONG_ARRAY ),
                 change( nodeId, propertyKey2, value2, EMPTY_LONG_ARRAY, newValue2, EMPTY_LONG_ARRAY ) ),
 
-                asSet( indexUpdates ) );
+                Iterables.asSet( indexUpdates ) );
     }
 
     @Test
@@ -479,7 +478,7 @@ public class TransactionRecordStateTest
 
         // THEN
         assertEquals( asSet( remove( nodeId, propertyKey1, value1, new long[]{labelId} ),
-                remove( nodeId, propertyKey2, value2, new long[]{labelId} ) ), asSet( indexUpdates ) );
+                remove( nodeId, propertyKey2, value2, new long[]{labelId} ) ), Iterables.asSet( indexUpdates ) );
     }
 
     @Test
@@ -700,7 +699,7 @@ public class TransactionRecordStateTest
 
         // THEN
         assertEquals( asSet( add( nodeId, propertyKey1, value1, new long[]{labelId} ),
-                add( nodeId, propertyKey2, value2, new long[]{labelId} ) ), asSet( updates ) );
+                add( nodeId, propertyKey2, value2, new long[]{labelId} ) ), Iterables.asSet( updates ) );
     }
 
     @Test
@@ -1238,8 +1237,8 @@ public class TransactionRecordStateTest
         }
 
         // Extract the dynamic label record id (which is also a verification that we allocated one)
-        NodeRecord node = single( recordChangeSet.getNodeRecords().changes() ).forReadingData();
-        dynamicLabelRecordId.set( single( node.getDynamicLabelRecords() ).getId() );
+        NodeRecord node = Iterables.single( recordChangeSet.getNodeRecords().changes() ).forReadingData();
+        dynamicLabelRecordId.set( Iterables.single( node.getDynamicLabelRecords() ).getId() );
 
         return recordState;
     }
@@ -1317,6 +1316,6 @@ public class TransactionRecordStateTest
 
     private PropertyCommand singlePropertyCommand( Collection<StorageCommand> commands )
     {
-        return (PropertyCommand) single( filter( t -> t instanceof PropertyCommand, commands ) );
+        return (PropertyCommand) Iterables.single( filter( t -> t instanceof PropertyCommand, commands ) );
     }
 }

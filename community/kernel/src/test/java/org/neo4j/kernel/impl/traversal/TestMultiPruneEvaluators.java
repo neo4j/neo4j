@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Path;
@@ -34,11 +34,9 @@ import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestMultiPruneEvaluators extends TraversalTestBase

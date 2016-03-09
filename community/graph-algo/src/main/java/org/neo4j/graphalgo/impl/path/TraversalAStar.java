@@ -37,12 +37,11 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.Uniqueness;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 import static org.neo4j.kernel.Traversal.traversal;
 
 /**
@@ -92,13 +91,13 @@ public class TraversalAStar implements PathFinder<WeightedPath>
     @Override
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
-        return IteratorUtil.asIterable( findSinglePath( start, end ) );
+        return Iterables.asIterable( findSinglePath( start, end ) );
     }
 
     @Override
     public WeightedPath findSinglePath( Node start, Node end )
     {
-        return firstOrNull( findPaths( start, end, false ) );
+        return Iterables.firstOrNull( findPaths( start, end, false ) );
     }
 
     private Iterable<WeightedPath> findPaths( Node start, Node end, boolean multiplePaths )

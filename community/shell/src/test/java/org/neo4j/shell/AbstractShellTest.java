@@ -19,21 +19,22 @@
  */
 package org.neo4j.shell;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.RemoteClient;
@@ -45,9 +46,9 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
 import static org.neo4j.shell.ShellLobby.remoteLocation;
 
@@ -207,7 +208,7 @@ public abstract class AbstractShellTest
                 }
             }
             assertTrue( "Was expecting a line matching '" + lineThatMustExist + "', but didn't find any from out of " +
-                    asCollection( output ), found != negative );
+                        Iterables.asCollection( output ), found != negative );
         }
     }
 

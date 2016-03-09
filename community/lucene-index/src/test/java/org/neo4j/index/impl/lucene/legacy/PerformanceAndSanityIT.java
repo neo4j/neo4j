@@ -27,7 +27,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -42,15 +41,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.out;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
+import static org.neo4j.helpers.collection.Iterators.count;
 
 public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
 {
@@ -94,8 +93,8 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
             {
                 index.query( new TermQuery( new Term( "name", "The name " + i ) ) );
             }
-            lastOrNull( (Iterable<T>) index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() ) );
-            lastOrNull( (Iterable<T>) index.get( "name", "The name " + i ) );
+            Iterables.lastOrNull( index.query( new QueryContext( new TermQuery( new Term( "name", "The name " + i ) ) ).tradeCorrectnessForSpeed() ) );
+            Iterables.lastOrNull( index.get( "name", "The name " + i ) );
             index.add( entity, "name", "The name " + i );
             index.add( entity, "title", "Some title " + i );
             index.add( entity, "something", i + "Nothing" );
@@ -114,7 +113,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
         int resultCount = 0;
         for ( int i = 0; i < count; i++ )
         {
-            resultCount += count( (Iterator<T>) index.get( "name", "The name " + i%max ) );
+            resultCount += count( index.get( "name", "The name " + i % max ) );
         }
         out.println( "get(" + resultCount + "):" + (double)( currentTimeMillis() - t ) / (double)count );
 
@@ -122,7 +121,7 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
         resultCount = 0;
         for ( int i = 0; i < count; i++ )
         {
-            resultCount += count( (Iterator<T>) index.get( "something", i%max + "Nothing" ) );
+            resultCount += count( index.get( "something", i % max + "Nothing" ) );
         }
         out.println( "get(" + resultCount + "):" + (double)( currentTimeMillis() - t ) / (double)count );
     }
@@ -146,64 +145,59 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
         ExecutorService pool = Executors.newFixedThreadPool( coreCount );
         for ( int t = 0; t < latch.getCount(); t++ )
         {
-            pool.execute( new Runnable()
-            {
-                @Override
-                public void run()
+            pool.execute( () -> {
+                for ( int i = 0; System.currentTimeMillis() - time < 60*1000*2; i++ )
                 {
-                    for ( int i = 0; System.currentTimeMillis() - time < 60*1000*2; i++ )
+                    if ( i%10 == 0 )
                     {
-                        if ( i%10 == 0 )
+                        if ( i%100 == 0 )
                         {
-                            if ( i%100 == 0 )
+                            int type = (int)(System.currentTimeMillis()%3);
+                            if ( type == 0 )
                             {
-                                int type = (int)(System.currentTimeMillis()%3);
-                                if ( type == 0 )
+                                IndexHits<Node> itr = index.get( "key", "value5" );
+                                try
                                 {
-                                    IndexHits<Node> itr = index.get( "key", "value5" );
-                                    try
-                                    {
-                                        itr.getSingle();
-                                    }
-                                    catch ( NoSuchElementException e )
-                                    { // For when there are multiple hits
-                                    }
+                                    itr.getSingle();
                                 }
-                                else if ( type == 1 )
+                                catch ( NoSuchElementException e )
+                                { // For when there are multiple hits
+                                }
+                            }
+                            else if ( type == 1 )
+                            {
+                                IndexHits<Node> itr = index.get( "key", "value5" );
+                                for ( int size = 0; itr.hasNext() && size < 5; size++ )
                                 {
-                                    IndexHits<Node> itr = index.get( "key", "value5" );
-                                    for ( int size = 0; itr.hasNext() && size < 5; size++ )
-                                    {
-                                        itr.next();
-                                    }
-                                    itr.close();
+                                    itr.next();
                                 }
-                                else
-                                {
-                                    IndexHits<Node> itr = index.get( "key", "crap value" ); /* Will return 0 hits */
-                                    // Iterate over the hits sometimes (it's always gonna be 0 sized)
-                                    if ( System.currentTimeMillis() % 10 > 5 )
-                                    {
-                                        IteratorUtil.count( (Iterator<Node>) itr );
-                                    }
-                                }
+                                itr.close();
                             }
                             else
                             {
-                                IteratorUtil.count( (Iterator<Node>) index.get( "key", "value5" ) );
+                                IndexHits<Node> itr = index.get( "key", "crap value" ); /* Will return 0 hits */
+                                // Iterate over the hits sometimes (it's always gonna be 0 sized)
+                                if ( System.currentTimeMillis() % 10 > 5 )
+                                {
+                                    Iterators.count( itr );
+                                }
                             }
                         }
                         else
                         {
-                            try ( Transaction tx = graphDb.beginTx() )
+                            Iterators.count( index.get( "key", "value5" ) );
+                        }
+                    }
+                    else
+                    {
+                        try ( Transaction tx1 = graphDb.beginTx() )
+                        {
+                            for ( int ii = 0; ii < 20; ii++ )
                             {
-                                for ( int ii = 0; ii < 20; ii++ )
-                                {
-                                    Node node = graphDb.createNode();
-                                    index.add( node, "key", "value" + ii );
-                                }
-                                tx.success();
+                                Node node = graphDb.createNode();
+                                index.add( node, "key", "value" + ii );
                             }
+                            tx1.success();
                         }
                     }
                 }
@@ -223,7 +217,8 @@ public class PerformanceAndSanityIT extends AbstractLuceneIndexTest
         final int count = 5000;
         final int group = 1;
         final int threads = 3;
-        final Collection<Thread> threadList = new ArrayList<Thread>();
+        final Collection<Thread> threadList;
+        threadList = new ArrayList<>();
         final AtomicInteger id = new AtomicInteger();
         final AtomicBoolean halt = new AtomicBoolean();
         long t = System.currentTimeMillis();

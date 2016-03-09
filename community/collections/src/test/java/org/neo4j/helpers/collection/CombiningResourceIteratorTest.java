@@ -24,15 +24,13 @@ import org.junit.Test;
 import org.neo4j.graphdb.ResourceIterator;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 
 public class CombiningResourceIteratorTest
 {
@@ -45,7 +43,7 @@ public class CombiningResourceIteratorTest
         CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>( iterator(it1, it2) );
 
         // When I iterate through it, things come back in the right order
-        assertThat( IteratorUtil.asList( combingIterator ), equalTo(asList(1l,2l,3l,5l,6l,7l)) );
+        assertThat( Iterators.asList( combingIterator ), equalTo(asList(1l,2l,3l,5l,6l,7l)) );
 
         // Then
         verify(it1, never()).close();
@@ -84,6 +82,6 @@ public class CombiningResourceIteratorTest
         CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>( iterator(it1, it2) );
 
         // When I iterate through it, things come back in the right order
-        assertThat( IteratorUtil.asList( combingIterator ), equalTo(asList(1l,5l,6l,7l)) );
+        assertThat( Iterators.asList( combingIterator ), equalTo(asList(1l,5l,6l,7l)) );
     }
 }

@@ -23,10 +23,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 
 /**
  * Utility for running a handful of {@link Runnable} in parallel, each in its own thread.
@@ -116,7 +115,7 @@ public class Workers<R extends Runnable> implements Iterable<R>
     @Override
     public Iterator<R> iterator()
     {
-        return Iterables.map( worker -> worker.toRun, workers.iterator() );
+        return Iterators.map( worker -> worker.toRun, workers.iterator() );
     }
 
     private class Worker extends Thread

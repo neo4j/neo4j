@@ -37,6 +37,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -56,11 +57,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.Iterators.asCollection;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.single;
 
 public abstract class AbstractConstraintCreationIT<Constraint extends PropertyConstraint> extends KernelIntegrationTest
 {
@@ -358,7 +358,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends PropertyCo
         // then
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( Collections.<ConstraintDefinition>emptyList(), asList( db.schema().getConstraints() ) );
+            assertEquals( Collections.<ConstraintDefinition>emptyList(), Iterables.asList( db.schema().getConstraints() ) );
             assertEquals( Collections.<IndexDefinition,Schema.IndexState>emptyMap(),
                     indexesWithState( db.schema() ) );
             tx.success();

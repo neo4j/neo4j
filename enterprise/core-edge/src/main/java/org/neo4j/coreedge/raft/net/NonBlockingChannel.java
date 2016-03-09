@@ -19,6 +19,12 @@
  */
 package org.neo4j.coreedge.raft.net;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.util.concurrent.FutureListener;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -26,15 +32,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.LockSupport;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
-import io.netty.util.concurrent.FutureListener;
-
 import org.neo4j.coreedge.raft.net.monitoring.MessageQueueMonitor;
 import org.neo4j.coreedge.server.Disposable;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -188,7 +188,7 @@ public class NonBlockingChannel implements Disposable
             Channel channel = channelFuture.awaitUninterruptibly().channel();
             if ( channelFuture.isSuccess() )
             {
-                Map.Entry<String, ChannelHandler> lastHandler = IteratorUtil.last( channel.pipeline().iterator() );
+                Map.Entry<String, ChannelHandler> lastHandler = Iterators.last( channel.pipeline().iterator() );
                 channel.pipeline().addBefore( lastHandler.getKey(), "keepAlive", this.keepAliveHandler );
                 channel.flush();
                 nettyChannel = channel;

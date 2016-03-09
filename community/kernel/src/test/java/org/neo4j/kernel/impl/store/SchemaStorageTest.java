@@ -33,7 +33,7 @@ import org.neo4j.function.Functions;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenNameLookup;
@@ -56,7 +56,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
@@ -232,7 +232,7 @@ public class SchemaStorageTest
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
         Mockito.when( schemaStorageSpy.loadAllSchemaRules() ).thenReturn(
-                IteratorUtil.<SchemaRule>iterator(
+                Iterators.<SchemaRule>iterator(
                         getUniquePropertyConstraintRule( 1l, LABEL1, PROP1 ),
                         getUniquePropertyConstraintRule( 2l, LABEL1, PROP1 ) ) );
 
@@ -269,7 +269,7 @@ public class SchemaStorageTest
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
         Mockito.when( schemaStorageSpy.loadAllSchemaRules() ).thenReturn(
-                IteratorUtil.<SchemaRule>iterator(
+                Iterators.<SchemaRule>iterator(
                         getRelationshipPropertyExistenceConstraintRule( 1l, TYPE1, PROP1 ),
                         getRelationshipPropertyExistenceConstraintRule( 2l, TYPE1, PROP1 ) ) );
 

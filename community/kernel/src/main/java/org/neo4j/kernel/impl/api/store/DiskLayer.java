@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBase
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -75,8 +76,6 @@ import org.neo4j.storageengine.api.schema.IndexSchemaRule;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -232,9 +231,9 @@ public class DiskLayer implements StoreReadLayer
 
     private Iterator<IndexDescriptor> getIndexDescriptorsFor( Predicate<SchemaRule> filter )
     {
-        Iterator<SchemaRule> filtered = filter( filter, neoStores.getSchemaStore().loadAllSchemaRules() );
+        Iterator<SchemaRule> filtered = Iterators.filter( filter, neoStores.getSchemaStore().loadAllSchemaRules() );
 
-        return map( new Function<SchemaRule, IndexDescriptor>()
+        return Iterators.map( new Function<SchemaRule, IndexDescriptor>()
         {
 
             @Override

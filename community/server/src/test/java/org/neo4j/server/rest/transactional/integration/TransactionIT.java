@@ -36,7 +36,7 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -54,7 +54,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
@@ -889,7 +889,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             long count = 0;
             for ( Node node : graphdb().getAllNodes() )
             {
-                Set<Label> nodeLabels = IteratorUtil.asSet( node.getLabels() );
+                Set<Label> nodeLabels = Iterables.asSet( node.getLabels() );
                 if ( nodeLabels.containsAll( givenLabels ) )
                 {
                     count++;

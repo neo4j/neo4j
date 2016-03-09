@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
@@ -42,7 +43,6 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 
@@ -249,7 +249,7 @@ public class HTTP
     {
         List<String> contentEncodings = response.getHeaders().get( "Content-Encoding" );
         String contentEncoding;
-        if ( contentEncodings != null && (contentEncoding = singleOrNull( contentEncodings )) != null )
+        if ( contentEncodings != null && (contentEncoding = Iterables.singleOrNull( contentEncodings )) != null )
         {
             // Specifically, this is never used for character encoding.
             contentEncoding = contentEncoding.toLowerCase();

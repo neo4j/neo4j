@@ -25,7 +25,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.helpers.Listeners.notifyListeners;
-import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 
 public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements CoreDiscoveryService
 {
@@ -92,7 +92,7 @@ public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements Co
             // Move the bootstrappable instance, if necessary
             if ( cluster.bootstrappable == me )
             {
-                cluster.bootstrappable = first( cluster.coreMembers );
+                cluster.bootstrappable = firstOrNull( cluster.coreMembers );
             }
 
             notifyListeners( cluster.membershipListeners, listener -> listener.onTopologyChange( currentTopology() ) );
@@ -102,7 +102,7 @@ public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements Co
     @Override
     public ClusterTopology currentTopology()
     {
-        CoreMember firstMember = first( cluster.coreMembers );
+        CoreMember firstMember = firstOrNull( cluster.coreMembers );
         return new TestOnlyClusterTopology( firstMember != null && firstMember.equals( me ),
                 cluster.coreMembers, cluster.edgeMembers );
     }

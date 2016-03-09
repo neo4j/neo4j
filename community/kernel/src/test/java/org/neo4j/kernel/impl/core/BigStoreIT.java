@@ -41,9 +41,10 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static java.lang.Math.pow;
@@ -51,7 +52,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
@@ -294,7 +294,7 @@ public class BigStoreIT implements RelationshipType
                 assertEquals( idBelow, relBelowTheLine.getId() );
                 assertEquals( highMark, relAboveTheLine.getId() );
                 assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ),
-                        asSet( asCollection( db.getNodeById( idBelow ).getRelationships() ) ) );
+                        asSet( Iterables.asCollection( db.getNodeById( idBelow ).getRelationships() ) ) );
                 transaction.success();
             }
             if ( i == 0 )

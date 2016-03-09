@@ -46,7 +46,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
@@ -84,7 +84,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -157,7 +156,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return IteratorUtil.asCollection( Iterables.concat( STORES20, STORES21, STORES22, STORES23 ) );
+            return Iterables.asCollection( Iterables.concat( STORES20, STORES21, STORES22, STORES23 ) );
         }
 
         @Rule
@@ -336,7 +335,7 @@ public class StoreUpgradeIntegrationTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<Store[]> stores()
         {
-            return IteratorUtil.asCollection( Iterables.concat( STORES21, STORES22, STORES23 ) );
+            return Iterables.asCollection( Iterables.concat( STORES21, STORES22, STORES23 ) );
         }
 
         @Rule
@@ -454,7 +453,7 @@ public class StoreUpgradeIntegrationTest
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class );
             Statement statement = bridge.get();
-            return concat(
+            return Iterators.concat(
                     statement.readOperations().indexesGetAll(),
                     statement.readOperations().uniqueIndexesGetAll()
             );

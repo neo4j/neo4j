@@ -36,6 +36,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -54,9 +56,6 @@ import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.allow_store_upgrade;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class TestMigrateToDenseNodeSupport
 {
@@ -170,7 +169,7 @@ public class TestMigrateToDenseNodeSupport
         try ( Transaction tx = db.beginTx() )
         {
             ResourceIterator<Node> allNodesWithLabel = db.findNodes( referenceNode );
-            Node refNode = single( allNodesWithLabel );
+            Node refNode = Iterators.single( allNodesWithLabel );
             int sparseCount = 0;
             for ( Relationship relationship : refNode.getRelationships( Types.SPARSE, OUTGOING ) )
             {
@@ -195,23 +194,23 @@ public class TestMigrateToDenseNodeSupport
 
     private void verifyDenseNode( GraphDatabaseService db, Node node )
     {
-        assertEquals( 102, count( node.getRelationships( OUTGOING ) ) );
-        assertEquals( 100, count( node.getRelationships( Types.OTHER, OUTGOING ) ) );
-        assertEquals( 2, count( node.getRelationships( Types.FOURTH, OUTGOING ) ) );
+        assertEquals( 102, Iterables.count( node.getRelationships( OUTGOING ) ) );
+        assertEquals( 100, Iterables.count( node.getRelationships( Types.OTHER, OUTGOING ) ) );
+        assertEquals( 2, Iterables.count( node.getRelationships( Types.FOURTH, OUTGOING ) ) );
         verifyProperties( node );
         verifyDenseRepresentation( db, node, true );
     }
 
     private void verifySparseNode( GraphDatabaseService db, Node node )
     {
-        assertEquals( 3, count( node.getRelationships( OUTGOING ) ) );
+        assertEquals( 3, Iterables.count( node.getRelationships( OUTGOING ) ) );
         verifyProperties( node );
         verifyDenseRepresentation( db, node, false );
     }
 
     private void verifyProperties( Node node )
     {
-        Set<String> keys = asSet( node.getPropertyKeys() );
+        Set<String> keys = Iterables.asSet( node.getPropertyKeys() );
         for ( Properties property : Properties.values() )
         {
             assertTrue( keys.remove( property.name() ) );

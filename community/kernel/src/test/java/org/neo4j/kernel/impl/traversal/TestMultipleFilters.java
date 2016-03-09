@@ -33,9 +33,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfAcceptedByAny;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestMultipleFilters extends TraversalTestBase
@@ -98,7 +98,8 @@ public class TestMultipleFilters extends TraversalTestBase
     {
         Evaluator mustBeConnectedToK = new MustBeConnectedToNodeFilter( getNodeWithName( "k" ) );
         Evaluator mustNotHaveMoreThanTwoOutRels =
-                path -> Evaluation.ofIncludes( count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
+                path -> Evaluation.ofIncludes( Iterables
+                                                       .count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
 
         TraversalDescription description = traversal().evaluator( mustBeConnectedToK );
         expectNodes( description.traverse( node( "a" ) ), "b", "c" );

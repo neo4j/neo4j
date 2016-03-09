@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -41,8 +42,8 @@ import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
-import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract;
@@ -62,7 +63,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule.uniquenessConstraintRule;
 
@@ -105,7 +105,7 @@ public class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( first( afterRecords ) );
+        verify( schemaStore ).updateRecord( Iterables.first( afterRecords ) );
     }
 
     @Test
@@ -140,7 +140,7 @@ public class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, schemaRule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( first( afterRecords ) );
+        verify( schemaStore ).updateRecord( Iterables.first( afterRecords ) );
         verify( metaDataStore ).setLatestConstraintIntroducingTx( txId );
     }
 
@@ -157,7 +157,7 @@ public class SchemaRuleCommandTest
         visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( first( afterRecords ) );
+        verify( schemaStore ).updateRecord( Iterables.first( afterRecords ) );
     }
 
     @Test

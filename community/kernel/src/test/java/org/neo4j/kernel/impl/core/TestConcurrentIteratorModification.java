@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -32,8 +32,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.*;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class TestConcurrentIteratorModification {
     @Rule

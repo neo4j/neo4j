@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -35,7 +36,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 
 public class ValueNode
         extends ValuePropertyContainer
@@ -48,7 +48,7 @@ public class ValueNode
     {
         packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.NODE );
         packer.pack( node.getId() );
-        Collection<Label> collectedLabels = Iterables.toList( node.getLabels() );
+        Collection<Label> collectedLabels = Iterables.asList( node.getLabels() );
         packer.packListHeader( collectedLabels.size() );
         for ( Label label : collectedLabels )
         {

@@ -38,6 +38,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -62,8 +63,6 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
@@ -362,7 +361,7 @@ public class UpgradeStoreIT
             record.setCreated();
             record.setInUse( true );
             Collection<DynamicRecord> typeRecords = store.allocateNameRecords( PropertyStore.encodeString( name ) );
-            record.setNameId( (int) first( typeRecords ).getId() );
+            record.setNameId( (int) Iterables.first( typeRecords ).getId() );
             record.addNameRecords( typeRecords );
             store.setHighId( store.getHighId()+1 );
             store.updateRecord( record );

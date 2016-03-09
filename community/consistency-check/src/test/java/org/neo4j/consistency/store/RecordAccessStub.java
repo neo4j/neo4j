@@ -55,13 +55,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
+import static java.util.Collections.singletonMap;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-
-import static java.util.Collections.singletonMap;
-
-import static org.neo4j.helpers.collection.IteratorUtil.resourceIterable;
+import static org.neo4j.helpers.collection.Iterables.resourceIterable;
 
 public class RecordAccessStub implements RecordAccess
 {

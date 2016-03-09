@@ -23,10 +23,10 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class GraphDatabaseServiceExecuteTest
 {
@@ -35,10 +35,10 @@ public class GraphDatabaseServiceExecuteTest
     {
         // given
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        final int before, after;
+        final long before, after;
         try ( Transaction tx = graphDb.beginTx() )
         {
-            before = count( graphDb.getAllNodes() );
+            before = Iterables.count( graphDb.getAllNodes() );
             tx.success();
         }
 
@@ -48,7 +48,7 @@ public class GraphDatabaseServiceExecuteTest
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {
-            after = count( graphDb.getAllNodes() );
+            after = Iterables.count( graphDb.getAllNodes() );
             tx.success();
         }
         assertEquals( before + 1, after );

@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -32,9 +33,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.single;
 
 public class LabelScanStoreIT
 {
@@ -55,13 +56,13 @@ public class LabelScanStoreIT
         // THEN
         assertEquals(
                 asSet( node1, node4, node5 ),
-                asSet( getAllNodesWithLabel( Labels.First ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.First ) ) );
         assertEquals(
                 asSet( node2, node4 ),
-                asSet( getAllNodesWithLabel( Labels.Second ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.Second ) ) );
         assertEquals(
                 asSet( node3, node4, node5 ),
-                asSet( getAllNodesWithLabel( Labels.Third ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.Third ) ) );
     }
 
     @Test
@@ -81,13 +82,13 @@ public class LabelScanStoreIT
         // THEN
         assertEquals(
                 asSet( node1, node4, node5 ),
-                asSet( getAllNodesWithLabel( Labels.First ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.First ) ) );
         assertEquals(
                 asSet( node2, node4 ),
-                asSet( getAllNodesWithLabel( Labels.Second ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.Second ) ) );
         assertEquals(
                 asSet( node3, node4, node5 ),
-                asSet( getAllNodesWithLabel( Labels.Third ) ) );
+                Iterables.asSet( getAllNodesWithLabel( Labels.Third ) ) );
     }
 
     @Test

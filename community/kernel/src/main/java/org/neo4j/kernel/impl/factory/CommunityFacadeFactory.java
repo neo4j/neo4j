@@ -25,7 +25,7 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.neo4j.helpers.collection.Iterables.append;
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 
 /**
@@ -38,7 +38,7 @@ public class CommunityFacadeFactory extends GraphDatabaseFacadeFactory
             GraphDatabaseFacade graphDatabaseFacade )
     {
         return super.newFacade( storeDir, params, newDependencies( dependencies ).settingsClasses(
-                toList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) ),
+                asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) ),
                 graphDatabaseFacade );
     }
 

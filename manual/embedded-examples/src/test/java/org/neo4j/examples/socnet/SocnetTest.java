@@ -18,26 +18,28 @@
  */
 package org.neo4j.examples.socnet;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Random;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.Iterators.addToCollection;
+import static org.neo4j.helpers.collection.Iterators.single;
 
 public class SocnetTest
 {
@@ -117,7 +119,7 @@ public class SocnetTest
     {
         Person person1;
         Person person2;
-        int noOfFriends;
+        long noOfFriends;
         try ( Transaction tx = graphDb.beginTx() )
         {
             person1 = personRepository.getPersonByName( "person#1" );
@@ -136,7 +138,7 @@ public class SocnetTest
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            int noOfFriendsAfterChange = person1.getNrOfFriends();
+            long noOfFriendsAfterChange = person1.getNrOfFriends();
             assertThat( noOfFriends, equalTo( noOfFriendsAfterChange + 1 ) );
         }
     }
@@ -265,7 +267,7 @@ public class SocnetTest
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            Person recommendation = IteratorUtil.single( a.getFriendRecommendation( 1 ).iterator() );
+            Person recommendation = single( a.getFriendRecommendation( 1 ).iterator() );
             assertThat( recommendation, equalTo( e ) );
         }
     }
@@ -313,7 +315,7 @@ public class SocnetTest
     private <T> ArrayList<T> fromIterableToArrayList( Iterator<T> iterable )
     {
         ArrayList<T> collection = new ArrayList<>();
-        IteratorUtil.addToCollection( iterable, collection );
+        addToCollection( iterable, collection );
         return collection;
     }
 
@@ -321,7 +323,7 @@ public class SocnetTest
                                        Person... expectedPath )
     {
         ArrayList<Person> pathArray = new ArrayList<>();
-        IteratorUtil.addToCollection( path, pathArray );
+        Iterables.addToCollection( path, pathArray );
         assertThat( pathArray.size(), equalTo( expectedPath.length ) );
         for ( int i = 0; i < expectedPath.length; i++ )
         {
@@ -361,7 +363,7 @@ public class SocnetTest
     private Person getRandomFriendOf( Person p )
     {
         ArrayList<Person> friends = new ArrayList<>();
-        IteratorUtil.addToCollection( p.getFriends().iterator(), friends );
+        addToCollection( p.getFriends().iterator(), friends );
         return friends.get( r.nextInt( friends.size() ) );
     }
 

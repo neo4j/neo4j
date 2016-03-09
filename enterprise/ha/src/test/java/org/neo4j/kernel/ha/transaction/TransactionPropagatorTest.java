@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import java.util.Collections;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Collections;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.Response;
@@ -38,7 +38,6 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.Log;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyString;
@@ -46,7 +45,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
@@ -110,7 +108,7 @@ public class TransactionPropagatorTest
         Iterable<Slave> prioritize = strategy.prioritize( asList( slave( 1 ), slave( 0 ), slave( 2 ) ) );
 
         // THEN
-        assertThat( Iterables.toList( prioritize ), equalTo( asList( slave( 0 ), slave( 1 ), slave( 2 ) ) ) );
+        assertThat( Iterables.asList( prioritize ), equalTo( asList( slave( 0 ), slave( 1 ), slave( 2 ) ) ) );
     }
 
     @Test
@@ -124,7 +122,7 @@ public class TransactionPropagatorTest
         Iterable<Slave> prioritize = strategy.prioritize( asList( slave( 1 ), slave( 0 ), slave( 2 ) ) );
 
         // THEN
-        assertThat( Iterables.toList(prioritize), equalTo( asList( slave( 2 ), slave( 1 ), slave( 0 ) ) ) );
+        assertThat( Iterables.asList(prioritize), equalTo( asList( slave( 2 ), slave( 1 ), slave( 0 ) ) ) );
     }
 
     private Slave slave( final int id )

@@ -21,15 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import java.util
 
-import org.mockito.Mockito._
 import org.mockito.Matchers._
-
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, InternalResultRow, InternalResultVisitor}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.helpers.collection.Iterables._
+import org.neo4j.helpers.collection.Iterators
 
 import scala.collection.JavaConverters._
 
@@ -62,19 +61,19 @@ class CompiledExecutionResultTest extends CypherFunSuite {
   test("should return java objects for string") {
     val result = newCompiledExecutionResult(javaMap("foo" -> "bar"))
 
-    toList(result.javaColumnAs[String]("foo")) should equal(javaList("bar"))
+    Iterators.asList(result.javaColumnAs[String]("foo")) should equal(javaList("bar"))
   }
 
   test("should return java objects for list") {
     val result = newCompiledExecutionResult(javaMap("foo" -> javaList(42)))
 
-    toList(result.javaColumnAs[List[Integer]]("foo")) should equal(javaList(javaList(42)))
+    Iterators.asList(result.javaColumnAs[List[Integer]]("foo")) should equal(javaList(javaList(42)))
   }
 
   test("should return java objects for map") {
     val result = newCompiledExecutionResult(javaMap("foo" -> javaMap("key" -> "value")))
 
-    toList(result.javaColumnAs[Map[String, Any]]("foo")) should equal(javaList(javaMap("key" -> "value")))
+    Iterators.asList(result.javaColumnAs[Map[String, Any]]("foo")) should equal(javaList(javaMap("key" -> "value")))
   }
 
   test("result should be a scala iterator for string") {
@@ -98,19 +97,19 @@ class CompiledExecutionResultTest extends CypherFunSuite {
   test("should return a java iterator for string") {
     val result = newCompiledExecutionResult(javaMap("foo" -> "bar"))
 
-    toList(result.javaIterator) should equal(javaList(javaMap("foo" -> "bar")))
+    Iterators.asList(result.javaIterator) should equal(javaList(javaMap("foo" -> "bar")))
   }
 
   test("should return a java iterator for list") {
     val result = newCompiledExecutionResult(javaMap("foo" -> javaList(42)))
 
-    toList(result.javaIterator) should equal(javaList(javaMap("foo" -> javaList(42))))
+    Iterators.asList(result.javaIterator) should equal(javaList(javaMap("foo" -> javaList(42))))
   }
 
   test("should return a java iterator for map") {
     val result = newCompiledExecutionResult(javaMap("foo" -> javaMap("key" -> "value")))
 
-    toList(result.javaIterator) should equal(javaList(javaMap("foo" -> javaMap("key" -> "value"))))
+    Iterators.asList(result.javaIterator) should equal(javaList(javaMap("foo" -> javaMap("key" -> "value"))))
   }
 
   test("javaIterator hasNext should not call accept if results already consumed") {

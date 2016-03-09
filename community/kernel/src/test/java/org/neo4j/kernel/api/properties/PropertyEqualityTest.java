@@ -24,21 +24,18 @@ import org.junit.runners.Parameterized;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.Collection;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.Iterables.asIterable;
 
 @RunWith(value = Parameterized.class)
 public class PropertyEqualityTest
 {
     @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> data()
+    public static Iterable<Test> data()
     {
-        Iterable<Test> testValues = asIterable(
+        return asIterable(
                 // boolean properties
                 shouldMatch( true, true ),
                 shouldMatch( false, false ),
@@ -138,9 +135,6 @@ public class PropertyEqualityTest
                 shouldMatch( new String[]{"A", "B", "C"}, new char[]{'A', 'B', 'C'} ),
                 shouldMatch( new char[]{'A', 'B', 'C'},  new String[]{"A", "B", "C"} )
         );
-        return asCollection( map( testValue -> {
-            return new Object[]{testValue};
-        }, testValues ) );
     }
 
     private Test currentTest;

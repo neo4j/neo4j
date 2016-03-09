@@ -25,7 +25,7 @@ import java.util.function.Predicate;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.helpers.collection.FilteringIterable;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.String.format;
 
@@ -36,7 +36,7 @@ public class MessageUtils
         Predicate<RaftMessages.Directed<RaftTestMember>> selectMember = message -> message.to() == member;
         try
         {
-            return IteratorUtil.single( new FilteringIterable<>( outcome.getOutgoingMessages(), selectMember ) )
+            return Iterables.single( new FilteringIterable<>( outcome.getOutgoingMessages(), selectMember ) )
                         .message();
         }
         catch ( NoSuchElementException e )

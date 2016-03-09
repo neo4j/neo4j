@@ -39,9 +39,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongArray;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.makeLongString;
 
@@ -139,11 +138,11 @@ public class DatabaseContentVerifier
     {
         try ( Transaction tx = database.beginTx() )
         {
-            List<IndexDefinition> indexDefinitions = Iterables.toList( database.schema().getIndexes() );
+            List<IndexDefinition> indexDefinitions = Iterables.asList( database.schema().getIndexes() );
             assertEquals( 1, indexDefinitions.size() );
             IndexDefinition indexDefinition = indexDefinitions.get( 0 );
             assertEquals( "Label", indexDefinition.getLabel().name() );
-            List<String> propKeys = Iterables.toList( indexDefinition.getPropertyKeys() );
+            List<String> propKeys = Iterables.asList( indexDefinition.getPropertyKeys() );
             assertEquals( 1, propKeys.size() );
             String propKey = propKeys.get( 0 );
             assertEquals( "prop", propKey );

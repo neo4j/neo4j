@@ -34,7 +34,7 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.helpers.collection.Iterables.toList;
+import static org.neo4j.helpers.collection.Iterables.asList;
 
 /**
  * This serves as a base class for contexts of distributed state machines, and holds
@@ -87,7 +87,7 @@ class AbstractContextImpl
     @Override
     public List<URI> getMemberURIs()
     {
-        return toList( commonState.configuration().getMemberURIs() );
+        return asList( commonState.configuration().getMemberURIs() );
     }
 
     @Override

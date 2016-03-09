@@ -89,7 +89,7 @@ public class PathImplTest
                                 .build( new PathImpl.Builder( createNodeProxy( 3 ) ) );
 
         Iterable<Node> nodes = path.reverseNodes();
-        List<Node> nodeList = Iterables.toList( nodes );
+        List<Node> nodeList = Iterables.asList( nodes );
 
         Assert.assertEquals( 3, nodeList.size() );
         Assert.assertEquals( 3, nodeList.get( 0 ).getId() );
@@ -108,7 +108,7 @@ public class PathImplTest
                 .build( new PathImpl.Builder( createNodeProxy( 3 ) ) );
 
         Iterable<Node> nodes = path.nodes();
-        List<Node> nodeList = Iterables.toList( nodes );
+        List<Node> nodeList = Iterables.asList( nodes );
 
         Assert.assertEquals( 3, nodeList.size() );
         Assert.assertEquals( 1, nodeList.get( 0 ).getId() );

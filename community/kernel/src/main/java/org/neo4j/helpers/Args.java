@@ -28,9 +28,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Validator;
-
-import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 
 /**
  * Parses a String[] argument from a main-method. It expects values to be either
@@ -182,7 +181,7 @@ public class Args
         Map<String,String> result = new HashMap<>();
         for ( Map.Entry<String,List<Option<String>>> entry : map.entrySet() )
         {
-            Option<String> value = firstOrNull( entry.getValue() );
+            Option<String> value = Iterables.firstOrNull( entry.getValue() );
             result.put( entry.getKey(), value != null ? value.value() : null );
         }
         return result;

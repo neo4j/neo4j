@@ -31,9 +31,9 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 
-import static org.neo4j.helpers.collection.Iterables.asRawIterator;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.helpers.collection.Iterators.asRawIterator;
+import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 

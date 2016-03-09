@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -47,9 +48,6 @@ import org.neo4j.test.PageCacheRule;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
-
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>>
@@ -495,8 +493,8 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
             assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
 
-            List<PropertyBlock> actualBlocks = asList( (Iterable<PropertyBlock>) actualRecord );
-            List<PropertyBlock> expectedBlocks = asList( (Iterable<PropertyBlock>) expectedRecord );
+            List<PropertyBlock> actualBlocks = Iterables.asList( (Iterable<PropertyBlock>) actualRecord );
+            List<PropertyBlock> expectedBlocks = Iterables.asList( (Iterable<PropertyBlock>) expectedRecord );
             assertThat( "getPropertyBlocks().size", actualBlocks.size(), is( expectedBlocks.size() ) );
             for ( int i = 0; i < actualBlocks.size(); i++ )
             {

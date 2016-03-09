@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.impl.api.TransactionApplier;
@@ -234,6 +234,6 @@ public class DummyIndexImplementation extends LifecycleAdapter implements IndexI
     @Override
     public ResourceIterator<File> listStoreFiles()
     {
-        return IteratorUtil.emptyIterator();
+        return Iterators.emptyIterator();
     }
 }

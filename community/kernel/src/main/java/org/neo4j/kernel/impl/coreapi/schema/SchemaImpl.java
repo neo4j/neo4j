@@ -38,6 +38,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -63,7 +64,6 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static java.lang.String.format;
@@ -72,10 +72,9 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.Iterators.addToCollection;
+import static org.neo4j.helpers.collection.Iterators.asCollection;
+import static org.neo4j.helpers.collection.Iterators.map;
 
 public class SchemaImpl implements Schema
 {
@@ -197,7 +196,7 @@ public class SchemaImpl implements Schema
     public IndexState getIndexState( final IndexDefinition index )
     {
         actions.assertInOpenTransaction();
-        String propertyKey = single( index.getPropertyKeys() );
+        String propertyKey = Iterables.single( index.getPropertyKeys() );
         try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
@@ -238,7 +237,7 @@ public class SchemaImpl implements Schema
     public IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index )
     {
         actions.assertInOpenTransaction();
-        String propertyKey = single( index.getPropertyKeys() );
+        String propertyKey = Iterables.single( index.getPropertyKeys() );
         try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
@@ -270,7 +269,7 @@ public class SchemaImpl implements Schema
     public String getIndexFailure( IndexDefinition index )
     {
         actions.assertInOpenTransaction();
-        String propertyKey = single( index.getPropertyKeys() );
+        String propertyKey = Iterables.single( index.getPropertyKeys() );
         try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );

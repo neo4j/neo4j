@@ -35,14 +35,14 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.Iterators.emptySetOf;
+import static org.neo4j.helpers.collection.Iterators.loop;
 
 public class Neo4jMatchers
 {
@@ -211,7 +211,7 @@ public class Neo4jMatchers
 
     public static Set<String> asLabelNameSet( Iterable<Label> enums )
     {
-        return asSet( map( Label::name, enums ) );
+        return Iterables.asSet( map( Label::name, enums ) );
     }
 
     public static Matcher<? super Iterator<Long>> hasSamePrimitiveItems( final PrimitiveLongIterator actual )
@@ -354,7 +354,7 @@ public class Neo4jMatchers
             if ( !propertyContainer.hasProperty( propertyName ) )
             {
                 mismatchDescription.appendText( String.format( "found property container with property keys: %s",
-                        asSet( propertyContainer.getPropertyKeys() ) ) );
+                        Iterables.asSet( propertyContainer.getPropertyKeys() ) ) );
                 return false;
             }
             return true;
@@ -476,7 +476,7 @@ public class Neo4jMatchers
         {
             try ( Transaction ignore = db.beginTx() )
             {
-                return asCollection( manifest() );
+                return Iterables.asCollection( manifest() );
             }
         }
 
@@ -491,7 +491,7 @@ public class Neo4jMatchers
             protected boolean matchesSafely( Neo4jMatchers.Deferred<T> nodes, Description description )
             {
                 Set<T> expected = asSet( expectedObjects );
-                Set<T> found = asSet( nodes.collection() );
+                Set<T> found = Iterables.asSet( nodes.collection() );
                 if ( !expected.equals( found ) )
                 {
                     description.appendText( "found " + found.toString() );
@@ -570,7 +570,7 @@ public class Neo4jMatchers
             protected boolean matchesSafely( Neo4jMatchers.Deferred<T> nodes, Description description )
             {
                 Set<T> expected = asSet( expectedObjects );
-                Set<T> found = asSet( nodes.collection() );
+                Set<T> found = Iterables.asSet( nodes.collection() );
                 if ( !found.containsAll( expected ) )
                 {
                     description.appendText( "found " + found.toString() );

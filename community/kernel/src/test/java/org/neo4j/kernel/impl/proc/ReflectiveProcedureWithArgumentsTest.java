@@ -40,7 +40,7 @@ import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ReflectiveProcedureWithArgumentsTest

@@ -19,14 +19,14 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
-import java.util.Collection;
-
 import org.hamcrest.Description;
 import org.hamcrest.Factory;
 import org.hamcrest.TypeSafeMatcher;
 
+import java.util.Collection;
+
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.Iterators;
 
 public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
 {
@@ -41,7 +41,7 @@ public class Contains<T> extends TypeSafeMatcher<IndexHits<T>>
     @Override
     public boolean matchesSafely( IndexHits<T> indexHits )
     {
-        Collection<T> collection = IteratorUtil.asCollection( indexHits.iterator() );
+        Collection<T> collection = Iterators.asCollection( indexHits.iterator() );
 
         if ( expectedItems.length != collection.size() )
         {
