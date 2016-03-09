@@ -36,7 +36,7 @@ public class HighLimitTest
     @Test
     public void shouldResolveHighLimitsRecordFormat() throws Exception
     {
-        Config config = new Config( MapUtil.stringMap( "unsupported.dbms.record_format", "highlimit" ) );
+        Config config = new Config( MapUtil.stringMap( "unsupported.dbms.record_format", HighLimit.NAME) );
         RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
         assertEquals( HighLimit.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
@@ -44,11 +44,10 @@ public class HighLimitTest
     @Test
     public void shouldResolveCommunityRecordFormat() throws Exception
     {
-        Config config = new Config( MapUtil.stringMap( "unsupported.dbms.record_format", "community" ) );
+        Config config = new Config( MapUtil.stringMap( "unsupported.dbms.record_format", LowLimitV3_0.NAME ) );
         RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
         assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
-
 
     @Test
     public void shouldResolveNoRecordFormatToHighLimitDefault() throws Exception

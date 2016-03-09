@@ -50,6 +50,7 @@ public class HighLimit extends BaseRecordFormats
     public static final RecordFormats RECORD_FORMATS = new HighLimit();
     // Enterprise.HighLimit.Zero
     public static final String STORE_VERSION = "vE.H.0";
+    public static final String NAME = "high_limit";
 
     public HighLimit()
     {
