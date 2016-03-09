@@ -24,6 +24,7 @@ import java.io.PrintStream;
 
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
+import org.neo4j.cursor.IOCursor;
 
 public class LogPrinter
 {
@@ -37,10 +38,15 @@ public class LogPrinter
     public void print( PrintStream out ) throws IOException
     {
         out.println( String.format( "%1$8s %2$5s  %3$2s %4$s", "Index", "Term", "C?", "Content"));
-        for ( int i = 0; i <= raftLog.appendIndex(); i++ )
+        long index = 0L;
+        try ( IOCursor<RaftLogEntry> cursor = raftLog.getEntryCursor( 0 ) )
         {
-            RaftLogEntry raftLogEntry = raftLog.readLogEntry( i );
-            out.printf("%8d %5d  %s %s%n", i, raftLogEntry.term(), i <= raftLog.commitIndex() ? "Y" : "N", raftLogEntry.content());
+            while ( cursor.next() )
+            {
+                RaftLogEntry raftLogEntry = cursor.get();
+                out.printf("%8d %5d  %s %s%n", index, raftLogEntry.term(), index <= raftLog.commitIndex() ? "Y" : "N", raftLogEntry.content());
+                index++;
+            }
         }
     }
 }

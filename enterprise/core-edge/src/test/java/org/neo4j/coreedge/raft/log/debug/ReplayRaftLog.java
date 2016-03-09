@@ -33,6 +33,8 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
+
 public class ReplayRaftLog
 {
     public static void main( String[] args ) throws IOException
@@ -58,19 +60,14 @@ public class ReplayRaftLog
 
         for ( int i = 0; i <= totalCommittedEntries; i++ )
         {
-            ReplicatedContent content = log.readLogEntry( i ).content();
+            ReplicatedContent content = readLogEntry( log, i ).content();
             if ( content instanceof ReplicatedTransaction )
             {
                 ReplicatedTransaction tx = (ReplicatedTransaction) content;
                 ReplicatedTransactionFactory.extractTransactionRepresentation( tx, new byte[0] ).accept(
-                        new Visitor<StorageCommand, IOException>()
-                        {
-                            @Override
-                            public boolean visit( StorageCommand element ) throws IOException
-                            {
-                                System.out.println(element);
-                                return false;
-                            }
+                        element -> {
+                            System.out.println(element);
+                            return false;
                         } );
             }
         }

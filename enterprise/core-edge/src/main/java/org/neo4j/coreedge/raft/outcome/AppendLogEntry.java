@@ -39,7 +39,7 @@ public class AppendLogEntry implements LogCommand
     @Override
     public void applyTo( RaftLog raftLog ) throws IOException
     {
-        if ( raftLog.entryExists( index ) )
+        if ( index <= raftLog.appendIndex() )
         {
             throw new IllegalStateException( "Attempted to append over an existing entry at index " + index );
         }

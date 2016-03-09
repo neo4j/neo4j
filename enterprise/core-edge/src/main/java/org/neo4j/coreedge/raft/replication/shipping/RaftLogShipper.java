@@ -19,12 +19,15 @@
  */
 package org.neo4j.coreedge.raft.replication.shipping;
 
+import java.io.IOException;
+
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -32,9 +35,8 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static java.lang.String.format;
-import static org.neo4j.coreedge.raft.RenewableTimeoutService.*;
-
-import java.io.IOException;
+import static org.neo4j.coreedge.raft.RenewableTimeoutService.RenewableTimeout;
+import static org.neo4j.coreedge.raft.RenewableTimeoutService.TimeoutName;
 
 /// Optimizations
 // TODO: Have several outstanding batches in catchup mode, to bridge the latency gap.
@@ -398,14 +400,13 @@ public class RaftLogShipper<MEMBER>
             return;
         }
 
-        RaftLogEntry[] logEntries;
-        if ( raftLog.entryExists( logIndex ) )
+        RaftLogEntry[] logEntries = RaftLogEntry.empty;
+        try ( IOCursor<RaftLogEntry> cursor = raftLog.getEntryCursor( logIndex ) )
         {
-            logEntries = new RaftLogEntry[]{ raftLog.readLogEntry( logIndex ) };
-        }
-        else
-        {
-            logEntries = RaftLogEntry.empty;
+            if ( cursor.next() )
+            {
+                logEntries = new RaftLogEntry[]{ cursor.get() };
+            }
         }
 
         RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
@@ -451,17 +452,18 @@ public class RaftLogShipper<MEMBER>
                 leader, leaderContext.term, prevLogIndex, prevLogTerm, entries, leaderContext.commitIndex );
 
         int offset = 0;
-        while( offset < batchSize )
+        try ( IOCursor<RaftLogEntry> cursor = raftLog.getEntryCursor( startIndex ) )
         {
-            entries[offset] = raftLog.readLogEntry( startIndex + offset );
-
-            if( entries[offset].term() > leaderContext.term )
+            while ( offset < batchSize && cursor.next() )
             {
-                log.warn( format( "Aborting send. Not leader anymore? %s, entryTerm=%d", leaderContext, entries[offset].term() ) );
-                return;
+                entries[offset] = cursor.get();
+                if( entries[offset].term() > leaderContext.term )
+                {
+                    log.warn( format( "Aborting send. Not leader anymore? %s, entryTerm=%d", leaderContext, entries[offset].term() ) );
+                    return;
+                }
+                offset++;
             }
-
-            offset++;
         }
 
         outbound.send( follower, appendRequest );

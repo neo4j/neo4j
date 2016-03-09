@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.raft.log;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import java.io.File;
@@ -143,7 +142,6 @@ public class PhysicalRaftLogRotationTest
         // Then
         assertEquals( indexToCommit, log.commitIndex() );
         assertEquals( indexToCommit, log.appendIndex() );
-        assertTrue( log.entryExists( indexToCommit ) );
         assertEquals( term, log.readEntryTerm( indexToCommit ) );
     }
 }

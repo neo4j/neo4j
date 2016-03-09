@@ -34,6 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
+import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
 public class CatchUpTest
 {
@@ -120,7 +121,7 @@ public class CatchUpTest
 
         for ( long logIndex = 0; logIndex <= log.appendIndex(); logIndex++ )
         {
-            ReplicatedContent content = log.readLogEntry( logIndex ).content();
+            ReplicatedContent content = readLogEntry( log, logIndex ).content();
             if ( content instanceof ReplicatedInteger )
             {
                 ReplicatedInteger integer = (ReplicatedInteger) content;

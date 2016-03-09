@@ -37,6 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
+import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -72,7 +73,7 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 0, testEntryLog.appendIndex() );
-        assertEquals( content, testEntryLog.readLogEntry( 0 ).content() );
+        assertEquals( content, readLogEntry( testEntryLog, 0 ).content() );
     }
 
     @Test
@@ -86,7 +87,7 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 0, testEntryLog.appendIndex() );
-        assertEquals( content, testEntryLog.readLogEntry( 0 ).content() );
+        assertEquals( content, readLogEntry( testEntryLog, 0 ).content() );
     }
 
     @Test
@@ -102,7 +103,7 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 0, testEntryLog.appendIndex() );
-        assertEquals( newData, testEntryLog.readLogEntry( 0 ).content() );
+        assertEquals( newData, readLogEntry( testEntryLog, 0 ).content() );
     }
 
     @Test
@@ -119,7 +120,7 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 2, testEntryLog.appendIndex() );
-        assertEquals( newData, testEntryLog.readLogEntry( 2 ).content() );
+        assertEquals( newData, readLogEntry( testEntryLog, 2 ).content() );
     }
 
     @Test

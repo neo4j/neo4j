@@ -74,7 +74,6 @@ public class RaftLogAdversarialTest
         verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, l -> {
             assertThat( l.appendIndex(), is( -1L ) );
             assertThat( l.commitIndex(), is( -1L ) );
-            assertThat( l.entryExists( 0 ), is( false ) );
         } );
     }
 
@@ -105,7 +104,6 @@ public class RaftLogAdversarialTest
         verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fileSystem, l -> {
             assertThat( l.appendIndex(), is( -1L ) );
             assertThat( l.commitIndex(), is( -1L ) );
-            assertThat( l.entryExists( 0 ), is( false ) );
         } );
     }
 

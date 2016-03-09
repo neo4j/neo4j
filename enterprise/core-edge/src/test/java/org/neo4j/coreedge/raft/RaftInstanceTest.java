@@ -50,6 +50,7 @@ import static org.neo4j.coreedge.raft.RaftInstance.Timeouts.ELECTION;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteRequest;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.voteResponse;
+import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterables.last;
@@ -294,7 +295,7 @@ public class RaftInstanceTest
         raft.handle( voteResponse().from( member1 ).term( 1 ).grant().build() );
 
         // Then
-        assertEquals( new NewLeaderBarrier(), raftLog.readLogEntry( raftLog.appendIndex() ).content() );
+        assertEquals( new NewLeaderBarrier(), readLogEntry( raftLog, raftLog.appendIndex() ).content() );
     }
 
     @Test
@@ -367,7 +368,7 @@ public class RaftInstanceTest
 
         // then
         assertEquals( 1, raftLog.appendIndex() );
-        assertEquals( data1, raftLog.readLogEntry( 1 ).content() );
+        assertEquals( data1, readLogEntry( raftLog, 1 ).content() );
     }
 
     @Test
@@ -534,21 +535,9 @@ public class RaftInstanceTest
         }
 
         @Override
-        public RaftLogEntry readLogEntry( long logIndex ) throws IOException
-        {
-            throw new IOException( "Boom! readLogEntry" );
-        }
-
-        @Override
         public long readEntryTerm( long logIndex ) throws IOException
         {
             return -1;
-        }
-
-        @Override
-        public boolean entryExists( long logIndex )
-        {
-            return false;
         }
 
         @Override

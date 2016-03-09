@@ -21,31 +21,21 @@ package org.neo4j.coreedge.raft.log;
 
 import java.io.IOException;
 
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.cursor.IOCursor;
 
-public interface ReadableRaftLog
+public class RaftLogHelper
 {
-    /**
-     * @return The index of the last appended entry.
-     */
-    long appendIndex();
-
-    /**
-     * @return The index of the last committed entry.
-     */
-    long commitIndex();
-
-    /**
-     * Reads the term associated with the entry at the supplied index.
-     *
-     * @param logIndex The index of the log entry.
-     * @return The term of the entry, or -1 if the entry does not exist
-     */
-    long readEntryTerm( long logIndex ) throws IOException;
-
-    /**
-     * Returns an {@link IOCursor} of {@link RaftLogEntry}s from the specified index until the end of the log
-     * @param fromIndex The log index at which the cursor should be positioned
-     */
-    IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException;
+    public static RaftLogEntry readLogEntry( ReadableRaftLog raftLog, long index ) throws IOException
+    {
+        try ( IOCursor<RaftLogEntry> cursor = raftLog.getEntryCursor( index ) )
+        {
+            if ( cursor.next() )
+            {
+                return cursor.get();
+            }
+        }
+        throw new IndexOutOfBoundsException();
+    }
 }

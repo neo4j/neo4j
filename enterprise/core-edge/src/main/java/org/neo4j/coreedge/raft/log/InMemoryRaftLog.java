@@ -75,8 +75,7 @@ public class InMemoryRaftLog implements RaftLog
         return commitIndex;
     }
 
-    @Override
-    public RaftLogEntry readLogEntry( long logIndex )
+    private RaftLogEntry readLogEntry( long logIndex )
     {
         if ( logIndex < 0 )
         {
@@ -119,12 +118,6 @@ public class InMemoryRaftLog implements RaftLog
             appendIndex = fromIndex - 1;
         }
         term = readEntryTerm( appendIndex );
-    }
-
-    @Override
-    public boolean entryExists( long logIndex )
-    {
-        return raftLog.containsKey( logIndex );
     }
 
     @Override
