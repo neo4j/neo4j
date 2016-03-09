@@ -36,7 +36,7 @@ The interaction cycle of working with transactions looks like this:
 . Finish the transaction.
 
 _It is very important to finish each transaction_. The transaction will not release the locks or memory it has acquired until it has been finished.
-The idiomatic use of transactions in Neo4j is to use a try-finally block, starting the transaction and then try to perform the write operations.
+The idiomatic use of transactions in Neo4j is to use a try-finally block, starting the transaction and then try to perform the graph operations.
 The last operation in the try block should mark the transaction as successful while the finally block should finish the transaction.
 Finishing the transaction will perform commit or rollback depending on the success status.
 

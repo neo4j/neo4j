@@ -21,6 +21,8 @@ tag=startDb
 Then we have to configure the database to index users by name.
 This only needs to be done once.
 
+NOTE: Schema changes and data changes are not allowed in the same transaction. Each transaction must either change the schema or the data, but not both.
+
 [snippet,java]
 ----
 component=neo4j-examples
