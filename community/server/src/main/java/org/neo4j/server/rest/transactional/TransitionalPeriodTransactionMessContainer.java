@@ -19,14 +19,25 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
+import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.server.rest.web.ServerQuerySession;
 
 public class TransitionalPeriodTransactionMessContainer
 {
+    private static final PropertyContainerLocker locker = new PropertyContainerLocker();
+
     private final GraphDatabaseFacade db;
     private final ThreadToStatementContextBridge txBridge;
 
@@ -36,9 +47,8 @@ public class TransitionalPeriodTransactionMessContainer
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    public TransitionalTxManagementKernelTransaction newTransaction( boolean implicitTransaction, AccessMode mode )
+    public TransitionalTxManagementKernelTransaction newTransaction( Type type, AccessMode mode )
     {
-        Type type = implicitTransaction ? Type.implicit : Type.explicit;
         Transaction tx = db.beginTransaction( type, mode );
         return new TransitionalTxManagementKernelTransaction( new TransactionTerminator( tx ), txBridge );
     }
@@ -48,4 +58,10 @@ public class TransitionalPeriodTransactionMessContainer
         return txBridge;
     }
 
+    public QuerySession create(  GraphDatabaseQueryService service, Type type, AccessMode mode, HttpServletRequest request )
+    {
+        InternalTransaction transaction = db.beginTransaction( type, mode );
+        TransactionalContext context = new Neo4jTransactionalContext( service, transaction, txBridge.get(), locker );
+        return new ServerQuerySession( request, context );
+    }
 }

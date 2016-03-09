@@ -33,7 +33,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     test(ldbcQuery.name) {
       try {
         //given
-        eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams, QueryEngineProvider.embeddedSession())
+        eengine.execute(ldbcQuery.createQuery, ldbcQuery.createParams, graph.session())
         ldbcQuery.constraintQueries.foreach(updateWithBothPlannersAndCompatibilityMode(_))
 
         //when

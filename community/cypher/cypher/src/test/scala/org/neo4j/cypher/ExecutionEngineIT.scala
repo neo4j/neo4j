@@ -19,32 +19,29 @@
  */
 package org.neo4j.cypher
 
-import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_0.CostBasedPlannerName
-import org.neo4j.cypher.internal.frontend.v3_0.notification.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.{Result, GraphDatabaseService, Label}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.test.TestGraphDatabaseFactory
 
-class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine {
+class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   test("by default when using cypher 2.3 some queries should default to COST") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+    val service = new GraphDatabaseCypherService(db)
 
     //when
-    val plan1 = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
-    val plan2 = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
+    val plan1 = service.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan2 = service.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
     plan1.getArguments.get("planner") should equal("COST")
@@ -58,10 +55,11 @@ class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine 
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.0").newGraphDatabase()
+    val service = new GraphDatabaseCypherService(db)
 
     //when
-    val plan1 = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
-    val plan2 = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
+    val plan1 = service.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan2 = service.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
     plan1.getArguments.get("planner") should equal("COST")
@@ -76,9 +74,10 @@ class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine 
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+    val service = new GraphDatabaseCypherService(db)
 
     //when
-    val plan = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan = service.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
 
     //then
     plan.getArguments.get("planner") should equal("RULE")
@@ -91,9 +90,10 @@ class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine 
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.0").newGraphDatabase()
+    val service = new GraphDatabaseCypherService(db)
 
     //when
-    val plan = db.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
+    val plan = service.planDescriptionForQuery("PROFILE MATCH (a) RETURN a")
 
     //then
     plan.getArguments.get("planner") should equal("RULE")
@@ -106,9 +106,10 @@ class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine 
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+    val service = new GraphDatabaseCypherService(db)
 
     //when
-    val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
+    val plan = service.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
     plan.getArguments.get("planner") should equal("COST")
@@ -121,9 +122,10 @@ class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine 
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.0").newGraphDatabase()
+    val service = new GraphDatabaseCypherService(db)
 
     //when
-    val plan = db.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
+    val plan = service.planDescriptionForQuery("PROFILE MATCH (a)-[:T*]-(a) RETURN a")
 
     //then
     plan.getArguments.get("planner") should equal("COST")
@@ -145,74 +147,81 @@ class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine 
   test("should not leak transaction when closing the result for a query") {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val engine = new ExecutionEngine(db)
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
 
     // when
     db.execute("return 1").close()
+
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
 
     // when
-    engine.execute("return 1").close()
+    engine.execute("return 1", Map.empty[String, Object], service.session()).close()
+
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
 
     // when
-    engine.execute("return 1").javaIterator.close()
+    engine.execute("return 1", Map.empty[String, Object], service.session()).javaIterator.close()
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
   }
 
   test("should not leak transaction when closing the result for a profile query") {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val engine = new ExecutionEngine(db)
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
 
     // when
     db.execute("profile return 1").close()
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
 
     // when
-    engine.execute("profile return 1").close()
+
+    engine.execute("profile return 1", Map.empty[String, Object], service.session()).close()
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
 
     // when
-    engine.execute("profile return 1").javaIterator.close()
+    engine.execute("profile return 1", Map.empty[String, Object], service.session()).javaIterator.close()
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
 
     // when
-    engine.profile("return 1").close()
+    engine.profile("return 1", Map.empty[String, Object], service.session()).close()
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
 
     // when
-    engine.profile("return 1").javaIterator.close()
+    engine.profile("return 1", Map.empty[String, Object], service.session()).javaIterator.close()
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
   }
 
   test("should not leak transaction when closing the result for an explain query") {
     //given
     val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
-    val engine = new ExecutionEngine(db)
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
 
     // when
     db.execute("explain return 1").close()
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
 
     // when
-    engine.execute("explain return 1").close()
+    engine.execute("explain return 1", Map.empty[String, Object], service.session()).close()
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
 
     // when
-    engine.execute("explain return 1").javaIterator.close()
+    engine.execute("explain return 1", Map.empty[String, Object], service.session()).javaIterator.close()
+
     // then
-    txBridge(db).hasTransaction shouldBe false
+    txBridge(service).hasTransaction shouldBe false
   }
 
   test("should be possible to close compiled result after it is consumed") {
@@ -244,7 +253,7 @@ class ExecutionEngineIT extends CypherFunSuite with TestFriendlyExecutionEngine 
     db.shutdown()
   }
 
-  private implicit class RichDb(db: GraphDatabaseService) extends GraphDatabaseCypherService(db) {
+  private implicit class RichDb(db: GraphDatabaseCypherService) {
     def planDescriptionForQuery(query: String) = {
       val res = db.execute(query)
       res.resultAsString()

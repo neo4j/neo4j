@@ -24,11 +24,13 @@ import java.util.Map;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QuerySession;
 
 public class CypherStatementRunner implements StatementRunner
 {
+    private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private final QueryExecutionEngine queryExecutionEngine;
 
     public CypherStatementRunner( QueryExecutionEngine queryExecutionEngine )
@@ -63,17 +65,8 @@ public class CypherStatementRunner implements StatementRunner
                 ctx.beginImplicitTransaction();
             }
 
-            return new CypherAdapterStream(
-                    queryExecutionEngine.executeQuery( statement, params, new BoltQuerySession() ) );
-        }
-    }
-
-    static class BoltQuerySession extends QuerySession
-    {
-        @Override
-        public String toString()
-        {
-            return "bolt";
+            QuerySession session = ctx.createSession( queryExecutionEngine.queryService(), locker );
+            return new CypherAdapterStream( queryExecutionEngine.executeQuery( statement, params, session ) );
         }
     }
 }

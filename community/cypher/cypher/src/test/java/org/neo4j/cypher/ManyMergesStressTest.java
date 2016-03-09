@@ -23,11 +23,9 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -35,8 +33,9 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static java.lang.String.format;
@@ -85,8 +84,6 @@ public class ManyMergesStressTest
             tx.success();
         }
 
-        ExecutionEngine engine = new ExecutionEngine( graph, NullLogProvider.getInstance() );
-
         for( int count = 0; count < TRIES; count++ )
         {
             Pair<String, String> stringPair = getRandomName();
@@ -96,9 +93,12 @@ public class ManyMergesStressTest
             String query =
                 format( "MERGE (%s:Person {id: %s}) ON CREATE SET %s.name = \"%s\";", ident, id, ident, name );
 
-            Result result = engine.executeQuery( query, Collections.emptyMap(),
-                    QueryEngineProvider.embeddedSession() );
-            result.close();
+            try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL ) )
+            {
+                Result result = db.execute( query );
+                result.close();
+                tx.success();
+            }
         }
     }
 

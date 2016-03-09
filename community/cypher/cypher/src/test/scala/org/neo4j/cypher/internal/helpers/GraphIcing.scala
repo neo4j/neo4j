@@ -26,9 +26,11 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Label._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.{AccessMode, KernelTransaction, Statement}
+import org.neo4j.kernel.api.KernelTransaction.Type
+import org.neo4j.kernel.api.{AccessMode, Statement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
+import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, QueryEngineProvider, QuerySession}
 import org.neo4j.kernel.impl.transaction.TransactionStats
 
 import scala.collection.JavaConverters._
@@ -43,9 +45,9 @@ trait GraphIcing {
     }
   }
 
-  implicit class RichGraphDatabaseAPI(graphService: GraphDatabaseQueryService) {
+  implicit class RichGraphDatabaseQueryService(graphService: GraphDatabaseQueryService) {
 
-    var graph = graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
+    private val graph = graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def getAllNodes() = graph.getAllNodes
 
@@ -70,7 +72,7 @@ trait GraphIcing {
       indexDefs.map(_.getPropertyKeys.asScala.toList)
     }
 
-    def createConstraint(label:String, property: String) = {
+    def createConstraint(label: String, property: String) = {
       inTx {
         graph.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
       }
@@ -91,13 +93,29 @@ trait GraphIcing {
     def statement: Statement = txBridge.get()
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
-    def inTx[T](f: => T): T = withTx(_ => f)
+    def inTx[T](f: => T, txType: Type = Type.`implicit`): T = withTx(_ => f, txType)
+
+    private val locker: PropertyContainerLocker = new PropertyContainerLocker
+
+    private def createSession(txType: Type): (InternalTransaction, QuerySession) = {
+      val tx = graph.beginTransaction(txType, AccessMode.FULL)
+      val transactionalContext = new Neo4jTransactionalContext(graphService, tx, txBridge.get(), locker)
+      val session = QueryEngineProvider.embeddedSession(transactionalContext)
+      (tx, session)
+    }
+
+    def session(txType: Type = Type.`implicit`): QuerySession =
+      createSession(txType)._2
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
-    def withTx[T](f: InternalTransaction => T): T = {
-      val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.FULL)
+    def withTx[T](f: InternalTransaction => T, txType: Type = Type.`implicit`): T =
+      withTxAndSession( (tx, _) => f(tx), txType)
+
+    // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
+    def withTxAndSession[T](f: (InternalTransaction, QuerySession ) => T, txType: Type = Type.`implicit`): T = {
+      val (tx, session) = createSession(txType)
       try {
-        val result = f(tx)
+        val result = f(tx, session)
         tx.success()
         result
       } finally {
@@ -106,7 +124,7 @@ trait GraphIcing {
     }
 
     def rollback[T](f: => T): T = {
-      val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.FULL)
+      val tx = graph.beginTransaction(Type.`implicit`, AccessMode.FULL)
       try {
         val result = f
         tx.failure()

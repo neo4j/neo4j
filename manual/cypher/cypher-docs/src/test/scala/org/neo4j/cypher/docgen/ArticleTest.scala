@@ -41,7 +41,7 @@ import scala.collection.JavaConverters._
 /*
 Use this base class for tests that are more flowing text with queries intersected in the middle of the text.
  */
-abstract class ArticleTest extends Assertions with DocumentationHelper {
+abstract class ArticleTest extends Assertions with DocumentationHelper with ExecutionEngineHelper {
 
   var db: GraphDatabaseCypherService = null
   implicit var engine: ExecutionEngine = null
@@ -52,6 +52,10 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   var generateConsole: Boolean = true
   var dir: File = null
 
+  // these 2 methods are need by ExecutionEngineHelper to do its job
+  override def graph = db
+  override def eengine = engine
+
   def title: String
   def section: String
   def assert(name: String, result: InternalExecutionResult)
@@ -59,7 +63,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
   def indexProps: List[String] = List()
 
   private def executeQuery(queryText: String)(implicit engine: ExecutionEngine): InternalExecutionResult = try {
-    val result = RewindableExecutionResult(engine.execute(replaceNodeIds(queryText)))
+    val result = execute(replaceNodeIds(queryText))
     result.dumpToString()
     result
   } catch {

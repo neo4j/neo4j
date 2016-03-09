@@ -35,7 +35,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     execute("CREATE INDEX ON :Person(name)")
 
     // THEN
-    graph.inTx{
+    graph.inTx {
       graph.indexPropsForLabel("Person") should equal(List(List("name")))
     }
   }
@@ -70,7 +70,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     execute("DROP INDEX ON :Person(name)")
 
     // THEN
-    graph.inTx{
+    graph.inTx {
       graph.indexPropsForLabel("Person") shouldBe empty
     }
   }
@@ -97,11 +97,11 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
   private def createDbWithFailedIndex: GraphDatabaseService = {
     new File("target/test-data/impermanent-db").deleteAll()
-    var graph = new TestGraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
-    eengine = new ExecutionEngine(new GraphDatabaseCypherService(graph))
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db"))
+    eengine = new ExecutionEngine(graph)
     execute("CREATE INDEX ON :Person(name)")
     execute("create (:Person {name:42})")
-    val tx = graph.beginTx()
+    val tx = graph.getGraphDatabaseService.beginTx()
     try {
       graph.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)
       tx.success()
@@ -114,8 +114,8 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     stream.write(65)
     stream.close()
 
-    graph = new TestGraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
-    eengine = new ExecutionEngine(new GraphDatabaseCypherService(graph))
-    graph
+    graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db"))
+    eengine = new ExecutionEngine(graph)
+    graph.getGraphDatabaseService
   }
 }

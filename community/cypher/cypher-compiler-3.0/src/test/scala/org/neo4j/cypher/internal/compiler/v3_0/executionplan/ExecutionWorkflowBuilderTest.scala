@@ -23,7 +23,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.Pipe
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryTransactionalContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
@@ -34,7 +34,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
-    when(context.transactionalContext).thenReturn(mock[TransactionalContext])
+    when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
     val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None, None, PlannerName), List.empty)
 
     // WHEN
@@ -69,7 +69,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
-    when(context.transactionalContext).thenReturn(mock[TransactionalContext])
+    when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
     val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty)
 
     // WHEN

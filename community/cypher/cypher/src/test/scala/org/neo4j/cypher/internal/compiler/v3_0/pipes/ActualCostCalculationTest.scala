@@ -24,11 +24,11 @@ import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
 import org.apache.commons.math3.stat.regression.{OLSMultipleLinearRegression, SimpleRegression}
-import org.neo4j.cypher.internal.Neo4jTransactionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Literal
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{LabelId, PropertyKeyId, SemanticDirection, ast}
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -37,7 +37,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.coreapi.{PropertyContainerLocker, InternalTransaction}
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -226,7 +227,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def runSimulation(graph: GraphDatabaseQueryService, pipes: Seq[Pipe]) = {
     val results = new ListBuffer[DataPoint]
     graph.withTx { tx =>
-      val transactionalContext = new Neo4jTransactionContext(graph, tx, graph.statement)
+      val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val state = QueryStateHelper.emptyWith(queryContext)
       for (x <- 0 to 25) {
@@ -287,7 +288,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
-      val transactionalContext = new Neo4jTransactionContext(graph, tx, graph.statement)
+      val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
       val ctx = new TransactionBoundPlanContext(transactionalContext)
       val literal = Literal(42)
 

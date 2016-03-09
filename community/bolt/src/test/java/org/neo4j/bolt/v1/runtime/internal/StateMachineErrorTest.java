@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -61,7 +61,7 @@ public class StateMachineErrorTest
     private GraphDatabaseFacade db = mock( GraphDatabaseFacade.class );
     private ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private StatementRunner runner = mock( StatementRunner.class );
-    private TopLevelTransaction tx = mock( TopLevelTransaction.class );
+    private InternalTransaction tx = mock( InternalTransaction.class );
     private JobScheduler scheduler = mock(JobScheduler.class );
 
     @Before

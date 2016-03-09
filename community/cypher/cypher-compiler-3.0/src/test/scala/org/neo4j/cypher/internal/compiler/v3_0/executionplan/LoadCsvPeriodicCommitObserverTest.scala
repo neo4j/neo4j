@@ -24,12 +24,12 @@ import java.net.URL
 import org.mockito.Matchers
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.ExternalCSVResource
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryTransactionalContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   var resourceUnderTest: LoadCsvPeriodicCommitObserver = _
-  var transactionalContext: TransactionalContext = _
+  var transactionalContext: QueryTransactionalContext = _
   var resource: ExternalCSVResource = _
   val url: URL = new URL("file:///tmp/something.csv")
 
@@ -73,7 +73,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   override protected def beforeEach() {
     val queryContext = mock[QueryContext]
-    transactionalContext = mock[TransactionalContext]
+    transactionalContext = mock[QueryTransactionalContext]
     when(queryContext.transactionalContext).thenReturn(transactionalContext)
     resource = mock[ExternalCSVResource]
     resourceUnderTest = new LoadCsvPeriodicCommitObserver(1, resource, queryContext)

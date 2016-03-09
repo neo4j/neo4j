@@ -26,9 +26,18 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -39,7 +48,7 @@ import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.apps.NodeOrRelationship;
 import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
 
-@Service.Implementation(App.class)
+@Service.Implementation( App.class )
 public class Start extends TransactionProvidingApp
 {
     private QueryExecutionEngine engine;
@@ -114,10 +123,10 @@ public class Start extends TransactionProvidingApp
     {
         out.println( (now() - startTime) + " ms" );
         out.println();
-        out.println("WARNING: " + exception.getMessage());
+        out.println( "WARNING: " + exception.getMessage() );
     }
 
-    protected Map<String, Object> getParameters(Session session) throws ShellException
+    protected Map<String,Object> getParameters( Session session ) throws ShellException
     {
         try
         {
@@ -150,24 +159,31 @@ public class Start extends TransactionProvidingApp
         return System.currentTimeMillis();
     }
 
-    static QuerySession shellSession( Session session )
+    private QuerySession shellSession( Session session )
     {
-        return new ShellQuerySession( session );
+        GraphDatabaseQueryService graph = this.engine.queryService();
+        InternalTransaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+        Statement statement =
+                graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
+        Neo4jTransactionalContext context =
+                new Neo4jTransactionalContext( graph, transaction, statement, new PropertyContainerLocker() );
+        return new ShellQuerySession( session, context );
     }
 
     private static class ShellQuerySession extends QuerySession
     {
         private final Session session;
 
-        ShellQuerySession( Session session )
+        ShellQuerySession( Session session, TransactionalContext transactionalContext )
         {
+            super( transactionalContext );
             this.session = session;
         }
 
         @Override
         public String toString()
         {
-            return String.format("shell-session(%s)", session.getId());
+            return String.format( "shell-session(%s)", session.getId() );
         }
     }
 }

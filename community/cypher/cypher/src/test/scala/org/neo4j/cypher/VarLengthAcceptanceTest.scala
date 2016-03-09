@@ -324,14 +324,16 @@ class VarLengthAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("should use variable of already matched rel in a varlenght path") {
-    eengine.execute("""create
-                      |(_0:`Node` ),
-                      |(_1:`Node` ),
-                      |(_2:`Node` ),
-                      |(_3:`Node` ),
-                      |(_0)-[:EDGE]->(_1),
-                      |(_1)-[:EDGE]->(_2),
-                      |(_2)-[:EDGE]->(_3)""".stripMargin)
+    val query =
+      """create
+        |(_0:`Node` ),
+        |(_1:`Node` ),
+        |(_2:`Node` ),
+        |(_3:`Node` ),
+        |(_0)-[:EDGE]->(_1),
+        |(_1)-[:EDGE]->(_2),
+        |(_2)-[:EDGE]->(_3)""".stripMargin
+    eengine.execute(query, Map.empty[String, Any], graph.session())
 
     val result = executeWithAllPlanners("""MATCH ()-[r:`EDGE`]-()
                                           |WITH r

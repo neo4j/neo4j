@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.kernel.impl.query.QuerySession
 
 case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
-  def execute(transactionalContext: ExtendedTransactionalContext, params: Map[String, Any], session: QuerySession) =
+  def execute(transactionalContext: TransactionalContextWrapper, params: Map[String, Any], session: QuerySession) =
     plan.run(transactionalContext, executionMode, params ++ extractedParams, session)
 
-  def profile(transactionalContext: ExtendedTransactionalContext, params: Map[String, Any], session: QuerySession) =
+  def profile(transactionalContext: TransactionalContextWrapper, params: Map[String, Any], session: QuerySession) =
     plan.run(transactionalContext, CypherExecutionMode.profile, params ++ extractedParams, session)
 }

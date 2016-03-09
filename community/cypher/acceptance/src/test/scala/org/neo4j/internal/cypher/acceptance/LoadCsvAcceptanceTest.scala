@@ -360,7 +360,7 @@ class LoadCsvAcceptanceTest
       .newGraphDatabase())
 
     intercept[LoadExternalResourceException] {
-      new ExecutionEngine(db).execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line CREATE (a {name:line[0]})")
+      new ExecutionEngine(db).execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line CREATE (a {name:line[0]})", Map.empty[String, Any], db.session())
     }.getMessage should endWith(": configuration property 'dbms.security.allow_csv_import_from_file_urls' is false")
   }
 
@@ -376,7 +376,7 @@ class LoadCsvAcceptanceTest
       .setConfig(GraphDatabaseSettings.load_csv_file_url_root, dir.toString)
       .newGraphDatabase())
 
-    val result = new ExecutionEngine(db).execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line RETURN line[0] AS field")
+    val result = new ExecutionEngine(db).execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line RETURN line[0] AS field", Map.empty[String, Any], db.session())
     result.toList should equal(List(Map("field" -> "something")))
   }
 
@@ -403,7 +403,7 @@ class LoadCsvAcceptanceTest
       .newImpermanentDatabaseBuilder()
       .newGraphDatabase())
 
-    val result = new ExecutionEngine(db).execute(s"LOAD CSV FROM 'testproto://foo.bar' AS line RETURN line[0] AS field")
+    val result = new ExecutionEngine(db).execute(s"LOAD CSV FROM 'testproto://foo.bar' AS line RETURN line[0] AS field", Map.empty[String, Any], db.session())
     result.toList should equal(List(Map("field" -> "something")))
   }
 
@@ -419,7 +419,7 @@ class LoadCsvAcceptanceTest
       eengine.execute(s"LOAD CSV WITH HEADERS FROM '$url' AS csvLine " +
         "MERGE (country:Country {name: csvLine.country}) " +
         "CREATE (movie:Movie {id: toInt(csvLine.id), title: csvLine.title, year:toInt(csvLine.year)})" +
-        "CREATE (movie)-[:MADE_IN]->(country)")
+        "CREATE (movie)-[:MADE_IN]->(country)", Map.empty[String, Any], graph.session())
 
 
       //make sure three unique movies are created
@@ -427,7 +427,7 @@ class LoadCsvAcceptanceTest
 
       result should equal(List(Map("id" -> 1), Map("id" -> 2), Map("id" -> 3)))
       //empty database
-      eengine.execute("MATCH (n) DETACH DELETE n")
+      eengine.execute("MATCH (n) DETACH DELETE n", Map.empty[String, Any], graph.session())
     }
   }
 

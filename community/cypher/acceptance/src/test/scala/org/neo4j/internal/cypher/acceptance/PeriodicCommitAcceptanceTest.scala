@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSu
 import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.graphdb.Node
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
@@ -176,19 +177,19 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
 
   test("should reject periodic commit hint with negative size") {
     val url = createTempCSVFile(1)
-    evaluating {
+    intercept[SyntaxException] {
       executeScalar[Node](s"USING PERIODIC COMMIT -1 LOAD CSV FROM '$url' AS line CREATE (n) RETURN n")
-    } should produce[SyntaxException]
+    }
   }
 
   test("should fail if periodic commit is executed in an open transaction") {
     // given
-    evaluating {
+    intercept[PeriodicCommitInOpenTransactionException] {
       val url = createTempCSVFile(3)
-      graph.inTx {
+      graph.inTx( {
         execute(s"USING PERIODIC COMMIT LOAD CSV FROM '$url' AS line CREATE ()")
-      }
-    } should produce[PeriodicCommitInOpenTransactionException]
+      }, KernelTransaction.Type.explicit)
+    }
   }
 
   test("should tell line number information when failing using periodic commit and load csv") {

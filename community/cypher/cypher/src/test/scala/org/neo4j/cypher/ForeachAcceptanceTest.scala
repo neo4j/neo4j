@@ -33,7 +33,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
         |  CREATE UNIQUE (n)-[:SELF]->(b))""".stripMargin
 
     // should work
-    eengine.execute(query)
+    eengine.execute(query, Map.empty[String, Any], graph.session())
   }
 
   test("nested foreach") {

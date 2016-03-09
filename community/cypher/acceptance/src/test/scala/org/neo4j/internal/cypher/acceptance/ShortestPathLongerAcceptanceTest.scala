@@ -588,7 +588,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
                     |create (_31818)-[:`SE`]->(_31817)
                     |create (_31819)-[:`SE`]->(_31818)
                     |create (_31820)-[:`SE`]->(_31813)""".stripMargin
-      eengine.execute(query)
+      eengine.execute(query, Map.empty[String, Any], graph.session())
     }
 
     createTestGraph()
@@ -778,12 +778,12 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   }
 
   def executeUsingRulePlannerOnly(query: String) =
-    eengine.execute(s"CYPHER planner=RULE $query") match {
+    eengine.execute(s"CYPHER planner=RULE $query", Map.empty[String, Any], graph.session()) match {
       case e:ExecutionResultWrapperFor3_0 => RewindableExecutionResult(e)
     }
 
   def executeUsingCostPlannerOnly(query: String) =
-    eengine.execute(s"CYPHER planner=COST $query") match {
+    eengine.execute(s"CYPHER planner=COST $query", Map.empty[String, Any], graph.session()) match {
       case e:ExecutionResultWrapperFor3_0 => RewindableExecutionResult(e)
     }
 

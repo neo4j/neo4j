@@ -19,37 +19,32 @@
  */
 package org.neo4j.cypher.performance
 
-import org.neo4j.cypher.internal.ExecutionEngine
+import java.util.Collections
+
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.neo4j.graphdb.{Node, RelationshipType}
-import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
-import org.neo4j.kernel.impl.query.QueryEngineProvider
+import org.neo4j.graphdb.{GraphDatabaseService, Node, RelationshipType}
 
 import scala.util.Random
 
 class PerformanceTest extends CypherFunSuite {
   val r = new Random()
 
-  var db: GraphDatabaseCypherService = null
-  var engine: ExecutionEngine = null
+  var db: GraphDatabaseService = null
 
   override def beforeEach() {
     super.beforeEach()
-    db = new GraphDatabaseCypherService(new GraphDatabaseFactory().newEmbeddedDatabase("target/db"))
-    engine = new ExecutionEngine(db)
+    db = new GraphDatabaseFactory().newEmbeddedDatabase("target/db")
   }
 
   override def afterEach() {
-    db.getGraphDatabaseService.shutdown()
+    db.shutdown()
     super.afterEach()
   }
 
   ignore("createDatabase") {
-
     val startPoints = (0 to 10).map(x => {
-      val tx = db.beginTransaction(KernelTransaction.Type.explicit, AccessMode.WRITE)
+      val tx = db.beginTx()
 
       val a = createNode()
       (0 to 10).foreach(y => {
@@ -67,14 +62,14 @@ class PerformanceTest extends CypherFunSuite {
       a
     })
 
-    val engine = new ExecutionEngine(db)
+    val t0: Double = System.nanoTime
 
-    val t0 = System.nanoTime : Double
-    engine.execute(
-      "start a=node({root}) match a-->b-->c, b-->d return a,count(*)",
-      Map("root"->startPoints),
-      QueryEngineProvider.embeddedSession()).toList
-    val t1 = System.nanoTime : Double
+    val result = db.execute("start a=node({root}) match a-->b-->c, b-->d return a,count(*)",
+      Collections.singletonMap("root", startPoints))
+    result.resultAsString()
+    result.close()
+
+    val t1: Double = System.nanoTime
     println("Elapsed time " + (t1 - t0) / 1000000.0 + " msecs")
   }
 

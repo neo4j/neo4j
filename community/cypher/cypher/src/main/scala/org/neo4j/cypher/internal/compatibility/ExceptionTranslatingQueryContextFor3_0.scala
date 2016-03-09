@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{KernelPredicate, Expander}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_0.ExceptionTranslationSupport
-import org.neo4j.graphdb.{Path, Node, PropertyContainer, Relationship}
+import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 import scala.collection.Iterator
@@ -249,8 +249,8 @@ class ExceptionTranslatingQueryContextFor3_0(val inner: QueryContext) extends Qu
       translateException(inner.isDeletedInThisTx(obj))
   }
 
-  class ExceptionTranslatingTransactionalContext(inner: TransactionalContext) extends DelegatingTransactionalContext(inner) {
-    override def close(success: Boolean) { translateException(inner.close(success)) }
+  class ExceptionTranslatingTransactionalContext(inner: QueryTransactionalContext) extends DelegatingQueryTransactionalContext(inner) {
+    override def close(success: Boolean) { translateException(super.close(success)) }
   }
 }
 

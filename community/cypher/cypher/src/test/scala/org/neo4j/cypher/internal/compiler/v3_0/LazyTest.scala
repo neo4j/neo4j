@@ -45,9 +45,9 @@ import org.neo4j.kernel.api.{AccessMode, KernelTransaction, ReadOperations, Stat
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.OperationsFacade
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, ThreadToStatementContextBridge}
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.coreapi.{PropertyContainerLocker, InternalTransaction}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
-import org.neo4j.kernel.impl.query.QueryEngineProvider.embeddedSession
+import org.neo4j.kernel.impl.query.{QueryEngineProvider, Neo4jTransactionalContext}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 // TODO: this test is horribly broken, it relies on mocking the core API for verification, but the internals don't use the core API
@@ -118,8 +118,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter: ExecutionResult =
-      engine.execute("match (n)-->(x) where n = {foo} return x", Map("foo" -> monitoredNode), embeddedSession())
+    val iter: ExecutionResult = engine.execute("match (n)-->(x) where n = {foo} return x", Map("foo" -> monitoredNode), graph.session())
 
     //Then:
     assert(limiter.counted === 0)
@@ -144,8 +143,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter =
-      engine.execute("match (n) where n IN {foo} return distinct n.name", Map("foo" -> Seq(a, b, c)), embeddedSession())
+    val iter = engine.execute(
+      "match (n) where n IN {foo} return distinct n.name", Map("foo" -> Seq(a, b, c)), graph.session())
 
     //Then, no Runtime exception is thrown
     iter.next()
@@ -165,8 +164,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     val engine = new ExecutionEngine(graph)
 
     //When:
-    val iter = engine.execute("match (n) where n = {a} return n.name UNION ALL match (n) where n IN {b} return n.name",
-      Map("a" -> a, "b" -> Seq(b, c)), embeddedSession())
+    val iter =  engine.execute("match (n) where n = {a} return n.name UNION ALL match (n) where n IN {b} return n.name",
+      Map("a" -> a, "b" -> Seq(b, c)), graph.session())
 
     //Then, no Runtime exception is thrown
     iter.next()
@@ -182,7 +181,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
     //When:
     val iter: ExecutionResult =
-      engine.execute("start n=node({foo}) match (n)-->(x) create n-[:FOO]->x", Map("foo" -> monitoredNode), embeddedSession())
+      engine.execute("start n=node({foo}) match (n)-->(x) create n-[:FOO]->x", Map("foo" -> monitoredNode), graph.session())
 
     //Then:
     assert(touched, "Query should have been executed")
@@ -191,7 +190,6 @@ class LazyTest extends ExecutionEngineFunSuite {
   test("graph global queries are lazy") {
     //Given:
     val fakeGraph = mock[GraphDatabaseFacade]
-    val tx = mock[InternalTransaction]
     val nodeManager = mock[NodeManager]
     val dependencies = mock[DependencyResolver]
     val bridge = mock[ThreadToStatementContextBridge]
@@ -216,7 +214,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(dependencies.resolveDependency(classOf[TransactionIdStore])).thenReturn(idStore)
     when(dependencies.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])).thenReturn(monitors)
     when(dependencies.resolveDependency(classOf[Config])).thenReturn(config)
-    when(fakeGraph.beginTransaction(any(classOf[KernelTransaction.Type]), any(classOf[AccessMode]) )).thenReturn(tx)
+    when(fakeGraph.beginTransaction(any(classOf[KernelTransaction.Type]), any(classOf[AccessMode]) )).thenReturn(mock[InternalTransaction])
     val n0 = mock[Node]
     val n1 = mock[Node]
     val n2 = mock[Node]
@@ -240,12 +238,15 @@ class LazyTest extends ExecutionEngineFunSuite {
         def answer(invocation: InvocationOnMock) = { cache }
     })
 
-    val engine = new ExecutionEngine(new GraphDatabaseCypherService(fakeGraph))
+    val service = new GraphDatabaseCypherService(fakeGraph)
+    val engine = new ExecutionEngine(service)
+
+    val tx = fakeGraph.beginTransaction(KernelTransaction.Type.`implicit`, AccessMode.FULL)
+    val context = new Neo4jTransactionalContext(service, tx, fakeStatement, new PropertyContainerLocker)
+    val session = QueryEngineProvider.embeddedSession(context)
 
     //When:
-    graph.inTx {
-      engine.execute("match (n) return n limit 4", Map.empty[String,Any], embeddedSession()).toList
-    }
+    engine.execute("match (n) return n limit 4", Map.empty[String,Any], session).toList
 
     //Then:
     assert( nodesIterator.hasNext )

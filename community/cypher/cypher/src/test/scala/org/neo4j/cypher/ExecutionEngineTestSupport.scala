@@ -23,10 +23,11 @@ import java.util.concurrent.TimeUnit
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.{ExtendedExecutionResult, ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.kernel.impl.query.{QuerySession, QueryEngineProvider}
+import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
+import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -36,7 +37,7 @@ case class ExpectedException[T <: Throwable](e: T) {
   def messageContains(s: String) = assertThat(e.getMessage, containsString(s))
 }
 
-trait ExecutionEngineTestSupport extends CypherTestSupport with TestFriendlyExecutionEngine {
+trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineHelper {
   self: CypherFunSuite with GraphDatabaseTestSupport =>
 
   var eengine: ExecutionEngine = null
@@ -46,25 +47,13 @@ trait ExecutionEngineTestSupport extends CypherTestSupport with TestFriendlyExec
     eengine = new ExecutionEngine(graph)
   }
 
-  def execute(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.execute(q, params.toMap, QueryEngineProvider.embeddedSession()))
-
-  def profile(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.profile(q, params.toMap, QueryEngineProvider.embeddedSession()))
-
   def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
     ExpectedException(intercept[T](execute(q)))
 
-  def executeScalar[T](q: String, params: (String, Any)*): T =
-    scalar(eengine.execute(q, params.toMap, QueryEngineProvider.embeddedSession()).toList)
-
-  def scalar[T](input: List[Map[String, Any]]) = input match {
-    case m :: Nil =>
-      if (m.size!=1)
-        fail(s"expected scalar value: $m")
-      else
-        m.head._2.asInstanceOf[T]
-    case _ => fail(s"expected to get a single row back")
+  override def executeScalar[T](q: String, params: (String, Any)*): T = try {
+    super.executeScalar[T](q, params: _*)
+  } catch {
+    case e: ScalarFailureException => fail(e.getMessage)
   }
 
   protected def timeOutIn(length: Int, timeUnit: TimeUnit)(f: => Unit) {
@@ -76,25 +65,32 @@ trait ExecutionEngineTestSupport extends CypherTestSupport with TestFriendlyExec
   }
 }
 
-trait TestFriendlyExecutionEngine {
+trait ExecutionEngineHelper {
+  self: GraphIcing =>
 
-  implicit class RighExecutionEngine(engine: ExecutionEngine) {
+  def graph: GraphDatabaseCypherService
 
-    def execute(query: String): ExtendedExecutionResult = {
-      engine.execute(query, Map.empty[String, Any], QueryEngineProvider.embeddedSession)
-    }
+  def eengine: ExecutionEngine
 
-    def execute(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
-      engine.execute(query, params, QueryEngineProvider.embeddedSession)
-    }
+  def execute(q: String, params: (String, Any)*): InternalExecutionResult =
+    RewindableExecutionResult(eengine.execute(q, params.toMap, graph.session()))
 
-    def profile(query: String): ExtendedExecutionResult = {
-      engine.profile(query, Map.empty[String, Any], QueryEngineProvider.embeddedSession)
-    }
+  def profile(q: String, params: (String, Any)*): InternalExecutionResult =
+    RewindableExecutionResult(eengine.profile(q, params.toMap, graph.session()))
 
-    def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult = {
-      engine.profile(query, params, QueryEngineProvider.embeddedSession)
-    }
+  def executeScalar[T](q: String, params: (String, Any)*): T =
+    scalar[T](eengine.execute(q, params.toMap, graph.session()).toList)
+
+  private def scalar[T](input: List[Map[String, Any]]): T = input match {
+    case m :: Nil =>
+      if (m.size != 1)
+        throw new ScalarFailureException(s"expected scalar value: $m")
+      else {
+        val value: Any = m.head._2
+        value.asInstanceOf[T]
+      }
+    case _ => throw new ScalarFailureException(s"expected to get a single row back")
   }
 
+  protected class ScalarFailureException(msg: String) extends RuntimeException(msg)
 }

@@ -21,12 +21,7 @@ package org.neo4j.cypher.internal.javacompat;
 
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.Map;
-
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -34,21 +29,17 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class CypherLoggingTest
 {
-    private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
-    private static final QuerySession SESSION = QueryEngineProvider.embeddedSession();
-
     @Test
     public void shouldNotLogQueries() throws Exception
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        GraphDatabaseCypherService database =
-                new GraphDatabaseCypherService( new TestGraphDatabaseFactory().newImpermanentDatabase() );
-        ExecutionEngine engine = new ExecutionEngine( database, logProvider );
+        GraphDatabaseService database =
+                new TestGraphDatabaseFactory().setUserLogProvider( logProvider ).newImpermanentDatabase();
 
         // when
-        engine.executeQuery( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n", NO_PARAMS, SESSION );
-        engine.executeQuery( "MATCH (n) RETURN n", NO_PARAMS, SESSION );
+        database.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );
+        database.execute( "MATCH (n) RETURN n" );
 
         // then
         inLog( org.neo4j.cypher.internal.ExecutionEngine.class );

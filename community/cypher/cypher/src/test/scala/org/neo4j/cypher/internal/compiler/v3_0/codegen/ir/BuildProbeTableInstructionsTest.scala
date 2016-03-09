@@ -26,15 +26,13 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.{CodeGenContext, JoinTableMethod, Variable}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{TransactionalContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{SemanticTable, symbols}
-import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.graphdb.Node
-import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
-import org.neo4j.kernel.internal.GraphDatabaseAPI
 
 import scala.collection.mutable
 
@@ -46,7 +44,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
   private val entityAccessor = mock[NodeManager]
   private val queryContext = mock[QueryContext]
-  private val transactionalContext = mock[ExtendedTransactionalContext]
+  private val transactionalContext = mock[TransactionalContextWrapper]
   private val readOps = mock[ReadOperations]
   private val allNodeIds = mutable.ArrayBuffer[Long]()
 

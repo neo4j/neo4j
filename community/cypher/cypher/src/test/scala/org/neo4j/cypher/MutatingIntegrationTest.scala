@@ -24,7 +24,6 @@ import java.util
 import org.neo4j.graphdb._
 import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.query.QueryEngineProvider
 import org.scalatest.Assertions
 
 import scala.collection.JavaConverters._
@@ -222,7 +221,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
       Map("name" -> "Peter", "prefers" -> "Java"))
 
     intercept[CypherTypeException](
-      eengine.execute("cypher planner=rule create ({params})", Map("params" -> maps), QueryEngineProvider.embeddedSession())
+        eengine.execute("cypher planner=rule create ({params})", Map("params" -> maps), graph.session())
     )
   }
 
@@ -352,8 +351,8 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     createNode()
     createNode()
 
-    eengine.execute("match (a) where id(a) = 0 create unique (a)-[:X]->({foo:[1,2,3]})")
-    val result = eengine.execute("match (a) where id(a) = 0 create unique (a)-[:X]->({foo:[1,2,3]})")
+    eengine.execute("match (a) where id(a) = 0 create unique (a)-[:X]->({foo:[1,2,3]})", Map.empty[String, Any], graph.session())
+    val result = eengine.execute("match (a) where id(a) = 0 create unique (a)-[:X]->({foo:[1,2,3]})", Map.empty[String, Any], graph.session())
 
     result.queryStatistics().containsUpdates should be(false)
   }

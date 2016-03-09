@@ -49,7 +49,7 @@ trait QueryContext extends TokenContext {
 
   def entityAccessor: EntityAccessor
 
-  def transactionalContext: TransactionalContext
+  def transactionalContext: QueryTransactionalContext
 
   def nodeOps: Operations[Node]
 
@@ -191,7 +191,7 @@ trait Operations[T <: PropertyContainer] {
   def releaseExclusiveLock(obj: Long): Unit
 }
 
-trait TransactionalContext {
+trait QueryTransactionalContext {
 
   type ReadOps
 

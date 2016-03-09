@@ -30,7 +30,8 @@ class TransitionalTxManagementKernelTransaction
 
     private KernelTransaction suspendedTransaction;
 
-    TransitionalTxManagementKernelTransaction( TransactionTerminator txTerminator, ThreadToStatementContextBridge bridge )
+    TransitionalTxManagementKernelTransaction( TransactionTerminator txTerminator,
+            ThreadToStatementContextBridge bridge )
     {
         this.txTerminator = txTerminator;
         this.bridge = bridge;

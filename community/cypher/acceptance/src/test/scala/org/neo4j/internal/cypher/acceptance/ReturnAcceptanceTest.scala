@@ -218,7 +218,7 @@ order by a.age""").toList)
     relate(a, b)
     relate(b, c)
 
-    val result = eengine.execute("match (a), (c) where id(a) = 0 and id(c) = 2 return shortestPath((a)-[*]->(c))").columnAs[Path]("shortestPath((a)-[*]->(c))").toList.head
+    val result = eengine.execute("match (a), (c) where id(a) = 0 and id(c) = 2 return shortestPath((a)-[*]->(c))", Map.empty[String, Any], graph.session()).columnAs[Path]("shortestPath((a)-[*]->(c))").toList.head
     result.endNode() should equal(c)
     result.startNode() should equal(a)
     result.length() should equal(2)

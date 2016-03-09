@@ -28,7 +28,8 @@ import org.neo4j.graphdb.{Direction, Node, Path}
 
 class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
   private implicit val monitor = mock[PipeMonitor]
-  private val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.BOTH, false, Some(15), single = true, relIterator = None)
+  private val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.BOTH,
+    allowZeroLength = false, Some(15), single = true, relIterator = None)
 
   test("should return the shortest path between two nodes") {
     val a = createNode("a")
@@ -50,6 +51,8 @@ class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->CTNode, "b"->CTNode)
 
     val pipe = new ShortestPathPipe(source, path)()
-    graph.withTx(tx => pipe.createResults(QueryStateHelper.queryStateFrom(graph, tx)).next()("p").asInstanceOf[Path])
+    graph.withTx { tx =>
+      pipe.createResults(QueryStateHelper.queryStateFrom(graph, tx)).next()("p").asInstanceOf[Path]
+    }
   }
 }

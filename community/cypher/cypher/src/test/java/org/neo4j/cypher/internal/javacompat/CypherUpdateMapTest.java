@@ -24,14 +24,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.AccessMode;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.query.QuerySession;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.not;
@@ -42,19 +37,16 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class CypherUpdateMapTest
 {
-    private ExecutionEngine engine;
-    private GraphDatabaseCypherService gdb;
-    private QuerySession session = QueryEngineProvider.embeddedSession();
+    private GraphDatabaseService db;
 
     @Test
     public void updateNodeByMapParameter() throws Throwable
     {
-        engine.executeQuery(
+        db.execute(
                 "CREATE (n:Reference) SET n = {data} RETURN n" ,
                 map( "data",
                         map("key1", "value1", "key2", 1234)
-                ),
-                session
+                )
         );
 
         Node node1 = getNodeByIdInTx( 0 );
@@ -62,12 +54,11 @@ public class CypherUpdateMapTest
         assertThat( node1, inTxS( hasProperty( "key1" ).withValue( "value1" ) ) );
         assertThat( node1, inTxS( hasProperty( "key2" ).withValue( 1234 ) ) );
 
-        engine.executeQuery(
+        db.execute(
                 "MATCH (n:Reference) SET n = {data} RETURN n",
                 map( "data",
                         map("key1", null, "key3", 5678)
-                ),
-                session
+                )
         );
 
         Node node2 = getNodeByIdInTx( 0 );
@@ -79,27 +70,26 @@ public class CypherUpdateMapTest
 
     public <T> Matcher<? super T> inTxS( final Matcher<T> inner )
     {
-        return inTx( gdb.getGraphDatabaseService(), inner, false );
+        return inTx( db, inner, false );
     }
 
     private Node getNodeByIdInTx( int nodeId )
     {
-        try ( Transaction ignored = gdb.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ) )
+        try ( Transaction ignored = db.beginTx() )
         {
-            return gdb.getNodeById( nodeId );
+            return db.getNodeById( nodeId );
         }
     }
 
     @Before
     public void setup()
     {
-        gdb = new GraphDatabaseCypherService( new TestGraphDatabaseFactory().newImpermanentDatabase() );
-        engine = new ExecutionEngine( gdb, NullLogProvider.getInstance() );
+        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After
     public void cleanup()
     {
-        gdb.getGraphDatabaseService().shutdown();
+        db.shutdown();
     }
 }

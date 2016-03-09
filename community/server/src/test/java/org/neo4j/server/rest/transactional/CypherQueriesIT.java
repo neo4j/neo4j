@@ -61,5 +61,4 @@ public class CypherQueriesIT extends AbstractRestFunctionalTestBase
     {
         return singleQuoted.replaceAll( "'", "\"" );
     }
-
 }

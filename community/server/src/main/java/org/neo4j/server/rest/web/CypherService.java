@@ -31,6 +31,7 @@ import javax.ws.rs.core.Response;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
@@ -99,21 +100,24 @@ public class CypherService
         {
             return output.badRequest( new IllegalArgumentException("Parameters must be a JSON map") );
         }
+
         try
         {
             QueryExecutionEngine executionEngine = cypherExecutor.getExecutionEngine();
+            QuerySession querySession = cypherExecutor.createSession( request );
 
             Result result;
             if ( profile )
             {
-                result = executionEngine.profileQuery( query, params, new ServerQuerySession( request ) );
+                result = executionEngine.profileQuery( query, params, querySession );
                 includePlan = true;
             }
             else
             {
-                result = executionEngine.executeQuery( query, params, new ServerQuerySession( request ) );
+                result = executionEngine.executeQuery( query, params, querySession );
                 includePlan = result.getQueryExecutionType().requestedExecutionPlanDescription();
             }
+
             return output.ok( new CypherResultRepresentation( result, includeStats, includePlan ) );
         }
         catch ( Throwable e )

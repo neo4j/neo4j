@@ -26,12 +26,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
+import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 
 class State
 {
-    final DocsExecutionEngine engine;
     final GraphDatabaseCypherService database;
     final Connection sqlDatabase;
     final File parentDirectory;
@@ -44,14 +43,16 @@ class State
     Result latestSqlResult;
     Result testedSqlResult;
 
-    State( DocsExecutionEngine engine, GraphDatabaseCypherService database, Connection sqlConnection,
-            File parentDirectory,
-            String url )
+    State( GraphDatabaseCypherService database, Connection sqlConnection, File parentDirectory, String url )
     {
-        this.engine = engine;
         this.database = database;
         this.sqlDatabase = sqlConnection;
         this.parentDirectory = parentDirectory;
         this.url = url.endsWith( "/" ) ? url : url + "/";
+    }
+
+    public String prettify( String query )
+    {
+        return Prettifier.apply( query );
     }
 }

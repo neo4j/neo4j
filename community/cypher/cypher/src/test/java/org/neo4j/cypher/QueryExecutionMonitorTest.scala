@@ -34,7 +34,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor is not called if iterator not exhausted") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     engine.execute("RETURN 42", Map.empty[String, Any], session)
@@ -46,7 +46,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor is called when exhausted") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     val result = engine.execute("RETURN 42", Map.empty[String, Any], session).javaIterator
@@ -62,7 +62,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor is called directly when return is empty") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     val result = engine.execute("CREATE()", Map.empty[String, Any], session).javaIterator
@@ -74,7 +74,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor really not called until result is exhausted") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     val result = engine.execute("RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
@@ -91,7 +91,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
   test("nothing breaks when no monitor is there") {
     // given
     val engine = new ExecutionEngine(graph)
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     engine.execute("RETURN 42", Map.empty[String, Any], session).toList
@@ -99,7 +99,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor is called when iterator closes") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     val result = engine.execute("RETURN 42", Map.empty[String, Any], session).javaIterator.close()
@@ -111,7 +111,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor is called when next on empty iterator") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     val iterator = engine.execute("RETURN 42", Map.empty[String, Any], session).javaIterator
@@ -132,7 +132,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("check so that profile triggers monitor") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     val result = engine.profile("RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
@@ -148,7 +148,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("triggering monitor in 2.3") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     val result = engine.profile("CYPHER 2.3 RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
@@ -164,7 +164,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor is called when iterator closes in 2.3") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     val result = engine.execute("CYPHER 2.3 RETURN 42", Map.empty[String, Any], session).javaIterator.close()
@@ -176,7 +176,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor is called when next on empty iterator in 2.3") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     val iterator = engine.execute("CYPHER 2.3 RETURN 42", Map.empty[String, Any], session).javaIterator
@@ -197,7 +197,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
   test("monitor is called directly when return is empty in 2.3") {
     // given
-    val session = QueryEngineProvider.embeddedSession()
+    val session = graph.session()
 
     // when
     val result = engine.execute("CYPHER 2.3 CREATE()", Map.empty[String, Any], session).javaIterator

@@ -20,8 +20,11 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.graphdb.{QueryExecutionException, Result, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.exceptions.Status
+
+import scala.collection.JavaConverters._
 
 class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfigTestSupport {
 
@@ -40,51 +43,49 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
 
   test("should be able to switch between versions") {
     runWithConfig() {
-      engine =>
-        engine.execute(s"CYPHER 2.3 $QUERY").toList shouldBe empty
-        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
+      db =>
+        db.execute(s"CYPHER 2.3 $QUERY").asScala.toList shouldBe empty
+        db.execute(s"CYPHER 3.0 $QUERY").asScala.toList shouldBe empty
     }
   }
 
   test("should be able to switch between versions2") {
     runWithConfig() {
-      engine =>
-        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
-        engine.execute(s"CYPHER 2.3 $QUERY").toList shouldBe empty
+      db =>
+        db.execute(s"CYPHER 3.0 $QUERY").asScala.toList shouldBe empty
+        db.execute(s"CYPHER 2.3 $QUERY").asScala.toList shouldBe empty
     }
   }
 
   test("should be able to override config") {
     runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "2.3") {
-      engine =>
-        engine.execute(s"CYPHER 3.0 $QUERY").toList shouldBe empty
+      db =>
+        db.execute(s"CYPHER 3.0 $QUERY").asScala.toList shouldBe empty
     }
   }
 
   test("should be able to override config2") {
     runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "3.0") {
-      engine =>
-        engine.execute(s"CYPHER 2.3 $QUERY").toList shouldBe empty
+      db =>
+        db.execute(s"CYPHER 2.3 $QUERY").asScala.toList shouldBe empty
     }
   }
 
   test("should use default version by default") {
     runWithConfig() {
-      engine =>
-        val result = engine.execute(QUERY)
-        result shouldBe empty
-        result.executionPlanDescription().arguments.get("version") should equal(
-          Some("CYPHER 3.0")
-        )
+      db =>
+        val result = db.execute(QUERY)
+        result.asScala.toList shouldBe empty
+        result.getExecutionPlanDescription.getArguments.get("version") should equal("CYPHER 3.0")
     }
   }
 
   //TODO fix this test
   ignore("should handle profile in compiled runtime") {
     runWithConfig() {
-      engine =>
-        assertProfiled(engine, "CYPHER 2.3 runtime=compiled PROFILE MATCH (n) RETURN n")
-        assertProfiled(engine, "CYPHER 3.0 runtime=compiled PROFILE MATCH (n) RETURN n")
+      db =>
+        assertProfiled(db, "CYPHER 2.3 runtime=compiled PROFILE MATCH (n) RETURN n")
+        assertProfiled(db, "CYPHER 3.0 runtime=compiled PROFILE MATCH (n) RETURN n")
     }
   }
 
@@ -110,92 +111,102 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
 
   test("should not fail if cypher allowed to choose planner or we specify RULE for update query") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        engine.execute(queryThatCannotRunWithCostPlanner)
-        engine.execute(s"CYPHER planner=RULE $queryThatCannotRunWithCostPlanner")
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN CYPHER planner=RULE $queryThatCannotRunWithCostPlanner"))
+      db =>
+        db.execute(queryThatCannotRunWithCostPlanner)
+        db.execute(s"CYPHER planner=RULE $queryThatCannotRunWithCostPlanner")
+        shouldHaveNoWarnings(
+          db.execute(s"EXPLAIN CYPHER planner=RULE $queryThatCannotRunWithCostPlanner")
+        )
     }
   }
 
   test("should fail if asked to execute query with COST instead of falling back to RULE if hint errors turned on") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        intercept[InvalidArgumentException](engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"))
+      db =>
+        intercept[QueryExecutionException](
+          db.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner")
+        ).getStatusCode should equal("Neo.ClientError.Statement.InvalidArguments")
     }
   }
 
   test("should not fail if asked to execute query with COST and instead fallback to RULE and return a warning if hint errors turned off") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
-      engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"), Status.Statement.PlannerUnsupportedWarning)
+      db =>
+        val result = db.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner")
+        shouldHaveWarning(result, Status.Statement.PlannerUnsupportedWarning)
     }
   }
 
   test("should not fail if asked to execute query with COST and instead fallback to RULE and return a warning by default") {
     runWithConfig() {
-      engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"), Status.Statement.PlannerUnsupportedWarning)
+      db =>
+        val result = db.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner")
+        shouldHaveWarning(result, Status.Statement.PlannerUnsupportedWarning)
     }
   }
 
   test("should not fail if asked to execute query with runtime=compiled on simple query") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        engine.execute("MATCH (n:Movie) RETURN n")
-        engine.execute("CYPHER runtime=compiled MATCH (n:Movie) RETURN n")
-        shouldHaveNoWarnings(engine.execute("EXPLAIN CYPHER runtime=compiled MATCH (n:Movie) RETURN n"))
+      db =>
+        db.execute("MATCH (n:Movie) RETURN n")
+        db.execute("CYPHER runtime=compiled MATCH (n:Movie) RETURN n")
+        shouldHaveNoWarnings(db.execute("EXPLAIN CYPHER runtime=compiled MATCH (n:Movie) RETURN n"))
     }
   }
 
   test("should fail if asked to execute query with runtime=compiled instead of falling back to interpreted if hint errors turned on") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      engine =>
-        intercept[InvalidArgumentException](engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"))
+      db =>
+        intercept[QueryExecutionException](
+          db.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime")
+        ).getStatusCode should equal("Neo.ClientError.Statement.InvalidArguments")
     }
   }
 
   test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning if hint errors turned off") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
-      engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"), Status.Statement.RuntimeUnsupportedWarning)
+      db =>
+        val result = db.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime")
+        shouldHaveWarning(result, Status.Statement.RuntimeUnsupportedWarning)
     }
   }
 
   test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning by default") {
     runWithConfig() {
-      engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"), Status.Statement.RuntimeUnsupportedWarning)
+      db =>
+        val result = db.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime")
+        shouldHaveWarning(result, Status.Statement.RuntimeUnsupportedWarning)
     }
   }
 
   test("should not fail nor generate a warning if asked to execute query without specifying runtime, knowing that compiled is default but will fallback silently to interpreted") {
     runWithConfig() {
-      engine =>
-        shouldHaveNoWarnings(engine.execute(s"EXPLAIN $querySupportedByCostButNotCompiledRuntime"))
+      db =>
+        shouldHaveNoWarnings(db.execute(s"EXPLAIN $querySupportedByCostButNotCompiledRuntime"))
     }
   }
 
-  test("should not support old 2.0 and 2.1 compilers") {
+  test("should not support old 1,9, 2.0, 2.1, and 2.2 compilers") {
     runWithConfig() {
-      engine =>
-        intercept[SyntaxException](engine.execute("CYPHER 1.9 MATCH (n) RETURN n"))
-        intercept[SyntaxException](engine.execute("CYPHER 2.0 MATCH (n) RETURN n"))
-        intercept[SyntaxException](engine.execute("CYPHER 2.1 MATCH (n) RETURN n"))
-        intercept[SyntaxException](engine.execute("CYPHER 2.2 MATCH (n) RETURN n"))
+      db =>
+        intercept[QueryExecutionException](db.execute("CYPHER 1.9 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
+        intercept[QueryExecutionException](db.execute("CYPHER 2.0 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
+        intercept[QueryExecutionException](db.execute("CYPHER 2.1 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
+        intercept[QueryExecutionException](db.execute("CYPHER 2.2 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
     }
   }
 
-  private def assertProfiled(engine: ExecutionEngine, q: String) {
-    val result = engine.execute(q)
-    val ignored = result.toList
-    assert(result.executionPlanDescription().asJava.hasProfilerStatistics, s"$q was not profiled as expected")
-    assert(result.planDescriptionRequested, s"$q was not flagged for planDescription")
+  private def assertProfiled(db: GraphDatabaseService, q: String) {
+    val result = db.execute(q)
+    result.resultAsString()
+    assert(result.getExecutionPlanDescription.hasProfilerStatistics, s"$q was not profiled as expected")
+    assert(result.getQueryExecutionType.requestedExecutionPlanDescription(), s"$q was not flagged for planDescription")
   }
 
-  private def assertExplained(engine: ExecutionEngine, q: String) {
-    val result = engine.execute(q)
-    val ignored = result.toList
-    assert(!result.executionPlanDescription().asJava.hasProfilerStatistics, s"$q was not profiled as expected")
-    assert(result.planDescriptionRequested, s"$q was not flagged for planDescription")
+  private def assertExplained(db: GraphDatabaseService, q: String) {
+    val result = db.execute(q)
+    result.resultAsString()
+    assert(!result.getExecutionPlanDescription.hasProfilerStatistics, s"$q was not explained as expected")
+    assert(result.getQueryExecutionType.requestedExecutionPlanDescription(), s"$q was not flagged for planDescription")
   }
 }

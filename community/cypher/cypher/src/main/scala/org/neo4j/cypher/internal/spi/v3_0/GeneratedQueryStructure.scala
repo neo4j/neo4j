@@ -27,7 +27,7 @@ import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen._
-import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
+import org.neo4j.codegen.source.SourceVisitor
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext, TransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, ParameterNotFoundException, SemanticDirection, symbols}
@@ -884,7 +884,7 @@ private object Templates {
     param[util.Map[String, Object]]("params")).
     put(self(), typeRef[TaskCloser], "closer", load("closer")).
     put(self(), typeRef[ReadOperations], "ro",
-        cast(classOf[ReadOperations], invoke(invoke(load("queryContext"), method[QueryContext, TransactionalContext]("transactionalContext")), method[TransactionalContext, ReadOperations]("readOperations")))).
+        cast(classOf[ReadOperations], invoke(invoke(load("queryContext"), method[QueryContext, QueryTransactionalContext]("transactionalContext")), method[QueryTransactionalContext, ReadOperations]("readOperations")))).
     put(self(), typeRef[ExecutionMode], "executionMode", load("executionMode")).
     put(self(), typeRef[Provider[InternalPlanDescription]], "description", load("description")).
     put(self(), typeRef[QueryExecutionTracer], "tracer", load("tracer")).

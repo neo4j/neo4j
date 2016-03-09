@@ -49,6 +49,7 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
+import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -73,6 +74,7 @@ import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
 import org.neo4j.kernel.impl.coreapi.IndexProviderImpl;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.coreapi.ReadOnlyIndexFacade;
 import org.neo4j.kernel.impl.coreapi.ReadOnlyRelationshipIndexFacade;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerFacade;
@@ -80,8 +82,10 @@ import org.neo4j.kernel.impl.coreapi.StandardNodeActions;
 import org.neo4j.kernel.impl.coreapi.StandardRelationshipActions;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
@@ -101,6 +105,8 @@ import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PRO
  */
 public class GraphDatabaseFacade implements GraphDatabaseAPI
 {
+    private static final PropertyContainerLocker locker = new PropertyContainerLocker();
+
     private Schema schema;
     private IndexManager indexManager;
     private NodeProxy.NodeActions nodeActions;
@@ -170,6 +176,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         <T> void unregisterTransactionEventHandler( TransactionEventHandler<T> handler );
 
         URL validateURLAccess( URL url ) throws URLAccessValidationError;
+
+        GraphDatabaseQueryService queryService();
     }
 
     public GraphDatabaseFacade()
@@ -179,7 +187,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     /**
      * Create a new Core API facade, backed by the given SPI.
      */
-    public void init(  SPI spi )
+    public void init( SPI spi )
     {
         IndexProviderImpl idxProvider = new IndexProviderImpl( this, spi::currentStatement );
 
@@ -326,11 +334,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     {
         if ( spi.isInOpenTransaction() )
         {
+            // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
             return new PlaceboTransaction( spi::currentTransaction, spi::currentStatement );
         }
 
-        KernelTransaction kernelTx = spi.beginTransaction( type, accessMode );
-        return new TopLevelTransaction( kernelTx, spi::currentStatement );
+        return new TopLevelTransaction( spi.beginTransaction( type, accessMode ), spi::currentStatement );
     }
 
     @Override
@@ -342,7 +350,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
-        return spi.executeQuery( query, parameters, QueryEngineProvider.embeddedSession() );
+        // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
+        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+        TransactionalContext transactionalContext =
+                new Neo4jTransactionalContext( spi.queryService(), transaction, spi.currentStatement(), locker );
+        return spi.executeQuery( query, parameters, QueryEngineProvider.embeddedSession( transactionalContext ) );
     }
 
     @Override

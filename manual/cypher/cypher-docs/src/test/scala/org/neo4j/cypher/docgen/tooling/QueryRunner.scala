@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
@@ -99,19 +98,16 @@ class QueryRunner(formatter: (GraphDatabaseQueryService, InternalTransaction) =>
           (assertions, resultTry) match {
             // *** Success conditions
 
-            case (ResultAssertions(f), Success(inner)) =>
-              val result = RewindableExecutionResult(inner)
-              f(result)
-              Right(format(_)(result))
+            case (ResultAssertions(f), Success(r)) =>
+              f(r)
+              Right(format(_)(r))
 
-            case (ResultAndDbAssertions(f), Success(inner)) =>
-              val result = RewindableExecutionResult(inner)
-              f(result, database.getInnerDb)
-              Right(format(_)(result))
+            case (ResultAndDbAssertions(f), Success(r)) =>
+              f(r, database.getInnerDb)
+              Right(format(_)(r))
 
-            case (NoAssertions, Success(inner)) =>
-              val result = RewindableExecutionResult(inner)
-              Right(format(_)(result))
+            case (NoAssertions, Success(r)) =>
+              Right(format(_)(r))
 
             // *** Error conditions
             case (_, Failure(exception: Throwable)) =>
@@ -152,13 +148,11 @@ class QueryRunner(formatter: (GraphDatabaseQueryService, InternalTransaction) =>
                                  placeHolder: QueryResultPlaceHolder) = {
     val profilingAttempt = Try(database.execute(s"PROFILE $queryText"))
     val planString = (assertions, profilingAttempt) match {
-      case (ResultAssertions(f), Success(inner)) =>
-        val result = RewindableExecutionResult(inner)
+      case (ResultAssertions(f), Success(result)) =>
         f(result)
         result.executionPlanDescription().toString
 
-      case (ResultAndDbAssertions(f), Success(inner)) =>
-        val result = RewindableExecutionResult(inner)
+      case (ResultAndDbAssertions(f), Success(result)) =>
         f(result, database.getInnerDb)
         result.executionPlanDescription().toString
 

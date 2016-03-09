@@ -23,6 +23,7 @@ import java.nio.file.Files
 import java.util
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.IDPSolverMonitor
 import org.neo4j.cypher.internal.{ExecutionEngine, PlanDescription}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -90,7 +91,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       println(s"\t$query")
     }
     val start = System.currentTimeMillis()
-    val result = eengine.execute(s"EXPLAIN CYPHER planner=IDP $query")
+    val result = eengine.execute(s"EXPLAIN CYPHER planner=IDP $query", Map.empty[String, Any], graph.session())
     val duration = System.currentTimeMillis() - start
     if (VERBOSE) {
       println(result.executionPlanDescription())
@@ -123,13 +124,13 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
         // measure planning time
         var startPlaning = System.currentTimeMillis()
-        val resultPlanning = eengine.execute(s"EXPLAIN CYPHER planner=$planner $query")
+        val resultPlanning = eengine.execute(s"EXPLAIN CYPHER planner=$planner $query", Map.empty[String, Any], graph.session())
         val durationPlanning = System.currentTimeMillis()-startPlaning
         val plan = resultPlanning.executionPlanDescription()
 
         // measure query time
         var start = System.currentTimeMillis()
-        val result = eengine.execute(s"CYPHER planner=$planner $query")
+        val result = eengine.execute(s"CYPHER planner=$planner $query", Map.empty[String, Any], graph.session())
         val resultCount = result.toList.length
         val duration = System.currentTimeMillis()-start
         val expectedResultCount = Math.pow(2, pathlen % indexStep).toInt
@@ -198,7 +199,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
           val monitor = TestIDPSolverMonitor()
           val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
           monitors.addMonitorListener(monitor)
-          val result = engine.execute(s"EXPLAIN CYPHER planner=IDP $query")
+          val result = engine.execute(s"EXPLAIN CYPHER planner=IDP $query", Map.empty[String, Any], graph.session())
           val counts = countExpandsAndJoins(result.executionPlanDescription())
           counts("joins") should be > 1
           counts("joins") should be < numberOfPatternRelationships / 2

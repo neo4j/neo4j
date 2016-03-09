@@ -24,7 +24,6 @@ import java.util.concurrent._
 import org.junit.Assert._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.Neo4jTransactionContext
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.HasLabel
@@ -43,11 +42,13 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Rewriter, Scope, SemanticTable}
-import org.neo4j.cypher.internal.spi.ExtendedTransactionalContext
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.Label.label
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Seq
@@ -58,7 +59,7 @@ class RuleExecutablePlanBuilderTest
   with Timed
   with MockitoSugar {
 
-
+  val locker: PropertyContainerLocker = new PropertyContainerLocker
   val ast = mock[Statement]
   val rewriterSequencer = RewriterStepSequencer.newValidating _
   val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
@@ -114,7 +115,7 @@ class RuleExecutablePlanBuilderTest
 
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
 
-      val transactionalContext = new Neo4jTransactionContext(graph, tx, statement)
+      val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, tx, statement, locker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = new FakePreparedQuery(q)
@@ -141,7 +142,7 @@ class RuleExecutablePlanBuilderTest
         .returns(ReturnItem(Variable("x"), "x"))
 
       val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors3_0(kernelMonitors), config, RewriterStepSequencer.newValidating)
-      val transactionalContext = new Neo4jTransactionContext(graph, tx, statement)
+      val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, tx, statement, locker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = new FakePreparedQuery(q)

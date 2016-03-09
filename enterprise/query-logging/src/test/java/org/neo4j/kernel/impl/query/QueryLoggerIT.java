@@ -84,7 +84,7 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), Matchers.endsWith( String.format( " ms: %s - %s - {}",
-                QueryEngineProvider.embeddedSession(), QUERY ) ) );
+                QueryEngineProvider.embeddedSession( null ), QUERY ) ) );
     }
 
     @Test
@@ -112,7 +112,7 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ),
                 Matchers.endsWith( String.format(
                         " ms: %s - %s - {props: {followers: [Jake, Eddie, Susannah], name: Roland, position: Gunslinger}}",
-                QueryEngineProvider.embeddedSession(), query) ) );
+                QueryEngineProvider.embeddedSession( null ), query) ) );
     }
 
     @Test
@@ -134,7 +134,7 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ),
                 Matchers.endsWith( String.format(
                         " ms: %s - %s - {ids: [0, 1, 2]}",
-                        QueryEngineProvider.embeddedSession(), query) ) );
+                        QueryEngineProvider.embeddedSession( null ), query) ) );
     }
 
     @Test

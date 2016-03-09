@@ -19,17 +19,14 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.ArithmeticException;
-import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.ResourceIterator;
@@ -39,10 +36,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.QuerySession;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,18 +48,8 @@ import static org.hamcrest.core.IsNull.nullValue;
 
 public class ExecutionResultTest
 {
-    private static final Map<String,Object> NO_PARAMS = Collections.emptyMap();
-    private static final QuerySession SESSION = QueryEngineProvider.embeddedSession();
-
     @Rule
     public final ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
-    private ExecutionEngine engine;
-
-    @Before
-    public void initializeExecutionEngine() throws Exception
-    {
-        engine = new ExecutionEngine( new GraphDatabaseCypherService( db.getGraphDatabaseAPI() ), NullLogProvider.getInstance() );
-    }
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
@@ -74,7 +58,7 @@ public class ExecutionResultTest
         // Given an execution result that has been started but not exhausted
         createNode();
         createNode();
-        Result executionResult = engine.executeQuery( "CYPHER runtime=interpreted MATCH (n) RETURN n", NO_PARAMS, SESSION );
+        Result executionResult = db.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
         executionResult.next();
         assertThat( activeTransaction(), is( notNullValue() ) );
 
@@ -92,7 +76,7 @@ public class ExecutionResultTest
         // Given an execution result that has been started but not exhausted
         createNode();
         createNode();
-        Result executionResult = engine.executeQuery( "CYPHER runtime=interpreted MATCH (n) RETURN n", NO_PARAMS, SESSION );
+        Result executionResult = db.execute( "CYPHER runtime=interpreted MATCH (n) RETURN n" );
         ResourceIterator<Node> resultIterator = executionResult.columnAs( "n" );
         resultIterator.next();
         assertThat( activeTransaction(), is( notNullValue() ) );
@@ -109,7 +93,7 @@ public class ExecutionResultTest
     {
         try
         {
-            engine.executeQuery( "RETURN rand()/0", NO_PARAMS, SESSION ).next();
+            db.execute( "RETURN rand()/0" ).next();
         }
         catch ( QueryExecutionException ex )
         {
@@ -121,7 +105,7 @@ public class ExecutionResultTest
     @Test( expected = ArithmeticException.class )
     public void shouldThrowAppropriateExceptionAlsoWhenVisiting() throws Exception
     {
-        engine.executeQuery( "RETURN rand()/0", NO_PARAMS, SESSION ).accept( row -> true );
+        db.execute( "RETURN rand()/0" ).accept( row -> true );
     }
 
     @Test
