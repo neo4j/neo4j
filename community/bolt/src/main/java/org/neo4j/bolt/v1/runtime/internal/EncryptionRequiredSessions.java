@@ -33,13 +33,14 @@ public class EncryptionRequiredSessions implements Sessions
     }
 
     @Override
-    public Session newSession( boolean isEncrypted )
+    public Session newSession( String connectionDescriptor, boolean isEncrypted )
     {
         if ( !isEncrypted )
         {
             return new ErrorReportingSession(
+                    connectionDescriptor,
                     new Neo4jError( Status.Security.EncryptionRequired, "This server requires a TLS encrypted connection." ) );
         }
-        return delegate.newSession( isEncrypted );
+        return delegate.newSession( connectionDescriptor, isEncrypted );
     }
 }

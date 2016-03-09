@@ -42,7 +42,7 @@ public class TransactionIT
     {
         // Given
         RecordingCallback<StatementMetadata, ?> responses = new RecordingCallback<>();
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient",  Collections.<String, Object>emptyMap(), null, null );
 
         // When
@@ -66,7 +66,7 @@ public class TransactionIT
     {
         // Given
         RecordingCallback<StatementMetadata, ?> responses = new RecordingCallback<>();
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient",  Collections.<String, Object>emptyMap(), null, null );
 
         // When
@@ -91,7 +91,7 @@ public class TransactionIT
         // Given
         RecordingCallback<StatementMetadata, ?> runResponse = new RecordingCallback<>();
         RecordingCallback<RecordStream, Object> pullResponse = new RecordingCallback<>();
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient",  Collections.<String, Object>emptyMap(), null, null );
 
         // When

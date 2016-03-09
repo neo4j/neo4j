@@ -122,6 +122,9 @@ public interface Session extends AutoCloseable
     /** A session id that is unique for this database instance */
     String key();
 
+    /** A descriptor for the underlying medium (connection etc) via which this session is being used */
+    String connectionDescriptor();
+
     /**
      * Initialize the session.
      */

@@ -60,7 +60,7 @@ public class SessionIT
     public void shouldHandleEmptyString() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         // When
@@ -74,7 +74,7 @@ public class SessionIT
     public void shouldExecuteStatement() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap() , null, null );
 
         // When
@@ -95,7 +95,7 @@ public class SessionIT
     public void shouldSucceedOn__run__pullAll__run() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         // And Given that I've ran and pulled one stream
@@ -113,7 +113,7 @@ public class SessionIT
     public void shouldSucceedOn__run__discardAll__run() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         // And Given that I've ran and pulled one stream
@@ -131,7 +131,7 @@ public class SessionIT
     public void shouldSucceedOn__run_BEGIN__pullAll__run_COMMIT__pullALL__run_COMMIT() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         // And Given that I've ran and pulled one stream
@@ -151,7 +151,7 @@ public class SessionIT
     public void shouldFailOn__run__run() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         // And Given that I've ran one statement
@@ -168,7 +168,7 @@ public class SessionIT
     public void shouldFailOn__pullAll__pullAll() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         // And Given that I've ran and pulled one stream
@@ -186,7 +186,7 @@ public class SessionIT
     public void shouldFailOn__pullAll__discardAll() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         // And Given that I've ran and pulled one stream
@@ -204,7 +204,7 @@ public class SessionIT
     public void shouldFailOn__discardAll__discardAll() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         // And Given that I've ran and pulled one stream
@@ -222,7 +222,7 @@ public class SessionIT
     public void shouldFailOn__discardAll__pullAll() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         // And Given that I've ran and pulled one stream
@@ -240,7 +240,7 @@ public class SessionIT
     public void shouldHandleImplicitCommitFailure() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
         session.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, null, Session.Callbacks.<StatementMetadata, Object>noop() );
         session.discardAll( null, Session.Callbacks.<Void,Object>noop() );
@@ -260,7 +260,7 @@ public class SessionIT
     public void shouldHandleFailureDuringResultPublishing() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         final CountDownLatch pullAllCallbackCalled = new CountDownLatch( 1 );
@@ -300,9 +300,9 @@ public class SessionIT
     public void shouldBeAbleToCleanlyRunMultipleSessionsInSingleThread() throws Throwable
     {
         // Given
-        Session firstSession = env.newSession();
+        Session firstSession = env.newSession( "<test>" );
         firstSession.init( "TestClient/1.0", emptyMap(), null, null );
-        Session secondSession = env.newSession();
+        Session secondSession = env.newSession( "<test>" );
         secondSession.init( "TestClient/1.0", emptyMap(), null, null );
 
         // And given I've started a transaction in one session
@@ -324,7 +324,7 @@ public class SessionIT
     public void shouldSupportUsingPeriodicCommitInSession() throws InterruptedException, IOException
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
         Map<String, Object> params = new HashMap<>();
         params.put( "csvFileUrl", createLocalIrisData( session ) );
@@ -354,7 +354,7 @@ public class SessionIT
     public void shouldNotSupportUsingPeriodicCommitInTransaction() throws InterruptedException, IOException
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
         Map<String, Object> params = new HashMap<>();
         params.put( "csvFileUrl", createLocalIrisData( session ) );
@@ -384,7 +384,7 @@ public class SessionIT
     public void shouldAllowNewTransactionAfterFailure() throws Throwable
     {
         // Given
-        Session session = env.newSession();
+        Session session = env.newSession( "<test>" );
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         // And given I've started a transaction that failed

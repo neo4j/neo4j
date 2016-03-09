@@ -130,7 +130,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
       val preParsedQuery = preParseQuery(queryText)
       val executionMode = preParsedQuery.executionMode
       val cacheKey = preParsedQuery.statementWithVersionAndPlanner
-      val externalTransactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.metadataKey))
+      val externalTransactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.METADATA_KEY))
 
       var n = 0
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {

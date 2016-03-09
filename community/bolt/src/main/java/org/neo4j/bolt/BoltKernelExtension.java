@@ -30,6 +30,7 @@ import java.security.GeneralSecurityException;
 import java.time.Clock;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -66,6 +67,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
@@ -98,6 +100,51 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 setting( "org.neo4j.server.webserver.address", STRING,
                         "localhost", illegalValueMessage( "Must be a valid hostname", org.neo4j.kernel.configuration
                                 .Settings.matches( ANY ) ) );
+
+
+        public static <T> Setting<T> connector( int i, Setting<T> setting )
+        {
+            String name = format( "dbms.connector.%s", i );
+            return new Setting<T>()
+            {
+                @Override
+                public String name()
+                {
+                    return format( "%s.%s", name, setting.name() );
+                }
+
+                @Override
+                public String getDefaultValue()
+                {
+                    return setting.getDefaultValue();
+                }
+
+                @Override
+                public T apply( Function<String,String> settings )
+                {
+                    return setting.apply( settings );
+                }
+
+                @Override
+                public int hashCode()
+                {
+                    return name().hashCode();
+                }
+
+                @Override
+                public boolean equals( Object obj )
+                {
+                    return obj instanceof Setting<?> && ((Setting<?>) obj).name().equals( name() );
+                }
+            };
+        }
+    }
+
+    public enum EncryptionLevel
+    {
+        REQUIRED,
+        OPTIONAL,
+        DISABLED
     }
 
     public interface Dependencies
@@ -206,7 +253,10 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         PrimitiveLongObjectMap<BiFunction<Channel,Boolean,BoltProtocol>> availableVersions = longObjectMap();
         availableVersions.put(
                 BoltProtocolV1.VERSION,
-                ( channel, isEncrypted ) -> new BoltProtocolV1( logging, sessions.newSession( isEncrypted ), channel )
+                ( channel, isEncrypted ) -> {
+                    String descriptor = format( "\tclient:%s\tserver:%s", channel.remoteAddress(), channel.localAddress() );
+                    return new BoltProtocolV1( logging, sessions.newSession( descriptor, isEncrypted ), channel );
+                }
         );
         return availableVersions;
     }
@@ -231,15 +281,14 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         if ( !certificatePath.exists() )
         {
             throw new IllegalStateException(
-                    String.format(
-                            "TLS private key found, but missing certificate at '%s'. Cannot start server without " +
+                    format( "TLS private key found, but missing certificate at '%s'. Cannot start server without " +
                             "certificate.",
                             certificatePath ) );
         }
         if ( !privateKeyPath.exists() )
         {
             throw new IllegalStateException(
-                    String.format( "TLS certificate found, but missing key at '%s'. Cannot start server without key.",
+                    format( "TLS certificate found, but missing key at '%s'. Cannot start server without key.",
                             privateKeyPath ) );
         }
 

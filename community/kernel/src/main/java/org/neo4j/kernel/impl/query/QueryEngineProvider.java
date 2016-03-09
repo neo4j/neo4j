@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
+import static java.lang.String.format;
+
 public abstract class QueryEngineProvider extends Service
 {
     public QueryEngineProvider( String name )
@@ -65,7 +67,7 @@ public abstract class QueryEngineProvider extends Service
             @Override
             public String toString()
             {
-                return String.format( "EmbeddedSession{thread=%s}", thread.getName() );
+                return format( "embedded-session\tthread\t%s", thread.getName() );
             }
         };
     }

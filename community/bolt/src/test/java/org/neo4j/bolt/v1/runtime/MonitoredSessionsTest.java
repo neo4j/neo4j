@@ -34,6 +34,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v1.runtime.Session.Callback.noOp;
@@ -46,7 +47,7 @@ public class MonitoredSessionsTest
         // given
         Sessions delegate = mock( Sessions.class );
         ControlledCompletionSession innerSession = new ControlledCompletionSession();
-        when( delegate.newSession(anyBoolean()) ).thenReturn( innerSession );
+        when( delegate.newSession( anyString(), anyBoolean() ) ).thenReturn( innerSession );
 
         Monitors monitors = new Monitors();
         CountingSessionMonitor monitor = new CountingSessionMonitor();
@@ -55,7 +56,7 @@ public class MonitoredSessionsTest
         FakeClock clock = new FakeClock();
 
         MonitoredSessions sessions = new MonitoredSessions( monitors, delegate, clock );
-        Session session = sessions.newSession();
+        Session session = sessions.newSession( "<test>" );
 
         // when
         session.run( "hello", null, null, noOp() );
@@ -80,13 +81,13 @@ public class MonitoredSessionsTest
         // after monitor listeners are added
         Sessions innerSessions = mock( Sessions.class );
         Session innerSession = mock( Session.class );
-        when(innerSessions.newSession( anyBoolean() )).thenReturn( innerSession );
+        when(innerSessions.newSession( anyString(), anyBoolean() ) ).thenReturn( innerSession );
 
         Monitors monitors = new Monitors();
         MonitoredSessions sessions = new MonitoredSessions( monitors, innerSessions, new FakeClock() );
 
         // When
-        Session session = sessions.newSession();
+        Session session = sessions.newSession( "<test>" );
 
         // Then
         assertEquals( innerSession, session );
@@ -95,7 +96,7 @@ public class MonitoredSessionsTest
         monitors.addMonitorListener( new CountingSessionMonitor() );
 
         // Then new sessions should be monitored
-        assertThat( sessions.newSession(), instanceOf( MonitoredSession.class ) );
+        assertThat( sessions.newSession( "<test>" ), instanceOf( MonitoredSession.class ) );
     }
 
     private static class CountingSessionMonitor implements MonitoredSessions.SessionMonitor
@@ -131,6 +132,11 @@ public class MonitoredSessionsTest
         public String key()
         {
             return null;
+        }
+
+        public String connectionDescriptor()
+        {
+            return "<test>";
         }
 
         @Override

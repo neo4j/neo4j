@@ -95,9 +95,9 @@ public class StandardSessions extends LifecycleAdapter implements Sessions
     }
 
     @Override
-    public Session newSession( boolean isEncrypted )
+    public Session newSession( String connectionDescriptor, boolean isEncrypted )
     {
-        return new SessionStateMachine( usageData, gds, txBridge, statementRunner, logging, authentication );
+        return new SessionStateMachine( connectionDescriptor, usageData, gds, txBridge, statementRunner, logging, authentication );
     }
 
     private Authentication authentication( DependencyResolver dependencyResolver )
