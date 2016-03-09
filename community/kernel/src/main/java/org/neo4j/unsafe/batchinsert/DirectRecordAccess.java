@@ -118,6 +118,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         private final RECORD record;
         private final ADDITIONAL additionalData;
         private boolean changed = false;
+        private final boolean created;
 
         public DirectRecordProxy( KEY key, RECORD record, ADDITIONAL additionalData, boolean created )
         {
@@ -128,6 +129,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
             {
                 prepareChange();
             }
+            this.created = created;
         }
 
         @Override
@@ -203,6 +205,12 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         public boolean isChanged()
         {
             return changed;
+        }
+
+        @Override
+        public boolean isCreated()
+        {
+            return created;
         }
     }
 

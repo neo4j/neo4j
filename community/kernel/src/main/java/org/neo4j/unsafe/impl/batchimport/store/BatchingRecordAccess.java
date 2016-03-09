@@ -155,5 +155,11 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
         {
             return true;
         }
+
+        @Override
+        public boolean isCreated()
+        {
+            return true;
+        }
     }
 }

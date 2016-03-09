@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -58,6 +59,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -162,6 +164,7 @@ public class TransactionRecordState implements RecordState
 
         // Collect nodes, relationships, properties
         Command[] nodeCommands = EMPTY_COMMANDS;
+        int skippedCommands = 0;
         if ( recordChangeSet.getNodeRecords().changeSize() > 0 )
         {
             nodeCommands = new Command[recordChangeSet.getNodeRecords().changeSize()];
@@ -210,9 +213,36 @@ public class TransactionRecordState implements RecordState
             for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change :
                 recordChangeSet.getRelGroupRecords().changes() )
             {
+                if ( change.isCreated() && !change.forReadingLinkage().inUse() )
+                {
+                    /*
+                     * This is an edge case that may come up and which we must handle properly. Relationship groups are
+                     * not managed by the tx state, since they are created as side effects rather than through
+                     * direct calls. However, they differ from say, dynamic records, in that their management can happen
+                     * through separate code paths. What we are interested in here is the following scenario.
+                     * 0. A node has one less relationship that is required to transition to dense node. The relationships
+                     *    it has belong to at least two different types
+                     * 1. In the same tx, a relationship is added making the node dense and all the relationships of a type
+                     *    are removed from that node. Regardless of the order these operations happen, the creation of the
+                     *    relationship (and the transition of the node to dense) will happen first.
+                     * 2. A relationship group will be created because of the transition to dense and then deleted because
+                     *    all the relationships it would hold are no longer there. This results in a relationship group
+                     *    command that appears in the tx as not in use. Depending on the final order of operations, this
+                     *    can end up using an id that is higher than the highest id seen so far. This may not be a problem
+                     *    for a single instance, but it can result in errors in cases where transactions are applied
+                     *    externally, such as backup or HA.
+                     *
+                     * The way we deal with this issue here is by not issuing a command for that offending record. This is
+                     * safe, since the record is not in use and never was, so the high id is not necessary to change and
+                     * the store remains consistent.
+                     */
+                    skippedCommands++;
+                    continue;
+                }
                 relGroupCommands[i++] = new Command.RelationshipGroupCommand( change.getBefore(),
                         prepared( change, relationshipGroupStore ) );
             }
+            relGroupCommands = i < relGroupCommands.length ? Arrays.copyOf( relGroupCommands, i ) : relGroupCommands;
             Arrays.sort( relGroupCommands, COMMAND_SORTER );
         }
 
@@ -233,8 +263,8 @@ public class TransactionRecordState implements RecordState
             commands.add( new Command.SchemaRuleCommand(
                     change.getBefore(), change.forChangingData(), change.getAdditionalData() ) );
         }
-        assert commands.size() == noOfCommands : "Expected " + noOfCommands + " final commands, got "
-                + commands.size() + " instead";
+        assert commands.size() == noOfCommands - skippedCommands: format( "Expected %d final commands, got %d " +
+                "instead, with %d skipped", noOfCommands, commands.size(), skippedCommands );
 
         prepared = true;
     }

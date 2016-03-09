@@ -592,7 +592,46 @@ public class TransactionRecordStateTest
     }
 
     @Test
-    public void shouldExtractDeleteCommandsInCorrectOrder() throws Throwable
+    public void shouldIgnoreRelationshipGroupCommandsForGroupThatIsCreatedAndDeletedInThisTx() throws Exception
+    {
+        /*
+         * This test verifies that there are no transaction commands generated for a state diff that contains a
+         * relationship group that is created and deleted in this tx. This case requires special handling because
+         * relationship groups can be created and then deleted from disjoint code paths. Look at
+         * TransactionRecordState.extractCommands() for more details.
+         *
+         * The test setup looks complicated but all it does is mock properly a NeoStoreTransactionContext to
+         * return an Iterable<RecordSet< that contains a RelationshipGroup record which has been created in this
+         * tx and also is set notInUse.
+         */
+        // Given:
+        // - dense node threshold of 5
+        // - node with 4 rels of type A and 1 rel of type B
+        NeoStores neoStore = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "5" );
+        int A = 0, B = 1;
+        TransactionRecordState state = newTransactionRecordState( neoStore );
+        state.nodeCreate( 0 );
+        state.relCreate( 0, A, 0, 0 );
+        state.relCreate( 1, A, 0, 0 );
+        state.relCreate( 2, A, 0, 0 );
+        state.relCreate( 3, A, 0, 0 );
+        state.relCreate( 4, B, 0, 0 );
+        apply( neoStore, state );
+
+        // When doing a tx where a relationship of type A for the node is create and rel of type B is deleted
+        state = newTransactionRecordState( neoStore );
+        state.relCreate( 5, A, 0, 0 ); // here this node should be converted to dense and the groups should be created
+        state.relDelete( 4 ); // here the group B should be delete
+
+        // Then
+        Collection<StorageCommand> commands = new ArrayList<>();
+        state.extractCommands( commands );
+        RelationshipGroupCommand group = singleRelationshipGroupCommand( commands );
+        assertEquals( A, group.getAfter().getType() );
+    }
+
+    @Test
+    public void shouldExtractDeleteCommandsInCorrectOrder() throws Exception
     {
         // GIVEN
         NeoStores neoStores = neoStoresRule.open( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
@@ -1317,5 +1356,10 @@ public class TransactionRecordStateTest
     private PropertyCommand singlePropertyCommand( Collection<StorageCommand> commands )
     {
         return (PropertyCommand) Iterables.single( filter( t -> t instanceof PropertyCommand, commands ) );
+    }
+
+    private RelationshipGroupCommand singleRelationshipGroupCommand( Collection<StorageCommand> commands )
+    {
+        return (RelationshipGroupCommand) Iterables.single( filter( t -> t instanceof RelationshipGroupCommand, commands ) );
     }
 }

@@ -95,4 +95,10 @@ public class TrackingRecordProxy<RECORD, ADDITIONAL> implements RecordProxy<Long
     {
         return changed;
     }
+
+    @Override
+    public boolean isCreated()
+    {
+        return created;
+    }
 }
