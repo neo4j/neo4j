@@ -234,6 +234,7 @@ public class CommunityEditionModule extends EditionModule
             }
         }
 
+        // TODO: Maybe the system should be locked down so you have to have an auth manager configured to get access at all
         if ( key.equals( "" ) )
         {
             logging.getInternalLog( CommunityFacadeFactory.class )
@@ -241,7 +242,7 @@ public class CommunityEditionModule extends EditionModule
             return AuthManager.NO_AUTH;
         }
 
-        throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );
+        throw new IllegalArgumentException( "No auth manager found with the name '" + key + "'." );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()

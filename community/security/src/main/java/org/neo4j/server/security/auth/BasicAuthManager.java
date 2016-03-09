@@ -39,7 +39,7 @@ import org.neo4j.server.security.auth.exception.IllegalUsernameException;
  *       so the given UserRepository should not be added to another LifeSupport.
  * </p>
  */
-public class BasicAuthManager implements Lifecycle, AuthManager
+public class BasicAuthManager implements Lifecycle, AuthManager, UserManager
 {
     private final AuthenticationStrategy authStrategy;
     private final UserRepository users;
@@ -115,6 +115,7 @@ public class BasicAuthManager implements Lifecycle, AuthManager
         return new BasicAuthSubject( this, user, result );
     }
 
+    @Override
     public User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException, IllegalUsernameException
     {
         assertAuthEnabled();
@@ -128,6 +129,7 @@ public class BasicAuthManager implements Lifecycle, AuthManager
         return user;
     }
 
+    @Override
     public boolean deleteUser( String username ) throws IOException
     {
         assertAuthEnabled();
@@ -135,6 +137,7 @@ public class BasicAuthManager implements Lifecycle, AuthManager
         return user != null && users.delete( user );
     }
 
+    @Override
     public User getUser( String username )
     {
         assertAuthEnabled();
@@ -159,6 +162,7 @@ public class BasicAuthManager implements Lifecycle, AuthManager
         }
     }
 
+    @Override
     public User setUserPassword( String username, String password ) throws IOException
     {
         assertAuthEnabled();
