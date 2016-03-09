@@ -98,12 +98,12 @@ class SecondaryPageCursorReadDataAdapter implements DataAdapter<PageCursor>, Sec
     {
         secondaryCursor.close();
 
-        assert (secondaryHeaderByte & BaseHighLimitRecordFormat.HEADER_BIT_RECORD_UNIT) != 0 : illegalHeader();
-        assert (secondaryHeaderByte & BaseHighLimitRecordFormat.HEADER_BIT_FIRST_RECORD_UNIT) == 0 : illegalHeader();
-    }
-
-    private String illegalHeader()
-    {
-        return "Read illegal secondary record unit header: " + Bits.numberToString( secondaryHeaderByte, Byte.BYTES );
+        boolean isPrimaryUnit = (secondaryHeaderByte & BaseHighLimitRecordFormat.HEADER_BIT_FIRST_RECORD_UNIT) != 0;
+        boolean isNotSecondaryUnit = (secondaryHeaderByte & BaseHighLimitRecordFormat.HEADER_BIT_RECORD_UNIT) == 0;
+        if ( isPrimaryUnit || isNotSecondaryUnit )
+        {
+            throw new IllegalStateException( "Read illegal secondary record unit header: " +
+                                             Bits.numberToString( secondaryHeaderByte, Byte.BYTES ) );
+        }
     }
 }
