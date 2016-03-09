@@ -150,6 +150,12 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
         return singleLabelCursor.get().init( NodeLabelsField.get( nodeRecord, nodeStore ), labelId );
     }
 
+    /**
+     * Acquires a read lock for the node in this cursor and then re-reads the record to get consistent data.
+     * This method should be called <strong>before</strong> accessing other fields of the entity record.
+     *
+     * @return the {@link Lock} that must be closed after all related data have been read.
+     */
     private Lock shortLivedReadLock()
     {
         Lock lock = lockService.acquireNodeLock( nodeRecord.getId(), LockService.LockType.READ_LOCK );
@@ -184,13 +190,15 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return allPropertyCursor.get().init( nodeRecord.getNextProp(), shortLivedReadLock() );
+        Lock lock = shortLivedReadLock();
+        return allPropertyCursor.get().init( nodeRecord.getNextProp(), lock );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
+        Lock lock = shortLivedReadLock();
+        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId, lock );
     }
 
     @Override
