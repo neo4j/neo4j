@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.batchinsert;
+package org.neo4j.unsafe.batchinsert.internal;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,6 +33,8 @@ import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.is;

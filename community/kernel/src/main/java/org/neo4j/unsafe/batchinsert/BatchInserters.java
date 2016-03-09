@@ -27,6 +27,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
