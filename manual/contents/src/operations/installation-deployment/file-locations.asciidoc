@@ -1,14 +1,17 @@
 [[file-locations]]
 = File Locations
 
-This table shows where important files can be found in various Neo4j distribution packages.
+This table shows where important files can be found by default in various Neo4j distribution packages.
+Many of these paths are configurable; see <<configuration-settings>> for details.
 
 [options="header"]
 |===
-|Package               |Configuration
-|Linux or OS X tarball |_<neo4j-root>/conf/neo4j.conf_
-|Windows zip           |_<neo4j-root>\conf\neo4j.conf_
-|Debian/Ubuntu .deb    |_/etc/neo4j/neo4j.conf_
-|Windows desktop       |_%APPDATA%\Neo4j Community Edition\neo4j.conf_
-|OS X desktop          |_$\{HOME\}/Documents/Neo4j/neo4j.conf_
+|Package               |Configuration                                  |Data
+|Linux or OS X tarball |_<neo4j-root>/conf/neo4j.conf_                 |_<neo4j-root>/data_
+|Windows zip           |_<neo4j-root>\conf\neo4j.conf_                 |_<neo4j-root>\data_
+|Debian/Ubuntu .deb    |_/etc/neo4j/neo4j.conf_                        |_/var/lib/neo4j_
+|Windows desktop       |_%APPDATA%\Neo4j Community Edition\neo4j.conf_ |_%APPDATA%\Neo4j Community Edition_
+|OS X desktop          |_$\{HOME\}/Documents/Neo4j/neo4j.conf_         |_$\{HOME\}/Documents/Neo4j_
 |===
+
+Please note that the structure directories and files in the data directory is internal to Neo4j and subject to change between versions without notice.
