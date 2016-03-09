@@ -26,9 +26,9 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 
 /**
  * Manages server authentication and authorization.
@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
  *       so the given UserRepository should not be added to another LifeSupport.
  * </p>
  */
-public class BasicAuthManager implements Lifecycle, AuthManager
+public class BasicAuthManager implements Lifecycle, AuthManager, UserManager
 {
     private final AuthenticationStrategy authStrategy;
     private final UserRepository users;
@@ -115,6 +115,7 @@ public class BasicAuthManager implements Lifecycle, AuthManager
         return new BasicAuthSubject( this, user, result );
     }
 
+    @Override
     public User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
             IllegalCredentialsException
     {
@@ -129,6 +130,7 @@ public class BasicAuthManager implements Lifecycle, AuthManager
         return user;
     }
 
+    @Override
     public boolean deleteUser( String username ) throws IOException
     {
         assertAuthEnabled();
@@ -136,6 +138,7 @@ public class BasicAuthManager implements Lifecycle, AuthManager
         return user != null && users.delete( user );
     }
 
+    @Override
     public User getUser( String username )
     {
         assertAuthEnabled();
@@ -160,6 +163,7 @@ public class BasicAuthManager implements Lifecycle, AuthManager
         }
     }
 
+    @Override
     public User setUserPassword( String username, String password ) throws IOException
     {
         assertAuthEnabled();
