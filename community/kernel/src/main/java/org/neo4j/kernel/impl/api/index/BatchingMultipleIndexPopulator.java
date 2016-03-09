@@ -75,7 +75,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private static final String FLUSH_THREAD_NAME_PREFIX = "Index Population Flush Thread";
 
     private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
-    private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME, 10_000 );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
     private final int BATCH_SIZE = FeatureToggles.getInteger( getClass(), BATCH_SIZE_NAME, 10_000 );
 
@@ -305,7 +304,8 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private ExecutorService createThreadPool()
     {
         int threads = Math.max( 2, Runtime.getRuntime().availableProcessors() - 1 );
-        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( TASK_QUEUE_SIZE );
+        int taskQueueSize = (int) (threads * 1.5);
+        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( taskQueueSize );
         ThreadFactory threadFactory = daemon( FLUSH_THREAD_NAME_PREFIX );
         RejectedExecutionHandler rejectedExecutionHandler = new ThreadPoolExecutor.CallerRunsPolicy();
         return new ThreadPoolExecutor( threads, threads, 0L, TimeUnit.MILLISECONDS, workQueue, threadFactory,
