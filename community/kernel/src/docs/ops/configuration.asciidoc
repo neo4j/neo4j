@@ -23,11 +23,12 @@ include::{importdir}/neo4j-dbms-docs-jar/ops/configuration-attributes.asciidoc[]
 == Configuring Bolt Connectors
 
 Bolt Connectors are ports that accept connections via the Bolt Database Protocol, which is the protocol used by official Neo4j Driver Libraries.
-You can configure Neo4j with one or more connectors, allowing you, for instance, to mandate encryption for remote connections.
+You can configure Neo4j with one or more connectors.
+This allows you, for instance, to have separate connectors for remote and local connections, with different encryption requirements.
 
-If you are using Neo4j Embedded, you need to include the Bolt extension on your class path.
+If you are using Neo4j Embedded, you need to include the Bolt extension on your class path to enable Bolt.
+See <<tutorials-java-embedded-bolt>> for details on how to open a Bolt connector from Neo4j Embedded.
 
 Each connector has a unique key to identify it, denoted `{key}` in the listing below.
 
-include::configuration-attributes.asciidoc[]
->>>>>>> Refactor config asciidoc generator.
+include::configuration-attributes-bolt-connector.asciidoc[]

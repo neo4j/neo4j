@@ -42,16 +42,21 @@ public final class SettingDescription
             String validationDescription, String defaultValue,
             boolean isDeprecated, boolean isMandatory, boolean hasDefault )
     {
-        // {key} is used for documenting group config, and this is not
-        // allowed in asciidoc references. Strip out the curlies.
-        this( "config_" + (name.replace( "{", "").replace( "}", "" ) ),
-            name, description, mandatoryDescription, deprecationDescription,
+
+        this(
+            // {key} is used for documenting group config, and this is not
+            // allowed in asciidoc references. Strip out the curlies.
+            "config_" + (name.replace( "{", "").replace( "}", "" ) ),
+            // And similarly, curlies need to be escaped when used in prose text
+            name.replace( "{", "\\{" ).replace( "}", "\\}" ),
+            
+            description, mandatoryDescription, deprecationDescription,
             validationDescription, defaultValue, isDeprecated, isMandatory, hasDefault );
     }
 
     public SettingDescription( String id, String name, String description )
     {
-        this( id, name, description, null, null, null, false, false, false );
+        this( id, name, description, null, null, null, null, false, false, false );
     }
 
     private SettingDescription( String id, String name, String description,
@@ -132,7 +137,8 @@ public final class SettingDescription
     public SettingDescription formatted( Function<String, String> format )
     {
         Function<String,String> f = ( str ) -> str == null ? null : format.apply(str);
-        return new SettingDescription( name,
+        return new SettingDescription(
+                id, name,
                 f.apply( description ),
                 f.apply(mandatoryDescription),
                 f.apply(deprecationDescription),

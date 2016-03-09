@@ -64,7 +64,6 @@ public class CoreEdgeMetricsIT
     @Rule
     public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
 
-
     private Cluster cluster;
 
     @After

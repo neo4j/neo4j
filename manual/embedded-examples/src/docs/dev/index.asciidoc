@@ -77,4 +77,8 @@ include::unique-nodes.asciidoc[]
 
 :leveloffset: 2
 
+include::bolt.asciidoc[]
+
+:leveloffset: 2
+
 include::terminate-tx.asciidoc[]

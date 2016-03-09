@@ -51,7 +51,9 @@ public class SettingsDocumenterTest
         //
         // for ( String line : result.split( "\\n" ) )
         // {
-        //     System.out.println("\"" + line +"%n\" +");
+        //    System.out.println("\"" + line
+        //            .replace( "\\", "\\\\" )
+        //            .replace( "\"", "\\\"" ) +"%n\" +");
         // }
         //
         // My intent here is to add tests and refactor the code, it could be
@@ -170,68 +172,71 @@ public class SettingsDocumenterTest
 
         // then
         assertThat( result, equalTo( String.format(
-            "[[config-org.neo4j.kernel.configuration.docs.SettingsDocumenterTest-Giraffe]]%n" +
-            ".Use this group to configure giraffes%n" +
-            "ifndef::nonhtmloutput[]%n" +
-            "%n" +
-            "[options=\"header\"]%n" +
-            "|===%n" +
-            "|Name|Description%n" +
-            "|<<config_group.key.spot_count,group.{key}.spot_count>>|Number of spots this giraffe has, in number.%n" +
-            "|<<config_group.key.type,group.{key}.type>>|Animal type.%n" +
-            "|===%n" +
-            "endif::nonhtmloutput[]%n" +
-            "%n" +
-            "ifdef::nonhtmloutput[]%n" +
-            "%n" +
-            "* <<config_group.key.spot_count,group.{key}.spot_count>>: Number of spots this giraffe has, in number.%n" +
-            "* <<config_group.key.type,group.{key}.type>>: Animal type.%n" +
-            "endif::nonhtmloutput[]%n" +
-            "%n" +
-            "%n" +
-            "ifndef::nonhtmloutput[]%n" +
-            "[[config_group.key.spot_count]]%n" +
-            ".group.{key}.spot_count%n" +
-            "[cols=\"<1h,<4\"]%n" +
-            "|===%n" +
-            "|Description a|Number of spots this giraffe has, in number.%n" +
-            "|Valid values a|spot_count is an integer%n" +
-            "|Default value m|12%n" +
-            "|===%n" +
-            "endif::nonhtmloutput[]%n" +
-            "%n" +
-            "ifdef::nonhtmloutput[]%n" +
-            "[[config_group.key.spot_count]]%n" +
-            ".group.{key}.spot_count%n" +
-            "[cols=\"<1h,<4\"]%n" +
-            "|===%n" +
-            "|Description a|Number of spots this giraffe has, in number.%n" +
-            "|Valid values a|spot_count is an integer%n" +
-            "|Default value m|12%n" +
-            "|===%n" +
-            "endif::nonhtmloutput[]%n" +
-            "%n" +
-            "ifndef::nonhtmloutput[]%n" +
-            "[[config_group.key.type]]%n" +
-            ".group.{key}.type%n" +
-            "[cols=\"<1h,<4\"]%n" +
-            "|===%n" +
-            "|Description a|Animal type.%n" +
-            "|Valid values a|type is a string%n" +
-            "|Default value m|giraffe%n" +
-            "|===%n" +
-            "endif::nonhtmloutput[]%n" +
-            "%n" +
-            "ifdef::nonhtmloutput[]%n" +
-            "[[config_group.key.type]]%n" +
-            ".group.{key}.type%n" +
-            "[cols=\"<1h,<4\"]%n" +
-            "|===%n" +
-            "|Description a|Animal type.%n" +
-            "|Valid values a|type is a string%n" +
-            "|Default value m|giraffe%n" +
-            "|===%n" +
-            "endif::nonhtmloutput[]%n%n"  ) ));
+                "[[config-org.neo4j.kernel.configuration.docs.SettingsDocumenterTest-Giraffe]]%n" +
+                ".Use this group to configure giraffes%n" +
+                "ifndef::nonhtmloutput[]%n" +
+                "%n" +
+                "[options=\"header\"]%n" +
+                "|===%n" +
+                "|Name|Description%n" +
+                "|<<config_group.key.spot_count,group.\\{key\\}.spot_count>>|Number of spots this giraffe has, in " +
+                "number.%n" +
+                "|<<config_group.key.type,group.\\{key\\}.type>>|Animal type.%n" +
+                "|===%n" +
+                "endif::nonhtmloutput[]%n" +
+                "%n" +
+                "ifdef::nonhtmloutput[]%n" +
+                "%n" +
+                "* <<config_group.key.spot_count,group.\\{key\\}.spot_count>>: Number of spots this giraffe has, in " +
+                "number.%n" +
+                "* <<config_group.key.type,group.\\{key\\}.type>>: Animal type.%n" +
+                "endif::nonhtmloutput[]%n" +
+                "%n" +
+                "%n" +
+                "ifndef::nonhtmloutput[]%n" +
+                "[[config_group.key.spot_count]]%n" +
+                ".group.\\{key\\}.spot_count%n" +
+                "[cols=\"<1h,<4\"]%n" +
+                "|===%n" +
+                "|Description a|Number of spots this giraffe has, in number.%n" +
+                "|Valid values a|spot_count is an integer%n" +
+                "|Default value m|12%n" +
+                "|===%n" +
+                "endif::nonhtmloutput[]%n" +
+                "%n" +
+                "ifdef::nonhtmloutput[]%n" +
+                "[[config_group.key.spot_count]]%n" +
+                ".group.\\{key\\}.spot_count%n" +
+                "[cols=\"<1h,<4\"]%n" +
+                "|===%n" +
+                "|Description a|Number of spots this giraffe has, in number.%n" +
+                "|Valid values a|spot_count is an integer%n" +
+                "|Default value m|12%n" +
+                "|===%n" +
+                "endif::nonhtmloutput[]%n" +
+                "%n" +
+                "ifndef::nonhtmloutput[]%n" +
+                "[[config_group.key.type]]%n" +
+                ".group.\\{key\\}.type%n" +
+                "[cols=\"<1h,<4\"]%n" +
+                "|===%n" +
+                "|Description a|Animal type.%n" +
+                "|Valid values a|type is a string%n" +
+                "|Default value m|giraffe%n" +
+                "|===%n" +
+                "endif::nonhtmloutput[]%n" +
+                "%n" +
+                "ifdef::nonhtmloutput[]%n" +
+                "[[config_group.key.type]]%n" +
+                ".group.\\{key\\}.type%n" +
+                "[cols=\"<1h,<4\"]%n" +
+                "|===%n" +
+                "|Description a|Animal type.%n" +
+                "|Valid values a|type is a string%n" +
+                "|Default value m|giraffe%n" +
+                "|===%n" +
+                "endif::nonhtmloutput[]%n%n"
+        ) ));
     }
 
     public interface SimpleSettings
