@@ -51,7 +51,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  * Implementation of the property store. This implementation has two dynamic
  * stores. One used to store keys and another for string property values.
  */
-public class PropertyStore extends ComposableRecordStore<PropertyRecord,NoStoreHeader>
+public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHeader>
 {
     public static abstract class Configuration extends CommonAbstractStore.Configuration
     {

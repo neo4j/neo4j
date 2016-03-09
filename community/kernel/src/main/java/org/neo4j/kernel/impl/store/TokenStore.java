@@ -44,7 +44,7 @@ import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
-        extends ComposableRecordStore<RECORD,NoStoreHeader>
+        extends CommonAbstractStore<RECORD,NoStoreHeader>
 {
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 

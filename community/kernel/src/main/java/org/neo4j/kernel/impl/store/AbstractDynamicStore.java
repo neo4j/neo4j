@@ -62,7 +62,7 @@ import org.neo4j.logging.LogProvider;
  * The record size is what's stored in the header (first record). {@link #getRecordDataSize()} returns
  * the size which was configured at the store creation, {@link #getRecordSize()} returns what the store header says.
  */
-public abstract class AbstractDynamicStore extends ComposableRecordStore<DynamicRecord,IntStoreHeader>
+public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRecord,IntStoreHeader>
         implements DynamicRecordAllocator
 {
     public static final byte[] NO_DATA = new byte[0];

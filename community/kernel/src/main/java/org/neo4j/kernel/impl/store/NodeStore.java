@@ -38,7 +38,7 @@ import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FO
 /**
  * Implementation of the node store.
  */
-public class NodeStore extends ComposableRecordStore<NodeRecord,NoStoreHeader>
+public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
 {
     public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
     {

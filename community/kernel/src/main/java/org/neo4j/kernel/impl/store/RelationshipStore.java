@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FO
 /**
  * Implementation of the relationship store.
  */
-public class RelationshipStore extends ComposableRecordStore<RelationshipRecord,NoStoreHeader>
+public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,NoStoreHeader>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 

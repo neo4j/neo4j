@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-public class NeoStoreActualRecord extends AbstractBaseRecord
+public class MetaDataRecord extends AbstractBaseRecord
 {
     private long value;
 
-    public NeoStoreActualRecord()
+    public MetaDataRecord()
     {
         super( -1 );
     }
 
-    public NeoStoreActualRecord initialize( boolean inUse, long value )
+    public MetaDataRecord initialize( boolean inUse, long value )
     {
         super.initialize( inUse );
         this.value = value;

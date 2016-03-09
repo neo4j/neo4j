@@ -58,7 +58,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 /**
  * Contains common implementation of {@link RecordStore}.
  */
-public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
+public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEADER extends StoreHeader>
         implements RecordStore<RECORD>, AutoCloseable
 {
     public static final String UNKNOWN_VERSION = "Unknown";
@@ -77,6 +77,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     private Throwable causeOfStoreNotOk;
     private final String typeDescriptor;
     protected int recordSize;
+
+    private final StoreHeaderFormat<HEADER> storeHeaderFormat;
+    private HEADER storeHeader;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -102,6 +105,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
             LogProvider logProvider,
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
+            StoreHeaderFormat<HEADER> storeHeaderFormat,
             String storeVersion )
     {
         this.storageFileName = fileName;
@@ -111,6 +115,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         this.idType = idType;
         this.typeDescriptor = typeDescriptor;
         this.recordFormat = recordFormat;
+        this.storeHeaderFormat = storeHeaderFormat;
         this.storeVersion = storeVersion;
         this.log = logProvider.getLog( getClass() );
     }
@@ -218,7 +223,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
 
     protected void createHeaderRecord( PageCursor cursor ) throws IOException
     {
-        assert getNumberOfReservedLowIds() == 0;
+        int offset = cursor.getOffset();
+        storeHeaderFormat.writeHeader( cursor );
+        cursor.setOffset( offset );
+        readHeaderAndInitializeRecordFormat( cursor );
     }
 
     /**
@@ -317,8 +325,9 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
      * of the record format still happens in here.
      * @throws IOException if there were problems reading header information.
      */
-    protected void readHeaderAndInitializeRecordFormat( PageCursor cursor ) throws IOException
+    private void readHeaderAndInitializeRecordFormat( PageCursor cursor ) throws IOException
     {
+        storeHeader = storeHeaderFormat.readHeader( cursor );
     }
 
     private void loadIdGenerator()
@@ -735,7 +744,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         }
     }
 
-    protected abstract int determineRecordSize();
+    protected int determineRecordSize()
+    {
+        return recordFormat.getRecordSize( storeHeader );
+    }
 
     @Override
     public final int getRecordSize()
@@ -746,10 +758,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     @Override
     public int getRecordDataSize()
     {
-        return getRecordSize();
+        return recordSize - recordFormat.getRecordHeaderSize();
     }
 
-    protected abstract boolean isInUse( PageCursor cursor );
+    private boolean isInUse( PageCursor cursor )
+    {
+        return recordFormat.isInUse( cursor );
+    }
 
     protected boolean isRecordReserved( PageCursor cursor )
     {
@@ -882,7 +897,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     @Override
     public int getNumberOfReservedLowIds()
     {
-        return 0;
+        return storeHeaderFormat.numberOfReservedRecords();
     }
 
     public IdType getIdType()
@@ -911,7 +926,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
      * {@link #logVersions(Logger)}
      * For a good samaritan to pick up later.
      */
-    public void visitStore( Visitor<CommonAbstractStore<RECORD>,RuntimeException> visitor )
+    public void visitStore( Visitor<CommonAbstractStore<RECORD,HEADER>,RuntimeException> visitor )
     {
         visitor.visit( this );
     }
@@ -937,7 +952,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     @Override
     public long getNextRecordReference( RECORD record )
     {
-        return Record.NULL_REFERENCE.intValue();
+        return recordFormat.getNextRecordReference( record );
+    }
+
+    @Override
+    public RECORD newRecord()
+    {
+        return recordFormat.newRecord();
     }
 
     /**
@@ -967,7 +988,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
                 do
                 {
                     prepareForReading( cursor, offset, record );
-                    readRecord( cursor, record, mode );
+                    recordFormat.read( record, cursor, mode, recordSize, storeFile );
                 }
                 while ( cursor.shouldRetry() );
                 verifyAfterReading( record, mode );
@@ -984,12 +1005,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         }
     }
 
-    /**
-     * Reads data from {@link PageCursor} into the record.
-     * @throws IOException on error reading.
-     */
-    protected abstract void readRecord( PageCursor cursor, RECORD record, RecordLoad mode ) throws IOException;
-
     @Override
     public void updateRecord( RECORD record )
     {
@@ -1003,7 +1018,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
                 do
                 {
                     cursor.setOffset( offset );
-                    writeRecord( cursor, record );
+                    recordFormat.write( record, cursor, recordSize, storeFile );
                 }
                 while ( cursor.shouldRetry() );
                 if ( !record.inUse() )
@@ -1024,7 +1039,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
         }
     }
 
-    protected abstract void writeRecord( PageCursor cursor, RECORD record ) throws IOException;
+    @Override
+    public void prepareForCommit( RECORD record )
+    {
+        if ( record.inUse() )
+        {
+            recordFormat.prepare( record, recordSize, this );
+        }
+    }
 
     /**
      * Scan the given range of records both inclusive, and pass all the in-use ones to the given processor, one by one.
@@ -1098,7 +1120,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
                             do
                             {
                                 prepareForReading( pageCursor, offset, record );
-                                readRecord( pageCursor, record, mode );
+                                recordFormat.read( record, pageCursor, mode, recordSize, storeFile );
                             }
                             while ( pageCursor.shouldRetry() );
                             verifyAfterReading( record, mode );
@@ -1210,7 +1232,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord>
     @Override
     public int getStoreHeaderInt()
     {
-        throw new UnsupportedOperationException( "No header" );
+        return ((IntStoreHeader) storeHeader).value();
     }
 
     public static abstract class Configuration

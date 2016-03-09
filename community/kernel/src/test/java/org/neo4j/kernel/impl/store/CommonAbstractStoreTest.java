@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -35,7 +34,6 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
@@ -90,7 +88,7 @@ public class CommonAbstractStoreTest
                 PageCache pageCache, LogProvider logProvider, RecordFormat recordFormat )
         {
             super( fileName, configuration, idType, idGeneratorFactory, pageCache, logProvider, "TheType",
-                    recordFormat, "v1" );
+                    recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, "v1" );
         }
 
         @Override
@@ -111,34 +109,7 @@ public class CommonAbstractStoreTest
         }
 
         @Override
-        public AbstractBaseRecord newRecord()
-        {
-            return null;
-        }
-
-        @Override
         public void accept( Processor processor, AbstractBaseRecord record ) throws Exception
-        {
-        }
-
-        @Override
-        protected void readRecord( PageCursor cursor, AbstractBaseRecord record, RecordLoad mode )
-        {
-        }
-
-        @Override
-        protected void writeRecord( PageCursor cursor, AbstractBaseRecord record )
-        {
-        }
-
-        @Override
-        protected boolean isInUse( PageCursor cursor )
-        {
-            return false;
-        }
-
-        @Override
-        public void prepareForCommit( AbstractBaseRecord record )
         {
         }
     }
