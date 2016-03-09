@@ -31,7 +31,7 @@ By default, this setting is not configured.
   _For security reasons you may not want users to be able to load files located anywhere on the database server filesystem and should set `dbms.directories.import` to a safe directory to load files from._
 * When set, file URLs will be resolved as relative to the directory it's set to.
   In this case a file URL will typically look like `file:///myfile.csv` or `file:///myproject/myfile.csv`.
-**  If set to `data/import` using the above URLs in `LOAD CSV` would read content from `data/import/myfile.csv` and `data/import/myproject/myfile.csv` respectively, where both are relative to the database install directory.
+**  If set to `import` using the above URLs in `LOAD CSV` would read content from `import/myfile.csv` and `import/myproject/myfile.csv` respectively, where both are relative to the neo4j root directory.
 **  If set to `/home/neo4j` using the above URLs in `LOAD CSV` would read content from `/home/neo4j/myfile.csv` and `/home/neo4j/myproject/myfile.csv` respectively.
 ====
 
