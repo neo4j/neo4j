@@ -260,8 +260,7 @@ public class ArbiterBootstrapperIT
 
     private Process startArbiterProcess( File configFile ) throws Exception
     {
-        List<String> args = new ArrayList<>( asList( "java", "-cp", getProperty( "java.class.path" ),
-                "-Dorg.neo4j.cluster.logdirectory=" + directory.getAbsolutePath() ) );
+        List<String> args = new ArrayList<>( asList( "java", "-cp", getProperty( "java.class.path" ) ) );
         if ( configFile != null )
         {
             args.add( "-D" + ServerSettings.SERVER_CONFIG_FILE_KEY + "=" + configFile.getAbsolutePath() );
