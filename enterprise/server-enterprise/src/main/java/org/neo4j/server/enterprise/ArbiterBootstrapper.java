@@ -32,6 +32,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -68,7 +69,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
                     new Dependencies(),
                     new Monitors(),
                     config,
-                    logService( new DefaultFileSystemAbstraction() ),
+                    logService( new DefaultFileSystemAbstraction(), config ),
                     new NotElectableElectionCredentialsProvider() );
         }
         catch ( LifecycleException e )
@@ -139,9 +140,9 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         }
     }
 
-    private static LogService logService( FileSystemAbstraction fileSystem )
+    private static LogService logService( FileSystemAbstraction fileSystem, Config config )
     {
-        String logDir = System.getProperty( "org.neo4j.cluster.logdirectory", "data/log" );
+        File logDir = config.get( GraphDatabaseSettings.logs_directory );
         try
         {
             return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
