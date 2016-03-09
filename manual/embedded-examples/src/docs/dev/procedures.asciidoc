@@ -343,7 +343,7 @@ public class FullTextIndex
     public GraphDatabaseService db;
 
     // This gives us a log instance that outputs messages to the
-    // standard log, normally found under `data/log/neo4j.log`
+    // standard log, `neo4j.log`
     @Context
     public Log log;
 
