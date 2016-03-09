@@ -78,24 +78,12 @@ class ProfilerStatisticsNotReadyException extends CypherException {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.profilerStatisticsNotReadyException(this)
 }
 
-class UnknownLabelException(labelName: String) extends CypherException {
-  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.unknownLabelException(labelName, this)
-}
-
-class HintException(message: String) extends CypherException {
-  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.hintException(message, this)
-}
-
 class IndexHintException(variable: String, label: String, property: String, message: String) extends CypherException {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.indexHintException(variable, label, property, message, this)
 }
 
 class JoinHintException(variable: String, message: String) extends CypherException {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.joinHintException(variable, message, this)
-}
-
-class LabelScanHintException(variable: String, label: String, message: String) extends CypherException {
-  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.labelScanHintException(variable, label, message, this)
 }
 
 class InvalidSemanticsException(message: String) extends CypherException {

@@ -30,7 +30,7 @@ public class CreateConstraintFailureException extends SchemaKernelException
 
     public CreateConstraintFailureException( PropertyConstraint constraint, Throwable cause )
     {
-        super( Status.Schema.ConstraintCreationFailure, cause, "Unable to create constraint %s: %s", constraint,
+        super( Status.Schema.ConstraintCreationFailed, cause, "Unable to create constraint %s: %s", constraint,
                 cause.getMessage() );
         this.constraint = constraint;
     }

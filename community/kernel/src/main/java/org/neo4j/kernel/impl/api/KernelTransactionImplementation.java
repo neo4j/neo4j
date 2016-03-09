@@ -371,7 +371,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // transaction passed through a happy path, but the transaction was still marked as
                     // failed for one or more reasons. Tell the user that although it looked happy it
                     // wasn't committed, but was instead rolled back.
-                    throw new TransactionFailureException( Status.Transaction.MarkedAsFailed,
+                    throw new TransactionFailureException( Status.Transaction.TransactionMarkedAsFailed,
                             "Transaction rolled back even if marked as successful" );
                 }
             }
@@ -414,7 +414,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     if ( hooksState != null && hooksState.failed() )
                     {
                         TransactionHookException cause = hooksState.failure();
-                        throw new TransactionFailureException( Status.Transaction.HookFailed, cause, "" );
+                        throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, cause, "" );
                     }
                 }
                 finally
@@ -494,7 +494,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             catch ( IllegalStateException | SecurityException e )
             {
-                throw new TransactionFailureException( Status.Transaction.CouldNotRollback, e,
+                throw new TransactionFailureException( Status.Transaction.TransactionRollbackFailed, e,
                         "Could not drop created constraint indexes" );
             }
 

@@ -30,12 +30,12 @@ class CypherExecutionException(message: String, cause: Throwable) extends Cypher
   def status = cause match {
     // These are always caused by KernelException's, so just map to the status code from the kernel exception.
     case e: KernelException if e != null => e.status()
-    case _ => Status.Statement.ExecutionFailure
+    case _ => Status.Statement.ExecutionFailed
   }
 }
 
 class UniquePathNotUniqueException(message: String, cause:Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.ConstraintViolation
+  val status = Status.Statement.ConstraintVerificationFailed
 }
 
 class EntityNotFoundException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
@@ -43,7 +43,7 @@ class EntityNotFoundException(message: String, cause: Throwable = null) extends 
 }
 
 class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  val status = Status.Statement.InvalidType
+  val status = Status.Statement.TypeError
 }
 
 class ParameterNotFoundException(message: String, cause: Throwable) extends CypherException(message, cause) {
@@ -51,83 +51,83 @@ class ParameterNotFoundException(message: String, cause: Throwable) extends Cyph
 }
 
 class ParameterWrongTypeException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.InvalidType
+  val status = Status.Statement.TypeError
 }
 
 class InvalidArgumentException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  val status = Status.Statement.InvalidArguments
+  val status = Status.Statement.ArgumentError
 }
 
 class PatternException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.InvalidSemantics
+  val status = Status.Statement.SemanticError
   def this(message: String) = this(message,null)
 }
 
 class InternalException(message: String, inner: Exception = null) extends CypherException(message, inner) {
-  val status = Status.Statement.ExecutionFailure
+  val status = Status.Statement.ExecutionFailed
 }
 
 class MissingIndexException(indexName: String) extends CypherException("Index `" + indexName + "` does not exist", null) {
-  val status = Status.Schema.NoSuchIndex
+  val status = Status.Schema.IndexNotFound
 }
 
 class FailedIndexException(indexName: String, cause: Throwable) extends CypherException("Index `" + indexName + "` has failed. Drop and recreate it to get it back online.", cause) {
-  val status = Status.General.FailedIndex
+  val status = Status.General.IndexCorruptionDetected
   def this(indexName: String) = this(indexName, null)
 }
 
 class MissingConstraintException(cause: Throwable) extends CypherException("Constraint not found", cause) {
-  val status = Status.Schema.NoSuchConstraint
+  val status = Status.Schema.ConstraintNotFound
 }
 
 class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable)
   extends CypherException("Node with id " + nodeId + " still has relationships, and cannot be deleted.", cause) {
-  val status = Status.Schema.ConstraintViolation
+  val status = Status.Schema.ConstraintValidationFailed
 }
 
 class ProfilerStatisticsNotReadyException(cause: Throwable) extends CypherException("This result has not been materialised yet. Iterate over it to get profiler stats.", cause) {
-  val status = Status.Statement.ExecutionFailure
+  val status = Status.Statement.ExecutionFailed
   def this() = this(null)
 }
 
 class UnknownLabelException(labelName: String, cause: Throwable) extends CypherException(s"The provided label :`$labelName` does not exist in the store", cause) {
-  val status = Status.Statement.NoSuchLabel
+  val status = Status.Statement.LabelNotFound
   def this(labelName: String) = this(labelName, null)
 }
 
 class HintException(message: String, cause: Throwable)
   extends CypherException(message, cause) {
-  val status = Status.Statement.ExecutionFailure
+  val status = Status.Statement.ExecutionFailed
 }
 
 class IndexHintException(variable: String, label: String, property: String, message: String, cause: Throwable)
   extends CypherException(s"$message\nLabel: `$label`\nProperty name: `$property`", cause) {
-  val status = Status.Schema.NoSuchIndex
+  val status = Status.Schema.IndexNotFound
 }
 
 class JoinHintException(variable: String, message: String, cause: Throwable)
   extends CypherException(message, cause) {
-  val status = Status.Statement.ExecutionFailure
+  val status = Status.Statement.ExecutionFailed
 }
 
 class LabelScanHintException(variable: String, label: String, message: String, cause: Throwable)
   extends CypherException(s"$message\nLabel: `$label`", cause) {
-  val status = Status.Statement.InvalidSemantics
+  val status = Status.Statement.SemanticError
   def this(variable: String, label: String, message: String) = this(variable, label, message, null)
 }
 
 class InvalidSemanticsException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.InvalidSemantics
+  val status = Status.Statement.SemanticError
   def this(message: String) = this(message,null)
 }
 
 class MergeConstraintConflictException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.ConstraintViolation
+  val status = Status.Statement.ConstraintVerificationFailed
   def this(message: String) = this(message, null)
 }
 
 class ConstraintValidationException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.ConstraintViolation
+  val status = Status.Statement.ConstraintVerificationFailed
   def this(message: String) = this(message, null)
 }
 
@@ -146,7 +146,7 @@ class PeriodicCommitInOpenTransactionException(cause: Throwable)
 }
 
 class LoadExternalResourceException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.ExternalResourceFailure
+  val status = Status.Statement.ExternalResourceFailed
 }
 
 class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException) extends CypherException(s"${cause.getMessage} (${extraInfo})", cause) {

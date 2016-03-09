@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.rest.transactional.error;
 
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Test;
-
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.stringContainsInOrder;
@@ -97,6 +96,6 @@ public class ErrorDocumentationGeneratorTest
         String actual = buf.toString( StandardCharsets.UTF_8.name() );
 
         // More or less randomly chosen bits of text that should be in the output:
-        assertThat( actual, stringContainsInOrder( asList( "UnknownFailure", "An unknown failure occurred" ) ) );
+        assertThat( actual, stringContainsInOrder( asList( "UnknownError", "An unknown error occurred" ) ) );
     }
 }

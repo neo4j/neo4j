@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
-import org.neo4j.bolt.v1.messaging.infrastructure.ValueUnboundRelationship;
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
@@ -194,7 +193,7 @@ public class Neo4jPack
             }
             else
             {
-                throw new BoltIOException( Status.General.UnknownFailure,
+                throw new BoltIOException( Status.General.UnknownError,
                         "Unpackable value " + obj + " of type " + obj.getClass().getName() );
             }
         }

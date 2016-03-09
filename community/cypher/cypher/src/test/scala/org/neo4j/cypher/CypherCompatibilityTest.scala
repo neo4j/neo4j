@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.graphdb.{QueryExecutionException, Result, GraphDatabaseService}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionException}
 import org.neo4j.kernel.api.exceptions.Status
 
 import scala.collection.JavaConverters._
@@ -125,7 +124,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       db =>
         intercept[QueryExecutionException](
           db.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner")
-        ).getStatusCode should equal("Neo.ClientError.Statement.InvalidArguments")
+        ).getStatusCode should equal("Neo.ClientError.Statement.ArgumentError")
     }
   }
 
@@ -159,7 +158,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       db =>
         intercept[QueryExecutionException](
           db.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime")
-        ).getStatusCode should equal("Neo.ClientError.Statement.InvalidArguments")
+        ).getStatusCode should equal("Neo.ClientError.Statement.ArgumentError")
     }
   }
 
@@ -189,10 +188,10 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
   test("should not support old 1,9, 2.0, 2.1, and 2.2 compilers") {
     runWithConfig() {
       db =>
-        intercept[QueryExecutionException](db.execute("CYPHER 1.9 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
-        intercept[QueryExecutionException](db.execute("CYPHER 2.0 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
-        intercept[QueryExecutionException](db.execute("CYPHER 2.1 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
-        intercept[QueryExecutionException](db.execute("CYPHER 2.2 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
+        intercept[QueryExecutionException](db.execute("CYPHER 1.9 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
+        intercept[QueryExecutionException](db.execute("CYPHER 2.0 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
+        intercept[QueryExecutionException](db.execute("CYPHER 2.1 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
+        intercept[QueryExecutionException](db.execute("CYPHER 2.2 MATCH (n) RETURN n")).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
     }
   }
 

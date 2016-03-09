@@ -109,7 +109,7 @@ public class OutputMappers
             }
             catch ( Throwable throwable )
             {
-                throw new ProcedureException( Status.Procedure.CallFailed, throwable,
+                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
                         "Unable to read value from record `%s`: %s", record, throwable.getMessage() );
             }
         }

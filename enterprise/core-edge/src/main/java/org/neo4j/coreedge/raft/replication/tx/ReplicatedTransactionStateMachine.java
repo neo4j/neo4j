@@ -42,7 +42,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import static java.lang.String.format;
 
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionInvalid;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
 
 public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
 {
@@ -152,7 +152,7 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
                     log.info( format( "[%d] Lock session changed: %s %s",
                             logIndex, replicatedTx.globalSession(), replicatedTx.localOperationId() ) );
                     future.ifPresent( txFuture -> txFuture.notifyCommitFailed( new TransactionFailureException(
-                            LockSessionInvalid,
+                            LockSessionExpired,
                             "The lock session in the cluster has changed: " +
                                     "[current lock session id:%d, tx lock session id:%d]",
                             currentTokenId, txLockSessionId ) ) );

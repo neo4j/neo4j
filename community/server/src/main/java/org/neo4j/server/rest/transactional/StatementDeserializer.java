@@ -160,12 +160,12 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
         }
         catch ( IOException e )
         {
-            addError( new Neo4jError( Status.Network.UnknownFailure, e ) );
+            addError( new Neo4jError( Status.Network.CommunicationError, e ) );
             return null;
         }
         catch ( Exception e)
         {
-            addError( new Neo4jError( Status.General.UnknownFailure, e ) );
+            addError( new Neo4jError( Status.General.UnknownError, e ) );
             return null;
         }
     }

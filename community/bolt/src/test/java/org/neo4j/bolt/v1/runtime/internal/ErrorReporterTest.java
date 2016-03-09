@@ -48,7 +48,7 @@ public class ErrorReporterTest
         reporter.report( error );
 
         // Then
-        assertThat( error.status(), CoreMatchers.equalTo( (Status) Status.General.UnknownFailure ) );
+        assertThat( error.status(), CoreMatchers.equalTo( (Status) Status.General.UnknownError ) );
         provider.assertExactly(
                 inLog( "userlog" )
                         .error( CoreMatchers.both( CoreMatchers.containsString( "START OF REPORT" ) )

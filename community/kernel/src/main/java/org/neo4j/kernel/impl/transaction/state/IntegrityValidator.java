@@ -86,14 +86,14 @@ public class IntegrityValidator
             }
             catch ( ConstraintVerificationFailedKernelException e )
             {
-                throw new TransactionFailureException( Status.Transaction.ValidationFailed, e, "Index validation failed" );
+                throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e, "Index validation failed" );
             }
             catch ( IndexNotFoundKernelException | IndexPopulationFailedKernelException e )
             {
                 // We don't expect this to occur, and if they do, it is because we are in a very bad state - out of
                 // disk or index corruption, or similar. This will kill the database such that it can be shut down
                 // and have recovery performed. It's the safest bet to avoid loosing data.
-                throw new TransactionFailureException( Status.Transaction.ValidationFailed, e, "Index population failure" );
+                throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e, "Index population failure" );
             }
         }
     }

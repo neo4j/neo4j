@@ -360,7 +360,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailure ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailed ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -401,7 +401,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
-        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Transaction.CouldNotCommit ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Transaction.TransactionCommitFailed ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -433,7 +433,7 @@ public class TransactionHandleTest
         verify( registry ).forget( 1337l );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.InvalidSyntax ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.SyntaxError ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -460,7 +460,7 @@ public class TransactionHandleTest
         verify( registry ).forget( 1337l );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailure ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailed ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }

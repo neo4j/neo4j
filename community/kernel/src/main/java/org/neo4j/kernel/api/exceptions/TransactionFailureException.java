@@ -42,6 +42,6 @@ public class TransactionFailureException extends KernelException
     // To satisfy DatabaseHealth
     public TransactionFailureException( String message, Throwable cause )
     {
-        super( Status.Transaction.CouldNotBegin, cause, message );
+        super( Status.Transaction.TransactionStartFailed, cause, message );
     }
 }

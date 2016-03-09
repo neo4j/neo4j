@@ -36,7 +36,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
-import static org.neo4j.kernel.api.exceptions.Status.Statement.InvalidSyntax;
+import static org.neo4j.kernel.api.exceptions.Status.Statement.SyntaxError;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoStackTraces;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.hasErrors;
 import static org.neo4j.test.server.HTTP.POST;
@@ -61,7 +61,7 @@ public class TransactionErrorIT extends AbstractRestFunctionalTestBase
         response = POST( commitResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE ;;' } ] }" ) );
 
         assertThat( response.status(), is( 200 ) );
-        assertThat( response, hasErrors( InvalidSyntax ) );
+        assertThat( response, hasErrors( SyntaxError ) );
         assertThat( response, containsNoStackTraces());
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );

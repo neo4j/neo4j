@@ -118,7 +118,7 @@ public class Neo4jError
         String[] parts = codeStr.split( "\\." );
         if ( parts.length != 4 )
         {
-            return Status.General.UnknownFailure;
+            return Status.General.UnknownError;
         }
 
         String category = parts[2];
@@ -144,7 +144,7 @@ public class Neo4jError
         case "Security":
             return Status.Security.valueOf( error );
         default:
-            return Status.General.UnknownFailure;
+            return Status.General.UnknownError;
         }
     }
 
@@ -162,7 +162,7 @@ public class Neo4jError
         // a buggy code path, and we need to try to convince whoever ends up here to tell us about it.
 
 
-        return new Neo4jError( Status.General.UnknownFailure, any.getMessage(), any );
+        return new Neo4jError( Status.General.UnknownError, any.getMessage(), any );
     }
 
 }

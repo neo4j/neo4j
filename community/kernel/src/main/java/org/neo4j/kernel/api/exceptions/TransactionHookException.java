@@ -23,6 +23,6 @@ public class TransactionHookException extends KernelException
 {
     public TransactionHookException( Throwable cause, String message, Object... parameters )
     {
-        super( Status.Transaction.EventHandlerThrewException, cause, message, parameters );
+        super( Status.Transaction.TransactionEventHandlerFailed, cause, message, parameters );
     }
 }

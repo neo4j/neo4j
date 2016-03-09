@@ -29,6 +29,6 @@ public abstract class SchemaRuleNotFoundException extends SchemaRuleException
     protected SchemaRuleNotFoundException( String messageTemplate, int ruleEntityId, int propertyKeyId,
             String messagePrefix )
     {
-        super( Status.Schema.NoSuchSchemaRule, messageTemplate, ruleEntityId, propertyKeyId, messagePrefix );
+        super( Status.Schema.SchemaRuleAccessFailed, messageTemplate, ruleEntityId, propertyKeyId, messagePrefix );
     }
 }

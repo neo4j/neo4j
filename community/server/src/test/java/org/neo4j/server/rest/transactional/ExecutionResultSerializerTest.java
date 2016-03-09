@@ -413,7 +413,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         }
         catch ( RuntimeException e )
         {
-            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailure, e ) ) );
+            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailed, e ) ) );
         }
         serializer.finish();
 
@@ -421,7 +421,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         String result = output.toString( UTF_8.name() );
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
-                "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailure\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
+                "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\",\"message\":\"Stuff went wrong!\",\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }
 
@@ -450,7 +450,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         }
         catch ( RuntimeException e )
         {
-            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailure, e ) ) );
+            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailed, e ) ) );
         }
         serializer.finish();
 
@@ -458,7 +458,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         String result = output.toString( UTF_8.name() );
         assertEquals(
                 "{\"results\":[{\"columns\":[\"column1\",\"column2\"],\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}]," +
-                "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailure\",\"message\":\"Stuff went wrong!\"," +
+                "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\",\"message\":\"Stuff went wrong!\"," +
                 "\"stackTrace\":***}]}",
                 replaceStackTrace( result, "***" ) );
     }
@@ -814,7 +814,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         assertEquals(
                 "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                         "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}],\"notifications\":[{\"code\":\"Neo" +
-                        ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"WARNING\",\"title\":\"This " +
+                        ".ClientNotification.Statement.CartesianProductWarning\",\"severity\":\"WARNING\",\"title\":\"This " +
                         "query builds a cartesian product between disconnected patterns.\",\"description\":\"If a " +
                         "part of a query contains multiple disconnected patterns, this will build a cartesian product" +
                         " between all those parts. This may produce a large amount of data and slow down query " +
@@ -876,7 +876,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         assertEquals(
                 "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
                         "\"data\":[{\"row\":[\"value1\",\"value2\"],\"meta\":[null,null]}]}],\"notifications\":[{\"code\":\"Neo" +
-                        ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"WARNING\",\"title\":\"This " +
+                        ".ClientNotification.Statement.CartesianProductWarning\",\"severity\":\"WARNING\",\"title\":\"This " +
                         "query builds a cartesian product between disconnected patterns.\",\"description\":\"If a " +
                         "part of a query contains multiple disconnected patterns, this will build a cartesian product" +
                         " between all those parts. This may produce a large amount of data and slow down query " +
