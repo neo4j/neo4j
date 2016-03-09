@@ -21,6 +21,7 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Optional;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Pair;
@@ -42,19 +43,22 @@ public class ServerCommandLineArgs
 {
     static final String CONFIG_KEY_ALT_1 = "config";
     static final String CONFIG_KEY_ALT_2 = "C";
+    private static final String RUNFILE_KEY = "run-file";
     private final File configFile;
     private final Pair<String,String>[] configOverrides;
+    private final Optional<File> runFile;
 
-    public ServerCommandLineArgs( File configFile, Pair<String,String>[] configOverrides )
+    private ServerCommandLineArgs( File configFile, Pair<String, String>[] configOverrides, Optional<File> runFile )
     {
         this.configFile = configFile;
         this.configOverrides = configOverrides;
+        this.runFile = runFile;
     }
 
     public static ServerCommandLineArgs parse( String[] argv )
     {
         Args args = Args.parse( argv );
-        return new ServerCommandLineArgs(detemineConfigFile( args ), parseConfigOverrides( args ));
+        return new ServerCommandLineArgs(detemineConfigFile( args ), parseConfigOverrides( args ), parseRunFile(args) );
     }
 
     public Pair<String,String>[] configOverrides()
@@ -87,5 +91,15 @@ public class ServerCommandLineArgs
                 } );
 
         return options.toArray( new Pair[options.size()] );
+    }
+
+    private static Optional<File> parseRunFile( Args args )
+    {
+        return Optional.ofNullable( args.get( RUNFILE_KEY ) ).map( File::new );
+    }
+
+    public Optional<File> runFile()
+    {
+        return runFile;
     }
 }

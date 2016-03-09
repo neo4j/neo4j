@@ -22,9 +22,11 @@ package org.neo4j.server;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -63,7 +65,15 @@ public abstract class Bootstrapper
     public static int start( Bootstrapper boot, String[] argv )
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
-        return boot.start( args.configFile(), args.configOverrides() );
+
+        int start = boot.start( args.configFile(), args.configOverrides() );
+        if ( start != 0 )
+        {
+            return start;
+        }
+
+        args.runFile().ifPresent( file -> stopWhenRunFileIsDeleted( boot, file ) );
+        return 0;
     }
 
     @SafeVarargs
@@ -152,6 +162,30 @@ public abstract class Bootstrapper
     {
         File standardConfigFile = new File( System.getProperty( SERVER_CONFIG_FILE_KEY, SERVER_CONFIG_FILE ) );
         return new ConfigLoader( this::settingsClasses ).loadConfig( file, standardConfigFile, log, configOverrides );
+    }
+
+    private static void stopWhenRunFileIsDeleted( Bootstrapper boot, File runFile )
+    {
+        try
+        {
+            //noinspection ResultOfMethodCallIgnored
+            runFile.createNewFile();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
+        try
+        {
+            Predicates.awaitForever( () -> !runFile.exists(), 20, TimeUnit.MILLISECONDS );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+        }
+
+        boot.stop();
     }
 
     private void addShutdownHook()
