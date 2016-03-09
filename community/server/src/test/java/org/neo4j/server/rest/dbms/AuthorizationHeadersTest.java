@@ -22,7 +22,7 @@ package org.neo4j.server.rest.dbms;
 import com.sun.jersey.core.util.Base64;
 import org.junit.Test;
 
-import org.neo4j.helpers.UTF8;
+import org.neo4j.string.UTF8;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

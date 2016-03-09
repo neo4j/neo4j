@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.index;
 import java.lang.reflect.Array;
 import java.util.Base64;
 
-import org.neo4j.helpers.UTF8;
+import org.neo4j.string.UTF8;
 
 public final class ArrayEncoder
 {

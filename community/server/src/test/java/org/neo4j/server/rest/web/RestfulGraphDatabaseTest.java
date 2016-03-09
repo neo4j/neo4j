@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
@@ -32,18 +37,12 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.FakeClock;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status.Request;
 import org.neo4j.kernel.api.exceptions.Status.Schema;
@@ -64,12 +63,12 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static java.lang.Long.parseLong;
 import static java.util.Collections.emptyMap;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -82,7 +81,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
 
 public class RestfulGraphDatabaseTest

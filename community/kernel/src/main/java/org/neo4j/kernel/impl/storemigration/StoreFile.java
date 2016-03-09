@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Predicate;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -46,6 +45,8 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.string.UTF8;
+
 import static org.neo4j.helpers.collection.Iterables.iterable;
 
 public enum StoreFile

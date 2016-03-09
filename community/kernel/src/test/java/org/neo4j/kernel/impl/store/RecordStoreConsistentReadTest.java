@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.Matchers.is;

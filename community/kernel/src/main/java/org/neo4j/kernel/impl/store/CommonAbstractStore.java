@@ -29,7 +29,6 @@ import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.string.UTF8;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
