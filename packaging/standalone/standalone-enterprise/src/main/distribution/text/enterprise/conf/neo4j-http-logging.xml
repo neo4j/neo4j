@@ -21,9 +21,9 @@
 -->
 <configuration>
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>data/log/http.log</file>
+    <file>logs/http.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>data/log/http.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <fileNamePattern>logs/http.%d{yyyy-MM-dd}.log</fileNamePattern>
       <maxHistory>7</maxHistory>
     </rollingPolicy>
 
