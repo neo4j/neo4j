@@ -421,12 +421,6 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )
-    {
-        return database.findNodesByLabelAndProperty( label, key, value );
-    }
-
-    @Override
     public ResourceIterable<RelationshipType> getAllRelationshipTypes()
     {
         return database.getAllRelationshipTypes();

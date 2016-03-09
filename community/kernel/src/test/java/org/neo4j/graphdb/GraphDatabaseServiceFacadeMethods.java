@@ -82,20 +82,6 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY =
-        new FacadeMethod<GraphDatabaseService>(
-                "ResourceIterator<Node> findNodes( Label label, String key, Object value )" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
-        {
-            for ( Node node : graphDatabaseService.findNodesByLabelAndProperty( label( "bar" ), "baz", 23 ) )
-            {
-
-            }
-        }
-    };
-
     static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED =
         new FacadeMethod<GraphDatabaseService>(
                 "ResourceIterator<Node> findNodeByLabelAndProperty( Label label, String key, Object value )" )
@@ -171,7 +157,6 @@ public class GraphDatabaseServiceFacadeMethods
             GET_NODE_BY_ID,
             GET_RELATIONSHIP_BY_ID,
             GET_ALL_NODES,
-            FIND_NODES_BY_LABEL_AND_PROPERTY,
             FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED,
             FIND_NODES_BY_LABEL,
             GET_ALL_RELATIONSHIP_TYPES,

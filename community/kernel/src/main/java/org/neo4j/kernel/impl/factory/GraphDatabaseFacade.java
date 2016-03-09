@@ -501,13 +501,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
         return allNodesWithLabel( myLabel );
     }
 
-    @Override
-    public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key,
-            final Object value )
-    {
-        return () -> nodesByLabelAndProperty( myLabel, key, value );
-    }
-
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
         Statement statement = spi.currentStatement();
