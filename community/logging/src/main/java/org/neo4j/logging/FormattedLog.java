@@ -51,7 +51,7 @@ public class FormattedLog extends AbstractLog
      */
     public static class Builder
     {
-        private TimeZone timezone = TimeZone.getDefault();
+        private TimeZone timezone = UTC;
         private Object lock = this;
         private String category = null;
         private Level level = Level.INFO;
