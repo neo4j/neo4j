@@ -67,7 +67,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
 
         List<String> captured = suppressOutput.getOutputVoice().lines();
         assertThat( captured, containsAtLeastTheseLines(
-                warn( "Config file \\[config.neo4j\\.conf\\] does not exist." ),
+                warn( "Config file \\[conf.neo4j\\.conf\\] does not exist." ),
                 info( "Starting..." ),
                 info( "Started." ),
                 info( "Remote interface available at http://.+:7474/" ),
