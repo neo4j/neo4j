@@ -52,7 +52,7 @@ class ExclusiveLock implements ForsetiLockManager.Lock
     public String toString()
     {
         return "ExclusiveLock{" +
-                "owner=" + owner +
-                '}';
+               "owner=" + owner +
+               '}';
     }
 }
