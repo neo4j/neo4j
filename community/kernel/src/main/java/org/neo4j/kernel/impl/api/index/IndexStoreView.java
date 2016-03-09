@@ -44,7 +44,7 @@ public interface IndexStoreView extends PropertyAccessor
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             IntPredicate labelIdFilter, IntPredicate propertyKeyIdFilter,
-            Visitor<NodePropertyUpdate, FAILURE> propertyUpdateVisitor,
+            Visitor<NodePropertyUpdates, FAILURE> propertyUpdateVisitor,
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
 
     /**
@@ -93,7 +93,7 @@ public interface IndexStoreView extends PropertyAccessor
 
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( IntPredicate labelIdFilter,
-                IntPredicate propertyKeyIdFilter, Visitor<NodePropertyUpdate,FAILURE> propertyUpdateVisitor,
+                IntPredicate propertyKeyIdFilter, Visitor<NodePropertyUpdates,FAILURE> propertyUpdateVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor )
         {
             return EMPTY_SCAN;

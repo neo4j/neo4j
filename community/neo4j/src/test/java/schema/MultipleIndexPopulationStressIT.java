@@ -26,10 +26,10 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -56,6 +56,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.Randoms;
+import org.neo4j.test.RepeatRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
@@ -90,16 +91,32 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
  */
 public class MultipleIndexPopulationStressIT
 {
-    private static final String[] TOKENS = new String[] {"One", "Two", "Three", "Four"};
+    private static final String[] TOKENS = new String[]{"One", "Two", "Three", "Four"};
+    private final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
-    public final RandomRule random = new RandomRule();
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    public final CleanupRule cleanup = new CleanupRule();
+    private final RandomRule random = new RandomRule();
+    private final CleanupRule cleanup = new CleanupRule();
+    private final RepeatRule repeat = new RepeatRule();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( random ).around( directory ).around( cleanup );
+    public final RuleChain ruleChain = RuleChain.outerRule( random ).around( repeat ).around( directory )
+                                                .around( cleanup );
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+
+    @Test
+    @RepeatRule.Repeat( times = 10 )
+    public void populateMultipleIndexWithSeveralNodesSingleThreaded() throws Exception
+    {
+        prepareAndRunTest( false, 10, TimeUnit.SECONDS.toMillis( 5 ) );
+    }
+
+    @Test
+    @RepeatRule.Repeat( times = 10 )
+    public void populateMultipleIndexWithSeveralNodesMultiThreaded() throws Exception
+    {
+        prepareAndRunTest( true, 10, TimeUnit.SECONDS.toMillis( 5 ) );
+    }
 
     @Test
     public void shouldPopulateMultipleIndexPopulatorsUnderStressSingleThreaded() throws Exception
@@ -129,10 +146,15 @@ public class MultipleIndexPopulationStressIT
         // GIVEN a database with random data in it
         int nodeCount = (int) Settings.parseLongWithUnit( System.getProperty( getClass().getName() + ".nodes", "1m" ) );
         long duration = TimeUtil.parseTimeMillis.apply( System.getProperty( getClass().getName() + ".duration", "5s" ) );
-        createRandomData( nodeCount );
-        long endTime = currentTimeMillis() + duration;
+        prepareAndRunTest( multiThreaded, nodeCount, duration );
+    }
 
-        // WHEN/THEN run tests for at least the specified duration
+    private void prepareAndRunTest( boolean multiThreaded, int nodeCount, long durationMillis ) throws Exception
+    {
+        createRandomData( nodeCount );
+        long endTime = currentTimeMillis() + durationMillis;
+
+        // WHEN/THEN run tests for at least the specified durationMillis
         for ( int i = 0; currentTimeMillis() < endTime; i++ )
         {
             runTest( nodeCount, i, multiThreaded );
@@ -141,42 +163,8 @@ public class MultipleIndexPopulationStressIT
 
     private void runTest( int nodeCount, int run, boolean multiThreaded ) throws Exception
     {
-        if ( run > 0 )
-        {   // To only have the dedicated stress test run see this message
-            System.out.println( "Run " + run );
-        }
-
         // WHEN creating the indexes under stressful updates
-        final GraphDatabaseService db = new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.absolutePath() )
-                .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
-                .setConfig( GraphDatabaseSettings.auth_store, directory.file( "auth" ).getAbsolutePath() )
-                .setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreaded + "" )
-                .newGraphDatabase();
-        createIndexes( db );
-        final AtomicBoolean end = new AtomicBoolean();
-        ExecutorService executor = cleanup.add( Executors.newCachedThreadPool() );
-        for ( int i = 0; i < 10; i++ )
-        {
-            executor.submit( () -> {
-                Randoms random = new Randoms();
-                while ( !end.get() )
-                {
-                    changeRandomNode( db, nodeCount, random );
-                }
-            });
-        }
-
-        while ( !indexesAreOnline( db ) )
-        {
-            Thread.sleep( 100 );
-        }
-        end.set( true );
-        executor.shutdown();
-        executor.awaitTermination( 10, SECONDS );
-
-        // THEN the db should be consistent in the end
-        db.shutdown();
+        populateDbAndIndexes( nodeCount, multiThreaded );
         ConsistencyCheckService cc = new ConsistencyCheckService();
         Result result = cc.runFullConsistencyCheck( directory.directory(),
                 new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
@@ -185,10 +173,48 @@ public class MultipleIndexPopulationStressIT
         dropIndexes();
     }
 
+    private void populateDbAndIndexes( int nodeCount, boolean multiThreaded ) throws InterruptedException
+    {
+        final GraphDatabaseService db = new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
+                .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
+                .setConfig( GraphDatabaseSettings.auth_store, directory.file( "auth" ).getAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreaded + "" )
+                .newGraphDatabase();
+        try
+        {
+            createIndexes( db );
+            final AtomicBoolean end = new AtomicBoolean();
+            ExecutorService executor = cleanup.add( Executors.newCachedThreadPool() );
+            for ( int i = 0; i < 10; i++ )
+            {
+                executor.submit( () -> {
+                    Randoms random = new Randoms();
+                    while ( !end.get() )
+                    {
+                        changeRandomNode( db, nodeCount, random );
+                    }
+                } );
+            }
+
+            while ( !indexesAreOnline( db ) )
+            {
+                Thread.sleep( 100 );
+            }
+            end.set( true );
+            executor.shutdown();
+            executor.awaitTermination( 10, SECONDS );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
     private void dropIndexes()
     {
         GraphDatabaseService db = new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory.absolutePath() )
+                .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "8m" )
                 .setConfig( GraphDatabaseSettings.auth_store, directory.file( "auth" ).getAbsolutePath() )
                 .newGraphDatabase();
@@ -276,108 +302,118 @@ public class MultipleIndexPopulationStressIT
     {
         BatchImporter importer = new ParallelBatchImporter( directory.directory(), fs,
                 DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, Config.empty() );
-        importer.doImport( new Input()
-        {
-            @Override
-            public boolean specificRelationshipIds()
-            {
-                return false;
-            }
-
-            @Override
-            public InputIterable<InputRelationship> relationships()
-            {
-                return SimpleInputIteratorWrapper.wrap( "Empty", Collections.emptyList() );
-            }
-
-            @Override
-            public InputIterable<InputNode> nodes()
-            {
-                return SimpleInputIteratorWrapper.wrap( "Nodes", randomNodes( count ) );
-            }
-
-            @Override
-            public IdMapper idMapper()
-            {
-                return IdMappers.actual();
-            }
-
-            @Override
-            public IdGenerator idGenerator()
-            {
-                return IdGenerators.fromInput();
-            }
-
-            @Override
-            public Collector badCollector()
-            {
-                try
-                {
-                    return new BadCollector( fs.openAsOutputStream(
-                            new File( directory.directory(), "bad" ), false ), 0, 0 );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-        } );
+        importer.doImport( new RandomDataInput( count ) );
     }
 
     protected Iterable<InputNode> randomNodes( int count )
     {
-        return new Iterable<InputNode>()
-        {
-            @Override
-            public Iterator<InputNode> iterator()
-            {
-                return new PrefetchingIterator<InputNode>()
-                {
-                    private int i;
-
-                    @Override
-                    protected InputNode fetchNextOrNull()
-                    {
-                        if ( i >= count )
-                        {
-                            return null;
-                        }
-
-                        try
-                        {
-                            return new InputNode( "Nodes", i, i, (long) i, randomProperties(), null, randomLabels(),
-                                    null );
-                        }
-                        finally
-                        {
-                            i++;
-                        }
-                    }
-
-                    private String[] randomLabels()
-                    {
-                        return random.randoms().selection( TOKENS, 1, TOKENS.length, false );
-                    }
-
-                    private Object[] randomProperties()
-                    {
-                        String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
-                        Object[] result = new Object[keys.length*2];
-                        int i = 0;
-                        for ( String key : keys )
-                        {
-                            result[i++] = key;
-                            result[i++] = randomPropertyValue( random.random() );
-                        }
-                        return result;
-                    }
-                };
-            }
-        };
+        return () -> new InputNodePrefetchingIterator( count );
     }
 
     private int randomPropertyValue( Random random )
     {
         return random.nextInt( 100 );
+    }
+
+    private class InputNodePrefetchingIterator extends PrefetchingIterator<InputNode>
+    {
+        private final int count;
+        private int i;
+
+        InputNodePrefetchingIterator( int count )
+        {
+            this.count = count;
+        }
+
+        @Override
+        protected InputNode fetchNextOrNull()
+        {
+            if ( i >= count )
+            {
+                return null;
+            }
+
+            try
+            {
+                return new InputNode( "Nodes", i, i, (long) i, randomProperties(), null, randomLabels(),
+                        null );
+            }
+            finally
+            {
+                i++;
+            }
+        }
+
+        private String[] randomLabels()
+        {
+            return random.randoms().selection( TOKENS, 1, TOKENS.length, false );
+        }
+
+        private Object[] randomProperties()
+        {
+            String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
+            Object[] result = new Object[keys.length * 2];
+            int i = 0;
+            for ( String key : keys )
+            {
+                result[i++] = key;
+                result[i++] = randomPropertyValue( random.random() );
+            }
+            return result;
+        }
+    }
+
+    private class RandomDataInput implements Input
+    {
+        private final int count;
+
+        public RandomDataInput( int count )
+        {
+            this.count = count;
+        }
+
+        @Override
+        public boolean specificRelationshipIds()
+        {
+            return false;
+        }
+
+        @Override
+        public InputIterable<InputRelationship> relationships()
+        {
+            return SimpleInputIteratorWrapper.wrap( "Empty", Collections.emptyList() );
+        }
+
+        @Override
+        public InputIterable<InputNode> nodes()
+        {
+            return SimpleInputIteratorWrapper.wrap( "Nodes", randomNodes( count ) );
+        }
+
+        @Override
+        public IdMapper idMapper()
+        {
+            return IdMappers.actual();
+        }
+
+        @Override
+        public IdGenerator idGenerator()
+        {
+            return IdGenerators.fromInput();
+        }
+
+        @Override
+        public Collector badCollector()
+        {
+            try
+            {
+                return new BadCollector( fs.openAsOutputStream(
+                        new File( directory.directory(), "bad" ), false ), 0, 0 );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
     }
 }

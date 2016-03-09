@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -183,12 +184,12 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * {@link IndexPopulation population}. Flushes all updates if {@link #BATCH_SIZE} is reached.
      *
      * @param population the index population.
-     * @param update the update to add to the batch.
+     * @param updates updates to add to the batch.
      */
-    private void batchUpdate( IndexPopulation population, NodePropertyUpdate update )
+    private void batchUpdate( IndexPopulation population, Collection<NodePropertyUpdate> updates )
     {
         List<NodePropertyUpdate> batch = batchedUpdates.computeIfAbsent( population, key -> newBatch() );
-        batch.add( update );
+        batch.addAll( updates );
         flushIfNeeded( population, batch );
     }
 
@@ -353,9 +354,10 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         }
 
         @Override
-        protected void addApplicable( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+        protected void addApplicable( Collection<NodePropertyUpdate> updates ) throws IOException,
+                IndexEntryConflictException
         {
-            batchUpdate( this, update );
+            batchUpdate( this, updates );
         }
     }
 

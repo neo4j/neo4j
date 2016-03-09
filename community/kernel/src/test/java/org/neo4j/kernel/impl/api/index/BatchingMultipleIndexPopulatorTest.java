@@ -297,8 +297,8 @@ public class BatchingMultipleIndexPopulatorTest
         IndexStoreView storeView = mock( IndexStoreView.class );
         when( storeView.visitNodes( any(), any(), any(), any() ) ).thenAnswer( invocation -> {
             Object visitorArg = invocation.getArguments()[2];
-            Visitor<NodePropertyUpdate,IndexPopulationFailedKernelException> visitor =
-                    (Visitor<NodePropertyUpdate,IndexPopulationFailedKernelException>) visitorArg;
+            Visitor<NodePropertyUpdates,IndexPopulationFailedKernelException> visitor =
+                    (Visitor<NodePropertyUpdates,IndexPopulationFailedKernelException>) visitorArg;
             return new NodePropertyUpdatesScan( updates, visitor );
         } );
         return storeView;
@@ -328,12 +328,12 @@ public class BatchingMultipleIndexPopulatorTest
     private static class NodePropertyUpdatesScan implements StoreScan<IndexPopulationFailedKernelException>
     {
         final NodePropertyUpdate[] updates;
-        final Visitor<NodePropertyUpdate,IndexPopulationFailedKernelException> visitor;
+        final Visitor<NodePropertyUpdates,IndexPopulationFailedKernelException> visitor;
 
         boolean stop;
 
         NodePropertyUpdatesScan( NodePropertyUpdate[] updates,
-                Visitor<NodePropertyUpdate,IndexPopulationFailedKernelException> visitor )
+                Visitor<NodePropertyUpdates,IndexPopulationFailedKernelException> visitor )
         {
             this.updates = updates;
             this.visitor = visitor;
@@ -342,13 +342,18 @@ public class BatchingMultipleIndexPopulatorTest
         @Override
         public void run() throws IndexPopulationFailedKernelException
         {
+
+            NodePropertyUpdates nodePropertyUpdates = new NodePropertyUpdates();
             for ( NodePropertyUpdate update : updates )
             {
                 if ( stop )
                 {
                     return;
                 }
-                visitor.visit( update );
+                nodePropertyUpdates.initForNodeId( update.getNodeId() );
+                nodePropertyUpdates.add( update );
+                visitor.visit( nodePropertyUpdates );
+                nodePropertyUpdates.reset();
             }
         }
 
