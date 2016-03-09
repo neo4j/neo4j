@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
-
 import java.util.Objects;
+
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 public class RelationshipGroupRecord extends AbstractBaseRecord
 {
@@ -175,18 +175,17 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     @Override
     public String toString()
     {
-        return new StringBuilder( "RelationshipGroup[" + getId() )
-                .append( ",type=" + type )
-                .append( ",out=" + firstOut )
-                .append( ",in=" + firstIn )
-                .append( ",loop=" + firstLoop )
-                .append( ",prev=" + prev )
-                .append( ",next=" + next )
-                .append( ",used=" + inUse() )
-                .append( ",owner=" + getOwningNode() )
-                .append( "]" ).toString();
+        return "RelationshipGroup[" + getId() +
+               ",type=" + type +
+               ",out=" + firstOut +
+               ",in=" + firstIn +
+               ",loop=" + firstLoop +
+               ",prev=" + prev +
+               ",next=" + next +
+               ",used=" + inUse() +
+               ",owner=" + getOwningNode() +
+               ",secondaryUnitId=" + getSecondaryUnitId() + "]";
     }
-
 
     @Override
     public RelationshipGroupRecord clone()

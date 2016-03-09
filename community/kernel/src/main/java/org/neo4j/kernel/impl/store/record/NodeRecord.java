@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
@@ -148,17 +147,18 @@ public class NodeRecord extends PrimitiveRecord
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder( "Node[" ).append( getId() )
-                .append( ",used=" ).append( inUse() )
-                .append( "," + (dense ? "group" : "rel") + "=" ).append( nextRel )
-                .append( ",prop=" ).append( getNextProp() )
-                .append( ",labels=" ).append( parseLabelsField( this ) )
-                .append( "," ).append( isLight ? "light" : "heavy" );
-        if ( !isLight && !dynamicLabelRecords.isEmpty() )
-        {
-            builder.append( ",dynlabels=" ).append( dynamicLabelRecords );
-        }
-        return builder.append( "]" ).toString();
+        String denseInfo = (dense ? "group" : "rel") + "=" + nextRel;
+        String lightHeavyInfo = isLight ? "light" :
+                                dynamicLabelRecords.isEmpty() ?
+                                "heavy" : "heavy,dynlabels=" + dynamicLabelRecords;
+
+        return "Node[" + getId() +
+               ",used=" + inUse() +
+               "," + denseInfo +
+               ",prop=" + getNextProp() +
+               ",labels=" + parseLabelsField( this ) +
+               "," + lightHeavyInfo +
+               ",secondaryUnitId=" + getSecondaryUnitId() + "]";
     }
 
     @Override

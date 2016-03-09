@@ -191,21 +191,20 @@ public class RelationshipRecord extends PrimitiveRecord
     @Override
     public String toString()
     {
-        return new StringBuilder( "Relationship[" )
-                .append( getId() ).append( ",used=" ).append( inUse() )
-                .append( ",source=" ).append( firstNode )
-                .append( ",target=" ).append( secondNode )
-                .append( ",type=" ).append( type )
-                .append( firstInFirstChain ? ",sCount=" : ",sPrev=" ).append( firstPrevRel )
-                .append( ",sNext=" ).append( firstNextRel )
-                .append( firstInSecondChain ? ",tCount=" : ",tPrev=" ).append( secondPrevRel )
-                .append( ",tNext=" ).append( secondNextRel )
-                .append( ",prop=" ).append( getNextProp() )
-                .append( firstInFirstChain ? ", sFirst" : ",!sFirst" )
-                .append( firstInSecondChain ? ", tFirst" : ",!tFirst" )
-                .append( "]" ).toString();
+        return "Relationship[" + getId() +
+               ",used=" + inUse() +
+               ",source=" + firstNode +
+               ",target=" + secondNode +
+               ",type=" + type +
+               (firstInFirstChain ? ",sCount=" : ",sPrev=") + firstPrevRel +
+               ",sNext=" + firstNextRel +
+               (firstInSecondChain ? ",tCount=" : ",tPrev=") + secondPrevRel +
+               ",tNext=" + secondNextRel +
+               ",prop=" + getNextProp() +
+               ",secondaryUnitId=" + getSecondaryUnitId() +
+               (firstInFirstChain ? ", sFirst" : ",!sFirst") +
+               (firstInSecondChain ? ", tFirst" : ",!tFirst") + "]";
     }
-
 
     @Override
     public RelationshipRecord clone()
