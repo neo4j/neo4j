@@ -26,6 +26,6 @@ public class LegacyIndexNotFoundKernelException extends KernelException
 {
     public LegacyIndexNotFoundKernelException( String message, Object... parameters )
     {
-        super( Status.LegacyIndex.NoSuchIndex, message, parameters );
+        super( Status.LegacyIndex.LegacyIndexNotFound, message, parameters );
     }
 }

@@ -33,7 +33,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.UnknownId;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 
 public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
@@ -62,7 +62,7 @@ public class TransactionTimeoutDocIT extends ExclusiveServerTestBase
         // Then
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> errors = (List<Map<String, Object>>) response.get( "errors" );
-        assertThat( (String) errors.get( 0 ).get( "code" ), equalTo( UnknownId.code().serialize() ) );
+        assertThat( (String) errors.get( 0 ).get( "code" ), equalTo( TransactionNotFound.code().serialize() ) );
     }
 
     private String txURI()

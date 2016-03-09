@@ -310,7 +310,7 @@ public class SessionStateMachineTest
         @Override
         public Status status()
         {
-            return Status.General.UnknownFailure;
+            return Status.General.UnknownError;
         }
     }
 
@@ -319,7 +319,7 @@ public class SessionStateMachineTest
         @Override
         public Status status()
         {
-            return Status.Statement.InvalidSyntax;
+            return Status.Statement.SyntaxError;
         }
     }
 }

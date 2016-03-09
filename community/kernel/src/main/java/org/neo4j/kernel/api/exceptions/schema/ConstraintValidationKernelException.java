@@ -35,11 +35,11 @@ public abstract class ConstraintValidationKernelException extends KernelExceptio
 {
     protected ConstraintValidationKernelException( String message, Object... parameters )
     {
-        super( Status.Schema.ConstraintViolation, message, parameters );
+        super( Status.Schema.ConstraintValidationFailed, message, parameters );
     }
 
     protected ConstraintValidationKernelException( Throwable cause, String message, Object... parameters )
     {
-        super( Status.Schema.ConstraintViolation, cause, message, parameters );
+        super( Status.Schema.ConstraintValidationFailed, cause, message, parameters );
     }
 }

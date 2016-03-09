@@ -209,7 +209,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         else
         {
-            throw new TransactionFailureException( Status.Schema.ModifiedConcurrently, "Failed to commit, because another transaction is making " +
+            throw new TransactionFailureException( Status.Schema.SchemaModifiedConcurrently, "Failed to commit, because another transaction is making " +
                     "schema changes. Slave commits are disallowed while schema changes are being committed. " +
                     "Retrying the transaction should yield a successful result." );
         }
@@ -285,7 +285,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( ConcurrentAccessException e )
         {
-            throw new TransactionFailureException( Status.Transaction.ConcurrentRequest, e,
+            throw new TransactionFailureException( Status.Transaction.TransactionAccessedConcurrently, e,
                     "The lock session requested to start is already in use. " +
                     "Please retry your request in a few seconds." );
         }

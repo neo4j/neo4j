@@ -33,6 +33,7 @@ import org.neo4j.function.Suppliers;
 
 import static org.neo4j.logging.FormattedLog.DEFAULT_CURRENT_DATE_SUPPLIER;
 import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
+import static org.neo4j.logging.FormattedLog.UTC;
 
 /**
  * A {@link LogProvider} implementation that applies a simple formatting to each log message.
@@ -47,7 +48,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     public static class Builder
     {
         private boolean renderContext = true;
-        private TimeZone timezone = TimeZone.getDefault();
+        private TimeZone timezone = UTC;
         private Map<String, Level> levels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
         private boolean autoFlush = true;

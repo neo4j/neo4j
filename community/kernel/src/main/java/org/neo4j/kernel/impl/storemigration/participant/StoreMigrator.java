@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicator;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -96,7 +97,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
-
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
@@ -163,7 +163,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             if ( newFormat.hasSameCapabilities( oldFormat, CapabilityType.FORMAT ) )
             {
                 // Do direct migration
-                migrateWithDirectMigration( storeDir, migrationDir, oldFormat, newFormat );
+                migrateWithDirectMigration( storeDir, migrationDir, oldFormat, newFormat, progressMonitor );
             }
             else
             {
@@ -186,14 +186,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void migrateWithDirectMigration( File storeDir, File migrationDir,
-            RecordFormats oldFormat, RecordFormats newFormat )
+            RecordFormats oldFormat, RecordFormats newFormat, MigrationProgressMonitor.Section progressMonitor )
     {
         DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config );
         StoreType[] stores = stream( StoreType.values() )
                 // Not interested in migrating MetaData store.
                 .filter( type -> type != META_DATA )
                 .toArray( StoreType[]::new );
-        migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, stores );
+        migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, progressMonitor, stores );
     }
 
     private void writeLastTxChecksum( File migrationDir, long lastTxChecksum ) throws IOException
@@ -451,16 +451,18 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         {
             // Migrate all token stores, schema store and dynamic node label ids, keeping their ids intact
             DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config );
-            migrator.migrate( storeDir, oldFormat, migrationDir, newFormat,
-                    new StoreType[] {
-                        StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
-                        StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
-                        StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME,
-                        StoreType.NODE_LABEL,
-                        StoreType.SCHEMA },
-                    new StoreType[] {
-                        StoreType.NODE,
-                    } );
+
+            StoreType[] storesToMigrate = {
+                    StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
+                    StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
+                    StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME,
+                    StoreType.NODE_LABEL,
+                    StoreType.SCHEMA};
+
+            // Migrate these stores silently because they are usually very small
+            MigrationProgressMonitor.Section section = SilentMigrationProgressMonitor.NO_OP_SECTION;
+
+            migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, section, storesToMigrate, StoreType.NODE );
         }
     }
 

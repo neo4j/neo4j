@@ -119,7 +119,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         @Override
         public Status status()
         {
-            return Status.Request.NotInTransaction;
+            return Status.Request.TransactionRequired;
         }
     }
 
@@ -128,7 +128,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         @Override
         public Status status()
         {
-            return Status.Transaction.Terminated;
+            return Status.Transaction.TransactionTerminated;
         }
     }
 

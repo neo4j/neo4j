@@ -252,7 +252,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                 else
                 {
                     log.error( "Failed to commit transaction.", e );
-                    errors.add( new Neo4jError( Status.Transaction.CouldNotCommit, e ) );
+                    errors.add( new Neo4jError( Status.Transaction.TransactionCommitFailed, e ) );
                 }
             }
         }
@@ -265,7 +265,7 @@ public class TransactionHandle implements TransactionTerminationHandle
             catch ( Exception e )
             {
                 log.error( "Failed to rollback transaction.", e );
-                errors.add( new Neo4jError( Status.Transaction.CouldNotRollback, e ) );
+                errors.add( new Neo4jError( Status.Transaction.TransactionRollbackFailed, e ) );
             }
         }
     }
@@ -279,7 +279,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         catch ( Exception e )
         {
             log.error( "Failed to rollback transaction.", e );
-            errors.add( new Neo4jError( Status.Transaction.CouldNotRollback, e ) );
+            errors.add( new Neo4jError( Status.Transaction.TransactionRollbackFailed, e ) );
         }
         finally
         {
@@ -322,7 +322,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                 }
                 catch ( IOException e )
                 {
-                    errors.add( new Neo4jError( Status.Network.UnknownFailure, e ) );
+                    errors.add( new Neo4jError( Status.Network.CommunicationError, e ) );
                     break;
                 }
                 catch ( Exception e )
@@ -333,7 +333,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                     }
                     else
                     {
-                        errors.add( new Neo4jError( Status.Statement.ExecutionFailure, e ) );
+                        errors.add( new Neo4jError( Status.Statement.ExecutionFailed, e ) );
                     }
 
                     break;
@@ -344,7 +344,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         }
         catch ( Throwable e )
         {
-            errors.add( new Neo4jError( Status.General.UnknownFailure, e ) );
+            errors.add( new Neo4jError( Status.General.UnknownError, e ) );
         }
     }
 }

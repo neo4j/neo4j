@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
-import java.io.IOException;
-
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.ServerHelper;
@@ -34,7 +34,6 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class ReadOnlyIT extends ExclusiveServerTestBase
@@ -70,7 +69,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
         String code = error.get( "code" ).asText();
         String message = error.get( "message" ).asText();
 
-        assertEquals( "Neo.ClientError.General.ReadOnly", code );
+        assertEquals( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase", code );
         assertThat( message, containsString( "This is a read only Neo4j instance" ) );
     }
 
@@ -87,7 +86,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
         String code = error.get( "code" ).asText();
         String message = error.get( "message" ).asText();
 
-        assertEquals( "Neo.ClientError.General.ReadOnly", code );
+        assertEquals( "Neo.ClientError.General.ForbiddenOnReadOnlyDatabase", code );
         assertThat( message, containsString( "This is a read only Neo4j instance" ) );
     }
 

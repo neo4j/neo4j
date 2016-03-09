@@ -108,7 +108,7 @@ public class TypeMappers
                 Type type = pt.getActualTypeArguments()[0];
                 if( type != String.class )
                 {
-                    throw new ProcedureException( Status.Procedure.FailedRegistration,
+                    throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                             "Maps are required to have `String` keys - but this map has `%s` keys.",
                             type.getTypeName() );
                 }
@@ -143,7 +143,7 @@ public class TypeMappers
         List<Type> types = Iterables.asList( javaToNeo.keySet() );
         types.sort( (a,b)->a.toString().compareTo( b.toString() ) );
 
-        return new ProcedureException( Status.Statement.InvalidType,
+        return new ProcedureException( Status.Statement.TypeError,
                 "Don't know how to map `%s` to the Neo4j Type System.%n" +
                 "Please refer to to the documentation for full details.%n" +
                 "For your reference, known types are: %s", cls, types );
@@ -173,7 +173,7 @@ public class TypeMappers
             {
                 return javaValue;
             }
-            throw new ProcedureException( Status.Procedure.CallFailed,
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
                     "Expected `%s` to be a `%s`, found `%s`.", javaValue, javaClass.getSimpleName(), javaValue.getClass());
         }
     }

@@ -288,7 +288,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
             String codeStr = map.containsKey( "code" ) ?
                     (String) map.get( "code" ) :
-                    Status.General.UnknownFailure.name();
+                    Status.General.UnknownError.name();
 
             String msg = map.containsKey( "message" ) ?
                     (String) map.get( "message" ) :

@@ -56,7 +56,7 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
         return Arrays.asList(
                 new Object[]{
                         "Not a valid query",
-                        Status.Statement.InvalidSyntax
+                        Status.Statement.SyntaxError
                 },
                 new Object[]{
                         "RETURN {foo}",
@@ -64,11 +64,11 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
                 },
                 new Object[]{
                         "MATCH (n) WITH n.prop AS n2 RETURN n2.prop",
-                        Status.Statement.InvalidType
+                        Status.Statement.TypeError
                 },
                 new Object[]{
                         "CYPHER 1.9 EXPLAIN MATCH n RETURN n",
-                        Status.Statement.InvalidSyntax
+                        Status.Statement.SyntaxError
                 },
                 new Object[]{
                         "RETURN 10 / 0",
@@ -76,15 +76,15 @@ public class ClientErrorIT extends AbstractRestFunctionalTestBase
                 },
                 new Object[]{
                         "CREATE INDEX ON :Person(name)",
-                        Status.Transaction.InvalidType
+                        Status.Transaction.ForbiddenDueToTransactionType
                 },
                 new Object[]{
                         "CREATE (n:``)",
-                        Status.Schema.IllegalTokenName
+                        Status.Schema.TokenNameError
                 },
                 new Object[]{
                         "CREATE (b:Book {isbn: " + UNIQUE_ISBN + "})",
-                        Status.Schema.ConstraintViolation
+                        Status.Schema.ConstraintValidationFailed
                 },
                 new Object[]{
                         "LOAD CSV FROM 'http://127.0.0.1/null/' AS line CREATE (a {name:line[0]})", // invalid for json

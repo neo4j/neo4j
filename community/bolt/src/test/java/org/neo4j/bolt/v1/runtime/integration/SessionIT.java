@@ -67,7 +67,7 @@ public class SessionIT
         session.run( "", EMPTY_PARAMS, null, responses );
 
         // Then
-        assertThat( responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
+        assertThat( responses.next(), failedWith( Status.Statement.SyntaxError ) );
     }
 
     @Test
@@ -253,7 +253,7 @@ public class SessionIT
         assertThat( responses.next(), success() );
 
         // But the stop should have failed, since it implicitly triggers commit and thus triggers a failure
-        assertThat( discarding.next(), failedWith( Status.Schema.ConstraintViolation ) );
+        assertThat( discarding.next(), failedWith( Status.Schema.ConstraintValidationFailed ) );
     }
 
     @Test
@@ -292,7 +292,7 @@ public class SessionIT
         // Then
         assertTrue( pullAllCallbackCalled.await( 30, TimeUnit.SECONDS ) );
         final Neo4jError err = error.get();
-        assertThat( err.status(), equalTo( (Status) Status.General.UnknownFailure ) );
+        assertThat( err.status(), equalTo( (Status) Status.General.UnknownError ) );
         assertThat( err.message(), CoreMatchers.containsString( "Ooopsies!" ) );
     }
 
@@ -376,7 +376,7 @@ public class SessionIT
 
         // Then
         Neo4jError error = responses.next().error();
-        assertThat( error.status(), equalTo( Status.Statement.InvalidSemantics ) );
+        assertThat( error.status(), equalTo( Status.Statement.SemanticError ) );
         assertThat( error.message(), equalTo( "Executing queries that use periodic commit in an open transaction is not possible." ) );
     }
 

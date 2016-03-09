@@ -131,7 +131,7 @@ public class ReplicatedTransactionCommitProcessTest
         }
         catch ( TransactionFailureException e )
         {
-            assertEquals( Status.Transaction.CouldNotCommit, e.status() );
+            assertEquals( Status.Transaction.TransactionCommitFailed, e.status() );
         }
     }
 

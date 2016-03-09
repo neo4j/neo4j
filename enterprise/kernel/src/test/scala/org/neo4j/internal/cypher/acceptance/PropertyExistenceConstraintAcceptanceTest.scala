@@ -149,7 +149,7 @@ class PropertyExistenceConstraintAcceptanceTest extends ExecutionEngineFunSuite 
     val e = intercept[CypherExecutionException](execute("create constraint on (node:Label1) assert exists(node.key1)"))
 
     //THEN
-    e.status should equal(Status.Schema.ConstraintCreationFailure)
+    e.status should equal(Status.Schema.ConstraintCreationFailed)
   }
 
   test("relationship: should fail to create constraint when existing data violates it") {
@@ -160,7 +160,7 @@ class PropertyExistenceConstraintAcceptanceTest extends ExecutionEngineFunSuite 
     val e = intercept[CypherExecutionException](execute("create constraint on ()-[rel:KNOWS]-() assert exists(rel.since)"))
 
     //THEN
-    e.status should equal(Status.Schema.ConstraintCreationFailure)
+    e.status should equal(Status.Schema.ConstraintCreationFailed)
   }
 
   test("node: should drop constraint") {

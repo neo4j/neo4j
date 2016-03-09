@@ -27,6 +27,6 @@ public class ReadOnlyDbException extends TransactionFailureException
 {
     public ReadOnlyDbException()
     {
-        super( Status.General.ReadOnly, "This is a read only Neo4j instance" );
+        super( Status.General.ForbiddenOnReadOnlyDatabase, "This is a read only Neo4j instance" );
     }
 }

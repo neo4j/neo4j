@@ -116,7 +116,7 @@ public class SlaveTransactionCommitProcessTest
         }
         catch ( TransactionFailureException e )
         {
-            assertThat( e.status(), is( (Status) Status.Transaction.CouldNotCommit ) );
+            assertThat( e.status(), is( (Status) Status.Transaction.TransactionCommitFailed ) );
         }
     }
 }

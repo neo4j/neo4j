@@ -145,10 +145,10 @@ public class ExceptionRepresentation extends MappingRepresentation
             }
             if ( current instanceof ConstraintViolationException )
             {
-                return Status.Schema.ConstraintViolation;
+                return Status.Schema.ConstraintValidationFailed;
             }
             current = current.getCause();
         }
-        return Status.General.UnknownFailure;
+        return Status.General.UnknownError;
     }
 }

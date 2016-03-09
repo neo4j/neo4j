@@ -37,7 +37,7 @@ public class PropertyNotFoundException extends KernelException
 
     private PropertyNotFoundException( String entity, int propertyKeyId )
     {
-        super( Status.Statement.NoSuchProperty, "%s has no property with propertyKeyId=%s.", entity, propertyKeyId );
+        super( Status.Statement.PropertyNotFound, "%s has no property with propertyKeyId=%s.", entity, propertyKeyId );
         this.entity = entity;
         this.propertyKeyId = propertyKeyId;
     }

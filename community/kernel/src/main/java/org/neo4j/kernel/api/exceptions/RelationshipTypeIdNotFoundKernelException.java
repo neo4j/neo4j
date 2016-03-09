@@ -23,6 +23,6 @@ public class RelationshipTypeIdNotFoundKernelException extends KernelException
 {
     public RelationshipTypeIdNotFoundKernelException( long relationshipTypeId, Exception cause )
     {
-        super( Status.Schema.NoSuchRelationshipType, cause, "Relationship type id '%s' not found", relationshipTypeId );
+        super( Status.Schema.RelationshipTypeAccessFailed, cause, "Relationship type id '%s' not found", relationshipTypeId );
     }
 }

@@ -55,7 +55,7 @@ public class MethodSignatureCompiler
 
             if ( !param.isAnnotationPresent( Name.class ) )
             {
-                throw new ProcedureException( Status.Procedure.FailedRegistration,
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Argument at position %d in method `%s` is missing an `@%s` annotation.%n" +
                         "Please add the annotation, recompile the class and try again.",
                         i, method.getName(), Name.class.getSimpleName() );
@@ -64,7 +64,7 @@ public class MethodSignatureCompiler
 
             if( name.trim().length() == 0 )
             {
-                throw new ProcedureException( Status.Procedure.FailedRegistration,
+                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Argument at position %d in method `%s` is annotated with a name,%n" +
                         "but the name is empty, please provide a non-empty name for the argument.",
                         i, method.getName() );

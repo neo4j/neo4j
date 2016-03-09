@@ -32,7 +32,7 @@ public class NoSuchIndexException extends SchemaKernelException
 
     public NoSuchIndexException( IndexDescriptor descriptor )
     {
-        super( Status.Schema.NoSuchIndex, format( message, descriptor ) );
+        super( Status.Schema.IndexNotFound, format( message, descriptor ) );
         this.descriptor = descriptor;
     }
 

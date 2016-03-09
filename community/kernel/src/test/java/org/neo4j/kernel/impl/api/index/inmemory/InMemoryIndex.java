@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -131,7 +131,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void add( List<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
+        public void add( Collection<NodePropertyUpdate> updates ) throws IndexEntryConflictException, IOException
         {
             for ( NodePropertyUpdate update : updates )
             {

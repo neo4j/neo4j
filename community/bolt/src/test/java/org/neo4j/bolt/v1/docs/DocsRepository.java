@@ -39,7 +39,7 @@ import static org.asciidoctor.OptionsBuilder.options;
 public class DocsRepository
 {
     private final static String SEP = File.separator;
-    private final static File docsDir = findBackwards( "community" + SEP + "bolt" + SEP + "src" + SEP + "docs" + SEP, 5 );
+    private final static File docsDir = findBackwards( "community" + SEP + "bolt" + SEP + "src" + SEP + "docs" + SEP, 12 );
 
     private final Asciidoctor asciidoc;
     private static final Map<File,Document> docCache = new HashMap<>();

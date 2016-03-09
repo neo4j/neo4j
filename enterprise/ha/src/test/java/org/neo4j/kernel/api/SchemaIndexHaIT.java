@@ -25,8 +25,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -436,7 +436,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void add( List<NodePropertyUpdate> updates )
+        public void add( Collection<NodePropertyUpdate> updates )
                 throws IndexEntryConflictException, IOException
         {
             delegate.add( updates );

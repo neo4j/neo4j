@@ -103,7 +103,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     val error = intercept[IndexHintException](executeWithAllPlannersAndCompatibilityMode(query))
 
     // THEN
-    error.status should equal(Status.Schema.NoSuchIndex)
+    error.status should equal(Status.Schema.IndexNotFound)
   }
 
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {
@@ -119,16 +119,14 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled") {
     runWithConfig() {
       db =>
-        val result = db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
-        shouldHaveWarning(result, Status.Schema.NoSuchIndex)
+        shouldHaveWarning(db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.IndexNotFound)
     }
   }
 
   test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned off") {
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
       db =>
-        val result = db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
-        shouldHaveWarning(result, Status.Schema.NoSuchIndex)
+        shouldHaveWarning(db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.IndexNotFound)
     }
   }
 
@@ -137,7 +135,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       db =>
         intercept[QueryExecutionException](
           db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
-        ).getStatusCode should equal("Neo.ClientError.Schema.NoSuchIndex")
+        ).getStatusCode should equal("Neo.ClientError.Schema.IndexNotFound")
     }
   }
 
@@ -146,7 +144,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       db =>
         intercept[QueryExecutionException](
           db.execute(s"MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
-        ).getStatusCode should equal("Neo.ClientError.Schema.NoSuchIndex")
+        ).getStatusCode should equal("Neo.ClientError.Schema.IndexNotFound")
     }
   }
 
@@ -156,7 +154,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         db.execute("CREATE INDEX ON :Person(email)")
         intercept[QueryExecutionException](
           db.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n")
-        ).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
+        ).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
     }
   }
 
@@ -166,7 +164,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         db.execute("CREATE INDEX ON :Person(email)")
         intercept[QueryExecutionException](
           db.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n")
-        ).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
+        ).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
     }
   }
 
@@ -340,7 +338,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
         engine.execute("CREATE INDEX ON :Person(name)")
         intercept[QueryExecutionException](
           engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) USING SCAN n:Person WHERE n.name = 'John' RETURN n")
-        ).getStatusCode should equal("Neo.ClientError.Statement.InvalidSyntax")
+        ).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
     }
   }
 
@@ -707,8 +705,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
       db =>
         db.execute(initQuery)
-        intercept[QueryExecutionException](db.execute(query)).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailure")
-        intercept[QueryExecutionException](db.execute(s"EXPLAIN $query")).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailure")
+        intercept[QueryExecutionException](db.execute(query)).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailed")
+        intercept[QueryExecutionException](db.execute(s"EXPLAIN $query")).getStatusCode should equal("Neo.DatabaseError.Statement.ExecutionFailed")
     }
   }
 

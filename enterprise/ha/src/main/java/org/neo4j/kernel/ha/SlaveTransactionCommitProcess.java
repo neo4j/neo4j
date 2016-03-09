@@ -71,7 +71,7 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
         catch ( IOException e )
         {
             throw new TransactionFailureException(
-                    Status.Transaction.CouldNotCommit, e, "Could not commit transaction on the master" );
+                    Status.Transaction.TransactionCommitFailed, e, "Could not commit transaction on the master" );
         }
         catch ( ComException e )
         {

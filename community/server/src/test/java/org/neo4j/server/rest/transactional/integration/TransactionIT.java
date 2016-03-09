@@ -178,7 +178,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( begin, hasErrors( Status.Request.InvalidFormat ) );
 
         assertThat( commit.status(), equalTo( 404 ) );
-        assertThat( commit, hasErrors( Status.Transaction.UnknownId ) );
+        assertThat( commit, hasErrors( Status.Transaction.TransactionNotFound ) );
 
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }
@@ -201,7 +201,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                                                                      " }" ) );
 
         assertThat( execute2.status(), equalTo( 404 ) );
-        assertThat( execute2, hasErrors( Status.Transaction.UnknownId ) );
+        assertThat( execute2, hasErrors( Status.Transaction.TransactionNotFound ) );
     }
 
     @Test
@@ -334,7 +334,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             );
 
             assertThat( response.status(), equalTo( 200 ) );
-            assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
+            assertThat( response, hasErrors( Status.Statement.SemanticError ) );
         } );
     }
 
@@ -348,7 +348,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         );
 
         assertThat( response.status(), equalTo( 200 ) );
-        assertThat( response, hasErrors( Status.Statement.InvalidSyntax ) );
+        assertThat( response, hasErrors( Status.Statement.SyntaxError ) );
     }
 
     @Test
@@ -363,7 +363,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                                 "CREATE ()' } ] }" )
             );
 
-            assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
+            assertThat( response, hasErrors( Status.Statement.SemanticError ) );
         } );
     }
 
@@ -382,7 +382,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                                                                          " PERIODIC COMMIT LOAD CSV FROM \\\"" +
                                                                          url + "\\\" AS line CREATE ()' } ] }" ) );
 
-            assertThat( response, hasErrors( Status.Statement.InvalidSemantics ) );
+            assertThat( response, hasErrors( Status.Statement.SemanticError ) );
         } );
     }
 
@@ -397,7 +397,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                                 url + "\\\" AS line CREATE ()' } ] }" )
             );
 
-            assertThat( begin, hasErrors( Status.Statement.InvalidSemantics ) );
+            assertThat( begin, hasErrors( Status.Statement.SemanticError ) );
         } );
     }
 
@@ -562,12 +562,12 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         interruptFuture.get();
         Response execute = executeFuture.get();
-        assertThat( execute, hasErrors( Status.Statement.ExecutionFailure ) );
+        assertThat( execute, hasErrors( Status.Statement.ExecutionFailed ) );
 
         Response execute2 =
                 http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertThat( execute2.status(), equalTo( 404 ) );
-        assertThat( execute2, hasErrors( Status.Transaction.UnknownId ) );
+        assertThat( execute2, hasErrors( Status.Transaction.TransactionNotFound ) );
     }
 
     @Test
@@ -813,7 +813,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         // begin and execute and commit
         Response begin = http.POST( "/db/data/transaction/commit", quotedJson( "{ 'statements': [ { 'statement': " +
                                                                                "'MATCH (n:Test) USING INDEX n:Test(foo) WHERE n.foo = 42 RETURN n.foo' } ] }" ) );
-        assertThat( begin, hasErrors( Status.Request.Schema.NoSuchIndex ) );
+        assertThat( begin, hasErrors( Status.Request.Schema.IndexNotFound ) );
     }
 
     @Test

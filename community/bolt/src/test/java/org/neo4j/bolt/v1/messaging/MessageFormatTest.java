@@ -78,7 +78,7 @@ public class MessageFormatTest
         assertSerializes( new PullAllMessage() );
         assertSerializes( new RecordMessage( record( 1L, "b", 2L ) ) );
         assertSerializes( new SuccessMessage( new HashMap<>() ) );
-        assertSerializes( new FailureMessage( Status.General.UnknownFailure, "Err" ) );
+        assertSerializes( new FailureMessage( Status.General.UnknownError, "Err" ) );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new ResetMessage() );
         assertSerializes( new InitMessage( "MyClient/1.0", map("scheme", "basic") ) );

@@ -27,8 +27,8 @@ import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotCommit;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotWriteToLog;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionLogError;
 
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
 {
@@ -65,7 +65,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
         catch ( Throwable cause )
         {
-            throw new TransactionFailureException( CouldNotWriteToLog, cause,
+            throw new TransactionFailureException( TransactionLogError, cause,
                     "Could not append transaction representation to log" );
         }
     }
@@ -79,7 +79,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
         catch ( Throwable cause )
         {
-            throw new TransactionFailureException( CouldNotCommit, cause,
+            throw new TransactionFailureException( TransactionCommitFailed, cause,
                     "Could not apply the transaction to the store after written to log" );
         }
     }

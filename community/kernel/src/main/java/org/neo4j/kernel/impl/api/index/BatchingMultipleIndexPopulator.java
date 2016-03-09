@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -75,7 +76,8 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private static final String FLUSH_THREAD_NAME_PREFIX = "Index Population Flush Thread";
 
     private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
-    private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME, 10_000 );
+    private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME,
+            getNumberOfPopulationWorkers() * 2 );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
     private final int BATCH_SIZE = FeatureToggles.getInteger( getClass(), BATCH_SIZE_NAME, 10_000 );
 
@@ -182,12 +184,12 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * {@link IndexPopulation population}. Flushes all updates if {@link #BATCH_SIZE} is reached.
      *
      * @param population the index population.
-     * @param update the update to add to the batch.
+     * @param updates updates to add to the batch.
      */
-    private void batchUpdate( IndexPopulation population, NodePropertyUpdate update )
+    private void batchUpdate( IndexPopulation population, Collection<NodePropertyUpdate> updates )
     {
         List<NodePropertyUpdate> batch = batchedUpdates.computeIfAbsent( population, key -> newBatch() );
-        batch.add( update );
+        batch.addAll( updates );
         flushIfNeeded( population, batch );
     }
 
@@ -304,7 +306,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     private ExecutorService createThreadPool()
     {
-        int threads = Math.max( 2, Runtime.getRuntime().availableProcessors() - 1 );
+        int threads = getNumberOfPopulationWorkers();
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( TASK_QUEUE_SIZE );
         ThreadFactory threadFactory = daemon( FLUSH_THREAD_NAME_PREFIX );
         RejectedExecutionHandler rejectedExecutionHandler = new ThreadPoolExecutor.CallerRunsPolicy();
@@ -328,6 +330,16 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     /**
+     * Calculate number of workers that will perform index population
+     *
+     * @return number of threads that will be used for index population
+     */
+    private static int getNumberOfPopulationWorkers()
+    {
+        return Math.max( 2, Runtime.getRuntime().availableProcessors() - 1 );
+    }
+
+    /**
      * An {@link IndexPopulation} that does not insert updates one by one into the index but instead adds them to the
      * map containing batches of updates for each index.
      */
@@ -342,9 +354,10 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         }
 
         @Override
-        protected void addApplicable( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+        protected void addApplicable( Collection<NodePropertyUpdate> updates ) throws IOException,
+                IndexEntryConflictException
         {
-            batchUpdate( this, update );
+            batchUpdate( this, updates );
         }
     }
 
