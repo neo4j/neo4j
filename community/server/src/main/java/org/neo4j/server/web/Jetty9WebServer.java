@@ -43,9 +43,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
 import ch.qos.logback.access.servlet.TeeFilter;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -64,6 +64,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.PortBindException;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -368,13 +369,11 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
-    private void loadAllMounts()
+    private void loadAllMounts() throws IOException
     {
         SessionManager sm = new HashSessionManager();
 
-        final SortedSet<String> mountpoints = new TreeSet<>( ( o1, o2 ) -> {
-            return o2.compareTo( o1 );
-        } );
+        final SortedSet<String> mountpoints = new TreeSet<>( (Comparator<String>) ( o1, o2 ) -> o2.compareTo( o1 ) );
 
         mountpoints.addAll( staticContent.keySet() );
         mountpoints.addAll( jaxRSPackages.keySet() );
@@ -428,10 +427,11 @@ public class Jetty9WebServer implements WebServer
         return count;
     }
 
-    private void loadRequestLogging()
+    private void loadRequestLogging() throws IOException
     {
-        final RequestLogImpl requestLog = new RequestLogImpl();
-        requestLog.setFileName( requestLoggingConfiguration.getAbsolutePath() );
+        RequestLog requestLog = new AsyncRequestLog(
+                new DefaultFileSystemAbstraction(),
+                requestLoggingConfiguration.getAbsolutePath() );
 
         // This makes the request log handler decorate whatever other handlers are already set up
         final RequestLogHandler requestLogHandler = new RequestLogHandler();
