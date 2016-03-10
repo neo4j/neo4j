@@ -101,7 +101,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
         }
         else
         {
-            markFirstByteAsUnused( cursor );
+            markAsUnused( cursor );
         }
     }
 

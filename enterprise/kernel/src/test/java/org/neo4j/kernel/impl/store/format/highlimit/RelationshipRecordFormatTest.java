@@ -24,24 +24,42 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPageCursor;
-import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
+import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.offsetForId;
+import static org.neo4j.kernel.impl.store.format.BaseRecordFormat.IN_USE_BIT;
 
 public class RelationshipRecordFormatTest
 {
-    private static final int DATA_SIZE = 100;
+    private final RelationshipRecordFormat format = new RelationshipRecordFormat();
+    private final int recordSize = format.getRecordSize( NO_STORE_HEADER );
+    private final StubPageCursor cursor = new StubPageCursor( 0, (int) ByteUnit.kibiBytes( 4 ) )
+    {
+        @Override
+        public boolean next( long pageId ) throws IOException
+        {
+            // We're going to use this cursor in an environment where in all genericness this cursor
+            // is one that can be moved around to other pages. That's not possible with this stub cursor,
+            // however we know that in this test we'll stay on page 0 even if there are calls to next(pageId)
+            // which are part of the format code.
+            assertEquals( 0, pageId );
+            return true;
+        }
+    };
 
     @Test
     public void writeAndReadRecordWithRelativeReferences() throws IOException
     {
-        RelationshipRecordFormat format = new RelationshipRecordFormat();
-        int recordSize = format.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
-        StubPageCursor cursor = new StubPageCursor( 0, (int) ByteUnit.kibiBytes( 4 ) );
         long recordId = 0xF1F1F1F1F1F1L;
         int recordOffset = cursor.getOffset();
 
@@ -54,6 +72,43 @@ public class RelationshipRecordFormatTest
         checkRecord( format, recordSize, cursor, recordId, recordOffset, firstInSecondChain );
         checkRecord( format, recordSize, cursor, recordId, recordOffset, firstInFirstChain );
         checkRecord( format, recordSize, cursor, recordId, recordOffset, firstInBothChains );
+    }
+
+    /*
+     * This test acts as a test group for whoever uses BaseHighLimitRecordFormat base class,
+     * the logic for marking both units as unused when deleting exists there.
+     */
+    @Test
+    public void shouldMarkBothUnitsAsUnusedhenDeletingRecordWhichHasSecondaryUnit() throws Exception
+    {
+        // GIVEN a record which requires two units
+        PagedFile storeFile = mock( PagedFile.class );
+        when( storeFile.pageSize() ).thenReturn( cursor.getCurrentPageSize() );
+        long hugeValue = 1L << 48;
+        RelationshipRecord record = new RelationshipRecord( 5 ).initialize( true,
+                hugeValue + 1, hugeValue + 2, hugeValue + 3, 4,
+                hugeValue + 5, hugeValue + 6, hugeValue + 7, hugeValue + 8, true, true );
+        record.setSecondaryUnitId( 17 );
+        record.setRequiresSecondaryUnit( true );
+        cursor.setOffset( offsetForId( record.getId(), cursor.getCurrentPageSize(), recordSize ) );
+        format.write( record, cursor, recordSize, storeFile );
+
+        // WHEN deleting that record
+        record.setInUse( false );
+        cursor.setOffset( offsetForId( record.getId(), cursor.getCurrentPageSize(), recordSize ) );
+        format.write( record, cursor, recordSize, storeFile );
+
+        // THEN both units should have been marked as unused
+        cursor.setOffset( offsetForId( record.getId(), cursor.getCurrentPageSize(), recordSize ) );
+        assertFalse( recordInUse( cursor ) );
+        cursor.setOffset( offsetForId( record.getSecondaryUnitId(), cursor.getCurrentPageSize(), recordSize ) );
+        assertFalse( recordInUse( cursor ) );
+    }
+
+    private boolean recordInUse( StubPageCursor cursor )
+    {
+        byte header = cursor.getByte();
+        return (header & IN_USE_BIT) != 0;
     }
 
     private void checkRecord( RelationshipRecordFormat format, int recordSize, StubPageCursor cursor,

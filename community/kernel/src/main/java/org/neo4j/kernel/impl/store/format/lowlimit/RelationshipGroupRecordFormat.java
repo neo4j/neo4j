@@ -111,7 +111,7 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
         }
         else
         {
-            markFirstByteAsUnused( cursor );
+            markAsUnused( cursor );
         }
     }
 
