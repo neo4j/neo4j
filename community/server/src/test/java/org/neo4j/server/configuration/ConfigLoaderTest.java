@@ -32,7 +32,9 @@ import org.junit.rules.TemporaryFolder;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
+import org.neo4j.test.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -40,14 +42,17 @@ import static org.junit.Assert.assertNotNull;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.test.SuppressOutput.suppressAll;
 
-public class ServerConfigLoaderTest
+public class ConfigLoaderTest
 {
     @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    public final SuppressOutput suppressOutput = suppressAll();
+    @Rule
+    public final TemporaryFolder folder = new TemporaryFolder();
 
     private final Log log = NullLog.getInstance();
-    private final BaseServerConfigLoader configLoader = new BaseServerConfigLoader();
+    private final ConfigLoader configLoader = new ConfigLoader( CommunityBootstrapper.settingsClasses );
 
     @Test
     public void shouldProvideAConfiguration() throws IOException
@@ -120,5 +125,41 @@ public class ServerConfigLoaderTest
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
         assertNotNull( thirdpartyJaxRsPackages );
         assertEquals( 3, thirdpartyJaxRsPackages.size() );
+    }
+
+    @Test
+    public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages() throws IOException
+    {
+        // given
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
+                .withNameValue( ServerSettings.third_party_packages.name(),
+                        "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
+                                "org.neo4j.extension.extension3=/extension3" )
+                .build();
+
+        // when
+        Config config = configLoader.loadConfig( null, configFile, log );
+
+        // then
+        List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
+
+        assertEquals( 3, thirdpartyJaxRsPackages.size() );
+        assertEquals( "/extension1", thirdpartyJaxRsPackages.get( 0 ).getMountPoint() );
+        assertEquals( "/extension2", thirdpartyJaxRsPackages.get( 1 ).getMountPoint() );
+        assertEquals( "/extension3", thirdpartyJaxRsPackages.get( 2 ).getMountPoint() );
+
+    }
+
+    @Test
+    public void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist()
+    {
+        // Given
+        File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );
+
+        // When
+        Config config = configLoader.loadConfig( null, nonExistentConfigFile, log );
+
+        // Then
+        assertNotNull( config );
     }
 }

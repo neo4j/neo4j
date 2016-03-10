@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
-import static org.neo4j.server.CommunityBootstrapper.start;
+import static org.neo4j.server.Bootstrapper.start;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
