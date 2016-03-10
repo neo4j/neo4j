@@ -23,12 +23,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.BiPredicate;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -46,14 +43,11 @@ import org.neo4j.metrics.source.db.TransactionMetrics;
 import org.neo4j.metrics.source.jvm.ThreadMetrics;
 import org.neo4j.test.ha.ClusterRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -62,13 +56,11 @@ import static org.neo4j.metrics.MetricsSettings.csvEnabled;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 import static org.neo4j.metrics.MetricsSettings.graphiteInterval;
 import static org.neo4j.metrics.MetricsSettings.metricsEnabled;
-import static org.neo4j.test.Assert.assertEventually;
+import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
+import static org.neo4j.metrics.MetricsTestHelper.readLongValueAndAssert;
 
 public class MetricsKernelExtensionFactoryIT
 {
-    private static final int TIME_STAMP = 0;
-    private static final int METRICS_VALUE = 1;
-
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() );
 
@@ -101,7 +93,7 @@ public class MetricsKernelExtensionFactoryIT
 
         // Create some activity that will show up in the metrics data.
         addNodes( 1000 );
-        File metricsFile = new File( outputPath, TransactionMetrics.TX_COMMITTED + ".csv" );
+        File metricsFile = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED );
 
         // WHEN
         // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
@@ -119,7 +111,7 @@ public class MetricsKernelExtensionFactoryIT
         // GIVEN
         // Create some activity that will show up in the metrics data.
         addNodes( 1000 );
-        File metricsFile = new File( outputPath, EntityCountMetrics.COUNTS_NODE + ".csv" );
+        File metricsFile = metricsCsv( outputPath, EntityCountMetrics.COUNTS_NODE );
 
         // WHEN
         // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
@@ -136,7 +128,7 @@ public class MetricsKernelExtensionFactoryIT
         // GIVEN
         // Create some activity that will show up in the metrics data.
         addNodes( 1000 );
-        File metricsFile = new File( outputPath, ClusterMetrics.IS_MASTER + ".csv" );
+        File metricsFile = metricsCsv( outputPath, ClusterMetrics.IS_MASTER );
 
         // WHEN
         // We should at least have a "timestamp" column, and a "neo4j.transaction.committed" column
@@ -171,7 +163,7 @@ public class MetricsKernelExtensionFactoryIT
             addNodes( 1 );
         }
 
-        File metricFile = new File( outputPath, CypherMetrics.REPLAN_EVENTS + ".csv" );
+        File metricFile = metricsCsv( outputPath, CypherMetrics.REPLAN_EVENTS );
         long events = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue >= currentValue );
 
         // THEN
@@ -189,7 +181,7 @@ public class MetricsKernelExtensionFactoryIT
         checkPointer.checkPointIfNeeded( new SimpleTriggerInfo( "test" ) );
 
         // wait for the file to be written before shutting down the cluster
-        File metricFile = new File( outputPath, CheckPointingMetrics.CHECK_POINT_DURATION + ".csv" );
+        File metricFile = metricsCsv( outputPath, CheckPointingMetrics.CHECK_POINT_DURATION );
 
         long result = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue > 0 );
 
@@ -204,8 +196,8 @@ public class MetricsKernelExtensionFactoryIT
         addNodes( 100 );
 
         // wait for the file to be written before shutting down the cluster
-        File threadTotalFile = new File( outputPath, ThreadMetrics.THREAD_TOTAL + ".csv" );
-        File threadCountFile = new File( outputPath, ThreadMetrics.THREAD_COUNT + ".csv" );
+        File threadTotalFile = metricsCsv( outputPath, ThreadMetrics.THREAD_TOTAL );
+        File threadCountFile = metricsCsv( outputPath, ThreadMetrics.THREAD_COUNT );
 
         long threadTotalResult = readLongValueAndAssert( threadTotalFile, ( newValue, currentValue ) -> newValue >= 0 );
         long threadCountResult = readLongValueAndAssert( threadCountFile, ( newValue, currentValue ) -> newValue >= 0 );
@@ -228,30 +220,4 @@ public class MetricsKernelExtensionFactoryIT
         }
     }
 
-    private long readLongValueAndAssert( File metricFile, BiPredicate<Integer,Integer> assumption ) throws Throwable
-    {
-        // let's wait until the file is in place (since the reporting is async that might take a while)
-        assertEventually( "Metrics file should exist", metricFile::exists, is( true ), 20, SECONDS );
-
-        try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
-        {
-            String[] headers = reader.readLine().split( "," );
-            assertThat( headers.length, is( 2 ) );
-            assertThat( headers[TIME_STAMP], is( "t" ) );
-            assertThat( headers[METRICS_VALUE], is( "value" ) );
-
-            // Now we can verify that the number of committed transactions should never decrease.
-            int currentValue = 0;
-            String line;
-            while ( (line = reader.readLine()) != null )
-            {
-                String[] fields = line.split( "," );
-                int newValue = Integer.parseInt( fields[1] );
-                assertTrue( "assertion failed on " + newValue + " " + currentValue,
-                        assumption.test( newValue, currentValue ) );
-                currentValue = newValue;
-            }
-            return currentValue;
-        }
-    }
 }

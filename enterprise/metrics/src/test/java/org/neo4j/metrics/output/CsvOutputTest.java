@@ -32,6 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.metrics.MetricsSettings;
@@ -56,7 +57,8 @@ public class CsvOutputTest
     public void setup()
     {
         storeDir = directory.directory();
-        kernelContext = new SimpleKernelContext( new DefaultFileSystemAbstraction(), storeDir, DatabaseInfo.UNKNOWN );
+        kernelContext = new SimpleKernelContext( new DefaultFileSystemAbstraction(), storeDir,
+                DatabaseInfo.UNKNOWN, new Dependencies() );
     }
 
     @Test

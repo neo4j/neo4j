@@ -54,6 +54,7 @@ import org.neo4j.metrics.source.jvm.GCMetrics;
 import org.neo4j.metrics.source.jvm.MemoryBuffersMetrics;
 import org.neo4j.metrics.source.jvm.MemoryPoolMetrics;
 import org.neo4j.metrics.source.jvm.ThreadMetrics;
+import org.neo4j.metrics.source.server.ServerMetrics;
 
 public class Neo4jMetricsBuilder
 {
@@ -172,9 +173,9 @@ public class Neo4jMetricsBuilder
             result = true;
         }
 
-        if( config.get( MetricsSettings.boltMessagesEnabled ))
+        if ( config.get( MetricsSettings.boltMessagesEnabled ) )
         {
-            life.add( new BoltMetrics( registry, dependencies.monitors() ));
+            life.add( new BoltMetrics( registry, dependencies.monitors() ) );
             result = true;
         }
 
@@ -193,14 +194,14 @@ public class Neo4jMetricsBuilder
         if ( config.get( MetricsSettings.coreEdgeEnabled ) )
         {
             OperationalMode mode = kernelContext.databaseInfo().operationalMode;
-            if ( mode == OperationalMode.core)
+            if ( mode == OperationalMode.core )
             {
                 life.add( new CoreMetrics( dependencies.monitors(), registry, dependencies.raft() ) );
                 result = true;
             }
-            else if ( mode == OperationalMode.edge)
+            else if ( mode == OperationalMode.edge )
             {
-                life.add( new EdgeMetrics( dependencies.monitors(), registry) );
+                life.add( new EdgeMetrics( dependencies.monitors(), registry ) );
                 result = true;
             }
             else
@@ -208,6 +209,12 @@ public class Neo4jMetricsBuilder
                 logService.getUserLog( getClass() )
                         .warn( "Core Edge metrics was enabled but the graph database is not in Core/Edge mode." );
             }
+        }
+
+        if ( config.get( MetricsSettings.neoServerEnabled ) )
+        {
+            life.add( new ServerMetrics( registry, logService, kernelContext.dependencySatisfier() ) );
+            result = true;
         }
 
         return result;

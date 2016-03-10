@@ -19,10 +19,13 @@
  */
 package org.neo4j.server.web;
 
+import org.eclipse.jetty.server.Server;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -70,4 +73,6 @@ public interface WebServer
     void setWadlEnabled( boolean wadlEnabled );
 
     void setDefaultInjectables( Collection<InjectableProvider<?>> defaultInjectables );
+
+    void setJettyCreatedCallback( Consumer<Server> callback );
 }

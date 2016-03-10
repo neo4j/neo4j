@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Consumer;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
@@ -81,6 +82,7 @@ public class Jetty9WebServer implements WebServer
 {
     private boolean wadlEnabled;
     private Collection<InjectableProvider<?>> defaultInjectables;
+    private Consumer<Server> jettyCreatedCallback;
 
     private static class FilterDefinition
     {
@@ -167,6 +169,10 @@ public class Jetty9WebServer implements WebServer
                 }
             }
 
+            if ( jettyCreatedCallback != null )
+            {
+                jettyCreatedCallback.accept( jetty );
+            }
         }
 
         handlers = new HandlerList();
@@ -278,6 +284,11 @@ public class Jetty9WebServer implements WebServer
     public void setDefaultInjectables( Collection<InjectableProvider<?>> defaultInjectables )
     {
         this.defaultInjectables = defaultInjectables;
+    }
+
+    public void setJettyCreatedCallback( Consumer<Server> callback )
+    {
+        this.jettyCreatedCallback = callback;
     }
 
     @Override
