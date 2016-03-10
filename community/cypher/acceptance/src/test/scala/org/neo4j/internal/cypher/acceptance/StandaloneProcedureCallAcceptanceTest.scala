@@ -43,7 +43,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should be able to call void procedure") {
     //Given
-    registerVoidProc()
+    registerVoidProcedure()
 
     //When
     val result = execute("CALL sys.do_nothing()")
@@ -54,7 +54,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should be able to call void procedure without arguments") {
     //Given
-    registerVoidProc()
+    registerVoidProcedure()
 
     //When
     val result = execute("CALL sys.do_nothing")
@@ -65,7 +65,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should be able to call empty procedure") {
     //Given
-    registerEmptyProc()
+    registerProcedureReturningNoRowsOrColumns()
 
     //When
     val result = execute("CALL sys.return_nothing()")
@@ -76,7 +76,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should be able to call empty procedure without arguments") {
     //Given
-    registerEmptyProc()
+    registerProcedureReturningNoRowsOrColumns()
 
     //When
     val result = execute("CALL sys.return_nothing")
@@ -218,7 +218,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should be able to call procedure with explicit arguments") {
     // Given
-    registerDummyProc(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // When
     val result = execute("CALL my.first.proc('42', 42)")
@@ -229,7 +229,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should be able to call procedure with implicit arguments") {
     // Given
-    registerDummyProc(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // When
     val result = execute("CALL my.first.proc", "in0" -> "42", "in1" -> 42)
@@ -240,7 +240,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should fail if input type is wrong") {
     // Given
-    registerDummyProc(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
     a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
@@ -248,7 +248,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("if signature declares number all number types are valid") {
     // Given
-    registerDummyProc(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
     execute("CALL my.first.proc(42)").toList should equal(List(Map("out0" -> 42)))
@@ -257,7 +257,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("arguments are nullable") {
     // Given
-    registerDummyProc(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
     execute("CALL my.first.proc(NULL)").toList should equal(List(Map("out0" -> null)))
@@ -265,7 +265,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should not fail if a procedure declares a float but gets an integer") {
     // Given
-    registerDummyProc(Neo4jTypes.NTFloat)
+    registerDummyInOutProcedure(Neo4jTypes.NTFloat)
 
     // Then
     a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42)")))
@@ -273,7 +273,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should not fail if a procedure declares a float but gets called with an integer") {
     // Given
-    registerDummyProc(Neo4jTypes.NTFloat)
+    registerDummyInOutProcedure(Neo4jTypes.NTFloat)
 
     // Then
     a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc({param})", "param" -> 42)))
@@ -281,7 +281,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should fail if explicit argument is missing") {
     // Given
-    registerDummyProc(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
     an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
@@ -289,7 +289,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should fail if too many arguments") {
     // Given
-    registerDummyProc(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
     an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42)"))
@@ -297,7 +297,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should fail if implicit argument is missing") {
     // Given
-    registerDummyProc(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
     a [ParameterNotFoundException] shouldBe thrownBy(execute("CALL my.first.proc", "in0" -> "42", "in42" -> 42))
@@ -305,7 +305,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
   test("should be able to call a procedure with explain") {
     // Given
-    registerDummyProc(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // When
     val result = execute("EXPLAIN CALL my.first.proc(42)")
