@@ -17,25 +17,46 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.metrics.source.coreedge;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
-import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
+import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
 
-public class RaftLogAppendIndexMetric implements RaftLogAppendIndexMonitor
+public class PullRequestMetric implements PullRequestMonitor
 {
-    private AtomicLong appendIndex = new AtomicLong( 0 );
+    private AtomicLong lastRequestedTxId = new AtomicLong( 0 );
+    private AtomicLong lastReceivedTxId = new AtomicLong( 0 );
+    private LongAdder events = new LongAdder(  );
 
     @Override
-    public long appendIndex()
+    public void txPullRequest( long txId )
     {
-        return appendIndex.get();
+        events.increment();
+        this.lastRequestedTxId.set( txId );
     }
 
     @Override
-    public void appendIndex( long appendIndex )
+    public void txPullResponse( long txId )
     {
-        this.appendIndex.set( appendIndex );
+        lastReceivedTxId.set( txId );
+    }
+
+    @Override
+    public long lastRequestedTxId()
+    {
+        return this.lastRequestedTxId.get();
+    }
+
+    @Override
+    public long numberOfRequests()
+    {
+        return events.longValue();
+    }
+
+    public long lastReceivedTxId()
+    {
+        return lastReceivedTxId.get();
     }
 }

@@ -41,6 +41,8 @@ import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.metrics.output.EventReporter;
 import org.neo4j.metrics.source.cluster.ClusterMetrics;
 import org.neo4j.metrics.source.cluster.NetworkMetrics;
+import org.neo4j.metrics.source.coreedge.CoreMetrics;
+import org.neo4j.metrics.source.coreedge.EdgeMetrics;
 import org.neo4j.metrics.source.db.BoltMetrics;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;

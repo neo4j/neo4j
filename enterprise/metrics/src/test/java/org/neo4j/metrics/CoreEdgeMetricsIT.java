@@ -38,7 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.metrics.source.CoreMetrics;
+import org.neo4j.metrics.source.coreedge.CoreMetrics;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -54,9 +54,9 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.metrics.source.EdgeMetrics.PULL_UPDATES;
-import static org.neo4j.metrics.source.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_RECEIVED;
-import static org.neo4j.metrics.source.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_REQUESTED;
+import static org.neo4j.metrics.source.coreedge.EdgeMetrics.PULL_UPDATES;
+import static org.neo4j.metrics.source.coreedge.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_RECEIVED;
+import static org.neo4j.metrics.source.coreedge.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_REQUESTED;
 import static org.neo4j.test.Assert.assertEventually;
 
 public class CoreEdgeMetricsIT

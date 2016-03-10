@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
-
-import java.io.IOException;
+package org.neo4j.metrics.source.coreedge;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
