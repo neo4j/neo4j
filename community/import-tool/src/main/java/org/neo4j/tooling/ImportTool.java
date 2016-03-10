@@ -372,7 +372,7 @@ public class ImportTool
 
         LifeSupport life = new LifeSupport();
 
-        LogService logService = life.add( StoreLogService.inStoreDirectory( fs, storeDir ) );
+        LogService logService = life.add( StoreLogService.inLogsDirectory( fs, storeDir ) );
 
         life.start();
         org.neo4j.unsafe.impl.batchimport.Configuration configuration =

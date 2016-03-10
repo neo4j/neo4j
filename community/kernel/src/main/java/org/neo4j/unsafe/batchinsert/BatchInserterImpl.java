@@ -239,7 +239,7 @@ public class BatchInserterImpl implements BatchInserter
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        StoreLogService logService = life.add( StoreLogService.inStoreDirectory( fileSystem, this.storeDir ) );
+        StoreLogService logService = life.add( StoreLogService.inLogsDirectory( fileSystem, this.storeDir ) );
         msgLog = logService.getInternalLog( getClass() );
         storeLocker = new StoreLocker( fileSystem );
         storeLocker.checkLock( this.storeDir );
