@@ -87,7 +87,6 @@ public abstract class GraphDatabaseFacadeFactory
 
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "unsupported.dbms.lock_manager", Settings.STRING, "" );
-        public static final Setting<String> auth_manager = setting( "unsupported.dbms.auth_manager", Settings.STRING, "" );
 
         public static final Setting<String> tracer =
                 setting( "unsupported.dbms.tracer", Settings.STRING, (String) null ); // 'null' default.

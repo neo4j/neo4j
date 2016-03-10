@@ -218,7 +218,7 @@ public class CommunityEditionModule extends EditionModule
             return AuthManager.NO_AUTH;
         }
 
-        String key = config.get( GraphDatabaseFacadeFactory.Configuration.auth_manager );
+        String key = config.get( GraphDatabaseSettings.auth_manager );
         for ( AuthManager.Factory candidate : Service.load( AuthManager.Factory.class ) )
         {
             String candidateId = candidate.getKeys().iterator().next();
