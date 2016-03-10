@@ -457,6 +457,9 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
 
+    @Internal
+    public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "" );
+
     // Bolt Settings
 
     @Group("dbms.connector")
