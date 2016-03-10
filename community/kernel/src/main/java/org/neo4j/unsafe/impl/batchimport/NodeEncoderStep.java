@@ -85,7 +85,7 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
             {
                 nodeRecord.setLabelField( batchNode.labelField(), Collections.<DynamicRecord>emptyList() );
             }
-            else
+            else if ( batchNode.labels().length > 0 )
             {
                 long[] labels = batch.labels[i] = labelHolder.getOrCreateIds( batchNode.labels() );
                 InlineNodeLabels.putSorted( nodeRecord, labels, null, nodeStore.getDynamicLabelStore() );
