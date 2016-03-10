@@ -179,6 +179,6 @@ public class StandaloneClusterClient implements AutoCloseable
     {
         File logDir = config.get( GraphDatabaseSettings.logs_directory );
         return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
-                .inStoreDirectory( fileSystem, logDir );
+                .inLogsDirectory( fileSystem, logDir );
     }
 }
