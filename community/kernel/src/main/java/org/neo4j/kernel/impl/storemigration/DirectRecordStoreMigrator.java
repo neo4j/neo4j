@@ -29,14 +29,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.logging.NullLogProvider;
 
@@ -89,20 +87,12 @@ public class DirectRecordStoreMigrator
     {
         to.setHighestPossibleIdInUse( from.getHighestPossibleIdInUse() );
 
-        RecordCursor<RECORD> cursor = from.newRecordCursor( from.newRecord() );
-        long highId = from.getHighId();
-        from.placeRecordCursor( from.getNumberOfReservedLowIds(), cursor, RecordLoad.CHECK );
-        for ( long id = from.getNumberOfReservedLowIds(); id < highId; id++ )
+        from.scanAllRecords( record ->
         {
-            if ( cursor.next( id ) )
-            {
-                RECORD record = cursor.get();
-
-                // We should be able to make updateRecord more efficient, in similar ways of the RecordCursor
-                to.prepareForCommit( record );
-                to.updateRecord( record );
-            }
-        }
+            to.prepareForCommit( record );
+            to.updateRecord( record );
+            return false;
+        } );
     }
 
     /**

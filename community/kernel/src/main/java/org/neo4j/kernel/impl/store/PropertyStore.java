@@ -176,8 +176,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             return;
         }
 
-        try ( Cursor<DynamicRecord> dynamicRecords = dynamicStore.placeRecordCursor( block.getSingleValueLong(),
-                dynamicStore.newRecordCursor( dynamicStore.newRecord() ), NORMAL ) )
+        try ( Cursor<DynamicRecord> dynamicRecords = dynamicStore.newRecordCursor( dynamicStore.newRecord() )
+                .acquire( block.getSingleValueLong(), NORMAL ) )
         {
             while ( dynamicRecords.next() )
             {

@@ -54,7 +54,7 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
     public StorePropertyCursor init( long firstPropertyId, Lock lock )
     {
         this.lock = lock;
-        propertyStore.placeRecordCursor( firstPropertyId, recordCursor, NORMAL );
+        recordCursor.acquire( firstPropertyId, NORMAL );
         payload.clear();
         return this;
     }

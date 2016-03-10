@@ -619,7 +619,7 @@ public class MetaDataStoreTest
             MetaDataRecord record = store.newRecord();
             try ( RecordCursor<MetaDataRecord> cursor = store.newRecordCursor( record ) )
             {
-                store.placeRecordCursor( 0, cursor, RecordLoad.NORMAL );
+                cursor.acquire( 0, RecordLoad.NORMAL );
                 long highId = store.getHighId();
                 for ( long id = 0; id < highId; id++ )
                 {

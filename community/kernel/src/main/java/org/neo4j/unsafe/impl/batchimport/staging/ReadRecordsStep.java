@@ -50,7 +50,7 @@ public abstract class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends
     @Override
     public void start( int orderingGuarantees )
     {
-        store.placeRecordCursor( 0, cursor, CHECK );
+        cursor.acquire( 0, CHECK );
         super.start( orderingGuarantees );
     }
 
