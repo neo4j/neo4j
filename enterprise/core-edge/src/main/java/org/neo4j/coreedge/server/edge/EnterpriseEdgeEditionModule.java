@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.server.edge;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -77,7 +78,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.udc.UsageData;
 
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 
 /**
@@ -140,7 +140,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 () -> new TransactionApplier( platformModule.dependencies );
 
         ExpiryScheduler expiryScheduler = new ExpiryScheduler( platformModule.jobScheduler );
-        Expiration expiration = new Expiration( SYSTEM_CLOCK );
+        Expiration expiration = new Expiration( Clock.systemUTC() );
 
         EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer( logProvider );
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );

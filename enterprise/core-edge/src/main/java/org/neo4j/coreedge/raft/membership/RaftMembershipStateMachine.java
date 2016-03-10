@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
+import java.time.Clock;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,7 +27,6 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
-import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

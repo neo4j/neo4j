@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.replication.shipping;
 
 import java.io.IOException;
+import java.time.Clock;
 
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderContext;
@@ -28,7 +29,6 @@ import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -289,7 +289,7 @@ public class RaftLogShipper<MEMBER>
             }
             else if ( timeoutAbsoluteMillis != 0 )
             {
-                long timeLeft = timeoutAbsoluteMillis - clock.currentTimeMillis();
+                long timeLeft = timeoutAbsoluteMillis - clock.millis();
 
                 if ( timeLeft > 0 )
                 {
@@ -328,14 +328,14 @@ public class RaftLogShipper<MEMBER>
 
     private boolean timedOut()
     {
-        return timeoutAbsoluteMillis != 0 && (clock.currentTimeMillis() - timeoutAbsoluteMillis) >= 0;
+        return timeoutAbsoluteMillis != 0 && (clock.millis() - timeoutAbsoluteMillis) >= 0;
     }
 
     private void scheduleTimeout( long deltaMillis )
     {
         // TODO: This cancel/create dance is a bit inefficient... consider something better.
 
-        timeoutAbsoluteMillis = clock.currentTimeMillis() + deltaMillis;
+        timeoutAbsoluteMillis = clock.millis() + deltaMillis;
 
         if ( timeout != null )
         {

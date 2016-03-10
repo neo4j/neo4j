@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.time.Clock;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,10 +28,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -66,16 +66,10 @@ public class DelayedRenewableTimeoutServiceTest
         // given
         final AtomicLong timeoutCount = new AtomicLong();
 
-        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
+        DelayedRenewableTimeoutService timeoutService =
+                new DelayedRenewableTimeoutService( Clock.systemUTC(), NullLogProvider.getInstance() );
 
-        timeoutService.create( Timeouts.FOOBAR, 1000, 0, new RenewableTimeoutService.TimeoutHandler()
-        {
-            @Override
-            public void onTimeout( RenewableTimeoutService.RenewableTimeout timeout )
-            {
-                timeoutCount.incrementAndGet();
-            }
-        } );
+        timeoutService.create( Timeouts.FOOBAR, 1000, 0, timeout -> timeoutCount.incrementAndGet() );
 
         life.add( timeoutService );
 
@@ -95,16 +89,9 @@ public class DelayedRenewableTimeoutServiceTest
         // given
         final AtomicLong timeoutCount = new AtomicLong();
 
-        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
+        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(), NullLogProvider.getInstance() );
 
-        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, 1000, 0, new RenewableTimeoutService.TimeoutHandler()
-        {
-            @Override
-            public void onTimeout( RenewableTimeoutService.RenewableTimeout timeout )
-            {
-                timeoutCount.incrementAndGet();
-            }
-        } );
+        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, 1000, 0, timeout1 -> timeoutCount.incrementAndGet() );
 
         life.add( timeoutService );
 

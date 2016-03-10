@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.time.Clock;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
@@ -34,7 +35,6 @@ import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -50,14 +50,14 @@ public class RaftInstanceBuilder<MEMBER>
     private StateStorage<TermState> termState = new InMemoryStateStorage<>( new TermState() );
     private StateStorage<VoteState<MEMBER>> voteState = new InMemoryStateStorage<>( new VoteState<>() );
     private RaftLog raftLog = new InMemoryRaftLog();
-    private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK,
+    private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(),
             NullLogProvider.getInstance() );
 
     private Inbound inbound = handler -> {};
     private Outbound<MEMBER> outbound = ( advertisedSocketAddress, messages ) -> {};
 
     private LogProvider logProvider = NullLogProvider.getInstance();
-    private Clock clock = Clock.SYSTEM_CLOCK;
+    private Clock clock = Clock.systemUTC();
 
     private long electionTimeout = 500;
     private long heartbeatInterval = 150;

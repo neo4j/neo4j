@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Clock;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -142,8 +143,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.udc.UsageData;
 
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
@@ -203,7 +202,7 @@ public class EnterpriseCoreEditionModule
         final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         final SenderService senderService = new SenderService(
-                new ExpiryScheduler( platformModule.jobScheduler ), new Expiration( SYSTEM_CLOCK ),
+                new ExpiryScheduler( platformModule.jobScheduler ), new Expiration( Clock.systemUTC() ),
                 new RaftChannelInitializer( marshal ), logProvider, platformModule.monitors, maxQueueSize );
         life.add( senderService );
 
@@ -228,7 +227,7 @@ public class EnterpriseCoreEditionModule
         RaftServer<CoreMember> raftServer = new RaftServer<>( marshal, raftListenAddress, logProvider );
 
         final DelayedRenewableTimeoutService raftTimeoutService =
-                new DelayedRenewableTimeoutService( SYSTEM_CLOCK, logProvider );
+                new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
 
 
         RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
@@ -411,7 +410,7 @@ public class EnterpriseCoreEditionModule
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
         ExpiryScheduler expiryScheduler = new ExpiryScheduler( platformModule.jobScheduler );
-        Expiration expiration = new Expiration( SYSTEM_CLOCK );
+        Expiration expiration = new Expiration( Clock.systemUTC() );
 
         CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer( logProvider );
         CoreToCoreClient coreToCoreClient = life.add( new CoreToCoreClient( logProvider, expiryScheduler, expiration,
@@ -567,12 +566,12 @@ public class EnterpriseCoreEditionModule
         Replicator localReplicator = new LeaderOnlyReplicator<>( myself, myself.getRaftAddress(), outbound );
 
         RaftMembershipManager<CoreMember> raftMembershipManager = new RaftMembershipManager<>( localReplicator,
-                memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, SYSTEM_CLOCK,
+                memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, Clock.systemUTC(),
                 config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipState );
 
         RaftLogShippingManager<CoreMember> logShipping = new RaftLogShippingManager<>( new RaftOutbound( outbound ),
                 logProvider, raftLog,
-                SYSTEM_CLOCK, myself, raftMembershipManager, electionTimeout,
+                Clock.systemUTC(), myself, raftMembershipManager, electionTimeout,
                 config.get( CoreEdgeClusterSettings.catchup_batch_size ),
                 config.get( CoreEdgeClusterSettings.log_shipping_max_lag ) );
 

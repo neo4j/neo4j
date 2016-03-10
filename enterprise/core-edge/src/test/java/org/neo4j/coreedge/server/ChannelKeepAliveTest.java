@@ -36,10 +36,10 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import org.junit.Test;
 
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
