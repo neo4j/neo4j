@@ -34,7 +34,6 @@ public class EnterpriseAuthManager extends BasicAuthManager
     @Override
     public void start() throws Throwable
     {
-        //System.out.println( "Starting EnterpriseAuthManager!" );
         super.start();
     }
 }
