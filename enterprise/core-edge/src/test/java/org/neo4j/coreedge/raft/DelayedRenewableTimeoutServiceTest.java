@@ -19,14 +19,14 @@
  */
 package org.neo4j.coreedge.raft;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -34,11 +34,22 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class DelayedRenewableTimeoutServiceTest
 {
+    // The base timeout for timers in tests, should be short.
+    private final long TIMEOUT_MS = 100;
+    // The maximum time for awaiting conditions in tests.. used for failing tests.
+    private final long LONG_TIME_MS = 30000;
+    // Used for allowing for example a timer to fire slightly earlier then asked for
+    // since in general tests can assert on tardiness but not on promptness.
+    // The error could be due to the timer service itself or the test.
+    private final long ERROR_MS = 1;
+
     private final LifeSupport life = new LifeSupport();
 
     @Before
@@ -68,25 +79,15 @@ public class DelayedRenewableTimeoutServiceTest
 
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
 
-        timeoutService.create( Timeouts.FOOBAR, 1000, 0, new RenewableTimeoutService.TimeoutHandler()
-        {
-            @Override
-            public void onTimeout( RenewableTimeoutService.RenewableTimeout timeout )
-            {
-                timeoutCount.incrementAndGet();
-            }
-        } );
+        timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, timeout -> timeoutCount.incrementAndGet() );
 
+        long startTime = System.currentTimeMillis();
         life.add( timeoutService );
 
-        // when
-        Thread.sleep( 500 );
-        //then
-        assertThat( timeoutCount.get(), equalTo( 0L ) );
-        //when
-        Thread.sleep( 750 );
-        // then
-        assertThat( timeoutCount.get(), equalTo( 1L ) );
+        Predicates.await( timeoutCount::get, count -> count == 1, LONG_TIME_MS, MILLISECONDS, 1, MILLISECONDS );
+
+        long runTime = System.currentTimeMillis() - startTime;
+        assertThat( runTime, greaterThanOrEqualTo( TIMEOUT_MS - ERROR_MS ) );
     }
 
     @Test
@@ -97,24 +98,31 @@ public class DelayedRenewableTimeoutServiceTest
 
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
 
-        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, 1000, 0, new RenewableTimeoutService.TimeoutHandler()
-        {
-            @Override
-            public void onTimeout( RenewableTimeoutService.RenewableTimeout timeout )
-            {
-                timeoutCount.incrementAndGet();
-            }
-        } );
+        RenewableTimeoutService.RenewableTimeout timeout =
+                timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, timeout1 -> timeoutCount.incrementAndGet() );
 
+        long startTime = System.currentTimeMillis();
         life.add( timeoutService );
 
         // when
-        Thread.sleep( 700 );
-        timeout.renew();
-        Thread.sleep( 500 );
+        Thread.sleep( TIMEOUT_MS/2 );
+        long timeoutCountSample = timeoutCount.get();
+        long sampleTime = System.currentTimeMillis();
 
-        // then
-        assertThat( timeoutCount.get(), equalTo( 0L ) );
+        if( sampleTime < startTime + TIMEOUT_MS )
+        {
+            assertThat( timeoutCountSample, is( 0L ) );
+        }
+
+        long renewTime = System.currentTimeMillis();
+        timeout.renew();
+
+        if( System.currentTimeMillis() < startTime + TIMEOUT_MS )
+        {
+            // we managed to renew before it expired
+            Predicates.await( timeoutCount::get, count -> count == 1, LONG_TIME_MS, MILLISECONDS, 1, MILLISECONDS );
+            assertThat( System.currentTimeMillis(), greaterThanOrEqualTo( renewTime + TIMEOUT_MS - ERROR_MS ) );
+        }
     }
 
     @Test
@@ -127,24 +135,24 @@ public class DelayedRenewableTimeoutServiceTest
 
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( clock, NullLogProvider.getInstance() );
 
-        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, 1000, 0, t -> timeoutCount
+        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, t -> timeoutCount
                 .incrementAndGet() );
 
         life.add( timeoutService );
 
-        clock.forward( 1000, MILLISECONDS );
-        Thread.sleep( 5 ); // to make sure the scheduled thread has checked time elapsed
+        clock.forward( TIMEOUT_MS, MILLISECONDS );
+        Predicates.await( timeoutCount::get, count -> count == 1, LONG_TIME_MS, MILLISECONDS, 1, MILLISECONDS );
 
-        assertThat( timeoutCount.get(), equalTo( 1L ) );
-
+        // when
         timeoutService.stop();
         timeoutService.shutdown();
 
         timeout.renew();
-        Thread.sleep( 5 );
-        clock.forward( 1000, MILLISECONDS );
-        Thread.sleep( 5 );
+        Thread.sleep( TIMEOUT_MS/2 );
+        clock.forward( TIMEOUT_MS, MILLISECONDS );
+        Thread.sleep( TIMEOUT_MS/2 );
 
+        // then
         assertThat( timeoutCount.get(), equalTo( 1L ) );
     }
 
@@ -157,22 +165,20 @@ public class DelayedRenewableTimeoutServiceTest
         FakeClock clock = new FakeClock();
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( clock, NullLogProvider.getInstance() );
 
-        int TIMEOUT_MS = 1000;
         RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, handler -> {
             try
             {
-                latch.await( 10_000, TimeUnit.MILLISECONDS );
+                latch.await( LONG_TIME_MS, MILLISECONDS );
             }
-            catch ( InterruptedException e )
+            catch ( InterruptedException ignored )
             {
-                Thread.interrupted();
             }
         } );
 
         life.add( timeoutService );
 
         clock.forward( TIMEOUT_MS, MILLISECONDS );
-        Thread.sleep( 5 ); // to make sure the scheduled thread has checked time elapsed
+        Thread.sleep( TIMEOUT_MS/2 ); // to allow the scheduled timeout to fire and get stuck in the latch
 
         // given: another thread that wants to cancel the timeout while the handler is in progress
         Thread cancelThread = new Thread()
@@ -186,14 +192,12 @@ public class DelayedRenewableTimeoutServiceTest
 
         // when: we cancel the timeout, then it should not deadlock, and the latch be immediately released
         cancelThread.start();
-        // so the following join should finish immediately and the cancelThread should be dead
-        cancelThread.join( 5_000 );
+        // so the following join should finish quicker than the latch expiry, and the cancelThread should be dead
+        cancelThread.join( LONG_TIME_MS/2 );
         assertFalse( cancelThread.isAlive() );
 
         // cleanup
         latch.countDown();
         cancelThread.interrupt();
-        timeoutService.stop();
-        timeoutService.shutdown();
     }
 }
