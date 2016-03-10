@@ -395,6 +395,8 @@ public class EnterpriseCoreEditionModule
         dependencies.satisfyDependency( createKernelData( fileSystem, platformModule.pageCache, storeDir,
                 config, graphDatabaseFacade, life ) );
 
+        life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
+
         headerInformationFactory = createHeaderInformationFactory();
 
         schemaWriteGuard = createSchemaWriteGuard();
