@@ -25,16 +25,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.udc.UsageData;
 
-import static org.neo4j.kernel.api.AccessMode.FULL;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
@@ -71,13 +71,19 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         try
                         {
-                            ctx.spi.authenticate( authToken );
+                            AuthenticationResult authResult = ctx.spi.authenticate( authToken );
+                            ctx.accessMode = authResult.getAccessMode();
+                            ctx.result( authResult.credentialsExpired() );
                             ctx.spi.udcRegisterClient( clientName );
                             return IDLE;
                         }
                         catch ( AuthenticationException e )
                         {
                             return error( ctx, new Neo4jError( e.status(), e.getMessage(), e ) );
+                        }
+                        catch ( Throwable e )
+                        {
+                            return error( ctx, e );
                         }
                     }
 
@@ -99,7 +105,7 @@ public class SessionStateMachine implements Session, SessionState
                     public State beginTransaction( SessionStateMachine ctx )
                     {
                         assert ctx.currentTransaction == null;
-                        ctx.currentTransaction = ctx.spi.beginTransaction( explicit, FULL );
+                        ctx.currentTransaction = ctx.spi.beginTransaction( explicit, ctx.accessMode );
                         return IN_TRANSACTION;
                     }
 
@@ -133,7 +139,7 @@ public class SessionStateMachine implements Session, SessionState
                         // NOTE: If we move away from doing implicit transactions this
                         // way, we need a different way to kill statements running in implicit
                         // transactions, because we do that by calling #terminate() on this tx.
-                        ctx.currentTransaction = ctx.spi.beginTransaction( implicit, FULL );
+                        ctx.currentTransaction = ctx.spi.beginTransaction( implicit, ctx.accessMode );
                         return IN_TRANSACTION;
                     }
 
@@ -529,6 +535,9 @@ public class SessionStateMachine implements Session, SessionState
     /** Callback attachment */
     private Object currentAttachment;
 
+    /** The current session auth state to be used for starting transactions */
+    private AccessMode accessMode;
+
     /** These are the "external" actions the state machine can take */
     private final SPI spi;
 
@@ -555,7 +564,7 @@ public class SessionStateMachine implements Session, SessionState
         void unbindTransactionFromCurrentThread();
         RecordStream run( SessionStateMachine ctx, String statement, Map<String, Object> params )
                 throws KernelException;
-        void authenticate( Map<String, Object> authToken ) throws AuthenticationException;
+        AuthenticationResult authenticate( Map<String, Object> authToken ) throws AuthenticationException;
         void udcRegisterClient( String clientName );
         Statement currentStatement();
     }
@@ -569,6 +578,7 @@ public class SessionStateMachine implements Session, SessionState
     public SessionStateMachine( SPI spi )
     {
         this.spi = spi;
+        this.accessMode = AccessMode.Static.NONE;
     }
 
     @Override
@@ -578,7 +588,7 @@ public class SessionStateMachine implements Session, SessionState
     }
 
     @Override
-    public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Void,A> callback )
+    public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Boolean,A> callback )
     {
         before( attachment, callback );
         try

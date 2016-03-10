@@ -21,6 +21,8 @@ package org.neo4j.kernel.api;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.security.AccessMode;
+
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
@@ -33,7 +35,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentReadStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.READ );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.READ );
         ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
@@ -47,7 +49,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentReadStatementAndDataStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.WRITE );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.WRITE );
         ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
@@ -61,7 +63,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentReadStatementAndSchemaStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.FULL );
         ReadOperations stmt1 = tx.acquireStatement().readOperations();
 
         // when
@@ -75,7 +77,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentDataStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.WRITE );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.WRITE );
         DataWriteOperations stmt1 = tx.acquireStatement().dataWriteOperations();
 
         // when
@@ -89,7 +91,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentDataStatementAndDataStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.WRITE );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.WRITE );
         DataWriteOperations stmt1 = tx.acquireStatement().dataWriteOperations();
 
         // when
@@ -103,7 +105,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentSchemaStatementAndReadStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.FULL );
         SchemaWriteOperations stmt1 = tx.acquireStatement().schemaWriteOperations();
 
         // when
@@ -117,7 +119,7 @@ public class TransactionStatementSharingTest
     public void shouldShareStatementStateForConcurrentSchemaStatementAndSchemaStatement() throws Exception
     {
         // given
-        KernelTransaction tx = kernelTransaction( AccessMode.FULL );
+        KernelTransaction tx = kernelTransaction( AccessMode.Static.FULL );
         SchemaWriteOperations stmt1 = tx.acquireStatement().schemaWriteOperations();
 
         // when
@@ -132,7 +134,7 @@ public class TransactionStatementSharingTest
     {
         // given
         KernelTransactionFactory.Instances instances =
-                KernelTransactionFactory.kernelTransactionWithInternals( AccessMode.READ );
+                KernelTransactionFactory.kernelTransactionWithInternals( AccessMode.Static.READ );
         KernelTransaction tx = instances.transaction;
         Statement statement = tx.acquireStatement();
         ReadOperations ops1 = statement.readOperations();

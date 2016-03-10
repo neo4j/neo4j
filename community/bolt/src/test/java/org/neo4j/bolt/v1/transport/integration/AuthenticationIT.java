@@ -27,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Collection;
+import java.util.Collections;
 
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -41,6 +42,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
+import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
+import static org.neo4j.bolt.v1.messaging.message.Messages.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyRecieves;
@@ -97,8 +100,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.CredentialsExpired,
-                String.format( "The credentials have expired and need to be updated. (ID:%s)", server.uniqueIdentier() ) ) ) );
+        assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
     }
 
     @Test
@@ -154,6 +156,75 @@ public class AuthenticationIT
         assertThat( client, eventuallyRecieves( msgSuccess() ) );
     }
 
+    @Test
+    public void shouldBeAbleToChangePasswordUsingBuiltInProcedure() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1",
+                                map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
+
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CALL sys.changePassword", Collections.singletonMap( "password", "secret" ) ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+
+        // If I reconnect I cannot use the old password
+        reconnect();
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1",
+                                map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Unauthorized,
+                String.format( "The client is unauthorized due to authentication failure. (ID:%s)", server.uniqueIdentier()) ) ) );
+
+        // But the new password works fine
+        reconnect();
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1",
+                                map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) ) );
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+    }
+
+    @Test
+    public void shouldNotBeAbleToReadWhenPasswordChangeRequired() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1",
+                                map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
+
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "MATCH (n) RETURN n" ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Forbidden,
+                "Read operations are not allowed for `NONE` transactions." ) ) );
+    }
 
     @Before
     public void setup()

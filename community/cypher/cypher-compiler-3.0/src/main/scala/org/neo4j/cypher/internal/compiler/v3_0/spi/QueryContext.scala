@@ -158,6 +158,8 @@ trait QueryContext extends TokenContext {
 
   def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
+  def callDbmsProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+
   // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database
   def isGraphKernelResultValue(v: Any): Boolean
@@ -194,8 +196,11 @@ trait Operations[T <: PropertyContainer] {
 trait QueryTransactionalContext {
 
   type ReadOps
+  type DbmsOps
 
   def readOperations: ReadOps
+
+  def dbmsOperations: DbmsOps
 
   def isTopLevelTx: Boolean
 

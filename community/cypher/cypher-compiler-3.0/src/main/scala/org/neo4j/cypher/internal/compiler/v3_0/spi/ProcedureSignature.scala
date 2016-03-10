@@ -19,12 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.spi
 
-import java.util
-
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, READ_ONLY, READ_WRITE}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{DBMS, InternalQueryType, READ_ONLY, READ_WRITE}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 sealed trait ProcedureCallMode {
@@ -51,6 +48,13 @@ case object EagerReadWriteCallMode extends ProcedureCallMode {
     }
     builder.result().iterator
   }
+}
+
+case object DbmsCallMode extends ProcedureCallMode {
+  override val queryType: InternalQueryType = DBMS
+
+  override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
+    ctx.callDbmsProcedure(signature.name, args)
 }
 
 case class ProcedureSignature(name: ProcedureName,

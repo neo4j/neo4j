@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -138,7 +138,7 @@ public class IndexPopulationFlipRaceIT
             throws Exception
     {
         KernelAPI kernelAPI = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AccessMode.READ );
+        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ );
               Statement statement = tx.acquireStatement() )
         {
             int labelAId = statement.readOperations().labelGetForName( labelA( i ).name() );

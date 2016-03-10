@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -593,10 +593,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public Revertable restrict( AccessMode read )
+    public Revertable restrict( AccessMode mode )
     {
         AccessMode oldMode = this.accessMode;
-        this.accessMode = read;
+        this.accessMode = mode;
         return () -> this.accessMode = oldMode;
     }
 

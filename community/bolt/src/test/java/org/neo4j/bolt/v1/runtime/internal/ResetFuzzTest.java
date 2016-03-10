@@ -29,6 +29,8 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.security.auth.BasicAuthenticationResult;
 import org.neo4j.bolt.v1.messaging.MessageHandler;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.message.Message;
@@ -41,7 +43,7 @@ import org.neo4j.bolt.v1.runtime.integration.RecordingCallback;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -195,9 +197,9 @@ public class ResetFuzzTest
         }
 
         @Override
-        public void authenticate( Map<String,Object> authToken ) throws AuthenticationException
+        public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
         {
-
+            return new BasicAuthenticationResult( AccessMode.Static.FULL, false );
         }
 
         @Override

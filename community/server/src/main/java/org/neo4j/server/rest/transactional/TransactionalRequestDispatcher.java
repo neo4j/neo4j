@@ -23,7 +23,7 @@ import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.dispatch.RequestDispatcher;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.RepresentationWriteHandler;
@@ -51,7 +51,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
     {
         RepresentationWriteHandler representationWriteHandler = DO_NOTHING;
 
-        AccessMode mode = AccessMode.FULL;
+        AccessMode mode = AccessMode.Static.FULL;
 
         if ( o instanceof RestfulGraphDatabase )
         {

@@ -28,7 +28,7 @@ import java.util.Collections;
 import org.neo4j.cypher.internal.DocsExecutionEngine;
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -83,7 +83,7 @@ public class DocsExecutionEngineTest
 
     public static QuerySession createSession()
     {
-        InternalTransaction transaction = database.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+        InternalTransaction transaction = database.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         ThreadToStatementContextBridge bridge =
                 database.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         Neo4jTransactionalContext context =

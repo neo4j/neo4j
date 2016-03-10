@@ -28,6 +28,7 @@ import java.util.Collection;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -93,7 +94,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
     private AccessMode accessMode()
     {
-        return isWriteTx ? AccessMode.WRITE : AccessMode.READ;
+        return isWriteTx ? AccessMode.Static.WRITE : AccessMode.Static.READ;
     }
 
     @Test
@@ -364,7 +365,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         try ( KernelTransactionImplementation transaction = newTransaction( accessMode() ) )
         {
-            transaction.initialize( 5L, mock( Locks.Client.class ), KernelTransaction.Type.implicit, AccessMode.FULL );
+            transaction.initialize( 5L, mock( Locks.Client.class ), KernelTransaction.Type.implicit, AccessMode.Static.FULL );
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
                 statement.legacyIndexTxState(); // which will pull it from the supplier and the mocking above

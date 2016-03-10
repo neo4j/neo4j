@@ -33,6 +33,7 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
 {
     // Note that these callbacks can be used for multiple in-flight requests simultaneously, you cannot reset them
     // while there are in-flight requests.
+    private final MessageProcessingCallback<Boolean> initCallback;
     private final MessageProcessingCallback<StatementMetadata> runCallback;
     private final MessageProcessingCallback<RecordStream> resultStreamCallback;
     private final MessageProcessingCallback<Void> simpleCallback;
@@ -45,7 +46,9 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
         this.resultStreamCallback = new RecordStreamCallback( log );
         this.simpleCallback = new MessageProcessingCallback<>( log );
         this.runCallback = new RunCallback( log );
+        this.initCallback = new InitCallback( log );
         this.session = session;
+        this.initCallback.reset( output, onEachCompletedRequest );
         this.simpleCallback.reset( output, onEachCompletedRequest );
         this.resultStreamCallback.reset( output, onEachCompletedRequest );
         this.runCallback.reset( output, onEachCompletedRequest );
@@ -54,7 +57,7 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
     @Override
     public void handleInitMessage( String clientName, Map<String,Object> authToken ) throws RuntimeException
     {
-        session.init( clientName, authToken, null, simpleCallback );
+        session.init( clientName, authToken, null, initCallback );
 
     }
 

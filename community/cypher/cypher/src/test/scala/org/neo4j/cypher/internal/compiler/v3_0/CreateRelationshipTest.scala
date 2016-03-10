@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_0
 
 import java.util
 
-import org.neo4j.kernel.api.{AccessMode, KernelTransaction}
-
-import collection.JavaConverters._
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Variable, ParameterExpression}
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{ParameterExpression, Variable}
 import org.neo4j.cypher.internal.compiler.v3_0.mutation.{CreateRelationship, RelationshipEndpoint}
+import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.security.AccessMode
+
+import scala.collection.JavaConverters._
 
 class CreateRelationshipTest extends GraphDatabaseFunSuite {
 
@@ -40,7 +41,7 @@ class CreateRelationshipTest extends GraphDatabaseFunSuite {
     val bEndNode = RelationshipEndpoint(Variable("b"), Map(), Seq.empty)
     val relCreator = new CreateRelationship("r", aEndNode, bEndNode, "RELTYPE", Map("*" -> ParameterExpression("props")))
 
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.WRITE )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.WRITE )
     try {
       val state = QueryStateHelper.queryStateFrom(graph, tx, props)
       val ctx = ExecutionContext.from("a" -> a, "b" -> b)

@@ -23,10 +23,11 @@ import java.util.Map;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.concurrent.DecayingFlags;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -102,9 +103,9 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     }
 
     @Override
-    public void authenticate( Map<String,Object> authToken ) throws AuthenticationException
+    public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
-        authentication.authenticate( authToken );
+        return authentication.authenticate( authToken );
     }
 
     @Override

@@ -25,7 +25,7 @@ import java.{lang, util}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_0
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, InternalExecutionResult, READ_ONLY, READ_WRITE, SCHEMA_WRITE, WRITE}
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor}
@@ -332,6 +332,7 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
       case READ_WRITE => QueryExecutionType.QueryType.READ_WRITE
       case WRITE => QueryExecutionType.QueryType.WRITE
       case SCHEMA_WRITE => QueryExecutionType.QueryType.SCHEMA_WRITE
+      case DBMS => QueryExecutionType.QueryType.READ_ONLY // TODO: We need to decide how we expose this in the public API
     }
     inner.executionMode match {
       case ExplainModev3_0 => QueryExecutionType.explained(qt)

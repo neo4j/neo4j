@@ -25,8 +25,8 @@ import java.net.URI;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.web.TransactionUriScheme;
@@ -51,7 +51,7 @@ public class ConcurrentTransactionAccessTest
                 .thenReturn( mock(TransitionalTxManagementKernelTransaction.class) );
         TransactionFacade actions = new TransactionFacade( kernel, null, registry, NullLogProvider.getInstance() );
 
-        final TransactionHandle transactionHandle = actions.newTransactionHandle( new DisgustingUriScheme(), true, AccessMode.FULL );
+        final TransactionHandle transactionHandle = actions.newTransactionHandle( new DisgustingUriScheme(), true, AccessMode.Static.FULL );
 
         final DoubleLatch latch = new DoubleLatch();
 

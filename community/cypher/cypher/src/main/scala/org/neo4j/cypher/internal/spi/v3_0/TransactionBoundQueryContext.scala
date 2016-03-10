@@ -481,7 +481,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def relationshipEndNode(rel: Relationship) = rel.getEndNode
 
-  private val tokenNameLookup = new StatementTokenNameLookup(transactionalContext.statement.readOperations())
+  private lazy val tokenNameLookup = new StatementTokenNameLookup(transactionalContext.statement.readOperations())
 
   // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(node: PatternNode,
@@ -552,6 +552,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]) =
     callProcedure(name, args, transactionalContext.statement.dataWriteOperations().procedureCallWrite )
+
+  override def callDbmsProcedure(name: ProcedureName, args: Seq[Any]) =
+    callProcedure(name, args,
+                  (kn: proc.ProcedureSignature.ProcedureName, input: Array[AnyRef]) =>
+                    transactionalContext.dbmsOperations.procedureCallDbms(kn, input, transactionalContext.accessMode))
 
   private def callProcedure(name: ProcedureName, args: Seq[Any],
                             call: (proc.ProcedureSignature.ProcedureName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]) = {

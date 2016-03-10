@@ -41,7 +41,9 @@ import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, ExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
-import org.neo4j.kernel.api.{AccessMode, KernelTransaction, ReadOperations, Statement}
+import org.neo4j.kernel.api.KernelTransaction.Revertable
+import org.neo4j.kernel.api.security.AccessMode
+import org.neo4j.kernel.api.{KernelTransaction, ReadOperations, Statement}
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.OperationsFacade
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, ThreadToStatementContextBridge}
@@ -90,7 +92,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("traversal matcher is lazy") {
     //Given:
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.READ )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.READ )
     val limiter = Counter().values.limit(2) { _ => fail("Limit reached!") }
     val monitoredNode = new MonitoredNode(aNode, limiter.tick)
 
@@ -241,8 +243,10 @@ class LazyTest extends ExecutionEngineFunSuite {
     val service = new GraphDatabaseCypherService(fakeGraph)
     val engine = new ExecutionEngine(service)
 
-    val tx = fakeGraph.beginTransaction(KernelTransaction.Type.`implicit`, AccessMode.FULL)
+    val tx = fakeGraph.beginTransaction(KernelTransaction.Type.`implicit`, AccessMode.Static.FULL)
     val context = new Neo4jTransactionalContext(service, tx, fakeStatement, new PropertyContainerLocker)
+    val revertable = mock[Revertable]
+    when(context.restrictCurrentTransaction(anyObject())).thenReturn(revertable)
     val session = QueryEngineProvider.embeddedSession(context)
 
     //When:
@@ -255,7 +259,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
   test("traversalmatcherpipe is lazy") {
     //Given:
-    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.FULL )
+    val tx = graph.beginTransaction( KernelTransaction.Type.explicit, AccessMode.Static.FULL )
     val limiter = Counter().values.limit(2) { _ => fail("Limit reached") }
     val traversalMatchPipe = createTraversalMatcherPipe(limiter)
 

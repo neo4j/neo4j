@@ -30,7 +30,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -185,7 +185,7 @@ public class LegacyIndexStore
 
                 // We were the first one here, let's create this config
                 try ( KernelTransaction transaction =
-                              kernel.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+                              kernel.get().newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
                       Statement statement = transaction.acquireStatement() )
                 {
                     switch ( entityType )

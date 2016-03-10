@@ -148,7 +148,9 @@ public class ProcedureSignature
         /** This procedure will only perform read operations against the graph */
         READ_ONLY,
         /** This procedure may perform both read and write operations against the graph */
-        READ_WRITE
+        READ_WRITE,
+        /** This procedure will perform system operations - i.e. not against the graph */
+        DBMS
     }
 
     public ProcedureSignature( ProcedureName name,

@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -64,6 +65,7 @@ public class BuiltInProceduresTest
     private final Map<Integer, String> relTypes = new HashMap<>();
 
     private final ReadOperations read = mock(ReadOperations.class);
+    private final DbmsOperations dbms = mock(DbmsOperations.class);
     private final Statement statement = mock(Statement.class);
     private final KernelTransaction tx = mock(KernelTransaction.class);
 
@@ -143,6 +145,7 @@ public class BuiltInProceduresTest
             record( "db.labels", "db.labels() :: (label :: STRING?)" ),
             record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)" ),
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)" ),
+            record( "sys.changePassword", "sys.changePassword(password :: STRING?) :: ()" ),
             record( "sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?)" ),
             record( "sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)" )
         ) );

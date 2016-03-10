@@ -186,6 +186,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]) =
     inner.callReadWriteProcedure(name, args)
 
+  override def callDbmsProcedure(name: ProcedureName, args: Seq[Any]) =
+    inner.callDbmsProcedure(name, args)
+
   override def isGraphKernelResultValue(v: Any): Boolean =
     inner.isGraphKernelResultValue(v)
 }
@@ -227,7 +230,11 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override type ReadOps = inner.ReadOps
 
+  override type DbmsOps = inner.DbmsOps
+
   override def readOperations: ReadOps = inner.readOperations
+
+  override def dbmsOperations: DbmsOps = inner.dbmsOperations
 
   override def commitAndRestartTx() { inner.commitAndRestartTx() }
 

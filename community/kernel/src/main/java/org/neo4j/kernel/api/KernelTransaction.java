@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AccessMode;
 
 /**
  * Represents a transaction of changes to the underlying graph.
@@ -150,7 +151,7 @@ public interface KernelTransaction extends AutoCloseable
      */
     Type transactionType();
 
-    Revertable restrict( AccessMode read );
+    Revertable restrict( AccessMode mode );
 
     interface Revertable extends AutoCloseable
     {

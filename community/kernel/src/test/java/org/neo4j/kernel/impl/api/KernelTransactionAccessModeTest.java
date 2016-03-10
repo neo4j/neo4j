@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransactionTestBase;
 import org.neo4j.kernel.api.ReadOperations;
@@ -40,7 +40,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowReadsInNoneMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.NONE );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.NONE );
 
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -53,7 +53,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowWritesInNoneMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.NONE );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.NONE );
 
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -66,7 +66,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowSchemaWritesInNoneMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.NONE );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.NONE );
 
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -79,7 +79,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldAllowReadsInReadMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.READ );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.READ );
 
         // When
         ReadOperations reads = tx.acquireStatement().readOperations();
@@ -92,7 +92,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowWriteAccessInReadMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.READ );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.READ );
 
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -105,7 +105,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowSchemaWriteAccessInReadMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.READ );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.READ );
 
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -118,7 +118,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowReadAccessInWriteOnlyMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE_ONLY );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.WRITE_ONLY );
 
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -131,7 +131,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldAllowWriteAccessInWriteOnlyMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE_ONLY );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.WRITE_ONLY );
 
         // When
         DataWriteOperations writes = tx.acquireStatement().dataWriteOperations();
@@ -144,7 +144,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowSchemaWriteAccessInWriteOnlyMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE_ONLY );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.WRITE_ONLY );
 
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -157,7 +157,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldAllowReadsInWriteMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.WRITE );
 
         // When
         ReadOperations reads = tx.acquireStatement().readOperations();
@@ -170,7 +170,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldAllowWritesInWriteMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.WRITE );
 
         // When
         DataWriteOperations writes = tx.acquireStatement().dataWriteOperations();
@@ -183,7 +183,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldNotAllowSchemaWriteAccessInWriteMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.WRITE );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.WRITE );
 
         // Expect
         exception.expect( AuthorizationViolationException.class );
@@ -196,7 +196,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldAllowReadsInFullMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.FULL );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.FULL );
 
         // When
         ReadOperations reads = tx.acquireStatement().readOperations();
@@ -209,7 +209,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldAllowWritesInFullMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.FULL );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.FULL );
 
         // When
         DataWriteOperations writes = tx.acquireStatement().dataWriteOperations();
@@ -222,7 +222,7 @@ public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
     public void shouldAllowSchemaWriteAccessInFullMode() throws Throwable
     {
         // Given
-        KernelTransactionImplementation tx = newTransaction( AccessMode.FULL );
+        KernelTransactionImplementation tx = newTransaction( AccessMode.Static.FULL );
 
         // When
         SchemaWriteOperations writes = tx.acquireStatement().schemaWriteOperations();

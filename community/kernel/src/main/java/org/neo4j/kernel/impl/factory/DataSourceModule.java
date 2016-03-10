@@ -36,6 +36,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.api.legacyindex.AutoIndexing;
 import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
+import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -164,6 +166,9 @@ public class DataSourceModule
         AtomicReference<QueryExecutionEngine> queryExecutor = new AtomicReference<>( QueryEngineProvider.noEngine() );
         this.queryExecutor = queryExecutor::get;
         Procedures procedures = setupProcedures( platformModule, editionModule.coreAPIAvailabilityGuard );
+
+        DbmsOperations dbmsOperations = new NonTransactionalDbmsOperations( procedures );
+        deps.satisfyDependency( dbmsOperations );
 
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup(
                 editionModule.labelTokenHolder,

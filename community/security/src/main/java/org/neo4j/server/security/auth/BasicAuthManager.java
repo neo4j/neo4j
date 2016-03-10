@@ -22,6 +22,7 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 import java.time.Clock;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
@@ -66,22 +67,26 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
     @Override
     public AuthenticationResult authenticate( String username, String password )
     {
+        AuthSubject subject = login( username, password );
+
+        return subject.getAuthenticationResult();
+    }
+
+    @Override
+    public AuthSubject login( String username, String password )
+    {
         assertAuthEnabled();
         User user = users.findByName( username );
-        if ( user == null )
+        AuthenticationResult result = AuthenticationResult.FAILURE;
+        if ( user != null )
         {
-            return AuthenticationResult.FAILURE;
+            result = authStrategy.authenticate( user, password );
+            if ( result == AuthenticationResult.SUCCESS && user.passwordChangeRequired() )
+            {
+                result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+            }
         }
-        AuthenticationResult result = authStrategy.authenticate( user, password );
-        if ( result != AuthenticationResult.SUCCESS )
-        {
-            return result;
-        }
-        if ( user.passwordChangeRequired() )
-        {
-            return AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-        }
-        return AuthenticationResult.SUCCESS;
+        return new BasicAuthSubject( this, user, result );
     }
 
     @Override
@@ -111,6 +116,24 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
     {
         assertAuthEnabled();
         return users.findByName( username );
+    }
+
+    public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException
+    {
+        if ( !(authSubject instanceof BasicAuthSubject) )
+        {
+            throw new IllegalArgumentException( "Incorrect AuthSubject type " + authSubject.getClass().getTypeName() );
+        }
+        BasicAuthSubject basicAuthSubject = (BasicAuthSubject) authSubject;
+
+        if ( !basicAuthSubject.doesUsernameMatch( username ) )
+        {
+            throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
+        }
+        if ( setPassword( username, password ) == null )
+        {
+            throw new IllegalArgumentException( "User " + username + " does not exist" );
+        }
     }
 
     @Override

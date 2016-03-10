@@ -30,7 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.LegacyIndexHits;
@@ -516,7 +516,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallRead( ProcedureName name, Object[] input ) throws ProcedureException
     {
-        return callProcedure( name, input, AccessMode.READ );
+        return callProcedure( name, input, AccessMode.Static.READ );
     }
 
     @Override
@@ -1029,8 +1029,8 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     @Override
     public RawIterator<Object[], ProcedureException> procedureCallWrite( ProcedureName name, Object[] input ) throws ProcedureException
     {
-        // FIXME: should this be AccessMode.WRITE instead?
-        return callProcedure( name, input, AccessMode.FULL );
+        // FIXME: should this be AccessMode.Static.WRITE instead?
+        return callProcedure( name, input, AccessMode.Static.FULL );
     }
     // </DataWrite>
 
@@ -1397,17 +1397,21 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     // </Counts>
 
+    // <Procedures>
+
     private RawIterator<Object[],ProcedureException> callProcedure(
-            ProcedureName name, Object[] input, AccessMode read )
+            ProcedureName name, Object[] input, AccessMode mode )
             throws ProcedureException
     {
         statement.assertOpen();
 
-        try ( KernelTransaction.Revertable revertable = tx.restrict( read ) )
+        try ( KernelTransaction.Revertable revertable = tx.restrict( mode ) )
         {
             CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
             ctx.put( CallableProcedure.Context.KERNEL_TRANSACTION, tx );
             return procedures.call( ctx, name, input );
         }
     }
+
+    // </Procedures>
 }

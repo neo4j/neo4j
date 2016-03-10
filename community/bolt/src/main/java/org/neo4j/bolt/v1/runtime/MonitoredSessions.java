@@ -77,7 +77,7 @@ public class MonitoredSessions implements Sessions
         }
 
         @Override
-        public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Void,A> callback )
+        public <A> void init( String clientName, Map<String,Object> authToken, A attachment, Callback<Boolean,A> callback )
         {
             monitor.messageReceived();
             delegate.init( clientName, authToken, attachment, withMonitor( callback ) );

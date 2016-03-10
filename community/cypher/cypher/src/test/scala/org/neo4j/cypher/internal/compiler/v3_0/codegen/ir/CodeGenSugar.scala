@@ -36,7 +36,8 @@ import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionB
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.{AccessMode, KernelTransaction, Statement}
+import org.neo4j.kernel.api.security.AccessMode
+import org.neo4j.kernel.api.{KernelTransaction, Statement}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
@@ -67,7 +68,7 @@ trait CodeGenSugar extends MockitoSugar {
                       mode: ExecutionMode = NormalMode,
                       params: Map[String, AnyRef] = Map.empty,
                       taskCloser: TaskCloser = new TaskCloser): InternalExecutionResult = {
-    val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AccessMode.READ)
+    val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
     try {
       val statement = graphDb.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
       val locker: PropertyContainerLocker = new PropertyContainerLocker

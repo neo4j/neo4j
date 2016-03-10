@@ -27,16 +27,16 @@ import java.util.Map;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -162,7 +162,7 @@ public class Start extends TransactionProvidingApp
     private QuerySession shellSession( Session session )
     {
         GraphDatabaseQueryService graph = this.engine.queryService();
-        InternalTransaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.FULL );
+        InternalTransaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
         Statement statement =
                 graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
         Neo4jTransactionalContext context =

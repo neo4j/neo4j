@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.AccessMode;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.api.KernelAPI;
@@ -51,7 +51,7 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized int getOrCreate( String name ) throws org.neo4j.kernel.api.exceptions.KernelException
     {
         KernelAPI kernel = kernelSupplier.get();
-        try ( KernelTransaction transaction = kernel.newTransaction( Type.implicit, AccessMode.FULL ) )
+        try ( KernelTransaction transaction = kernel.newTransaction( Type.implicit, AccessMode.Static.FULL ) )
         {
             try ( Statement statement = transaction.acquireStatement() )
             {

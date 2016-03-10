@@ -27,7 +27,8 @@ import org.neo4j.graphdb.Label._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
-import org.neo4j.kernel.api.{AccessMode, Statement}
+import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, QueryEngineProvider, QuerySession}
@@ -98,7 +99,7 @@ trait GraphIcing {
     private val locker: PropertyContainerLocker = new PropertyContainerLocker
 
     private def createSession(txType: Type): (InternalTransaction, QuerySession) = {
-      val tx = graph.beginTransaction(txType, AccessMode.FULL)
+      val tx = graph.beginTransaction(txType, AccessMode.Static.FULL)
       val transactionalContext = new Neo4jTransactionalContext(graphService, tx, txBridge.get(), locker)
       val session = QueryEngineProvider.embeddedSession(transactionalContext)
       (tx, session)
@@ -124,7 +125,7 @@ trait GraphIcing {
     }
 
     def rollback[T](f: => T): T = {
-      val tx = graph.beginTransaction(Type.`implicit`, AccessMode.FULL)
+      val tx = graph.beginTransaction(Type.`implicit`, AccessMode.Static.FULL)
       try {
         val result = f
         tx.failure()
