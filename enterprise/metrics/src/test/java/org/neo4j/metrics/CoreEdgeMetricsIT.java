@@ -107,19 +107,19 @@ public class CoreEdgeMetricsIT
         File coreServerMetricsDir = new File( cluster.getCoreServerById( 0 ).getStoreDir(), "metrics" );
 
         assertEventually( "append index eventually accurate",
-                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.APPEND_INDEX ) ),
+                () -> readLastValue( metricsCsv(CoreMetrics.APPEND_INDEX ) ),
                 greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "commit index eventually accurate",
-                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.COMMIT_INDEX ) ),
+                () -> readLastValue( metricsCsv(CoreMetrics.COMMIT_INDEX ) ),
                 greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "term eventually accurate",
-                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.TERM ) ),
+                () -> readLastValue( metricsCsv(CoreMetrics.TERM ) ),
                 greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "leader not found eventually accurate",
-                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.LEADER_NOT_FOUND ) ),
+                () -> readLastValue( metricsCsv(CoreMetrics.LEADER_NOT_FOUND ) ),
                 equalTo( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "tx pull requests received eventually accurate",
@@ -129,40 +129,40 @@ public class CoreEdgeMetricsIT
                     for ( final CoreGraphDatabase db : cluster.coreServers() )
                     {
                         File metricsDir = new File( db.getStoreDir(), "metrics" );
-                        total += readLastValue( metricsCsv( metricsDir, CoreMetrics.TX_PULL_REQUESTS_RECEIVED ) );
+                        total += readLastValue( metricsCsv(CoreMetrics.TX_PULL_REQUESTS_RECEIVED ) );
                     }
                     return total;
                 },
                 greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "tx retries eventually accurate",
-                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.TX_RETRIES ) ),
+                () -> readLastValue( metricsCsv(CoreMetrics.TX_RETRIES ) ),
                 equalTo( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "is leader eventually accurate",
-                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.IS_LEADER ) ),
+                () -> readLastValue( metricsCsv(CoreMetrics.IS_LEADER ) ),
                 greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
 
         File edgeServerMetricsDir = new File( cluster.getEdgeServerById( 0 ).getStoreDir(), "metrics" );
 
         assertEventually( "pull update request registered",
-                () -> readLastValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATES ) ),
+                () -> readLastValue( metricsCsv(PULL_UPDATES ) ),
                 greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "pull update request registered",
-                () -> readLastValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_REQUESTED ) ),
+                () -> readLastValue( metricsCsv(PULL_UPDATE_HIGHEST_TX_ID_REQUESTED ) ),
                 greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "pull update response received",
-                () -> readLastValue( metricsCsv( edgeServerMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_RECEIVED ) ),
+                () -> readLastValue( metricsCsv(PULL_UPDATE_HIGHEST_TX_ID_RECEIVED ) ),
                 greaterThan( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "dropped messages eventually accurate",
-                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.DROPPED_MESSAGES ) ),
+                () -> readLastValue( metricsCsv(CoreMetrics.DROPPED_MESSAGES ) ),
                 greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "queue size eventually accurate",
-                () -> readLastValue( metricsCsv( coreServerMetricsDir, CoreMetrics.QUEUE_SIZE ) ),
+                () -> readLastValue( metricsCsv(CoreMetrics.QUEUE_SIZE ) ),
                 greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
     }
 
@@ -190,9 +190,9 @@ public class CoreEdgeMetricsIT
     private static final int TIME_STAMP = 0;
     private static final int METRICS_VALUE = 1;
 
-    public static File metricsCsv( File dbDir, String metric )
+    public static File metricsCsv(String metric)
     {
-        File csvFile = new File( dbDir, metric + ".csv" );
+        File csvFile = new File( System.getProperty( "user.dir" ), metric + ".csv" );
         assertEventually( "Metrics file should exist", csvFile::exists, is( true ), 20, SECONDS );
         return csvFile;
     }
