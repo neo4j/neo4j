@@ -1011,7 +1011,7 @@ public class ClusterManager
             StringBuilder result = new StringBuilder();
             for ( HighlyAvailableGraphDatabase member : getAllMembers() )
             {
-                result.append( result.length() > 0 ? "," : "" ).append( ":" )
+                result.append( result.length() > 0 ? "," : "" ).append( "localhost:" )
                       .append( member.getDependencyResolver().resolveDependency(
                               ClusterClient.class ).getClusterServer().getPort() );
             }

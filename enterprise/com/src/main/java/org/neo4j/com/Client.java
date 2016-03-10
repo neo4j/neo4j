@@ -110,8 +110,25 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
         this.maxUnusedChannels = maxConcurrentChannels;
         this.comExceptionHandler = getNoOpComExceptionHandler();
-        this.destination = new InetSocketAddress( destinationHostNameOrIp, destinationPort );
-        origin = originHostNameOrIp == null ? null : new InetSocketAddress( originHostNameOrIp, 0);
+
+        if ( destinationHostNameOrIp.equals( "0.0.0.0" ))
+        {
+            // So it turns out that on Windows, connecting to 0.0.0.0 when specifying
+            // an origin address will not succeed. But since we know we are
+            // connecting to ourselves, and that we are listening on everything,
+            // replacing with localhost is the proper thing to do.
+            this.destination = new InetSocketAddress( "127.0.0.1", destinationPort );
+        } else {
+            // An explicit destination address is always correct
+            this.destination = new InetSocketAddress( destinationHostNameOrIp, destinationPort );
+        }
+
+        if (originHostNameOrIp == null || originHostNameOrIp.equals("0.0.0.0")) {
+            origin = null;
+        } else {
+            origin = new InetSocketAddress( originHostNameOrIp, 0);
+        }
+
         this.protocol = createProtocol( chunkSize, protocolVersion.getApplicationProtocol() );
         this.responseUnpacker = responseUnpacker;
 
