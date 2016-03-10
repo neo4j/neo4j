@@ -49,8 +49,10 @@ public class GraphDatabaseInternalLogIT
     public void shouldWriteToInternalDiagnosticsLog() throws Exception
     {
         // Given
-        new TestGraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() ).shutdown();
-        File internalLog = new File( testDir.graphDbDir(), StoreLogService.INTERNAL_LOG_NAME );
+        new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
+                .newGraphDatabase().shutdown();
+        File internalLog = new File( testDir.directory( "logs" ), StoreLogService.INTERNAL_LOG_NAME );
 
         // Then
         assertThat( internalLog.isFile(), is( true ) );
@@ -64,14 +66,16 @@ public class GraphDatabaseInternalLogIT
     public void shouldNotWriteDebugToInternalDiagnosticsLogByDefault() throws Exception
     {
         // Given
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
+                .newGraphDatabase();
 
         // When
         LogService logService = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( LogService.class );
         logService.getInternalLog( getClass() ).debug( "A debug entry" );
 
         db.shutdown();
-        File internalLog = new File( testDir.graphDbDir(), StoreLogService.INTERNAL_LOG_NAME );
+        File internalLog = new File( testDir.directory( "logs" ), StoreLogService.INTERNAL_LOG_NAME );
 
         // Then
         assertThat( internalLog.isFile(), is( true ) );
@@ -86,6 +90,7 @@ public class GraphDatabaseInternalLogIT
         // Given
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.store_internal_debug_contexts, getClass().getName() + ",java.io" )
+                .setConfig( GraphDatabaseSettings.logs_directory, testDir.directory("logs").getAbsolutePath() )
                 .newGraphDatabase();
 
         // When
@@ -95,7 +100,7 @@ public class GraphDatabaseInternalLogIT
         logService.getInternalLog( StringWriter.class ).debug( "A SW debug entry" );
 
         db.shutdown();
-        File internalLog = new File( testDir.graphDbDir(), StoreLogService.INTERNAL_LOG_NAME );
+        File internalLog = new File( testDir.directory( "logs" ), StoreLogService.INTERNAL_LOG_NAME );
 
         // Then
         assertThat( internalLog.isFile(), is( true ) );
