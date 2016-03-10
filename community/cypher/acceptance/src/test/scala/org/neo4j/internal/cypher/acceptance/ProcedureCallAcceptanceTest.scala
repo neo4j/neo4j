@@ -21,7 +21,6 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
-import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
 import org.neo4j.kernel.api.proc.ProcedureSignature._
@@ -29,59 +28,47 @@ import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature}
 
 abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
-  protected def registerDummyProc(types: Neo4jTypes.AnyType*) = {
-    val builder = procedureSignature(Array("my", "first"), "proc")
+  protected def registerDummyInOutProcedure(types: Neo4jTypes.AnyType*) =
+    registerProcedure("my.first.proc") { builder =>
 
-    for (i <- types.indices) {
+      for (i <- types.indices) {
+        builder
+          .in(s"in$i", types(i))
+          .out(s"out$i", types(i))
+      }
 
-      builder
-        .in(s"in$i", types(i))
-        .out(s"out$i", types(i))
-    }
-
-    val proc = new BasicProcedure(builder.build) {
-      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
-        RawIterator.of[Array[AnyRef], ProcedureException](input)
-    }
-    kernel.registerProcedure(proc)
+      new BasicProcedure(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+          RawIterator.of[Array[AnyRef], ProcedureException](input)
+      }
   }
 
-  protected def registerValueProc(value: AnyRef) = {
-    val builder = procedureSignature(Array("my", "first"), "value")
-    builder.out("out", Neo4jTypes.NTAny)
+  protected def registerProcedureReturningSingleValue(value: AnyRef) =
+    registerProcedure("my.first.value") { builder =>
+      val builder = procedureSignature(Array("my", "first"), "value")
+      builder.out("out", Neo4jTypes.NTAny)
 
-    val proc = new BasicProcedure(builder.build) {
-      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
-        RawIterator.of[Array[AnyRef], ProcedureException](Array(value))
+      new BasicProcedure(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+          RawIterator.of[Array[AnyRef], ProcedureException](Array(value))
+      }
     }
-    kernel.registerProcedure(proc)
-  }
 
-  protected def registerVoidProc() = {
-    val builder = procedureSignature(Array("sys"), "do_nothing")
-    builder.out(ProcedureSignature.VOID)
+  protected def registerVoidProcedure() =
+    registerProcedure("sys.do_nothing") { builder =>
+      builder.out(ProcedureSignature.VOID)
 
-    val proc = new BasicProcedure(builder.build) {
-      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
-        RawIterator.empty()
+      new BasicProcedure(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+          RawIterator.empty()
+      }
     }
-    kernel.registerProcedure(proc)
-  }
 
-  protected def registerEmptyProc() = {
-    val builder = procedureSignature(Array("sys"), "return_nothing")
-
-    val proc = new BasicProcedure(builder.build) {
-      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
-        RawIterator.empty()
+  protected def registerProcedureReturningNoRowsOrColumns() =
+    registerProcedure("sys.return_nothing") { builder =>
+      new BasicProcedure(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+          RawIterator.empty()
+      }
     }
-    kernel.registerProcedure(proc)
-  }
-
-  override protected def initTest() {
-    super.initTest()
-    kernel = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
-  }
-
-  protected var kernel: KernelAPI = null
 }

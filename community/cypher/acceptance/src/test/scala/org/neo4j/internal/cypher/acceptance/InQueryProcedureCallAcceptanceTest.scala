@@ -71,7 +71,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should be able to call procedure with explicit arguments") {
     // Given
-    registerDummyProc(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // When
     val result = execute("CALL my.first.proc('42', 42) YIELD out0, out1 RETURN *")
@@ -82,7 +82,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should be able to call empty procedure") {
     //Given
-    registerEmptyProc()
+    registerProcedureReturningNoRowsOrColumns()
 
     //When
     val result = execute("CALL sys.return_nothing() RETURN 1")
@@ -93,7 +93,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should be able to call void procedure") {
     //Given
-    registerVoidProc()
+    registerVoidProcedure()
 
     //When
     val result = execute("MATCH (n) CALL sys.do_nothing() RETURN n")
@@ -104,7 +104,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should be able to call void procedure without swallowing rows") {
     //Given
-    registerVoidProc()
+    registerVoidProcedure()
 
     createLabeledNode("A")
     createLabeledNode("B")
@@ -131,7 +131,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should fail if input type is wrong") {
     // Given
-    registerDummyProc(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
     a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten') YIELD x RETURN x"))
@@ -139,7 +139,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("if signature declares number all number types are valid") {
     // Given
-    registerDummyProc(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
     execute("CALL my.first.proc(42) YIELD out0 AS x RETURN *").toList should equal(List(Map("x" -> 42)))
@@ -148,7 +148,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("arguments are nullable") {
     // Given
-    registerDummyProc(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
     execute("CALL my.first.proc(NULL) YIELD out0 AS x RETURN *").toList should equal(List(Map("x" -> null)))
@@ -156,7 +156,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should not fail if a procedure declares a float but gets an integer") {
     // Given
-    registerDummyProc(Neo4jTypes.NTFloat)
+    registerDummyInOutProcedure(Neo4jTypes.NTFloat)
 
     // Then
     a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42) YIELD out0 RETURN *")))
@@ -164,7 +164,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should not fail if a procedure declares a float but gets called with an integer") {
     // Given
-    registerDummyProc(Neo4jTypes.NTFloat)
+    registerDummyInOutProcedure(Neo4jTypes.NTFloat)
 
     // Then
     a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc({param}) YIELD out0 RETURN *", "param" -> 42)))
@@ -172,7 +172,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should fail if too many arguments") {
     // Given
-    registerDummyProc(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
     an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42) YIELD x, y, z RETURN *"))
@@ -180,7 +180,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should be able to call a procedure with explain") {
     // Given
-    registerDummyProc(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // When
     val result = execute("EXPLAIN CALL my.first.proc(42) YIELD out0 RETURN *")
@@ -217,7 +217,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     value.put("name", "Cypher")
     value.put("level", 9001)
 
-    registerValueProc(value)
+    registerProcedureReturningSingleValue(value)
 
     // Using graph execute to get a Java value
     graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
@@ -230,7 +230,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     value.add("Norris")
     value.add("Strange")
 
-    registerValueProc(value)
+    registerProcedureReturningSingleValue(value)
 
     // Using graph execute to get a Java value
     graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
@@ -244,7 +244,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     value.add("Strange")
     val stream = value.stream()
 
-    registerValueProc(stream)
+    registerProcedureReturningSingleValue(stream)
 
     // Using graph execute to get a Java value
     graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
