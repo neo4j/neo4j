@@ -19,16 +19,16 @@
  */
 package org.neo4j.metrics;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiPredicate;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -43,10 +43,10 @@ import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
 import org.neo4j.metrics.source.db.EntityCountMetrics;
 import org.neo4j.metrics.source.db.TransactionMetrics;
+import org.neo4j.metrics.source.jvm.ThreadMetrics;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
@@ -54,7 +54,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -196,6 +195,24 @@ public class MetricsKernelExtensionFactoryIT
 
         // THEN
         assertThat( result, greaterThanOrEqualTo( 0L ) );
+    }
+
+    @Test
+    public void shouldShowMetricsForThreads() throws Throwable
+    {
+        // WHEN
+        addNodes( 100 );
+
+        // wait for the file to be written before shutting down the cluster
+        File threadTotalFile = new File( outputPath, ThreadMetrics.THREAD_TOTAL + ".csv" );
+        File threadCountFile = new File( outputPath, ThreadMetrics.THREAD_COUNT + ".csv" );
+
+        long threadTotalResult = readLongValueAndAssert( threadTotalFile, ( newValue, currentValue ) -> newValue >= 0 );
+        long threadCountResult = readLongValueAndAssert( threadCountFile, ( newValue, currentValue ) -> newValue >= 0 );
+
+        // THEN
+        assertThat( threadTotalResult, greaterThanOrEqualTo( 0L ) );
+        assertThat( threadCountResult, greaterThanOrEqualTo( 0L ) );
     }
 
     private void addNodes( int numberOfNodes )
