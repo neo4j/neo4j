@@ -69,7 +69,7 @@ Function Invoke-Neo4j
       if ( ($Neo4jHome -eq $null) -or (-not (Test-Path -Path $Neo4jHome)) ) {
         $Neo4jHome = Split-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -Parent
       }
-      if ($Neo4jHome -eq $null) { throw "Could not determine the Neo4j home Directory.  Set the NEO4J_HOME environment variable and retry" }
+      if ($Neo4jHome -eq $null) { throw "Could not determine the Neo4j home Directory.  Set the NEO4J_HOME environment variable and retry" }  
       Write-Verbose "Neo4j Root is '$Neo4jHome'"
       
       $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jHome -ErrorAction Stop
@@ -87,50 +87,50 @@ Function Invoke-Neo4j
       {
         "" {
           Write-Host "Usage: neo4j { console | start | stop | restart | status | install-service | uninstall-service } < -Verbose >"
-          Exit 1
+          Return 1
         }
         "console" {
           Write-Verbose "Console command specified"
-          Exit (Start-Neo4jServer -Console -Neo4jServer $thisServer -ErrorAction Stop)
+          Return [int](Start-Neo4jServer -Console -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "start" {
           Write-Verbose "Start command specified"
-          Exit (Start-Neo4jServer -Service -Neo4jServer $thisServer -ErrorAction Stop)
+          Return [int](Start-Neo4jServer -Service -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "stop" {
           Write-Verbose "Stop command specified"
-          Exit (Stop-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
+          Return [int](Stop-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "restart" {
           Write-Verbose "Restart command specified"
           
           $result = (Stop-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
-          if ($result -ne 0) { Exit $result}
-          Exit (Start-Neo4jServer -Service -Neo4jServer $thisServer -ErrorAction Stop)
+          if ($result -ne 0) { Return $result}
+          Return (Start-Neo4jServer -Service -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "status" {
           Write-Verbose "Status command specified"
-          Exit (Get-Neo4jStatus -Neo4jServer $thisServer -ErrorAction Stop)
+          Return [int](Get-Neo4jStatus -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "install-service" {
           Write-Verbose "Install command specified"
-          Exit (Install-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
+          Return [int](Install-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
         }
         "uninstall-service" {
           Write-Verbose "Uninstall command specified"
-          Exit (Uninstall-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
+          Return [int](Uninstall-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
         }
         default {
           Write-Host "Unknown command $Command"
-          Exit 255
+          Return 255
         }
       }
       # Should not get here!
-      Exit 2
+      Return 2
     }
     catch {
-      $_
-      Exit 1
+      Write-Error $_
+      Return 1
     }
   }
   
