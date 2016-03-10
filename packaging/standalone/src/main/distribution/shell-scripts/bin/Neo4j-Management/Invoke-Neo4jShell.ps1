@@ -51,11 +51,11 @@ Function Invoke-Neo4jShell
   Process
   {
     try {
-      Exit (Invoke-Neo4jUtility -Command 'Shell' -CommandArgs $CommandArgs -ErrorAction 'Stop')      
+      Return [int](Invoke-Neo4jUtility -Command 'Shell' -CommandArgs $CommandArgs -ErrorAction 'Stop')      
     }
     catch {
-      $_
-      Exit 1
+      Write-Error $_
+      Return 1
     }
   }
   

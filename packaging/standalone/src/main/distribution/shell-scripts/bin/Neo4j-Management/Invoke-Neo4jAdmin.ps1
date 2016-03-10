@@ -118,23 +118,23 @@ neo4j-admin help
 
     Display this help text.
 "@)
-          Exit 0
+          Return 0
         }
         "import" {
           Write-Verbose "Import command specified"
-          Exit (Invoke-Neo4jAdmin_Import -CommandArgs $ArgsHash -Neo4jServer $thisServer -ErrorAction Stop)
+          Return  [int](Invoke-Neo4jAdmin_Import -CommandArgs $ArgsHash -Neo4jServer $thisServer -ErrorAction Stop)
         }
         default {
           Write-Host "Unknown command $Command"
-          Exit 255
+          Return 255
         }
       }
       # Should not get here!
-      Exit 2
+      Return 2
     }
     catch {
-      $_
-      Exit 1
+      Write-Error $_
+      Return 1
     }
   }
   
