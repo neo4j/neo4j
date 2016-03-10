@@ -19,9 +19,15 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.Counter
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.graphdb.Node
+import org.neo4j.kernel.api.exceptions.ProcedureException
+import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
+import org.neo4j.kernel.api.proc.{CallableProcedure, Neo4jTypes}
+import org.neo4j.storageengine.api.{Direction, RelationshipItem}
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.util.matching.Regex
@@ -48,6 +54,177 @@ class EagerizationAcceptanceTest
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsDeleted = 1)
     assertNumberOfEagerness(query, 1)
+  }
+
+  test("should not introduce extra eagerness after CALL of writing procedure") {
+    // Given
+    registerProcedure("user.mkRel") { builder =>
+      builder.in("x", Neo4jTypes.NTNode)
+      builder.in("y", Neo4jTypes.NTNode)
+      builder.out("relId", Neo4jTypes.NTInteger)
+      builder.mode(org.neo4j.kernel.api.proc.ProcedureSignature.Mode.READ_WRITE)
+      new BasicProcedure(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+          val transaction = ctx.get(CallableProcedure.Context.KERNEL_TRANSACTION)
+          val statement = transaction.acquireStatement()
+          try {
+            val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
+            val nodeX = input(0).asInstanceOf[Node]
+            val nodeY = input(1).asInstanceOf[Node]
+            val rel = statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
+            RawIterator.of(Array(new java.lang.Long(rel)))
+          } finally {
+            statement.close()
+          }
+        }
+      }
+    }
+
+    createNode()
+    createNode()
+    val query = "MATCH (a), (b) CALL user.mkRel(a, b) YIELD relId WITH * MATCH ()-[rel]->() WHERE id(rel) = relId RETURN rel"
+
+    val result = executeWithCostPlannerOnly(query)
+    result.size should equal(4)
+
+    // Correct! Eagerization happens as part of query context operation
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("should not introduce extra eagerness after CALL of writing void procedure") {
+    // Given
+    var counter = Counter(0)
+
+    registerProcedure("user.mkRel") { builder =>
+      builder.in("x", Neo4jTypes.NTNode)
+      builder.in("y", Neo4jTypes.NTNode)
+      builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
+      builder.mode(org.neo4j.kernel.api.proc.ProcedureSignature.Mode.READ_WRITE)
+      new BasicProcedure(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+          val transaction = ctx.get(CallableProcedure.Context.KERNEL_TRANSACTION)
+          val statement = transaction.acquireStatement()
+          try {
+            val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
+            val nodeX = input(0).asInstanceOf[Node]
+            val nodeY = input(1).asInstanceOf[Node]
+            statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
+            counter += 1
+            RawIterator.empty()
+          } finally {
+            statement.close()
+          }
+        }
+      }
+    }
+
+    createNode()
+    createNode()
+    val query = "MATCH (a), (b) CALL user.mkRel(a, b) MATCH (a)-[rel]->(b) RETURN rel"
+
+    val result = executeWithCostPlannerOnly(query)
+    result.size should equal(4)
+    counter.counted should equal(4)
+
+    // Correct! Eagerization happens as part of query context operation
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("should not introduce extra eagerness after CALL of reading procedure") {
+    // Given
+    registerProcedure("user.expand") { builder =>
+      builder.in("x", Neo4jTypes.NTNode)
+      builder.in("y", Neo4jTypes.NTNode)
+      builder.out("relId", Neo4jTypes.NTInteger)
+      new BasicProcedure(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+          val transaction = ctx.get(CallableProcedure.Context.KERNEL_TRANSACTION)
+          val statement = transaction.acquireStatement()
+          try {
+            val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
+            val idX = input(0).asInstanceOf[Node].getId
+            val idY = input(1).asInstanceOf[Node].getId
+            val nodeCursor = statement.readOperations().nodeCursor(idX)
+            val result = Array.newBuilder[Array[AnyRef]]
+            while (nodeCursor.next()) {
+              val relCursor = nodeCursor.get().relationships( Direction.OUTGOING )
+              while (relCursor.next()) {
+                val item: RelationshipItem = relCursor.get()
+                if (item.endNode() == idY)
+                  result += Array(new java.lang.Long(item.id()))
+              }
+            }
+            RawIterator.of(result.result(): _*)
+          } finally {
+            statement.close()
+          }
+        }
+      }
+    }
+
+    val nodeA = createNode()
+    val nodeB = createNode()
+    val nodeC = createNode()
+    relate(nodeA, nodeB)
+    relate(nodeA, nodeC)
+
+    val query = "MATCH (x), (y) CALL user.expand(x, y) YIELD relId RETURN x, y, relId"
+
+    val result = executeWithCostPlannerOnly(query)
+    result.size should equal(2)
+
+    // Correct! No eagerization necessary
+    assertNumberOfEagerness(query, 0)
+  }
+
+  test("should not introduce extra eagerness after CALL of reading VOID procedure") {
+    // Given
+    var counter = Counter(0)
+
+    registerProcedure("user.expand") { builder =>
+      builder.in("x", Neo4jTypes.NTNode)
+      builder.in("y", Neo4jTypes.NTNode)
+      builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
+      new BasicProcedure(builder.build) {
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+          val transaction = ctx.get(CallableProcedure.Context.KERNEL_TRANSACTION)
+          val statement = transaction.acquireStatement()
+          try {
+            val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
+            val idX = input(0).asInstanceOf[Node].getId
+            val idY = input(1).asInstanceOf[Node].getId
+            val nodeCursor = statement.readOperations().nodeCursor(idX)
+            val result = Array.newBuilder[Array[AnyRef]]
+            while (nodeCursor.next()) {
+              val relCursor = nodeCursor.get().relationships( Direction.OUTGOING )
+              while (relCursor.next()) {
+                val item: RelationshipItem = relCursor.get()
+                if (item.endNode() == idY)
+                  counter += 1
+              }
+            }
+            RawIterator.empty()
+          } finally {
+            statement.close()
+          }
+        }
+      }
+    }
+
+    val nodeA = createNode()
+    val nodeB = createNode()
+    val nodeC = createNode()
+    relate(nodeA, nodeB)
+    relate(nodeA, nodeC)
+
+    val query = "MATCH (x), (y) CALL user.expand(x, y) WITH * MATCH (x)-[rel]->(y) RETURN *"
+
+    val result = executeWithCostPlannerOnly(query)
+    result.size should equal(2)
+    counter.counted should equal(2)
+
+    // Correct! No eagerization necessary
+    assertNumberOfEagerness(query, 0)
   }
 
   test("should introduce eagerness between MATCH and CREATE relationships with overlapping relationship types") {
