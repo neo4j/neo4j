@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.helpers.Clock;
@@ -118,6 +119,7 @@ public class DelayedRenewableTimeoutServiceTest
     }
 
     @Test
+    @Ignore("See: https://neo4j.slack.com/archives/team-big-graph/p1457617213000382")
     public void shouldNotTimeOutWhenStopped() throws Throwable
     {
         // given
