@@ -59,6 +59,7 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingP
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoTracer;
 
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.String.valueOf;
 
@@ -98,9 +99,12 @@ public class BatchingNeoStores implements AutoCloseable, NeoStoresSupplier
         // Having less than that might result in an evicted page will reading, which would mean
         // unnecessary re-reading. Having slightly more leaves some leg room.
         long optimalMappedMemorySize = pageSize * 40;
+        long limitedMemorySize = max(
+                2 * pageSize, // page cache requires at the very least memory enough for two pages
+                applyEnvironmentLimitationsTo( optimalMappedMemorySize ) );
         this.neo4jConfig = new Config( stringMap( dbConfig.getParams(),
                 dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
-                pagecache_memory.name(), valueOf( applyEnvironmentLimitationsTo( optimalMappedMemorySize ) ),
+                pagecache_memory.name(), valueOf( limitedMemorySize ),
                 mapped_memory_page_size.name(), valueOf( pageSize ) ),
                 GraphDatabaseSettings.class );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
