@@ -48,7 +48,7 @@ For this reason, the heap should ideally be sized and tuned such that transactio
 
 [NOTE]
 --
-When using Neo4j Server, JVM configuration goes into the _conf/neo4j-wrapper.conf_ file. See <<server-configuration>>.
+When using Neo4j Server, JVM configuration goes into the _conf/neo4j-wrapper.conf_ file.
 --
 
 In server deployments, the heap size is configured with the `dbms.memory.heap.max_size` (in MBs) setting in the _neo4j-wrapper.conf_ file.

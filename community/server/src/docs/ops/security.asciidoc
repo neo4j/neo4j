@@ -158,4 +158,4 @@ Further information can be found in <<query-load-csv>>.
 
 == Neo4j Web Interface Security
 
-For configuration settings to consider in order to get the level of security you want to achieve, see <<server-browser-config>>.
+For configuration settings to consider in order to get the level of security you want to achieve, see <<configuration-settings>>.

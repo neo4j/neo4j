@@ -76,9 +76,9 @@ public interface ServerSettings
     Setting<Long> webserver_limit_execution_time =
             setting( "unsupported.dbms.executiontime_limit.time", DURATION, NO_DEFAULT );
 
-    @Description("Console engines for the legacy webadmin administration")
-    Setting<List<String>> management_console_engines = setting(
-            "org.neo4j.server.manage.console_engines", STRING_LIST, "SHELL" );
+    @Internal
+    Setting<List<String>> console_module_engines = setting(
+            "unsupported.dbms.console_module.engines", STRING_LIST, "SHELL" );
 
     @Description("Comma-separated list of <classname>=<mount point> for unmanaged extensions.")
     Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "dbms.unmanaged_extension_classes",
@@ -171,15 +171,14 @@ public interface ServerSettings
     Setting<HostnamePort> bolt_socket_address = BoltKernelExtension.Settings.socket_address;
 
     @Internal
-    Setting<URI> rest_api_path = setting( "org.neo4j.server.webadmin.data.uri",
-            NORMALIZED_RELATIVE_URI, "/db/data" );
+    Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" );
 
     @Internal
-    Setting<URI> management_api_path = setting( "org.neo4j.server.webadmin.management.uri",
+    Setting<URI> management_api_path = setting( "unsupported.dbms.uris.management",
             NORMALIZED_RELATIVE_URI, "/db/manage" );
 
     @Internal
-    Setting<URI> browser_path = setting( "org.neo4j.server.webadmin.browser.uri", Settings.URI, "/browser/" );
+    Setting<URI> browser_path = setting( "unsupported.dbms.uris.browser", Settings.URI, "/browser/" );
 
     @Internal
     Setting<Boolean> script_sandboxing_enabled = setting("unsupported.dbms.security.script_sandboxing_enabled",
@@ -190,5 +189,5 @@ public interface ServerSettings
             FALSE );
 
     @Internal
-    Setting<Boolean> webadmin_enabled = setting( "dbms.webadmin.enabled", BOOLEAN, TRUE );
+    Setting<Boolean> console_module_enabled = setting( "unsupported.dbms.console_module.enabled", BOOLEAN, TRUE );
 }
