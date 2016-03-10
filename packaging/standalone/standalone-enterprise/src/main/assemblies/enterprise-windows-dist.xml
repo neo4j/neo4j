@@ -48,18 +48,10 @@
       <lineEnding>dos</lineEnding>
       <includes>
         <include>**/*.bat</include>
-      </includes>
-      <filtered>true</filtered>
-    </fileSet>
-    <!-- Neo4j Powershell Modules -->
-    <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory></outputDirectory>
-      <lineEnding>dos</lineEnding>
-      <includes>
         <include>**/*.psd1</include>
         <include>**/*.psm1</include>
         <include>**/*.ps1</include>
+        <include>**/*.exe</include>
       </includes>
 	  <filtered>true</filtered>
     </fileSet>

@@ -58,6 +58,7 @@
         <exclude>**/*.psm1</exclude>
         <exclude>**/*.ps1</exclude>
         <exclude>**/Neo4j-Management</exclude>
+        <exclude>**/*.exe</exclude>
       </excludes>
       <filtered>true</filtered>
     </fileSet>
