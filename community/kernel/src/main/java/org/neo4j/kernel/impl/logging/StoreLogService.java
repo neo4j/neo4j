@@ -99,16 +99,11 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
-        public StoreLogService inStoreDirectory( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
-        {
-            return toFile( fileSystem, new File( storeDir, INTERNAL_LOG_NAME ) );
-        }
-
-        public StoreLogService toFile( FileSystemAbstraction fileSystem, File internalLogPath ) throws IOException
+        public StoreLogService inLogsDirectory(FileSystemAbstraction fileSystem, File logsDir ) throws IOException
         {
             return new StoreLogService(
                     userLogProvider,
-                    fileSystem, internalLogPath, logLevels, defaultLevel,
+                    fileSystem, new File( logsDir, INTERNAL_LOG_NAME ), logLevels, defaultLevel,
                     internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, rotationExecutor, rotationListener );
         }
     }
@@ -123,9 +118,9 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         return new Builder().withRotation( internalLogRotationThreshold, internalLogRotationDelay, maxInternalLogArchives, jobScheduler );
     }
 
-    public static StoreLogService inStoreDirectory( FileSystemAbstraction fileSystem, File storeDir ) throws IOException
+    public static StoreLogService inLogsDirectory(FileSystemAbstraction fileSystem, File storeDir ) throws IOException
     {
-        return new Builder().inStoreDirectory( fileSystem, storeDir );
+        return new Builder().inLogsDirectory( fileSystem, storeDir );
     }
 
     private final Closeable closeable;

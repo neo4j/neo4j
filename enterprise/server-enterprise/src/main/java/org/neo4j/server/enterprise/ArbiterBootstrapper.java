@@ -146,7 +146,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         try
         {
             return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
-                    .inStoreDirectory( fileSystem, new File( logDir ) );
+                    .inLogsDirectory( fileSystem, logDir );
         }
         catch ( IOException e )
         {
