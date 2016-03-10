@@ -158,6 +158,9 @@ public interface ServerSettings
     @Description("Size of each GC log that is kept.")
     Setting<Long> gc_logging_rotation_size = setting("dbms.logs.rotation.gc.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
+    @Description("Path of the run directory")
+    Setting<File> run_directory = setting("dbms.directories.run", PATH, "run");
+
     @Description("Timeout for idle transactions.")
     Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
 
