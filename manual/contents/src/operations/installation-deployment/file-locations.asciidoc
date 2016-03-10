@@ -14,8 +14,7 @@ Some of these paths are configurable; see <<configuration-settings>> for details
 |OS X desktop          |_$\{HOME\}/Documents/Neo4j/neo4j.conf_         |_$\{HOME\}/Documents/Neo4j_         |_$\{HOME\}/Documents/Neo4j/logs_
 |===
 
-Please note that the structure directories and files in the data directory is internal to Neo4j and subject to change between versions without notice.
-
+Please note that the data directory is internal to Neo4j and its structure subject to change between versions without notice.
 == Log Files
 
 [options="header"]
