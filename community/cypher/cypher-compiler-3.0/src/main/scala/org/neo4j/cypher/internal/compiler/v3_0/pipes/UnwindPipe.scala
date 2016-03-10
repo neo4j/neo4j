@@ -82,6 +82,3 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
     }
   }
 }
-
-
-

@@ -55,7 +55,7 @@ case class ProcedureCallPipe(source: Pipe,
     case PassThroughRow => internalCreateResultsByPassingThrough _
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
     val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
@@ -96,23 +96,23 @@ case class ProcedureCallPipe(source: Pipe,
     }
   }
 
-    def planDescriptionWithoutCardinality: InternalPlanDescription = {
+  override def planDescriptionWithoutCardinality: InternalPlanDescription = {
     PlanDescriptionImpl(this.id, "ProcedureCall", SingleChild(source.planDescription), Seq(
       Signature(QualifiedProcedureName(name.namespace, name.name), argExprs, resultSymbols)
     ), variables)
   }
 
-  def symbols = resultSymbols.foldLeft(source.symbols) {
+  override def symbols = resultSymbols.foldLeft(source.symbols) {
       case (symbols, (symbolName, symbolType)) =>
         symbols.add(symbolName, symbolType.legacyIteratedType)
     }
 
   override def localEffects = AllEffects
 
-  def dup(sources: List[Pipe]): Pipe = {
+  override def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
     copy(source = head)(estimatedCardinality)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  override def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

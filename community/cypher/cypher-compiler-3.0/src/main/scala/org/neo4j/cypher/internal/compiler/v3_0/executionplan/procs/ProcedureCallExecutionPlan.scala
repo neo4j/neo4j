@@ -25,9 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.{Counter, RuntimeJavaValu
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, GraphStatistics, PlanContext, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, ProcedureSignature, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser, _}
-import org.neo4j.cypher.internal.frontend.v3_0.ParameterNotFoundException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
@@ -108,13 +107,6 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
 
   private def createSignatureArgument =
     Signature(signature.name, argExprCommands, resultSymbols)
-
-  private def fail(f: FieldSignature, ctx: QueryContext) = {
-    ctx.transactionalContext.close(success = false)
-    throw new ParameterNotFoundException(
-      s"""Procedure ${signature.name.name} expected an argument with ${f.name} with type ${f.typ}"""
-    )
-  }
 
   override def notifications(planContext: PlanContext) = Seq.empty
   override def isPeriodicCommit: Boolean = false

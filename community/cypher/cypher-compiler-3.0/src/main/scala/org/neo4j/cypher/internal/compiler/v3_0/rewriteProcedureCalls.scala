@@ -52,7 +52,7 @@ object rewriteProcedureCalls {
   //
   private val fakeStandaloneCallDeclarations = Rewriter.lift {
     case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(_, _, _, _, _)))) if !resolved.fullyDeclared =>
-      val result = q.copy(part = part.copy(clauses = Seq(resolved.fakeDeclarations))(part.position))(q.position)
+      val result = q.copy(part = part.copy(clauses = Seq(resolved.withFakedFullDeclarations))(part.position))(q.position)
       result
   }
 }

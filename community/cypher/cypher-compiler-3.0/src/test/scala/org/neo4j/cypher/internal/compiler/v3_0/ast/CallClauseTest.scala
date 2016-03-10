@@ -186,8 +186,8 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signature = ProcedureSignature(qualifiedName, Seq.empty, Some(Seq.empty), ProcedureReadOnlyAccess)
     val call = ResolvedCall(signature, null, null, declaredArguments = false, declaredResults = false)(pos)
 
-    call.fakeDeclarations.declaredArguments should be(true)
-    call.fakeDeclarations.declaredResults should be(true)
+    call.withFakedFullDeclarations.declaredArguments should be(true)
+    call.withFakedFullDeclarations.declaredResults should be(true)
   }
 
   test("adds coercion of arguments to signature types upon request") {

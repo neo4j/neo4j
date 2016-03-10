@@ -45,7 +45,9 @@ object literalReplacement {
          _: ast.With |
          _: ast.CallClause =>
       acc => (acc, Some(identity))
-    case _: ast.Clause | _: ast.PeriodicCommitHint | _: ast.Limit =>
+    case _: ast.Clause |
+         _: ast.PeriodicCommitHint |
+         _: ast.Limit =>
       acc => (acc, None)
     case n: ast.NodePattern =>
       acc => (n.properties.treeFold(acc)(literalMatcher), None)

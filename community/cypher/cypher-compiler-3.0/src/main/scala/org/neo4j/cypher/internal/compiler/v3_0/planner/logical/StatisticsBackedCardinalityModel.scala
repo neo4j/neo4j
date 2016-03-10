@@ -79,9 +79,9 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     case _: UnwindProjection =>
       in * Multiplier(10)
 
-    // CallProcedure
+    // ProcedureCall
     case _: ProcedureCallProjection =>
-      in * Multiplier(10)
+      (in * Multiplier(10)).max(Cardinality(10000)).min(Cardinality(1))
 
     // Load CSV
     case _: LoadCSVProjection =>

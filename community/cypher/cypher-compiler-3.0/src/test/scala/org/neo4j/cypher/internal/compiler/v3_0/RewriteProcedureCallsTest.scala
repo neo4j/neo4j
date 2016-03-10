@@ -42,7 +42,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     val rewritten = rewriteProcedureCalls(lookup)(original)
 
     rewritten should equal(
-      Query(None, SingleQuery(Seq(ResolvedCall(lookup)(unresolved).coerceArguments.fakeDeclarations))_)(pos)
+      Query(None, SingleQuery(Seq(ResolvedCall(lookup)(unresolved).coerceArguments.withFakedFullDeclarations))_)(pos)
     )
   }
 
