@@ -301,7 +301,7 @@ abstract class CallClause extends Clause {
 
 case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
                           procedureName: ProcedureName,
-                          // None: No arguments given
+                          // None: No arguments given (i.e. no "YIELD" part)
                           declaredArguments: Option[Seq[Expression]] = None,
                           // None: No results declared
                           declaredResults: Option[Seq[ProcedureResultItem]] = None

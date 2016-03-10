@@ -36,31 +36,31 @@ object ResolvedCall {
     ResolvedCall(signature, callArguments, callResults, declaredArguments.nonEmpty, declaredResults.nonEmpty)(position)
   }
 
-  def signatureArguments(signature: ProcedureSignature, position: InputPosition): Seq[Parameter] = {
+  private def signatureArguments(signature: ProcedureSignature, position: InputPosition): Seq[Parameter] =
     signature.inputSignature.map { field => Parameter(field.name, CTAny)(position) }
-  }
 
-  def signatureResults(signature: ProcedureSignature, position: InputPosition): Seq[ProcedureResultItem] = {
+  private def signatureResults(signature: ProcedureSignature, position: InputPosition): Seq[ProcedureResultItem] =
     signature.outputSignature.getOrElse(Seq.empty).map { field => ProcedureResultItem(Variable(field.name)(position))(position) }
-  }
 }
 
 case class ResolvedCall(signature: ProcedureSignature,
                         callArguments: Seq[Expression],
                         callResults: Seq[ProcedureResultItem],
-                        // as given by the user originally
+                        // true if given by the user originally
                         val declaredArguments: Boolean = true,
+                        // true if given by the user originally
                         val declaredResults: Boolean = true)
                        (val position: InputPosition)
   extends CallClause {
 
-  def qualifiedName = signature.name
-  def fullyDeclared = declaredArguments && declaredResults
+  def qualifiedName: QualifiedProcedureName = signature.name
 
-  def fakeDeclarations =
+  def fullyDeclared: Boolean = declaredArguments && declaredResults
+
+  def withFakedFullDeclarations: ResolvedCall =
     copy(declaredArguments = true, declaredResults = true)(position)
 
-  def coerceArguments = {
+  def coerceArguments: ResolvedCall = {
     val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
     val coercedArguments=
       callArguments
@@ -72,7 +72,7 @@ case class ResolvedCall(signature: ProcedureSignature,
     copy(callArguments = coercedArguments)(position)
   }
 
-  override def returnColumns =
+  override def returnColumns: List[String] =
     callResults.map(_.variable.name).toList
 
   def callResultIndices: Seq[(Int, String)] = {
@@ -114,7 +114,7 @@ case class ResolvedCall(signature: ProcedureSignature,
     // CALL ... YIELD ... => Check named outputs
     else if (declaredResults)
       callResults.foldSemanticCheck(_.semanticCheck(callOutputTypes))
-    // CALL wo YIELD of non-VOID procedure in query => Error
+    // CALL wo YIELD of non-VOID or non-empty procedure in query => Error
     else
       error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)", position))
 
