@@ -234,12 +234,11 @@ public class CommunityEditionModule extends EditionModule
             }
         }
 
-        // TODO: Maybe the system should be locked down so you have to have an auth manager configured to get access at all
         if ( key.equals( "" ) )
         {
-            logging.getInternalLog( CommunityFacadeFactory.class )
-                    .info( "No auth manager implementation specified, defaulting to no authentication" );
-            return AuthManager.NO_AUTH;
+            logging.getUserLog( CommunityFacadeFactory.class )
+                    .error( "No auth manager implementation specified and no default could be loaded." );
+            throw new IllegalArgumentException( "No auth manager found." );
         }
 
         throw new IllegalArgumentException( "No auth manager found with the name '" + key + "'." );
