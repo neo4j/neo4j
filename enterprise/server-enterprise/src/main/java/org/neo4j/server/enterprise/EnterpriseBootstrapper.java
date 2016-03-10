@@ -27,6 +27,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.BlockingBootstrapper;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.NeoServer;
 
@@ -42,6 +43,22 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
         if ( exit != 0 )
         {
             System.exit( exit );
+        }
+    }
+
+    private static BlockingBootstrapper bootstrapper;
+
+    public static void start( String[] args )
+    {
+        bootstrapper = new BlockingBootstrapper( new EnterpriseBootstrapper() );
+        System.exit( start( bootstrapper, args ) );
+    }
+
+    public static void stop( @SuppressWarnings("UnusedParameters") String[] args )
+    {
+        if ( bootstrapper != null )
+        {
+            bootstrapper.stop();
         }
     }
 

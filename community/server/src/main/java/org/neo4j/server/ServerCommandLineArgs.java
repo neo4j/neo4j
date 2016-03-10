@@ -21,7 +21,6 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.Optional;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Pair;
@@ -43,25 +42,23 @@ public class ServerCommandLineArgs
 {
     static final String CONFIG_KEY_ALT_1 = "config";
     static final String CONFIG_KEY_ALT_2 = "C";
-    private static final String RUNFILE_KEY = "run-file";
     private final File configFile;
-    private final Pair<String,String>[] configOverrides;
-    private final Optional<File> runFile;
+    private final Pair<String, String>[] configOverrides;
 
-    private ServerCommandLineArgs( File configFile, Pair<String, String>[] configOverrides, Optional<File> runFile )
+    private ServerCommandLineArgs( File configFile, Pair<String, String>[] configOverrides )
     {
         this.configFile = configFile;
         this.configOverrides = configOverrides;
-        this.runFile = runFile;
     }
 
     public static ServerCommandLineArgs parse( String[] argv )
     {
         Args args = Args.parse( argv );
-        return new ServerCommandLineArgs(detemineConfigFile( args ), parseConfigOverrides( args ), parseRunFile(args) );
+        return new ServerCommandLineArgs( detemineConfigFile( args ), parseConfigOverrides( args )
+        );
     }
 
-    public Pair<String,String>[] configOverrides()
+    public Pair<String, String>[] configOverrides()
     {
         return configOverrides;
     }
@@ -77,10 +74,10 @@ public class ServerCommandLineArgs
                 arguments.get( CONFIG_KEY_ALT_1, "config/neo4j.config" ) ) );
     }
 
-    private static Pair<String,String>[] parseConfigOverrides( Args arguments )
+    private static Pair<String, String>[] parseConfigOverrides( Args arguments )
     {
-        Collection<Pair<String,String>> options = arguments.interpretOptions( "c",
-                Converters.<Pair<String,String>>optional(), s -> {
+        Collection<Pair<String, String>> options = arguments.interpretOptions( "c",
+                Converters.<Pair<String, String>>optional(), s -> {
                     if ( s.contains( "=" ) )
                     {
                         String[] keyVal = s.split( "=", 2 );
@@ -91,15 +88,5 @@ public class ServerCommandLineArgs
                 } );
 
         return options.toArray( new Pair[options.size()] );
-    }
-
-    private static Optional<File> parseRunFile( Args args )
-    {
-        return Optional.ofNullable( args.get( RUNFILE_KEY ) ).map( File::new );
-    }
-
-    public Optional<File> runFile()
-    {
-        return runFile;
     }
 }

@@ -22,8 +22,20 @@ package org.neo4j.server;
 public class CommunityBootstrapperTest extends BaseBootstrapperTest
 {
     @Override
-    protected Bootstrapper newBootstrapper()
+    protected BaseBootstrapper newBootstrapper()
     {
         return new CommunityBootstrapper();
+    }
+
+    @Override
+    protected void start(String[] args)
+    {
+        CommunityBootstrapper.start( args );
+    }
+
+    @Override
+    protected void stop(String[] args)
+    {
+        CommunityBootstrapper.stop( args );
     }
 }
