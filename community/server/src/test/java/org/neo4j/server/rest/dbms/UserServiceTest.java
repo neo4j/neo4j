@@ -37,7 +37,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -144,6 +143,7 @@ public class UserServiceTest
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
         when( authManager.getUser( "neo4j" ) ).thenReturn( NEO4J_USER );
+        when( authManager.setUserPassword( "neo4j", "test" ) ).thenReturn( NEO4J_USER );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );
@@ -153,7 +153,7 @@ public class UserServiceTest
 
         // Then
         assertThat( response.getStatus(), equalTo( 200 ) );
-        verify( authManager ).setPassword( anyObject(), "neo4j", "test" );
+        verify( authManager ).setUserPassword( "neo4j", "test" );
     }
 
     @Test
