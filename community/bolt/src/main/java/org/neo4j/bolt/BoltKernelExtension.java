@@ -254,7 +254,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         availableVersions.put(
                 BoltProtocolV1.VERSION,
                 ( channel, isEncrypted ) -> {
-                    String descriptor = format( "\tclient:%s\tserver:%s", channel.remoteAddress(), channel.localAddress() );
+                    String descriptor = format( "\tclient%s\tserver%s", channel.remoteAddress(), channel.localAddress() );
                     return new BoltProtocolV1( logging, sessions.newSession( descriptor, isEncrypted ), channel );
                 }
         );

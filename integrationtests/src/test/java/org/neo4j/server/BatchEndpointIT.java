@@ -22,15 +22,12 @@ package org.neo4j.server;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.server.ServerTestUtils.createDummyLogbackConfigFile;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -65,19 +62,5 @@ public class BatchEndpointIT
 
         // Then
         assertEquals( 200, response.status() );
-    }
-
-    private static String createDummyLogbackConfigFile()
-    {
-        try
-        {
-            Path file = Files.createTempFile( "logback", ".xml" );
-            Files.write( file, "<configuration></configuration>".getBytes() );
-            return file.toAbsolutePath().toString();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to create dummy logback configuration file", e );
-        }
     }
 }
