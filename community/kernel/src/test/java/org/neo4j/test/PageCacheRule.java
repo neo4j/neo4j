@@ -30,6 +30,7 @@ import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 
@@ -57,6 +58,11 @@ public class PageCacheRule extends ExternalResource
 
     public PageCache getPageCache( FileSystemAbstraction fs, Config config )
     {
+        return getPageCache( fs, PageCacheTracer.NULL, config );
+    }
+
+    public PageCache getPageCache( FileSystemAbstraction fs, PageCacheTracer tracer, Config config )
+    {
         if ( pageCache != null )
         {
             try
@@ -70,7 +76,7 @@ public class PageCacheRule extends ExternalResource
             }
         }
 
-        pageCache = StandalonePageCacheFactory.createPageCache( fs, config );
+        pageCache = StandalonePageCacheFactory.createPageCache( fs, tracer, config );
 
         if ( automaticallyProduceInconsistentReads )
         {
