@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.raft.state.DurableStateStorage;
 import org.neo4j.coreedge.raft.state.StateMarshal;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
+import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -36,6 +37,7 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 public class ReplicatedLockTokenStateMachineTest
@@ -220,6 +222,60 @@ public class ReplicatedLockTokenStateMachineTest
 
         assertEquals( memberB, initialState.get().owner() );
         assertEquals( candidateId, initialState.get().id() );
+    }
+
+    @Test
+    public void shouldBeIdempotent() throws Exception
+    {
+        // given
+        EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
+        fsa.mkdir( testDir.directory() );
+
+        StateMarshal<ReplicatedLockTokenState<CoreMember>> marshal = new ReplicatedLockTokenState.Marshal<>( new CoreMember.CoreMemberMarshal() );
+
+        DurableStateStorage<ReplicatedLockTokenState<CoreMember>> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+                "state", marshal, 100, health(), NullLogProvider.getInstance() );
+
+        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( storage, new PendingLockTokensRequests<>() );
+
+        CoreMember memberA = new CoreMember(
+                new AdvertisedSocketAddress( "1" ),
+                new AdvertisedSocketAddress( "2" ) );
+
+        CoreMember memberB = new CoreMember(
+                new AdvertisedSocketAddress( "3" ),
+                new AdvertisedSocketAddress( "4" ) );
+
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( memberA, 0 ), 3 );
+
+        // when
+        stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( memberB, 1 ), 2 );
+
+        // then
+        assertEquals( memberA, stateMachine.currentToken().owner() );
+    }
+
+    @Test
+    public void shouldSetInitialPendingRequestToInitialState() throws Exception
+    {
+        // Given
+        StateStorage<ReplicatedLockTokenState<Object>> storage = mock( StateStorage.class );
+        CoreMember initialHoldingCoreMember = new CoreMember(
+                new AdvertisedSocketAddress( "1" ),
+                new AdvertisedSocketAddress( "2" ) );
+        ReplicatedLockTokenState<Object> initialState = new ReplicatedLockTokenState<>( 123, 3, initialHoldingCoreMember );
+        when ( storage.getInitialState() ).thenReturn( initialState );
+
+
+        PendingLockTokensRequests<Object> lockRequests = new PendingLockTokensRequests<>();
+
+        // When
+        new ReplicatedLockTokenStateMachine<>( storage, lockRequests );
+
+        // Then
+        LockToken initialToken = lockRequests.currentToken();
+        assertEquals( initialState.get().owner(), initialToken.owner() );
+        assertEquals( initialState.get().id(), initialToken.id() );
     }
 
     private Supplier<DatabaseHealth> health()
