@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.{CompiledRuntimeName, CostBasedPlannerName}
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession, TransactionalContext}
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.scalatest.Assertions
 
 trait QueryStatisticsTestSupport {
@@ -47,7 +46,7 @@ trait QueryStatisticsTestSupport {
         override def endFailure(session: QuerySession, throwable: Throwable){}
       }
       implicit val session = new QuerySession(null) {
-        override def toString: String = "testSession"
+        override def toString: String = s"test-session\ttest"
       }
       val r = new ExecutionResultWrapperFor3_0(actual, CostBasedPlannerName.default, CompiledRuntimeName)
       apply(r.queryStatistics())

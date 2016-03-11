@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -62,6 +63,20 @@ public class ServerTestUtils
         File file = File.createTempFile( "neo4j", "conf" );
         file.delete();
         return file;
+    }
+
+    public static String createDummyLogbackConfigFile()
+    {
+        try
+        {
+            Path file = Files.createTempFile( "logback", ".xml" );
+            Files.write( file, "<configuration></configuration>".getBytes() );
+            return file.toAbsolutePath().toString();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Unable to create dummy logback configuration file", e );
+        }
     }
 
     public static File getRelativeFile( Setting<File> setting ) throws IOException

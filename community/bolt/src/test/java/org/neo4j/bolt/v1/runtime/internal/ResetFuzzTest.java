@@ -78,7 +78,7 @@ public class ResetFuzzTest
     private final Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
     private final SessionStateMachine ssm = new SessionStateMachine( new FuzzStubSPI() );
     private final ThreadedSessions sessions =
-            new ThreadedSessions( ( enc ) -> ssm, scheduler, NullLogService.getInstance() );
+            new ThreadedSessions( ( enc, descriptor ) -> ssm, scheduler, NullLogService.getInstance() );
 
     private final List<Message> messages = asList(
         new RunMessage( "test", map() ),
@@ -94,7 +94,7 @@ public class ResetFuzzTest
     {
         // given
         life.start();
-        Session session = sessions.newSession();
+        Session session = sessions.newSession( "<test>" );
         session.init( "Test/0.0.0", map(), null, Session.Callback.NO_OP );
 
         TransportBridge bridge = new TransportBridge(
@@ -158,6 +158,12 @@ public class ResetFuzzTest
      */
     private class FuzzStubSPI implements SessionStateMachine.SPI
     {
+        @Override
+        public String connectionDescriptor()
+        {
+            return "<test>";
+        }
+
         @Override
         public void reportError( Neo4jError err )
         {

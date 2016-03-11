@@ -40,6 +40,7 @@ import org.neo4j.udc.UsageDataKeys;
 
 class StandardStateMachineSPI implements SessionStateMachine.SPI
 {
+    private final String connectionDescriptor;
     private final UsageData usageData;
     private final GraphDatabaseFacade db;
     private final StatementRunner statementRunner;
@@ -49,9 +50,10 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     private final ThreadToStatementContextBridge txBridge;
     private final DecayingFlags featureUsage;
 
-    StandardStateMachineSPI( UsageData usageData, GraphDatabaseFacade db, StatementRunner statementRunner,
+    StandardStateMachineSPI( String connectionDescriptor, UsageData usageData, GraphDatabaseFacade db, StatementRunner statementRunner,
             LogService logging, Authentication authentication, ThreadToStatementContextBridge txBridge )
     {
+        this.connectionDescriptor = connectionDescriptor;
         this.usageData = usageData;
         this.db = db;
         this.statementRunner = statementRunner;
@@ -60,6 +62,12 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
         this.errorReporter = new ErrorReporter( logging, this.usageData );
         this.log = logging.getInternalLog( SessionStateMachine.class );
         this.authentication = authentication;
+    }
+
+    @Override
+    public String connectionDescriptor()
+    {
+        return connectionDescriptor;
     }
 
     @Override

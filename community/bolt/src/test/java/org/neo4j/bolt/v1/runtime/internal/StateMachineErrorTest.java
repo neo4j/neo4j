@@ -91,7 +91,7 @@ public class StateMachineErrorTest
 
     private SessionStateMachine newIdleMachine()
     {
-        SessionStateMachine machine = new SessionStateMachine( new UsageData( scheduler ), db, txBridge, runner, NullLogService
+        SessionStateMachine machine = new SessionStateMachine( "<idle>", new UsageData( scheduler ), db, txBridge, runner, NullLogService
                 .getInstance(), Authentication.NONE );
         machine.init( "FunClient", map(), null, Session.Callback.NO_OP );
         return machine;
@@ -221,7 +221,7 @@ public class StateMachineErrorTest
     {
         // Given
         RecordingCallback messages = new RecordingCallback();
-        SessionStateMachine machine = new SessionStateMachine( new UsageData( scheduler ), db, txBridge, runner, NullLogService
+        SessionStateMachine machine = new SessionStateMachine( "<test>", new UsageData( scheduler ), db, txBridge, runner, NullLogService
                 .getInstance(), Authentication.NONE );
 
         // When
