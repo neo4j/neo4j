@@ -18,7 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Tools, including global operations over the whole graph.
+ * This package exists for backwards compatibility, it's contents will be removed
+ * in the next major version of Neo4j.
  */
 package org.neo4j.tooling;
 

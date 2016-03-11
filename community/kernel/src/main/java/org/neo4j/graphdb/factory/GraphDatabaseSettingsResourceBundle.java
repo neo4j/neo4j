@@ -20,8 +20,9 @@
 package org.neo4j.graphdb.factory;
 
 /**
- * Default ResourceBundle for GraphDatabaseSettings.
+ * @deprecated this will be removed in the next major release of Neo4j.
  */
+@Deprecated
 public class GraphDatabaseSettingsResourceBundle
         extends SettingsResourceBundle
 {

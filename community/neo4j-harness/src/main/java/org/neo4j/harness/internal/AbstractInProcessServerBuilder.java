@@ -19,6 +19,8 @@
  */
 package org.neo4j.harness.internal;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
-
-import org.apache.commons.io.FileUtils;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -53,9 +53,7 @@ import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 
-import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.enabled;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.socket_address;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.test.Digests.md5Hex;
@@ -91,8 +89,8 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
                 ServerTestUtils.getRelativePath( workingDir, ServerSettings.tls_key_file ) );
         withConfig( ServerSettings.tls_certificate_file,
                         ServerTestUtils.getRelativePath( workingDir, ServerSettings.tls_certificate_file ) );
-        withConfig( connector( 0, enabled ), "true" );
-        withConfig( connector( 0, socket_address ), "localhost:" + Integer.toString( freePort( 7687, 10000 ) ) );
+        withConfig( boltConnector( "0" ).enabled, "true" );
+        withConfig( boltConnector( "0" ).address, "localhost:" + Integer.toString( freePort( 7687, 10000 ) ) );
     }
 
 

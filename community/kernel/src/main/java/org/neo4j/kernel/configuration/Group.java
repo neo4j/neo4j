@@ -25,11 +25,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to add a short description title for settings in {@link org.neo4j.graphdb.factory.GraphDatabaseSettings}.
+ * Used to denote that a class represents a grouped set of config options.
  */
+@Target( ElementType.TYPE )
 @Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.FIELD )
-public @interface Title
+public @interface Group
 {
+    /** The config prefix for this group, for instance `dbms.connector` */
     String value();
 }

@@ -112,7 +112,7 @@ public class Cluster
         params.put( ClusterSettings.server_id.name(), String.valueOf( serverId ) );
         params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialHosts );
         params.put( "metrics.csv.enabled", "true" );
-        params.put( "metrics.neo4j.network.enabled", "true" );
+        params.put( "metrics.neo4j.core_edge.enabled", "true" );
         params.put( "metrics.csv.path", "metrics" );
         return params;
     }

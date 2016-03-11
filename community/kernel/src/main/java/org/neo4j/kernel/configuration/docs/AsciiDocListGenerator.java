@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.configuration;
+package org.neo4j.kernel.configuration.docs;
 
 import java.util.List;
 
@@ -38,7 +38,7 @@ public class AsciiDocListGenerator
         this.shortenDescription = shortenDescription;
     }
 
-    public String generateListAndTableCombo( List<AsciiDocItem> items )
+    public String generateListAndTableCombo( List<SettingDescription> items )
     {
         StringBuilder sb = new StringBuilder( 200 * items.size() );
         StringBuilder print = new StringBuilder( 100 * items.size() );
@@ -50,12 +50,12 @@ public class AsciiDocListGenerator
         {
             sb.append( '.' ).append( title ).append( '\n' );
         }
-        sb.append( ConfigAsciiDocGenerator.IFDEF_HTMLOUTPUT ).append( '\n' )
+        sb.append( SettingsDocumenter.IFDEF_HTMLOUTPUT ).append( '\n' )
           .append( "[options=\"header\"]\n" )
           .append( "|===\n" )
           .append( "|Name|Description\n" );
-        print.append( ConfigAsciiDocGenerator.IFDEF_NONHTMLOUTPUT ).append( '\n' );
-        for ( AsciiDocItem item : items )
+        print.append( SettingsDocumenter.IFDEF_NONHTMLOUTPUT ).append( '\n' );
+        for ( SettingDescription item : items )
         {
             String id = item.id();
             String name = item.name();
@@ -95,8 +95,8 @@ public class AsciiDocListGenerator
             print.append( '\n' );
         }
         sb.append( "|===\n" )
-            .append( ConfigAsciiDocGenerator.ENDIF );
-        print.append( ConfigAsciiDocGenerator.ENDIF )
+            .append( SettingsDocumenter.ENDIF );
+        print.append( SettingsDocumenter.ENDIF )
             .append( '\n' );
         sb.append( print.toString() );
         return sb.toString();

@@ -26,12 +26,11 @@ import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 
 public class BoltIT extends ExclusiveServerTestBase
@@ -52,8 +51,8 @@ public class BoltIT extends ExclusiveServerTestBase
     {
         // When I run Neo4j with Bolt enabled
         server = server()
-                .withProperty( connector( 0, ServerSettings.bolt_enabled ).name(), "true" )
-                .withProperty( connector( 0, ServerSettings.bolt_tls_level ).name(), "REQUIRED" )
+                .withProperty( boltConnector( "0" ).enabled.name(), "true" )
+                .withProperty( boltConnector( "0" ).encryption_level.name(), "REQUIRED" )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() )
                 .build();
         server.start();
@@ -67,9 +66,9 @@ public class BoltIT extends ExclusiveServerTestBase
     {
         // When I run Neo4j with Bolt enabled, and a non-standard port configured
         server = server()
-                .withProperty( connector( 0, ServerSettings.bolt_enabled ).name(), "true" )
-                .withProperty( connector( 0, ServerSettings.bolt_tls_level ).name(), "REQUIRED" )
-                .withProperty( connector( 0, ServerSettings.bolt_socket_address ).name(), "localhost:8776" )
+                .withProperty( boltConnector( "0" ).enabled.name(), "true" )
+                .withProperty( boltConnector( "0" ).encryption_level.name(), "REQUIRED" )
+                .withProperty( boltConnector( "0" ).address.name(), "localhost:8776" )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() )
                 .build();
         server.start();

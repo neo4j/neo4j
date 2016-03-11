@@ -22,12 +22,14 @@ package org.neo4j.tooling;
 import java.util.Arrays;
 import java.util.ResourceBundle;
 import java.util.Set;
-import org.neo4j.graphdb.factory.GraphDatabaseSettingsResourceBundle;
+
 import org.neo4j.graphdb.factory.SettingsResourceBundle;
 
 /**
- * Generates the default neo4j.conf file by using the {@link GraphDatabaseSettingsResourceBundle}
+ * Generates the default neo4j.conf file.
+ * @deprecated this will be moved out of public API in the next major release of Neo4j
  */
+@Deprecated
 public class GenerateDefaultNeo4jConfig
 {
     public static void main( String[] args )

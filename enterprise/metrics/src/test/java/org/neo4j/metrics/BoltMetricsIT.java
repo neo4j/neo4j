@@ -39,10 +39,9 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.enabled;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.metrics.CoreEdgeMetricsIT.metricsCsv;
 import static org.neo4j.metrics.CoreEdgeMetricsIT.readLastValue;
@@ -62,7 +61,7 @@ public class BoltMetricsIT
         File metricsFolder = tmpDir.newFolder( "metrics" );
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
-                .setConfig( connector( 0, enabled ), "true" )
+                .setConfig( boltConnector( "0" ).enabled, "true" )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "false" )
                 .setConfig( BoltKernelExtension.Settings.tls_certificate_file,
                         tmpDir.getRoot().toPath().resolve( BoltKernelExtension.Settings.tls_certificate_file.getDefaultValue() ).toString())

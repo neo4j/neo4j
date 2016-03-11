@@ -52,8 +52,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.configuration.AsciiDocItem;
-import org.neo4j.kernel.configuration.AsciiDocListGenerator;
+import org.neo4j.kernel.configuration.docs.SettingDescription;
+import org.neo4j.kernel.configuration.docs.AsciiDocListGenerator;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
 
@@ -108,7 +108,7 @@ public class JmxDocTest
     @Test
     public void dumpJmxInfo() throws Exception
     {
-        List<AsciiDocItem> asciiDocItems = new ArrayList<>();
+        List<SettingDescription> settingDescriptions = new ArrayList<>();
         AsciiDocListGenerator listGenerator = new AsciiDocListGenerator( "jmx-list", "MBeans exposed by Neo4j", false );
 
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -158,7 +158,7 @@ public class JmxDocTest
                     .replace( '\n', ' ' );
 
             String id = getId( name );
-            asciiDocItems.add( new AsciiDocItem( id, name, description ) );
+            settingDescriptions.add( new SettingDescription( id, name, description ) );
 
             writeDetailsToFile( id, objectName, bean, info, description );
         }
@@ -166,7 +166,7 @@ public class JmxDocTest
         try
         {
             fw = AsciiDocGenerator.getFW( "target/docs/ops", "JMX List" );
-            fw.write( listGenerator.generateListAndTableCombo( asciiDocItems ) );
+            fw.write( listGenerator.generateListAndTableCombo( settingDescriptions ) );
         }
         finally
         {

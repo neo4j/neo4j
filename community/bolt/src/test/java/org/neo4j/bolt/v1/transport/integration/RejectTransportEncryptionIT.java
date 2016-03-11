@@ -30,7 +30,6 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
@@ -38,15 +37,15 @@ import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.bolt.BoltKernelExtension.EncryptionLevel.DISABLED;
-import static org.neo4j.bolt.BoltKernelExtension.Settings.connector;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.DISABLED;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 
 @RunWith( Parameterized.class )
 public class RejectTransportEncryptionIT
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket(
-            settings -> settings.put( connector( 0, BoltKernelExtension.Settings.tls_level ), DISABLED.name() ) );
+            settings -> settings.put( boltConnector( "0" ).encryption_level, DISABLED.name() ) );
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
