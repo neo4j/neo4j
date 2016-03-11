@@ -63,7 +63,7 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
 
     private static class BatchingIdGenerator implements IdGenerator
     {
-        private long highId;
+        private final BatchingIdSequence idSequence;
         private final FileSystemAbstraction fs;
         private final File fileName;
 
@@ -71,20 +71,14 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
         {
             this.fs = fs;
             this.fileName = fileName;
-            this.highId = highId;
+            this.idSequence = new BatchingIdSequence();
+            this.idSequence.set( highId );
         }
 
         @Override
         public long nextId()
         {
-            try
-            {
-                return highId;
-            }
-            finally
-            {
-                highId++;
-            }
+            return idSequence.nextId();
         }
 
         @Override
@@ -96,13 +90,13 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
         @Override
         public void setHighId( long id )
         {
-            highId = id;
+            idSequence.set( id );
         }
 
         @Override
         public long getHighId()
         {
-            return highId;
+            return idSequence.peek();
         }
 
         @Override
@@ -114,13 +108,13 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
         public void close()
         {
             fs.deleteFile( fileName );
-            createGenerator( fs, fileName, highId );
+            createGenerator( fs, fileName, idSequence.peek() );
         }
 
         @Override
         public long getNumberOfIdsInUse()
         {
-            return highId;
+            return idSequence.peek();
         }
 
         @Override
