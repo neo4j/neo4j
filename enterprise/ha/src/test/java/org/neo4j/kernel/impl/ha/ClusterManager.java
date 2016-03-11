@@ -24,9 +24,11 @@ import org.w3c.dom.Document;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -148,6 +150,7 @@ public class ClusterManager
         HighlyAvailableGraphDatabase repair() throws Throwable;
     }
 
+    private final String localAddress;
     private final File root;
     private final Map<String,String> commonConfig;
     private final Map<Integer,Map<String,String>> instanceConfig;
@@ -161,6 +164,7 @@ public class ClusterManager
                            Map<Integer,Map<String,String>> instanceConfig,
                            HighlyAvailableGraphDatabaseFactory dbFactory )
     {
+        this.localAddress = getLocalAddress();
         this.clustersProvider = clustersProvider;
         this.root = root;
         this.commonConfig = withDefaults( commonConfig );
@@ -171,6 +175,7 @@ public class ClusterManager
 
     public ClusterManager( Builder builder )
     {
+        this.localAddress = getLocalAddress();
         this.clustersProvider = builder.provider;
         this.root = builder.root;
         this.commonConfig = withDefaults( builder.commonConfig );
@@ -217,6 +222,21 @@ public class ClusterManager
         };
     }
 
+    private static String getLocalAddress()
+    {
+        try
+        {
+            // Null corresponds to localhost
+            return InetAddress.getByName( null ).getHostAddress();
+        }
+        catch ( UnknownHostException e )
+        {
+            // Fetching the localhost address won't throw this exception, so this should never happen, but if it
+            // were, then the computer doesn't even have a loopback interface, so crash now rather than later
+            throw new AssertionError( e );
+        }
+    }
+
     /**
      * Provides a cluster specification with default values
      *
@@ -224,7 +244,7 @@ public class ClusterManager
      */
     public static Provider clusterOfSize( int memberCount )
     {
-        return clusterOfSize( "127.0.0.1", memberCount );
+        return clusterOfSize( getLocalAddress(), memberCount );
     }
 
     /**
@@ -248,7 +268,7 @@ public class ClusterManager
         Pair[] clusters = new Pair[clusterSizes.length];
         for ( int i = 0; i < clusterSizes.length; i++ )
         {
-            clusters[i] = Pair.of( "127.0.0.1", clusterSizes[i] );
+            clusters[i] = Pair.of( getLocalAddress(), clusterSizes[i] );
         }
         //noinspection unchecked
         return clustersOfSize( clusters );
@@ -780,7 +800,7 @@ public class ClusterManager
     {
         private final File root;
         private final Map<Integer,Map<String,String>> instanceConfig = new HashMap<>();
-        private Provider provider = clusterOfSize( 3 );
+        private Provider provider = null;
         private Map<String,String> commonConfig = emptyMap();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
@@ -834,6 +854,10 @@ public class ClusterManager
 
         public ClusterManager build()
         {
+            if ( provider == null )
+            {
+                provider = clusterOfSize( 3 );
+            }
             return new ClusterManager( this );
         }
     }
@@ -1011,7 +1035,8 @@ public class ClusterManager
             StringBuilder result = new StringBuilder();
             for ( HighlyAvailableGraphDatabase member : getAllMembers() )
             {
-                result.append( result.length() > 0 ? "," : "" ).append( "localhost:" )
+                result.append( result.length() > 0 ? "," : "" )
+                      .append( localAddress ).append( ":" )
                       .append( member.getDependencyResolver().resolveDependency(
                               ClusterClient.class ).getClusterServer().getPort() );
             }
@@ -1180,11 +1205,11 @@ public class ClusterManager
                 {
                     initialHosts.append( "," );
                 }
-                // the host might be 0.0.0.0:PORT, or :PORT. But localhost should always reach them during tests.
+                // the host might be 0.0.0.0:PORT, or :PORT, if so, replace with a valid address.
                 URI uri = new URI( "cluster://" + spec.getMembers().get( i ).getHost() );
                 if ( uri.getHost() == null || uri.getHost().isEmpty() || uri.getHost().equals("0.0.0.0") )
                 {
-                    initialHosts.append( "localhost:" ).append( uri.getPort() );
+                    initialHosts.append( localAddress ).append( ":" ).append( uri.getPort() );
                 }
                 else
                 {

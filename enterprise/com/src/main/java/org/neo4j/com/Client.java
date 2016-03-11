@@ -19,8 +19,10 @@
  */
 package org.neo4j.com;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -117,7 +119,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             // an origin address will not succeed. But since we know we are
             // connecting to ourselves, and that we are listening on everything,
             // replacing with localhost is the proper thing to do.
-            this.destination = new InetSocketAddress( "127.0.0.1", destinationPort );
+            this.destination = new InetSocketAddress( getLocalAddress(), destinationPort );
         } else {
             // An explicit destination address is always correct
             this.destination = new InetSocketAddress( destinationHostNameOrIp, destinationPort );
@@ -133,6 +135,21 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.responseUnpacker = responseUnpacker;
 
         msgLog.info( getClass().getSimpleName() + " communication channel created towards " + destination );
+    }
+
+    private String getLocalAddress()
+    {
+        try
+        {
+            // Null corresponds to localhost
+            return InetAddress.getByName( null ).getHostAddress();
+        }
+        catch ( UnknownHostException e )
+        {
+            // Fetching the localhost address won't throw this exception, so this should never happen, but if it
+            // were, then the computer doesn't even have a loopback interface, so crash now rather than later
+            throw new AssertionError( e );
+        }
     }
 
     private ComExceptionHandler getNoOpComExceptionHandler()
