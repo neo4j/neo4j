@@ -128,6 +128,22 @@ public class FeatureToggles
     }
 
     /**
+     * Get the value of a {@link String} system property.
+     * <p>
+     * The absolute name of the system property is computed based on the provided class and local name.
+     *
+     * @param location the class that owns the flag.
+     * @param name the local name of the flag
+     * @param defaultValue the default value of the flag if the system property is not assigned.
+     * @return the parsed value of the system property, or the default value.
+     */
+    public static String getString( Class<?> location, String name, String defaultValue )
+    {
+        String propertyValue = System.getProperty( name( location, name ) );
+        return propertyValue == null || propertyValue.isEmpty() ? defaultValue : propertyValue;
+    }
+
+    /**
      * Get the value of a {@code enum} system property.
      *
      * The absolute name of the system property is computed based on the provided class and local name.

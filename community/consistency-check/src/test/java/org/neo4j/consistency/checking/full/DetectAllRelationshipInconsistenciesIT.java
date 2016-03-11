@@ -35,10 +35,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -47,13 +43,18 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.TargetDirectory;
-import static org.junit.Assert.assertTrue;
 
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class DetectAllRelationshipInconsistenciesIT
@@ -80,7 +81,7 @@ public class DetectAllRelationshipInconsistenciesIT
             {
                 for ( int i = 0; i < nodes.length; i++ )
                 {
-                    nodes[i] = db.createNode();
+                    nodes[i] = db.createNode( label( "Foo" ) );
                 }
                 for ( int i = 0; i < 10_000; i++ )
                 {
@@ -180,7 +181,9 @@ public class DetectAllRelationshipInconsistenciesIT
             after.setFirstNextRel( otherReference = after.getFirstNextRel() + 1 );
         }
 
+        store.prepareForCommit( after );
         store.updateRecord( after );
+
         RelationshipRecord other = store.getRecord( otherReference, store.newRecord(), RecordLoad.FORCE );
         return new Sabotage( before, after, other );
     }

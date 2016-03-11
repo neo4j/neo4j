@@ -47,7 +47,8 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
  */
 class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
 {
-    private static final int RECORD_SIZE = 32;
+    static final int RECORD_SIZE = 32;
+
     private static final int FIRST_IN_FIRST_CHAIN_BIT = 0b0000_1000;
     private static final int FIRST_IN_SECOND_CHAIN_BIT = 0b0001_0000;
     private static final int HAS_FIRST_CHAIN_NEXT_BIT = 0b0010_0000;
@@ -56,7 +57,12 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
 
     public RelationshipRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0 );
+        this( RECORD_SIZE );
+    }
+
+    RelationshipRecordFormat( int recordSize )
+    {
+        super( fixedRecordSize( recordSize ), 0 );
     }
 
     @Override

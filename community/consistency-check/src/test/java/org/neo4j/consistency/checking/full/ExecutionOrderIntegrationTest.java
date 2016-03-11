@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -74,9 +73,9 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
-
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -92,8 +91,8 @@ public class ExecutionOrderIntegrationTest
             // TODO: create bigger sample graph here
             try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
             {
-                Node node1 = set( graphDb.createNode() );
-                Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
+                Node node1 = set( graphDb.createNode( label( "Foo" ) ) );
+                Node node2 = set( graphDb.createNode( label( "Foo" ) ), property( "key", "value" ) );
                 node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
                 tx.success();
             }

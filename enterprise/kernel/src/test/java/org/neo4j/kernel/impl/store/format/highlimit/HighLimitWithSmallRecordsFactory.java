@@ -17,8 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package consistency;
+package org.neo4j.kernel.impl.store.format.highlimit;
 
-public class FullCheckIntegrationTest extends org.neo4j.consistency.checking.full.FullCheckIntegrationTest
+import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+
+@Service.Implementation( RecordFormats.Factory.class )
+public class HighLimitWithSmallRecordsFactory extends RecordFormats.Factory
 {
+    public HighLimitWithSmallRecordsFactory()
+    {
+        super( HighLimitWithSmallRecords.NAME );
+    }
+
+    @Override
+    public RecordFormats newInstance()
+    {
+        if ( HighLimitWithSmallRecords.isEnabled() )
+        {
+            return HighLimitWithSmallRecords.RECORD_FORMATS;
+        }
+        return HighLimit.RECORD_FORMATS;
+    }
 }

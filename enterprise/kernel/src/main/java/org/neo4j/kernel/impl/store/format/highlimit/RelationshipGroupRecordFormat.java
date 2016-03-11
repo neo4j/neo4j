@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.highlimit;
 
 import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -41,7 +42,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  */
 class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<RelationshipGroupRecord>
 {
-    private static final int RECORD_SIZE = 32;
+    static final int RECORD_SIZE = 32;
+
     private static final int HAS_OUTGOING_BIT = 0b0000_1000;
     private static final int HAS_INCOMING_BIT = 0b0001_0000;
     private static final int HAS_LOOP_BIT     = 0b0010_0000;
@@ -49,7 +51,12 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
 
     public RelationshipGroupRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0 );
+        this( RECORD_SIZE );
+    }
+
+    RelationshipGroupRecordFormat( int recordSize )
+    {
+        super( fixedRecordSize( recordSize ), 0 );
     }
 
     @Override

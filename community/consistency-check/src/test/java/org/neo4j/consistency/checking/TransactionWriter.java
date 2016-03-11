@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -51,12 +52,23 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
  */
 public class TransactionWriter
 {
-    private final List<StorageCommand> commands = new ArrayList<>();
+    private final NeoStores neoStores;
+
+    private final List<Command.NodeCommand> nodeCommands = new ArrayList<>();
+    private final List<Command.RelationshipCommand> relationshipCommands = new ArrayList<>();
+    private final List<Command.RelationshipGroupCommand> relationshipGroupCommands = new ArrayList<>();
+    private final List<Command> otherCommands = new ArrayList<>();
+
+    public TransactionWriter( NeoStores neoStores )
+    {
+        this.neoStores = neoStores;
+    }
 
     public TransactionRepresentation representation( byte[] additionalHeader, int masterId, int authorId,
             long startTime, long lastCommittedTx, long committedTime )
     {
-        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( commands );
+        prepareForCommit();
+        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( allCommands() );
         representation.setHeader( additionalHeader, masterId, authorId, startTime, lastCommittedTx, committedTime, -1 );
         return representation;
     }
@@ -65,36 +77,31 @@ public class TransactionWriter
     {
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( id );
         PropertyKeyTokenRecord after = withName( new PropertyKeyTokenRecord( id ), dynamicIds, key );
-        addCommand( new Command.PropertyKeyTokenCommand( before, after ) );
+        otherCommands.add( new Command.PropertyKeyTokenCommand( before, after ) );
     }
 
     public void label( int id, String name, int... dynamicIds )
     {
         LabelTokenRecord before = new LabelTokenRecord( id );
         LabelTokenRecord after = withName( new LabelTokenRecord( id ), dynamicIds, name );
-        addCommand( new Command.LabelTokenCommand( before, after ) );
+        otherCommands.add( new Command.LabelTokenCommand( before, after ) );
     }
 
     public void relationshipType( int id, String label, int... dynamicIds )
     {
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( id );
         RelationshipTypeTokenRecord after = withName( new RelationshipTypeTokenRecord( id ), dynamicIds, label );
-        addCommand( new Command.RelationshipTypeTokenCommand( before, after ) );
+        otherCommands.add( new Command.RelationshipTypeTokenCommand( before, after ) );
     }
 
     public void update( NeoStoreRecord before, NeoStoreRecord after )
     {
-        addCommand( new Command.NeoStoreCommand( before, after ) );
+        otherCommands.add( new Command.NeoStoreCommand( before, after ) );
     }
 
     public void update( LabelTokenRecord before, LabelTokenRecord after )
     {
-        addCommand( new Command.LabelTokenCommand( before, after ) );
-    }
-
-    private void addCommand( Command command )
-    {
-        this.commands.add( command );
+        otherCommands.add( new Command.LabelTokenCommand( before, after ) );
     }
 
     public void create( NodeRecord node )
@@ -222,52 +229,52 @@ public class TransactionWriter
     private void addSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
             SchemaRule rule )
     {
-        addCommand( new Command.SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
+        otherCommands.add( new Command.SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
     }
 
     public void add( NodeRecord before, NodeRecord after )
     {
-        addCommand( new Command.NodeCommand( before, after ) );
+        nodeCommands.add( new Command.NodeCommand( before, after ) );
     }
 
     public void add( RelationshipRecord before, RelationshipRecord after )
     {
-        addCommand( new Command.RelationshipCommand( before, after ) );
+        relationshipCommands.add( new Command.RelationshipCommand( before, after ) );
     }
 
     public void add( RelationshipGroupRecord before, RelationshipGroupRecord after )
     {
-        addCommand( new Command.RelationshipGroupCommand( before, after ) );
+        relationshipGroupCommands.add( new Command.RelationshipGroupCommand( before, after ) );
     }
 
     public void add( PropertyRecord before, PropertyRecord property )
     {
-        addCommand( new Command.PropertyCommand( before, property ) );
+        otherCommands.add( new Command.PropertyCommand( before, property ) );
     }
 
     public void add( RelationshipTypeTokenRecord before, RelationshipTypeTokenRecord after )
     {
-        addCommand( new Command.RelationshipTypeTokenCommand( before, after ) );
+        otherCommands.add( new Command.RelationshipTypeTokenCommand( before, after ) );
     }
 
     public void add( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
     {
-        addCommand( new Command.PropertyKeyTokenCommand( before, after ) );
+        otherCommands.add( new Command.PropertyKeyTokenCommand( before, after ) );
     }
 
     public void add( NeoStoreRecord before, NeoStoreRecord after )
     {
-        addCommand( new Command.NeoStoreCommand( before, after ) );
+        otherCommands.add( new Command.NeoStoreCommand( before, after ) );
     }
 
     public void incrementNodeCount( int labelId, long delta )
     {
-        addCommand( new Command.NodeCountsCommand( labelId, delta ) );
+        otherCommands.add( new Command.NodeCountsCommand( labelId, delta ) );
     }
 
     public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        addCommand( new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, delta ) );
+        otherCommands.add( new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, delta ) );
     }
 
     private static <T extends TokenRecord> T withName( T record, int[] dynamicIds, String name )
@@ -302,5 +309,31 @@ public class TransactionWriter
         }
         record.setNameId( dynamicIds[0] );
         return record;
+    }
+
+    private void prepareForCommit()
+    {
+        for ( Command.NodeCommand command : nodeCommands )
+        {
+            neoStores.getNodeStore().prepareForCommit( command.getAfter() );
+        }
+        for ( Command.RelationshipCommand command : relationshipCommands )
+        {
+            neoStores.getRelationshipStore().prepareForCommit( command.getAfter() );
+        }
+        for ( Command.RelationshipGroupCommand command : relationshipGroupCommands )
+        {
+            neoStores.getRelationshipGroupStore().prepareForCommit( command.getAfter() );
+        }
+    }
+
+    private List<StorageCommand> allCommands()
+    {
+        List<StorageCommand> allCommands = new ArrayList<>();
+        allCommands.addAll( nodeCommands );
+        allCommands.addAll( relationshipCommands );
+        allCommands.addAll( relationshipGroupCommands );
+        allCommands.addAll( otherCommands );
+        return allCommands;
     }
 }

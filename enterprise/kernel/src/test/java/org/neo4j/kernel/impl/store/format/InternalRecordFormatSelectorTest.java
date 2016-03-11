@@ -17,26 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.kernel.impl.store.format;
 
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.record_format;
 
-public class HighLimitTest
+public class InternalRecordFormatSelectorTest
 {
     @Test
     public void shouldResolveHighLimitsRecordFormat() throws Exception
     {
-        Config config = new Config( MapUtil.stringMap( "unsupported.dbms.record_format", HighLimit.NAME) );
+        Config config = new Config( MapUtil.stringMap( record_format.name(), HighLimit.NAME ) );
         RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
         assertEquals( HighLimit.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
@@ -44,7 +45,7 @@ public class HighLimitTest
     @Test
     public void shouldResolveCommunityRecordFormat() throws Exception
     {
-        Config config = new Config( MapUtil.stringMap( "unsupported.dbms.record_format", LowLimitV3_0.NAME ) );
+        Config config = new Config( MapUtil.stringMap( record_format.name(), LowLimitV3_0.NAME ) );
         RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
         assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
@@ -60,10 +61,11 @@ public class HighLimitTest
     @Test
     public void shouldNotResolveNoneExistingRecordFormat() throws Exception
     {
-        Config config = new Config( MapUtil.stringMap( "unsupported.dbms.record_format", "notAValidRecordFormat" ) );
+        Config config = new Config( MapUtil.stringMap( record_format.name(), "notAValidRecordFormat" ) );
         try
         {
             RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
+            assertNotNull( formatSelector );
             fail( "Should not be possible to specify non-existing format" );
         }
         catch ( IllegalArgumentException ignored )
