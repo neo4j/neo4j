@@ -192,16 +192,9 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     @Override
     protected void after()
     {
-        try
+        if ( clusterManager != null )
         {
-            if ( clusterManager != null )
-            {
-                clusterManager.shutdown();
-            }
-        }
-        catch ( Throwable throwable )
-        {
-            throwable.printStackTrace();
+            clusterManager.safeShutdown();
         }
     }
 

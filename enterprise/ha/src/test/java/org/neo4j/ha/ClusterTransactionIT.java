@@ -19,12 +19,12 @@
  */
 package org.neo4j.ha;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.FutureTask;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -42,7 +42,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.Exceptions.contains;
-import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 public class ClusterTransactionIT
 {
@@ -54,7 +54,7 @@ public class ClusterTransactionIT
     @Before
     public void setUp() throws Exception
     {
-        cluster = clusterRule.withProvider( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ) )
+        cluster = clusterRule.withProvider( clusterOfSize( 3 ) )
                              .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
                              .withSharedSetting( HaSettings.tx_push_factor, "2" ).startCluster();
 

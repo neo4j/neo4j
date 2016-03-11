@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -124,7 +124,7 @@ public class TestFailoverWithAdditionalSlaveFailures
         }
         finally
         {
-            manager.shutdown();
+            manager.safeShutdown();
         }
     }
 
