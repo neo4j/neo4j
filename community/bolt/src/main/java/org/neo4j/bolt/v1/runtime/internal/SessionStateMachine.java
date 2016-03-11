@@ -177,8 +177,11 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         try
                         {
-                            ctx.currentTransaction.success();
-                            ctx.currentTransaction.close();
+                            KernelTransaction tx = ctx.currentTransaction;
+                            ctx.currentTransaction = null;
+
+                            tx.success();
+                            tx.close();
                         }
                         catch ( Throwable e )
                         {
@@ -282,6 +285,19 @@ public class SessionStateMachine implements Session, SessionState
                     @Override
                     public State reset( SessionStateMachine ctx )
                     {
+                        // There may still be a transaction open, so do
+                        // an extra reset on the outcome of ackFailure to ensure we go
+                        // to idle state.
+                        return ackFailure( ctx ).reset( ctx );
+                    }
+
+                    @Override
+                    public State ackFailure( SessionStateMachine ctx )
+                    {
+                        if( ctx.hasTransaction() )
+                        {
+                            return IN_TRANSACTION;
+                        }
                         return IDLE;
                     }
 
@@ -290,26 +306,6 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         ctx.ignored();
                         return ERROR;
-                    }
-                },
-
-        /**
-         * A recoverable error has occurred within an explicitly opened transaction. After the client acknowledges
-         * it, we will move back to {@link #IN_TRANSACTION}.
-         */
-        RECOVERABLE_ERROR
-                {
-                    @Override
-                    public State reset( SessionStateMachine ctx )
-                    {
-                        return IN_TRANSACTION;
-                    }
-
-                    @Override
-                    protected State onNoImplementation( SessionStateMachine ctx, String command )
-                    {
-                        ctx.ignored();
-                        return RECOVERABLE_ERROR;
                     }
                 },
 
@@ -421,6 +417,11 @@ public class SessionStateMachine implements Session, SessionState
             return onNoImplementation( ctx, "resetting the current session" );
         }
 
+        public State ackFailure( SessionStateMachine ctx )
+        {
+            return onNoImplementation( ctx, "acknowledging a failure" );
+        }
+
         /**
          * If the session has been interrupted, this will be invoked before *each*
          * message that is processed after interruption, until the interrupt counter
@@ -466,11 +467,12 @@ public class SessionStateMachine implements Session, SessionState
             State outcome = ERROR;
             if ( ctx.hasTransaction() )
             {
-                // Is this error bad enough that we should roll back, or did the failure occur in an implicit
-                // transaction?
-                if(  err.status().code().classification().rollbackTransaction() ||
-                        ctx.currentTransaction.transactionType() == implicit )
+                switch( ctx.currentTransaction.transactionType() )
                 {
+                case explicit:
+                    ctx.currentTransaction.failure();
+                    break;
+                case implicit:
                     try
                     {
                         ctx.currentTransaction.failure();
@@ -485,15 +487,7 @@ public class SessionStateMachine implements Session, SessionState
                     {
                         ctx.currentTransaction = null;
                     }
-                }
-                else
-                {
-                    // A non-fatal error occurred inside an explicit transaction, such as a syntax error.
-                    // These are recoverable, so we leave the transaction open for the user.
-                    // This is mainly to cover cases of direct user-driven work, where someone might have
-                    // manually built up a large transaction, and we'd rather not have it all be thrown out
-                    // because of a spelling mistake.
-                    outcome = RECOVERABLE_ERROR;
+                    break;
                 }
             }
             ctx.error( err );
@@ -648,6 +642,17 @@ public class SessionStateMachine implements Session, SessionState
         try
         {
             state = state.discardAll( this );
+        }
+        finally { after(); }
+    }
+
+    @Override
+    public <A> void ackFailure( A attachment, Callback<Void,A> callback )
+    {
+        before( attachment, callback );
+        try
+        {
+            state = state.ackFailure( this );
         }
         finally { after(); }
     }

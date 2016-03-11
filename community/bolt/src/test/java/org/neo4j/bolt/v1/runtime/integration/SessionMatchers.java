@@ -82,6 +82,24 @@ public class SessionMatchers
         };
     }
 
+    public static Matcher<? super RecordingCallback.Call> failed()
+    {
+        return new TypeSafeMatcher<RecordingCallback.Call>()
+        {
+            @Override
+            protected boolean matchesSafely( RecordingCallback.Call item )
+            {
+                return item.error() != null;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "Failed" );
+            }
+        };
+    }
+
     public static Matcher<? super RecordingCallback.Call> failedWith( final Status expected )
     {
         return new TypeSafeMatcher<RecordingCallback.Call>()

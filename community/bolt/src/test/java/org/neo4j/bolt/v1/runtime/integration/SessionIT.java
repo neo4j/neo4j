@@ -42,7 +42,10 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.bolt.v1.runtime.Session.Callback.noOp;
+import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.failed;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.failedWith;
+import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
 
@@ -52,7 +55,7 @@ public class SessionIT
 
     @Rule
     public TestSessions env = new TestSessions();
-    private final RecordingCallback<StatementMetadata, ?> responses = new RecordingCallback<>();
+    private final RecordingCallback responses = new RecordingCallback<>();
     private final RecordingCallback<RecordStream, ?> pulling = new RecordingCallback<>();
     private final RecordingCallback<Void, ?> discarding = new RecordingCallback<>();
 
@@ -254,6 +257,39 @@ public class SessionIT
 
         // But the stop should have failed, since it implicitly triggers commit and thus triggers a failure
         assertThat( discarding.next(), failedWith( Status.Schema.ConstraintValidationFailed ) );
+    }
+
+    @Test
+    public void shouldAllowUserControlledRollbackOnExplicitTxFailure() throws Throwable
+    {
+        // Given whenever en explicit transaction has a failure,
+        // it is more natural for drivers to see the failure, acknowledge it
+        // and send a `ROLLBACK`, because that means that all failures in the
+        // transaction, be they client-local or inside neo, can be handled the
+        // same way by a driver.
+        Session session = env.newSession();
+        session.init( "TestClient/1.0", emptyMap(), null, null );
+
+        session.run( "BEGIN", EMPTY_PARAMS, null, noOp() );
+        session.discardAll( null, noOp() );
+        session.run( "CREATE (n:Victim)-[:REL]->()", EMPTY_PARAMS, null, noOp() );
+        session.discardAll( null, noOp() );
+
+        // When I perform an action that will fail
+        session.run( "this is not valid syntax", EMPTY_PARAMS, null, responses );
+
+        // Then I should see a failure
+        assertThat( responses.next(), failed() );
+
+        // And when I acknowledge that failure, and roll back the transaction
+        session.ackFailure( null, responses );
+        session.run( "ROLLBACK", EMPTY_PARAMS, null, responses );
+
+        // Then both operations should succeed
+        assertThat( responses, recorded(
+            success(),
+            success()
+        ));
     }
 
     @Test

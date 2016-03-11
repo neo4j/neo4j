@@ -22,45 +22,42 @@ package org.neo4j.bolt.v1.runtime.internal;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Matchers;
 
 import java.util.Collections;
 
-import org.neo4j.bolt.security.auth.Authentication;
+import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.security.auth.BasicAuthenticationResult;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKeys;
 
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.v1.runtime.Session.Callback.noOp;
+import static org.neo4j.bolt.v1.runtime.internal.SessionStateMachine.State.ERROR;
+import static org.neo4j.bolt.v1.runtime.internal.SessionStateMachine.State.IDLE;
 
 public class SessionStateMachineTest
 {
-    private final GraphDatabaseFacade db = mock( GraphDatabaseFacade.class );
-    private final ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
-    private final Transaction tx = mock( TopLevelTransaction.class );
     private final KernelTransaction ktx = mock( KernelTransaction.class );
-    private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
-    private final StatementRunner runner = mock( StatementRunner.class );
-    private final SessionStateMachine machine = new SessionStateMachine( "<test>", usageData, db, txBridge, runner, NullLogService.getInstance(), Authentication.NONE );
+
+    private final SessionStateMachine.SPI spi = mock( SessionStateMachine.SPI.class );
+    private final SessionStateMachine machine = new SessionStateMachine( spi );
 
     @Test
     public void initialStateShouldBeUninitalized()
@@ -70,57 +67,28 @@ public class SessionStateMachineTest
     }
 
     @Test
-    public void shouldRollbackOpenTransactionOnRollbackInducingError() throws Throwable
+    public void shouldRollbackExplicitTransactionOnReset() throws Throwable
     {
         // Given
-        final TopLevelTransaction tx = mock( TopLevelTransaction.class );
-        when( db.beginTx() ).thenReturn( tx );
-        when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
                 .thenThrow( new RollbackInducingKernelException() );
 
-        machine.init( "FunClient/1.2", Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
-        machine.beginTransaction();
+        machine.init( "FunClient/1.2", emptyMap(), null, noOp()  );
+        machine.beginImplicitTransaction();
 
         // When
-        machine.run( "Hello, world!", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
+        machine.run( "Hello, world!", emptyMap(), null, noOp() );
 
         // Then
-        assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( ERROR ) );
         verify( ktx ).failure();
-        verify( ktx ).close();
 
         // And when
-        machine.reset( null, Session.Callback.NO_OP );
+        machine.reset( null, noOp()  );
 
         // Then the machine goes back to an idle (no open transaction) state
-        assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.IDLE ) );
-    }
-
-    @Test
-    public void shouldNotLeaveTransactionOpenOnClientErrors() throws Throwable
-    {
-        // Given
-        final TopLevelTransaction tx = mock( TopLevelTransaction.class );
-        when( db.beginTx() ).thenReturn( tx );
-        when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
-                .thenThrow( new NoTransactionEffectException() );
-
-        machine.init( "FunClient/1.2", Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
-        machine.beginTransaction();
-
-        // When
-        machine.run( "Hello, world!", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
-
-        // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
-        verify( ktx ).failure();
         verify( ktx ).close();
-
-        // And when
-        machine.reset( null, Session.Callback.NO_OP );
-
-        // Then the machine goes back to an idle (no open transaction) state
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( machine.state(), equalTo( IDLE ) );
     }
 
     @Test
@@ -133,7 +101,7 @@ public class SessionStateMachineTest
 
         // Then
         assertThat( machine.state(), CoreMatchers.equalTo( SessionStateMachine.State.STOPPED ) );
-        verify( db ).beginTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ));
+        verify( spi ).beginTransaction( any( KernelTransaction.Type.class ), any( AccessMode.class ));
         verify( ktx ).close();
     }
 
@@ -144,8 +112,7 @@ public class SessionStateMachineTest
         machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
 
         // Then
-        assertTrue( usageData.get( UsageDataKeys.clientNames ).recentItems().contains(
-                "FunClient/1.2" ) );
+        verify( spi ).udcRegisterClient( "FunClient/1.2" );
     }
 
     @Test
@@ -159,7 +126,7 @@ public class SessionStateMachineTest
         machine.reset( null, callback );
 
         // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( machine.state(), equalTo( IDLE ) );
         assertThat( callback.completedCount, equalTo( 1 ) );
     }
 
@@ -175,7 +142,7 @@ public class SessionStateMachineTest
         machine.reset( null, callback );
 
         // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( machine.state(), equalTo( IDLE ) );
         assertThat( callback.completedCount, equalTo( 1 ) );
     }
 
@@ -183,7 +150,7 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnStreamOpenWithExplicitTransaction() throws Throwable
     {
         // Given
-        when( runner.run( any( SessionState.class ), anyString(), anyMap() ) )
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
                 .thenReturn( mock( RecordStream.class ) );
         machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
         machine.beginTransaction();
@@ -194,7 +161,7 @@ public class SessionStateMachineTest
         machine.reset( null, callback );
 
         // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( machine.state(), equalTo( IDLE ) );
         assertThat( callback.completedCount, equalTo( 1 ) );
     }
 
@@ -202,7 +169,7 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnStreamOpenWithImplicitTransaction() throws Throwable
     {
         // Given
-        when( runner.run( any( SessionState.class ), anyString(), anyMap() ) )
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
                 .thenReturn( mock( RecordStream.class ) );
         machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
         machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
@@ -212,7 +179,7 @@ public class SessionStateMachineTest
         machine.reset( null, callback );
 
         // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( machine.state(), equalTo( IDLE ) );
         assertThat( callback.completedCount, equalTo( 1 ) );
     }
 
@@ -233,10 +200,8 @@ public class SessionStateMachineTest
     public void shouldResetToIdleOnError() throws Throwable
     {
         // Given
-        final TopLevelTransaction tx = mock( TopLevelTransaction.class );
-        when( db.beginTx() ).thenReturn( tx );
-        when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
-                .thenThrow( new NoTransactionEffectException() );
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+                .thenThrow( new RollbackInducingKernelException() );
         machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
         machine.run( "RETURN 1", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
 
@@ -245,7 +210,7 @@ public class SessionStateMachineTest
         machine.reset( null, callback );
 
         // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );
+        assertThat( machine.state(), equalTo( IDLE ) );
         assertThat( callback.completedCount, equalTo( 1 ) );
     }
 
@@ -253,24 +218,63 @@ public class SessionStateMachineTest
     public void shouldErrorWhenOutOfOrderRollback() throws Throwable
     {
         // Given
-        final TopLevelTransaction tx = mock( TopLevelTransaction.class );
-        when( db.beginTx() ).thenReturn( tx );
-        when( runner.run( any( SessionState.class ), anyString(), Matchers.anyMap() ) )
-                .thenThrow( new NoTransactionEffectException() );
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+                .thenThrow( new RollbackInducingKernelException() );
         machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
 
         // When
         machine.run( "ROLLBACK", Collections.EMPTY_MAP, null, Session.Callback.NO_OP );
 
         // Then
-        assertThat( machine.state(), equalTo( SessionStateMachine.State.ERROR ) );
+        assertThat( machine.state(), equalTo( ERROR ) );
+    }
+
+    @Test
+    public void shouldGoBackToIdleAfterImplicitTxFailure() throws Throwable
+    {
+        // Given
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+                .thenThrow( new RollbackInducingKernelException() );
+        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, noOp() );
+
+        // When
+        machine.run( "Statement that fails", emptyMap(), null, noOp() );
+        machine.ackFailure( null, noOp() );
+
+        // Then
+        assertThat( machine.state(), equalTo( IDLE ) );
+    }
+
+    @Test
+    public void shouldMoveBackTo_IN_TRANSACTION_afterAckFailureOnExplicitTx() throws Throwable
+    {
+        // Given all statements will fail
+        when( spi.run( any( SessionStateMachine.class ), anyString(), anyMap() ) )
+                .thenThrow( new RollbackInducingKernelException() );
+        machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, noOp() );
+
+        // When
+        machine.beginTransaction();
+        machine.run( "statement that fails", emptyMap(), null, noOp() );
+        machine.ackFailure( null, noOp() );
+
+        // Then
+        assertThat( machine.state(), equalTo( SessionStateMachine.State.IN_TRANSACTION ) );
     }
 
     @Before
-    public void setup()
+    public void setup() throws AuthenticationException
     {
-        when( db.beginTx() ).thenReturn( tx );
-        when( txBridge.getKernelTransactionBoundToThisThread( false ) ).thenReturn( ktx );
+        when( spi.authenticate( any() ) ).thenReturn( new BasicAuthenticationResult(AccessMode.Static.FULL, false) );
+        when( spi.beginTransaction( any(), any() )).thenAnswer( (inv) -> {
+            // The state machine will ask for different types of transactions, we
+            // modify out mock to suit it's needs. I'm not sure this is a good way
+            // to do this.
+            KernelTransaction.Type type = (KernelTransaction.Type) inv.getArguments()[0];
+            when( ktx.transactionType() ).thenReturn( type );
+            return ktx;
+        });
+
     }
 
     static class TestCallback<V> extends Session.Callback.Adapter<V, Object>
@@ -310,15 +314,6 @@ public class SessionStateMachineTest
         public Status status()
         {
             return Status.General.UnknownError;
-        }
-    }
-
-    public static class NoTransactionEffectException extends RuntimeException implements Status.HasStatus
-    {
-        @Override
-        public Status status()
-        {
-            return Status.Statement.SyntaxError;
         }
     }
 }
