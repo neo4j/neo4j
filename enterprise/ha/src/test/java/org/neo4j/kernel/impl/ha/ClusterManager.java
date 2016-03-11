@@ -1182,7 +1182,14 @@ public class ClusterManager
                 }
                 // the host might be 0.0.0.0:PORT, or :PORT. But localhost should always reach them during tests.
                 URI uri = new URI( "cluster://" + spec.getMembers().get( i ).getHost() );
-                initialHosts.append( "localhost:" ).append( uri.getPort() );
+                if ( uri.getHost() == null || uri.getHost().isEmpty() || uri.getHost().equals("0.0.0.0") )
+                {
+                    initialHosts.append( "localhost:" ).append( uri.getPort() );
+                }
+                else
+                {
+                    initialHosts.append( uri.getHost() ).append( ":" ).append( uri.getPort() );
+                }
             }
             File parent = new File( root, name );
             URI clusterUri = new URI( "cluster://" + member.getHost() );
