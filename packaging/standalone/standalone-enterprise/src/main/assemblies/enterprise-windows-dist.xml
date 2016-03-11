@@ -42,6 +42,15 @@
         <include>lib/*.jar</include>
       </includes>
     </fileSet>
+    <!-- do not filter binaries -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>**/*.exe</include>
+      </includes>
+    </fileSet>
+    <!-- filter text files -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
       <outputDirectory></outputDirectory>
@@ -51,7 +60,6 @@
         <include>**/*.psd1</include>
         <include>**/*.psm1</include>
         <include>**/*.ps1</include>
-        <include>**/*.exe</include>
       </includes>
 	  <filtered>true</filtered>
     </fileSet>
