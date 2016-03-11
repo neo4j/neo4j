@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{CostBasedPlannerName, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
@@ -535,7 +536,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("project parameter") {
 
-    val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO")(pos)))(solved))
+    val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> "BAR"))
 
     //then
@@ -597,7 +598,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("project addition of int and value from params") {
     val lhs = SignedDecimalIntegerLiteral("1")(pos)
-    val rhs = Parameter("FOO")(pos)
+    val rhs = Parameter("FOO", CTAny)(pos)
     val add = Add(lhs, rhs)(pos)
     val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L)))
@@ -608,8 +609,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project addition of two values coming from params") {
-    val lhs = Parameter("FOO")(pos)
-    val rhs = Parameter("BAR")(pos)
+    val lhs = Parameter("FOO", CTAny)(pos)
+    val rhs = Parameter("BAR", CTAny)(pos)
     val add = Add(lhs, rhs)(pos)
     val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
@@ -620,7 +621,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project collection") {
-    val collection = Collection(Seq(Parameter("FOO")(pos), Parameter("BAR")(pos)))(pos)
+    val collection = Collection(Seq(Parameter("FOO", CTAny)(pos), Parameter("BAR", CTAny)(pos)))(pos)
     val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> collection))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
 
@@ -630,7 +631,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project map") {
-    val map = MapExpression(Seq((PropertyKeyName("FOO")(pos), Parameter("BAR")(pos))))(pos)
+    val map = MapExpression(Seq((PropertyKeyName("FOO")(pos), Parameter("BAR", CTAny)(pos))))(pos)
     val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> map))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
 
@@ -660,7 +661,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("number equality, one from parameter") {
-    val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), Parameter("BAR")(pos))(pos)
+    val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), Parameter("BAR", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), Projection(SingleRow()(solved), Map("result" -> equals))(solved))
     val compiled = compileAndExecute(plan, Map("BAR" -> Double.box(9007199254740992D)))
 
@@ -679,7 +680,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("or one from parameter") {
-    val or = Or(False()(pos), Parameter("FOO")(pos))(pos)
+    val or = Or(False()(pos), Parameter("FOO", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(false)))
 
@@ -689,7 +690,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("or two from parameter, one null") {
-    val or = Or(Parameter("FOO")(pos), Parameter("BAR")(pos))(pos)
+    val or = Or(Parameter("FOO", CTAny)(pos), Parameter("BAR", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(true), "BAR" -> null))
 
@@ -699,7 +700,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("or two from parameter, both null") {
-    val or = Or(Parameter("FOO")(pos), Parameter("BAR")(pos))(pos)
+    val or = Or(Parameter("FOO", CTAny)(pos), Parameter("BAR", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), Projection(SingleRow()(solved), Map("result" -> or))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> null, "BAR" -> null))
 
@@ -719,7 +720,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("not on a parameter") {
-    val not = Not(Parameter("FOO")(pos))(pos)
+    val not = Not(Parameter("FOO", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), Projection(SingleRow()(solved), Map("result" -> not))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(false)))
 
@@ -729,7 +730,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("not on a null parameter") {
-    val not = Not(Parameter("FOO")(pos))(pos)
+    val not = Not(Parameter("FOO", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), Projection(SingleRow()(solved), Map("result" -> not))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> null))
 
@@ -814,7 +815,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("throw error when parameter is missing") {
     //given
-    val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO")(pos)))(solved))
+    val plan = ProduceResult(List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
 
     //when
     val compiled = compileAndExecute(plan)

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.{IDPQueryGrap
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.rewriter.{LogicalPlanRewriter, unnestApply}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, ProcedureName, ProcedureSignature}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.fixedPoint
@@ -152,9 +152,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def bidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node], end: EntityProducer[Node]): TraversalMatcher = ???
 
-      override def procedureSignature(name: ProcedureName): ProcedureSignature = ???
-
       override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
+
+      override def procedureSignature(name: QualifiedProcedureName): ProcedureSignature = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {

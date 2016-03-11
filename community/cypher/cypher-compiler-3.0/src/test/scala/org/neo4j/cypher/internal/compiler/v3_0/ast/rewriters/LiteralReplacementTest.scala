@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters
 
 
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Parameter
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_0.{Rewriter, bottomUp}
 
 class LiteralReplacementTest extends CypherFunSuite  {
 
@@ -96,13 +99,17 @@ class LiteralReplacementTest extends CypherFunSuite  {
     )
   }
 
+  test("should extract from procedure calls") {
+    assertRewrite("CALL foo(12)", "CALL foo({`  AUTOINT0`})", Map("  AUTOINT0" -> 12))
+  }
+
   private def assertDoesNotRewrite(query: String): Unit = {
     assertRewrite(query, query, Map.empty)
   }
 
   private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any]) {
     val original = parser.parse(originalQuery)
-    val expected = parser.parse(expectedQuery)
+    val expected = parser.parse(expectedQuery).endoRewrite(fixParameterTypeExpectations)
 
     val (rewriter, replacedLiterals) = literalReplacement(original)
 
@@ -110,4 +117,11 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assert(result === expected)
     assert(replacements === replacedLiterals)
   }
+
+  private def fixParameterTypeExpectations = bottomUp(Rewriter.lift {
+    case p@Parameter(name, _) if name.startsWith("  AUTOSTRING") => p.copy(parameterType = CTString)(p.position)
+    case p@Parameter(name, _) if name.startsWith("  AUTOINT") => p.copy(parameterType = CTInteger)(p.position)
+    case p@Parameter(name, _) if name.startsWith("  AUTOBOOL") => p.copy(parameterType = CTBoolean)(p.position)
+    case p@Parameter(name, _) if name.startsWith("  AUTODOUBLE") => p.copy(parameterType = CTFloat)(p.position)
+  })
 }

@@ -23,7 +23,7 @@ import java.io.PrintWriter
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalExecutionResult, InternalQueryType}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, JavaResultValueConverter}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CollectionSupport, RuntimeJavaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext}
@@ -45,7 +45,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   self =>
 
-  val javaValues = new JavaResultValueConverter(state.query.isGraphKernelResultValue)
+  val javaValues = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
   lazy val dumpToString = withDumper(dumper => dumper.dumpToString(_))
 
   def dumpToString(writer: PrintWriter) { withDumper(dumper => dumper.dumpToString(writer)(_)) }
@@ -56,7 +56,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext
-    def next() = javaValues.asDeepJavaResultValue(getAnyColumn(column, self.next())).asInstanceOf[T]
+    def next() = javaValues.asDeepJavaValue(getAnyColumn(column, self.next())).asInstanceOf[T]
   }
 
   def columnAs[T](column: String): Iterator[T] =
@@ -65,7 +65,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next() = Eagerly.immutableMapValues(self.next(), javaValues.asDeepJavaResultValue).asJava
+    def next() = Eagerly.immutableMapValues(self.next(), javaValues.asDeepJavaValue).asJava
   }
 
   override def toList: List[Predef.Map[String, Any]] = result.toList
@@ -102,7 +102,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
     try {
-      javaValues.iteratorToVisitable(self).accept(visitor)
+      javaValues.feedIteratorToVisitable(self).accept(visitor)
     } finally {
       self.close()
     }

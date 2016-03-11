@@ -146,18 +146,19 @@ trait DocumentationHelper extends GraphIcing with ExecutionEngineHelper {
 
 abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper with GraphIcing with ResetStrategy {
   def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String = null,
-                parameters: Map[String, Any] = Map.empty, assertions: InternalExecutionResult => Unit) {
-    internalTestQuery(title, text, queryText, optionalResultExplanation, None, None, parameters, assertions)
+                parameters: Map[String, Any] = Map.empty, planners: Seq[String] = Seq.empty,
+                assertions: InternalExecutionResult => Unit) {
+    internalTestQuery(title, text, queryText, optionalResultExplanation, None, None, parameters, planners, assertions)
   }
 
   def testFailingQuery[T <: CypherException: ClassTag](title: String, text: String, queryText: String, optionalResultExplanation: String = null) {
     val classTag = implicitly[ClassTag[T]]
-    internalTestQuery(title, text, queryText, optionalResultExplanation, Some(classTag), None, Map.empty, _ => {})
+    internalTestQuery(title, text, queryText, optionalResultExplanation, Some(classTag), None, Map.empty, Seq.empty, _ => {})
   }
 
   def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String = "",
                           prepare: GraphDatabaseCypherService => Unit, assertions: InternalExecutionResult => Unit) {
-    internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(prepare), Map.empty, assertions)
+    internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(prepare), Map.empty, Seq.empty, assertions)
   }
 
   def profileQuery(title: String, text: String, queryText: String, realQuery: Option[String] = None, assertions: InternalExecutionResult => Unit) {
@@ -238,6 +239,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                                 expectedException: Option[ClassTag[_ <: CypherException]],
                                 prepare: Option[GraphDatabaseCypherService => Unit],
                                 parameters: Map[String, Any],
+                                planners: Seq[String],
                                 assertions: InternalExecutionResult => Unit)
   {
     preparationQueries = List()
@@ -275,8 +277,13 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     val testQuery = filePaths.foldLeft(query)( (acc, entry) => acc.replace(entry._1, entry._2))
     val docQuery = urls.foldLeft(query)( (acc, entry) => acc.replace(entry._1, entry._2))
 
-    executeWithAllPlannersAndAssert(testQuery, assertions, expectedException,
-      dumpToFileWithException(dir, writer, title, docQuery, optionalResultExplanation, text, _, consoleData, parameters), parameters,
+    executeWithAllPlannersAndAssert(
+      testQuery,
+      assertions,
+      expectedException,
+      dumpToFileWithException(dir, writer, title, docQuery, optionalResultExplanation, text, _, consoleData, parameters),
+      parameters,
+      planners,
       prepareForTest(title, prepare))
     match {
       case Some(result) => dumpToFileWithResult(dir, writer, title, docQuery, optionalResultExplanation, text, result, consoleData, parameters)
@@ -299,17 +306,17 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
                                               expectedException: Option[ClassTag[_ <: CypherException]],
                                               expectedCaught: CypherException => Unit,
                                               parameters: Map[String, Any],
+                                              providedPlanners: Seq[String],
                                               prepareFunction: => Unit) = {
     // COST planner is default. Can't specify it without getting exception thrown if it's unavailable.
-    val planners = Seq("", "CYPHER PLANNER=rule ")
+    val planners = if (providedPlanners.isEmpty) Seq("", "CYPHER PLANNER=rule ") else providedPlanners
 
     val results = planners.flatMap {
-      case s if expectedException.isEmpty =>
-        val rewindable = RewindableExecutionResult(engine.execute(s"$s $query", parameters, db.session()))
-
+      case planner if expectedException.isEmpty =>
+        val rewindable = RewindableExecutionResult(engine.execute(s"$planner $query", parameters, db.session()))
         db.inTx(assertions(rewindable))
         val dump = rewindable.dumpToString()
-        if (graphvizExecutedAfter && s == planners.head) {
+        if (graphvizExecutedAfter && planner == planners.head) {
           dumpGraphViz(dir, graphvizOptions.trim)
         }
         reset()

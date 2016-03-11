@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ProcedureSignatureTest
@@ -57,6 +58,17 @@ public class ProcedureSignatureTest
     }
 
     @Test
+    public void shouldHonorVoidInEquals()
+    {
+        ProcedureSignature sig1 = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).build();
+        ProcedureSignature sig2 = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).out( ProcedureSignature.VOID ).build();
+        ProcedureSignature sig2clone = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).out( ProcedureSignature.VOID ).build();
+
+        assertEquals( sig2, sig2clone );
+        assertNotEquals( sig1, sig2 );
+    }
+
+    @Test
     public void toStringShouldMatchCypherSyntax() throws Throwable
     {
         // When
@@ -68,5 +80,21 @@ public class ProcedureSignatureTest
 
         // Then
         assertEquals( "org.myProcedure(inputArg :: LIST? OF STRING?) :: (outputArg :: NUMBER?)", toStr );
+    }
+
+    @Test
+    public void toStringForVoidProcedureShouldMatchCypherSyntax() throws Throwable
+    {
+        // Given
+        ProcedureSignature proc = procedureSignature( "org", "myProcedure" )
+                .in( "inputArg", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
+                .out( ProcedureSignature.VOID )
+                .build();
+
+        // When
+        String toStr = proc.toString();
+
+        // Then
+        assertEquals( "org.myProcedure(inputArg :: LIST? OF STRING?) :: VOID", toStr );
     }
 }

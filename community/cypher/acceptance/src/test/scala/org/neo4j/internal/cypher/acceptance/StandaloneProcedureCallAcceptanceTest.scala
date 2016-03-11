@@ -19,15 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
-import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.proc.CallableProcedure.{BasicProcedure, Context}
 import org.neo4j.kernel.api.proc.Neo4jTypes
-import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 
-class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
+class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should be able to find labels from built-in-procedure") {
     // Given
@@ -44,6 +39,50 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
         Map("label" -> "A"),
         Map("label" -> "B"),
         Map("label" -> "C")))
+  }
+
+  test("should be able to call void procedure") {
+    //Given
+    registerVoidProcedure()
+
+    //When
+    val result = execute("CALL sys.do_nothing()")
+
+    // Then
+    result.toList shouldBe empty
+  }
+
+  test("should be able to call void procedure without arguments") {
+    //Given
+    registerVoidProcedure()
+
+    //When
+    val result = execute("CALL sys.do_nothing")
+
+    // Then
+    result.toList shouldBe empty
+  }
+
+  test("should be able to call empty procedure") {
+    //Given
+    registerProcedureReturningNoRowsOrColumns()
+
+    //When
+    val result = execute("CALL sys.return_nothing()")
+
+    // Then
+    result.toList shouldBe empty
+  }
+
+  test("should be able to call empty procedure without arguments") {
+    //Given
+    registerProcedureReturningNoRowsOrColumns()
+
+    //When
+    val result = execute("CALL sys.return_nothing")
+
+    // Then
+    result.toList shouldBe empty
   }
 
   test("db.labels work on an empty database") {
@@ -179,7 +218,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should be able to call procedure with explicit arguments") {
     // Given
-    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // When
     val result = execute("CALL my.first.proc('42', 42)")
@@ -190,7 +229,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should be able to call procedure with implicit arguments") {
     // Given
-    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // When
     val result = execute("CALL my.first.proc", "in0" -> "42", "in1" -> 42)
@@ -201,15 +240,15 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should fail if input type is wrong") {
     // Given
-    register(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
-    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
+    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
   }
 
   test("if signature declares number all number types are valid") {
     // Given
-    register(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
     execute("CALL my.first.proc(42)").toList should equal(List(Map("out0" -> 42)))
@@ -218,23 +257,15 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("arguments are nullable") {
     // Given
-    register(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // Then
     execute("CALL my.first.proc(NULL)").toList should equal(List(Map("out0" -> null)))
   }
 
-  test("should fail a procedure declares an integer but gets a float ") {
-    // Given
-    register(Neo4jTypes.NTInteger)
-
-    // Then
-    a [CypherTypeException] shouldBe thrownBy(execute("CALL my.first.proc(42.0)"))
-  }
-
   test("should not fail if a procedure declares a float but gets an integer") {
     // Given
-    register(Neo4jTypes.NTFloat)
+    registerDummyInOutProcedure(Neo4jTypes.NTFloat)
 
     // Then
     a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc(42)")))
@@ -242,7 +273,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should not fail if a procedure declares a float but gets called with an integer") {
     // Given
-    register(Neo4jTypes.NTFloat)
+    registerDummyInOutProcedure(Neo4jTypes.NTFloat)
 
     // Then
     a [CypherTypeException] shouldNot be(thrownBy(execute("CALL my.first.proc({param})", "param" -> 42)))
@@ -250,23 +281,23 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should fail if explicit argument is missing") {
     // Given
-    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
+    an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
   }
 
   test("should fail if too many arguments") {
     // Given
-    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [InvalidArgumentException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42)"))
+    an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42)"))
   }
 
   test("should fail if implicit argument is missing") {
     // Given
-    register(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
     a [ParameterNotFoundException] shouldBe thrownBy(execute("CALL my.first.proc", "in0" -> "42", "in42" -> 42))
@@ -274,7 +305,7 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should be able to call a procedure with explain") {
     // Given
-    register(Neo4jTypes.NTNumber)
+    registerDummyInOutProcedure(Neo4jTypes.NTNumber)
 
     // When
     val result = execute("EXPLAIN CALL my.first.proc(42)")
@@ -286,30 +317,4 @@ class CallProcedureAcceptanceTest extends ExecutionEngineFunSuite {
   test("should fail if calling non-existent procedure") {
     a [CypherExecutionException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42)"))
   }
-
-  private def register(types: Neo4jTypes.AnyType*) = {
-
-    val builder = procedureSignature(Array("my", "first"), "proc")
-
-    for (i <- types.indices) {
-
-      builder
-        .in(s"in$i", types(i))
-        .out(s"out$i", types(i))
-    }
-
-    val proc = new BasicProcedure(builder.build) {
-      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
-        RawIterator.of[Array[AnyRef], ProcedureException](input)
-    }
-    kernel.registerProcedure(proc)
-  }
-
-  override protected def initTest() {
-    super.initTest()
-    kernel = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
-  }
-
-  private var kernel: KernelAPI = null
-
 }

@@ -28,7 +28,8 @@ import scala.collection.immutable.IndexedSeq
 trait Command extends Parser
   with Expressions
   with Literals
-  with Base {
+  with Base
+  with ProcedureCalls {
 
   def Command: Rule1[ast.Command] = rule(
     CreateUniqueConstraint
@@ -39,7 +40,6 @@ trait Command extends Parser
       | DropNodePropertyExistenceConstraint
       | DropRelationshipPropertyExistenceConstraint
       | DropIndex
-      | Call
   )
 
   def CreateIndex: Rule1[ast.CreateIndex] = rule {
@@ -72,10 +72,6 @@ trait Command extends Parser
 
   def DropRelationshipPropertyExistenceConstraint: Rule1[ast.DropRelationshipPropertyExistenceConstraint] = rule {
     group(keyword("DROP") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
-  }
-
-  def Call = rule("CALL") {
-    group(keyword("CALL") ~~ zeroOrMore(SymbolicNameString ~ ".") ~ ProcedureName ~ ProcedureArguments) ~~>> (ast.CallProcedure(_, _, _))
   }
 
   private def ProcedureArguments: Rule1[Option[Seq[Expression]]] = rule("arguments to a procedure") {

@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal.frontend.v3_0.ast
 import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
-case class Parameter(name: String)(val position: InputPosition) extends Expression with SimpleTyping {
-  protected def possibleTypes = CTAny.covariant
+case class Parameter(name: String,
+                     parameterType: CypherType)(val position: InputPosition)
+  extends Expression with SimpleTyping {
+
+  protected def possibleTypes: TypeSpec = parameterType.covariant
 }

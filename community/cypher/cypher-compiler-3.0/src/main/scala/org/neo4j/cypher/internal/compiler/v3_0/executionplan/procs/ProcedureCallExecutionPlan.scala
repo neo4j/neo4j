@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
-import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, READ_ONLY}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.Counter
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, InternalExecutionResult, ProcedureCallMode, READ_ONLY}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{Counter, RuntimeJavaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.{ExternalCSVResource, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_0.spi._
-import org.neo4j.cypher.internal.frontend.v3_0.ParameterNotFoundException
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, ExecutionMode, ExplainExecutionResult, ExplainMode, ProcedurePlannerName, ProcedureRuntimeName, TaskCloser, _}
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
 /**
   * Execution plan for calling procedures
@@ -38,12 +38,15 @@ import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression
   * latter case we will have to resort to runtime type checking.
   *
   * @param signature the signature of the procedure
-  * @param providedArgExprs the argument to the procedure
+  * @param argExprs the arguments to the procedure
   */
-case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArgExprs: Option[Seq[Expression]])
+case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
+                                      argExprs: Seq[Expression],
+                                      resultSymbols: Seq[(String, CypherType)],
+                                      resultIndices: Seq[(Int, String)])
   extends ExecutionPlan {
 
-  private val optArgCommandExprs  = providedArgExprs.map { args => args.map(toCommandExpression) }
+  private val argExprCommands = argExprs.map(toCommandExpression)
 
   override def run(ctx: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
     val input = evaluateArguments(ctx, params)
@@ -61,13 +64,15 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
   private def createNormalExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
                                           input: Seq[Any], planType: ExecutionMode) = {
     val descriptionGenerator = () => createNormalPlan
-    new ProcedureExecutionResult(ctx, taskCloser, signature, input, descriptionGenerator, planType)
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    val columns = signature.outputSignature.map(_.toList.map(_.name)).getOrElse(List.empty)
+    new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, resultIndices, descriptionGenerator, planType)
   }
 
   private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any]) = {
     // close all statements
     taskCloser.close(success = true)
-    val columns = signature.outputSignature.seq.map(_.name).toList
+    val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
     new ExplainExecutionResult(columns, createNormalPlan, READ_ONLY, Set.empty)
   }
 
@@ -75,30 +80,33 @@ case class CallProcedureExecutionPlan(signature: ProcedureSignature, providedArg
                                             input: Seq[Any], planType: ExecutionMode) = {
     val rowCounter = Counter()
     val descriptionGenerator = createProfilePlanGenerator(rowCounter)
-    new ProcedureExecutionResult(ctx, taskCloser, signature, input, descriptionGenerator, planType) {
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    val columns = signature.outputSignature.map(_.toList.map(_.name)).getOrElse(List.empty)
+    new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, resultIndices, descriptionGenerator, planType) {
       override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
     }
   }
 
   private def evaluateArguments(ctx: QueryContext, params: Map[String, Any]): Seq[Any] = {
+    val converter = new RuntimeJavaValueConverter(ctx.isGraphKernelResultValue)
     val state = new QueryState(ctx, ExternalCSVResource.empty, params)
-    optArgCommandExprs.map { exprs => exprs.map(_.apply(ExecutionContext.empty)(state)) }.getOrElse {
-      signature.inputSignature.map { f => params.getOrElse(f.name, fail(f, ctx)) }
-    }
+    argExprCommands.map(expr => converter.asDeepJavaValue(expr.apply(ExecutionContext.empty)(state)))
   }
 
   private def createNormalPlan =
-    PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren, Seq(), Set.empty)
+    PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
+      Seq(createSignatureArgument),
+      resultSymbols.map(_._1).toSet
+    )
 
   private def createProfilePlanGenerator(rowCounter: Counter) = () =>
-    PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren, Seq(DbHits(1), Rows(rowCounter.counted)), Set.empty)
-
-  private def fail(f: FieldSignature, ctx: QueryContext) = {
-    ctx.transactionalContext.close(success = false)
-    throw new ParameterNotFoundException(
-      s"""Procedure ${signature.name.name} expected an argument with ${f.name} with type ${f.typ}"""
+    PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
+      Seq(createSignatureArgument, DbHits(1), Rows(rowCounter.counted)),
+      resultSymbols.map(_._1).toSet
     )
-  }
+
+  private def createSignatureArgument =
+    Signature(signature.name, argExprCommands, resultSymbols)
 
   override def notifications(planContext: PlanContext) = Seq.empty
   override def isPeriodicCommit: Boolean = false

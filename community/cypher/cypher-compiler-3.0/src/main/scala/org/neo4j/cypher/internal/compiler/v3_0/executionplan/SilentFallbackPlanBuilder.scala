@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.{PreparedQuery, PreparedQuerySemantics, CompilationPhaseTracer, PreparedQuerySyntax}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.notification.PlannerUnsupportedNotification
 
 trait FallbackBuilder extends ExecutablePlanBuilder {
 
-  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext,
-                  tracer: CompilationPhaseTracer,
-                  createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan = {
+  override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext,
+                           tracer: CompilationPhaseTracer,
+                           createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan = {
     val queryText = inputQuery.queryText
     val statement = inputQuery.statement
     try {
@@ -69,7 +69,7 @@ case class WarningFallbackPlanBuilder(oldBuilder: ExecutablePlanBuilder,
                                       newBuilder: ExecutablePlanBuilder,
                                       monitor: NewLogicalPlanSuccessRateMonitor) extends FallbackBuilder {
 
-  override def warn(preparedQuery: PreparedQuery): Unit = preparedQuery.notificationLogger
-    .log(PlannerUnsupportedNotification)
+  override def warn(preparedQuery: PreparedQuery): Unit =
+    preparedQuery.notificationLogger.log(PlannerUnsupportedNotification)
 }
 

@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutablePlanBuilder, ExecutionPlan, PlanFingerprint, PlanFingerprintReference, SCHEMA_WRITE}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, PlanContext, ProcedureName, ProcedureSignature, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, PlanContext, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.{CompilationPhaseTracer, PreparedQuerySemantics, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
-import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
 
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands
@@ -33,36 +34,18 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols._
   */
 case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuilder) extends ExecutablePlanBuilder {
 
-  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer,
+  override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan = {
 
     inputQuery.statement match {
 
-      // CALL foo.bar.baz("arg1", 2)
-      case call@CallProcedure(namespace, procName, providedArgs) =>
-        // Get signature
-        val signature = planContext.procedureSignature(ProcedureName(namespace, procName.name))
+      // Global call: CALL foo.bar.baz("arg1", 2)
+      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>
+        val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
+        val mkException = new SyntaxExceptionCreator(inputQuery.queryText, inputQuery.offset)
+        errors.foreach { error => throw mkException(error.msg, error.position) }
 
-        // Check arity
-        providedArgs.foreach { args =>
-          if (args.nonEmpty && args.size != signature.inputSignature.size) {
-            throw new InvalidArgumentException(
-              s"""Procedure ${signature.name.name} takes ${signature.inputSignature.size}
-                  |arguments but ${args.size} was provided.""".stripMargin)
-          }
-
-          //type check arguments
-          args.zip(signature.inputSignature).foreach {
-            case (arg, field) => typeCheck(inputQuery.semanticTable)(arg, field, signature)
-          }
-        }
-
-        // Cast all arguments to their expected types at runtime
-        val coercer = coerceToTypeIfNeeded(inputQuery.semanticTable.types).tupled
-        val argTypes = signature.inputSignature.map(_.typ)
-        val coercedArgs = providedArgs.map(_.zip(argTypes).map(coercer))
-
-        CallProcedureExecutionPlan(signature, coercedArgs)
+        ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices)
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, prop) =>

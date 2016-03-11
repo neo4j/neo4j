@@ -30,7 +30,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
 import org.neo4j.graphdb.ResourceIterator
 
 case class ExplainExecutionResult(columns: List[String],
-                                  executionPlanDescription: InternalPlanDescription, executionType: InternalQueryType,
+                                  executionPlanDescription: InternalPlanDescription,
+                                  executionType: InternalQueryType,
                                   notifications: Set[InternalNotification])
   extends InternalExecutionResult {
 

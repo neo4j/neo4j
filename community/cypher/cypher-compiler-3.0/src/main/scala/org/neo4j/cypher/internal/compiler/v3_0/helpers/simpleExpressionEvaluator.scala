@@ -32,7 +32,7 @@ object simpleExpressionEvaluator {
 
   def hasParameters(expr: Expression): Boolean =
     expr.inputs.exists {
-      case (Parameter(_), _) => true
+      case (Parameter(_, _), _) => true
       case _ => false
     }
 

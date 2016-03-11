@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands
 
 import org.neo4j.cypher.internal.compiler.v3_0._
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{And, Predicate, True}
@@ -102,20 +103,23 @@ object StatementConverters {
           val b = tail.foldLeft(commands.QueryBuilder())((b, t) => b.tail(t))
 
           val builder = group.foldLeft(b)((b, clause) => clause match {
-            case c: ast.LoadCSV      => c.addToQueryBuilder(b)
-            case c: ast.Start        => c.addToQueryBuilder(b)
-            case c: ast.Match        => c.addToQueryBuilder(b, notifications, plannerName)
-            case c: ast.Unwind       => c.addToQueryBuilder(b)
-            case c: ast.Merge        => c.addToQueryBuilder(b)
-            case c: ast.Create       => c.addToQueryBuilder(b)
-            case c: ast.CreateUnique => c.addToQueryBuilder(b)
-            case c: ast.SetClause    => c.addToQueryBuilder(b)
-            case c: ast.Delete       => c.addToQueryBuilder(b)
-            case c: ast.Remove       => c.addToQueryBuilder(b)
-            case c: ast.Foreach      => c.addToQueryBuilder(b)
-            case _: ast.With         => b
-            case _: ast.Return       => b
-            case _                   => throw new IllegalArgumentException("Unknown clause while grouping")
+            case c: ast.LoadCSV        => c.addToQueryBuilder(b)
+            case c: ast.Start          => c.addToQueryBuilder(b)
+            case c: ast.Match          => c.addToQueryBuilder(b, notifications, plannerName)
+            case c: ast.Unwind         => c.addToQueryBuilder(b)
+            case c: ast.Merge          => c.addToQueryBuilder(b)
+            case c: ast.Create         => c.addToQueryBuilder(b)
+            case c: ast.CreateUnique   => c.addToQueryBuilder(b)
+            case c: ast.SetClause      => c.addToQueryBuilder(b)
+            case c: ast.Delete         => c.addToQueryBuilder(b)
+            case c: ast.Remove         => c.addToQueryBuilder(b)
+            case c: ast.Foreach        => c.addToQueryBuilder(b)
+            case _: ast.With           => b
+            case _: ast.Return         => b
+            case c: ast.UnresolvedCall =>
+              throw new IllegalArgumentException("Unsupported clause while grouping: unresolved call")
+            case c: ResolvedCall       => c.addToQueryBuilder(b)
+            case _                     => throw new IllegalArgumentException("Unknown clause while grouping")
           })
 
           val result = Some(group.takeRight(2) match {
@@ -168,6 +172,11 @@ object StatementConverters {
       val items: Seq[StartItem] = builder.startItems :+ commands.Unwind(toCommandExpression(inner.expression),inner.variable.name)
       builder.startItems(items: _*)
     }
+  }
+
+  implicit class ResolvedCallConverter(inner: ResolvedCall) {
+    def addToQueryBuilder(builder: commands.QueryBuilder) =
+      throw new InternalException("RULE planner does not support calling procedures")
   }
 
   implicit class StartConverter(val clause: ast.Start) extends AnyVal {

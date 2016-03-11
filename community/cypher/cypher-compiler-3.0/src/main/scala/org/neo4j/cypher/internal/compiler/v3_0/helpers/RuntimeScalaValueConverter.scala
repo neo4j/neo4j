@@ -31,21 +31,24 @@ import scala.collection.immutable
 //
 // Main use: Converting results when using ExecutionEngine from scala
 //
-class ScalaResultValueConverter(skip: Any => Boolean) {
+class RuntimeScalaValueConverter(skip: Any => Boolean) {
 
-  final def asDeepScalaResultMap[A](map: JavaMap[A, Any]): immutable.Map[A, Any] =
-    if (map == null) null else immutableMapValues(map.asScala, asDeepScalaResultValue): immutable.Map[A, Any]
+  final def asDeepScalaMap[A, B](map: JavaMap[A, B]): immutable.Map[A, Any] =
+    if (map == null) null else immutableMapValues(map.asScala, asDeepScalaValue): immutable.Map[A, Any]
 
-  def asDeepScalaResultValue(value: Any): Any = value match {
+  final def asShallowScalaMap[A, B](map: JavaMap[A, B]): immutable.Map[A, Any] =
+    if (map == null) null else map.asScala.toMap
+
+  def asDeepScalaValue(value: Any): Any = value match {
     case anything if skip(anything) => anything
-    case javaMap: JavaMap[_, _] => immutableMapValues(javaMap.asScala, asDeepScalaResultValue): immutable.Map[_, _]
-    case javaIterable: JavaIterable[_] => javaIterable.asScala.map(asDeepScalaResultValue).toList: List[_]
-    case map: collection.Map[_, _] => immutableMapValues(map, asDeepScalaResultValue): immutable.Map[_, _]
-    case traversable: TraversableOnce[_] => traversable.map(asDeepScalaResultValue).toList: List[_]
+    case javaMap: JavaMap[_, _] => immutableMapValues(javaMap.asScala, asDeepScalaValue): immutable.Map[_, _]
+    case javaIterable: JavaIterable[_] => javaIterable.asScala.map(asDeepScalaValue).toList: List[_]
+    case map: collection.Map[_, _] => immutableMapValues(map, asDeepScalaValue): immutable.Map[_, _]
+    case traversable: TraversableOnce[_] => traversable.map(asDeepScalaValue).toList: List[_]
     case anything => anything
   }
 
-  def asShallowScalaResultValue(value: Any): Any = value match {
+  def asShallowScalaValue(value: Any): Any = value match {
     case anything if skip(anything) => anything
     case javaMap: JavaMap[_, _] => javaMap.asScala.toMap: immutable.Map[_, _]
     case javaIterable: JavaIterable[_] => javaIterable.asScala.toList: List[_]

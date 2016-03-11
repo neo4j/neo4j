@@ -51,7 +51,7 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
   }
 
   private def isParameter(expr: Expression) = expr match {
-    case Parameter(_) => true
+    case _: Parameter => true
     case _            => false
   }
 

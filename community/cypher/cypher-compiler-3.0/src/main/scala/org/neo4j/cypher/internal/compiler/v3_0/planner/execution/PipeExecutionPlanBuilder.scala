@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.execution
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.StatementConverters
@@ -26,11 +27,11 @@ import org.neo4j.cypher.internal.compiler.v3_0.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v3_0.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_0.commands.predicates.{True, _}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{PeriodicCommit, CantHandleQueryException, logical}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantHandleQueryException, PeriodicCommit, logical}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionContext, Monitors, ast => compilerAst, pipes}
@@ -308,6 +309,12 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
     case UnwindCollection(_, variable, collection) =>
       UnwindPipe(source, toCommandExpression(collection), variable.name)()
+
+    case ProcedureCall(_, call@ResolvedCall(signature, callArguments, callResults, _, _)) =>
+      val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+      val callArgumentCommands = callArguments.map(toCommandExpression)
+      val rowProcessing = ProcedureCallRowProcessing(signature)
+      ProcedureCallPipe(source, signature.name, callMode, callArgumentCommands, rowProcessing, call.callResultTypes, call.callResultIndices)()
 
     case LoadCSVPlan(_, url, variableName, format, fieldTerminator) =>
       LoadCSVPipe(source, format, toCommandExpression(url), variableName.name, fieldTerminator)()

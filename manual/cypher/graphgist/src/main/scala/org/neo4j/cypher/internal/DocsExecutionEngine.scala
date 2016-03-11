@@ -27,16 +27,14 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 
-import scala.collection.JavaConverters._
-
 class DocsExecutionEngine(graph: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance)
   extends ExecutionEngine(graph, logProvider) {
 
   @throws(classOf[SyntaxException])
-  def internalExecute(query: String, params: JavaMap[String, Any], session: QuerySession): InternalExecutionResult =
+  def internalExecute(query: String, params: JavaMap[String, AnyRef], session: QuerySession): InternalExecutionResult =
     RewindableExecutionResult(execute(query, params, session))
 
   @throws(classOf[SyntaxException])
-  def internalProfile(query: String, params: JavaMap[String, Any], session: QuerySession): InternalExecutionResult =
+  def internalProfile(query: String, params: JavaMap[String, AnyRef], session: QuerySession): InternalExecutionResult =
     RewindableExecutionResult(profile(query, params, session))
 }
