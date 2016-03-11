@@ -63,7 +63,7 @@
                   <arg value="org.neo4j.metrics.source.db.LogRotationMetrics" />
                   <arg value="org.neo4j.metrics.source.cluster.NetworkMetrics" />
                   <arg value="org.neo4j.metrics.source.cluster.ClusterMetrics" />
-                  <arg value="org.neo4j.metrics.source.CoreMetrics" />
+                  <arg value="org.neo4j.metrics.source.coreedge.CoreMetrics" />
 
                   <!-- keep this one last as it's a bit special compared to the others -->
                   <arg value="org.neo4j.metrics.source.jvm.JvmMetrics" />

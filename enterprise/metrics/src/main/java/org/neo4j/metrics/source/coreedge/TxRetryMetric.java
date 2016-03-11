@@ -17,46 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.metrics.source.coreedge;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
 
-import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
+import org.neo4j.coreedge.catchup.tx.core.TxRetryMonitor;
 
-public class PullRequestMetric implements PullRequestMonitor
+
+public class TxRetryMetric implements TxRetryMonitor
 {
-    private AtomicLong lastRequestedTxId = new AtomicLong( 0 );
-    private AtomicLong lastReceivedTxId = new AtomicLong( 0 );
-    private LongAdder events = new LongAdder(  );
+    private AtomicLong count = new AtomicLong( 0 );
 
     @Override
-    public void txPullRequest( long txId )
+    public long transactionsRetries()
     {
-        events.increment();
-        this.lastRequestedTxId.set( txId );
+        return count.get();
     }
 
     @Override
-    public void txPullResponse( long txId )
+    public void retry()
     {
-        lastReceivedTxId.set( txId );
-    }
-
-    @Override
-    public long lastRequestedTxId()
-    {
-        return this.lastRequestedTxId.get();
-    }
-
-    @Override
-    public long numberOfRequests()
-    {
-        return events.longValue();
-    }
-
-    public long lastReceivedTxId()
-    {
-        return lastReceivedTxId.get();
+        count.incrementAndGet();
     }
 }

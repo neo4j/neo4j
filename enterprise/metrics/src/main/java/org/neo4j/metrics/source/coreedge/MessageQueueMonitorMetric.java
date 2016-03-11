@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.metrics.source.coreedge;
 
 import java.net.InetSocketAddress;
 import java.util.Map;

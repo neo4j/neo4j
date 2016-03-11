@@ -174,7 +174,7 @@ public class PlatformModule
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
         kernelExtensions = dependencies.satisfyDependency( new KernelExtensions(
-                new SimpleKernelContext( fileSystem, storeDir, databaseInfo ),
+                new SimpleKernelContext( fileSystem, storeDir, databaseInfo, dependencies ),
                 externalDependencies.kernelExtensions(),
                 dependencies,
                 UnsatisfiedDependencyStrategies.fail() ) );

@@ -284,7 +284,7 @@ public class BatchInserterImpl implements BatchInserter
         deps.satisfyDependencies( fileSystem, config, logService, indexStoreView );
 
         KernelExtensions extensions = life.add( new KernelExtensions(
-                new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN ),
+                new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN, deps ),
                 kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
 
         SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,

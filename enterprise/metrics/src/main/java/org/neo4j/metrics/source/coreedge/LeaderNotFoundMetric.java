@@ -17,25 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.metrics.source.coreedge;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.coreedge.raft.log.monitoring.RaftLogAppendIndexMonitor;
+import org.neo4j.coreedge.raft.LeaderNotFoundMonitor;
 
-public class RaftLogAppendIndexMetric implements RaftLogAppendIndexMonitor
+
+public class LeaderNotFoundMetric implements LeaderNotFoundMonitor
 {
-    private AtomicLong appendIndex = new AtomicLong( 0 );
+    private AtomicLong count = new AtomicLong( 0 );
 
     @Override
-    public long appendIndex()
+    public long leaderNotFoundExceptions()
     {
-        return appendIndex.get();
+        return count.get();
     }
 
     @Override
-    public void appendIndex( long appendIndex )
+    public void increment()
     {
-        this.appendIndex.set( appendIndex );
+        count.incrementAndGet();
     }
 }

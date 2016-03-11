@@ -17,26 +17,46 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.metrics.source.coreedge;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
-import org.neo4j.coreedge.raft.LeaderNotFoundMonitor;
+import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
 
-
-public class LeaderNotFoundMetric implements LeaderNotFoundMonitor
+public class PullRequestMetric implements PullRequestMonitor
 {
-    private AtomicLong count = new AtomicLong( 0 );
+    private AtomicLong lastRequestedTxId = new AtomicLong( 0 );
+    private AtomicLong lastReceivedTxId = new AtomicLong( 0 );
+    private LongAdder events = new LongAdder(  );
 
     @Override
-    public long leaderNotFoundExceptions()
+    public void txPullRequest( long txId )
     {
-        return count.get();
+        events.increment();
+        this.lastRequestedTxId.set( txId );
     }
 
     @Override
-    public void increment()
+    public void txPullResponse( long txId )
     {
-        count.incrementAndGet();
+        lastReceivedTxId.set( txId );
+    }
+
+    @Override
+    public long lastRequestedTxId()
+    {
+        return this.lastRequestedTxId.get();
+    }
+
+    @Override
+    public long numberOfRequests()
+    {
+        return events.longValue();
+    }
+
+    public long lastReceivedTxId()
+    {
+        return lastReceivedTxId.get();
     }
 }

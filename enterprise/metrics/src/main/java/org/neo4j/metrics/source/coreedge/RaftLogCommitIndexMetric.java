@@ -17,25 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.metrics.source.coreedge;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.coreedge.raft.log.monitoring.RaftTermMonitor;
+import org.neo4j.coreedge.raft.LeaderNotFoundMonitor;
+import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 
-public class RaftTermMetric implements RaftTermMonitor
+public class RaftLogCommitIndexMetric implements RaftLogCommitIndexMonitor
 {
-    private AtomicLong term = new AtomicLong( 0 );
+    private AtomicLong commitIndex = new AtomicLong( 0 );
 
     @Override
-    public long term()
+    public long commitIndex()
     {
-        return term.get();
+        return commitIndex.get();
     }
 
     @Override
-    public void term( long term )
+    public void commitIndex( long commitIndex )
     {
-        this.term.set( term );
+        this.commitIndex.set( commitIndex );
     }
 }

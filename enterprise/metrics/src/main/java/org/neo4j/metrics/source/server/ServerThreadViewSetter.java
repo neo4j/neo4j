@@ -17,27 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metrics.source;
+package org.neo4j.metrics.source.server;
 
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.neo4j.coreedge.catchup.tx.core.TxPullRequestsMonitor;
-import org.neo4j.coreedge.raft.LeaderNotFoundMonitor;
-
-
-public class TxPullRequestsMetric implements TxPullRequestsMonitor
+public interface ServerThreadViewSetter
 {
-    private AtomicLong count = new AtomicLong( 0 );
-
-    @Override
-    public long txPullRequestsReceived()
-    {
-        return count.get();
-    }
-
-    @Override
-    public void increment()
-    {
-        count.incrementAndGet();
-    }
+    void set( ServerThreadView serverThreadView );
 }
