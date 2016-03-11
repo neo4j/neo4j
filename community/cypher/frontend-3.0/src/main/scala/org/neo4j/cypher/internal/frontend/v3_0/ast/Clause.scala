@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_0._
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
@@ -28,9 +30,14 @@ sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
 
   def noteCurrentScope: SemanticCheck = s => SemanticCheckResult.success(s.noteCurrentScope(this))
+
+  def returnColumns: List[String] =
+    throw new InternalException("This clause is not allowed as a last clause and hence does not declare return columns")
 }
 
-sealed trait UpdateClause extends Clause
+sealed trait UpdateClause extends Clause {
+  override def returnColumns = List.empty
+}
 
 case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variable, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
   override def name = "LOAD CSV"
@@ -287,6 +294,30 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
     }
 }
 
+abstract class CallClause extends Clause {
+  override def name = "CALL"
+  def returnColumns: List[String]
+}
+
+case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
+                          procedureName: ProcedureName,
+                          // None: No arguments given (i.e. no "YIELD" part)
+                          declaredArguments: Option[Seq[Expression]] = None,
+                          // None: No results declared
+                          declaredResults: Option[Seq[ProcedureResultItem]] = None
+                         )(val position: InputPosition) extends CallClause {
+
+  override def returnColumns =
+    declaredResults.map(_.map(_.variable.name).toList).getOrElse(List.empty)
+
+  override def semanticCheck: SemanticCheck = {
+    val argumentCheck = declaredArguments.map(_.semanticCheck(SemanticContext.Results)).getOrElse(success)
+    val resultsCheck = declaredResults.map(_.foldSemanticCheck(_.semanticCheck)).getOrElse(success)
+
+    argumentCheck chain resultsCheck
+  }
+}
+
 sealed trait HorizonClause extends Clause with SemanticChecking {
   override def semanticCheck = noteCurrentScope
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck
@@ -385,6 +416,8 @@ case class Return(
                    limit: Option[Limit])(val position: InputPosition) extends ProjectionClause {
 
   override def name = "RETURN"
+
+  override def returnColumns = returnItems.items.map(_.name).toList
 
   override def semanticCheck = super.semanticCheck chain checkVariableScope
 

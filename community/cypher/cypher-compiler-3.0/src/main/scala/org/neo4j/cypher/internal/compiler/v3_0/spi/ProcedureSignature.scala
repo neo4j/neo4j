@@ -19,51 +19,32 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.spi
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{DBMS, InternalQueryType, READ_ONLY, READ_WRITE}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.UnresolvedCall
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 
-import scala.collection.mutable.ArrayBuffer
-
-sealed trait ProcedureCallMode {
-  val queryType: InternalQueryType
-
-  def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]]
-}
-
-case object LazyReadOnlyCallMode extends ProcedureCallMode {
-  override val queryType: InternalQueryType = READ_ONLY
-
-  override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
-    ctx.callReadOnlyProcedure(signature.name, args)
-}
-
-case object EagerReadWriteCallMode extends ProcedureCallMode {
-  override val queryType: InternalQueryType = READ_WRITE
-
-  override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] = {
-    val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
-    val iterator = ctx.callReadWriteProcedure(signature.name, args)
-    while (iterator.hasNext) {
-      builder += iterator.next()
-    }
-    builder.result().iterator
-  }
-}
-
-case object DbmsCallMode extends ProcedureCallMode {
-  override val queryType: InternalQueryType = DBMS
-
-  override def call(ctx: QueryContext, signature: ProcedureSignature, args: Seq[Any]): Iterator[Array[AnyRef]] =
-    ctx.callDbmsProcedure(signature.name, args)
-}
-
-case class ProcedureSignature(name: ProcedureName,
+case class ProcedureSignature(name: QualifiedProcedureName,
                               inputSignature: Seq[FieldSignature],
-                              outputSignature: Seq[FieldSignature],
-                              mode: ProcedureCallMode = LazyReadOnlyCallMode)
+                              outputSignature: Option[Seq[FieldSignature]],
+                              accessMode: ProcedureAccessMode = ProcedureReadOnlyAccess) {
 
-case class ProcedureName(namespace: Seq[String], name: String) {
+  def outputFields = outputSignature.getOrElse(Seq.empty)
+
+  def isVoid = outputSignature.isEmpty
+}
+
+object QualifiedProcedureName {
+  def apply(unresolved: UnresolvedCall): QualifiedProcedureName =
+    QualifiedProcedureName(unresolved.procedureNamespace.parts, unresolved.procedureName.name)
+}
+
+case class QualifiedProcedureName(namespace: Seq[String], name: String) {
   override def toString = s"""${namespace.mkString(".")}.$name"""
 }
 
 case class FieldSignature(name: String, typ: CypherType)
+
+sealed trait ProcedureAccessMode
+
+case object ProcedureReadOnlyAccess extends ProcedureAccessMode
+case object ProcedureReadWriteAccess extends ProcedureAccessMode
+case object ProcedureDbmsAccess extends ProcedureAccessMode

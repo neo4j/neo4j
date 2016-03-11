@@ -180,13 +180,13 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
                                filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]) =
-    inner.callReadOnlyProcedure(name, args)
+  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
+    singleDbHit(inner.callReadOnlyProcedure(name, args))
 
-  override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]) =
-    inner.callReadWriteProcedure(name, args)
+  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
+    singleDbHit(inner.callReadWriteProcedure(name, args))
 
-  override def callDbmsProcedure(name: ProcedureName, args: Seq[Any]) =
+  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]) =
     inner.callDbmsProcedure(name, args)
 
   override def isGraphKernelResultValue(v: Any): Boolean =

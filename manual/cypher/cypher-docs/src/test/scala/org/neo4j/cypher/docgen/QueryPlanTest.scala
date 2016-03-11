@@ -446,4 +446,13 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Unwind"))
     )
   }
+
+  @Test def call(): Unit = {
+    profileQuery(
+      title = "Call Procedure",
+      text = """Return all labels sorted by name""".stripMargin,
+      queryText = """CALL db.labels() YIELD label RETURN * ORDER BY label""",
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("ProcedureCall"))
+    )
+  }
 }

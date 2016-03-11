@@ -22,40 +22,40 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan.procs
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.ResultRowImpl
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, StandardInternalExecutionResult}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaResultValueConverter
+import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, ProcedureSignature, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{QualifiedProcedureName, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, InternalQueryStatistics, ProfileMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.ProfilerStatisticsNotReadyException
-
-import scala.collection.JavaConverters._
 
 /**
   * Execution result of a Procedure
   *
   * @param context The QueryContext used to communicate with the kernel.
   * @param taskCloser called when done with the result, cleans up resources.
-  * @param signature The signature of the procedure.
+  * @param name The name of the procedure.
+  * @param callMode The call mode of the procedure.
   * @param args The argument to the procedure.
+  * @param indexResultNameMappings Describes how values at output row indices are mapped onto result columns.
   * @param executionPlanDescriptionGenerator Generator for the plan description of the result.
   * @param executionMode The execution mode.
   */
 class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                taskCloser: TaskCloser,
-                                               signature: ProcedureSignature,
+                                               name: QualifiedProcedureName,
+                                               callMode: ProcedureCallMode,
                                                args: Seq[Any],
+                                               indexResultNameMappings: Seq[(Int, String)],
                                                executionPlanDescriptionGenerator: () => InternalPlanDescription,
                                                val executionMode: ExecutionMode)
   extends StandardInternalExecutionResult(context, Some(taskCloser)) {
 
-  // The signature mode is taking care of eagerization
-  private final val javaValues = new JavaResultValueConverter(isGraphKernelResultValue)
-  private final val executionResults = executeCall
-  private final val outputs = signature.outputSignature
+  override def columns = indexResultNameMappings.map(_._2).toList
 
-  protected def executeCall: Iterator[Array[AnyRef]] =
-    signature.mode.call(context, signature, args.map(javaValues.asDeepJavaResultValue))
+  private final val executionResults = executeCall
+
+  // The signature mode is taking care of eagerization
+  protected def executeCall = callMode.call(context, name, args)
 
   override protected def createInner = new util.Iterator[util.Map[String, Any]]() {
     override def next(): util.Map[String, Any] =
@@ -71,30 +71,20 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
     close()
   }
 
-  override def javaColumns: java.util.List[String] = signature.outputSignature.seq.map(_.name).asJava
-
   // TODO Look into having the kernel track updates, rather than cypher middle-layers, only sensible way I can think
   //      of to get accurate stats for procedure code
   override def queryStatistics() = context.getOptStatistics.getOrElse(InternalQueryStatistics())
-  override def executionType: InternalQueryType = signature.mode.queryType
+  override def executionType: InternalQueryType = callMode.queryType
 
   private def resultAsMap(rowData: Array[AnyRef]): util.Map[String, Any] = {
     val mapData = new util.HashMap[String, Any](rowData.length)
-    var i = 0
-    outputs.foreach { field =>
-      mapData.put(field.name, rowData(i))
-      i = i + 1
-    }
+    indexResultNameMappings.foreach { entry => mapData.put(entry._2, rowData(entry._1)) }
     mapData
   }
 
   private def resultAsRefMap(rowData: Array[AnyRef]): util.Map[String, AnyRef] = {
     val mapData = new util.HashMap[String, AnyRef](rowData.length)
-    var i = 0
-    outputs.foreach { field =>
-      mapData.put(field.name, rowData(i))
-      i = i + 1
-    }
+    indexResultNameMappings.foreach { entry => mapData.put(entry._2, rowData(entry._1)) }
     mapData
   }
 

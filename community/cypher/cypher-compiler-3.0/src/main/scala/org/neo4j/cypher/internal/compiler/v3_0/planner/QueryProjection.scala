@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.CSVFormat
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LazyMode, StrictnessMode}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{EagerMode, IdName, LazyMode, StrictnessMode}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 
 sealed trait QueryHorizon {
+
   def exposedSymbols(qg: QueryGraph): Set[IdName]
 
   def dependingExpressions: Seq[Expression]
@@ -158,6 +161,14 @@ case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHori
   override def dependingExpressions = Seq(exp)
 
   override def preferredStrictness = None
+}
+
+case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
+  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
+
+  override def dependingExpressions = call.callArguments
+
+  override def preferredStrictness = Some(if (call.signature.accessMode == ProcedureReadOnlyAccess) LazyMode else EagerMode)
 }
 
 case class LoadCSVProjection(variable: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {

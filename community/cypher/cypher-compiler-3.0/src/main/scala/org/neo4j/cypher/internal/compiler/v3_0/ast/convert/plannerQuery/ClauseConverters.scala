@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{NoHeaders, HasHeaders}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.{HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
@@ -36,6 +37,7 @@ object ClauseConverters {
     case c: Match => addMatchToLogicalPlanInput(acc, c)
     case c: With => addWithToLogicalPlanInput(acc, c)
     case c: Unwind => addUnwindToLogicalPlanInput(acc, c)
+    case c: ResolvedCall => addCallToLogicalPlanInput(acc, c)
     case c: Start => addStartToLogicalPlanInput(acc, c)
     case c: Create => addCreateToLogicalPlanInput(acc, c)
     case c: SetClause => addSetClauseToLogicalPlanInput(acc, c)
@@ -45,6 +47,7 @@ object ClauseConverters {
     case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
     case c: Foreach => addForeachToLogicalPlanInput(acc, c)
 
+    case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
     case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
   }
 
@@ -402,6 +405,12 @@ object ClauseConverters {
           exp = clause.expression)
       ).
       withTail(PlannerQuery.empty)
+
+  private def addCallToLogicalPlanInput(builder: PlannerQueryBuilder, call: ResolvedCall): PlannerQueryBuilder = {
+    builder
+      .withHorizon(ProcedureCallProjection(call))
+      .withTail(PlannerQuery.empty)
+  }
 
   private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach): PlannerQueryBuilder = {
     val currentlyAvailableVariables = builder.currentlyAvailableVariables

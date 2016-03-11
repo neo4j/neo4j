@@ -37,6 +37,13 @@ public interface RawIterator<T,EXCEPTION extends Exception>
 
     default void remove() { throw new UnsupportedOperationException(); }
 
+    static RawIterator<Object,Exception> EMPTY = RawIterator.of();
+
+    @SuppressWarnings( "unchecked" )
+    static <T, EXCEPTION extends Exception> RawIterator<T, EXCEPTION> empty() {
+        return (RawIterator<T,EXCEPTION>) EMPTY;
+    }
+
     static <T, EX extends Exception> RawIterator<T, EX> of( T ... values )
     {
         return new RawIterator<T,EX>()
@@ -52,11 +59,11 @@ public interface RawIterator<T,EXCEPTION extends Exception>
             @Override
             public T next() throws EX
             {
-                if(!hasNext())
+                if ( hasNext() )
                 {
-                    throw new NoSuchElementException();
+                    return values[position++];
                 }
-                return values[position++];
+                throw new NoSuchElementException();
             }
         };
     }

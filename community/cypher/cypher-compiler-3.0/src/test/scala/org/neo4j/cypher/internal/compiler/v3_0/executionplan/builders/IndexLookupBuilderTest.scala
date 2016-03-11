@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.frontend.v3_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.{ExclusiveBound, InclusiveBound, IndexHintException, ast}
 
 class IndexLookupBuilderTest extends BuilderTest {
@@ -100,7 +101,7 @@ class IndexLookupBuilderTest extends BuilderTest {
       def run() = {
         //GIVEN
         val property: ast.Property = ast.Property(varFor("n"), ast.PropertyKeyName("prop")_)_
-        val inequality: ast.StartsWith = ast.StartsWith(property, ast.Parameter("paramName")_)_
+        val inequality: ast.StartsWith = ast.StartsWith(property, ast.Parameter("paramName", CTAny)_)_
         val predicate = toCommandPredicate(inequality)
 
         // WHAM

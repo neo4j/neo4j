@@ -35,6 +35,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.{ApplyRewriter,
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Scope, SemanticTable}
 
+import scala.util.Try
+
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           metricsFactory: MetricsFactory,
@@ -49,7 +51,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           config: CypherCompilerConfiguration)
   extends ExecutablePlanBuilder {
 
-  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer, createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
+  override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer, createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
     val statement =
       CostBasedExecutablePlanBuilder.rewriteStatement(
         statement = inputQuery.statement,
@@ -58,8 +60,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
         rewriterSequencer = rewriterSequencer,
         preConditions = inputQuery.conditions,
         monitor = monitors.newMonitor[AstRewritingMonitor](),
-        semanticChecker = semanticChecker
-      )
+        semanticChecker = semanticChecker)
 
     //monitor success of compilation
     val planBuilderMonitor = monitors.newMonitor[NewRuntimeSuccessRateMonitor](CypherCompilerFactory.monitorTag)
@@ -75,7 +76,6 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
         throw new CantHandleQueryException(x.toString())
     }
   }
-
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
                         (planContext: PlanContext,  notificationLogger: InternalNotificationLogger):

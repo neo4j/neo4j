@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.helpers
 
 import org.neo4j.cypher.internal.compiler.v3_0.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v3_0.spi.QueryContext
-import org.neo4j.graphdb.{Path, Node, Relationship}
+import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.Map
 
@@ -29,18 +29,18 @@ import scala.collection.Map
 //
 // Main use: Printing results when using ExecutionEngine
 //
-class TextResultValueConverter(scalaValues: ScalaResultValueConverter)(implicit context: QueryContext) {
+class RuntimeTextValueConverter(scalaValues: RuntimeScalaValueConverter)(implicit context: QueryContext) {
 
-  def asTextResultValue(a: Any): String = {
-    val scalaValue = scalaValues.asShallowScalaResultValue(a)
+  def asTextValue(a: Any): String = {
+    val scalaValue = scalaValues.asShallowScalaValue(a)
     scalaValue match {
       case node: Node => s"$node${props(node)}"
       case relationship: Relationship => s":${relationship.getType.name()}[${relationship.getId}]${props(relationship)}"
       case path: Path => path.toString
       case map: Map[_, _] => makeString(map)
-      case opt: Option[_] => opt.map(asTextResultValue).getOrElse("None")
-      case array: Array[_] => array.map(elem => asTextResultValue(elem)).mkString("[", ",", "]")
-      case iterable: Iterable[_] => iterable.map(elem => asTextResultValue(elem)).mkString("[", ",", "]")
+      case opt: Option[_] => opt.map(asTextValue).getOrElse("None")
+      case array: Array[_] => array.map(elem => asTextValue(elem)).mkString("[", ",", "]")
+      case iterable: Iterable[_] => iterable.map(elem => asTextValue(elem)).mkString("[", ",", "]")
       case str: String => "\"" + str + "\""
       case token: KeyToken => token.name
       case null => "<null>"
@@ -48,19 +48,19 @@ class TextResultValueConverter(scalaValues: ScalaResultValueConverter)(implicit 
     }
   }
 
-  private def makeString(m: Map[_, _]) = m.map { case (k, v) => s"$k -> ${asTextResultValue(v)}" }.mkString("{", ", ", "}")
+  private def makeString(m: Map[_, _]) = m.map { case (k, v) => s"$k -> ${asTextValue(v)}" }.mkString("{", ", ", "}")
 
   private def props(n: Node): String = {
     val ops = context.nodeOps
     val properties = ops.propertyKeyIds(n.getId)
-    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextResultValue(ops.getProperty(n.getId, pkId))}")
+    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(n.getId, pkId))}")
     keyValStrings.mkString("{", ",", "}")
   }
 
   private def props(r: Relationship): String = {
     val ops = context.relationshipOps
     val properties = ops.propertyKeyIds(r.getId)
-    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextResultValue(ops.getProperty(r.getId, pkId))}")
+    val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(r.getId, pkId))}")
     keyValStrings.mkString("{", ",", "}")
   }
 }

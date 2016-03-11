@@ -157,18 +157,19 @@ trait CompatibilityFor3_0 {
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer) = {
     val notificationLogger = new RecordingNotificationLogger
-    val preparedQueryForV_3_0 =
-      Try(compiler.prepareQuery(preParsedQuery.statement,
+    val preparedSyntacticQueryForV_3_0 =
+      Try(compiler.prepareSyntacticQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLogger,
         preParsedQuery.planner.name,
         Some(preParsedQuery.offset), tracer))
     new ParsedQuery {
-      def isPeriodicCommit = preparedQueryForV_3_0.map(_.isPeriodicCommit).getOrElse(false)
+      def isPeriodicCommit = preparedSyntacticQueryForV_3_0.map(_.isPeriodicCommit).getOrElse(false)
 
       def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = exceptionHandlerFor3_0.runSafely {
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext))
-        val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_3_0.get, planContext, tracer)
+        val syntacticQuery = preparedSyntacticQueryForV_3_0.get
+        val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, planContext, Some(preParsedQuery.offset), tracer)
 
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger += _)
@@ -176,7 +177,7 @@ trait CompatibilityFor3_0 {
         (new ExecutionPlanWrapper(planImpl), extractedParameters)
       }
 
-      override def hasErrors = preparedQueryForV_3_0.isFailure
+      override def hasErrors = preparedSyntacticQueryForV_3_0.isFailure
     }
   }
 

@@ -21,11 +21,12 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compiler.v3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows}
+import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{QualifiedProcedureName, GraphStatistics}
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.graphdb.QueryExecutionException
 
@@ -58,7 +59,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(4)(result)("AllNodesScan")
   }
 
-  test("profile call") {
+  test("profile standalone call") {
     createLabeledNode("Person")
     createLabeledNode("Animal")
 
@@ -66,6 +67,36 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
+    getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
+      val Signature(QualifiedProcedureName(namespaces, procName), _, returnSignature) = plan.arguments.collectFirst {
+        case x: Signature => x
+      }.getOrElse(fail("expected a procedure signature"))
+
+      namespaces should equal(Seq("db"))
+      procName should equal("labels")
+      returnSignature should equal(Seq("label" -> CTString))
+      plan.variables should equal(Set("label"))
+    }
+  }
+
+  test("profile call in query") {
+    createLabeledNode("Person")
+    createLabeledNode("Animal")
+
+    val result = legacyProfile("MATCH (n:Person) CALL db.labels() YIELD label RETURN *")
+
+    assertDbHits(1)(result)("ProcedureCall")
+    assertRows(2)(result)("ProcedureCall")
+    getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
+      val Signature(QualifiedProcedureName(namespaces, procName), _, returnSignature) = plan.arguments.collectFirst {
+        case x: Signature => x
+      }.getOrElse(fail("expected a procedure signature"))
+
+      namespaces should equal(Seq("db"))
+      procName should equal("labels")
+      returnSignature should equal(Seq("label" -> CTString))
+      plan.variables should equal(Set("n", "label"))
+    }
   }
 
   test("match (n) where (n)-[:FOO]->() return *") {
