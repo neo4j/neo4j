@@ -17,13 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.console;
+package org.neo4j.server.rest.management.console;
+
+import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 
-public interface ConsoleSessionFactory
+public interface ConsoleSessionCreator
 {
-    ScriptSession createSession( String engineName, Database database, LogProvider logProvider );
-    Iterable<String> supportedEngines();
+    String name();
+
+    ScriptSession newSession( Database database, CypherExecutor cypherExecutor, HttpServletRequest request, LogProvider logProvider );
 }

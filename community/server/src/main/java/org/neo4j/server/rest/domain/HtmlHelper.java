@@ -28,7 +28,6 @@ import java.util.Map;
 public class HtmlHelper
 {
     private final static String STYLE_LOCATION = "http://resthtml.neo4j.org/style/";
-    private final static String HTML_JAVASCRIPT_LOCATION = "/webadmin/htmlbrowse.js";
 
     public static String from( final Object object, final ObjectType objectType )
     {
@@ -53,7 +52,6 @@ public class HtmlHelper
         }
         builder.append( "<meta content=\"text/html; charset=utf-8\" http-equiv=\"Content-Type\">\n" + "<link href='"
                         + STYLE_LOCATION + "rest.css' rel='stylesheet' type='text/css'>\n"
-                        + "<script type='text/javascript' src='" + HTML_JAVASCRIPT_LOCATION + "'></script>\n"
                         + "</head>\n<body onload='javascript:neo4jHtmlBrowse.start();' id='" + title.toLowerCase()
                         + "'>\n" + "<div id='content'>" + "<div id='header'>"
                         + "<h1><a title='Neo4j REST interface' href='/'><span>Neo4j REST interface</span></a></h1>"

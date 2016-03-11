@@ -21,9 +21,9 @@ package org.neo4j.server.enterprise;
 
 import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.webadmin.rest.MasterInfoService.BASE_PATH;
-import static org.neo4j.server.webadmin.rest.MasterInfoService.IS_MASTER_PATH;
-import static org.neo4j.server.webadmin.rest.MasterInfoService.IS_SLAVE_PATH;
+import static org.neo4j.server.rest.MasterInfoService.BASE_PATH;
+import static org.neo4j.server.rest.MasterInfoService.IS_MASTER_PATH;
+import static org.neo4j.server.rest.MasterInfoService.IS_SLAVE_PATH;
 import static org.neo4j.test.server.ha.EnterpriseServerHelper.createNonPersistentServer;
 
 import java.io.IOException;

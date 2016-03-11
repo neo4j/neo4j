@@ -28,7 +28,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class RedirectorDocIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void shouldRedirectRootToWebadmin() throws Exception {
+    public void shouldRedirectRootToBrowser() throws Exception {
         JaxRsResponse response = new RestRequest(server().baseUri()).get();
 
         assertThat(response.getStatus(), is(not(404)));
@@ -36,7 +36,7 @@ public class RedirectorDocIT extends AbstractRestFunctionalTestBase
 
     @Test
     public void shouldNotRedirectTheRestOfTheWorld() throws Exception {
-        JaxRsResponse response = new RestRequest(server().baseUri()).get("a/different/relative/webadmin/data/uri/");
+        JaxRsResponse response = new RestRequest(server().baseUri()).get("a/different/relative/data/uri/");
 
         assertThat(response.getStatus(), is(404));
     }

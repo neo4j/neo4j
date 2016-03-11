@@ -41,8 +41,8 @@ import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.enterprise.modules.JMXManagementModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.webadmin.rest.DatabaseRoleInfoServerModule;
-import org.neo4j.server.webadmin.rest.MasterInfoService;
+import org.neo4j.server.rest.DatabaseRoleInfoServerModule;
+import org.neo4j.server.rest.MasterInfoService;
 
 import static java.util.Arrays.asList;
 

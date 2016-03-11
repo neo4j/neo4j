@@ -64,8 +64,8 @@ public class CommunityServerBuilder
     private String portNo = "7474";
     private String maxThreads = null;
     protected String dataDir = null;
-    private String webAdminUri = "/db/manage/";
-    private String webAdminDataUri = "/db/data/";
+    private String managementUri = "/db/manage/";
+    private String restUri = "/db/data/";
     protected PreFlightTasks preflightTasks;
     private final HashMap<String, String> thirdPartyPackages = new HashMap<>();
     private final Properties arbitraryProperties = new Properties();
@@ -134,8 +134,8 @@ public class CommunityServerBuilder
     private Map<String, String> createConfiguration( File temporaryFolder )
     {
         Map<String, String> properties = stringMap(
-                ServerSettings.management_api_path.name(), webAdminUri,
-                ServerSettings.rest_api_path.name(), webAdminDataUri );
+                ServerSettings.management_api_path.name(), managementUri,
+                ServerSettings.rest_api_path.name(), restUri );
 
         ServerTestUtils.addDefaultRelativeProperties( properties, temporaryFolder );
 
@@ -237,18 +237,18 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withRelativeWebAdminUriPath( String webAdminUri )
+    public CommunityServerBuilder withRelativeManagementApiUriPath( String uri )
     {
         try
         {
-            URI theUri = new URI( webAdminUri );
+            URI theUri = new URI( uri );
             if ( theUri.isAbsolute() )
             {
-                this.webAdminUri = theUri.getPath();
+                this.managementUri = theUri.getPath();
             }
             else
             {
-                this.webAdminUri = theUri.toString();
+                this.managementUri = theUri.toString();
             }
         }
         catch ( URISyntaxException e )
@@ -258,18 +258,18 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder withRelativeWebDataAdminUriPath( String webAdminDataUri )
+    public CommunityServerBuilder withRelativeRestApiUriPath( String uri )
     {
         try
         {
-            URI theUri = new URI( webAdminDataUri );
+            URI theUri = new URI( uri );
             if ( theUri.isAbsolute() )
             {
-                this.webAdminDataUri = theUri.getPath();
+                this.restUri = theUri.getPath();
             }
             else
             {
-                this.webAdminDataUri = theUri.toString();
+                this.restUri = theUri.toString();
             }
         }
         catch ( URISyntaxException e )

@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.rest.dbms;
 
-import org.apache.commons.codec.binary.Base64;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -34,11 +30,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 
+import org.apache.commons.codec.binary.Base64;
+import org.junit.Before;
+import org.junit.Test;
+
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.AuthenticationResult;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.eq;
@@ -48,6 +49,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class AuthorizationFilterTest
@@ -103,17 +105,16 @@ public class AuthorizationFilterTest
     {
         // Given
         final AuthorizationFilter filter = new AuthorizationFilter( () -> authManager, logProvider,
-                Pattern.compile( "/" ), Pattern.compile( "/webadmin.*" ), Pattern.compile( "/browser.*" ) );
+                Pattern.compile( "/" ), Pattern.compile( "/browser.*" ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
-        when( servletRequest.getContextPath() ).thenReturn( "/", "/webadmin/index.html", "/browser/index.html" );
+        when( servletRequest.getContextPath() ).thenReturn( "/", "/browser/index.html" );
 
         // When
         filter.doFilter( servletRequest, servletResponse, filterChain );
         filter.doFilter( servletRequest, servletResponse, filterChain );
-        filter.doFilter( servletRequest, servletResponse, filterChain );
 
         // Then
-        verify( filterChain, times( 3 ) ).doFilter( same( servletRequest ), same( servletResponse ) );
+        verify( filterChain, times( 2 ) ).doFilter( same( servletRequest ), same( servletResponse ) );
     }
 
     @Test
