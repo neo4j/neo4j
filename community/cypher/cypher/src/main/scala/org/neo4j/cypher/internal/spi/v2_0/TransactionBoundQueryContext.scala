@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.cypher.internal.compiler.v2_0.spi.IdempotentResult
 import java.net.URL
 
-class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement)
-  extends TransactionBoundTokenContext(statement) with QueryContext {
+class TransactionBoundQueryContext(graph: GraphDatabaseAPI, private var tx: Transaction, initialStatement: Statement)
+  extends TransactionBoundTokenContext(initialStatement) with QueryContext {
 
   private var open = true
 
@@ -50,19 +50,21 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, sta
   }
 
   def close(success: Boolean) {
-    try {
-      statement.close()
+    if (open) {
+      try {
+        statement.close()
 
-      if (success)
-        tx.success()
-      else
-        tx.failure()
-      tx.close()
-
-
-    }
-    finally {
-      open = false
+        if (success)
+          tx.success()
+        else
+          tx.failure()
+        tx.close()
+      }
+      finally {
+        statement = null
+        tx = null
+        open = false
+      }
     }
   }
 
