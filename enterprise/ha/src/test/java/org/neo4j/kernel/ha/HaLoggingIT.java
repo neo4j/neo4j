@@ -29,12 +29,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.test.ha.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsJoined;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalClients;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
@@ -53,6 +55,7 @@ public class HaLoggingIT
         cluster = clusterRule
                 .withProvider( clusterWithAdditionalClients( 2, 1 ) )
                 .withAvailabilityChecks( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() )
+                .withSharedSetting( logs_directory, clusterRule.directory( "logs" ).getAbsolutePath() )
                 .startCluster();
     }
 
@@ -81,7 +84,7 @@ public class HaLoggingIT
 
     private long countLoggingLines( HighlyAvailableGraphDatabase db, String suffix ) throws IOException
     {
-        Path logFile = Paths.get( cluster.getStoreDir( db ).getAbsolutePath(), StoreLogService.INTERNAL_LOG_NAME );
+        Path logFile = Paths.get( clusterRule.directory( "logs" ).getAbsolutePath(), StoreLogService.INTERNAL_LOG_NAME );
         try ( Stream<String> lines = Files.lines( logFile ) )
         {
             return lines.filter( line -> line.endsWith( suffix ) ).count();

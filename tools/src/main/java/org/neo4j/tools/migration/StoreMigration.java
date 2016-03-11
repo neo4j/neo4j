@@ -91,7 +91,7 @@ public class StoreMigration
             LogProvider userLogProvider ) throws IOException
     {
         LogService logService =
-                StoreLogService.withUserLogProvider( userLogProvider ).inStoreDirectory( fs, storeDirectory );
+                StoreLogService.withUserLogProvider( userLogProvider ).inLogsDirectory( fs, storeDirectory );
 
         VisibleMigrationProgressMonitor progressMonitor =
                 new VisibleMigrationProgressMonitor( logService.getUserLog( StoreMigration.class ) );

@@ -33,6 +33,7 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -107,7 +108,7 @@ public class StandaloneClusterClient implements AutoCloseable
                     new Dependencies(),
                     new Monitors(),
                     config,
-                    logService( new DefaultFileSystemAbstraction() ),
+                    logService( new DefaultFileSystemAbstraction(), config ),
                     new NotElectableElectionCredentialsProvider() );
         }
         catch ( LifecycleException e )
@@ -174,10 +175,10 @@ public class StandaloneClusterClient implements AutoCloseable
         }
     }
 
-    private static LogService logService( FileSystemAbstraction fileSystem ) throws IOException
+    private static LogService logService( FileSystemAbstraction fileSystem, Config config ) throws IOException
     {
-        String logDir = System.getProperty( "org.neo4j.cluster.logdirectory", "data/log" );
+        File logDir = config.get( GraphDatabaseSettings.logs_directory );
         return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
-                .inStoreDirectory( fileSystem, new File( logDir ) );
+                .inLogsDirectory( fileSystem, logDir );
     }
 }
