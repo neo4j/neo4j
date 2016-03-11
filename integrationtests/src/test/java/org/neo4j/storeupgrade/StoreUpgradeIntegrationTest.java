@@ -273,7 +273,7 @@ public class StoreUpgradeIntegrationTest
             }
             finally
             {
-                clusterManager.shutdown();
+                clusterManager.safeShutdown();
             }
 
             assertConsistentStore( new File( master.getStoreDir() ) );
