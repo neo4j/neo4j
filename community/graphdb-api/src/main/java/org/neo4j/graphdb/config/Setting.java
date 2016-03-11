@@ -45,4 +45,6 @@ public interface Setting<T> extends Function<Function<String,String>,T>
      * @return the default value
      */
     String getDefaultValue();
+
+    T from( Configuration config );
 }

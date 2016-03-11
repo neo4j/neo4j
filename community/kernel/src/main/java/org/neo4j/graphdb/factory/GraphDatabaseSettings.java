@@ -485,12 +485,11 @@ public abstract class GraphDatabaseSettings
 
         public enum ConnectorType
         {
-            BOLT
-            // Intention is to expand this to include all Neo4j port options
+            BOLT, HTTP
         }
     }
 
-    @Description( "Configuration options for connectors with type set to `BOLT`." )
+    @Description( "Configuration options for Bolt connectors." )
     public static class BoltConnector extends Connector
     {
         @Description( "Encryption level to require this connector to use" )

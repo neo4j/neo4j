@@ -93,6 +93,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.configuration.ServerSettings.httpConnector;
 import static org.neo4j.test.SuppressOutput.suppressAll;
 
 public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
@@ -635,8 +637,12 @@ public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
             URI uri = new URI( "http://example.org:7474/" );
             when( uriInfo.getBaseUri() ).thenReturn( uri );
 
-            RootService svc = new RootService( new CommunityNeoServer( Config.empty(),
-                    GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ).monitors( new Monitors() ),
+            RootService svc = new RootService( new CommunityNeoServer( new Config( stringMap(
+                    httpConnector( "1" ).type.name(), "HTTP",
+                    httpConnector( "1" ).enabled.name(), "true"
+            ) ),
+                    GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() )
+                            .monitors( new Monitors() ),
                     NullLogProvider.getInstance() ) );
 
             EntityOutputFormat output = new EntityOutputFormat( new JsonFormat(), null, null );

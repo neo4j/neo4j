@@ -21,15 +21,14 @@ package org.neo4j.server.security.ssl;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.web.HttpConnectorFactory;
 import org.neo4j.server.web.JettyThreadCalculator;
@@ -46,21 +45,15 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
     protected HttpConfiguration createHttpConfig()
     {
         HttpConfiguration httpConfig = super.createHttpConfig();
-        httpConfig.addCustomizer( new HttpConfiguration.Customizer()
-        {
-            @Override
-            public void customize( Connector connector, HttpConfiguration channelConfig, Request request )
-            {
-                request.setScheme( HttpScheme.HTTPS.asString() );
-            }
-        } );
+        httpConfig.addCustomizer(
+                ( connector, channelConfig, request ) -> request.setScheme( HttpScheme.HTTPS.asString() ) );
         return httpConfig;
     }
 
-    public ServerConnector createConnector( Server server, KeyStoreInformation config, String host, int port, JettyThreadCalculator jettyThreadCalculator )
+    public ServerConnector createConnector( Server server, KeyStoreInformation config, HostnamePort address, JettyThreadCalculator jettyThreadCalculator )
     {
         SslConnectionFactory sslConnectionFactory = createSslConnectionFactory( config );
-        return super.createConnector( server, host, port, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory() );
+        return super.createConnector( server, address, jettyThreadCalculator, sslConnectionFactory, createHttpConnectionFactory() );
     }
 
     private SslConnectionFactory createSslConnectionFactory( KeyStoreInformation ksInfo )

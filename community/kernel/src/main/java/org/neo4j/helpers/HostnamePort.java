@@ -19,10 +19,11 @@
  */
 package org.neo4j.helpers;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Objects;
+
+import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.String.format;
 
@@ -218,5 +219,27 @@ public class HostnamePort
             return new String[]{host};
         }
         return hostnamePort.split( ":" );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        HostnamePort that = (HostnamePort) o;
+        return Objects.equals( host, that.host ) &&
+                Arrays.equals( ports, that.ports );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( host, ports );
     }
 }

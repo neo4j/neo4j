@@ -110,8 +110,9 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 # SINGLE - Single mode, default.
 dbms.mode=HA
 
-# Let the webserver only listen on the specified IP.
-org.neo4j.server.webserver.address=0.0.0.0
+dbms.connector.http.type=HTTP
+dbms.connector.http.enabled=true
+dbms.connector.http.address=0.0.0.0:7474
 ----
 
 Neo4j instance #2 -- neo4j-02.local::
@@ -132,8 +133,9 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 # SINGLE - Single mode, default.
 dbms.mode=HA
 
-# Let the webserver only listen on the specified IP.
-org.neo4j.server.webserver.address=0.0.0.0
+dbms.connector.http.type=HTTP
+dbms.connector.http.enabled=true
+dbms.connector.http.address=0.0.0.0:7474
 ----
 
 Neo4j instance #3 -- neo4j-03.local::
@@ -154,8 +156,9 @@ ha.initial_hosts = neo4j-01.local:5001,neo4j-02.local:5001,neo4j-03.local:5001
 # SINGLE - Single mode, default.
 dbms.mode=HA
 
-# Let the webserver only listen on the specified IP.
-org.neo4j.server.webserver.address=0.0.0.0
+dbms.connector.http.type=HTTP
+dbms.connector.http.enabled=true
+dbms.connector.http.address=0.0.0.0:7474
 ----
 
 === Start the Neo4j Servers
@@ -246,11 +249,9 @@ ha.server = 127.0.0.1:6363
 # SINGLE - Single mode, default.
 dbms.mode=HA
 
-# http port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.port=7474
-
-# https port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.https.port=7484
+dbms.connector.http.type=HTTP
+dbms.connector.http.enabled=true
+dbms.connector.http.address=0.0.0.0:7474
 ----
 
 Neo4j instance #2 -- ~/neo4j-02::
@@ -283,11 +284,9 @@ ha.server = 127.0.0.1:6364
 # SINGLE - Single mode, default.
 dbms.mode=HA
 
-# http port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.port=7475
-
-# https port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.https.port=7485
+dbms.connector.http.type=HTTP
+dbms.connector.http.enabled=true
+dbms.connector.http.address=0.0.0.0:7475
 ----
 
 Neo4j instance #3 -- ~/neo4j-03::
@@ -320,11 +319,9 @@ ha.server = 127.0.0.1:6365
 # SINGLE - Single mode, default.
 dbms.mode=HA
 
-# http port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.port=7476
-
-# https port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.https.port=7486
+dbms.connector.http.type=HTTP
+dbms.connector.http.enabled=true
+dbms.connector.http.address=0.0.0.0:7476
 ----
 
 === Start the Neo4j Servers

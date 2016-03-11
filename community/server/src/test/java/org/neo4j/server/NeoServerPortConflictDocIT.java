@@ -19,35 +19,36 @@
  */
 package org.neo4j.server;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 
+import org.junit.Test;
+
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static java.lang.String.format;
+
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
 {
     @Test
-    public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
+    public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException, InterruptedException
     {
-        int contestedPort = 9999;
-        try ( ServerSocket ignored = new ServerSocket( contestedPort, 0, InetAddress.getByName(Jetty9WebServer.DEFAULT_ADDRESS ) ) )
+        HostnamePort contestedAddress = new HostnamePort( "localhost", 9999 );
+        try ( ServerSocket ignored = new ServerSocket(
+                contestedAddress.getPort(), 0, InetAddress.getByName( contestedAddress.getHost() ) ) )
         {
             AssertableLogProvider logProvider = new AssertableLogProvider();
             CommunityNeoServer server = CommunityServerBuilder.server( logProvider )
-                    .onPort( contestedPort )
+                    .onAddress( contestedAddress )
                     .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                    .onHost( Jetty9WebServer.DEFAULT_ADDRESS )
                     .build();
             try
             {
@@ -62,8 +63,9 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
 
             logProvider.assertAtLeastOnce(
                     AssertableLogProvider.inLog( containsString( "CommunityNeoServer" ) ).error(
-                            "Failed to start Neo Server on port %d: %s",
-                            9999, startsWith( "Address 0.0.0.0:9999 is already in use, cannot bind to it." )
+                            "Failed to start Neo4j on %s: %s",
+                            contestedAddress,
+                            format( "Address %s is already in use, cannot bind to it.", contestedAddress )
                     )
             );
             server.stop();

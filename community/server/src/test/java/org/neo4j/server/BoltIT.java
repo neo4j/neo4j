@@ -51,6 +51,7 @@ public class BoltIT extends ExclusiveServerTestBase
     {
         // When I run Neo4j with Bolt enabled
         server = server()
+                .withProperty( boltConnector( "0" ).type.name(), "BOLT" )
                 .withProperty( boltConnector( "0" ).enabled.name(), "true" )
                 .withProperty( boltConnector( "0" ).encryption_level.name(), "REQUIRED" )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() )
@@ -66,6 +67,7 @@ public class BoltIT extends ExclusiveServerTestBase
     {
         // When I run Neo4j with Bolt enabled, and a non-standard port configured
         server = server()
+                .withProperty( boltConnector( "0" ).type.name(), "BOLT" )
                 .withProperty( boltConnector( "0" ).enabled.name(), "true" )
                 .withProperty( boltConnector( "0" ).encryption_level.name(), "REQUIRED" )
                 .withProperty( boltConnector( "0" ).address.name(), "localhost:8776" )

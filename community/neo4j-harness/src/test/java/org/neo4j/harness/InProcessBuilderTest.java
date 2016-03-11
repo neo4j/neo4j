@@ -19,11 +19,6 @@
  */
 package org.neo4j.harness;
 
-import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -40,6 +35,11 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import org.apache.commons.io.FileUtils;
+import org.codehaus.jackson.JsonNode;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -67,8 +67,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.server.configuration.ServerSettings.httpConnector;
 
 public class InProcessBuilderTest
 {
@@ -98,13 +100,12 @@ public class InProcessBuilderTest
 
     private TestServerBuilder getTestServerBuilder( File workDir )
     {
-        TestServerBuilder serverBuilder = newInProcessBuilder( workDir )
+        return newInProcessBuilder( workDir )
                 .withConfig( ServerSettings.tls_key_file.name(),
                     ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) )
                 .withConfig( ServerSettings.tls_certificate_file.name(),
                     ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) )
                 .withConfig( GraphDatabaseSettings.auth_store.name(), new File(workDir, "auth").getAbsolutePath() );
-        return serverBuilder;
     }
 
     @Test
@@ -115,14 +116,19 @@ public class InProcessBuilderTest
 
         // When
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
-                .withConfig( ServerSettings.webserver_https_enabled.name(), "true")
+                .withConfig( httpConnector( "0" ).type, "HTTP" )
+                .withConfig( httpConnector( "0" ).enabled, "true" )
+                .withConfig( httpConnector( "1" ).type, "HTTP" )
+                .withConfig( httpConnector( "1" ).enabled, "true" )
+                .withConfig( httpConnector( "1" ).encryption, "TLS" )
+                .withConfig( httpConnector( "1" ).address, "localhost:7473" )
                 .withConfig( ServerSettings.tls_certificate_file.name(), testDir.file( "cert" ).getAbsolutePath() )
                 .withConfig( ServerSettings.tls_key_file.name(), testDir.file( "key" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 .newServer() )
         {
             // Then
-            assertThat( HTTP.GET( server.httpsURI().toString() ).status(), equalTo( 200 ) );
+            assertThat( HTTP.GET( server.httpsURI().get().toString() ).status(), equalTo( 200 ) );
             assertDBConfig( server, "20", GraphDatabaseSettings.dense_node_threshold.name() );
         }
     }

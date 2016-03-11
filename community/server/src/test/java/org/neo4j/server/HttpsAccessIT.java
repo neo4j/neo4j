@@ -63,7 +63,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         server = server().withHttpsEnabled()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
-        httpsUri = server.httpsUri().toASCIIString();
+        httpsUri = server.httpsUri().get().toASCIIString();
 
         // Because we are generating a non-CA-signed certificate, we need to turn off verification in the client.
         // This is ironic, since there is no proper verification on the CA side in the first place, but I digress.
@@ -99,7 +99,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         server.start();
 
         // Then
-        assertThat( server.getHttpsEnabled(), is( true ) );
+        assertThat( server.httpsIsEnabled(), is( true ) );
         assertThat( GET(httpsUri).status(), is( 200 ) );
     }
 

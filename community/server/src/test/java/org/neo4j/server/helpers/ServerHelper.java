@@ -25,7 +25,6 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -94,20 +93,9 @@ public class ServerHelper
         return createServer( builder, false, null );
     }
 
-    public static NeoServer createPersistentServer( File path ) throws IOException
-    {
-        return createServer( CommunityServerBuilder.server(), true, path );
-    }
-
-    public static NeoServer createPersistentServer(File path, LogProvider logProvider) throws IOException
-    {
-        return createServer( CommunityServerBuilder.server( logProvider ), true, path );
-    }
-
     private static NeoServer createServer( CommunityServerBuilder builder, boolean persistent, File path )
             throws IOException
     {
-        configureHostname( builder );
         if ( persistent )
         {
             builder = builder.persistent();
@@ -139,15 +127,6 @@ public class ServerHelper
             {
                 serverSocket.close();
             }
-        }
-    }
-
-    private static void configureHostname( CommunityServerBuilder builder )
-    {
-        String hostName = System.getProperty( "neo-server.test.hostname" );
-        if ( StringUtils.isNotEmpty( hostName ) )
-        {
-            builder.onHost( hostName );
         }
     }
 

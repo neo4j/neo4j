@@ -106,6 +106,7 @@ public class ConfigLoader
 
         // TODO: This should not be here, it's a temporary workaround for the windows packages
         //       this means we override and enable a bolt connector if there is not one explicitly set to disabled
+        config.putIfAbsent( boltConnector( "0" ).type.name(), "BOLT" );
         config.putIfAbsent( boltConnector( "0" ).enabled.name(), "true" );
     }
 

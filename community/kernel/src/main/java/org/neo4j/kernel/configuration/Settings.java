@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import org.neo4j.function.Functions;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;
@@ -174,6 +175,12 @@ public class Settings
             }
 
             @Override
+            public OUT from( Configuration config )
+            {
+                return config.get( this );
+            }
+
+            @Override
             public OUT apply( Function<String, String> config )
             {
                 String override = config.apply( name );
@@ -207,6 +214,12 @@ public class Settings
             public String getDefaultValue()
             {
                 return NO_DEFAULT;
+            }
+
+            @Override
+            public OUT from( Configuration config )
+            {
+                return config.get( this );
             }
 
             @Override
@@ -927,6 +940,12 @@ public class Settings
         public String getDefaultValue()
         {
             return defaultLookup( Functions.<String, String>nullFunction() );
+        }
+
+        @Override
+        public T from( Configuration config )
+        {
+            return config.get( this );
         }
 
         public String lookup( Function<String, String> settings )

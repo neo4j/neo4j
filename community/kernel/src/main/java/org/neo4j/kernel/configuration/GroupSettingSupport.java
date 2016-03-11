@@ -24,6 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
 /**
@@ -97,6 +98,12 @@ public class GroupSettingSupport
             public String getDefaultValue()
             {
                 return inner.getDefaultValue();
+            }
+
+            @Override
+            public T from( Configuration config )
+            {
+                return config.get( this );
             }
 
             @Override

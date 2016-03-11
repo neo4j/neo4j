@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.harness.ServerControls;
@@ -60,7 +61,7 @@ public class InProcessServerControls implements ServerControls
     }
 
     @Override
-    public URI httpsURI()
+    public Optional<URI> httpsURI()
     {
         return server.httpsUri();
     }

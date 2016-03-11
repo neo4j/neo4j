@@ -20,7 +20,9 @@
 package org.neo4j.desktop.runtime;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Properties;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,12 +36,15 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.server.configuration.ServerSettings.httpConnector;
+
 public class DatabaseActionsTest
 {
     @Rule
     public TargetDirectory.TestDirectory baseDir = TargetDirectory.testDirForTest( getClass() );
 
     private File storeDir;
+    private File configFile;
 
     @Test
     public void shouldCreateMessagesLogInDbDirWithClassicLog() throws Exception
@@ -47,6 +52,7 @@ public class DatabaseActionsTest
         // Given
         Installation installation = mock( Installation.class );
         when( installation.getDatabaseDirectory() ).thenReturn( storeDir );
+        when( installation.getConfigurationsFile() ).thenReturn( configFile );
 
         DesktopModel model = new DesktopModel( installation );
         DatabaseActions databaseActions = new DatabaseActions( model );
@@ -72,5 +78,14 @@ public class DatabaseActionsTest
     {
         storeDir = new File( baseDir.directory(), "store_dir" );
         storeDir.mkdirs();
+
+        configFile = new File( baseDir.directory(), "neo4j.conf" );
+        Properties props = new Properties();
+        props.setProperty( httpConnector( "1" ).type.name(), "HTTP" );
+        props.setProperty( httpConnector( "1" ).enabled.name(), "true" );
+        try ( FileWriter writer = new FileWriter( configFile ) )
+        {
+            props.store( writer, "" );
+        }
     }
 }

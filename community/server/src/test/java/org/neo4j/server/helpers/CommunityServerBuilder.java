@@ -30,6 +30,7 @@ import java.util.Properties;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
@@ -51,17 +52,16 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
+import static org.neo4j.server.configuration.ServerSettings.httpConnector;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class CommunityServerBuilder
 {
     protected final LogProvider logProvider;
-    private String portNo = "7474";
+    private HostnamePort address = new HostnamePort( "localhost", 7474 );
     private String maxThreads = null;
     protected String dataDir = null;
     private String managementUri = "/db/manage/";
@@ -80,10 +80,9 @@ public class CommunityServerBuilder
     protected Clock clock = null;
     private String[] autoIndexedNodeKeys = null;
     private final String[] autoIndexedRelationshipKeys = null;
-    private String host = null;
     private String[] securityRuleClassNames;
     public boolean persistent;
-    private Boolean httpsEnabled = FALSE;
+    private boolean httpsEnabled = false;
 
     public static CommunityServerBuilder server( LogProvider logProvider )
     {
@@ -144,14 +143,6 @@ public class CommunityServerBuilder
             properties.put( DatabaseManagementSystemSettings.data_directory.name(), dataDir );
         }
 
-        if ( portNo != null )
-        {
-            properties.put( ServerSettings.webserver_port.name(), portNo );
-        }
-        if ( host != null )
-        {
-            properties.put( ServerSettings.webserver_address.name(), host );
-        }
         if ( maxThreads != null )
         {
             properties.put( ServerSettings.webserver_max_threads.name(), maxThreads );
@@ -182,16 +173,16 @@ public class CommunityServerBuilder
             properties.put( ServerSettings.security_rules.name(), propertyKeys );
         }
 
-        if ( httpsEnabled != null )
+        properties.put( httpConnector("http").type.name(), "HTTP" );
+        properties.put( httpConnector("http").enabled.name(), "true" );
+        properties.put( httpConnector("http").address.name(), address.toString() );
+
+        if ( httpsEnabled )
         {
-            if ( httpsEnabled )
-            {
-                properties.put( ServerSettings.webserver_https_enabled.name(), "true" );
-            }
-            else
-            {
-                properties.put( ServerSettings.webserver_https_enabled.name(), "false" );
-            }
+            properties.put( httpConnector("https").type.name(), "HTTP" );
+            properties.put( httpConnector("https").enabled.name(), "true" );
+            properties.put( httpConnector("https").address.name(), "localhost:7473" );
+            properties.put( httpConnector("https").encryption.name(), "TLS" );
         }
 
         properties.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
@@ -216,12 +207,6 @@ public class CommunityServerBuilder
     public CommunityServerBuilder persistent()
     {
         this.persistent = true;
-        return this;
-    }
-
-    public CommunityServerBuilder onPort( int portNo )
-    {
-        this.portNo = String.valueOf( portNo );
         return this;
     }
 
@@ -296,9 +281,9 @@ public class CommunityServerBuilder
         return this;
     }
 
-    public CommunityServerBuilder onHost( String host )
+    public CommunityServerBuilder onAddress( HostnamePort address )
     {
-        this.host = host;
+        this.address = address;
         return this;
     }
 
@@ -310,7 +295,7 @@ public class CommunityServerBuilder
 
     public CommunityServerBuilder withHttpsEnabled()
     {
-        httpsEnabled = TRUE;
+        httpsEnabled = true;
         return this;
     }
 
