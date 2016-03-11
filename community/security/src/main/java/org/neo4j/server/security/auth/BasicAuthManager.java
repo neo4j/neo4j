@@ -21,6 +21,7 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.util.Map;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -87,6 +88,12 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
             }
         }
         return new BasicAuthSubject( this, user, result );
+    }
+
+    @Override
+    public AuthSubject login( String username, String password, Map<String,Object> authToken )
+    {
+        return login( username, password );
     }
 
     @Override

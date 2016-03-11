@@ -20,6 +20,7 @@
 package org.neo4j.server.security.auth;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
@@ -43,6 +44,15 @@ public interface AuthManager
      * @return An AuthSubject representing the newly logged-in user
      */
     AuthSubject login( String username, String password );
+
+    /**
+     * Log in using the provided username and password
+     * @param username The name of the user
+     * @param password The password of the user
+     * @param authToken A map containing all principals and credentials
+     * @return An AuthSubject representing the newly logged-in user
+     */
+    AuthSubject login( String username, String password, Map<String, Object> authToken );
 
     /**
      * Create a new user with the provided credentials.
@@ -136,6 +146,12 @@ public interface AuthManager
                     return "";
                 }
             };
+        }
+
+        @Override
+        public AuthSubject login( String username, String password, Map<String,Object> authToken )
+        {
+            return login( username, password );
         }
 
         @Override
