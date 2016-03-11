@@ -55,12 +55,12 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Event;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -74,6 +74,7 @@ public class CommonAbstractStoreTest
 
     private final IdGenerator idGenerator = mock( IdGenerator.class );
     private final IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
+    private final PageCursor pageCursor = mock( PageCursor.class );
     private final PagedFile pageFile = mock( PagedFile.class );
     private final PageCache pageCache = mock( PageCache.class );
     private final Config config = Config.empty();
@@ -94,6 +95,7 @@ public class CommonAbstractStoreTest
                 .thenReturn( idGenerator );
 
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
+        when( pageFile.io( anyLong(), anyInt() ) ).thenReturn( pageCursor );
         when( pageCache.map( eq( storeFile ), anyInt() ) ).thenReturn( pageFile );
     }
 
@@ -119,12 +121,11 @@ public class CommonAbstractStoreTest
         long recordId = 4;
         long pageIdForRecord = store.pageIdForRecord( recordId );
 
-        PageCursor pageCursor = mock( PageCursor.class );
         when( pageCursor.getCurrentPageId() ).thenReturn( pageIdForRecord );
         when( pageCursor.next( anyInt() ) ).thenReturn( true );
 
         RecordCursor<TheRecord> cursor = store.newRecordCursor( new TheRecord( -1 ) );
-        cursor.init( recordId, RecordLoad.FORCE, pageCursor );
+        cursor.acquire( recordId, RecordLoad.FORCE );
 
         cursor.next( recordId );
 
@@ -146,20 +147,14 @@ public class CommonAbstractStoreTest
             store.initialise( true );
             assertNull( tracer.tryObserve( Event.class ) );
 
-            NodeRecord record = store.newRecord();
-            record.setId( 0 );
-            record.initialize( true, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 42 );
-            store.updateRecord( record );
-            assertNotNull( tracer.tryObserve( Pin.class ) );
-            assertNull( tracer.tryObserve( Event.class ) );
+            long nodeId1 = insertNodeRecordAndObservePinEvent( tracer, store );
+            long nodeId2 = insertNodeRecordAndObservePinEvent( tracer, store );
 
-            long pageId = store.pageIdForRecord( record.getId() );
-            try ( RecordCursor<NodeRecord> cursor = store.newRecordCursor( store.newRecord() );
-                  PageCursor pageCursor = store.storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
+            try ( RecordCursor<NodeRecord> cursor = store.newRecordCursor( store.newRecord() ) )
             {
-                assertTrue( pageCursor.next( pageId ) );
-                cursor.init( record.getId(), RecordLoad.NORMAL, pageCursor );
-                assertTrue( cursor.next() );
+                cursor.acquire( 0, RecordLoad.NORMAL );
+                assertTrue( cursor.next( nodeId1 ) );
+                assertTrue( cursor.next( nodeId2 ) );
                 assertNotNull( tracer.tryObserve( Pin.class ) );
                 assertNull( tracer.tryObserve( Event.class ) );
             }
@@ -174,6 +169,19 @@ public class CommonAbstractStoreTest
         TheStore store = new TheStore( storeFile, config, idType, idGeneratorFactory, pageCache, log, recordFormat );
         store.initialise( false );
         return store;
+    }
+
+    private long insertNodeRecordAndObservePinEvent( RecordingPageCacheTracer tracer, NodeStore store )
+    {
+        long nodeId = store.nextId();
+        NodeRecord record = store.newRecord();
+        record.setId( nodeId );
+        record.initialize( true, NO_NEXT_PROPERTY.intValue(), false, NO_NEXT_RELATIONSHIP.intValue(), 42 );
+        store.prepareForCommit( record );
+        store.updateRecord( record );
+        assertNotNull( tracer.tryObserve( Pin.class ) );
+        assertNull( tracer.tryObserve( Event.class ) );
+        return nodeId;
     }
 
     private static class TheStore extends CommonAbstractStore<TheRecord,NoStoreHeader>
