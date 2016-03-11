@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -35,7 +36,6 @@ import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.logging.MessageLogger;
 import org.neo4j.coreedge.server.logging.NullMessageLogger;
-import org.neo4j.helpers.Clock;
 
 import static java.lang.String.format;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
@@ -46,7 +46,7 @@ public class RaftTestFixture
 
     public RaftTestFixture( DirectNetworking net, int expectedClusterSize, long... ids )
     {
-        this( Clock.SYSTEM_CLOCK, net, new NullMessageLogger<>(), expectedClusterSize, ids );
+        this( Clock.systemUTC(), net, new NullMessageLogger<>(), expectedClusterSize, ids );
     }
 
     public RaftTestFixture( Clock clock, DirectNetworking net, int expectedClusterSize, long... ids )

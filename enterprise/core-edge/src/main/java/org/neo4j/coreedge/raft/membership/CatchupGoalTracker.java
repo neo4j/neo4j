@@ -19,9 +19,10 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
+import java.time.Clock;
+
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
-import org.neo4j.helpers.Clock;
 
 public class CatchupGoalTracker
 {
@@ -47,8 +48,8 @@ public class CatchupGoalTracker
         this.roundTimeout = roundTimeout;
         this.catchupTimeout = catchupTimeout;
         this.targetIndex = raftLog.appendIndex();
-        this.startTime = clock.currentTimeMillis();
-        this.roundStartTime = clock.currentTimeMillis();
+        this.startTime = clock.millis();
+        this.roundStartTime = clock.millis();
 
         this.roundCount = 1;
     }
@@ -61,12 +62,12 @@ public class CatchupGoalTracker
         }
 
         boolean achievedTarget = followerState.getMatchIndex() >= targetIndex;
-        if ( achievedTarget && (clock.currentTimeMillis() - roundStartTime) <= roundTimeout )
+        if ( achievedTarget && (clock.millis() - roundStartTime) <= roundTimeout )
         {
             goalAchieved = true;
             finished = true;
         }
-        else if ( clock.currentTimeMillis() > (startTime + catchupTimeout) )
+        else if ( clock.millis() > (startTime + catchupTimeout) )
         {
             finished = true;
         }
@@ -75,7 +76,7 @@ public class CatchupGoalTracker
             if( roundCount < MAX_ROUNDS )
             {
                 roundCount++;
-                roundStartTime = clock.currentTimeMillis();
+                roundStartTime = clock.millis();
                 targetIndex = raftLog.appendIndex();
             }
             else

@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.elections;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +33,6 @@ import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
 
@@ -75,7 +75,7 @@ public class Fixture
     private DelayedRenewableTimeoutService createTimeoutService() throws Throwable
     {
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService(
-                Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
+                Clock.systemUTC(), NullLogProvider.getInstance() );
 
         timeoutServices.add( timeoutService );
 

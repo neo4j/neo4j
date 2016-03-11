@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -29,7 +30,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -112,7 +112,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
     private long calcTimeoutTimestamp( long milliseconds, long randomRange )
     {
         int randomness = randomRange != 0 ? random.nextInt( (int) randomRange ) : 0;
-        return clock.currentTimeMillis() + milliseconds + randomness;
+        return clock.millis() + milliseconds + randomness;
     }
 
     @Override
@@ -120,7 +120,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
     {
         try
         {
-            long now = clock.currentTimeMillis();
+            long now = clock.millis();
             Collection<ScheduledRenewableTimeout> triggered = new LinkedList<>();
 
             synchronized ( timeouts )

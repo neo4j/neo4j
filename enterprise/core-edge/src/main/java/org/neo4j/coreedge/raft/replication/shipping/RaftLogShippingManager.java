@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.replication.shipping;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -29,7 +30,6 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
-import org.neo4j.helpers.Clock;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.*;

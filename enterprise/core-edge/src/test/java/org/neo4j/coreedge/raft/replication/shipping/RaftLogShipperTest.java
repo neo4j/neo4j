@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -35,7 +36,6 @@ import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
 
@@ -68,7 +68,7 @@ public class RaftLogShipperTest
         // defaults
         outbound = new OutboundMessageCollector();
         raftLog = new InMemoryRaftLog();
-        clock = Clock.SYSTEM_CLOCK;
+        clock = Clock.systemUTC();
         leader = new RaftTestMember( 0 );
         follower = new RaftTestMember( 1 );
         leaderTerm = 0;
