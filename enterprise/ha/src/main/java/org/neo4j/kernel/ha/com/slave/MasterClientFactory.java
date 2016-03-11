@@ -25,6 +25,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 public interface MasterClientFactory
 {
-    public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
-                                     StoreId storeId, LifeSupport life );
+    MasterClient instantiate( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+            Monitors monitors, StoreId storeId, LifeSupport life );
 }

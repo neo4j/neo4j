@@ -53,15 +53,16 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
     private final Supplier<LogEntryReader<ReadableClosablePositionAwareChannel>> logEntryReader;
 
     @Override
-    public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
-                                     StoreId storeId, LifeSupport life )
+    public MasterClient instantiate( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+            Monitors monitors, StoreId storeId, LifeSupport life )
     {
         if ( currentFactory == null )
         {
             assignDefaultFactory();
         }
 
-        MasterClient result = currentFactory.instantiate( hostNameOrIp, port, monitors, storeId, life );
+        MasterClient result = currentFactory.instantiate( destinationHostNameOrIp, destinationPort, originHostNameOrIp,
+                monitors, storeId, life );
         result.setComExceptionHandler( this );
         return result;
     }
@@ -151,12 +152,12 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
         }
 
         @Override
-        public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
-                                         StoreId storeId, LifeSupport life )
+        public MasterClient instantiate( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+                Monitors monitors, StoreId storeId, LifeSupport life )
         {
-            return life.add( new MasterClient210( hostNameOrIp, port, logProvider, storeId, readTimeoutSeconds,
-                    lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
-                    monitors.newMonitor( ByteCounterMonitor.class, MasterClient210.class ),
+            return life.add( new MasterClient210( destinationHostNameOrIp, destinationPort, originHostNameOrIp,
+                    logProvider, storeId, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize,
+                    responseUnpacker, monitors.newMonitor( ByteCounterMonitor.class, MasterClient210.class ),
                     monitors.newMonitor( RequestMonitor.class, MasterClient210.class ), logEntryReader.get() ) );
         }
     }
@@ -170,12 +171,12 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
         }
 
         @Override
-        public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
-                                         StoreId storeId, LifeSupport life )
+        public MasterClient instantiate( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+                Monitors monitors, StoreId storeId, LifeSupport life )
         {
-            return life.add( new MasterClient214( hostNameOrIp, port, logProvider, storeId, readTimeoutSeconds,
-                    lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
-                    monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
+            return life.add( new MasterClient214(  destinationHostNameOrIp, destinationPort, originHostNameOrIp,
+                    logProvider, storeId, readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize,
+                    responseUnpacker, monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
                     monitors.newMonitor( RequestMonitor.class, MasterClient214.class ), logEntryReader.get() ) );
         }
     }
