@@ -111,7 +111,8 @@ public abstract class EditionModule
             }
             else if ( key.equals( "" ) )
             {
-                logging.getInternalLog( CommunityFacadeFactory.class )
+                // As a default use the available service for the configured build edition
+                logging.getInternalLog( GraphDatabaseFacadeFactory.class )
                         .info( "No auth manager implementation specified, defaulting to '" + candidateId + "'" );
                 return candidate.newInstance( config, logging.getUserLogProvider() );
             }
@@ -119,9 +120,11 @@ public abstract class EditionModule
 
         if ( key.equals( "" ) )
         {
-            logging.getUserLog( CommunityFacadeFactory.class )
-                    .error( "No auth manager implementation specified and no default could be loaded." );
-            throw new IllegalArgumentException( "No auth manager found." );
+            logging.getUserLog( GraphDatabaseFacadeFactory.class )
+                    .error( "No auth manager implementation specified and no default could be loaded. " +
+                            "It is an illegal product configuration to have auth enabled and not provide an " +
+                            "auth manager service." );
+            throw new IllegalArgumentException( "Auth enabled but no auth manager found. This is an illegal product configuration." );
         }
 
         throw new IllegalArgumentException( "No auth manager found with the name '" + key + "'." );

@@ -19,13 +19,17 @@
  */
 package org.neo4j.server.rest.dbms;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.Principal;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.BasicAuthManager;
@@ -54,6 +58,9 @@ public class UserServiceTest
         }
     };
     private static final User NEO4J_USER = new User( "neo4j", Credential.forPassword( "neo4j" ), true );
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void shouldReturnValidUserRepresentation() throws Exception
@@ -320,5 +327,19 @@ public class UserServiceTest
         assertNotNull( json );
         assertThat( json, containsString( "\"code\" : \"Neo.ClientError.Request.Invalid\"" ) );
         assertThat( json, containsString( "\"message\" : \"Old password and new password cannot be the same.\"" ) );
+    }
+
+    @Test
+    public void shouldThrowExceptionIfGivenAuthManagerDoesNotImplementUserManager() throws URISyntaxException
+    {
+        // Given
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+
+        // Expect
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "The provided auth manager is not capable of user management" );
+
+        // When
+        new UserService( mock( AuthManager.class ), new JsonFormat(), outputFormat );
     }
 }
