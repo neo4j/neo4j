@@ -22,6 +22,9 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
+import static java.lang.Long.parseLong;
+import static java.lang.Math.min;
+
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
@@ -41,36 +44,31 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
     int denseNodeThreshold();
 
     /**
-     * @return page size for the page cache managing the store.
+     * @return amount of memory to reserve for the page cache. This should just be "enough" for it to be able
+     * to sequentially read and write a couple of stores at a time. If configured too high then there will
+     * be less memory available for other caches which are critical during the import. Optimal size is
+     * estimated to be 100-200 MiB. The importer will figure out an optimal page size from this value,
+     * with slightly bigger page size than "normal" random access use cases.
      */
-    long pageSize();
+    long pageCacheMemory();
 
     class Default
             extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
             implements Configuration
     {
         @Override
-        public int batchSize()
+        public long pageCacheMemory()
         {
-            return 10_000;
-        }
-
-        @Override
-        public long pageSize()
-        {
-            return mebiBytes( 8 );
+            long upperBound = parseLong( GraphDatabaseSettings.pagecache_memory.getDefaultValue() );
+            // Get the upper bound of what we can get from the default config calculation
+            // We even want to limit amount of memory a bit more since we don't need very much during import
+            return min( mebiBytes( 240 ), upperBound );
         }
 
         @Override
         public int denseNodeThreshold()
         {
             return Integer.parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
-        }
-
-        @Override
-        public int movingAverageSize()
-        {
-            return 100;
         }
     }
 
@@ -96,9 +94,9 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         }
 
         @Override
-        public long pageSize()
+        public long pageCacheMemory()
         {
-            return defaults.pageSize();
+            return defaults.pageCacheMemory();
         }
 
         @Override
