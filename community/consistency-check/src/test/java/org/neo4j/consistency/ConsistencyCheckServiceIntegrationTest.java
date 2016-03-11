@@ -101,7 +101,7 @@ public class ConsistencyCheckServiceIntegrationTest
         ConsistencyCheckService service = new ConsistencyCheckService();
         File specificLogFile = new File( testDirectory.directory(), "specific_logfile.txt" );
         Config configuration = new Config(
-                settings( ConsistencyCheckSettings.consistency_check_report_file.name(), specificLogFile.getPath() ),
+                settings( ConsistencyCheckSettings.consistency_check_report_directory.name(), specificLogFile.getPath() ),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class
         );
 

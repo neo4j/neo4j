@@ -125,7 +125,7 @@ public class ConsistencyCheckService
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
 
         ConsistencySummaryStatistics summary;
-        final File reportFile = chooseReportPath( storeDir, tuningConfiguration );
+        final File reportFile = chooseReportPath(tuningConfiguration );
         Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( () -> {
             try
             {
@@ -194,20 +194,10 @@ public class ConsistencyCheckService
         return Result.SUCCESS;
     }
 
-    private File chooseReportPath( File storeDir, Config tuningConfiguration )
+    private File chooseReportPath( Config tuningConfiguration)
     {
-        final File reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_file );
-        if ( reportPath == null )
-        {
-            return new File( storeDir, defaultLogFileName( timestamp ) );
-        }
-
-        if ( reportPath.isDirectory() )
-        {
-            return new File( reportPath, defaultLogFileName( timestamp ) );
-        }
-
-        return reportPath;
+        final File reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_directory );
+        return new File( reportPath, defaultLogFileName( timestamp ) );
     }
 
     public static String defaultLogFileName( Date date )
