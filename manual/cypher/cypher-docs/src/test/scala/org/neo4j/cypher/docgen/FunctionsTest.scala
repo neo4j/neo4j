@@ -55,7 +55,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def all() {
     testThis(
       title = "all()",
-      syntax = "`all(variable IN list WHERE predicate)`",
+      syntax = "all(variable IN list WHERE predicate)",
       arguments = common_arguments,
       text = """Tests whether a predicate holds for all elements of this list.""",
       queryText = """match p=(a)-[*1..3]->(b) where a.name='Alice' and b.name='Daniel' and all(x in nodes(p) WHERE x.age > 30) return p""",
@@ -66,7 +66,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def any() {
     testThis(
       title = "any()",
-      syntax = "`any(variable IN list WHERE predicate)`",
+      syntax = "any(variable IN list WHERE predicate)",
       arguments = common_arguments,
       text = """Tests whether a predicate holds for at least one element in the list.""",
       queryText = """match (a) where a.name='Eskil' and any(x in a.array WHERE x = "one") return a""",
@@ -77,7 +77,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def none() {
     testThis(
       title = "none()",
-      syntax = "`none(variable in list WHERE predicate)`",
+      syntax = "none(variable in list WHERE predicate)",
       arguments = common_arguments,
       text = """Returns true if the predicate holds for no element in the list.""",
       queryText = """match p=(n)-[*1..3]->(b) where n.name='Alice' and NONE(x in nodes(p) WHERE x.age = 25) return p""",
@@ -88,7 +88,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def single() {
     testThis(
       title = "single()",
-      syntax = "`single(variable in list WHERE predicate)`",
+      syntax = "single(variable in list WHERE predicate)",
       arguments = common_arguments,
       text = """Returns true if the predicate holds for exactly one of the elements in the list.""",
       queryText = """match p=(n)-->(b) where n.name='Alice' and SINGLE(var in nodes(p) WHERE var.eyes = "blue") return p""",
@@ -99,7 +99,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def exists() {
     testThis(
       title = "exists()",
-      syntax = "`exists( pattern-or-property )`",
+      syntax = "exists( pattern-or-property )",
       arguments = List("pattern-or-property" -> "A pattern or a property (in the form 'variable.prop')."),
       text = """Returns true if a match for the pattern exists in the graph, or the property exists in the node, relationship or map.""",
       queryText = """match (n) where EXISTS(n.name) return n.name AS name, EXISTS( (n)-[:MARRIED]->() ) AS is_married""",
@@ -110,7 +110,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def relationship_type() {
     testThis(
       title = "type()",
-      syntax = "`type( relationship )`",
+      syntax = "type( relationship )",
       arguments = List("relationship" -> "A relationship."),
       text = """Returns a string representation of the relationship type.""",
       queryText = """match (n)-[r]->() where n.name='Alice' return type(r)""",
@@ -121,7 +121,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def size() {
     testThis(
       title = "size()",
-      syntax = "`size( list )`",
+      syntax = "size( list )",
       arguments = List("list" -> "An expression that returns a list"),
       text = """To return or filter on the size of a list, use the `size()` function.""",
       queryText = """return size(['Alice', 'Bob']) as col""",
@@ -131,8 +131,8 @@ class FunctionsTest extends DocumentingTestBase {
 
   @Test def size2() {
     testThis(
-      title = "size of pattern expression",
-      syntax = "`size( pattern expression )`",
+      title = "Size of pattern expression",
+      syntax = "size( pattern expression )",
       arguments = List("pattern expression" -> "A pattern expression that returns a list"),
       text = """
                |This is the same `size()` method described before,
@@ -148,7 +148,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def length() {
     testThis(
       title = "length()",
-      syntax = "`length( path )`",
+      syntax = "length( path )",
       arguments = List("path" -> "An expression that returns a path"),
       text = """To return or filter on the length of a path, use the `LENGTH()` function.""",
       queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' return length(p)""",
@@ -158,8 +158,8 @@ class FunctionsTest extends DocumentingTestBase {
 
   @Test def lengthString() {
     testThis(
-      title = "length of string",
-      syntax = "`length( string )`",
+      title = "Length of string",
+      syntax = "length( string )",
       arguments = List("string" -> "An expression that returns a string"),
       text = """To return or filter on the length of a string, use the `LENGTH()` function.""",
       queryText = """match (a) where length(a.name) > 6 return length(a.name)""",
@@ -170,7 +170,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def labels() {
     testThis(
       title = "labels()",
-      syntax = "`labels( node )`",
+      syntax = "labels( node )",
       arguments = List("node" -> "Any expression that returns a single node"),
       text = """Returns a list of string representations for the labels attached to a node.""",
       queryText = """match (a) where a.name='Alice' return labels(a)""",
@@ -186,7 +186,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def keys() {
     testThis(
       title = "keys()",
-      syntax = "`keys(  property-container )`",
+      syntax = "keys(  property-container )",
       arguments = List("property-container" -> "A node, a relationship, or a literal map."),
       text = """Returns a list of string representations for the property names of a node, relationship, or map.""",
       queryText = """match (a) where a.name='Alice' return keys(a)""",
@@ -202,14 +202,14 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def extract() {
     testThis(
       title = "extract()",
-      syntax = "`extract( variable IN list | expression )`",
+      syntax = "extract( variable IN list | expression )",
       arguments = List(
         "list" -> "An expression that returns a list",
         "variable" -> "The closure will have a variable introduced in it's context. Here you decide which variable to use.",
         "expression" -> "This expression will run once per value in the list, and produces the result list."
       ),
       text = """To return a single property, or the value of a function from a list of nodes or relationships,
- you can use `EXTRACT`. It will go through a list, run an expression on every element, and return the results
+ you can use `extract()`. It will go through a list, run an expression on every element, and return the results
  in a list with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
       queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' and b.name='Bob' and c.name='Daniel' return extract(n in nodes(p) | n.age) AS extracted""",
       returns = """The age property of all nodes in the path are returned.""",
@@ -219,7 +219,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def reduce() {
     testThis(
       title = "reduce()",
-      syntax = "`reduce( accumulator = initial, variable IN list | expression )`",
+      syntax = "reduce( accumulator = initial, variable IN list | expression )",
       arguments = List(
         "accumulator" -> "A variable that will hold the result and the partial results as the list is iterated",
         "initial"    -> "An expression that runs once to give a starting value to the accumulator",
@@ -228,7 +228,7 @@ class FunctionsTest extends DocumentingTestBase {
         "expression" -> "This expression will run once per value in the list, and produces the result value."
       ),
       text = """To run an expression against individual elements of a list, and store the result of the expression in
- an accumulator, you can use `REDUCE`. It will go through a list, run an expression on every element, storing the partial result
+ an accumulator, you can use `reduce()`. It will go through a list, run an expression on every element, storing the partial result
  in the accumulator. It works like the `fold` or `reduce` method in functional languages such as Lisp and Scala.""",
       queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' and b.name='Bob' and c.name='Daniel' return reduce(totalAge = 0, n in nodes(p) | totalAge + n.age) AS reduction""",
       returns = """The age property of all nodes in the path are summed and returned as a single value.""",
@@ -238,11 +238,11 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def head() {
     testThis(
       title = "head()",
-      syntax = "`head( expression )`",
+      syntax = "head( expression )",
       arguments = List(
         "expression" -> "This expression should return a list of some kind."
       ),
-      text = "`HEAD` returns the first element in a list.",
+      text = "`head()` returns the first element in a list.",
       queryText = """match (a) where a.name='Eskil' return a.array, head(a.array)""",
       returns = "The first node in the path is returned.",
       assertions = (p) => assertEquals(List("one"), p.columnAs[List[_]]("head(a.array)").toList))
@@ -251,11 +251,11 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def last() {
     testThis(
       title = "last()",
-      syntax = "`last( expression )`",
+      syntax = "last( expression )",
       arguments = List(
         "expression" -> "This expression should return a list of some kind."
       ),
-      text = "`LAST` returns the last element in a list.",
+      text = "`last()` returns the last element in a list.",
       queryText = """match (a) where a.name='Eskil' return a.array, last(a.array)""",
       returns = "The last node in the path is returned.",
       assertions = (p) => assertEquals(List("three"), p.columnAs[List[_]]("last(a.array)").toList))
@@ -264,11 +264,11 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def tail() {
     testThis(
       title = "tail()",
-      syntax = "`tail( expression )`",
+      syntax = "tail( expression )",
       arguments = List(
         "expression" -> "This expression should return a list of some kind."
       ),
-      text = "`TAIL` returns all but the first element in a list.",
+      text = "`tail()` returns all but the first element in a list.",
       queryText = """match (a) where a.name='Eskil' return a.array, tail(a.array)""",
       returns = "This returns the property named `array` and all elements of that property except the first one.",
       assertions = (p) => {
@@ -280,9 +280,9 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def filter() {
     testThis(
       title = "filter()",
-      syntax = "`filter(variable IN list WHERE predicate)`",
+      syntax = "filter(variable IN list WHERE predicate)",
       arguments = common_arguments,
-      text = "`FILTER` returns all the elements in a list that comply to a predicate.",
+      text = "`filter()` returns all the elements in a list that comply to a predicate.",
       queryText = """match (a) where a.name='Eskil' return a.array, filter(x in a.array WHERE size(x) = 3)""",
       returns = "This returns the property named `array` and a list of values in it, which have size `3`.",
       assertions = (p) => {
@@ -294,7 +294,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def nodes_in_path() {
     testThis(
       title = "nodes()",
-      syntax = "`nodes( path )`",
+      syntax = "nodes( path )",
       arguments = List("path" -> "A path."),
       text = """Returns all nodes in a path.""",
       queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' and c.name='Eskil' return nodes(p)""",
@@ -306,7 +306,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def rels_in_path() {
     testThis(
       title = "relationships()",
-      syntax = "`relationships( path )`",
+      syntax = "relationships( path )",
       arguments = List("path" -> "A path."),
       text = """Returns all relationships in a path.""",
       queryText = """match p=(a)-->(b)-->(c) where a.name='Alice' and c.name='Eskil' return relationships(p)""",
@@ -318,7 +318,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def id() {
     testThis(
       title = "id()",
-      syntax = "`id( property-container )`",
+      syntax = "id( property-container )",
       arguments = List("property-container" -> "A node or a relationship."),
       text = """Returns the id of the relationship or node.""",
       queryText = """match (a) return id(a)""",
@@ -330,7 +330,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def coalesce() {
     testThis(
       title = "coalesce()",
-      syntax = "`coalesce( expression [, expression]* )`",
+      syntax = "coalesce( expression [, expression]* )",
       arguments = List("expression" -> "The expression that might return NULL."),
       text = """Returns the first non-++NULL++ value in the list of expressions passed to it.
 In case all arguments are +NULL+, +NULL+ will be returned.""",
@@ -343,7 +343,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def range() {
     testThis(
       title = "range()",
-      syntax = "`range( start, end [, step] )`",
+      syntax = "range( start, end [, step] )",
       arguments = List(
         "start" -> "A numerical expression.",
         "end" -> "A numerical expression.",
@@ -362,11 +362,11 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def replace() {
     testThis(
       title = "replace()",
-      syntax = "`replace( original, search, replace )`",
+      syntax = "replace( original, search, replace )",
       arguments = List("original" -> "An expression that returns a string",
                        "search" -> "An expression that returns a string to search for",
                        "replace" -> "An expression that returns the string to replace the search string with"),
-      text = "`REPLACE` returns a string with the search string replaced by the replace string. It replaces all occurrences.",
+      text = "`replace()` returns a string with the search string replaced by the replace string. It replaces all occurrences.",
       queryText = "return replace(\"hello\", \"l\", \"w\")",
       returns = "",
       assertions = (p) => assert(Seq("hewwo") === p.columnAs[String]("replace(\"hello\", \"l\", \"w\")").toSeq)
@@ -376,11 +376,11 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def split() {
     testThis(
       title = "split()",
-      syntax = "`split( original, splitPattern )`",
+      syntax = "split( original, splitPattern )",
       arguments = List(
         "original" -> "An expression that returns a string",
         "splitPattern" -> "The string to split the original string with"),
-      text = "`SPLIT` returns the sequence of strings witch are delimited by split patterns.",
+      text = "`split()` returns the sequence of strings witch are delimited by split patterns.",
       queryText = """return split("one,two", ",")""",
       returns = "",
       assertions = (p) => {
@@ -394,10 +394,10 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def left() {
     testThis(
       title = "left()",
-      syntax = "`left( original, length )`",
+      syntax = "left( original, length )",
       arguments = List("original" -> "An expression that returns a string",
                        "n" -> "An expression that returns a positive number"),
-      text = "`LEFT` returns a string containing the left n characters of the original string.",
+      text = "`left()` returns a string containing the left n characters of the original string.",
       queryText = "return left(\"hello\", 3)",
       returns = "",
       assertions = (p) => assert(Seq("hel") === p.columnAs[String]("left(\"hello\", 3)").toSeq)
@@ -407,10 +407,10 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def right() {
     testThis(
       title = "right()",
-      syntax = "`right( original, length )`",
+      syntax = "right( original, length )",
       arguments = List("original" -> "An expression that returns a string",
                        "n" -> "An expression that returns a positive number"),
-      text = "`RIGHT` returns a string containing the right n characters of the original string.",
+      text = "`right()` returns a string containing the right n characters of the original string.",
       queryText = "return right(\"hello\", 3)",
       returns = "",
       assertions = (p) => assert(Seq("llo") === p.columnAs[String]("right(\"hello\", 3)").toSeq)
@@ -420,11 +420,11 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def substring() {
     testThis(
       title = "substring()",
-      syntax = "`substring( original, start [, length] )`",
+      syntax = "substring( original, start [, length] )",
       arguments = List("original" -> "An expression that returns a string",
                        "start" -> "An expression that returns a positive number",
                        "length" -> "An expression that returns a positive number"),
-      text = "`SUBSTRING` returns a substring of the original, with a 0-based index start and length. If length is omitted, it returns a substring from start until the end of the string.",
+      text = "`substring()` returns a substring of the original, with a 0-based index start and length. If length is omitted, it returns a substring from start until the end of the string.",
       queryText = "return substring(\"hello\", 1, 3), substring(\"hello\", 2)",
       returns = "",
       assertions = (p) => assert(List(Map("substring(\"hello\", 1, 3)" -> "ell", "substring(\"hello\", 2)" -> "llo")) === p.toList)
@@ -434,9 +434,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def lower() {
     testThis(
       title = "lower()",
-      syntax = "`lower( original )`",
+      syntax = "lower( original )",
       arguments = List("original" -> "An expression that returns a string"),
-      text = "`LOWER` returns the original string in lowercase.",
+      text = "`lower()` returns the original string in lowercase.",
       queryText = "return lower(\"HELLO\")",
       returns = "",
       assertions = (p) => assert(List(Map("lower(\"HELLO\")" -> "hello")) === p.toList)
@@ -446,9 +446,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def upper() {
     testThis(
       title = "upper()",
-      syntax = "`upper( original )`",
+      syntax = "upper( original )",
       arguments = List("original" -> "An expression that returns a string"),
-      text = "`UPPER` returns the original string in uppercase.",
+      text = "`upper()` returns the original string in uppercase.",
       queryText = "return upper(\"hello\")",
       returns = "",
       assertions = (p) => assert(List(Map("upper(\"hello\")" -> "HELLO")) === p.toList)
@@ -458,9 +458,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def reverse() {
     testThis(
       title = "reverse()",
-      syntax = "`reverse( original )`",
+      syntax = "reverse( original )",
       arguments = List("original" -> "An expression that returns a string"),
-      text = "`REVERSE` returns the original string reversed.",
+      text = "`reverse()` returns the original string reversed.",
       queryText = "return reverse(\"anagram\")",
       returns = "",
       assertions = (p) => assert(List(Map("reverse(\"anagram\")" -> "margana")) === p.toList)
@@ -470,9 +470,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def ltrim() {
     testThis(
       title = "ltrim()",
-      syntax = "`ltrim( original )`",
+      syntax = "ltrim( original )",
       arguments = List("original" -> "An expression that returns a string"),
-      text = "`LTRIM` returns the original string with whitespace removed from the left side.",
+      text = "`ltrim()` returns the original string with whitespace removed from the left side.",
       queryText = "return ltrim(\"   hello\")",
       returns = "",
       assertions = (p) => assert(List(Map("ltrim(\"   hello\")" -> "hello")) === p.toList)
@@ -482,9 +482,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def rtrim() {
     testThis(
       title = "rtrim()",
-      syntax = "`rtrim( original )`",
+      syntax = "rtrim( original )",
       arguments = List("original" -> "An expression that returns a string"),
-      text = "`RTRIM` returns the original string with whitespace removed from the right side.",
+      text = "`rtrim()` returns the original string with whitespace removed from the right side.",
       queryText = "return rtrim(\"hello   \")",
       returns = "",
       assertions = (p) => assert(List(Map("rtrim(\"hello   \")" -> "hello")) === p.toList)
@@ -494,9 +494,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def trim() {
     testThis(
       title = "trim()",
-      syntax = "`trim( original )`",
+      syntax = "trim( original )",
       arguments = List("original" -> "An expression that returns a string"),
-      text = "`TRIM` returns the original string with whitespace removed from both sides.",
+      text = "`trim()` returns the original string with whitespace removed from both sides.",
       queryText = "return trim(\"   hello   \")",
       returns = "",
       assertions = (p) => assert(List(Map("trim(\"   hello   \")" -> "hello")) === p.toList)
@@ -506,9 +506,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def toInt() {
     testThis(
       title = "toInt()",
-      syntax = "`toInt( expression )`",
+      syntax = "toInt( expression )",
       arguments = List("expression" -> "An expression that returns anything"),
-      text = "`TOINT` converts the argument to an integer. A string is parsed as if it was an integer number. If the " +
+      text = "`toInt()` converts the argument to an integer. A string is parsed as if it was an integer number. If the " +
         "parsing fails, +NULL+ will be returned. A floating point number will be cast into an integer.",
       queryText = "return toInt(\"42\"), toInt(\"not a number\")",
       returns = "",
@@ -519,9 +519,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def toFloat() {
     testThis(
       title = "toFloat()",
-      syntax = "`toFloat( expression )`",
+      syntax = "toFloat( expression )",
       arguments = List("expression" -> "An expression that returns anything"),
-      text = "`TOFLOAT` converts the argument to a float. A string is parsed as if it was an floating point number. " +
+      text = "`toFloat()` converts the argument to a float. A string is parsed as if it was an floating point number. " +
         "If the parsing fails, +NULL+ will be returned. An integer will be cast to a floating point number.",
       queryText = "return toFloat(\"11.5\"), toFloat(\"not a number\")",
       returns = "",
@@ -532,9 +532,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def toStringFunc() {
     testThis(
       title = "toString()",
-      syntax = "`toString( expression )`",
+      syntax = "toString( expression )",
       arguments = List("expression" -> "An expression that returns a number, a boolean, or a string"),
-      text = "`TOSTRING` converts the argument to a string. It converts integral and floating point numbers and booleans to strings, and if called with a string will leave it unchanged.",
+      text = "`toString()` converts the argument to a string. It converts integral and floating point numbers and booleans to strings, and if called with a string will leave it unchanged.",
       queryText = "return toString(11.5), toString(\"already a string\"), toString(true)",
       returns = "",
       assertions = (p) => assert(List(Map("toString(11.5)" -> "11.5",
@@ -546,9 +546,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def propertiesFunc() {
     testThis(
       title = "properties()",
-      syntax = "`properties( expression )`",
+      syntax = "properties( expression )",
       arguments = List("expression" -> "An expression that returns a node, a relationship, or a map"),
-      text = "`PROPERTIES` converts the arguments to a map of its properties. " +
+      text = "`properties()` converts the arguments to a map of its properties. " +
         "If the argument is a node or a relationship, the returned map is a map of its properties ." +
         "If the argument is already a map, it is returned unchanged.",
       queryText = "create (p:Person {name: 'Stefan', city: 'Berlin'}) return properties(p)",
@@ -561,9 +561,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def now() {
     testThis(
       title = "timestamp()",
-      syntax = "`timestamp()`",
+      syntax = "timestamp()",
       arguments = List.empty,
-      text = "`TIMESTAMP` returns the difference, measured in milliseconds, between the current time and midnight, " +
+      text = "`timestamp()` returns the difference, measured in milliseconds, between the current time and midnight, " +
         "January 1, 1970 UTC. It will return the same value during the whole one query, even if the query is a long " +
         "running one.",
       queryText = "return timestamp()",
@@ -580,9 +580,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def startNode() {
     testThis(
       title = "startNode()",
-      syntax = "`startNode( relationship )`",
+      syntax = "startNode( relationship )",
       arguments = List("relationship" -> "An expression that returns a relationship"),
-      text = "`STARTNODE` returns the starting node of a relationship",
+      text = "`startNode()` returns the starting node of a relationship",
       queryText = "MATCH (x:foo)-[r]-() return startNode(r)",
       returns = "",
       assertions = (p) => assert(p.toList.head("startNode(r)") === node("A")))
@@ -591,9 +591,9 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
   @Test def endNode() {
     testThis(
       title = "endNode()",
-      syntax = "`endNode( relationship )`",
+      syntax = "endNode( relationship )",
       arguments = List("relationship" -> "An expression that returns a relationship"),
-      text = "`ENDNODE` returns the end node of a relationship",
+      text = "`endNode()` returns the end node of a relationship",
       queryText = "MATCH (x:foo)-[r]-() return endNode(r)",
       returns = "",
       assertions = (p) => assert(p.toList.head("endNode(r)") === node("C")))

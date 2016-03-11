@@ -46,7 +46,7 @@ class MathFunctionsTest extends DocumentingTest {
     graphViz()
     section("abs()") {
       p("`abs()` returns the absolute value for a number.")
-      function("`abs( expression )`", ("expression", "A numeric expression"))
+      function("`abs( expression )`", ("expression", "A numeric expression."))
       query("MATCH (a), (e) WHERE a.name = 'Alice' AND e.name = 'Eskil' RETURN a.age, e.age, abs(a.age - e.age)",
             ResultAssertions((r) => {
               r.toList should equal(List(Map("a.age" -> 38L, "e.age" -> 41L, "abs(a.age - e.age)" -> 3L)))
@@ -57,7 +57,7 @@ class MathFunctionsTest extends DocumentingTest {
     }
     section("acos()") {
       p("`acos()` returns the arccosine of the expression, in radians.")
-      function("`abs( expression )`", ("expression", "A numeric expression that represents the angle in radians"))
+      function("`abs( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
       query("RETURN acos(0.5)", ResultAssertions((r) => {
         r.toList.head("acos(0.5)") should equal(1.0471975511965979)
       })) {
@@ -67,7 +67,7 @@ class MathFunctionsTest extends DocumentingTest {
     }
     section("asin()") {
       p("`asin()` returns the arcsine of the expression, in radians.")
-      function("`asin( expression )`", ("expression", "A numeric expression that represents the angle in radians"))
+      function("`asin( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
       query("RETURN asin(0.5)", ResultAssertions((r) => {
         r.toList.head("asin(0.5)") should equal(0.5235987755982989)
       })) {
@@ -77,7 +77,7 @@ class MathFunctionsTest extends DocumentingTest {
     }
     section("atan()") {
       p("`atan()` returns the arctangent of the expression, in radians.")
-      function("`atan( expression )`", ("expression", "A numeric expression that represents the angle in radians"))
+      function("`atan( expression )`", ("expression", "A numeric expression that represents the angle in radians."))
       query("RETURN atan(0.5)", ResultAssertions((r) => {
         r.toList.head("atan(0.5)") should equal(0.4636476090008061)
       })) {
