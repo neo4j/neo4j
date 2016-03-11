@@ -67,7 +67,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -230,7 +229,7 @@ public class StoreUpgradeIntegrationTest
             }
             finally
             {
-                clusterManager.shutdown();
+                clusterManager.safeShutdown();
             }
 
             assertConsistentStore( new File( master.getStoreDir() ) );

@@ -130,16 +130,9 @@ public class ClusterRule extends ExternalResource
     @Override
     protected void after()
     {
-        try
+        if ( clusterManager != null )
         {
-            if ( clusterManager != null )
-            {
-                clusterManager.shutdown();
-            }
-        }
-        catch ( Throwable throwable )
-        {
-            throwable.printStackTrace();
+            clusterManager.safeShutdown();
         }
     }
 }

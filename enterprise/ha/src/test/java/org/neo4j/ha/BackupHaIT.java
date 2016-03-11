@@ -19,15 +19,15 @@
  */
 package org.neo4j.ha;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.InstanceId;
@@ -42,7 +42,6 @@ import org.neo4j.test.TargetDirectory;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
 import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -71,8 +70,7 @@ public class BackupHaIT
 
     private void startCluster() throws Throwable
     {
-        clusterManager = new ClusterManager( ClusterManager.fromXml( getClass().getResource( "/threeinstances.xml" )
-                .toURI() ),
+        clusterManager = new ClusterManager( ClusterManager.clusterOfSize( 3 ),
                 PATH, MapUtil.stringMap( OnlineBackupSettings.online_backup_enabled.name(),
                 Settings.TRUE ) )
         {

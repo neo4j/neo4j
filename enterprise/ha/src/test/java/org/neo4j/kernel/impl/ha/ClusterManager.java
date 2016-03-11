@@ -24,9 +24,11 @@ import org.w3c.dom.Document;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,6 +64,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
@@ -147,6 +150,7 @@ public class ClusterManager
         HighlyAvailableGraphDatabase repair() throws Throwable;
     }
 
+    private final String localAddress;
     private final File root;
     private final Map<String,String> commonConfig;
     private final Map<Integer,Map<String,String>> instanceConfig;
@@ -160,6 +164,7 @@ public class ClusterManager
                            Map<Integer,Map<String,String>> instanceConfig,
                            HighlyAvailableGraphDatabaseFactory dbFactory )
     {
+        this.localAddress = getLocalAddress();
         this.clustersProvider = clustersProvider;
         this.root = root;
         this.commonConfig = withDefaults( commonConfig );
@@ -170,6 +175,7 @@ public class ClusterManager
 
     public ClusterManager( Builder builder )
     {
+        this.localAddress = getLocalAddress();
         this.clustersProvider = builder.provider;
         this.root = builder.root;
         this.commonConfig = withDefaults( builder.commonConfig );
@@ -216,6 +222,21 @@ public class ClusterManager
         };
     }
 
+    private static String getLocalAddress()
+    {
+        try
+        {
+            // Null corresponds to localhost
+            return InetAddress.getByName( null ).getHostAddress();
+        }
+        catch ( UnknownHostException e )
+        {
+            // Fetching the localhost address won't throw this exception, so this should never happen, but if it
+            // were, then the computer doesn't even have a loopback interface, so crash now rather than later
+            throw new AssertionError( e );
+        }
+    }
+
     /**
      * Provides a cluster specification with default values
      *
@@ -223,25 +244,75 @@ public class ClusterManager
      */
     public static Provider clusterOfSize( int memberCount )
     {
-        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        HashSet<Integer> takenPorts = new HashSet<>();
-        try
+        return clusterOfSize( getLocalAddress(), memberCount );
+    }
+
+    /**
+     * Provides a cluster specification with default values on specified hostname
+     *
+     * @param hostname the hostname/ip-address to bind to
+     * @param memberCount the total number of members in the cluster to start.
+     */
+    public static Provider clusterOfSize( String hostname, int memberCount )
+    {
+        //noinspection unchecked
+        return clustersOfSize( Pair.of( hostname, memberCount ) );
+    }
+
+    /**
+     * Provides cluster specifications with default values, but unique names/ports
+     * @param clusterSizes the sizes of the clusters
+     */
+    public static Provider clustersOfSize( final int... clusterSizes )
+    {
+        Pair[] clusters = new Pair[clusterSizes.length];
+        for ( int i = 0; i < clusterSizes.length; i++ )
         {
-            for ( int i = 0; i < memberCount; i++ )
+            clusters[i] = Pair.of( getLocalAddress(), clusterSizes[i] );
+        }
+        //noinspection unchecked
+        return clustersOfSize( clusters );
+    }
+
+    /**
+     * /**
+     * Provides cluster specifications with default values, but unique names/ports
+     * @param clusterHostsAndSizes the hostnames and sizes of the clusters
+     */
+    public static Provider clustersOfSize( Pair<String, Integer>... clusterHostsAndSizes )
+    {
+        final Clusters clusters = new Clusters();
+        HashSet<Integer> takenPorts = new HashSet<>();
+
+        for (int clusterCount = 0; clusterCount < clusterHostsAndSizes.length; clusterCount++)
+        {
+            Clusters.Cluster cluster;
+            // Just to avoid having to fix lots of hardcoded tests
+            if (clusterCount == 0) {
+                cluster = new Clusters.Cluster( "neo4j.ha" );
+            } else {
+                cluster = new Clusters.Cluster( "neo4j.ha" + clusterCount );
+            }
+
+            String hostname = clusterHostsAndSizes[clusterCount].first();
+            int memberCount = clusterHostsAndSizes[clusterCount].other();
+
+            try
             {
-                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                takenPorts.add( port );
-                cluster.getMembers().add( new Clusters.Member( port, true ) );
+                for ( int i = 0; i < memberCount; i++ )
+                {
+                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                    takenPorts.add( port );
+                    cluster.getMembers().add( new Clusters.Member( hostname + ":" + port, true ) );
+                }
+                clusters.getClusters().add( cluster );
+            }
+            catch ( IOException e )
+            {
+                // you can't throw a normal exception in a TestRule
+                throw new AssertionError( "Failed to find an open port" );
             }
         }
-        catch ( IOException e )
-        {
-            // you can't throw a normal exception in a TestRule
-            throw new AssertionError( "Failed to find an open port" );
-        }
-
-        final Clusters clusters = new Clusters();
-        clusters.getClusters().add( cluster );
         return provided( clusters );
     }
 
@@ -666,6 +737,23 @@ public class ClusterManager
         life.shutdown();
     }
 
+    /**
+     * Shutdown the cluster and catch any exceptions which might be thrown as a result. If an exception is thrown,
+     * the stacktrace is printed.
+     *
+     * This is intended for unit tests where a failure in cluster shutdown might mask the actual error in the test.
+     */
+    public void safeShutdown() {
+        try
+        {
+            shutdown();
+        }
+        catch ( Throwable throwable )
+        {
+            throwable.printStackTrace();
+        }
+    }
+
     @SuppressWarnings( "unchecked" )
     private <T> T instance( Class<T> classToFind, Iterable<?> from )
     {
@@ -712,7 +800,7 @@ public class ClusterManager
     {
         private final File root;
         private final Map<Integer,Map<String,String>> instanceConfig = new HashMap<>();
-        private Provider provider = clusterOfSize( 3 );
+        private Provider provider = null;
         private Map<String,String> commonConfig = emptyMap();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
@@ -766,6 +854,10 @@ public class ClusterManager
 
         public ClusterManager build()
         {
+            if ( provider == null )
+            {
+                provider = clusterOfSize( 3 );
+            }
             return new ClusterManager( this );
         }
     }
@@ -943,7 +1035,8 @@ public class ClusterManager
             StringBuilder result = new StringBuilder();
             for ( HighlyAvailableGraphDatabase member : getAllMembers() )
             {
-                result.append( result.length() > 0 ? "," : "" ).append( ":" )
+                result.append( result.length() > 0 ? "," : "" )
+                      .append( localAddress ).append( ":" )
                       .append( member.getDependencyResolver().resolveDependency(
                               ClusterClient.class ).getClusterServer().getPort() );
             }
@@ -1105,10 +1198,23 @@ public class ClusterManager
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
         {
             Clusters.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
-            StringBuilder initialHosts = new StringBuilder( spec.getMembers().get( 0 ).getHost() );
-            for ( int i = 1; i < spec.getMembers().size(); i++ )
+            StringBuilder initialHosts = new StringBuilder();
+            for ( int i = 0; i < spec.getMembers().size(); i++ )
             {
-                initialHosts.append( "," ).append( spec.getMembers().get( i ).getHost() );
+                if ( i > 0 )
+                {
+                    initialHosts.append( "," );
+                }
+                // the host might be 0.0.0.0:PORT, or :PORT, if so, replace with a valid address.
+                URI uri = new URI( "cluster://" + spec.getMembers().get( i ).getHost() );
+                if ( uri.getHost() == null || uri.getHost().isEmpty() || uri.getHost().equals("0.0.0.0") )
+                {
+                    initialHosts.append( localAddress ).append( ":" ).append( uri.getPort() );
+                }
+                else
+                {
+                    initialHosts.append( uri.getHost() ).append( ":" ).append( uri.getPort() );
+                }
             }
             File parent = new File( root, name );
             URI clusterUri = new URI( "cluster://" + member.getHost() );
@@ -1128,7 +1234,7 @@ public class ClusterManager
                 builder.setConfig( ClusterSettings.initial_hosts, initialHosts.toString() );
                 builder.setConfig( ClusterSettings.server_id, serverId + "" );
                 builder.setConfig( ClusterSettings.cluster_server, "0.0.0.0:" + clusterPort );
-                builder.setConfig( HaSettings.ha_server, ":" + haPort );
+                builder.setConfig( HaSettings.ha_server, clusterUri.getHost() + ":" + haPort );
                 builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
                 builder.setConfig( commonConfig );
                 if ( instanceConfig.containsKey( serverId.toIntegerIndex() ) )
