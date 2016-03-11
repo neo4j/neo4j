@@ -80,20 +80,20 @@ public class BoltMetricsIT
 
         // Then
         assertEventually( "init request shows up as recieved",
-                () -> readLastValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_RECIEVED ) ),
+                () -> readLastValue( metricsCsv(BoltMetrics.MESSAGES_RECIEVED ) ),
                 equalTo( 1L ), 5, TimeUnit.SECONDS );
         assertEventually( "init request shows up as started",
-                () -> readLastValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_STARTED ) ),
+                () -> readLastValue( metricsCsv(BoltMetrics.MESSAGES_STARTED ) ),
                 equalTo( 1L ), 5, TimeUnit.SECONDS );
         assertEventually( "init request shows up as done",
-                () -> readLastValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_DONE ) ),
+                () -> readLastValue( metricsCsv(BoltMetrics.MESSAGES_DONE ) ),
                 equalTo( 1L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "queue time shows up",
-                () -> readLastValue( metricsCsv( metricsFolder, BoltMetrics.TOTAL_QUEUE_TIME ) ),
+                () -> readLastValue( metricsCsv(BoltMetrics.TOTAL_QUEUE_TIME ) ),
                 greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
         assertEventually( "processing time shows up",
-                () -> readLastValue( metricsCsv( metricsFolder, BoltMetrics.TOTAL_PROCESSING_TIME ) ),
+                () -> readLastValue( metricsCsv(BoltMetrics.TOTAL_PROCESSING_TIME ) ),
                 greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
 
     }

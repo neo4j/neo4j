@@ -99,7 +99,7 @@ public class MetricsSettings
     @Description( "The target location of the CSV files: a path to a directory wherein a CSV file per reported " +
                   "field  will be written. Relative paths will be interpreted relative to the configured Neo4j " +
                   "store directory." )
-    public static Setting<File> csvPath = setting( "metrics.csv.path", Settings.PATH, Settings.NO_DEFAULT );
+    public static Setting<File> csvPath = setting( "metrics.csv.path", Settings.PATH, "metrics" );
 
     @Description( "The reporting interval for the CSV files. That is, how often new rows with numbers are appended to " +
                   "the CSV files." )

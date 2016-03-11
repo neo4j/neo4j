@@ -234,7 +234,7 @@ public class PlatformModule
             }
             else
             {
-                logService = builder.toFile( fileSystem, internalLog );
+                logService = builder.toFile( fileSystem, new File(internalLog, StoreLogService.INTERNAL_LOG_NAME ) );
             }
         }
         catch ( IOException ex )

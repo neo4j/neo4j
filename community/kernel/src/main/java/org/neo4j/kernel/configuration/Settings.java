@@ -535,7 +535,10 @@ public class Settings
         {
             setting = FileUtils.fixSeparatorsInPath( setting );
 
-            return new File( setting );
+            File settingFile = new File( setting );
+            return settingFile.isAbsolute() ?
+                    settingFile :
+                    new File( System.getProperty( "user.dir" ), setting );
         }
 
         @Override
