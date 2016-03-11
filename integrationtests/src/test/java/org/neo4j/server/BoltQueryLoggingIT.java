@@ -118,7 +118,6 @@ public class BoltQueryLoggingIT
         assertThat( lines, hasSize( 5 ) );
         for ( String line : lines )
         {
-             System.out.println(line);
             assertTrue( line.contains( "INFO" ) );
             assertTrue( line.contains( "ms: bolt-session\tbolt\tneo4j\tMyClient/1.0" ) );
             assertTrue( line.contains( "client/127.0.0.1:" ) );
