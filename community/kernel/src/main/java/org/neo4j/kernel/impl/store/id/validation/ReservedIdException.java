@@ -17,22 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.lowlimit;
+package org.neo4j.kernel.impl.store.id.validation;
 
-import org.junit.Test;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.NullLogService;
-
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
-
-public class LowLimitTest
+public class ReservedIdException extends UnderlyingStorageException
 {
-    @Test
-    public void shouldResolveLowLimitsRecordFormat() throws Exception
+    public ReservedIdException( long id )
     {
-        assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(),
-                select( Config.empty(), NullLogService.getInstance() ).storeVersion() );
+        super( "Id " + id + " is reserved and can't be used as a regular record id" );
     }
 }

@@ -27,18 +27,18 @@ import java.io.File;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.id.validation.IdCapacityExceededException;
+import org.neo4j.kernel.impl.store.id.validation.NegativeIdException;
 import org.neo4j.test.EphemeralFileSystemRule;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
-
 import static org.neo4j.test.ProcessTestUtil.executeSubProcess;
 
 public class IdGeneratorImplTest
@@ -60,9 +60,66 @@ public class IdGeneratorImplTest
             idGenerator.setHighId( -1 );
             fail( "Should have failed" );
         }
-        catch ( UnderlyingStorageException e )
-        {   // OK
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( NegativeIdException.class ) );
         }
+    }
+
+    @Test
+    public void throwsWhenNextIdIsTooHigh()
+    {
+        long maxId = 10;
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, maxId, false, 0 );
+
+        for ( long i = 0; i <= maxId; i++ )
+        {
+            idGenerator.nextId();
+        }
+
+        try
+        {
+            idGenerator.nextId();
+            fail( "Should have failed" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IdCapacityExceededException.class ) );
+        }
+    }
+
+    @Test
+    public void throwsWhenGivenHighIdIsTooHigh()
+    {
+        long maxId = 10;
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, maxId, false, 0 );
+
+        try
+        {
+            idGenerator.setHighId( maxId + 1 );
+            fail( "Should have failed" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IdCapacityExceededException.class ) );
+        }
+    }
+
+    /**
+     * It should be fine to set high id to {@link IdGeneratorImpl#INTEGER_MINUS_ONE}.
+     * It will just be never returned from {@link IdGeneratorImpl#nextId()}.
+     */
+    @Test
+    public void highIdCouldBeSetToReservedId()
+    {
+        IdGeneratorImpl.createGenerator( fsr.get(), file, 0, false );
+        IdGenerator idGenerator = new IdGeneratorImpl( fsr.get(), file, 1, Long.MAX_VALUE, false, 0 );
+
+        idGenerator.setHighId( IdGeneratorImpl.INTEGER_MINUS_ONE );
+
+        assertEquals( IdGeneratorImpl.INTEGER_MINUS_ONE + 1, idGenerator.nextId() );
     }
 
     @Test

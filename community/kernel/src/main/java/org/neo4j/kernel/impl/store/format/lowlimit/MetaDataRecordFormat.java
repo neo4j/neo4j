@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -32,10 +33,11 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
 {
     public static final int RECORD_SIZE = 9;
     public static final long FIELD_NOT_PRESENT = -1;
+    private static final int ID_BITS = 32;
 
     public MetaDataRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT );
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, ID_BITS );
     }
 
     @Override
@@ -71,11 +73,5 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
         assert record.inUse();
         cursor.putByte( Record.IN_USE.byteValue() );
         cursor.putLong( record.getValue() );
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return 32;
     }
 }

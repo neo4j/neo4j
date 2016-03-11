@@ -24,11 +24,11 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 
 public class JumpingIdGeneratorFactory implements IdGeneratorFactory
@@ -92,7 +92,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         private long tryNextId()
         {
             long result = nextId.getAndIncrement();
-            if ( result == IdGeneratorImpl.INTEGER_MINUS_ONE )
+            if ( IdValidator.isReservedId( result ) )
             {
                 result = nextId.getAndIncrement();
                 leftToNextJump--;

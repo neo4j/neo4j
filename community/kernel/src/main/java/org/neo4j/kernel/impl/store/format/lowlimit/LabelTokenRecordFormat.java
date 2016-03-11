@@ -25,18 +25,12 @@ public class LabelTokenRecordFormat extends TokenRecordFormat<LabelTokenRecord>
 {
     public LabelTokenRecordFormat()
     {
-        super( BASE_RECORD_SIZE );
+        super( BASE_RECORD_SIZE, LowLimitFormatSettings.LABEL_TOKEN_MAXIMUM_ID_BITS );
     }
 
     @Override
     public LabelTokenRecord newRecord()
     {
         return new LabelTokenRecord( -1 );
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return getMaxId( LowLimitFormatSettings.LABEL_TOKEN_MAXIMUM_ID_BITS );
     }
 }

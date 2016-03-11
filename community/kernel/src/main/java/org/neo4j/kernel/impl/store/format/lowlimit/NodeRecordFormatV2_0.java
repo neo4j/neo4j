@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
@@ -30,19 +31,13 @@ class NodeRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<NodeRecord>
 {
     NodeRecordFormatV2_0()
     {
-        super( fixedRecordSize( 14 ), 0, IN_USE_BIT );
+        super( fixedRecordSize( 14 ), 0, IN_USE_BIT, LowLimitFormatSettings.NODE_RECORD_MAXIMUM_ID_BITS );
     }
 
     @Override
     public NodeRecord newRecord()
     {
         return new NodeRecord( -1 );
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return LowLimitFormatSettings.NODE_RECORD_MAXIMUM_ID_BITS;
     }
 
     public void read( NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )

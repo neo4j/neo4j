@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 
 import static java.lang.Math.max;
 
@@ -71,6 +72,10 @@ public class IdGeneratorImpl implements IdGenerator
     private static final byte CLEAN_GENERATOR = (byte) 0;
     private static final byte STICKY_GENERATOR = (byte) 1;
 
+    /**
+     * Invalid and reserved id value. Represents special values, f.ex. the end of a relationships/property chain.
+     * Please use {@link IdValidator} to validate generated ids.
+     */
     public static final long INTEGER_MINUS_ONE = 0xFFFFFFFFL;  // 4294967295L;
 
     // number of defragged ids to grab from file in batch (also used for write)
@@ -149,24 +154,13 @@ public class IdGeneratorImpl implements IdGenerator
         }
 
         long id = highId.get();
-        if ( id == INTEGER_MINUS_ONE )
+        if ( IdValidator.isReservedId( id ) )
         {
-            // Skip the integer -1 (0xFFFFFFFF) because it represents
-            // special values, f.ex. the end of a relationships/property chain.
             id = highId.incrementAndGet();
         }
-        assertIdWithinCapacity( id );
+        IdValidator.assertValidId( id, max );
         highId.incrementAndGet();
         return id;
-    }
-
-    private void assertIdWithinCapacity( long id )
-    {
-        if ( id > max || id < 0  )
-        {
-            throw new UnderlyingStorageException(
-                    "Id capacity exceeded: " + id + " is not within bounds [0; " + max + "] for " + file );
-        }
     }
 
     private void assertStillOpen()
@@ -215,7 +209,7 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public void setHighId( long id )
     {
-        assertIdWithinCapacity( id );
+        IdValidator.assertIdWithinCapacity( id, max );
         highId.set( id );
     }
 
@@ -253,7 +247,7 @@ public class IdGeneratorImpl implements IdGenerator
     @Override
     public synchronized void freeId( long id )
     {
-        if ( id == INTEGER_MINUS_ONE )
+        if ( IdValidator.isReservedId( id ) )
         {
             return;
         }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 
 /**
  * {@link IdSequence} w/o any synchronization, purely a long incrementing.
@@ -61,7 +61,7 @@ public class BatchingIdSequence implements IdSequence
 
     public long peek()
     {
-        if ( nextId == IdGeneratorImpl.INTEGER_MINUS_ONE )
+        if ( IdValidator.isReservedId( nextId ) )
         {
             nextId++;
         }

@@ -17,20 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.lowlimit;
+package org.neo4j.kernel.impl.store.id.validation;
 
-import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
-public class RelationshipTypeTokenRecordFormat extends TokenRecordFormat<RelationshipTypeTokenRecord>
+public class NegativeIdException extends UnderlyingStorageException
 {
-    public RelationshipTypeTokenRecordFormat()
+    public NegativeIdException( long id )
     {
-        super( BASE_RECORD_SIZE, LowLimitFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS );
-    }
-
-    @Override
-    public RelationshipTypeTokenRecord newRecord()
-    {
-        return new RelationshipTypeTokenRecord( -1 );
+        super( "Record id can't be negative: " + id );
     }
 }

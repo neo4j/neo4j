@@ -39,7 +39,7 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
 
     public RelationshipRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT );
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, LowLimitFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS );
     }
 
     @Override
@@ -47,13 +47,6 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
     {
         return new RelationshipRecord( -1 );
     }
-
-    @Override
-    public long getMaxId()
-    {
-        return getMaxId( LowLimitFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS );
-    }
-
 
     public void read( RelationshipRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
             PagedFile storeFile ) throws IOException

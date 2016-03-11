@@ -19,18 +19,20 @@
  */
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
-import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.junit.Test;
 
-public class RelationshipTypeTokenRecordFormat extends TokenRecordFormat<RelationshipTypeTokenRecord>
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.NullLogService;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
+
+public class LowLimitV3_0Test
 {
-    public RelationshipTypeTokenRecordFormat()
+    @Test
+    public void shouldResolveLowLimitsRecordFormat() throws Exception
     {
-        super( BASE_RECORD_SIZE, LowLimitFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS );
-    }
-
-    @Override
-    public RelationshipTypeTokenRecord newRecord()
-    {
-        return new RelationshipTypeTokenRecord( -1 );
+        assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(),
+                select( Config.empty(), NullLogService.getInstance() ).storeVersion() );
     }
 }

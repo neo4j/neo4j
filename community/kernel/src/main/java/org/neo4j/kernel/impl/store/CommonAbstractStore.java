@@ -37,8 +37,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -118,11 +118,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         this.storeHeaderFormat = storeHeaderFormat;
         this.storeVersion = storeVersion;
         this.log = logProvider.getLog( getClass() );
-    }
-
-    protected static long longFromIntAndMod( long base, long modifier )
-    {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
 
     void initialise( boolean createIfNotExists )
@@ -1009,6 +1004,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     public void updateRecord( RECORD record )
     {
         long id = record.getId();
+        IdValidator.assertValidId( id, recordFormat.getMaxId() );
+
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
         try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_WRITE_LOCK ) )
