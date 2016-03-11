@@ -56,14 +56,13 @@ import scala.collection.{Iterator, mutable}
 final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   extends TransactionBoundTokenContext(tc.statement) with QueryContext {
 
-  val nodeOps = new NodeOperations
-  val relationshipOps = new RelationshipOperations
+  override val nodeOps = new NodeOperations
+  override val relationshipOps = new RelationshipOperations
   private val nodeManager = tc.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
   def isOpen = tc.isOpen
 
   def isTopLevelTx: Boolean = tc.isTopLevelTx
-
 
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (tc.statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
