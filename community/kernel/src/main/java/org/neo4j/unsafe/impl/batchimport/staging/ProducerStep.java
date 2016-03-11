@@ -70,13 +70,18 @@ public abstract class ProducerStep extends AbstractStep<Void>
     protected void process()
     {
         Object batch = null;
-        long startTime = nanoTime();
-        while ( (batch = nextBatchOrNull( doneBatches.get(), batchSize )) != null )
+        while ( true )
         {
+            long startTime = nanoTime();
+            batch = nextBatchOrNull( doneBatches.get(), batchSize );
+            if ( batch == null )
+            {
+                break;
+            }
+
             totalProcessingTime.add( nanoTime()-startTime );
             downstreamIdleTime.addAndGet( downstream.receive( doneBatches.getAndIncrement(), batch ) );
             assertHealthy();
-            startTime = nanoTime();
         }
     }
 
