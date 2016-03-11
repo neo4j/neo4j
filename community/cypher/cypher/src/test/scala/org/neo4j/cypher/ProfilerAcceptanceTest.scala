@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{QualifiedProcedureName, GraphStatistics}
 import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper.RichString
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.graphdb.QueryExecutionException
 
@@ -67,7 +68,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
     getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
-      formatArguments(plan.arguments) should contain("db.labels() :: (label :: String)")
+      val Signature(QualifiedProcedureName(namespaces, procName), _, returnSignature) = plan.arguments.collectFirst {
+        case x: Signature => x
+      }.getOrElse(fail("expected a procedure signature"))
+
+      namespaces should equal(Seq("db"))
+      procName should equal("labels")
+      returnSignature should equal(Seq("label" -> CTString))
       plan.variables should equal(Set("label"))
     }
   }
@@ -81,7 +88,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
     getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
-      formatArguments(plan.arguments) should contain("db.labels() :: (label :: String)")
+      val Signature(QualifiedProcedureName(namespaces, procName), _, returnSignature) = plan.arguments.collectFirst {
+        case x: Signature => x
+      }.getOrElse(fail("expected a procedure signature"))
+
+      namespaces should equal(Seq("db"))
+      procName should equal("labels")
+      returnSignature should equal(Seq("label" -> CTString))
       plan.variables should equal(Set("n", "label"))
     }
   }
@@ -672,10 +685,5 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
           descriptions
       }
     }
-  }
-
-  private def formatArguments(args: Seq[Argument]) = args.map {
-    case s: Signature => s.signatureAsText
-    case x            => x.toString
   }
 }

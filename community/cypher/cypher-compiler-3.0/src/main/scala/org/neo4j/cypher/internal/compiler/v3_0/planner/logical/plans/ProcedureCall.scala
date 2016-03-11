@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, P
 case class ProcedureCall(left: LogicalPlan, call: ResolvedCall)
                         (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
-  val lhs = Some(left)
+  override val lhs = Some(left)
 
-  def rhs = None
+  override def rhs = None
 
-  def availableSymbols: Set[IdName] =
+  override def availableSymbols: Set[IdName] =
     left.availableSymbols ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
 }

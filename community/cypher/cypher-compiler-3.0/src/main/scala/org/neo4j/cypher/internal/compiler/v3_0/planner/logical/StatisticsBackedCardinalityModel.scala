@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.{Cardinal
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_0.ast.IntegerLiteral
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality.lift
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel) extends CardinalityModel {
 
@@ -81,7 +82,7 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
     // ProcedureCall
     case _: ProcedureCallProjection =>
-      (in * Multiplier(10)).max(Cardinality(10000)).min(Cardinality(1))
+      in * Multiplier(10) min 1.0 max 10000.0
 
     // Load CSV
     case _: LoadCSVProjection =>

@@ -60,13 +60,12 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
         rewriterSequencer = rewriterSequencer,
         preConditions = inputQuery.conditions,
         monitor = monitors.newMonitor[AstRewritingMonitor](),
-        semanticChecker = semanticChecker
-      )
+        semanticChecker = semanticChecker)
 
     //monitor success of compilation
     val planBuilderMonitor = monitors.newMonitor[NewRuntimeSuccessRateMonitor](CypherCompilerFactory.monitorTag)
 
-    val result = Try { statement match {
+    statement match {
       case (ast: Query, rewrittenSemanticTable) =>
         val (periodicCommit, logicalPlan, pipeBuildContext) = closing(tracer.beginPhase(LOGICAL_PLANNING)) {
           produceLogicalPlan(ast, rewrittenSemanticTable)(planContext, inputQuery.notificationLogger)
@@ -75,11 +74,8 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
           planBuilderMonitor, plannerName, inputQuery, createFingerprintReference, config)
       case x =>
         throw new CantHandleQueryException(x.toString())
-    } }
-
-    result.get
+    }
   }
-
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
                         (planContext: PlanContext,  notificationLogger: InternalNotificationLogger):

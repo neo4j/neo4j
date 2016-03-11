@@ -71,8 +71,10 @@ object PlanDescriptionArgumentSerializer {
         val types = typeNames.mkString(":", "|:", "")
         val dirArrow = if (bothDirections) "" else ">"
         s"count( ($start)-[$types]-$dirArrow($end) )" + (if (ident.unnamed) "" else s" AS $ident")
-      case s: Signature =>
-        s.signatureAsText
+      case Signature(procedureName, args, results) =>
+        val argString = args.mkString(", ")
+        val resultString = results.map { case (name, typ) => s"$name :: $typ" }.mkString(", ")
+        s"$procedureName($argString) :: ($resultString)"
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here

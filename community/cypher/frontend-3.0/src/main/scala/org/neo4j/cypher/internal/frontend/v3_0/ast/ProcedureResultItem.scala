@@ -34,7 +34,7 @@ object ProcedureResultItem {
 case class ProcedureResultItem(output: Option[ProcedureOutput], variable: Variable)(val position: InputPosition)
   extends ASTNode with SemanticChecking {
 
-  val outputName = output.map(_.name).getOrElse(variable.name)
+  val outputName: String = output.map(_.name).getOrElse(variable.name)
 
   def semanticCheck: SemanticCheck =
     // This is needed to prevent the initial round of semantic checking from failing with type errors

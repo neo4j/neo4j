@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticChecking,
 case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart)(val position: InputPosition)
   extends Statement with SemanticChecking {
 
-  def returnColumns = part.returnColumns
+  override def returnColumns = part.returnColumns
 
   override def semanticCheck =
     part.semanticCheck chain
@@ -42,15 +42,15 @@ sealed trait QueryPart extends ASTNode with ASTPhrase with SemanticCheckable {
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart {
   assert(clauses.nonEmpty)
 
-  def containsUpdates:Boolean =
+  override def containsUpdates =
     clauses.exists {
       case _: UpdateClause => true
       case _               => false
     }
 
-  def returnColumns = clauses.last.returnColumns
+  override def returnColumns = clauses.last.returnColumns
 
-  def semanticCheck: SemanticCheck =
+  override def semanticCheck =
     checkOrder chain
     checkClauses chain
     checkIndexHints

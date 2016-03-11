@@ -20,7 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_0.helpers
 
 import java.util
+import java.util.Arrays.asList
+import java.util.Collections.{emptyMap, emptyList, singletonMap}
+import java.util.Collections.{singleton => singletonSet}
 
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.ScalaCompatibility.asScalaCompatible
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class ScalaCompatibilityTest extends CypherFunSuite {
@@ -30,27 +34,27 @@ class ScalaCompatibilityTest extends CypherFunSuite {
     it.put("k1", 5)
     it.put("k2", 15)
 
-    ScalaCompatibility.asScalaCompatible(it) should equal(Map("k1" -> 5, "k2" -> 15))
+    asScalaCompatible(it) should equal(Map("k1" -> 5, "k2" -> 15))
   }
 
   test("should convert singleton map") {
-    val it = java.util.Collections.singletonMap("key", 12)
+    val it = singletonMap("key", 12)
 
-    ScalaCompatibility.asScalaCompatible(it) should equal(Map("key" -> 12))
+    asScalaCompatible(it) should equal(Map("key" -> 12))
   }
 
   test("should convert empty map") {
-    val it = java.util.Collections.emptyMap()
+    val it = emptyMap()
 
-    ScalaCompatibility.asScalaCompatible(it) should equal(Map.empty)
+    asScalaCompatible(it) should equal(Map.empty)
   }
 
   test("should convert nested map") {
     val it = new util.HashMap[String, Any]()
-    it.put("k1", java.util.Collections.singletonMap("a", 2))
+    it.put("k1", singletonMap("a", 2))
     it.put("k2", 15)
 
-    ScalaCompatibility.asScalaCompatible(it) should equal(Map("k1" -> Map("a" -> 2), "k2" -> 15))
+    asScalaCompatible(it) should equal(Map("k1" -> Map("a" -> 2), "k2" -> 15))
   }
 
 
@@ -59,7 +63,7 @@ class ScalaCompatibilityTest extends CypherFunSuite {
     it.add(12)
     it.add(14)
 
-    ScalaCompatibility.asScalaCompatible(it) should equal(List(12, 14))
+    asScalaCompatible(it) should equal(List(12, 14))
   }
 
 
@@ -68,37 +72,37 @@ class ScalaCompatibilityTest extends CypherFunSuite {
     it.add(12)
     it.add(14)
 
-    ScalaCompatibility.asScalaCompatible(it) should equal(List(12, 14))
+    asScalaCompatible(it) should equal(List(12, 14))
   }
 
-  test("should convert singleton list") {
-    val it = java.util.Collections.singleton(3)
+  test("should convert singleton set") {
+    val it = singletonSet(3)
 
-    ScalaCompatibility.asScalaCompatible(it) should equal(List(3))
+    asScalaCompatible(it) should equal(List(3))
   }
 
   test("should convert empty list") {
-    val it = java.util.Collections.emptyList()
+    val it = emptyList()
 
-    ScalaCompatibility.asScalaCompatible(it) should equal(List.empty)
+    asScalaCompatible(it) should equal(List.empty)
   }
 
-  test("should convert nested list") {
-    val it = java.util.Collections.singleton(util.Arrays.asList(3, 4))
+  test("should convert nested data structures") {
+    val it = singletonSet(asList(3, 4))
 
-    ScalaCompatibility.asScalaCompatible(it) should equal(List(List(3, 4)))
+    asScalaCompatible(it) should equal(List(List(3, 4)))
   }
 
-  test("should convert set to Iterable") {
+  test("should convert from set") {
     val it = new java.util.HashSet[String]
     it.add("Hello")
 
-    ScalaCompatibility.asScalaCompatible(it) should equal(List("Hello"))
+    asScalaCompatible(it) should equal(List("Hello"))
   }
 
   test("should convert traversable to Iterable") {
     val it = Stream[Any](1, 2, 3)
 
-    ScalaCompatibility.asScalaCompatible(it).isInstanceOf[Iterable[Any]] shouldBe true
+    it shouldBe a [Iterable[Any]]
   }
 }

@@ -47,7 +47,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
       text = "This invokes the built-in procedure 'db.labels', which lists all in-use labels in the database.",
       queryText = "CALL db.labels",
       optionalResultExplanation = "",
-      assertions = (p) => assert(p.hasNext) )
+      assertions = (p) => assert(p.nonEmpty) )
   }
 
   @Test def call_a_procedure_within_a_complex_query() {
@@ -58,7 +58,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
       queryText = "CALL db.labels() YIELD label RETURN count(label) AS numLabels",
       optionalResultExplanation =
         "Since the procedure call is part of a larger query, all outputs must be named explicitly",
-      assertions = (p) => assert(p.hasNext) )
+      assertions = (p) => assert(p.nonEmpty) )
   }
 
   @Test def call_a_procedure_within_a_complex_query_and_rename_outputs() {
@@ -73,7 +73,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
                   "RETURN prop, count(n) AS numNodes",
       optionalResultExplanation =
         "Since the procedure call is part of a larger query, all outputs must be named explicitly",
-      assertions = (p) => assert(p.hasNext) )
+      assertions = (p) => assert(p.nonEmpty) )
   }
 
   @Test def call_a_procedure_with_literal_arguments() {
@@ -82,7 +82,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
       text = "This invokes the example procedure `org.neo4j.procedure.example.addNodeToIndex` using arguments that are written out directly in the statement text. This is called literal arguments.",
       queryText = "CALL org.neo4j.procedure.example.addNodeToIndex('users', "+nodeId+", 'name')",
       optionalResultExplanation = "Since our example procedure does not return any result, the result is empty.",
-      assertions = (p) => assert(!p.hasNext) )
+      assertions = (p) => assert(p.isEmpty) )
   }
 
   @Test def call_a_procedure_with_parameter_arguments() {
@@ -92,7 +92,7 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
       queryText = "CALL org.neo4j.procedure.example.addNodeToIndex",
       parameters = Map("indexName"->"users", "node"->nodeId, "propKey"-> "name"),
       optionalResultExplanation = "Since our example procedure does not return any result, the result is empty.",
-      assertions = (p) => assert(!p.hasNext) )
+      assertions = (p) => assert(p.isEmpty) )
   }
 
   @Test def call_a_procedure_with_mixed_arguments() {
@@ -102,6 +102,6 @@ class CallTest extends DocumentingTestBase with QueryStatisticsTestSupport with 
       queryText = "CALL org.neo4j.procedure.example.addNodeToIndex('users', {node}, 'name')",
       parameters = Map("node"->nodeId),
       optionalResultExplanation = "Since our example procedure does not return any result, the result is empty.",
-      assertions = (p) => assert(!p.hasNext) )
+      assertions = (p) => assert(p.isEmpty) )
   }
 }

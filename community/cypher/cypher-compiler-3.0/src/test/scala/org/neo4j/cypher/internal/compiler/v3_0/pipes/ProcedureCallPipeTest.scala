@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.pipes
 import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{EagerReadWriteCallMode, LazyReadOnlyCallMode}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{QualifiedProcedureName, QueryContext, QueryContextAdaptation}
+import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
@@ -48,20 +48,7 @@ class ProcedureCallPipeTest
       resultIndices = Seq(0 -> "r")
     )()(newMonitor)
 
-    val qtx = new QueryContext with QueryContextAdaptation {
-      override def isGraphKernelResultValue(v: Any): Boolean = false
-
-      override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
-        name should equal(procedureName)
-        args.length should be(1)
-        val count = args.head.asInstanceOf[Number].intValue()
-        1.to(count).map { i =>
-          Array[AnyRef](s"take $i/$count")
-        }
-
-
-      }.toIterator
-    }
+    val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadOnlyAccess)
 
     pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
       ExecutionContext.from("a" ->1, "r" -> "take 1/1"),
@@ -84,25 +71,11 @@ class ProcedureCallPipeTest
       resultIndices = Seq(0 -> "r")
     )()(newMonitor)
 
-    val qtx = new QueryContext with QueryContextAdaptation {
-      override def isGraphKernelResultValue(v: Any): Boolean = false
-
-      override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
-        name should equal(procedureName)
-        args.length should be(1)
-        val count = args.head.asInstanceOf[Number].intValue()
-        1.to(count).map { i =>
-          Array[AnyRef](s"take $i/$count")
-        }
-
-
-      }.toIterator
-    }
-
+    val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadWriteAccess)
     pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
-      ExecutionContext.from("a" ->1, "r" -> "take 1/1"),
-      ExecutionContext.from("a" ->2, "r" -> "take 1/2"),
-      ExecutionContext.from("a" ->2, "r" -> "take 2/2")
+      ExecutionContext.from("a" -> 1, "r" -> "take 1/1"),
+      ExecutionContext.from("a" -> 2, "r" -> "take 1/2"),
+      ExecutionContext.from("a" -> 2, "r" -> "take 2/2")
     ))
   }
 
@@ -120,19 +93,41 @@ class ProcedureCallPipeTest
       resultIndices = Seq.empty
     )()(newMonitor)
 
-    val qtx = new QueryContext with QueryContextAdaptation {
-      override def isGraphKernelResultValue(v: Any): Boolean = false
-
-      override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
-        name should equal(procedureName)
-        args.length should be(1)
-        Iterator.empty
-      }
-    }
-
+    val qtx = new FakeQueryContext(procedureName, _ => Iterator.empty, ProcedureReadWriteAccess)
     pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
       ExecutionContext.from("a" -> 1),
       ExecutionContext.from("a" -> 2)
     ))
+  }
+
+  private def resultsTransformer(args: Seq[Any]): Iterator[Array[AnyRef]] = {
+    val count = args.head.asInstanceOf[Number].intValue()
+    1.to(count).map { i =>
+      Array[AnyRef](s"take $i/$count")
+    }
+
+  }.toIterator
+
+
+  class FakeQueryContext(procedureName: QualifiedProcedureName, result: Seq[Any] => Iterator[Array[AnyRef]],
+                         expectedAccessMode: ProcedureAccessMode) extends QueryContext with QueryContextAdaptation {
+    override def isGraphKernelResultValue(v: Any): Boolean = false
+
+    override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]) = {
+      expectedAccessMode should equal(ProcedureReadOnlyAccess)
+      doIt(name, args)
+    }
+
+    override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
+      expectedAccessMode should equal(ProcedureReadWriteAccess)
+      doIt(name, args)
+    }
+
+    private def doIt(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
+      name should equal(procedureName)
+      args.length should be(1)
+      result(args)
+    }
+
   }
 }

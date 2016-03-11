@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, _}
 
 sealed trait Command extends Statement {
-  def returnColumns = List.empty
+  override def returnColumns = List.empty
 }
 
 case class CreateIndex(label: LabelName, property: PropertyKeyName)(val position: InputPosition) extends Command {
