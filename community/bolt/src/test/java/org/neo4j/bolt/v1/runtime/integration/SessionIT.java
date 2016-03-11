@@ -267,7 +267,7 @@ public class SessionIT
         // and send a `ROLLBACK`, because that means that all failures in the
         // transaction, be they client-local or inside neo, can be handled the
         // same way by a driver.
-        Session session = env.newSession();
+        Session session = env.newSession("bolt-test");
         session.init( "TestClient/1.0", emptyMap(), null, null );
 
         session.run( "BEGIN", EMPTY_PARAMS, null, noOp() );

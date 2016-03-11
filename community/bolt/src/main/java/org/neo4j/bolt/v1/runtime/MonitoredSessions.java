@@ -121,7 +121,7 @@ public class MonitoredSessions implements Sessions
         public <A> void ackFailure( A attachment, Callback<Void,A> callback )
         {
             monitor.messageReceived();
-            delegate.reset( attachment, withMonitor( callback ) );
+            delegate.ackFailure( attachment, withMonitor( callback ) );
         }
 
         @Override
