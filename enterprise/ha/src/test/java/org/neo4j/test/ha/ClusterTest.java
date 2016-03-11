@@ -48,7 +48,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalArbiters;
-import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.provided;
@@ -359,7 +358,7 @@ public class ClusterTest
     public void givenClusterWhenMasterGoesDownAndTxIsRunningThenDontWaitToSwitch() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "waitfortx" ) )
-                .withProvider( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ) ).build();
+                .withProvider( ClusterManager.clusterOfSize( 3 ) ).build();
         try
         {
             clusterManager.start();

@@ -198,25 +198,6 @@ public class ClusterManager
         return result;
     }
 
-    /**
-     * Provider pointing out an XML file to read.
-     *
-     * @param clustersXml the XML file containing the cluster specifications.
-     */
-    public static Provider fromXml( final URI clustersXml )
-    {
-        return new Provider()
-        {
-            @Override
-            public Clusters clusters() throws Exception
-            {
-                DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-                Document clustersXmlDoc = documentBuilder.parse( clustersXml.toURL().openStream() );
-                return new ClustersXMLSerializer( documentBuilder ).read( clustersXmlDoc );
-            }
-        };
-    }
-
     private static String getLocalAddress()
     {
         try
