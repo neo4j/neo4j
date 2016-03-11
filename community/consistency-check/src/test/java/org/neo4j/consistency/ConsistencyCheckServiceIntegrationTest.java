@@ -89,7 +89,9 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // then
         assertEquals( ConsistencyCheckService.Result.FAILURE, result );
-        File reportFile = new File( fixture.directory(), defaultLogFileName( timestamp ) );
+        File reportFile = new File(
+                configuration.get( ConsistencyCheckSettings.consistency_check_report_directory ),
+                defaultLogFileName( timestamp ) );
         assertTrue( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
     }
 
