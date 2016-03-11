@@ -101,7 +101,7 @@ public class BaseHighLimitRecordFormatTest
         }
 
         @Override
-        protected void doReadInternal( MyRecord record, PageCursor cursor, int recordSize,
+        protected String doReadInternal( MyRecord record, PageCursor cursor, int recordSize,
                                        long inUseByte, boolean inUse )
         {
             int shortsPerRecord = getShortsPerRecord();
@@ -111,6 +111,7 @@ public class BaseHighLimitRecordFormatTest
                 v += (cursor.getByte() & 0xFF);
                 record.value = v;
             }
+            return null;
         }
 
         private int getShortsPerRecord()

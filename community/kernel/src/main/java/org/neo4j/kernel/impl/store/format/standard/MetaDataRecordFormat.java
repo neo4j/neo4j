@@ -47,7 +47,7 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
     }
 
     @Override
-    public void read( MetaDataRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
+    public String read( MetaDataRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
             PagedFile storeFile ) throws IOException
     {
         int id = record.getIntId();
@@ -55,7 +55,7 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
         if ( id >= values.length )
         {
             record.initialize( false, FIELD_NOT_PRESENT );
-            return;
+            return null;
         }
 
         Position position = values[id];
@@ -64,6 +64,7 @@ public class MetaDataRecordFormat extends BaseOneByteHeaderRecordFormat<MetaData
         boolean inUse = cursor.getByte() == Record.IN_USE.byteValue();
         long value = inUse ? cursor.getLong() : FIELD_NOT_PRESENT;
         record.initialize( inUse, value );
+        return null;
     }
 
     @Override

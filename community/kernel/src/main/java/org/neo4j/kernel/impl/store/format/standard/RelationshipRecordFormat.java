@@ -48,11 +48,12 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
         return new RelationshipRecord( -1 );
     }
 
-    public void read( RelationshipRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
+    public String read( RelationshipRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
             PagedFile storeFile ) throws IOException
     {
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
+        record.setInUse( inUse );
         if ( mode.shouldLoad( inUse ) )
         {
             // [    ,   x] in use flag
@@ -102,6 +103,7 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
                     (extraByte & 0x1) != 0,
                     (extraByte & 0x2) != 0 );
         }
+        return null;
     }
 
     @Override

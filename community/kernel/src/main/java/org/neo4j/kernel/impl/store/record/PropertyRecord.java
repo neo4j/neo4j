@@ -312,25 +312,35 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     @Override
     public String toString()
     {
-        ensureBlocksLoaded();
         StringBuilder buf = new StringBuilder();
         buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
                 prevProp ).append( ",next=" ).append( nextProp );
+
         if ( entityId != -1 )
         {
             buf.append( entityType == TYPE_NODE? ",node=" : ",rel=" ).append( entityId );
         }
-        for ( int i = 0; i < blockRecordsCursor; i++ )
+
+        if ( blocksLoaded )
         {
-            buf.append( ',' ).append( blockRecords[i] );
+            for ( int i = 0; i < blockRecordsCursor; i++ )
+            {
+                buf.append( ',' ).append( blockRecords[i] );
+            }
         }
+        else
+        {
+            buf.append( ", (blocks not loaded)" );
+        }
+
         if ( deletedRecords != null )
         {
             for ( DynamicRecord dyn : deletedRecords )
             {
-                buf.append( ",del:" ).append( dyn );
+                buf.append( ", del:" ).append( dyn );
             }
         }
+
         buf.append( "]" );
         return buf.toString();
     }
@@ -385,6 +395,11 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     {
         assert blocksCursor + 1 <= blocks.length : "Capacity of " + blocks.length + " exceeded";
         blocks[blocksCursor++] = block;
+    }
+
+    public int getBlockCapacity()
+    {
+        return blocks.length;
     }
 
     public int getNumberOfBlocks()

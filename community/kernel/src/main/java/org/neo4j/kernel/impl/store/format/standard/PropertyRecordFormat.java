@@ -51,7 +51,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
     }
 
     @Override
-    public void read( PropertyRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public String read( PropertyRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
     {
         int offsetAtBeginning = cursor.getOffset();
 
@@ -78,12 +78,22 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
 
             record.setInUse( true );
             record.addLoadedBlock( block );
-            int additionalBlocks = type.calculateNumberOfBlocksUsed( block ) - 1;
+            int numberOfBlocksUsed = type.calculateNumberOfBlocksUsed( block );
+            if ( numberOfBlocksUsed == PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING )
+            {
+                return "Invalid type or encoding of property block";
+            }
+            int additionalBlocks = numberOfBlocksUsed - 1;
+            if ( additionalBlocks * 8 > RECORD_SIZE - (cursor.getOffset() - offsetAtBeginning ) )
+            {
+                return "PropertyRecord claims to have more property blocks than can fit in a record";
+            }
             while ( additionalBlocks --> 0 )
             {
                 record.addLoadedBlock( cursor.getLong() );
             }
         }
+        return null;
     }
 
     @Override

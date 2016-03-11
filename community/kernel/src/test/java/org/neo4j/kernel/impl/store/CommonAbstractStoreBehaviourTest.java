@@ -242,7 +242,7 @@ public class CommonAbstractStoreBehaviourTest
         }
 
         @Override
-        public void read( IntRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+        public String read( IntRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
                 throws IOException
         {
             for ( int i = 0; i < intsPerRecord; i++ )
@@ -250,6 +250,7 @@ public class CommonAbstractStoreBehaviourTest
                 record.value = cursor.getInt();
             }
             record.setInUse( true );
+            return null;
         }
 
         @Override

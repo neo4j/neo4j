@@ -90,7 +90,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         super( recordSize, recordHeaderSize, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
 
-    public void read( RECORD record, PageCursor primaryCursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public String read( RECORD record, PageCursor primaryCursor, RecordLoad mode, int recordSize, PagedFile storeFile )
             throws IOException
     {
         int primaryStartOffset = primaryCursor.getOffset();
@@ -106,7 +106,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                 // it may only be read as part of reading the primary unit.
                 record.clear();
                 // Return and try again
-                return;
+                return "Expected record to be the first unit in the chain, but record header says it's not";
             }
 
             // This is a record that is split into multiple record units. We need a bit more clever
@@ -121,7 +121,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                 // We must have made an inconsistent read of the secondary record unit reference.
                 // No point in trying to read this.
                 record.clear();
-                return;
+                return "Secondary record placed on inaccessible page";
             }
             secondaryCursor.setOffset( offset + HEADER_BYTE);
             int primarySize = recordSize - (primaryCursor.getOffset() - primaryStartOffset);
@@ -132,16 +132,16 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             int secondarySize = recordSize - HEADER_BYTE;
             PageCursor composite = CompositePageCursor.compose(
                     primaryCursor, primarySize, secondaryCursor, secondarySize );
-            doReadInternal( record, composite, recordSize, headerByte, inUse );
             record.setSecondaryUnitId( secondaryId );
+            return doReadInternal( record, composite, recordSize, headerByte, inUse );
         }
         else
         {
-            doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
+            return doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
         }
     }
 
-    protected abstract void doReadInternal(
+    protected abstract String doReadInternal(
             RECORD record, PageCursor cursor, int recordSize, long inUseByte, boolean inUse );
 
     @Override

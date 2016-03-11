@@ -87,9 +87,12 @@ public interface RecordFormat<RECORD extends AbstractBaseRecord>
      * @param recordSize size of records of this format. This is passed in like this since not all formats
      * know the record size in advance, but may be read from store header when opening the store.
      * @param storeFile {@link PagedFile} to get additional {@link PageCursor} from if needed.
+     * @return An error message describing if something went wrong when reading the record, or {@code null} if
+     * the record was read successfully. If non-null, the returned message can be fed to
+     * {@link RecordLoad#report(String)}.
      * @throws IOException on error reading.
      */
-    void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    String read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
             throws IOException;
 
     /**

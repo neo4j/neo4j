@@ -48,7 +48,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     }
 
     @Override
-    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public String read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
     {
         /*
          * First 4b
@@ -65,6 +65,12 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
         {
             int dataSize = recordSize - getRecordHeaderSize();
             int nrOfBytes = (int) (firstInteger & 0xFFFFFF);
+            if ( nrOfBytes > recordSize )
+            {
+                // We must have performed an inconsistent read,
+                // because this many bytes cannot possibly fit in a record!
+                return payloadTooBigErrorMessage( record, recordSize, nrOfBytes );
+            }
 
             /*
              * Pointer to next block 4b (low bits of the pointer)
@@ -77,23 +83,31 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
                     && nrOfBytes < dataSize || nrOfBytes > dataSize )
             {
-                mode.report( format( "Next block set[%d] current block illegal size[%d/%d]",
-                        record.getNextBlock(), record.getLength(), dataSize ) );
+                return format( "Next block set[%d] current block illegal size[%d/%d]",
+                        record.getNextBlock(), record.getLength(), dataSize );
             }
 
             readData( record, cursor );
         }
+        return null;
+    }
+
+    public static String payloadTooBigErrorMessage( DynamicRecord record, int recordSize, int nrOfBytes )
+    {
+        return format( "DynamicRecord[%s] claims to have a payload of %s bytes, " +
+                       "which is larger than the record size of %s bytes.",
+                record.getId(), nrOfBytes, recordSize );
     }
 
     public static void readData( DynamicRecord record, PageCursor cursor )
     {
-        if ( record.getLength() == 0 ) // don't go though the trouble of acquiring the window if we would read nothing
+        int len = record.getLength();
+        if ( len == 0 ) // don't go though the trouble of acquiring the window if we would read nothing
         {
             record.setData( NO_DATA );
             return;
         }
 
-        int len = record.getLength();
         byte[] data = record.getData();
         if ( data == null || data.length != len )
         {

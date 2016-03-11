@@ -71,7 +71,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     }
 
     @Override
-    protected void doReadInternal( RelationshipRecord record, PageCursor cursor, int recordSize, long headerByte,
+    protected String doReadInternal( RelationshipRecord record, PageCursor cursor, int recordSize, long headerByte,
                                    boolean inUse )
     {
         int type = cursor.getShort() & 0xFFFF;
@@ -87,6 +87,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
                 decodeAbsoluteIfPresent( cursor, headerByte, HAS_SECOND_CHAIN_NEXT_BIT, recordId ),
                 has( headerByte, FIRST_IN_FIRST_CHAIN_BIT ),
                 has( headerByte, FIRST_IN_SECOND_CHAIN_BIT ) );
+        return null;
     }
 
     private long decodeAbsoluteOrRelative( PageCursor cursor, long headerByte, int firstInStartBit, long recordId )

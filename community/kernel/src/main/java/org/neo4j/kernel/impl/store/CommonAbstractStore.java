@@ -728,8 +728,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                             if ( !justLegacyStoreTrailer )
                             {
                                 // We've found the highest id in use
+                                highestId = recordId + 1 /*+1 since we return the high id*/;
                                 found = true;
-                                highestId = recordId + 1; /*+1 since we return the high id*/;
                                 break;
                             }
                         }
@@ -1063,13 +1063,18 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         if ( cursor.next( pageId ) )
         {
             // There is a page in the store that covers this record, go read it
+            String error;
             do
             {
                 prepareForReading( cursor, offset, record );
-                recordFormat.read( record, cursor, mode, recordSize, storeFile );
+                error = recordFormat.read( record, cursor, mode, recordSize, storeFile );
             }
             while ( cursor.shouldRetry() );
             checkForOutOfBounds( cursor, id );
+            if ( error != null )
+            {
+                mode.report( error );
+            }
             verifyAfterReading( record, mode );
         }
         else

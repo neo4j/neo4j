@@ -41,7 +41,7 @@ class RelationshipRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<Relatio
     }
 
     @Override
-    public void read( RelationshipRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
+    public String read( RelationshipRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
             PagedFile storeFile ) throws IOException
     {
         long headerByte = cursor.getByte();
@@ -92,6 +92,7 @@ class RelationshipRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<Relatio
                     longFromIntAndMod( secondNextRel, secondNextRelMod ),
                     false, false );
         }
+        return null;
     }
 
     @Override

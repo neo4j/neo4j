@@ -52,7 +52,7 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.select;
 public class TestIdGeneratorRebuilding
 {
     @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    public static PageCacheRule pageCacheRule = new PageCacheRule(true);
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private EphemeralFileSystemAbstraction fs;

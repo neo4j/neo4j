@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
+import static org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat.payloadTooBigErrorMessage;
 import static org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat.readData;
 
 /**
@@ -60,7 +61,7 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
     }
 
     @Override
-    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public String read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
             throws IOException
     {
         byte headerByte = cursor.getByte();
@@ -68,11 +69,16 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
         if ( mode.shouldLoad( inUse ) )
         {
             int length = cursor.getShort() | cursor.getByte() << 16;
+            if ( length > recordSize )
+            {
+                return payloadTooBigErrorMessage( record, recordSize, length );
+            }
             long next = cursor.getLong();
             boolean isStartRecord = (headerByte & START_RECORD_BIT) != 0;
             record.initialize( inUse, isStartRecord, next, -1, length );
             readData( record, cursor );
         }
+        return null;
     }
 
     @Override

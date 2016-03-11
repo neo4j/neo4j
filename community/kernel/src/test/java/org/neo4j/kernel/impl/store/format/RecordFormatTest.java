@@ -46,7 +46,11 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -69,6 +73,7 @@ public abstract class RecordFormatTest
 
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule );
 
@@ -239,12 +244,14 @@ public abstract class RecordFormatTest
              Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
              */
             int offset = Math.toIntExact( written.getId() * recordSize );
+            String error;
             do
             {
                 cursor.setOffset( offset );
-                format.read( read, cursor, NORMAL, recordSize, storeFile );
+                error = format.read( read, cursor, NORMAL, recordSize, storeFile );
             }
             while ( cursor.shouldRetry() );
+            assertThat( error, is( nullValue() ) );
             assertFalse( "Out-of-bounds when reading record " + written, cursor.checkAndClearBoundsFlag() );
 
             // THEN
@@ -287,8 +294,7 @@ public abstract class RecordFormatTest
 
     private void assertedNext( PageCursor cursor ) throws IOException
     {
-        boolean couldDoNext = cursor.next();
-        assert couldDoNext;
+        assertTrue( cursor.next() );
     }
 
     private long idSureToBeOnTheNextPage( int pageSize, int recordSize )

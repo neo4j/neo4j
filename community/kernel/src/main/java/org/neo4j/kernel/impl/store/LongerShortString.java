@@ -820,9 +820,11 @@ public enum LongerShortString
 
     private static LongerShortString getEncodingTable( int encodingHeader )
     {
-        final LongerShortString encoding = ENCODINGS_BY_ENCODING[encodingHeader];
-        if (encoding==null) throw new IllegalArgumentException( "Invalid encoding '" + encoding + "'" );
-        return encoding;
+        if ( encodingHeader < 0 | ENCODINGS_BY_ENCODING.length <= encodingHeader )
+        {
+            return null;
+        }
+        return ENCODINGS_BY_ENCODING[encodingHeader];
     }
 
     private static Bits newBits( LongerShortString encoding, int length )
@@ -851,7 +853,10 @@ public enum LongerShortString
         for ( int i = 0; i < length; i++ )
         {
             char c = string.charAt( i );
-            if ( c < 0 || c >= 256 ) return false;
+            if ( c >= 256 )
+            {
+                return false;
+            }
             bits.put( c, 8 ); // Just the lower byte
         }
         return true;
@@ -934,13 +939,20 @@ public enum LongerShortString
         /*
          * [ lll,llle][eeee,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
          */
-        int encoding = (int) ((firstBlock & 0x1F0000000L) >> 28);
-        int length = (int) ((firstBlock & 0x7E00000000L) >> 33);
+        int encoding = (int) ( ( firstBlock & 0x1F0000000L ) >> 28 );
+        int length = (int) ( ( firstBlock & 0x7E00000000L ) >> 33 );
         if ( encoding == ENCODING_UTF8 || encoding == ENCODING_LATIN1 )
         {
-            return calculateNumberOfBlocksUsedForStep8( length );
+            return calculateNumberOfBlocksUsedForStep8(length);
         }
-        return calculateNumberOfBlocksUsed( getEncodingTable( encoding ), length );
+
+        LongerShortString encodingTable = getEncodingTable( encoding );
+        if ( encodingTable == null )
+        {
+            // We probably did an inconsistent read of the first block
+            return PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING;
+        }
+        return calculateNumberOfBlocksUsed( encodingTable, length );
     }
 
     public static int calculateNumberOfBlocksUsedForStep8( int length )

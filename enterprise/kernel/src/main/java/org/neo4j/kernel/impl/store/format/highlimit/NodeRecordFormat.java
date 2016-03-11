@@ -64,7 +64,7 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     }
 
     @Override
-    protected void doReadInternal( NodeRecord record, PageCursor cursor, int recordSize, long headerByte,
+    protected String doReadInternal( NodeRecord record, PageCursor cursor, int recordSize, long headerByte,
                                    boolean inUse )
     {
         // Interpret the header byte
@@ -76,6 +76,7 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
         long nextProp = decode( cursor, headerByte, HAS_PROPERTY_BIT, NULL );
         long labelField = decode( cursor, headerByte, HAS_LABELS_BIT, NULL_LABELS );
         record.initialize( inUse, nextProp, dense, nextRel, labelField );
+        return null;
     }
 
     @Override

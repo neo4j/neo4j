@@ -401,4 +401,5 @@ public enum PropertyType
     }
 
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    public static final int BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING = -1;
 }
