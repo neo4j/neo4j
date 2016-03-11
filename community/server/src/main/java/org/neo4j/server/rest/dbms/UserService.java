@@ -57,7 +57,7 @@ public class UserService
     {
         if ( !(authManager instanceof UserManager) )
         {
-            new IllegalArgumentException( "The provided auth manager is not capable of user management" );
+            throw new IllegalArgumentException( "The provided auth manager is not capable of user management" );
         }
         this.userManager = (UserManager) authManager;
         this.input = input;
