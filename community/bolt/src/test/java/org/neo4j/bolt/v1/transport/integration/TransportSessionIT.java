@@ -34,6 +34,8 @@ import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 
@@ -44,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.Messages.run;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.hasNotification;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
@@ -158,6 +161,34 @@ public class TransportSessionIT
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( 1l ) ) ),
                 msgSuccess( map( "type", "r" ) ) ) );
+    }
+
+    @Test
+    public void shouldSendNotifications() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)" ),
+                        pullAll() ) );
+
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves(
+                msgSuccess(),
+                msgSuccess(),
+                hasNotification(
+                        new TestNotification( "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                                "The provided label is not in the database.",
+                                "One of the labels in your query is not available in the database, " +
+                                "make sure you didn't misspell it or that the label is available when " +
+                                "you run this statement in your application (the missing label name is is: " +
+                                "THIS_IS_NOT_A_LABEL)",
+                                SeverityLevel.WARNING, new InputPosition( 9, 1, 10 ) ) ) ) );
+
     }
 
     @Before

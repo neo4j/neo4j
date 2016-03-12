@@ -38,15 +38,17 @@ import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
-import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.graphdb.QueryExecutionType.explained;
 import static org.neo4j.graphdb.QueryExecutionType.query;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
+import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class CypherAdapterStreamTest
@@ -165,7 +167,8 @@ public class CypherAdapterStreamTest
 
         // Then
         assertThat( meta.get( "notifications" ).toString(), equalTo(
-                "[{title=The request (directly or indirectly) referred to an index that does not exist., description=The hinted index does not exist, please check the schema, code=Neo.ClientError.Schema.IndexNotFound}, {description=Using COST planner is unsupported for this query, please use RULE planner instead, code=Neo.ClientNotification.Statement.PlannerUnsupportedWarning, position={offset=4, column=6, line=5}, title=This query is not supported by the COST planner.}]" ) );
+         "[{severity=WARNING, description=The hinted index does not exist, please check the schema, code=Neo.ClientError.Schema.IndexNotFound, title=The request (directly or indirectly) referred to an index that does not exist.}, {severity=WARNING, description=Using COST planner is unsupported for this query, please use RULE planner instead, code=Neo.ClientNotification.Statement.PlannerUnsupportedWarning, position={offset=4, column=6, line=5}, title=This query is not supported by the COST planner.}]"
+        ) );
     }
 
     private Map<String,Object> metadataOf( CypherAdapterStream stream ) throws Exception

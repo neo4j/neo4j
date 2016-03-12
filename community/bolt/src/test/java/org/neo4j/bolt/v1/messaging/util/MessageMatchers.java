@@ -21,18 +21,19 @@ package org.neo4j.bolt.v1.messaging.util;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.bolt.v1.messaging.MessageFormat;
-import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.PackStreamMessageFormatV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.RecordingMessageHandler;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
@@ -43,6 +44,10 @@ import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.bolt.v1.transport.integration.TestNotification;
+import org.neo4j.graphdb.Notification;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -75,6 +80,34 @@ public class MessageMatchers
             {
                 description.appendList( "MessageList[", ", ", "]", Arrays.asList( messageMatchers
                 ) );
+            }
+        };
+    }
+
+    public static Matcher<Message> hasNotification( Notification notification)
+    {
+        return new TypeSafeMatcher<Message>()
+        {
+            @Override
+            protected boolean matchesSafely( Message t )
+            {
+                assertThat( t, instanceOf( SuccessMessage.class ) );
+                Map<String,Object> meta = ((SuccessMessage) t).meta();
+                assertThat(meta, Matchers.hasKey("notifications"));
+                Set<Notification> notifications =
+                        ((List<Map<String, Object>>)meta.get( "notifications" ))
+                                .stream()
+                                .map( TestNotification::fromMap )
+                                .collect( Collectors.toSet() );
+
+                assertThat( notifications, Matchers.contains( notification ));
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "SUCCESS" );
             }
         };
     }
