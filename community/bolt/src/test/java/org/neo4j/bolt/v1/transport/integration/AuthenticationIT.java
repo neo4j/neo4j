@@ -222,8 +222,8 @@ public class AuthenticationIT
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.Forbidden,
-                "Read operations are not allowed for `NONE` transactions." ) ) );
+        assertThat( client, eventuallyRecieves( msgFailure( Status.Security.CredentialsExpired,
+                "The credentials you provided were valid, but must be changed before you can use this instance." ) ) );
     }
 
     @Before
