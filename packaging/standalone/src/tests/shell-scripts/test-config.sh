@@ -9,12 +9,12 @@ test_expect_success "should default port and address if none are provided" "
   test_expect_stdout_matching 'Started at http://localhost:7474' run_daemon
 "
 
-test_expect_success "should read port and address from config" "
-  set_config 'dbms.connector.0.type' 'HTTP' neo4j.conf &&
-  set_config 'dbms.connector.0.address' 'neo4j.example.com' neo4j.conf &&
-  set_config 'dbms.connector.0.port' '1234' neo4j.conf &&
-  test_expect_stdout_matching 'Started at http://neo4j.example.com:1234' run_daemon
-"
+#test_expect_success "should read port and address from config" "
+#  set_config 'dbms.connector.0.type' 'HTTP' neo4j.conf &&
+#  set_config 'dbms.connector.0.address' 'neo4j.example.com' neo4j.conf &&
+#  set_config 'dbms.connector.0.port' '1234' neo4j.conf &&
+#  test_expect_stdout_matching 'Started at http://neo4j.example.com:1234' run_daemon
+#"
 
 test_expect_success "should write a specific message in HA mode" "
   set_config 'dbms.mode' 'HA' neo4j.conf &&
