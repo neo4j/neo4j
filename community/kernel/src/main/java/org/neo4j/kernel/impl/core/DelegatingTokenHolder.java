@@ -86,8 +86,13 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> extends Lifecyc
         }
     }
 
-    private synchronized int createToken( String name )
-            throws KernelException
+    /**
+     * Create and put new token in cache.
+     * @param name token name
+     * @return newly created token id
+     * @throws KernelException
+     */
+    private synchronized int createToken( String name ) throws KernelException
     {
         Integer id = tokenCache.getId( name );
         if ( id != null )
