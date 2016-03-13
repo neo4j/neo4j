@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.compiler.v3_0.commands._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes._
@@ -31,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v3_0.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
-import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, ProfileMode, _}
 import org.neo4j.cypher.internal.frontend.v3_0.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
@@ -91,7 +89,7 @@ object ExecutablePlanBuilder {
 
 trait ExecutablePlanBuilder {
 
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext,
+  def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext,
                   tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
                   createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan
 }
@@ -102,7 +100,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseQueryService,
                            createFingerprintReference: Option[PlanFingerprint] => PlanFingerprintReference)
   extends PatternGraphBuilder {
 
-  def build(planContext: PlanContext, inputQuery: PreparedQuery,
+  def build(planContext: PlanContext, inputQuery: PreparedQuerySemantics,
             tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
 
     executionPlanBuilder.producePlan(inputQuery, planContext, tracer, createFingerprintReference)
@@ -110,14 +108,14 @@ class ExecutionPlanBuilder(graph: GraphDatabaseQueryService,
 }
 
 object InterpretedExecutionPlanBuilder {
-  def interpretedToExecutionPlan(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuery,
+  def interpretedToExecutionPlan(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuerySemantics,
                                  createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference,
                                  config: CypherCompilerConfiguration) = {
-    val abstractQuery = inputQuery.abstractQuery
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
-    val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
+    val columns = inputQuery.statement.returnColumns
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
-    val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory, inputQuery.notificationLogger)
+    val func = getExecutionPlanFunction(periodicCommitInfo, inputQuery.queryText, updating, resultBuilderFactory, inputQuery
+      .notificationLogger)
     new ExecutionPlan {
       private val fingerprint = createFingerprintReference(fp)
 
@@ -139,30 +137,6 @@ object InterpretedExecutionPlanBuilder {
       CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
 
     notificationCheckers.flatMap(_(pipe))
-  }
-
-  @tailrec
-  private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {
-    case in: PeriodicCommitQuery =>
-      getQueryResultColumns(in.query, currentSymbols)
-
-    case in: Query =>
-      // Find the last query part
-      var query = in
-      while (query.tail.isDefined) {
-        query = query.tail.get
-      }
-
-      query.returns.columns.flatMap {
-        case "*" => currentSymbols.variables.keys
-        case x => Seq(x)
-      }
-
-    case union: Union =>
-      getQueryResultColumns(union.queries.head, currentSymbols)
-
-    case _ =>
-      List.empty
   }
 
   private def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],

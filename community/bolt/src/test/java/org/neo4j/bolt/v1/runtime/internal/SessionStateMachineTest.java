@@ -60,8 +60,7 @@ public class SessionStateMachineTest
     private final KernelTransaction ktx = mock( KernelTransaction.class );
     private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
     private final StatementRunner runner = mock( StatementRunner.class );
-    private final SessionStateMachine machine = new SessionStateMachine(
-            usageData, db, txBridge, runner, NullLogService.getInstance(), Authentication.NONE );
+    private final SessionStateMachine machine = new SessionStateMachine( "<test>", usageData, db, txBridge, runner, NullLogService.getInstance(), Authentication.NONE );
 
     @Test
     public void initialStateShouldBeUninitalized()

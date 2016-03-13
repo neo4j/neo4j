@@ -60,6 +60,15 @@ public class ReplicatedLockTokenState<MEMBER>
         return ordinal;
     }
 
+    @Override
+    public String toString()
+    {
+        return "ReplicatedLockTokenState{" +
+                "currentToken=" + currentToken +
+                ", ordinal=" + ordinal +
+                '}';
+    }
+
     public static class Marshal<MEMBER> implements
             StateMarshal<ReplicatedLockTokenState<MEMBER>>
     {

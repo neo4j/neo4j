@@ -24,6 +24,9 @@ import scala.collection.mutable
 import scala.reflect.ClassTag
 
 object Foldable {
+
+  type TreeFold[R] = PartialFunction[Any, R => (R, Option[R => R])]
+
   implicit class TreeAny(val that: Any) extends AnyVal {
     def children: Iterator[AnyRef] = that match {
       case p: Product => p.productIterator.asInstanceOf[Iterator[AnyRef]]

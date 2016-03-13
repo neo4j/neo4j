@@ -23,18 +23,22 @@ import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.util.DependencySatisfier;
 
 public class SimpleKernelContext implements KernelContext
 {
     private final FileSystemAbstraction fileSystem;
     private final File storeDir;
     private final DatabaseInfo databaseInfo;
+    private final DependencySatisfier satisfier;
 
-    public SimpleKernelContext( FileSystemAbstraction fileSystem, File storeDir, DatabaseInfo databaseInfo )
+    public SimpleKernelContext( FileSystemAbstraction fileSystem, File storeDir, DatabaseInfo databaseInfo,
+            DependencySatisfier satisfier )
     {
         this.fileSystem = fileSystem;
         this.storeDir = storeDir;
         this.databaseInfo = databaseInfo;
+        this.satisfier = satisfier;
     }
 
     @Override
@@ -53,5 +57,11 @@ public class SimpleKernelContext implements KernelContext
     public DatabaseInfo databaseInfo()
     {
         return databaseInfo;
+    }
+
+    @Override
+    public DependencySatisfier dependencySatisfier()
+    {
+        return satisfier;
     }
 }

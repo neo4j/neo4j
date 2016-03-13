@@ -28,19 +28,27 @@ import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 
 public class ErrorReportingSession implements Session
 {
+    private final String connectionDescriptor;
     private final Neo4jError error;
     private final String id;
 
-    public ErrorReportingSession( Neo4jError error )
+    public ErrorReportingSession( String connectionDescriptor, Neo4jError error )
     {
         this.error = error;
         this.id = UUID.randomUUID().toString();
+        this.connectionDescriptor = connectionDescriptor;
     }
 
     @Override
     public String key()
     {
         return id;
+    }
+
+    @Override
+    public String connectionDescriptor()
+    {
+        return connectionDescriptor;
     }
 
     private <V, A> void reportError( A attachment, Callback<V,A> callback )

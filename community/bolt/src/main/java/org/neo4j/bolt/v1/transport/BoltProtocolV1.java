@@ -36,6 +36,7 @@ import org.neo4j.bolt.v1.runtime.internal.Neo4jError;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
+import static java.lang.String.format;
 import static org.neo4j.bolt.v1.messaging.msgprocess.MessageProcessingCallback.publishError;
 
 /**
@@ -64,10 +65,10 @@ public class BoltProtocolV1 implements BoltProtocol
         this.session = session;
         this.output = new ChunkedOutput( channel, DEFAULT_BUFFER_SIZE );
         this.packer = new PackStreamMessageFormatV1.Writer( new Neo4jPack.Packer( output ), output );
-
         this.dechunker = new BoltV1Dechunker(
-                new TransportBridge( log, session, packer, this::onMessageDone),
-                this::onMessageStarted );
+            new TransportBridge( log, session, packer, this::onMessageDone) ,
+            this::onMessageStarted
+        );
     }
 
     /**
@@ -120,7 +121,7 @@ public class BoltProtocolV1 implements BoltProtocol
             }
             catch ( Throwable e1 )
             {
-                log.error( String.format( "Session %s: Secondary error while notifying client of problem: %s",
+                log.error( format( "Session %s: Secondary error while notifying client of problem: %s",
                         session.key(), e.getMessage() ), e );
             }
             finally

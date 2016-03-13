@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.planner.{Predicate, Selections}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, LabelId, PropertyKeyId, SemanticTable}
 
@@ -44,7 +45,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
-    val result = calculator(In(Property(varFor("n"), PropertyKeyName("title")_)_, Parameter("titles")_)_)
+    val result = calculator(In(Property(varFor("n"), PropertyKeyName("title")_)_, Parameter("titles", CTAny)_)_)
 
     result.factor should equal (0.92 +- 0.01)
   }

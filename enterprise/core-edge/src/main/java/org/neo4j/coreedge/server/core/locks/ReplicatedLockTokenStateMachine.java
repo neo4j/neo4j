@@ -42,15 +42,15 @@ public class ReplicatedLockTokenStateMachine<MEMBER> implements StateMachine
         this.storage = storage;
         this.state = storage.getInitialState();
         this.pendingLockTokensRequests = pendingLockTokensRequests;
+        this.pendingLockTokensRequests.setCurrentToken( state.get() );
     }
 
     @Override
     public synchronized void applyCommand( ReplicatedContent content, long logIndex )
     {
-        if ( content instanceof ReplicatedLockTokenRequest )
+        if ( content instanceof ReplicatedLockTokenRequest && logIndex > state.ordinal() )
         {
             ReplicatedLockTokenRequest<MEMBER> tokenRequest = (ReplicatedLockTokenRequest<MEMBER>) content;
-
             Optional<PendingLockTokenRequest> future = Optional.ofNullable( pendingLockTokensRequests.retrieve( tokenRequest ) );
             if ( tokenRequest.id() == LockToken.nextCandidateId( currentToken().id() ) )
             {

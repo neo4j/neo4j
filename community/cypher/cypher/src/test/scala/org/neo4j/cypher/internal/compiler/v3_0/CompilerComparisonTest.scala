@@ -39,8 +39,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QuerySt
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.coreapi.{PropertyContainerLocker, InternalTransaction}
-import org.neo4j.kernel.impl.query.{TransactionalContext, Neo4jTransactionalContext}
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.xml.Elem
@@ -541,14 +540,14 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
   private def runQueryWith(query: String, compiler: CypherCompiler, db: GraphDatabaseQueryService): (List[Map[String, Any]], InternalExecutionResult) = {
     val (plan: ExecutionPlan, parameters) = db.withTxAndSession {
       (tx, session) =>
-        val transactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.metadataKey))
+        val transactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.METADATA_KEY))
         val planContext = new TransactionBoundPlanContext(transactionalContext)
         compiler.planQuery(query, planContext, devNullLogger)
     }
 
     db.withTxAndSession {
       (tx, session) =>
-        val transactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.metadataKey))
+        val transactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.METADATA_KEY))
         val queryContext = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
         val result = plan.run(queryContext, ProfileMode, parameters)
         (result.toList, result)

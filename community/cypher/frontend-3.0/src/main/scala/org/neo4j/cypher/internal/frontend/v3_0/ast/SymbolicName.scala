@@ -26,6 +26,18 @@ trait SymbolicName extends ASTNode with ASTParticle {
   def position: InputPosition
 }
 
+case class ProcedureNamespace(parts: List[String] = List.empty)(val position: InputPosition) extends ASTNode
+
+case class ProcedureName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName {
+  override def equals(x: Any): Boolean = x match {
+    case ProcedureName(other) => other.toLowerCase == name.toLowerCase
+    case _ => false
+  }
+  override def hashCode = name.toLowerCase.hashCode
+}
+
+case class ProcedureOutput(name: String)(val position: InputPosition) extends ASTNode with SymbolicName
+
 trait SymbolicNameWithId[+ID <: NameId] extends SymbolicName {
   def id(implicit semanticTable: SemanticTable): Option[ID]
 }

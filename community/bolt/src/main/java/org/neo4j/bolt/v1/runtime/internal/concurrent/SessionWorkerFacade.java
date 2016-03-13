@@ -32,11 +32,13 @@ import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 public class SessionWorkerFacade implements Session
 {
     private final String key;
+    private final String connectionDescriptor;
     private final SessionWorker worker;
 
-    public SessionWorkerFacade( String key, SessionWorker worker )
+    public SessionWorkerFacade( String key, String connectionDescriptor, SessionWorker worker )
     {
         this.key = key;
+        this.connectionDescriptor = connectionDescriptor;
         this.worker = worker;
     }
 
@@ -44,6 +46,12 @@ public class SessionWorkerFacade implements Session
     public String key()
     {
         return key;
+    }
+
+    @Override
+    public String connectionDescriptor()
+    {
+        return connectionDescriptor;
     }
 
     @Override

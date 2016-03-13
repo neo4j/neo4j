@@ -129,13 +129,13 @@ class ExceptionTranslatingQueryContextFor3_0(val inner: QueryContext) extends Qu
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     translateException(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
+  override def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callReadOnlyProcedure(name, args))
 
-  override def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
+  override def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callReadWriteProcedure(name, args))
 
-  override def callDbmsProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
+  override def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]] =
     translateIterator(inner.callDbmsProcedure(name, args))
 
   override def isGraphKernelResultValue(v: Any): Boolean =

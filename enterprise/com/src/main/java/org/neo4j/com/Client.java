@@ -19,8 +19,10 @@
  */
 package org.neo4j.com;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -79,7 +81,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private static final String MONITORING_CHANNEL_HANDLER_NAME = "monitor";
 
     private ClientBootstrap bootstrap;
-    private final SocketAddress address;
+    private final SocketAddress destination;
+    private final SocketAddress origin;
     private final Log msgLog;
     private ResourcePool<ChannelContext> channelPool;
     private final Protocol protocol;
@@ -94,8 +97,9 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final RequestMonitor requestMonitor;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> entryReader;
 
-    public Client( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, int frameLength,
-            ProtocolVersion protocolVersion, long readTimeout, int maxConcurrentChannels, int chunkSize,
+    public Client( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+            LogProvider logProvider, StoreId storeId, int frameLength, ProtocolVersion protocolVersion,
+            long readTimeout, int maxConcurrentChannels, int chunkSize,
             ResponseUnpacker responseUnpacker,
             ByteCounterMonitor byteCounterMonitor,
             RequestMonitor requestMonitor,
@@ -116,11 +120,44 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
         this.maxUnusedChannels = maxConcurrentChannels;
         this.comExceptionHandler = getNoOpComExceptionHandler();
-        this.address = new InetSocketAddress( hostNameOrIp, port );
+
+        if ( destinationHostNameOrIp.equals( "0.0.0.0" ))
+        {
+            // So it turns out that on Windows, connecting to 0.0.0.0 when specifying
+            // an origin address will not succeed. But since we know we are
+            // connecting to ourselves, and that we are listening on everything,
+            // replacing with localhost is the proper thing to do.
+            this.destination = new InetSocketAddress( getLocalAddress(), destinationPort );
+        } else {
+            // An explicit destination address is always correct
+            this.destination = new InetSocketAddress( destinationHostNameOrIp, destinationPort );
+        }
+
+        if (originHostNameOrIp == null || originHostNameOrIp.equals("0.0.0.0")) {
+            origin = null;
+        } else {
+            origin = new InetSocketAddress( originHostNameOrIp, 0);
+        }
+
         this.protocol = createProtocol( chunkSize, protocolVersion.getApplicationProtocol() );
         this.responseUnpacker = responseUnpacker;
 
-        msgLog.info( getClass().getSimpleName() + " communication channel created towards " + address );
+        msgLog.info( getClass().getSimpleName() + " communication channel created towards " + destination );
+    }
+
+    private String getLocalAddress()
+    {
+        try
+        {
+            // Null corresponds to localhost
+            return InetAddress.getByName( null ).getHostAddress();
+        }
+        catch ( UnknownHostException e )
+        {
+            // Fetching the localhost address won't throw this exception, so this should never happen, but if it
+            // were, then the computer doesn't even have a loopback interface, so crash now rather than later
+            throw new AssertionError( e );
+        }
     }
 
     private ComExceptionHandler getNoOpComExceptionHandler()
@@ -155,8 +192,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     public void start()
     {
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
-                newCachedThreadPool( daemon( getClass().getSimpleName() + "-boss@" + address ) ),
-                newCachedThreadPool( daemon( getClass().getSimpleName() + "-worker@" + address ) ) ) );
+                newCachedThreadPool( daemon( getClass().getSimpleName() + "-boss@" + destination ) ),
+                newCachedThreadPool( daemon( getClass().getSimpleName() + "-worker@" + destination ) ) ) );
         bootstrap.setPipelineFactory( this );
 
         channelPool = new ResourcePool<ChannelContext>( maxUnusedChannels,
@@ -166,19 +203,26 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             @Override
             protected ChannelContext create()
             {
-                ChannelFuture channelFuture = bootstrap.connect( address );
+                msgLog.info( threadInfo() + "Trying to open a new channel from " + origin + " to " + destination,
+                        true );
+                // We must specify the origin address in case the server has multiple IPs per interface
+                ChannelFuture channelFuture = bootstrap.connect( destination, origin );
                 channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
                 if ( channelFuture.isSuccess() )
                 {
-                    msgLog.info( threadInfo() + "Opened a new channel to " + address );
+                    msgLog.info( threadInfo() + "Opened a new channel from " +
+                            channelFuture.getChannel().getLocalAddress() + " to " +
+                            channelFuture.getChannel().getRemoteAddress() );
 
                     return new ChannelContext( channelFuture.getChannel(), ChannelBuffers.dynamicBuffer(),
                             ByteBuffer.allocate( 1024 * 1024 ) );
                 }
 
-                String msg = Client.this.getClass().getSimpleName() + " could not connect to " + address;
+                Throwable cause = channelFuture.getCause();
+                String msg = Client.this.getClass().getSimpleName() + " could not connect from " + origin + " to " +
+                        destination;
                 msgLog.debug( msg, true );
-                throw traceComException( new ComException( msg, channelFuture.getCause() ), "Client.start" );
+                throw traceComException( new ComException( msg, cause ), "Client.start" );
             }
 
             @Override
@@ -337,7 +381,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         {
             if ( channelPool == null )
             {
-                throw new ComException( String.format( "Client for %s is stopped", address.toString() ) );
+                throw new ComException( String.format( "Client for %s is stopped", destination.toString() ) );
             }
 
             // Calling acquire is dangerous since it may be a blocking call... and if this
@@ -400,6 +444,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + address + "]";
+        return getClass().getSimpleName() + "[" + destination + "]";
     }
 }

@@ -177,7 +177,7 @@ public class CoreEdgeClusterSettings
 
     @Description( "RAFT log implementation" )
     public static final Setting<String> raft_log_implementation =
-            setting( "core_edge.raft_log_implementation", STRING, "NAIVE" );
+            setting( "core_edge.raft_log_implementation", STRING, "PHYSICAL" );
 
     @Description( "RAFT log rotation size" )
     public static final Setting<Long> raft_log_rotation_size =
@@ -197,5 +197,5 @@ public class CoreEdgeClusterSettings
 
     @Description("Enable or disable the dump of all network messages pertaining to the RAFT protocol")
     public static final Setting<Boolean> raft_messages_log_enable =
-            setting( "core_edge.raft_messages_log_enable", BOOLEAN, "false");
+            setting( "core_edge.raft_messages_log_enable", BOOLEAN, "true");
 }

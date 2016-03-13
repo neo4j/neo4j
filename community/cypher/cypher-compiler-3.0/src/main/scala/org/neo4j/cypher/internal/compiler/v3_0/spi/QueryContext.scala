@@ -45,6 +45,8 @@ import scala.collection.Iterator
  */
 trait QueryContext extends TokenContext {
 
+  // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
+
   type EntityAccessor
 
   def entityAccessor: EntityAccessor
@@ -154,11 +156,11 @@ trait QueryContext extends TokenContext {
 
   def lockRelationships(relIds: Long*)
 
-  def callReadOnlyProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callReadOnlyProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
-  def callReadWriteProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callReadWriteProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
-  def callDbmsProcedure(name: ProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
+  def callDbmsProcedure(name: QualifiedProcedureName, args: Seq[Any]): Iterator[Array[AnyRef]]
 
   // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database
@@ -208,3 +210,4 @@ trait QueryTransactionalContext {
 
   def commitAndRestartTx()
 }
+

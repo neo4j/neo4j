@@ -46,15 +46,19 @@ public final class StandalonePageCacheFactory
         return createPageCache( fileSystem, Config.defaults() );
     }
 
-    public static PageCache createPageCache(
-            FileSystemAbstraction fileSystem, Config config )
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config )
+    {
+        return createPageCache( fileSystem, PageCacheTracer.NULL, config );
+    }
+
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer tracer, Config config )
     {
         Config baseConfig = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
         Config finalConfig = baseConfig.with( config.getParams() );
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, finalConfig, PageCacheTracer.NULL, logProvider.getLog( PageCache.class ) );
+                fileSystem, finalConfig, tracer, logProvider.getLog( PageCache.class ) );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, SemanticChecking,
 case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart)(val position: InputPosition)
   extends Statement with SemanticChecking {
 
+  override def returnColumns = part.returnColumns
+
   override def semanticCheck =
     part.semanticCheck chain
     periodicCommitHint.semanticCheck chain
@@ -34,18 +36,21 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
 
 sealed trait QueryPart extends ASTNode with ASTPhrase with SemanticCheckable {
   def containsUpdates: Boolean
+  def returnColumns: List[String]
 }
 
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends QueryPart {
   assert(clauses.nonEmpty)
 
-  def containsUpdates:Boolean =
+  override def containsUpdates =
     clauses.exists {
       case _: UpdateClause => true
       case _               => false
     }
 
-  def semanticCheck: SemanticCheck =
+  override def returnColumns = clauses.last.returnColumns
+
+  override def semanticCheck =
     checkOrder chain
     checkClauses chain
     checkIndexHints
@@ -89,6 +94,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     val lastError = lastPair.last match {
       case _: UpdateClause => None
       case _: Return => None
+      case _: CallClause if clauses.size == 1 => None
       case clause =>
         Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.position))
     }
@@ -115,6 +121,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 sealed trait Union extends QueryPart with SemanticChecking {
   def part: QueryPart
   def query: SingleQuery
+
+  def returnColumns = query.returnColumns
 
   def containsUpdates:Boolean = part.containsUpdates || query.containsUpdates
 

@@ -49,8 +49,11 @@ case object PlanEventHorizon
       case UnwindProjection(variable, expression) =>
         context.logicalPlanProducer.planUnwind(plan, variable, expression)
 
-      case LoadCSVProjection(variableName, url, format, fieldTermiator) =>
-        context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTermiator)
+      case ProcedureCallProjection(call) =>
+        context.logicalPlanProducer.planCallProcedure(plan, call)
+
+      case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
+        context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator)
 
       case PassthroughAllHorizon() =>
         context.logicalPlanProducer.planPassAll(plan)

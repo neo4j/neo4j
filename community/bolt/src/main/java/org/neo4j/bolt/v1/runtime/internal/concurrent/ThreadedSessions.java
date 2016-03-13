@@ -20,9 +20,9 @@
 package org.neo4j.bolt.v1.runtime.internal.concurrent;
 
 import org.neo4j.bolt.v1.runtime.Session;
+import org.neo4j.bolt.v1.runtime.Sessions;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.bolt.v1.runtime.Sessions;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.THREAD_ID;
@@ -53,13 +53,13 @@ public class ThreadedSessions implements Sessions
     }
 
     @Override
-    public Session newSession( boolean isEncrypted )
+    public Session newSession( String connectionDescriptor, boolean isEncrypted )
     {
-        Session realSession = delegate.newSession( isEncrypted );
+        Session realSession = delegate.newSession( connectionDescriptor, isEncrypted );
         SessionWorker worker = new SessionWorker( realSession, logging );
 
         scheduler.schedule( sessionWorker, worker, stringMap( THREAD_ID, realSession.key() ) );
 
-        return new SessionWorkerFacade( realSession.key(), worker );
+        return new SessionWorkerFacade( realSession.key(), realSession.connectionDescriptor(), worker );
     }
 }

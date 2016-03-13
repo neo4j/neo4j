@@ -183,7 +183,7 @@ public class Start extends TransactionProvidingApp
         @Override
         public String toString()
         {
-            return String.format( "shell-session(%s)", session.getId() );
+            return String.format( "shell-session\tshell\t%s", session.getId() );
         }
     }
 }

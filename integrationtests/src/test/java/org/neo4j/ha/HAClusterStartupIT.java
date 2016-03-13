@@ -79,7 +79,7 @@ public class HAClusterStartupIT
         }
         finally
         {
-            clusterManager.shutdown();
+            clusterManager.safeShutdown();
         }
 
         assertAllStoreConsistent();
@@ -104,7 +104,7 @@ public class HAClusterStartupIT
         }
         finally
         {
-            clusterManager.shutdown();
+            clusterManager.safeShutdown();
         }
 
         assertAllStoreConsistent();
@@ -130,7 +130,7 @@ public class HAClusterStartupIT
         }
         finally
         {
-            clusterManager.shutdown();
+            clusterManager.safeShutdown();
         }
 
         assertAllStoreConsistent();
@@ -155,7 +155,7 @@ public class HAClusterStartupIT
         }
         finally
         {
-            clusterManager.shutdown();
+            clusterManager.safeShutdown();
         }
 
         assertAllStoreConsistent();
@@ -179,7 +179,7 @@ public class HAClusterStartupIT
         }
         finally
         {
-            clusterManager.shutdown();
+            clusterManager.safeShutdown();
         }
 
         assertAllStoreConsistent();
@@ -204,7 +204,7 @@ public class HAClusterStartupIT
         }
         finally
         {
-            clusterManager.shutdown();
+            clusterManager.safeShutdown();
         }
 
         assertAllStoreConsistent();
@@ -239,7 +239,7 @@ public class HAClusterStartupIT
         }
         finally
         {
-            newClusterManager.shutdown();
+            newClusterManager.safeShutdown();
         }
 
         assertAllStoreConsistent( newMaster, newSlave1, newSlave2 );

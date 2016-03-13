@@ -350,6 +350,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         final CountDownLatch hasLockLatch = new CountDownLatch( 1 );
         final CountDownLatch unlockLatch = new CountDownLatch( 1 );
         final CountDownLatch secondThreadGotLockLatch = new CountDownLatch( 1 );
+        final AtomicBoolean doneWriteSignal = new AtomicBoolean();
+        final AtomicBoolean doneCloseSignal = new AtomicBoolean();
 
         executor.submit( () -> {
             try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -367,6 +369,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 cursor.next();
+                doneWriteSignal.set( true );
                 secondThreadGotLockLatch.await();
             }
             return null;
@@ -374,12 +377,14 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
         Future<Object> closeFuture = executor.submit( () -> {
             pf.close();
+            doneCloseSignal.set( true );
             return null;
         } );
 
         try
         {
-            closeFuture.get( 100, TimeUnit.MILLISECONDS );
+            Thread.yield();
+            closeFuture.get( 50, TimeUnit.MILLISECONDS );
             fail( "Expected a TimeoutException here" );
         }
         catch ( TimeoutException e )
@@ -397,7 +402,15 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 
         unlockLatch.countDown(); // The race is on.
 
-        try
+        boolean anyDone;
+        do
+        {
+            Thread.yield();
+            anyDone = doneWriteSignal.get() | doneCloseSignal.get();
+        }
+        while ( !anyDone );
+
+        if ( doneCloseSignal.get() )
         {
             closeFuture.get( 1000, TimeUnit.MILLISECONDS );
             // The closeFuture got it first, so the takeLockFuture should throw.
@@ -414,8 +427,9 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
                 assertThat( cause.getMessage(), startsWith( "File has been unmapped" ) );
             }
         }
-        catch ( TimeoutException e )
+        else
         {
+            assertTrue( doneWriteSignal.get() );
             // The takeLockFuture got it first, so the closeFuture should
             // complete when we release the latch.
             secondThreadGotLockLatch.countDown();
@@ -423,7 +437,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
     }
 
-    @RepeatRule.Repeat( times = 3000 )
+    @RepeatRule.Repeat( times = 1000 )
     @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
     {

@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.udc.UsageData;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
@@ -75,6 +76,7 @@ public class SessionStateMachine implements Session, SessionState
                             ctx.accessMode = authResult.getAccessMode();
                             ctx.result( authResult.credentialsExpired() );
                             ctx.spi.udcRegisterClient( clientName );
+                            ctx.setQuerySourceFromClientNameAndPrincipal( clientName, authToken.get( Authentication.PRINCIPAL ) );
                             return IDLE;
                         }
                         catch ( AuthenticationException e )
@@ -91,7 +93,7 @@ public class SessionStateMachine implements Session, SessionState
                     protected State onNoImplementation( SessionStateMachine ctx, String command )
                     {
                         ctx.error( new Neo4jError( Status.Request.Invalid, "No operations allowed until you send an " +
-                                                                           "INIT message." ) );
+                                "INIT message." ) );
                         return halt( ctx );
                     }
                 },
@@ -467,7 +469,7 @@ public class SessionStateMachine implements Session, SessionState
                 // Is this error bad enough that we should roll back, or did the failure occur in an implicit
                 // transaction?
                 if(  err.status().code().classification().rollbackTransaction() ||
-                     ctx.currentTransaction.transactionType() == implicit )
+                        ctx.currentTransaction.transactionType() == implicit )
                 {
                     try
                     {
@@ -477,7 +479,7 @@ public class SessionStateMachine implements Session, SessionState
                     catch ( Throwable t )
                     {
                         ctx.spi.reportError( "While handling '" + err.status() + "', a second failure occurred when " +
-                                             "rolling back transaction: " + t.getMessage(), t );
+                                "rolling back transaction: " + t.getMessage(), t );
                     }
                     finally
                     {
@@ -529,6 +531,9 @@ public class SessionStateMachine implements Session, SessionState
     /** The current transaction, if present */
     private KernelTransaction currentTransaction;
 
+    /** The current query source, if initialized */
+    private String currentQuerySource;
+
     /** Callback poised to receive the next response */
     private Callback currentCallback;
 
@@ -557,6 +562,7 @@ public class SessionStateMachine implements Session, SessionState
      */
     interface SPI
     {
+        String connectionDescriptor();
         void reportError( Neo4jError err );
         void reportError( String message, Throwable cause );
         KernelTransaction beginTransaction( KernelTransaction.Type type, AccessMode mode );
@@ -568,13 +574,11 @@ public class SessionStateMachine implements Session, SessionState
         void udcRegisterClient( String clientName );
         Statement currentStatement();
     }
-
-    public SessionStateMachine( UsageData usageData, GraphDatabaseFacade db, ThreadToStatementContextBridge txBridge,
+    public SessionStateMachine( String connectionDescriptor, UsageData usageData, GraphDatabaseFacade db, ThreadToStatementContextBridge txBridge,
             StatementRunner engine, LogService logging, Authentication authentication )
     {
-        this( new StandardStateMachineSPI( usageData, db, engine, logging, authentication, txBridge ));
+        this( new StandardStateMachineSPI( connectionDescriptor, usageData, db, engine, logging, authentication, txBridge ));
     }
-
     public SessionStateMachine( SPI spi )
     {
         this.spi = spi;
@@ -585,6 +589,22 @@ public class SessionStateMachine implements Session, SessionState
     public String key()
     {
         return id;
+    }
+
+    public String connectionDescriptor()
+    {
+        return spi.connectionDescriptor();
+    }
+
+    private String querySource()
+    {
+        return currentQuerySource;
+    }
+
+    private void setQuerySourceFromClientNameAndPrincipal( String clientName, Object principal )
+    {
+        String principalName = principal == null ? "null" : principal.toString();
+        currentQuerySource = format( "bolt\t%s\t%s\t%s>", principalName, clientName, connectionDescriptor() );
     }
 
     @Override
@@ -712,15 +732,7 @@ public class SessionStateMachine implements Session, SessionState
                 service.beginTransaction( currentTransaction.transactionType(), currentTransaction.mode() );
         Neo4jTransactionalContext transactionalContext =
                 new Neo4jTransactionalContext( service, transaction, spi.currentStatement(), locker );
-
-        return new QuerySession( transactionalContext )
-        {
-            @Override
-            public String toString()
-            {
-                return "bolt";
-            }
-        };
+        return new BoltQuerySession( transactionalContext, querySource() );
     }
 
     public State state()
@@ -823,6 +835,23 @@ public class SessionStateMachine implements Session, SessionState
         if ( currentCallback != null )
         {
             currentCallback.ignored( currentAttachment );
+        }
+    }
+
+    private class BoltQuerySession extends QuerySession
+    {
+        private final String querySource;
+
+        public BoltQuerySession( Neo4jTransactionalContext transactionalContext, String querySource )
+        {
+            super( transactionalContext );
+            this.querySource = querySource;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "bolt-session\t%s", querySource );
         }
     }
 }

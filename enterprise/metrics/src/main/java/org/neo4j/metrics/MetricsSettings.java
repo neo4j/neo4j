@@ -77,6 +77,9 @@ public class MetricsSettings
     @Description( "Enable reporting metrics about HA cluster info." )
     public static Setting<Boolean> neoClusterEnabled = setting(
             "metrics.neo4j.cluster.enabled", Settings.BOOLEAN, neoEnabled );
+    @Description( "Enable reporting metrics about Server threading info." )
+    public static Setting<Boolean> neoServerEnabled = setting(
+            "metrics.neo4j.server.enabled", Settings.BOOLEAN, neoEnabled );
 
     @Description( "Enable reporting metrics about the duration of garbage collections" )
     public static Setting<Boolean> jvmGcEnabled = setting( "metrics.jvm.gc.enabled", Settings.BOOLEAN, neoEnabled );

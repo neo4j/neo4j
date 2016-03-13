@@ -27,8 +27,8 @@ import scala.collection.mutable.ArrayBuffer
 
 class RowIteratorVisitationTest extends CypherFunSuite {
 
-  val javaValues = new JavaResultValueConverter(_ => false)
-  import javaValues.iteratorToVisitable
+  val javaValues = new RuntimeJavaValueConverter(_ => false)
+  import javaValues.feedIteratorToVisitable
 
   test("should convert non-empty iterator to visitor") {
     // Given
@@ -36,7 +36,7 @@ class RowIteratorVisitationTest extends CypherFunSuite {
     val recordingVisitor = RecordingResultVisitor("a", "b")()
 
     // When
-    iteratorToVisitable(input.iterator).accept(recordingVisitor)
+    feedIteratorToVisitable(input.iterator).accept(recordingVisitor)
 
     // Then
     recordingVisitor.recorded should equal(input.flatMap(_.toList))
@@ -49,7 +49,7 @@ class RowIteratorVisitationTest extends CypherFunSuite {
     val recordingVisitor = RecordingResultVisitor("a")(rowsToAccept)
 
     // When
-    iteratorToVisitable(input.iterator).accept(recordingVisitor)
+    feedIteratorToVisitable(input.iterator).accept(recordingVisitor)
 
     // Then
     recordingVisitor.recorded should equal(input.take(rowsToAccept).flatMap(_.toList))
@@ -60,7 +60,7 @@ class RowIteratorVisitationTest extends CypherFunSuite {
     val visitor = mock[InternalResultVisitor[RuntimeException]]
 
     // When
-    iteratorToVisitable(Iterator.empty).accept(visitor)
+    feedIteratorToVisitable(Iterator.empty).accept(visitor)
 
     // Then
     verifyZeroInteractions(visitor)

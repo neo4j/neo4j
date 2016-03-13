@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 import java.io.{PrintWriter, StringWriter}
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.{JavaResultValueConverter, ScalaResultValueConverter, TextResultValueConverter}
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, RuntimeTextValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
@@ -44,7 +44,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   import scala.collection.JavaConverters._
 
   protected val isGraphKernelResultValue = context.isGraphKernelResultValue _
-  private val scalaValues = new ScalaResultValueConverter(isGraphKernelResultValue)
+  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   private var successful = false
 
@@ -52,9 +52,12 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   protected def isClosed = taskCloser.exists(_.isClosed)
 
   override def hasNext = inner.hasNext
-  override def next() = scalaValues.asDeepScalaResultMap(inner.next())
+  override def next() = scalaValues.asDeepScalaMap(inner.next())
 
+  // Override one of them in subclasses
+  override def javaColumns: util.List[String] = columns.asJava
   override def columns: List[String] = javaColumns.asScala.toList
+
   override def columnAs[T](column: String): Iterator[T] = map { case m => extractScalaColumn(column, m).asInstanceOf[T] }
 
   override def javaIterator: ResourceIterator[util.Map[String, Any]] = new ClosingJavaIterator[util.Map[String, Any]] {
@@ -110,7 +113,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
       override def executionPlanDescription(): InternalPlanDescription =
         self.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
 
-      override def toList = result.asScala.map(m => Eagerly.immutableMapValues(m.asScala, scalaValues.asDeepScalaResultValue)).toList
+      override def toList = result.asScala.map(m => Eagerly.immutableMapValues(m.asScala, scalaValues.asDeepScalaValue)).toList
 
       override def dumpToString(writer: PrintWriter) =
         formatOutput(writer, columns, dumpToStringBuilder.result(), queryStatistics())
@@ -121,7 +124,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
     }
   }
 
-  protected final lazy val inner = createInner
+  protected final lazy val inner: util.Iterator[util.Map[String, Any]] = createInner
 
   protected def createInner: util.Iterator[util.Map[String, Any]]
 
@@ -140,9 +143,9 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
 
   protected def populateDumpToStringResults(builder: mutable.Builder[Map[String, String], Seq[Map[String, String]]])
                                            (row: InternalResultRow) = {
-    val textValues = new TextResultValueConverter(scalaValues)(context)
+    val textValues = new RuntimeTextValueConverter(scalaValues)(context)
     val map = new mutable.HashMap[String, String]()
-    columns.foreach(c => map.put(c, textValues.asTextResultValue(row.get(c))))
+    columns.foreach(c => map.put(c, textValues.asTextValue(row.get(c))))
 
     builder += map
   }
@@ -201,11 +204,11 @@ object StandardInternalExecutionResult {
 
     self: StandardInternalExecutionResult =>
 
-    val javaValues = new JavaResultValueConverter(isGraphKernelResultValue)
+    val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
 
     @throws(classOf[Exception])
     def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
-      javaValues.iteratorToVisitable(self).accept(visitor)
+      javaValues.feedIteratorToVisitable(self).accept(visitor)
     }
   }
 }

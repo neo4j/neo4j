@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.eclipse.jetty.util.thread.ThreadPool;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,18 +36,22 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.metrics.source.server.ServerThreadView;
+import org.neo4j.metrics.source.server.ServerThreadViewSetter;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.enterprise.modules.JMXManagementModule;
 import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.DatabaseRoleInfoServerModule;
 import org.neo4j.server.rest.MasterInfoService;
+import org.neo4j.server.rest.management.AdvertisableService;
+import org.neo4j.server.web.Jetty9WebServer;
+import org.neo4j.server.web.WebServer;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterables.mix;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
@@ -117,6 +123,39 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         }
     }
 
+    @Override
+    protected WebServer createWebServer()
+    {
+        Jetty9WebServer webServer = (Jetty9WebServer) super.createWebServer();
+        webServer.setJettyCreatedCallback( ( jetty ) -> {
+            ThreadPool threadPool = jetty.getThreadPool();
+            assert threadPool != null;
+            try
+            {
+                ServerThreadViewSetter setter =
+                        database.getGraph().getDependencyResolver().resolveDependency( ServerThreadViewSetter.class );
+                setter.set( new ServerThreadView()
+                {
+                    @Override
+                    public int allThreads()
+                    {
+                        return threadPool.getThreads();
+                    }
+
+                    @Override
+                    public int idleThreads()
+                    {
+                        return threadPool.getIdleThreads();
+                    }
+                } );
+            }
+            catch ( UnsatisfiedDependencyException ex )
+            {
+                // nevermind, metrics are likely not enabled
+            }
+        } );
+        return webServer;
+    }
 
     @SuppressWarnings( "unchecked" )
     @Override

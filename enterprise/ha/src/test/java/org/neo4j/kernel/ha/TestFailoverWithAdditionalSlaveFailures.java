@@ -125,7 +125,7 @@ public class TestFailoverWithAdditionalSlaveFailures
         }
         finally
         {
-            manager.shutdown();
+            manager.safeShutdown();
         }
     }
 

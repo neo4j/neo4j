@@ -94,13 +94,13 @@ public class TestSessions implements TestRule, Sessions
     }
 
     @Override
-    public Session newSession( boolean isEncrypted )
+    public Session newSession( String connectionDescriptor, boolean isEncrypted )
     {
         if ( actual == null )
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        Session session = actual.newSession( isEncrypted );
+        Session session = actual.newSession( connectionDescriptor, isEncrypted );
         startedSessions.add( session );
         return session;
     }

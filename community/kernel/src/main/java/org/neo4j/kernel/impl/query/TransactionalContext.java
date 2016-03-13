@@ -55,10 +55,10 @@ public interface TransactionalContext
 
     Lock acquireWriteLock( PropertyContainer p );
 
-    QuerySession.MetadataKey<TransactionalContext>
-            metadataKey = new QuerySession.MetadataKey<>( TransactionalContext.class, "transaction context" );
-
     AccessMode accessMode();
 
     KernelTransaction.Revertable restrictCurrentTransaction( AccessMode accessMode );
+
+    QuerySession.MetadataKey<TransactionalContext> METADATA_KEY =
+            new QuerySession.MetadataKey<>( TransactionalContext.class, "transactional-context" );
 }

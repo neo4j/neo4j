@@ -307,7 +307,7 @@ public class SequenceLockTest
     @Test( timeout = TIMEOUT )
     public void unlockExclusiveAndTakeWriteLockMustBeAtomic() throws Exception
     {
-        int threads = 12;
+        int threads = Runtime.getRuntime().availableProcessors() - 1;
         CountDownLatch start = new CountDownLatch( threads );
         AtomicBoolean stop = new AtomicBoolean();
         lock.tryExclusiveLock();

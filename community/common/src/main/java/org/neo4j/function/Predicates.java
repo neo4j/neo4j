@@ -135,26 +135,42 @@ public class Predicates
         };
     }
 
-    public static <TYPE> void await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
+    public static <TYPE> void await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout, TimeUnit timeoutUnit,
+            long pollInterval, TimeUnit pollUnit )
             throws TimeoutException, InterruptedException
     {
-        await( Suppliers.compose( supplier, predicate ), timeout, unit );
+        await( Suppliers.compose( supplier, predicate ), timeout, timeoutUnit, pollInterval, pollUnit );
+    }
+
+    public static <TYPE> void await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout, TimeUnit timeoutUnit )
+            throws TimeoutException, InterruptedException
+    {
+        await( Suppliers.compose( supplier, predicate ), timeout, timeoutUnit );
     }
 
     public static void await( Supplier<Boolean> condition, long timeout, TimeUnit unit )
             throws TimeoutException, InterruptedException
     {
-        long deadline = System.currentTimeMillis() + unit.toMillis( timeout );
+        int defaultPollInterval = 20;
+        await( condition, timeout, unit, defaultPollInterval, TimeUnit.MILLISECONDS );
+    }
+
+    public static void await( Supplier<Boolean> condition, long timeout, TimeUnit timeoutUnit, long pollInterval, TimeUnit pollUnit )
+            throws TimeoutException, InterruptedException
+    {
+        long deadlineMillis = System.currentTimeMillis() + timeoutUnit.toMillis( timeout );
+        long pollIntervalMillis = pollUnit.toMillis( pollInterval );
+
         do
         {
             if ( condition.get() )
             {
                 return;
             }
-            Thread.sleep( 20 );
+            Thread.sleep( pollIntervalMillis );
         }
-        while ( System.currentTimeMillis() < deadline );
-        throw new TimeoutException( "Waited for " + timeout + " " + unit + ", but " + condition + " was not accepted." );
+        while ( System.currentTimeMillis() < deadlineMillis );
+        throw new TimeoutException( "Waited for " + timeout + " " + timeoutUnit + ", but " + condition + " was not accepted." );
     }
 
     public static void awaitForever( BooleanSupplier condition, long checkInterval, TimeUnit unit ) throws InterruptedException

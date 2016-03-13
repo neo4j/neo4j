@@ -43,8 +43,8 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.accepted
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.metrics.CoreEdgeMetricsIT.metricsCsv;
-import static org.neo4j.metrics.CoreEdgeMetricsIT.readLastValue;
+import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
+import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
 import static org.neo4j.test.Assert.assertEventually;
 
 public class BoltMetricsIT
@@ -80,20 +80,20 @@ public class BoltMetricsIT
 
         // Then
         assertEventually( "init request shows up as recieved",
-                () -> readLastValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_RECIEVED ) ),
+                () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_RECIEVED ) ),
                 equalTo( 1L ), 5, TimeUnit.SECONDS );
         assertEventually( "init request shows up as started",
-                () -> readLastValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_STARTED ) ),
+                () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_STARTED ) ),
                 equalTo( 1L ), 5, TimeUnit.SECONDS );
         assertEventually( "init request shows up as done",
-                () -> readLastValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_DONE ) ),
+                () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.MESSAGES_DONE ) ),
                 equalTo( 1L ), 5, TimeUnit.SECONDS );
 
         assertEventually( "queue time shows up",
-                () -> readLastValue( metricsCsv( metricsFolder, BoltMetrics.TOTAL_QUEUE_TIME ) ),
+                () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.TOTAL_QUEUE_TIME ) ),
                 greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
         assertEventually( "processing time shows up",
-                () -> readLastValue( metricsCsv( metricsFolder, BoltMetrics.TOTAL_PROCESSING_TIME ) ),
+                () -> readLongValue( metricsCsv( metricsFolder, BoltMetrics.TOTAL_PROCESSING_TIME ) ),
                 greaterThanOrEqualTo( 0L ), 5, TimeUnit.SECONDS );
 
     }

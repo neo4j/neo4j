@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport, _}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{FieldSignature, ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
+import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -872,6 +874,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val tail = query.tail.get
 
     tail.horizon should equal(RegularQueryProjection(Map("x" -> varFor("x"))))
+  }
+
+  test("CALL foo() YIELD all RETURN all") {
+    val signature = ProcedureSignature(
+      QualifiedProcedureName(Seq.empty, "foo"),
+      inputSignature = Seq.empty,
+      outputSignature = Some(Seq(FieldSignature("all", CTInteger)))
+    )
+    val query = buildPlannerQuery("CALL foo() YIELD all RETURN all", Some(_ => signature))
+
+    query.horizon match {
+      case ProcedureCallProjection(call) =>
+        call.signature should equal(signature)
+      case _ =>
+        fail("Built wrong query horizon")
+    }
   }
 
   test("WITH [1,2,3] as xes, 2 as y UNWIND xes AS x RETURN x, y") {

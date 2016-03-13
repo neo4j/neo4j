@@ -23,6 +23,9 @@ import org.hamcrest.Matcher;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -37,22 +40,44 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 
 public class RecordingPageCacheTracer implements PageCacheTracer
 {
+    private final Set<Class<? extends Event>> eventTypesToTrace = new HashSet<>();
     private final BlockingQueue<Event> record = new LinkedBlockingQueue<>();
     private CountDownLatch trapLatch;
     private Matcher<? extends Event> trap;
 
-    public void pageFaulted( long filePageId, PageSwapper swapper )
+    public RecordingPageCacheTracer()
     {
-        Fault event = new Fault( swapper, filePageId );
-        record.add( event );
-        trip( event );
+        this( Evict.class, Fault.class );
     }
 
-    public void evicted( long filePageId, PageSwapper swapper )
+    @SafeVarargs
+    public RecordingPageCacheTracer( Class<? extends Event>... eventTypesToTrace )
     {
-        Evict event = new Evict( swapper, filePageId );
-        record.add( event );
-        trip( event );
+        Collections.addAll( this.eventTypesToTrace, eventTypesToTrace );
+    }
+
+    private void pageFaulted( long filePageId, PageSwapper swapper )
+    {
+        record( new Fault( swapper, filePageId ) );
+    }
+
+    private void evicted( long filePageId, PageSwapper swapper )
+    {
+        record( new Evict( swapper, filePageId ) );
+    }
+
+    private void pinned( long filePageId, PageSwapper swapper )
+    {
+        record( new Pin( swapper, filePageId ) );
+    }
+
+    private void record( Event event )
+    {
+        if ( eventTypesToTrace.contains( event.getClass() ) )
+        {
+            record.add( event );
+            trip( event );
+        }
     }
 
     @Override
@@ -132,6 +157,7 @@ public class RecordingPageCacheTracer implements PageCacheTracer
             @Override
             public void done()
             {
+                pinned( filePageId, swapper );
             }
         };
     }
@@ -305,7 +331,7 @@ public class RecordingPageCacheTracer implements PageCacheTracer
 
     public static class Fault extends Event
     {
-        public Fault( PageSwapper io, long pageId )
+        private Fault( PageSwapper io, long pageId )
         {
             super( io, pageId );
         }
@@ -313,7 +339,15 @@ public class RecordingPageCacheTracer implements PageCacheTracer
 
     public static class Evict extends Event
     {
-        public Evict( PageSwapper io, long pageId )
+        private Evict( PageSwapper io, long pageId )
+        {
+            super( io, pageId );
+        }
+    }
+
+    public static class Pin extends Event
+    {
+        private Pin( PageSwapper io, long pageId )
         {
             super( io, pageId );
         }

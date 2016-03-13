@@ -665,7 +665,7 @@ public class BackupServiceIT
 
         OnlineBackupKernelExtension backup = (OnlineBackupKernelExtension)
                 new OnlineBackupExtensionFactory().newInstance(
-                        new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN ),
+                        new SimpleKernelContext( fileSystem, storeDir, DatabaseInfo.UNKNOWN, dependencies ),
                         DependenciesProxy.dependencies( dependencies, OnlineBackupExtensionFactory.Dependencies.class )
                 );
         backup.start();

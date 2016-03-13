@@ -26,5 +26,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols.{TypeSpec, CypherType}
 case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
   def position = expr.position
 
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = expr.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    expr.semanticCheck(ctx) chain expr.expectType(typ.covariant)
 }

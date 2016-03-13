@@ -23,7 +23,7 @@ import java.lang.Boolean.FALSE
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaResultValueConverter
+import org.neo4j.cypher.internal.compiler.v3_0.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v3_0.{LRUCache => LRUCachev3_0, _}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
@@ -37,8 +37,6 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession, TransactionalContext}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api, monitoring}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
-
-import scala.collection.JavaConverters._
 
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
@@ -78,30 +76,39 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
   private val preParsedQueries = new LRUCachev3_0[String, PreParsedQuery](getPlanCacheSize)
   private val parsedQueries = new LRUCachev3_0[String, ParsedQuery](getPlanCacheSize)
 
-  private val javaValues = new JavaResultValueConverter(isGraphKernelResultValue)
+  private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
+  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   @throws(classOf[SyntaxException])
-  def profile(query: String, params: JavaMap[String, Any], session: QuerySession): ExtendedExecutionResult =
-    profile(query, params.asScala.toMap, session)
-
-  @throws(classOf[SyntaxException])
-  def profile(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
-    val javaParams = javaValues.asDeepJavaResultMap(params).asInstanceOf[JavaMap[String, AnyRef]]
-    executionMonitor.startQueryExecution(session, query, javaParams)
-    val (preparedPlanExecution, transactionalContext) = planQuery(query, session)
-    preparedPlanExecution.profile(transactionalContext, params, session)
+  def profile(query: String, scalaParams: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    // we got deep scala parameters => convert to deep java parameters
+    val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
+    profile(query, javaParams, session)
   }
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: JavaMap[String, Any], session: QuerySession): ExtendedExecutionResult =
-    execute(query, params.asScala.toMap, session)
-
-  @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
-    val javaParams = javaValues.asDeepJavaResultMap(params).asInstanceOf[JavaMap[String, AnyRef]]
+  def profile(query: String, javaParams: JavaMap[String, AnyRef], session: QuerySession): ExtendedExecutionResult = {
+    // we got deep java parameters => convert to shallow scala parameters for passing into the engine
+    val scalaParams = scalaValues.asShallowScalaMap(javaParams)
     executionMonitor.startQueryExecution(session, query, javaParams)
     val (preparedPlanExecution, transactionalContext) = planQuery(query, session)
-    preparedPlanExecution.execute(transactionalContext, params, session)
+    preparedPlanExecution.profile(transactionalContext, scalaParams, session)
+  }
+
+  @throws(classOf[SyntaxException])
+  def execute(query: String, scalaParams: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    // we got deep scala parameters => convert to deep java parameters
+    val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
+    execute(query, javaParams, session)
+  }
+
+  @throws(classOf[SyntaxException])
+  def execute(query: String, javaParams: JavaMap[String, AnyRef], session: QuerySession): ExtendedExecutionResult = {
+    // we got deep java parameters => convert to shallow scala parameters for passing into the engine
+    val scalaParams = scalaValues.asShallowScalaMap(javaParams)
+    executionMonitor.startQueryExecution(session, query, javaParams)
+    val (preparedPlanExecution, transactionalContext) = planQuery(query, session)
+    preparedPlanExecution.execute(transactionalContext, scalaParams, session)
   }
 
   @throws(classOf[SyntaxException])
@@ -130,7 +137,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
       val preParsedQuery = preParseQuery(queryText)
       val executionMode = preParsedQuery.executionMode
       val cacheKey = preParsedQuery.statementWithVersionAndPlanner
-      val externalTransactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.metadataKey))
+      val externalTransactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.METADATA_KEY))
 
       var n = 0
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {

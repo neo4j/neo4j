@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -45,8 +46,8 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterWithAdditionalArbiters;
-import static org.neo4j.kernel.impl.ha.ClusterManager.fromXml;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.provided;
@@ -61,11 +62,13 @@ public class ClusterTest
     @Test
     public void testCluster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory(  "testCluster" ) )
-                .withProvider( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ) )
-                .withSharedConfig( stringMap(
-                        HaSettings.ha_server.name(), "localhost:6001-6005",
-                        HaSettings.tx_push_factor.name(), "2" ) ).build();
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "testCluster" ) )
+                .withSharedConfig(
+                    MapUtil.stringMap(
+                            HaSettings.ha_server.name(), "localhost:6001-6005",
+                            HaSettings.tx_push_factor.name(), "2" ) )
+                .withProvider( clusterOfSize( 3 ) )
+                .build();
         try
         {
             clusterManager.start();
@@ -92,7 +95,7 @@ public class ClusterTest
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.safeShutdown();
         }
     }
 
@@ -138,7 +141,7 @@ public class ClusterTest
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.safeShutdown();
         }
     }
 
@@ -184,7 +187,7 @@ public class ClusterTest
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.safeShutdown();
         }
     }
 
@@ -207,7 +210,7 @@ public class ClusterTest
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.safeShutdown();
         }
     }
 
@@ -301,7 +304,7 @@ public class ClusterTest
     public void given4instanceClusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "4instances" ) )
-                .withProvider( fromXml( getClass().getResource( "/fourinstances.xml" ).toURI() ) ).build();
+                .withProvider( ClusterManager.clusterOfSize( 4 ) ).build();
         try
         {
             clusterManager.start();
@@ -327,7 +330,7 @@ public class ClusterTest
         }
         finally
         {
-            clusterManager.stop();
+            clusterManager.safeShutdown();
         }
     }
 
@@ -355,7 +358,7 @@ public class ClusterTest
     public void givenClusterWhenMasterGoesDownAndTxIsRunningThenDontWaitToSwitch() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "waitfortx" ) )
-                .withProvider( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ) ).build();
+                .withProvider( ClusterManager.clusterOfSize( 3 ) ).build();
         try
         {
             clusterManager.start();

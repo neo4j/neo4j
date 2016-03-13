@@ -151,14 +151,27 @@ case class CypherCompiler(parser: CypherParser,
 
   def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
                 plannerName: String = "",
-                offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText, queryText, notificationLogger, plannerName), context, CompilationPhaseTracer.NO_TRACING)
+                offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) = {
+    planPreparedQuery(prepareSyntacticQuery(queryText, queryText, notificationLogger, plannerName), context, offset, CompilationPhaseTracer.NO_TRACING)
+  }
 
+  def planPreparedQuery(syntacticQuery: PreparedQuerySyntax,
+                        context: PlanContext,
+                        offset: Option[InputPosition] = None,
+                        tracer: CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) = {
+    val semanticQuery = prepareSemanticQuery(syntacticQuery, context, offset, tracer)
+    val cache = provideCache(cacheAccessor, cacheMonitor, context)
+    val (executionPlan, _) = cache.getOrElseUpdate(syntacticQuery.statement, syntacticQuery.queryText,
+      _.isStale (context.txIdProvider, context.statistics),
+      executionPlanBuilder.build(context, semanticQuery, tracer)
+    )
+    (executionPlan, semanticQuery.extractedParams)
+  }
 
-  def prepareQuery(queryText: String, rawQueryText: String, notificationLogger: InternalNotificationLogger,
-                   plannerName: String = "",
-                   offset: Option[InputPosition] = None,
-                   tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuery = {
+  def prepareSyntacticQuery(queryText: String, rawQueryText: String, notificationLogger: InternalNotificationLogger,
+                            plannerName: String = "",
+                            offset: Option[InputPosition] = None,
+                            tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySyntax = {
 
     val parsedStatement = closing(tracer.beginPhase(PARSING)) {
       parser.parse(queryText, offset)
@@ -178,27 +191,31 @@ case class CypherCompiler(parser: CypherParser,
     val (rewrittenStatement, extractedParams, postConditions) = closing(tracer.beginPhase(AST_REWRITE)) {
       astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
     }
+
+    PreparedQuerySyntax(rewrittenStatement, queryText, offset, extractedParams)(notificationLogger, plannerName, postConditions)
+  }
+
+  def prepareSemanticQuery(syntacticQuery: PreparedQuerySyntax,
+                           context: PlanContext,
+                           offset: Option[InputPosition] = None,
+                           tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PreparedQuerySemantics = {
+
+    val queryText = syntacticQuery.queryText
+
+    val rewrittenSyntacticQuery = syntacticQuery.rewrite(rewriteProcedureCalls(context.procedureSignature))
+
+    val mkException = new SyntaxExceptionCreator(queryText, offset)
     val postRewriteSemanticState = closing(tracer.beginPhase(SEMANTIC_CHECK)) {
-      semanticChecker.check(queryText, rewrittenStatement, mkException)
+      semanticChecker.check(syntacticQuery.queryText, rewrittenSyntacticQuery.statement, mkException)
     }
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
-    PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger, plannerName, offset)
+    val result = rewrittenSyntacticQuery.withSemantics(table, postRewriteSemanticState.scopeTree)
+    result
   }
 
-  def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext, tracer: CompilationPhaseTracer):
-  (ExecutionPlan, Map[String, Any]) = {
-    val cache = provideCache(cacheAccessor, cacheMonitor, context)
-    val (executionPlan, _) = cache.getOrElseUpdate(parsedQuery.statement, parsedQuery.queryText,
-      plan => plan.isStale(context.txIdProvider, context.statistics), {
-        executionPlanBuilder.build(context, parsedQuery, tracer)
-      }
-    )
-    (executionPlan, parsedQuery.extractedParams)
-  }
-
-  private def syntaxDeprecationNotifications(statement: Statement) =
-  // We don't have any deprecations in 3.0 yet
+  private def syntaxDeprecationNotifications( statement: Statement) =
+    // We don't have any deprecations in 3.0 yet
     Seq.empty[InternalNotification]
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
@@ -210,3 +227,6 @@ case class CypherCompiler(parser: CypherParser,
       new QueryCache(cacheAccessor, lRUCache)
     })
 }
+
+
+

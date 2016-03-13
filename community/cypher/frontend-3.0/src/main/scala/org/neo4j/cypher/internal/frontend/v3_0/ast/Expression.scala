@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.frontend.v3_0.ast
 
 import org.neo4j.cypher.internal.frontend.v3_0.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_0.{ast, _}
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticCheckResult._
+import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.{CypherType, TypeSpec, _}
 
@@ -37,10 +38,10 @@ object Expression {
 
   implicit class SemanticCheckableOption[A <: Expression](option: Option[A]) {
     def semanticCheck(ctx: SemanticContext): SemanticCheck =
-      option.fold(SemanticCheckResult.success) { _.semanticCheck(ctx) }
+      option.fold(success) { _.semanticCheck(ctx) }
 
     def expectType(possibleTypes: => TypeSpec): SemanticCheck =
-      option.fold(SemanticCheckResult.success) { _.expectType(possibleTypes) }
+      option.fold(success) { _.expectType(possibleTypes) }
   }
 
   implicit class SemanticCheckableExpressionTraversable[A <: Expression](traversable: TraversableOnce[A]) extends SemanticChecking {
@@ -135,7 +136,7 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
         val expectedTypesString = possibleTypes.mkString(", ", " or ")
         SemanticCheckResult.error(ss, SemanticError("Type mismatch: " + messageGen(expectedTypesString, existingTypesString), position))
       case (ss, _)             =>
-        SemanticCheckResult.success(ss)
+        success(ss)
     }
   }
 
@@ -165,7 +166,7 @@ trait FunctionTyping { self: Expression =>
   def checkTypes: SemanticCheck = s => {
     val initSignatures = signatures.filter(_.argumentTypes.length == arguments.length)
 
-    val (remainingSignatures: Seq[Signature], result) = arguments.foldLeft((initSignatures, SemanticCheckResult.success(s))) {
+    val (remainingSignatures: Seq[Signature], result) = arguments.foldLeft((initSignatures, success(s))) {
       case (accumulator@(Seq(), _), _) =>
         accumulator
       case ((possibilities, r1), arg)  =>
