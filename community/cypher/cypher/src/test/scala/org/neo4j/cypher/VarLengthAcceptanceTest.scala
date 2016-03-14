@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.NoneInCollection
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v3_1.commands.NoneInCollection
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.graphdb.Direction._
 import org.scalatest.matchers.{MatchResult, Matcher}

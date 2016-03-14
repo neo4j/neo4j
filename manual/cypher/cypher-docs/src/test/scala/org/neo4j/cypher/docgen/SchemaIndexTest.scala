@@ -23,10 +23,10 @@ import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.IndexSeekByRange
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.Planner
-import org.neo4j.cypher.internal.compiler.v3_0.{DPPlannerName, IDPPlannerName, RulePlannerName}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.IndexSeekByRange
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.Planner
+import org.neo4j.cypher.internal.compiler.v3_1.{DPPlannerName, IDPPlannerName, RulePlannerName}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 
 class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {

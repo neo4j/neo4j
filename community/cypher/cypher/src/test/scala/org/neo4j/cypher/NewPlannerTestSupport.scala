@@ -23,12 +23,12 @@ import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, 
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_0}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantCompileQueryException, CantHandleQueryException}
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_1.planner.{CantCompileQueryException, CantHandleQueryException}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherTestSupport
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Exceptions

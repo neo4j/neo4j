@@ -21,8 +21,8 @@ package org.neo4j.cypher.docgen.tooling
 
 import java.io._
 
-import org.neo4j.cypher.internal.compiler.v3_0.CypherSerializer
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_1.CypherSerializer
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext

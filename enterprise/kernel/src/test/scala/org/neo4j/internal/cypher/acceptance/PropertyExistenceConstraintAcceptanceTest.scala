@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
 import org.neo4j.kernel.api.exceptions.Status
 
 class PropertyExistenceConstraintAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport

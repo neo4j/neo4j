@@ -32,16 +32,16 @@ import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen.{CompiledConversionUtils, CompiledExpandUtils, CompiledMathHelper, NodeIdWrapper, RelationshipIdWrapper}
-import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter
-import org.neo4j.cypher.internal.compiler.v3_0.codegen._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers._
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, ParameterNotFoundException, SemanticDirection, symbols}
+import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter
+import org.neo4j.cypher.internal.compiler.v3_1.codegen._
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_1.helpers._
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_1.{CypherExecutionException, ParameterNotFoundException, SemanticDirection, symbols}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.collection.MapUtil

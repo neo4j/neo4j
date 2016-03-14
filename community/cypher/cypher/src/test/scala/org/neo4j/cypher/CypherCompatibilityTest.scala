@@ -38,6 +38,8 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     execute(s"CYPHER 2.3 $query").columnAs[Long]("count(*)").next() shouldBe 1
     execute(s"CYPHER 3.0 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
     execute(s"CYPHER 3.0 $query").columnAs[Long]("count(*)").next() shouldBe 1
+    execute(s"CYPHER 3.1 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
+    execute(s"CYPHER 3.1 $query").columnAs[Long]("count(*)").next() shouldBe 1
   }
 
   test("should be able to switch between versions") {
@@ -45,12 +47,14 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       db =>
         db.execute(s"CYPHER 2.3 $QUERY").asScala.toList shouldBe empty
         db.execute(s"CYPHER 3.0 $QUERY").asScala.toList shouldBe empty
+        db.execute(s"CYPHER 3.1 $QUERY").asScala.toList shouldBe empty
     }
   }
 
   test("should be able to switch between versions2") {
     runWithConfig() {
       db =>
+        db.execute(s"CYPHER 3.1 $QUERY").asScala.toList shouldBe empty
         db.execute(s"CYPHER 3.0 $QUERY").asScala.toList shouldBe empty
         db.execute(s"CYPHER 2.3 $QUERY").asScala.toList shouldBe empty
     }
@@ -59,12 +63,12 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
   test("should be able to override config") {
     runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "2.3") {
       db =>
-        db.execute(s"CYPHER 3.0 $QUERY").asScala.toList shouldBe empty
+        db.execute(s"CYPHER 3.1 $QUERY").asScala.toList shouldBe empty
     }
   }
 
   test("should be able to override config2") {
-    runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "3.0") {
+    runWithConfig(GraphDatabaseSettings.cypher_parser_version -> "3.1") {
       db =>
         db.execute(s"CYPHER 2.3 $QUERY").asScala.toList shouldBe empty
     }
@@ -75,7 +79,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       db =>
         val result = db.execute(QUERY)
         result.asScala.toList shouldBe empty
-        result.getExecutionPlanDescription.getArguments.get("version") should equal("CYPHER 3.0")
+        result.getExecutionPlanDescription.getArguments.get("version") should equal("CYPHER 3.1")
     }
   }
 
@@ -93,6 +97,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       engine =>
         assertProfiled(engine, "CYPHER 2.3 runtime=interpreted PROFILE MATCH (n) RETURN n")
         assertProfiled(engine, "CYPHER 3.0 runtime=interpreted PROFILE MATCH (n) RETURN n")
+        assertProfiled(engine, "CYPHER 3.1 runtime=interpreted PROFILE MATCH (n) RETURN n")
     }
   }
 
@@ -101,6 +106,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       engine =>
         assertExplained(engine, "CYPHER 2.3 EXPLAIN MATCH (n) RETURN n")
         assertExplained(engine, "CYPHER 3.0 EXPLAIN MATCH (n) RETURN n")
+        assertExplained(engine, "CYPHER 3.1 EXPLAIN MATCH (n) RETURN n")
     }
   }
 

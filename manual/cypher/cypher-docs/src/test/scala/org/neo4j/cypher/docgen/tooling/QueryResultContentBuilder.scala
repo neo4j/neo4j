@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.docgen.tooling
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.frontend.v3_0.Rewritable._
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.frontend.v3_1.Rewritable._
 import org.neo4j.cypher.internal.helpers.GraphIcing
 
 /**

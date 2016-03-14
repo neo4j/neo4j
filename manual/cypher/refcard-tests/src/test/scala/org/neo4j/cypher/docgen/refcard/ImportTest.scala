@@ -23,7 +23,7 @@ import java.io.File
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.{CsvFile, RefcardTest}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class ImportTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List()

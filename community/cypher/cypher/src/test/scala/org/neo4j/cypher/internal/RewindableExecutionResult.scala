@@ -25,13 +25,13 @@ import java.util
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_0, exceptionHandlerFor2_3, exceptionHandlerFor3_0}
 import org.neo4j.cypher.internal.compiler.v2_3
-import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{InternalExecutionResult, READ_WRITE, _}
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, Children, Id, InternalPlanDescription, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.InternalResultVisitor
+import org.neo4j.cypher.internal.compiler.v3_1._
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, READ_WRITE, _}
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, Children, Id, InternalPlanDescription, NoChildren, PlanDescriptionImpl, SingleChild, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v2_3.{notification => notification_2_3}
-import org.neo4j.cypher.internal.frontend.v3_0.{InputPosition, notification}
+import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, notification}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
 object RewindableExecutionResult {
@@ -175,9 +175,9 @@ object RewindableExecutionResult {
       case notification_2_3.MissingPropertyNameNotification(position, name) => notification.MissingPropertyNameNotification(lift(position), name)
       case notification_2_3.UnboundedShortestPathNotification(position) => notification.UnboundedShortestPathNotification(lift(position))
       case notification_2_3.LegacyPlannerNotification =>
-        null // there is no equivalent in 3.0, let's return null so we can check if notifications are not empty in some 2.3 compatibility tests
+        null // there is no equivalent in 3.1, let's return null so we can check if notifications are not empty in some 2.3 compatibility tests
       case notification_2_3.BareNodeSyntaxDeprecatedNotification(position) =>
-        null // there is no equivalent in 3.0, let's return null so we can check if notifications are not empty in some 2.3 compatibility tests
+        null // there is no equivalent in 3.1, let's return null so we can check if notifications are not empty in some 2.3 compatibility tests
     }
 
     private def lift(position: frontend.v2_3.InputPosition): InputPosition = {

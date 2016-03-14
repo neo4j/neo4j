@@ -25,16 +25,16 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
-import org.neo4j.cypher.internal.compiler.v3_0.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
-import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.JavaConversionSupport._
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_0.spi._
-import org.neo4j.cypher.internal.frontend.v3_0.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection, spi => frontend}
+import org.neo4j.cypher.internal.compiler.v3_1.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
+import org.neo4j.cypher.internal.compiler.v3_1._
+import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.JavaConversionSupport._
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
+import org.neo4j.cypher.internal.frontend.v3_1.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection, spi => frontend}
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.{BeansAPIRelationshipIterator, TransactionalContextWrapper}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService

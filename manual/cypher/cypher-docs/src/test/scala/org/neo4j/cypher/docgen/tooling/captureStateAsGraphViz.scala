@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen.tooling
 
 import java.io.ByteArrayOutputStream
 
-import org.neo4j.cypher.internal.frontend.v3_0._
+import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphvizWriter}

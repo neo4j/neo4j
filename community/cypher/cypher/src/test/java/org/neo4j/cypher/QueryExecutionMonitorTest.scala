@@ -23,7 +23,7 @@ import java.util.Collections
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -204,6 +204,67 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
 
     // then
     verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.3 CREATE()", Collections.emptyMap())
+    verify(monitor, times(1)).endSuccess(session)
+  }
+
+  test("triggering monitor in 3.0") {
+    // given
+    val session = graph.session()
+
+    // when
+    val result = engine.profile("CYPHER 3.0 RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
+
+    //then
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 3.0 RETURN [1, 2, 3, 4, 5]", Collections.emptyMap())
+    while (result.hasNext) {
+      verify(monitor, never).endSuccess(session)
+      result.next()
+    }
+    verify(monitor, times(1)).endSuccess(session)
+  }
+
+  test("monitor is called when iterator closes in 3.0") {
+    // given
+    val session = graph.session()
+
+    // when
+    val result = engine.execute("CYPHER 3,0 RETURN 42", Map.empty[String, Any], session).javaIterator.close()
+
+    // then
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 3.0 RETURN 42", Collections.emptyMap())
+    verify(monitor, times(1)).endSuccess(session)
+  }
+
+  test("monitor is called when next on empty iterator in 3.0") {
+    // given
+    val session = graph.session()
+
+    // when
+    val iterator = engine.execute("CYPHER 3.0 RETURN 42", Map.empty[String, Any], session).javaIterator
+    iterator.next()
+    var throwable: Throwable = null
+    try {
+      iterator.next()
+      fail("we expect an exception here")
+    }
+    catch {
+      case e: Throwable => throwable = e
+    }
+
+    // then
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 3.0 RETURN 42", Collections.emptyMap())
+    verify(monitor, times(1)).endFailure(session, throwable)
+  }
+
+  test("monitor is called directly when return is empty in 3.0") {
+    // given
+    val session = graph.session()
+
+    // when
+    val result = engine.execute("CYPHER 3.0 CREATE()", Map.empty[String, Any], session).javaIterator
+
+    // then
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 3.0 CREATE()", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
   }
 

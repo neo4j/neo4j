@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer
+import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.kernel.api.Statement
 

@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier;
+import org.neo4j.cypher.internal.compiler.v3_1.prettifier.Prettifier;
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService;
 
 class State

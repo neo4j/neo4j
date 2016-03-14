@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathImpl
-import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CustomMatchers
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CustomMatchers
 import org.neo4j.cypher.{EntityNotFoundException, ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
 import org.neo4j.graphdb._
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.MergePattern
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.MergePattern
 
 class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
   test("normal query is marked as such") {
@@ -38,7 +38,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
     result should be(empty)
   }
 
-  test("EXPLAIN for Cypher 3.0") {
+  test("EXPLAIN for Cypher 3.1") {
     val result = eengine.execute("explain match (n) return n", Map.empty[String, Object], graph.session())
     result.toList
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")

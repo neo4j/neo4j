@@ -23,8 +23,8 @@ import java.nio.file.Files
 import java.util
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.IDPSolverMonitor
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.IDPSolverMonitor
 import org.neo4j.cypher.internal.{ExecutionEngine, PlanDescription}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting

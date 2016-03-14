@@ -22,11 +22,11 @@ package org.neo4j.cypher
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_1._
+import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_1.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.helpers.Clock
 import org.neo4j.logging.NullLog

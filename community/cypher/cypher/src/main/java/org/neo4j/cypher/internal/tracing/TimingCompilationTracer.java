@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer;
+import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer;
 
 public class TimingCompilationTracer implements CompilationTracer
 {

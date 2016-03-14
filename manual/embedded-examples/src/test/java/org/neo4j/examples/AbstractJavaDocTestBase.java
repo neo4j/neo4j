@@ -66,7 +66,7 @@ public abstract class AbstractJavaDocTestBase implements GraphHolder
 
     protected String createCypherSnippet( String cypherQuery )
     {
-        String snippet = org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier.apply( cypherQuery );
+        String snippet = org.neo4j.cypher.internal.compiler.v3_1.prettifier.Prettifier.apply( cypherQuery );
         return AsciidocHelper.createAsciiDocSnippet( "cypher", snippet );
     }
 

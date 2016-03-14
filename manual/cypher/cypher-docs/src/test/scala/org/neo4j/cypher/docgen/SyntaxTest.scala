@@ -20,7 +20,7 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 
 class SyntaxTest extends DocumentingTestBase {
   override def graphDescription = List(

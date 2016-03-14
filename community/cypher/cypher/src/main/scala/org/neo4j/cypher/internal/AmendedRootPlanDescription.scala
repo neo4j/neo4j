@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_0.{RuntimeName, PlannerName}
+import org.neo4j.cypher.internal.compiler.v3_1.{RuntimeName, PlannerName}
 import org.neo4j.cypher.CypherVersion
 
 class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: CypherVersion, planner: PlannerName, runtime: RuntimeName)

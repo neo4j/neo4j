@@ -23,8 +23,8 @@ import java.util
 
 import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_0
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_0.{CompiledRuntimeName, CostBasedPlannerName}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.{CompiledRuntimeName, CostBasedPlannerName}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.scalatest.Assertions
 

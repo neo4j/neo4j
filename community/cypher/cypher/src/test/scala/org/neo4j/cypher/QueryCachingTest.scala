@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.StringCacheMonitor
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.kernel.api.Statement
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -67,9 +67,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         val actual = cacheListener.trace
         val expected = List(
           s"cacheFlushDetected",
-          s"cacheMiss: CYPHER 3.0 $query",
-          s"cacheHit: CYPHER 3.0 $query",
-          s"cacheHit: CYPHER 3.0 $query")
+          s"cacheMiss: CYPHER 3.1 $query",
+          s"cacheHit: CYPHER 3.1 $query",
+          s"cacheHit: CYPHER 3.1 $query")
 
         actual should equal(expected)
     }
