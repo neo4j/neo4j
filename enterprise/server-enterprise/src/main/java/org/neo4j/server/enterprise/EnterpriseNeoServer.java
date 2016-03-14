@@ -19,16 +19,14 @@
  */
 package org.neo4j.server.enterprise;
 
-import org.eclipse.jetty.util.thread.ThreadPool;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.neo4j.coreedge.server.core.CoreGraphDatabase;
-import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
+import org.eclipse.jetty.util.thread.ThreadPool;
+
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
@@ -52,6 +50,7 @@ import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.Iterables.mix;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
@@ -61,9 +60,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     {
         SINGLE,
         HA,
-        ARBITER,
-        CORE,
-        EDGE;
+        ARBITER;
 
         public static Mode fromString( String value )
         {
@@ -88,16 +85,6 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         return new EnterpriseGraphDatabase( storeDir, config.getParams(), dependencies );
     };
 
-    private static final GraphFactory CORE_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new CoreGraphDatabase( storeDir, config.getParams(), dependencies );
-    };
-
-    private static final GraphFactory EDGE_FACTORY = ( config, dependencies ) -> {
-        File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new EdgeGraphDatabase( storeDir, config.getParams(), dependencies );
-    };
-
     public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
     {
         super( config, createDbFactory( config ), dependencies, logProvider );
@@ -114,10 +101,6 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         case ARBITER:
             // Should never reach here because this mode is handled separately by the scripts.
             throw new IllegalArgumentException( "The server cannot be started in ARBITER mode." );
-        case CORE:
-            return lifecycleManagingDatabase( CORE_FACTORY );
-        case EDGE:
-            return lifecycleManagingDatabase( EDGE_FACTORY );
         default: // Anything else gives community, including Mode.SINGLE
             return lifecycleManagingDatabase( ENTERPRISE_FACTORY );
         }
