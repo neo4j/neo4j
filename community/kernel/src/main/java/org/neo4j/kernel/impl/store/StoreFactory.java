@@ -76,8 +76,14 @@ public class StoreFactory
 
     public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider )
     {
+        this( fileSystem, storeDir, pageCache, logProvider, InternalRecordFormatSelector.select() );
+    }
+
+    public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider
+            logProvider, RecordFormats recordFormats )
+    {
         this( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                logProvider );
+                logProvider, recordFormats );
     }
 
     public StoreFactory( File storeDir, Config config,

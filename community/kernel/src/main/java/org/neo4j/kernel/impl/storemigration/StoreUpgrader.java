@@ -215,7 +215,7 @@ public class StoreUpgrader
         {
             for ( StoreMigrationParticipant participant : participants )
             {
-                participant.rebuildCounts( storeDirectory, versionToMigrateFrom );
+                participant.rebuildCounts( storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
             }
         }
         catch ( IOException e )
