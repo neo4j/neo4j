@@ -131,7 +131,17 @@ class FullTxData extends TxData
             }
             else
             {
-                index.type.addToDocument( document, key, value );
+                try
+                {    
+                    index.type.addToDocument( document, key, value );
+  
+                }
+                catch ( NullPointerException npe )
+                {
+                    // Treat as null value
+                    document.add( new Field( ORPHANS_KEY, key, Store.NO, Index.NOT_ANALYZED ) );
+                    addOrphan( key );
+                }
             }
 
             if ( add )

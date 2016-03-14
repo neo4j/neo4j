@@ -128,14 +128,19 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         {
             boolean isValueContext = oneValue instanceof ValueContext;
             oneValue = isValueContext ? ((ValueContext) oneValue).getCorrectValue() : oneValue.toString();
-            type.addToDocument( document, key, oneValue );
-            if ( createdNow )
+	    
+            if ( oneValue.toString() != null )
             {
-                // If we know that the index was created this session
-                // then we can go ahead and add stuff to the cache directly
-                // when adding to the index.
-                addToCache( entityId, key, oneValue );
-            }
+            
+                type.addToDocument( document, key, oneValue );
+                if ( createdNow )
+                {
+                    // If we know that the index was created this session
+                    // then we can go ahead and add stuff to the cache directly
+                    // when adding to the index.
+                    addToCache( entityId, key, oneValue );
+                }
+	    }
         }
     }
 
