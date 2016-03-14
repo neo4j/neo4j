@@ -21,8 +21,6 @@ package org.neo4j.server.enterprise;
 
 import java.io.IOException;
 
-import static org.neo4j.server.enterprise.ArbiterBootstrapper.getConfig;
-
 public class ArbiterBootstrapperTestProxy
 {
     public static final String START_SIGNAL = "starting";
@@ -33,8 +31,9 @@ public class ArbiterBootstrapperTestProxy
         // a start of a timeout. The whole reason for this class to be here is to
         // split awaiting for the process to start and actually awaiting the cluster client to start.
         System.out.println( START_SIGNAL );
-        try ( ArbiterBootstrapper client = new ArbiterBootstrapper( getConfig( args ) ) )
+        try ( ArbiterBootstrapper arbiter = new ArbiterBootstrapper() )
         {
+            arbiter.start( ArbiterBootstrapper.getConfigFile() );
             System.in.read();
         }
     }

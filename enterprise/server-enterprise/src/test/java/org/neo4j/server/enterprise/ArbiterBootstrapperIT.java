@@ -83,9 +83,6 @@ public class ArbiterBootstrapperIT
     public void canJoinWithExplicitInitialHosts() throws Exception
     {
         startAndAssertJoined( 5003,
-                // Config file
-                stringMap(),
-                // Arguments
                 stringMap(
                         initial_hosts.name(), ":5001",
                         server_id.name(), "3" )
@@ -97,45 +94,8 @@ public class ArbiterBootstrapperIT
     {
         assumeFalse( "Cannot kill processes on windows.", SystemUtils.IS_OS_WINDOWS );
         startAndAssertJoined( SHOULD_NOT_JOIN,
-                // Config file
-                stringMap(),
-                // Arguments
                 stringMap(
                         initial_hosts.name(), ":5011",
-                        server_id.name(), "3" )
-        );
-    }
-
-    @Test
-    public void canJoinWithInitialHostsInConfigFile() throws Exception
-    {
-        startAndAssertJoined( 5003,
-                // Config file
-                stringMap( initial_hosts.name(), ":5001" ),
-                // Arguments
-                stringMap( server_id.name(), "3" ) );
-    }
-
-    @Test
-    public void willFailJoinIfIncorrectInitialHostsSetInConfigFile() throws Exception
-    {
-        assumeFalse( "Cannot kill processes on windows.", SystemUtils.IS_OS_WINDOWS );
-        startAndAssertJoined( SHOULD_NOT_JOIN,
-                // Config file
-                stringMap( initial_hosts.name(), ":5011" ),
-                // Arguments
-                stringMap( server_id.name(), "3" ) );
-    }
-
-    @Test
-    public void canOverrideInitialHostsConfigFromConfigFile() throws Exception
-    {
-        startAndAssertJoined( 5003,
-                // Config file
-                stringMap( initial_hosts.name(), ":5011" ),
-                // Arguments
-                stringMap(
-                        initial_hosts.name(), ":5001",
                         server_id.name(), "3" )
         );
     }
@@ -144,9 +104,6 @@ public class ArbiterBootstrapperIT
     public void canSetSpecificPort() throws Exception
     {
         startAndAssertJoined( 5010,
-                // Config file
-                stringMap(),
-                // Arguments
                 stringMap(
                         initial_hosts.name(), ":5001",
                         server_id.name(), "3",
@@ -155,15 +112,13 @@ public class ArbiterBootstrapperIT
     }
 
     @Test
-    public void usesPortRangeFromConfigFile() throws Exception
+    public void usesPortRange() throws Exception
     {
         startAndAssertJoined( 5012,
-                // Config file
                 stringMap(
                         initial_hosts.name(), ":5001",
-                        cluster_server.name(), ":5012-5020" ),
-                // Arguments
-                stringMap( server_id.name(), "3" )
+                        cluster_server.name(), ":5012-5020",
+                        server_id.name(), "3" )
         );
     }
 
@@ -229,26 +184,23 @@ public class ArbiterBootstrapperIT
         return configFile;
     }
 
-    private void startAndAssertJoined( Integer expectedAssignedPort, Map<String, String> configInConfigFile,
-                                       Map<String, String> config ) throws Exception
+    private void startAndAssertJoined( Integer expectedAssignedPort, Map<String, String> config ) throws Exception
     {
-        Map<String,String> localCopy = new HashMap<>( configInConfigFile );
-        localCopy.put( GraphDatabaseSettings.auth_store.name(), Files.createTempFile("auth", "").toString() );
+        Map<String, String> localCopy = new HashMap<>( config );
+        localCopy.put( GraphDatabaseSettings.auth_store.name(), Files.createTempFile( "auth", "" ).toString() );
         File configFile = configFile( localCopy );
         CountDownLatch latch = new CountDownLatch( 1 );
         AtomicInteger port = new AtomicInteger();
         clients[0].addClusterListener( joinAwaitingListener( latch, port ) );
 
-        boolean arbiterStarted = startArbiter( configFile, config, latch );
+        boolean arbiterStarted = startArbiter( configFile, latch );
         if ( expectedAssignedPort == null )
         {
-            assertFalse( format( "Should not be able to start arbiter given config file:%s " +
-                    "and arguments:%s", configInConfigFile, config ), arbiterStarted );
+            assertFalse( format( "Should not be able to start arbiter given config file:%s", config ), arbiterStarted );
         }
         else
         {
-            assertTrue( format( "Should be able to start arbiter given config file:%s " +
-                    "and arguments:%s", configInConfigFile, config ), arbiterStarted );
+            assertTrue( format( "Should be able to start arbiter given config file:%s", config ), arbiterStarted );
             assertEquals( expectedAssignedPort.intValue(), port.get() );
         }
     }
@@ -267,14 +219,13 @@ public class ArbiterBootstrapperIT
         };
     }
 
-    private boolean startArbiter( File configFile, Map<String, String> config, CountDownLatch latch )
-            throws Exception
+    private boolean startArbiter( File configFile, CountDownLatch latch ) throws Exception
     {
         Process process = null;
         ProcessStreamHandler handler = null;
         try
         {
-            process = startArbiterProcess( configFile, config );
+            process = startArbiterProcess( configFile );
             new InputStreamAwaiter( process.getInputStream() ).awaitLine( START_SIGNAL, 20, SECONDS );
             handler = new ProcessStreamHandler( process, false, "", IGNORE_FAILURES );
             handler.launch();
@@ -307,8 +258,7 @@ public class ArbiterBootstrapperIT
         }
     }
 
-    private Process startArbiterProcess( File configFile, Map<String, String> config )
-            throws Exception
+    private Process startArbiterProcess( File configFile ) throws Exception
     {
         List<String> args = new ArrayList<>( asList( "java", "-cp", getProperty( "java.class.path" ),
                 "-Dorg.neo4j.cluster.logdirectory=" + directory.getAbsolutePath() ) );
@@ -317,11 +267,6 @@ public class ArbiterBootstrapperIT
             args.add( "-D" + ServerSettings.SERVER_CONFIG_FILE_KEY + "=" + configFile.getAbsolutePath() );
         }
         args.add( ArbiterBootstrapperTestProxy.class.getName() );
-
-        for ( Map.Entry<String, String> entry : config.entrySet() )
-        {
-            args.add( "-" + entry.getKey() + "=" + entry.getValue() );
-        }
         return getRuntime().exec( args.toArray( new String[args.size()] ) );
     }
 

@@ -32,8 +32,8 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -45,50 +45,47 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.helpers.Exceptions.peel;
 
-public class ArbiterBootstrapper implements AutoCloseable
+public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
 {
     private final LifeSupport life = new LifeSupport();
-    private final Timer timer;
+    private final Timer timer = new Timer( true );
 
-    public ArbiterBootstrapper( Config config ) throws IOException
+    public static void main( String[] args ) throws IOException
     {
-        start( config );
-
-        timer = new Timer( true );
-        addShutdownHook();
-        life.start();
-    }
-
-    protected void addShutdownHook()
-    {
-        Runtime.getRuntime().addShutdownHook( new Thread()
+        int status = new ArbiterBootstrapper().start( getConfigFile() );
+        if ( status != 0 )
         {
-            @Override
-            public void run()
-            {
-                // ClusterJoin will block on a Future.get(), which will prevent it to shutdown.
-                // Adding a timer here in case a shutdown is requested before cluster join has succeeded. Otherwise
-                // the deadlock will prevent the shutdown from finishing.
-                timer.schedule( new TimerTask()
-                {
-                    @Override
-                    public void run()
-                    {
-                        System.err.println( "Failed to stop in a reasonable time, terminating..." );
-                        Runtime.getRuntime().halt( 1 );
-                    }
-                },  4_000L);
-                life.shutdown();
-            }
-        } );
+            System.exit( status );
+        }
     }
 
-    private void start( Config config ) throws IOException
+    static File getConfigFile()
     {
+        String configPath = System.getProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
+        if ( configPath == null )
+        {
+            throw new RuntimeException( "System property " + ServerSettings.SERVER_CONFIG_FILE_KEY +
+                    " must be provided" );
+        }
+
+        File configFile = new File( configPath );
+        if ( !configFile.exists() )
+        {
+            throw new IllegalArgumentException( configFile + " doesn't exist" );
+        }
+        return configFile;
+    }
+
+    @SafeVarargs
+    @Override
+    public final int start( File configFile, Pair<String, String>... configOverrides )
+    {
+        Config config = getConfig( configFile, configOverrides );
         try
         {
             life.add( new Neo4jJobScheduler() );
@@ -116,37 +113,42 @@ public class ArbiterBootstrapper implements AutoCloseable
                 throw e;
             }
         }
+        addShutdownHook();
+        life.start();
+
+        return 0;
     }
 
-    public static void main( String[] args ) throws IOException
+    @Override
+    public int stop()
     {
-        new ArbiterBootstrapper( getConfig( args ) );
+        life.shutdown();
+        return 0;
     }
 
     @Override
     public void close()
     {
-        life.shutdown();
+        stop();
     }
 
-    public static Config getConfig( String[] args ) throws IOException
+    private static Config getConfig( File configFile, Pair<String, String>... configOverrides )
     {
         Map<String, String> config = new HashMap<>();
-        String configPath = System.getProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
-        if ( configPath != null )
+        try
         {
-            File configFile = new File( configPath );
-            if ( configFile.exists() )
-            {
-                config.putAll( MapUtil.load( configFile ) );
-            }
-            else
-            {
-                throw new IllegalArgumentException( configFile + " doesn't exist" );
-            }
+            config.putAll( MapUtil.load( configFile ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Unable to load config file " + configFile, e );
         }
 
-        config.putAll( Args.parse( args ).asMap() );
+        for ( Pair<String, String> configOverride : configOverrides )
+        {
+            config.put( configOverride.first(), configOverride.other() );
+        }
+
         verifyConfig( config );
         return new Config( config );
     }
@@ -155,20 +157,49 @@ public class ArbiterBootstrapper implements AutoCloseable
     {
         if ( !config.containsKey( ClusterSettings.initial_hosts.name() ) )
         {
-            System.err.println( "No initial hosts to connect to supplied" );
-            System.exit( 1 );
+            throw new IllegalArgumentException( "No initial hosts to connect to supplied" );
         }
         if ( !config.containsKey( ClusterSettings.server_id.name() ) )
         {
-            System.err.println( "No server id specified" );
-            System.exit( 1 );
+            throw new IllegalArgumentException( "No server id specified" );
         }
     }
 
-    private static LogService logService( FileSystemAbstraction fileSystem ) throws IOException
+    private static LogService logService( FileSystemAbstraction fileSystem )
     {
         String logDir = System.getProperty( "org.neo4j.cluster.logdirectory", "data/log" );
-        return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
-                .inStoreDirectory( fileSystem, new File( logDir ) );
+        try
+        {
+            return StoreLogService.withUserLogProvider( FormattedLogProvider.toOutputStream( System.out ) )
+                    .inStoreDirectory( fileSystem, new File( logDir ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private void addShutdownHook()
+    {
+        Runtime.getRuntime().addShutdownHook( new Thread()
+        {
+            @Override
+            public void run()
+            {
+                // ClusterJoin will block on a Future.get(), which will prevent it to shutdown.
+                // Adding a timer here in case a shutdown is requested before cluster join has succeeded. Otherwise
+                // the deadlock will prevent the shutdown from finishing.
+                timer.schedule( new TimerTask()
+                {
+                    @Override
+                    public void run()
+                    {
+                        System.err.println( "Failed to stop in a reasonable time, terminating..." );
+                        Runtime.getRuntime().halt( 1 );
+                    }
+                }, 4_000L );
+                ArbiterBootstrapper.this.stop();
+            }
+        } );
     }
 }
