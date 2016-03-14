@@ -38,17 +38,21 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Stack;
+
+import org.neo4j.coreedge.raft.ReplicatedString;
+import org.neo4j.cursor.IOCursor;
+
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import org.junit.Test;
-
-import java.util.Stack;
-
-import org.neo4j.coreedge.raft.ReplicatedString;
 
 public class PhysicalRaftLogEntryCursorTest
 {
@@ -78,35 +82,25 @@ public class PhysicalRaftLogEntryCursorTest
 
         // when/then
         assertTrue( entryCursor.next() );
-        assertEquals( entryA, entryCursor.get().getLogEntry() );
+        assertEquals( entryA, entryCursor.get().logEntry() );
         assertTrue( entryCursor.next() );
-        assertEquals( entryB, entryCursor.get().getLogEntry() );
+        assertEquals( entryB, entryCursor.get().logEntry() );
         assertTrue( entryCursor.next() );
-        assertEquals( entryC, entryCursor.get().getLogEntry() );
+        assertEquals( entryC, entryCursor.get().logEntry() );
         assertFalse( entryCursor.next() ); // record cursor is done, there should be no more entries/
-        assertEquals( null, entryCursor.get() );
     }
 
     @Test
     public void shouldSkipUntilContinuation() throws Exception
     {
         // given
-        RaftRecordCursor recordCursor = mock( RaftRecordCursor.class );
-
-        when( recordCursor.next() )
-                .thenReturn( true )
-                .thenReturn( true )
-                .thenReturn( true )
-                .thenReturn( true )
-                .thenReturn( true )
-                .thenReturn( false );
-        when( recordCursor.get() )
-                .thenReturn( new RaftLogAppendRecord( 0, entryA ) )
-                .thenReturn( new RaftLogAppendRecord( 1, entryB ) ) // truncated
-                .thenReturn( new RaftLogAppendRecord( 2, entryC ) ) // truncated
-                .thenReturn( new RaftLogContinuationRecord( 1 ) )
-                .thenReturn( new RaftLogAppendRecord( 1, entryD ) )
-                .thenReturn( null );
+        IOCursor<RaftLogRecord> recordCursor = new StubRecordCursor(
+                new RaftLogAppendRecord( 0, entryA ),
+                new RaftLogAppendRecord( 1, entryB ), // truncated
+                new RaftLogAppendRecord( 2, entryC ), // truncated
+                new RaftLogContinuationRecord( 1, 0 ),
+                new RaftLogAppendRecord( 1, entryD )
+        );
 
         Stack<Long> skipStack = new Stack<>();
         // this represents the state after truncating entryB, we skip from index 1 until the next continuation
@@ -116,10 +110,54 @@ public class PhysicalRaftLogEntryCursorTest
 
         // when - then
         assertTrue( entryCursor.next() );
-        assertEquals( entryA, entryCursor.get().getLogEntry() );
+        assertEquals( entryA, entryCursor.get().logEntry() );
         assertTrue( entryCursor.next() );
-        assertEquals( entryD, entryCursor.get().getLogEntry() );
+        assertEquals( entryD, entryCursor.get().logEntry() );
         assertFalse( entryCursor.next() ); // record cursor is done, there should be no more entries/
-        assertEquals( null, entryCursor.get() );
+    }
+
+    @Test
+    public void shouldReadTermOf() throws Exception
+    {
+        // given
+
+
+
+        // when
+
+        // then
+    }
+
+    private static class StubRecordCursor implements IOCursor<RaftLogRecord>
+    {
+        private final Iterator<RaftLogRecord> iterator;
+        private RaftLogRecord current = null;
+
+        public StubRecordCursor( RaftLogRecord... records )
+        {
+            iterator = asList( records ).iterator();
+        }
+
+        @Override
+        public boolean next() throws IOException
+        {
+            if ( iterator.hasNext() )
+            {
+                current = iterator.next();
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public RaftLogRecord get()
+        {
+            return current;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+        }
     }
 }

@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;

@@ -78,7 +78,7 @@ public class PhysicalRaftEntryStoreTest
 
         // then
         assertTrue( cursor.next() );
-        assertEquals( indexToStartFrom, cursor.get().getLogIndex() );
+        assertEquals( indexToStartFrom, cursor.get().logIndex() );
 
     }
 }

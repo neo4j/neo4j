@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Heartbeat;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
+import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.net.Inbound;
@@ -293,12 +294,14 @@ public class LeaderTest
         FollowerStates<RaftTestMember> followerState = new FollowerStates<>();
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
-        ReadableRaftLog logMock = mock( ReadableRaftLog.class );
-        when( logMock.appendIndex() ).thenReturn( 100l );
-        when( logMock.commitIndex() ).thenReturn( 100l ); // assume that everything is committed, so we don't deal
-        // with commit requests in this test
+        RaftLog log = new InMemoryRaftLog();
+        for ( int i = 0; i <= 100; i++ )
+        {
+            log.append( new RaftLogEntry( 0, valueOf( i ) ) );
+        }
+        log.commit( 100 ); // assume that everything is committed, so we don't deal with commit requests in this test
 
-        when( state.entryLog() ).thenReturn( logMock );
+        when( state.entryLog() ).thenReturn( log );
         when( state.followerStates() ).thenReturn( followerState );
         when( state.term() ).thenReturn( 4l ); // both leader and follower are in the same term
 

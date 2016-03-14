@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogHelper;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
@@ -37,7 +38,7 @@ import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
 public class ClusterSafetyViolations
 {
-    public static List<Violation> violations( ClusterState state ) throws IOException
+    public static List<Violation> violations( ClusterState state ) throws IOException, RaftLogCompactedException
     {
         List<Violation> invariantsViolated = new ArrayList<>();
 
@@ -54,7 +55,7 @@ public class ClusterSafetyViolations
         return invariantsViolated;
     }
 
-    public static boolean inconsistentCommittedLogEntries( ClusterState state ) throws IOException
+    public static boolean inconsistentCommittedLogEntries( ClusterState state ) throws IOException, RaftLogCompactedException
     {
         int index = 0;
         boolean moreLog = true;

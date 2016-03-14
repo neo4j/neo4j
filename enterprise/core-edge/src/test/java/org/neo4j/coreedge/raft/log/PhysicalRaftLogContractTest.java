@@ -19,15 +19,6 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,6 +26,7 @@ import java.util.Stack;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,6 +39,15 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogVersions;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
+
+import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class PhysicalRaftLogContractTest extends RaftLogContractTest
 {
@@ -77,7 +78,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, 1000000, cacheSize, 10, 10,
+        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, 10 * 1024, cacheSize, 10, 10,
                 new PhysicalLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(), () -> mock( DatabaseHealth.class ),
                 NullLogProvider.getInstance() );
         life.add( newRaftLog );
@@ -224,7 +225,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
             while( cursor.next() )
             {
                 RaftLogAppendRecord record = cursor.get();
-                if ( record.getLogIndex() == 0L )
+                if ( record.logIndex() == 0L )
                 {
                     assertFalse( firstRecordEncountered );
                 }

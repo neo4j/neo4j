@@ -59,25 +59,6 @@ public class RaftLogMetadataCacheTest
     }
 
     @Test
-    public void shouldThrowWhenCachingATxWithNegativeOffsetPosition()
-    {
-        // given
-        final RaftLogMetadataCache cache = new RaftLogMetadataCache( 2 );
-        final long index = 42;
-        final long term= 42;
-        final LogPosition position = new LogPosition( 3, -1 );
-
-        // when
-        try
-        {
-            cache.cacheMetadata( index, term, position );
-            fail();
-        } catch (RuntimeException ex) {
-            assertEquals( "StartEntry.position is " + position, ex.getMessage() );
-        }
-    }
-
-    @Test
     public void shouldClearTheCache()
     {
         // given

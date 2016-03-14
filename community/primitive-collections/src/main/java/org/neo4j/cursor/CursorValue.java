@@ -17,13 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.cursor;
 
-public interface LogHeaderVisitor
+public class CursorValue<T>
 {
-    /***
-     * Used for visiting log headers in reverse order of age, meaning latest first.
-     * Stops visiting when false is returned.
-     */
-    boolean visit( LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog );
+    private boolean valid = false;
+    private T t;
+
+    public void set( T newT )
+    {
+        t = newT;
+        valid = true;
+    }
+
+    public T get()
+    {
+        if( valid )
+        {
+            return t;
+        }
+        throw new IllegalStateException();
+    }
+
+    public void invalidate()
+    {
+        valid = false;
+        t = null;
+    }
 }
