@@ -33,7 +33,7 @@ public class BatchingTokenRepositoryTest
     public void shouldDedupLabelIds() throws Exception
     {
         // GIVEN
-        BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( null, 0 );
+        BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( null );
 
         // WHEN
         long[] ids = repo.getOrCreateIds( new String[] {"One", "Two", "One"} );
@@ -46,7 +46,7 @@ public class BatchingTokenRepositoryTest
     public void shouldSortLabelIds() throws Exception
     {
         // GIVEN
-        BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( null, 0 );
+        BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( null );
         long[] expected = new long[] {
                 repo.getOrCreateId( "One" ),
                 repo.getOrCreateId( "Two" ),
