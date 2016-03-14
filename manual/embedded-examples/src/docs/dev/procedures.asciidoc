@@ -123,7 +123,7 @@ The Maven _pom.xml_ file is broken into pieces with comments for readability, th
  <description>A template project for building a Neo4j Procedure</description>
 
  <properties>
-   <neo4j.version>3.0.0-SNAPSHOT</neo4j.version>
+   <neo4j.version>3.1.0-SNAPSHOT</neo4j.version>
  </properties>
 ----
 
