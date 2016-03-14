@@ -44,17 +44,17 @@ public class AsciiDocListGenerator
         StringBuilder print = new StringBuilder( 100 * items.size() );
         if ( listId != null )
         {
-            sb.append( "[[" ).append( listId ).append( "]]\n" );
+            sb.append( "[[" ).append( listId ).append( String.format( "]]%n" ) );
         }
         if ( title != null )
         {
-            sb.append( '.' ).append( title ).append( '\n' );
+            sb.append( '.' ).append( title ).append( System.lineSeparator() );
         }
-        sb.append( SettingsDocumenter.IFDEF_HTMLOUTPUT ).append( '\n' )
-          .append( "[options=\"header\"]\n" )
-          .append( "|===\n" )
-          .append( "|Name|Description\n" );
-        print.append( SettingsDocumenter.IFDEF_NONHTMLOUTPUT ).append( '\n' );
+        sb.append( SettingsDocumenter.IFDEF_HTMLOUTPUT ).append( System.lineSeparator() )
+          .append( String.format( "[options=\"header\"]%n" ) )
+          .append( String.format( "|===%n") )
+          .append( String.format( "|Name|Description%n" ) );
+        print.append( SettingsDocumenter.IFDEF_NONHTMLOUTPUT ).append( System.lineSeparator() );
         for ( SettingDescription item : items )
         {
             String id = item.id();
@@ -91,13 +91,13 @@ public class AsciiDocListGenerator
                 sb.append( '.' );
                 print.append( '.' );
             }
-            sb.append( '\n' );
-            print.append( '\n' );
+            sb.append( System.lineSeparator() );
+            print.append( System.lineSeparator() );
         }
-        sb.append( "|===\n" )
+        sb.append( String.format( "|===%n" ))
             .append( SettingsDocumenter.ENDIF );
         print.append( SettingsDocumenter.ENDIF )
-            .append( '\n' );
+            .append( System.lineSeparator() );
         sb.append( print.toString() );
         return sb.toString();
     }
