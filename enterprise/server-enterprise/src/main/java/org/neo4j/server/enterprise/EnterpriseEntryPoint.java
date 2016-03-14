@@ -19,22 +19,33 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.IOException;
+import org.neo4j.server.BlockingBootstrapper;
+import org.neo4j.server.ServerBootstrapper;
 
-public class ArbiterBootstrapperTestProxy
+public class EnterpriseEntryPoint
 {
-    public static final String START_SIGNAL = "starting";
+    private static BlockingBootstrapper bootstrapper;
 
-    public static void main( String[] args ) throws IOException
+    public static void main( String[] args )
     {
-        // This sysout will be intercepted by the parent process and will trigger
-        // a start of a timeout. The whole reason for this class to be here is to
-        // split awaiting for the process to start and actually awaiting the cluster client to start.
-        System.out.println( START_SIGNAL );
-        try ( ArbiterBootstrapper arbiter = new ArbiterBootstrapper() )
+        int status = ServerBootstrapper.start( new EnterpriseBootstrapper(), args );
+        if ( status != 0 )
         {
-            arbiter.start( ArbiterEntryPoint.getConfigFile() );
-            System.in.read();
+            System.exit( status );
+        }
+    }
+
+    public static void start( String[] args )
+    {
+        bootstrapper = new BlockingBootstrapper( new EnterpriseBootstrapper() );
+        System.exit( ServerBootstrapper.start( bootstrapper, args ) );
+    }
+
+    public static void stop( @SuppressWarnings("UnusedParameters") String[] args )
+    {
+        if ( bootstrapper != null )
+        {
+            bootstrapper.stop();
         }
     }
 }

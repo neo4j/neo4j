@@ -13,7 +13,7 @@ test_expect_success "should start successfully" "
 "
 
 test_expect_success "should invoke arbiter main class" "
-  test_expect_java_arg 'org.neo4j.server.enterprise.ArbiterBootstrapper'
+  test_expect_java_arg 'org.neo4j.server.enterprise.ArbiterEntryPoint'
 "
 
 test_expect_success "should print a specific startup message" "

@@ -40,7 +40,7 @@ public class BlockingBootstrapper implements Bootstrapper
     public final int start( File configFile, Pair<String, String>... configOverrides )
     {
         int status = wrapped.start( configFile, configOverrides );
-        if ( status != BaseBootstrapper.OK )
+        if ( status != ServerBootstrapper.OK )
         {
             return status;
         }

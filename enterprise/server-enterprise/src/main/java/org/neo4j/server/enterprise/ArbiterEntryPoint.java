@@ -19,22 +19,36 @@
  */
 package org.neo4j.server.enterprise;
 
+import java.io.File;
 import java.io.IOException;
 
-public class ArbiterBootstrapperTestProxy
-{
-    public static final String START_SIGNAL = "starting";
+import org.neo4j.server.configuration.ServerSettings;
 
+public class ArbiterEntryPoint
+{
     public static void main( String[] args ) throws IOException
     {
-        // This sysout will be intercepted by the parent process and will trigger
-        // a start of a timeout. The whole reason for this class to be here is to
-        // split awaiting for the process to start and actually awaiting the cluster client to start.
-        System.out.println( START_SIGNAL );
-        try ( ArbiterBootstrapper arbiter = new ArbiterBootstrapper() )
+        int status = new ArbiterBootstrapper().start( getConfigFile() );
+        if ( status != 0 )
         {
-            arbiter.start( ArbiterEntryPoint.getConfigFile() );
-            System.in.read();
+            System.exit( status );
         }
+    }
+
+    static File getConfigFile()
+    {
+        String configPath = System.getProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
+        if ( configPath == null )
+        {
+            throw new RuntimeException( "System property " + ServerSettings.SERVER_CONFIG_FILE_KEY +
+                    " must be provided" );
+        }
+
+        File configFile = new File( configPath );
+        if ( !configFile.exists() )
+        {
+            throw new IllegalArgumentException( configFile + " doesn't exist" );
+        }
+        return configFile;
     }
 }

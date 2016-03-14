@@ -48,7 +48,7 @@
     <neo4j.version>${project.version}</neo4j.version>
     <neo4j-browser.version>1.0.1</neo4j-browser.version>
 
-    <neo4j-server.mainClass>org.neo4j.server.CommunityBootstrapper</neo4j-server.mainClass>
+    <neo4j-server.mainClass>org.neo4j.server.CommunityEntryPoint</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
 

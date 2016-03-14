@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.server.BaseBootstrapper;
+import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.BaseBootstrapperTest;
 
 import static org.hamcrest.Matchers.is;
@@ -42,7 +42,7 @@ import static org.neo4j.test.Assert.assertEventually;
 public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
 {
     @Override
-    protected BaseBootstrapper newBootstrapper()
+    protected ServerBootstrapper newBootstrapper()
     {
         return new EnterpriseBootstrapper();
     }
@@ -50,13 +50,13 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
     @Override
     protected void start(String[] args)
     {
-        EnterpriseBootstrapper.start( args );
+        EnterpriseEntryPoint.start( args );
     }
 
     @Override
     protected void stop(String[] args)
     {
-        EnterpriseBootstrapper.stop( args );
+        EnterpriseEntryPoint.stop( args );
     }
 
     @Rule
@@ -66,15 +66,18 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
     public void shouldBeAbleToStartInSingleMode() throws Exception
     {
         // When
-        int resultCode = BaseBootstrapper.start( bootstrapper,
+        int resultCode = ServerBootstrapper.start( bootstrapper,
                 "-c", configOption( EnterpriseServerSettings.mode, "SINGLE" ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( auth_store, getRelativePath( folder.getRoot(), auth_store ) ),
                 "-c", configOption( tls_key_file, getRelativePath( folder.getRoot(), tls_key_file ) ),
-                "-c", configOption( tls_certificate_file, getRelativePath( folder.getRoot(), tls_certificate_file ) ) );
+                "-c", configOption( tls_certificate_file, getRelativePath( folder.getRoot(), tls_certificate_file ) ),
+                "-c", configOption( tls_certificate_file, getRelativePath( folder.getRoot(), tls_certificate_file ) ),
+                "-c", "dbms.connector.1.type=HTTP",
+                "-c", "dbms.connector.1.enabled=true" );
 
         // Then
-        assertEquals( BaseBootstrapper.OK, resultCode );
+        assertEquals( ServerBootstrapper.OK, resultCode );
         assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
     }
 
@@ -82,17 +85,19 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
     public void shouldBeAbleToStartInHAMode() throws Exception
     {
         // When
-        int resultCode = BaseBootstrapper.start( bootstrapper,
+        int resultCode = ServerBootstrapper.start( bootstrapper,
                 "-c", configOption( EnterpriseServerSettings.mode, "HA" ),
                 "-c", configOption( ClusterSettings.server_id, "1" ),
                 "-c", configOption( ClusterSettings.initial_hosts, "127.0.0.1:5001" ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( auth_store, getRelativePath( folder.getRoot(), auth_store ) ),
                 "-c", configOption( tls_key_file, getRelativePath( folder.getRoot(), tls_key_file ) ),
-                "-c", configOption( tls_certificate_file, getRelativePath( folder.getRoot(), tls_certificate_file ) ) );
+                "-c", configOption( tls_certificate_file, getRelativePath( folder.getRoot(), tls_certificate_file ) ),
+                "-c", "dbms.connector.1.type=HTTP",
+                "-c", "dbms.connector.1.enabled=true" );
 
         // Then
-        assertEquals( BaseBootstrapper.OK, resultCode );
+        assertEquals( ServerBootstrapper.OK, resultCode );
         assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
     }
 }

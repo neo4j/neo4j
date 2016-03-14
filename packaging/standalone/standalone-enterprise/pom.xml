@@ -28,7 +28,7 @@
   </scm>
 
   <properties>
-    <neo4j.mainClass>org.neo4j.server.enterprise.EnterpriseBootstrapper</neo4j.mainClass>
+    <neo4j.mainClass>org.neo4j.server.enterprise.EnterpriseEntryPoint</neo4j.mainClass>
   </properties>
 
   <licenses>

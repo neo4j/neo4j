@@ -46,7 +46,6 @@ import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.Bootstrapper;
-import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.helpers.Exceptions.peel;
 
@@ -54,32 +53,6 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
 {
     private final LifeSupport life = new LifeSupport();
     private final Timer timer = new Timer( true );
-
-    public static void main( String[] args ) throws IOException
-    {
-        int status = new ArbiterBootstrapper().start( getConfigFile() );
-        if ( status != 0 )
-        {
-            System.exit( status );
-        }
-    }
-
-    static File getConfigFile()
-    {
-        String configPath = System.getProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
-        if ( configPath == null )
-        {
-            throw new RuntimeException( "System property " + ServerSettings.SERVER_CONFIG_FILE_KEY +
-                    " must be provided" );
-        }
-
-        File configFile = new File( configPath );
-        if ( !configFile.exists() )
-        {
-            throw new IllegalArgumentException( configFile + " doesn't exist" );
-        }
-        return configFile;
-    }
 
     @SafeVarargs
     @Override
@@ -132,6 +105,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         stop();
     }
 
+    @SafeVarargs
     private static Config getConfig( File configFile, Pair<String, String>... configOverrides )
     {
         Map<String, String> config = new HashMap<>();

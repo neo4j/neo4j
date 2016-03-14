@@ -67,7 +67,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-import org.neo4j.server.BaseBootstrapper;
+import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
@@ -211,7 +211,7 @@ public class StoreUpgradeIntegrationTest
 
             try
             {
-                BaseBootstrapper bootstrapper = new CommunityBootstrapper();
+                ServerBootstrapper bootstrapper = new CommunityBootstrapper();
                 try
                 {
                     bootstrapper.start( configFile );

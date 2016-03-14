@@ -116,9 +116,9 @@ Function Get-Neo4jPrunsrv
       '--Startup=automatic'
     )
 
-    if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseBootstrapper' }
-    if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityBootstrapper' }
-    if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterBootstrapper' }
+    if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseEntryPoint' }
+    if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
+    if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterEntryPoint' }
     if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }    
     $PrunArgs += @("--StopClass=$($serverMainClass)",
                    "--StartClass=$($serverMainClass)")

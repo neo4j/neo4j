@@ -19,23 +19,30 @@
  */
 package org.neo4j.server;
 
-public class CommunityBootstrapperTest extends BaseBootstrapperTest
+public class CommunityEntryPoint
 {
-    @Override
-    protected ServerBootstrapper newBootstrapper()
+    private static BlockingBootstrapper bootstrapper;
+
+    public static void main( String[] args )
     {
-        return new CommunityBootstrapper();
+        int status = ServerBootstrapper.start( new CommunityBootstrapper(), args );
+        if ( status != 0 )
+        {
+            System.exit( status );
+        }
     }
 
-    @Override
-    protected void start(String[] args)
+    public static void start( String[] args )
     {
-        CommunityEntryPoint.start( args );
+        bootstrapper = new BlockingBootstrapper( new CommunityBootstrapper() );
+        System.exit( ServerBootstrapper.start( bootstrapper, args ) );
     }
 
-    @Override
-    protected void stop(String[] args)
+    public static void stop( @SuppressWarnings("UnusedParameters") String[] args )
     {
-        CommunityEntryPoint.stop( args );
+        if ( bootstrapper != null )
+        {
+            bootstrapper.stop();
+        }
     }
 }

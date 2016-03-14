@@ -110,7 +110,7 @@ setup_arbiter_options() {
   if is_arbiter; then
     SHUTDOWN_TIMEOUT=20
     MIN_ALLOWED_OPEN_FILES=1
-    MAIN_CLASS="org.neo4j.server.enterprise.ArbiterBootstrapper"
+    MAIN_CLASS="org.neo4j.server.enterprise.ArbiterEntryPoint"
 
     print_start_message() {
       echo "Started in ARBITER mode."

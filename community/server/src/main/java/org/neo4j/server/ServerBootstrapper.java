@@ -44,7 +44,7 @@ import static java.lang.String.format;
 import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE;
 import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE_KEY;
 
-public abstract class BaseBootstrapper implements Bootstrapper
+public abstract class ServerBootstrapper implements Bootstrapper
 {
     public static final int OK = 0;
     public static final int WEB_SERVER_STARTUP_ERROR_CODE = 1;

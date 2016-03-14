@@ -52,7 +52,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
 
-    protected BaseBootstrapper bootstrapper;
+    protected ServerBootstrapper bootstrapper;
 
     @Before
     public void before() throws IOException
@@ -69,7 +69,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         }
     }
 
-    protected abstract BaseBootstrapper newBootstrapper() throws IOException;
+    protected abstract ServerBootstrapper newBootstrapper() throws IOException;
 
     protected abstract void start( String[] args );
 
@@ -79,7 +79,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws IOException
     {
         // When
-        int resultCode = BaseBootstrapper.start( bootstrapper,
+        int resultCode = ServerBootstrapper.start( bootstrapper,
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( auth_store, tempDir.newFile().getAbsolutePath() ),
                 "-c", configOption( tls_certificate_file,
@@ -90,7 +90,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         );
 
         // Then
-        assertEquals( BaseBootstrapper.OK, resultCode );
+        assertEquals( ServerBootstrapper.OK, resultCode );
         assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
     }
 
@@ -102,10 +102,12 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.1.type", "HTTP" );
+        properties.put( "dbms.connector.1.enabled", "true" );
         store( properties, configFile );
 
         // When
-        BaseBootstrapper.start( bootstrapper, "-C", configFile.getAbsolutePath() );
+        ServerBootstrapper.start( bootstrapper, "-C", configFile.getAbsolutePath() );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "ourcustomvalue" ) );
@@ -119,10 +121,12 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.1.type", "HTTP" );
+        properties.put( "dbms.connector.1.enabled", "true" );
         store( properties, configFile );
 
         // When
-        BaseBootstrapper.start( bootstrapper,
+        ServerBootstrapper.start( bootstrapper,
                 "-C", configFile.getAbsolutePath(),
                 "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
 
