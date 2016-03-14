@@ -196,7 +196,7 @@ public class ConsistencyCheckService
 
     private File chooseReportPath( Config tuningConfiguration)
     {
-        final File reportPath = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_report_directory );
+        final File reportPath = tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
         return new File( reportPath, defaultLogFileName( timestamp ) );
     }
 
