@@ -35,7 +35,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.fromInput;
@@ -47,7 +46,7 @@ public class NodeEncoderStepTest
 {
     private final StageControl control = mock( StageControl.class );
     private final TokenStore<LabelTokenRecord,Token> tokenStore = mock( TokenStore.class );
-    private final BatchingLabelTokenRepository tokenRepository = new BatchingLabelTokenRepository( tokenStore, 0 );
+    private final BatchingLabelTokenRepository tokenRepository = new BatchingLabelTokenRepository( tokenStore );
     private final NodeStore nodeStore = mock( NodeStore.class );
     private final CapturingSender sender = new CapturingSender();
 

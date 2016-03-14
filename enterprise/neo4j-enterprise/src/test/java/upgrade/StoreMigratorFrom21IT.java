@@ -23,8 +23,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.graphdb.DependencyResolver;
@@ -34,22 +37,23 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings( "unchecked" )
@@ -97,13 +101,18 @@ public class StoreMigratorFrom21IT
         File dir = MigrationTestUtils.find21FormatStoreDirectoryWithDuplicateProperties( storeDir.directory() );
 
         GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
-                        .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+                        .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
+                        .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
         GraphDatabaseService database = builder.newGraphDatabase();
         database.shutdown();
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck(
-                dir.getAbsoluteFile(), Config.defaults(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
+                dir.getAbsoluteFile(), Config.defaults().with( MapUtil.stringMap( GraphDatabaseFacadeFactory
+                        .Configuration.record_format.name(), HighLimit.NAME ) ),
+                ProgressMonitorFactory.NONE,
+                NullLogProvider
+                        .getInstance(), false );
         assertTrue( result.isSuccessful() );
 
         database = builder.newGraphDatabase();
@@ -113,47 +122,29 @@ public class StoreMigratorFrom21IT
         // Verify that the properties appear correct to the outside world:
         try ( Transaction ignore = database.beginTx() )
         {
-            verifyPropertiesEqual( database.getNodeById( 0 ),
-                    Pair.of( "keyA", "actual" ),
-                    Pair.of( "__DUPLICATE_keyA_1", "phony!" ),
-                    Pair.of( "__DUPLICATE_keyA_2", "phony!" ));
-            verifyPropertiesEqual( database.getNodeById( 1 ),
-                    Pair.of( "keyA", "actual" ),
-                    Pair.of( "__DUPLICATE_keyA_1", "actual" ),
-                    Pair.of( "__DUPLICATE_keyA_2", "actual" ));
-            verifyPropertiesEqual( database.getNodeById( 2 ),
-                    Pair.of( "keyA", "real1" ),
-                    Pair.of( "keyD", "real2" ),
-                    Pair.of( "__DUPLICATE_keyD_2", "phony" ),
-                    Pair.of( "__DUPLICATE_keyD_1", "phony" ),
-                    Pair.of( "__DUPLICATE_keyA_1", "phony" ),
-                    Pair.of( "__DUPLICATE_keyA_2", "phony" ));
-            verifyPropertiesEqual( database.getNodeById( 3 ),
-                    Pair.of( "keyA", "real1" ),
-                    Pair.of( "__DUPLICATE_keyA_1", "real1" ),
-                    Pair.of( "__DUPLICATE_keyA_2", "real1" ),
-                    Pair.of( "keyD", "real2" ),
-                    Pair.of( "__DUPLICATE_keyD_1", "real2" ),
-                    Pair.of( "__DUPLICATE_keyD_2", "real2" ) );
-            verifyPropertiesEqual( database.getNodeById( 4 ),
-                    Pair.of( "keyA", "actual" ),
-                    Pair.of( "keyB", "actual" ),
-                    Pair.of( "keyC", "actual" ) );
-            verifyPropertiesEqual( database.getRelationshipById( 0 ),
-                    Pair.of( "keyA", "actual" ),
-                    Pair.of( "__DUPLICATE_keyA_1", "actual" ),
-                    Pair.of( "__DUPLICATE_keyA_2", "actual" ));
-            verifyPropertiesEqual( database.getRelationshipById( 1 ),
-                    Pair.of( "keyA", "real1" ),
-                    Pair.of( "__DUPLICATE_keyA_1", "real1" ),
-                    Pair.of( "__DUPLICATE_keyA_2", "real1" ),
-                    Pair.of( "keyD", "real2" ),
-                    Pair.of( "__DUPLICATE_keyD_1", "real2" ),
-                    Pair.of( "__DUPLICATE_keyD_2", "real2" ) );
-            verifyPropertiesEqual( database.getRelationshipById( 2 ),
-                    Pair.of( "keyA", "actual" ),
-                    Pair.of( "keyB", "actual" ),
-                    Pair.of( "keyC", "actual" ) );
+            verifyProperties( database.getNodeById( 0 ),
+                    Pair.of( "keyA", new Object[] {"actual", "phony!", "phony!"} ) );
+            verifyProperties( database.getNodeById( 1 ), Pair.of( "keyA",
+                    new Object[]{"actual", "actual", "actual"} ) );
+            verifyProperties( database.getNodeById( 2 ),
+                    Pair.of( "keyA", new Object[]{ "real1", "phony", "phony"} ),
+                    Pair.of( "keyD", new Object[]{ "real2", "phony", "phony"} ));
+            verifyProperties( database.getNodeById( 3 ),
+                    Pair.of("keyA", new Object[]{"real1", "real1", "real1"}),
+                    Pair.of("keyD", new Object[]{"real2", "real2", "real2"}));
+            verifyProperties( database.getNodeById( 4 ),
+                    Pair.of("keyA", new Object[]{"actual"}),
+                    Pair.of("keyB", new Object[]{"actual"}),
+                    Pair.of("keyC", new Object[]{"actual"}));
+            verifyProperties( database.getRelationshipById( 0 ),
+                    Pair.of( "keyA", new Object[]{"actual","actual","actual"}));
+            verifyProperties( database.getRelationshipById( 1 ),
+                    Pair.of( "keyA", new Object[]{"real1", "real1", "real1"} ),
+                    Pair.of( "keyD", new Object[]{"real2", "real2", "real2"} ));;
+            verifyProperties( database.getRelationshipById( 2 ),
+                    Pair.of( "keyA", new Object[]{"actual"}),
+                    Pair.of( "keyB", new Object[]{"actual"}),
+                    Pair.of( "keyC", new Object[]{"actual"}));
         }
 
         // Verify that there are no two properties on the entities, that have the same key:
@@ -172,10 +163,22 @@ public class StoreMigratorFrom21IT
         database.shutdown();
     }
 
-    private void verifyPropertiesEqual( PropertyContainer entity, Pair<String,String>... expectedProperties )
+    private void verifyProperties( PropertyContainer entity, Pair<String, Object[]>... expectedPropertyGroups )
     {
-        Map<String, String> properties = (Map) entity.getAllProperties();
-        assertThat( properties, is( Iterables.asMap( Arrays.asList( expectedProperties ) ) ) );
+        for ( Pair<String, Object[]> group : expectedPropertyGroups )
+        {
+            Predicate<Map.Entry<String,Object>> filter = entry -> entry.getKey().equals( group.first() ) || entry
+                    .getKey().contains( "__DUPLICATE_" + group.first() + "_" );
+            Map<String,Object> relevantProperties = entity.getAllProperties().entrySet().stream().filter( filter )
+                    .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue() ) );
+            assertEquals( group.other().length, relevantProperties.size() );
+            List<Object> relevantValues = new ArrayList<>( relevantProperties.values() );
+            for ( Object expectedValue : group.other() )
+            {
+                assertTrue( relevantValues.remove( expectedValue ) );
+            }
+            assertTrue( relevantValues.size() == 0 );
+        }
     }
 }
 
