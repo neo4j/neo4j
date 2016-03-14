@@ -20,7 +20,10 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 
 public class StateMachines implements StateMachine
@@ -47,6 +50,26 @@ public class StateMachines implements StateMachine
         for ( StateMachine machine : machines )
         {
             machine.flush();
+        }
+    }
+
+    @Override
+    public Map<RaftStateType, Object> snapshot()
+    {
+        HashMap<RaftStateType, Object> map = new HashMap<>();
+        for ( StateMachine machine : machines )
+        {
+            map.putAll( machine.snapshot() );
+        }
+        return map;
+    }
+
+    @Override
+    public void installSnapshot( Map<RaftStateType, Object> snapshot )
+    {
+        for ( StateMachine machine : machines )
+        {
+            machine.installSnapshot( snapshot );
         }
     }
 }

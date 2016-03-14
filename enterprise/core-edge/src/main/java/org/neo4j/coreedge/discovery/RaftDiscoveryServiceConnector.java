@@ -21,6 +21,8 @@ package org.neo4j.coreedge.discovery;
 
 import java.util.Set;
 
+import org.neo4j.coreedge.raft.RaftInstance.BootstrapException;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
@@ -39,7 +41,7 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
     }
 
     @Override
-    public void start() throws RaftInstance.BootstrapException
+    public void start() throws BootstrapException
     {
         discoveryService.addMembershipListener( this );
 
@@ -48,7 +50,14 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
 
         if ( clusterTopology.bootstrappable() )
         {
-            raftInstance.bootstrapWithInitialMembers( new CoreMemberSet( initialMembers ) );
+            try
+            {
+                raftInstance.bootstrapWithInitialMembers( new CoreMemberSet( initialMembers ) );
+            }
+            catch ( RaftLogCompactedException e )
+            {
+                throw new BootstrapException( e );
+            }
         }
 
         onTopologyChange( clusterTopology );

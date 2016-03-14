@@ -71,7 +71,7 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
 
         final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, globalSession, lockState( lockSessionId ), new CommittingTransactionsRegistry(),
@@ -97,7 +97,7 @@ public class ReplicatedTransactionStateMachineTest
                 physicalTx( lockSessionId ), globalSession, localOperationId );
 
         RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
         ReplicatedTransactionStateMachine<CoreMember> listener = new ReplicatedTransactionStateMachine<>(
@@ -128,7 +128,7 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
 
         CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
         final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine<>(
@@ -167,7 +167,7 @@ public class ReplicatedTransactionStateMachineTest
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
         RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
 
         CommittingTransactions committingTransactions = new CommittingTransactionsRegistry();
         final ReplicatedTransactionStateMachine listener = new ReplicatedTransactionStateMachine<>(

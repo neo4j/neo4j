@@ -21,11 +21,9 @@ package org.neo4j.coreedge.raft.membership;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
-import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFailedException;
+import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 
 public class TxPullClient

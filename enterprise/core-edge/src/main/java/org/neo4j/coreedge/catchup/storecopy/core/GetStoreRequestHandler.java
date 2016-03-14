@@ -86,7 +86,7 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
 
     private void endStoreCopy( ChannelHandlerContext ctx, long lastCommittedTxBeforeStoreCopy )
     {
-        ctx.write( ResponseMessageType.STORY_COPY_FINISHED );
+        ctx.write( ResponseMessageType.STORE_COPY_FINISHED );
         ctx.writeAndFlush( new StoreCopyFinishedResponse( lastCommittedTxBeforeStoreCopy ) );
     }
 }

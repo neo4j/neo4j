@@ -17,12 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.edge;
+package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-
-public interface EdgeToCoreConnectionStrategy
+/**
+ * The RAFT external entity that is interested in log entries and
+ * typically applies them to a state machine.
+ */
+public interface RaftStateMachine
 {
-    AdvertisedSocketAddress coreServer() throws EdgeServerConnectionException;
+    /**
+     * Called when the highest committed index increases.
+     */
+    default void notifyCommitted( long commitIndex ) {}
+
+    /**
+     * Download and install a snapshot of state from another member of the cluster.
+     * <p/>
+     * Called when the consensus system no longer has the log entries required to further update the state machine,
+     * because they have been deleted through pruning.
+     */
+    default void downloadSnapshot() {}
 }

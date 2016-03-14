@@ -33,14 +33,22 @@ import org.neo4j.coreedge.catchup.CatchupServer;
 import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.StoreIdSupplier;
+import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
+import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
+import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyClient;
+import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
+import org.neo4j.coreedge.catchup.storecopy.edge.state.StateFetcher;
+import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.CoreDiscoveryService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
-import org.neo4j.coreedge.raft.ConsensusListener;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
+import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
@@ -104,6 +112,7 @@ import org.neo4j.coreedge.server.logging.MessageLogger;
 import org.neo4j.coreedge.server.logging.NullMessageLogger;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -129,6 +138,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
@@ -149,14 +159,36 @@ import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
  * that are specific to the Enterprise Core edition that provides a core cluster.
  */
 public class EnterpriseCoreEditionModule
-        extends EditionModule
+        extends EditionModule implements CoreEditionSPI
 {
-    public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
-    private final RaftInstance<CoreMember> raft;
+    private static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
 
-    public RaftInstance<CoreMember> raft()
+    private final RaftInstance<CoreMember> raft;
+    private final CoreStateMachine coreStateMachine;
+    private final CoreMember myself;
+
+    @Override
+    public CoreMember id()
     {
-        return raft;
+        return myself;
+    }
+
+    @Override
+    public Role currentRole()
+    {
+        return raft.currentRole();
+    }
+
+    @Override
+    public void downloadSnapshot( AdvertisedSocketAddress source )
+    {
+        coreStateMachine.downloadSnapshot( source );
+    }
+
+    @Override
+    public void compact()
+    {
+        coreStateMachine.compact();
     }
 
     public enum RaftLogImplementation
@@ -178,12 +210,18 @@ public class EnterpriseCoreEditionModule
         }
     }
 
+    @Override
+    protected SPI spi()
+    {
+        return this;
+    }
+
     public EnterpriseCoreEditionModule( final PlatformModule platformModule,
                                         DiscoveryServiceFactory discoveryServiceFactory )
     {
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 
-        final org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
+        final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
@@ -207,7 +245,7 @@ public class EnterpriseCoreEditionModule
                 new RaftChannelInitializer( marshal ), logProvider, platformModule.monitors, maxQueueSize );
         life.add( senderService );
 
-        final CoreMember myself = new CoreMember(
+        myself = new CoreMember(
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
                 config.get( CoreEdgeClusterSettings.raft_advertised_address ) );
 
@@ -230,13 +268,34 @@ public class EnterpriseCoreEditionModule
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( SYSTEM_CLOCK, logProvider );
 
-
         RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
                 databaseHealthSupplier );
 
-        MonitoredRaftLog monitoredRaftLog = new MonitoredRaftLog( underlyingLog , platformModule.monitors );
+        MonitoredRaftLog raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
 
         StateMachineApplier stateMachineApplier;
+
+        LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
+                new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(),
+                        platformModule.pageCache ),
+                new StoreFiles( new DefaultFileSystemAbstraction() ),
+                dependencies.provideDependency( NeoStoreDataSource.class ),
+                platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier );
+
+        ExpiryScheduler expiryScheduler = new ExpiryScheduler( platformModule.jobScheduler );
+        Expiration expiration = new Expiration( SYSTEM_CLOCK );
+
+        CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer( logProvider );
+        CoreToCoreClient coreToCoreClient = life.add( new CoreToCoreClient( logProvider, expiryScheduler, expiration,
+                channelInitializer, platformModule.monitors, maxQueueSize ) );
+        channelInitializer.setOwner( coreToCoreClient );
+
+        StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,
+                new StoreCopyClient( coreToCoreClient ), new TxPullClient( coreToCoreClient ),
+                new TransactionLogCatchUpFactory() );
+
+        StateFetcher stateFetcher = new StateFetcher( coreToCoreClient );
+
         try
         {
             DurableStateStorage<LastAppliedState> lastAppliedStorage = life.add( new DurableStateStorage<>(
@@ -246,17 +305,22 @@ public class EnterpriseCoreEditionModule
             ExecutorService applyExecutor = Executors.newSingleThreadExecutor();
             life.add( new ExecutorServiceLifecycleAdapter( applyExecutor ) );
             stateMachineApplier = new StateMachineApplier(
-                    monitoredRaftLog, lastAppliedStorage, applyExecutor,
+                    raftLog, lastAppliedStorage, applyExecutor,
                     config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                     databaseHealthSupplier, logProvider );
+
+            coreStateMachine = new CoreStateMachine( stateMachineApplier, localDatabase,
+                    new NotMyselfSelectionStrategy( discoveryService, myself ), storeFetcher, stateFetcher,
+                    logProvider, raftLog );
+            life.add( coreStateMachine );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
 
-        raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, monitoredRaftLog,
-                stateMachineApplier, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
+        raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
+                coreStateMachine, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
                 raftTimeoutService, databaseHealthSupplier, platformModule.monitors );
 
         dependencies.satisfyDependency( raft );
@@ -380,7 +444,19 @@ public class EnterpriseCoreEditionModule
                     replicatedTxStateMachine, labelTokenStateMachine, relationshipTypeTokenStateMachine,
                     propertyKeyTokenStateMachine, replicatedLockTokenStateMachine, idAllocationStateMachine );
 
-            stateMachineApplier.setStateMachine( stateMachines );
+            long lastAppliedIndex = txLogState.findLastAppliedIndex();
+            stateMachineApplier.setStateMachine( stateMachines, lastAppliedIndex );
+            try
+            {
+                if( lastAppliedIndex > 1)
+                {
+                    raftLog.skip( lastAppliedIndex, raft.term() );
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
 
             return new ReplicatedTransactionCommitProcess( replicator, localSessionPool,
                     new ExponentialBackoffStrategy( 10, TimeUnit.SECONDS ), logging, committingTransactions,
@@ -410,14 +486,6 @@ public class EnterpriseCoreEditionModule
 
         publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
 
-        ExpiryScheduler expiryScheduler = new ExpiryScheduler( platformModule.jobScheduler );
-        Expiration expiration = new Expiration( SYSTEM_CLOCK );
-
-        CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer( logProvider );
-        CoreToCoreClient coreToCoreClient = life.add( new CoreToCoreClient( logProvider, expiryScheduler, expiration,
-                channelInitializer, platformModule.monitors, maxQueueSize ) );
-        channelInitializer.setOwner( coreToCoreClient );
-
         long leaderLockTokenTimeout = config.get( CoreEdgeClusterSettings.leader_lock_token_timeout );
         lockManager = dependencies.satisfyDependency( createLockManager( config, logging, replicator, myself,
                 pendingLockTokensRequests, raft, leaderLockTokenTimeout ) );
@@ -428,6 +496,7 @@ public class EnterpriseCoreEditionModule
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
                 new DataSourceSupplier( platformModule ),
                 new CheckpointerSupplier( platformModule.dependencies ),
+                stateMachineApplier,
                 config.get( CoreEdgeClusterSettings.transaction_listen_address ),
                 platformModule.monitors );
 
@@ -499,7 +568,7 @@ public class EnterpriseCoreEditionModule
             Config config,
             MessageLogger<AdvertisedSocketAddress> messageLogger,
             RaftLog raftLog,
-            ConsensusListener consensusListener,
+            RaftStateMachine raftStateMachine,
             FileSystemAbstraction fileSystem,
             File clusterStateDirectory,
             CoreMember myself,
@@ -577,7 +646,7 @@ public class EnterpriseCoreEditionModule
                 config.get( CoreEdgeClusterSettings.log_shipping_max_lag ) );
 
         RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
-                myself, termState, voteState, raftLog, consensusListener, electionTimeout, heartbeatInterval,
+                myself, termState, voteState, raftLog, raftStateMachine, electionTimeout, heartbeatInterval,
                 raftTimeoutService, loggingRaftInbound,
                 new RaftOutbound( outbound ), leaderWaitTimeout, logProvider,
                 raftMembershipManager, logShipping, databaseHealthSupplier, monitors );

@@ -22,12 +22,14 @@ package org.neo4j.coreedge.catchup.storecopy;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.DatabaseHealth;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -50,7 +52,7 @@ public class LocalDatabaseTest
         LocalDatabase localDatabase = new LocalDatabase( new File( "directory" ),
                 mock( CopiedStoreRecovery.class ),
                 new StoreFiles( mock( FileSystemAbstraction.class ) ),
-                singleton( neoStoreDataSource ), singleton( mock( TransactionIdStore.class ) ) );
+                singleton( neoStoreDataSource ), singleton( mock( TransactionIdStore.class ) ), () -> mock( DatabaseHealth.class ) );
 
         // then
         assertEquals( storeId, localDatabase.storeId() );

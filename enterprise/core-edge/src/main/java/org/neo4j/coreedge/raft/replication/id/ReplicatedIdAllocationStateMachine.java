@@ -20,8 +20,10 @@
 package org.neo4j.coreedge.raft.replication.id;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.raft.state.StateStorage;
@@ -31,6 +33,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.util.Collections.singletonMap;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -89,5 +92,20 @@ public class ReplicatedIdAllocationStateMachine implements StateMachine
     public void flush() throws IOException
     {
         storage.persistStoreData( idAllocationState );
+    }
+
+    @Override
+    public Map<RaftStateType, Object> snapshot()
+    {
+        return singletonMap( RaftStateType.ID_ALLOCATION, idAllocationState );
+    }
+
+    @Override
+    public void installSnapshot( Map<RaftStateType, Object> snapshot )
+    {
+        if ( snapshot.containsKey( RaftStateType.ID_ALLOCATION ) )
+        {
+            idAllocationState = (IdAllocationState) snapshot.get( RaftStateType.ID_ALLOCATION );
+        }
     }
 }

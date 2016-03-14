@@ -62,6 +62,19 @@ public class Follower implements RaftMessageHandler
         return false;
     }
 
+    public static <MEMBER> void handleLeaderLogCompaction( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome, RaftMessages.LogCompactionInfo<MEMBER> compactionInfo )
+    {
+        if ( compactionInfo.leaderTerm() < ctx.term() )
+        {
+            return;
+        }
+
+        if( compactionInfo.prevIndex() > ctx.entryLog().appendIndex() )
+        {
+            outcome.markNeedForFreshSnapshot();
+        }
+    }
+
     @Override
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> ctx, Log log )
             throws IOException, RaftLogCompactedException
@@ -85,6 +98,12 @@ public class Follower implements RaftMessageHandler
             case VOTE_REQUEST:
             {
                 Voting.handleVoteRequest( ctx, outcome, (RaftMessages.Vote.Request<MEMBER>) message );
+                break;
+            }
+
+            case LOG_COMPACTION_INFO:
+            {
+                handleLeaderLogCompaction( ctx, outcome, (RaftMessages.LogCompactionInfo<MEMBER>) message );
                 break;
             }
 

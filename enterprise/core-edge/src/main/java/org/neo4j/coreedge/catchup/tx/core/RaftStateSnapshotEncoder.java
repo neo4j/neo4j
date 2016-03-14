@@ -17,16 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft;
+package org.neo4j.coreedge.catchup.tx.core;
 
-/**
- * A consensus listener is notified when a particular index in the consensus log
- * is considered committed.
- */
-public interface ConsensusListener
+import java.util.List;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageEncoder;
+
+import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
+import org.neo4j.coreedge.catchup.storecopy.core.RaftStateSnapshot;
+
+public class RaftStateSnapshotEncoder extends MessageToMessageEncoder<RaftStateSnapshot>
 {
-    /**
-     * Called when the highest committed index increases.
-     */
-    void notifyCommitted();
+    @Override
+    protected void encode( ChannelHandlerContext ctx, RaftStateSnapshot response, List<Object> out ) throws Exception
+    {
+        ByteBuf encoded = ctx.alloc().buffer();
+        new RaftStateSnapshot.Marshal().marshal( response, new NetworkFlushableByteBuf( encoded ) );
+        out.add( encoded );
+    }
 }

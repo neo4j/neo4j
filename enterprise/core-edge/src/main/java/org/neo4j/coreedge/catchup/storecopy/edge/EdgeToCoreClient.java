@@ -92,7 +92,7 @@ public class EdgeToCoreClient extends CoreClient
 
             // keep these after type-specific handlers since they process ByteBufs
             pipeline.addLast( new FileHeaderDecoder( protocol ) );
-            pipeline.addLast( new FileHeaderHandler( protocol ) );
+            pipeline.addLast( new FileHeaderHandler( protocol, logProvider ) );
             pipeline.addLast( new FileContentHandler( protocol, owner ) );
 
             pipeline.addLast( new ExceptionLoggingHandler( logProvider.getLog( getClass() ) ) );

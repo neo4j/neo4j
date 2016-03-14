@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.roles.Role;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.EnterpriseCoreFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -33,16 +33,15 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 public class CoreGraphDatabase extends GraphDatabaseFacade
 {
-    private RaftInstance<CoreMember> raft;
+    private final CoreEditionSPI coreEditionSPI;
 
     public CoreGraphDatabase( File storeDir, Map<String, String> params,
                               GraphDatabaseFacadeFactory.Dependencies dependencies,
                               DiscoveryServiceFactory discoveryServiceFactory )
     {
-        new EnterpriseCoreFacadeFactory( discoveryServiceFactory ).initFacade( storeDir, params, dependencies, this );
-
-        // See same thing in HighlyAvailableGraphDatabase for details
-        raft = getDependencyResolver().resolveDependency( RaftInstance.class );
+        GraphDatabaseFacade coreGraphDatabaseFacade =
+                new EnterpriseCoreFacadeFactory( discoveryServiceFactory ).initFacade( storeDir, params, dependencies, this );
+        coreEditionSPI = (CoreEditionSPI) coreGraphDatabaseFacade.editionSPI();
     }
 
     public CoreGraphDatabase( File storeDir, Map<String, String> params,
@@ -51,8 +50,23 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
         this( storeDir, params, dependencies, new HazelcastDiscoveryServiceFactory() );
     }
 
+    public CoreMember id()
+    {
+        return coreEditionSPI.id();
+    }
+
     public Role getRole()
     {
-        return raft.currentRole();
+        return coreEditionSPI.currentRole();
+    }
+
+    public void downloadSnapshot( AdvertisedSocketAddress source )
+    {
+        coreEditionSPI.downloadSnapshot( source );
+    }
+
+    public void compact()
+    {
+        coreEditionSPI.compact();
     }
 }

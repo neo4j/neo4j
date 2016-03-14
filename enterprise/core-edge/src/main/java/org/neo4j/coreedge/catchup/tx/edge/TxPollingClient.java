@@ -22,9 +22,9 @@ package org.neo4j.coreedge.catchup.tx.edge;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
-import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
+import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.edge.EdgeToCoreConnectionStrategy;
+import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -39,7 +39,7 @@ public class TxPollingClient extends LifecycleAdapter
 {
     private final JobScheduler jobScheduler;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
-    private final EdgeToCoreConnectionStrategy connectionStrategy;
+    private final CoreServerSelectionStrategy connectionStrategy;
     private final long pollingInterval;
     private final CoreClient coreClient;
     private final TxPullResponseListener txPullResponseListener;
@@ -48,7 +48,7 @@ public class TxPollingClient extends LifecycleAdapter
     public TxPollingClient( JobScheduler jobScheduler, long pollingInterval,
                             Supplier<TransactionIdStore> transactionIdStoreSupplier,
                             CoreClient coreClient, TxPullResponseListener txPullResponseListener,
-                            EdgeToCoreConnectionStrategy connectionStrategy, LogProvider logProvider )
+                            CoreServerSelectionStrategy connectionStrategy, LogProvider logProvider )
     {
         this.coreClient = coreClient;
         this.txPullResponseListener = txPullResponseListener;
@@ -74,7 +74,7 @@ public class TxPollingClient extends LifecycleAdapter
                         transactionServer = connectionStrategy.coreServer();
                         coreClient.pollForTransactions( transactionServer, txIdStore.getLastCommittedTransactionId() );
                     }
-                    catch ( EdgeServerConnectionException e )
+                    catch ( CoreServerSelectionException e )
                     {
                         if ( transactionServer != null )
                         {

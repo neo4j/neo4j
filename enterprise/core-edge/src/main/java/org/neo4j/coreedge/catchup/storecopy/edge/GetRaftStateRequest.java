@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.discovery;
+package org.neo4j.coreedge.catchup.storecopy.edge;
 
-public class EdgeServerConnectionException extends Exception
+import org.neo4j.coreedge.catchup.RequestMessageType;
+import org.neo4j.coreedge.network.Message;
+
+public class GetRaftStateRequest implements Message
 {
-    public EdgeServerConnectionException( String message )
-    {
-        super( message );
-    }
+    public static final RequestMessageType MESSAGE_TYPE = RequestMessageType.STORE;
 }

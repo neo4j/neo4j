@@ -22,7 +22,7 @@ package org.neo4j.coreedge.server.edge;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
-import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
+import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -36,14 +36,14 @@ public class EdgeServerStartupProcess implements Lifecycle
     private final LocalDatabase localDatabase;
     private final TxPollingClient txPuller;
     private final DataSourceManager dataSourceManager;
-    private final EdgeToCoreConnectionStrategy connectionStrategy;
+    private final CoreServerSelectionStrategy connectionStrategy;
     private final Log log;
     private final RetryStrategy.Timeout timeout;
 
     public EdgeServerStartupProcess( StoreFetcher storeFetcher, LocalDatabase localDatabase,
                                      TxPollingClient txPuller,
                                      DataSourceManager dataSourceManager,
-                                     EdgeToCoreConnectionStrategy connectionStrategy,
+                                     CoreServerSelectionStrategy connectionStrategy,
                                      RetryStrategy retryStrategy,
                                      LogProvider logProvider )
     {
@@ -75,7 +75,7 @@ public class EdgeServerStartupProcess implements Lifecycle
                 localDatabase.copyStoreFrom( transactionServer, storeFetcher );
                 copiedStore = true;
             }
-            catch ( EdgeServerConnectionException ex )
+            catch ( CoreServerSelectionException ex )
             {
                 log.info( "Failed to connect to core server. Retrying in %d ms.", timeout.getMillis() );
                 Thread.sleep( timeout.getMillis() );

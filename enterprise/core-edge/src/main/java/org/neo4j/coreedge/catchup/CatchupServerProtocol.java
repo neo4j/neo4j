@@ -35,6 +35,6 @@ public class CatchupServerProtocol
 
     public enum NextMessage
     {
-        MESSAGE_TYPE, GET_STORE, TX_PULL, LOCK_REQUEST
+        MESSAGE_TYPE, GET_STORE, GET_RAFT_STATE, TX_PULL
     }
 }

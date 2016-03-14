@@ -106,6 +106,12 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Raf
             buf.writeLong( heartbeat.commitIndexTerm() );
             buf.writeLong( heartbeat.commitIndex() );
         }
+        else if( message instanceof RaftMessages.LogCompactionInfo )
+        {
+            RaftMessages.LogCompactionInfo<CoreMember> logCompactionInfo = (RaftMessages.LogCompactionInfo<CoreMember>) message;
+            buf.writeLong( logCompactionInfo.leaderTerm() );
+            buf.writeLong( logCompactionInfo.prevIndex() );
+        }
         else
         {
             throw new IllegalArgumentException( "Unknown message type" );

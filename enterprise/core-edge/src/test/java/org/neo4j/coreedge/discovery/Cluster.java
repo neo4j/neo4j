@@ -30,17 +30,22 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.BiConsumer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.coreedge.raft.NoLeaderFoundException;
+import org.neo4j.coreedge.raft.replication.Replicator;
+import org.neo4j.coreedge.raft.replication.id.IdGenerationException;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
@@ -52,6 +57,7 @@ import static java.util.stream.Collectors.joining;
 import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
 
 public class Cluster
 {
@@ -62,7 +68,7 @@ public class Cluster
     private Set<CoreGraphDatabase> coreServers = new HashSet<>();
     private Set<EdgeGraphDatabase> edgeServers = new HashSet<>();
 
-    Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers, DiscoveryServiceFactory discoveryServiceFactory )
+    Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers, DiscoveryServiceFactory discoveryServiceFactory, Map<String,String> coreParams )
             throws ExecutionException, InterruptedException
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
@@ -72,7 +78,7 @@ public class Cluster
         ExecutorService executor = Executors.newCachedThreadPool();
         try
         {
-            startCoreServers( executor, noOfCoreServers, initialHosts );
+            startCoreServers( executor, noOfCoreServers, initialHosts, coreParams );
             startEdgeServers( executor, noOfEdgeServers, initialHosts );
         }
         finally
@@ -85,13 +91,19 @@ public class Cluster
                                  DiscoveryServiceFactory discoveryServiceFactory )
             throws ExecutionException, InterruptedException
     {
-        return new Cluster( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory );
+        return new Cluster( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, stringMap() );
     }
 
     public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers )
             throws ExecutionException, InterruptedException
     {
-        return new Cluster( parentDir, noOfCoreServers, noOfEdgeServers, new HazelcastDiscoveryServiceFactory() );
+        return new Cluster( parentDir, noOfCoreServers, noOfEdgeServers, new HazelcastDiscoveryServiceFactory(), stringMap() );
+    }
+
+    public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers, Map<String,String> coreParams )
+            throws ExecutionException, InterruptedException
+    {
+        return new Cluster( parentDir, noOfCoreServers, noOfEdgeServers, new HazelcastDiscoveryServiceFactory(), coreParams );
     }
 
     private static File coreServerStoreDirectory( File parentDir, int serverId )
@@ -128,8 +140,8 @@ public class Cluster
         return addresses;
     }
 
-    private void startCoreServers( ExecutorService executor, final int noOfCoreServers, List<AdvertisedSocketAddress>
-            addresses )
+    private void startCoreServers( ExecutorService executor, final int noOfCoreServers,
+            List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams )
             throws InterruptedException, ExecutionException
     {
         List<Callable<CoreGraphDatabase>> coreServerSuppliers = new ArrayList<>();
@@ -137,7 +149,7 @@ public class Cluster
         {
             // start up a core server
             final int serverId = i;
-            coreServerSuppliers.add( () -> startCoreServer( serverId, noOfCoreServers, addresses ) );
+            coreServerSuppliers.add( () -> startCoreServer( serverId, noOfCoreServers, addresses, extraParams ) );
         }
 
         Future<List<CoreGraphDatabase>> coreServerFutures = combine( executor.invokeAll( coreServerSuppliers ) );
@@ -161,7 +173,7 @@ public class Cluster
         this.edgeServers.addAll( edgeServerFutures.get() );
     }
 
-    public CoreGraphDatabase startCoreServer( int serverId, int clusterSize, List<AdvertisedSocketAddress> addresses )
+    public CoreGraphDatabase startCoreServer( int serverId, int clusterSize, List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams )
     {
         int clusterPort = 5000 + serverId;
         int txPort = 6000 + serverId;
@@ -181,6 +193,9 @@ public class Cluster
         params.put( HaSettings.pull_interval.name(), String.valueOf( 5 ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "100M" );
         params.put( GraphDatabaseSettings.auth_store.name(), new File(parentDir, "auth").getAbsolutePath() );
+
+        params.putAll( extraParams );
+
         final File storeDir = coreServerStoreDirectory( parentDir, serverId );
         return new CoreGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
                 discoveryServiceFactory );
@@ -313,11 +328,16 @@ public class Cluster
 
     public void addCoreServerWithServerId( int serverId, int intendedClusterSize )
     {
+        addCoreServerWithServerId( serverId, intendedClusterSize, stringMap() );
+    }
+
+    public void addCoreServerWithServerId( int serverId, int intendedClusterSize, Map<String,String> extraParams )
+    {
         Config config = firstOrNull( coreServers ).getDependencyResolver().resolveDependency( Config.class );
         List<AdvertisedSocketAddress> advertisedAddress = config.get( CoreEdgeClusterSettings
                 .initial_core_cluster_members );
 
-        coreServers.add( startCoreServer( serverId, intendedClusterSize, advertisedAddress ) );
+        coreServers.add( startCoreServer( serverId, intendedClusterSize, advertisedAddress, extraParams ) );
     }
 
     public void addEdgeServerWithFileLocation( int serverId )
@@ -400,5 +420,58 @@ public class Cluster
 
 
         edgeServers.add( startEdgeServer( 999, edgeDatabaseStoreFileLocation, advertisedAddresses ) );
+    }
+
+    public CoreGraphDatabase coreTx( BiConsumer<CoreGraphDatabase,Transaction> op ) throws TimeoutException, InterruptedException
+    {
+        return leaderTx( op );
+    }
+
+    private CoreGraphDatabase leaderTx( BiConsumer<CoreGraphDatabase,Transaction> op ) throws TimeoutException, InterruptedException
+    {
+        while( true )
+        {
+            CoreGraphDatabase db = awaitCoreGraphDatabaseWithRole( 5000, Role.LEADER );
+
+            try
+            {
+                Transaction tx = db.beginTx();
+                op.accept( db, tx );
+                tx.close();
+                return db;
+            }
+            catch ( TransactionFailureException e )
+            {
+                if( isTransientFailure( e ) )
+                {
+                    // sleep and retry
+                    Thread.sleep( 100 );
+                }
+                else
+                {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    private boolean isTransientFailure( TransactionFailureException e )
+    {
+        // TODO: This should really catch all cases of transient failures. Must be able to express that in a clearer manner...
+        if ( e.getCause() instanceof Replicator.ReplicationFailedException )
+        {
+            return true;
+        }
+        else if ( e instanceof IdGenerationException )
+        {
+            return true;
+        }
+        else if ( e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
+                  ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() == LockSessionExpired )
+        {
+            return true;
+        }
+
+        return false;
     }
 }

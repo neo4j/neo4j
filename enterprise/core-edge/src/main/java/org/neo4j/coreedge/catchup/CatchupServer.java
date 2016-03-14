@@ -35,13 +35,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
+import org.neo4j.coreedge.catchup.storecopy.core.GetRaftStateRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.core.GetStoreRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.core.StoreCopyFinishedResponseEncoder;
+import org.neo4j.coreedge.catchup.storecopy.edge.GetRaftStateRequestDecoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestDecoder;
+import org.neo4j.coreedge.catchup.tx.core.RaftStateSnapshotEncoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestHandler;
 import org.neo4j.coreedge.catchup.tx.core.TxPullResponseEncoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseEncoder;
+import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -66,6 +70,7 @@ public class CatchupServer extends LifecycleAdapter
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
+    private final Supplier<StateMachine> stateMachine;
     private final ListenSocketAddress listenAddress;
 
     private EventLoopGroup workerGroup;
@@ -79,8 +84,10 @@ public class CatchupServer extends LifecycleAdapter
                           Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                           Supplier<NeoStoreDataSource> dataSourceSupplier,
                           Supplier<CheckPointer> checkPointerSupplier,
+                          Supplier<StateMachine> stateMachine,
                           ListenSocketAddress listenAddress, Monitors monitors )
     {
+        this.stateMachine = stateMachine;
         this.listenAddress = listenAddress;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.storeIdSupplier = storeIdSupplier;
@@ -120,6 +127,7 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new ResponseMessageTypeEncoder() );
                         pipeline.addLast( new RequestMessageTypeEncoder() );
                         pipeline.addLast( new TxPullResponseEncoder() );
+                        pipeline.addLast( new RaftStateSnapshotEncoder() );
                         pipeline.addLast( new StoreCopyFinishedResponseEncoder() );
                         pipeline.addLast( new TxStreamFinishedResponseEncoder() );
                         pipeline.addLast( new FileHeaderEncoder() );
@@ -135,6 +143,9 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new GetStoreRequestDecoder( protocol ) );
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier ) );
+
+                        pipeline.addLast( new GetRaftStateRequestDecoder( protocol ) );
+                        pipeline.addLast( new GetRaftStateRequestHandler( protocol, stateMachine ) );
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                     }
