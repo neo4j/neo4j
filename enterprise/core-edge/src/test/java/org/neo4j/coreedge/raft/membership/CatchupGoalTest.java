@@ -75,6 +75,12 @@ public class CatchupGoalTest
             return appendIndex;
         }
 
+        @Override
+        public long prevIndex()
+        {
+            return 0;
+        }
+
         @Override public long commitIndex()
         {
             return 0;
@@ -86,9 +92,9 @@ public class CatchupGoalTest
         }
 
         @Override
-        public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+        public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
         {
-            return IOCursor.getEmpty();
+            return RaftLogCursor.empty();
         }
     }
 }

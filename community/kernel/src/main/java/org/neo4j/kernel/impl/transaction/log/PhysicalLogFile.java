@@ -29,7 +29,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
  */
-public class PhysicalLogFile extends LifecycleAdapter implements LogFile
+public class PhysicalLogFile implements LogFile, Lifecycle
 {
     public interface Monitor
     {
@@ -87,7 +87,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public void init() throws Throwable
+    public void init() throws IOException
     {
         // Make sure at least a bare bones log file is available before recovery
         long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
@@ -96,7 +96,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws IOException
     {
         // Recovery has taken place before this, so the log file has been truncated to last known good tx
         // Just read header and move to the end
@@ -109,11 +109,17 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         writer = new PositionAwarePhysicalFlushableChannel( channel );
     }
 
+    @Override
+    public void stop()
+    {
+        // nothing to stop
+    }
+
     // In order to be able to write into a logfile after life.stop during shutdown sequence
     // we will close channel and writer only during shutdown phase when all pending changes (like last
     // checkpoint) are already in
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown() throws IOException
     {
         if ( writer != null )
         {

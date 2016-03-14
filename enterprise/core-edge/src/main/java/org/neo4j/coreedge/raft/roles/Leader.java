@@ -19,25 +19,26 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.Followers;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
-import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.logging.Log;
 
 import static java.lang.Math.max;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
-
-import java.io.IOException;
 
 public class Leader implements RaftMessageHandler
 {
@@ -46,7 +47,7 @@ public class Leader implements RaftMessageHandler
         return new FilteringIterable<>( ctx.replicationMembers(), member -> !member.equals( ctx.myself() ) );
     }
 
-    static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws IOException
+    static <MEMBER> void sendHeartbeats( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome ) throws IOException, RaftLogCompactedException
     {
         long commitIndex = ctx.leaderCommit();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
@@ -59,7 +60,7 @@ public class Leader implements RaftMessageHandler
 
     @Override
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message,
-                                            ReadableRaftState<MEMBER> ctx, Log log ) throws IOException
+                                            ReadableRaftState<MEMBER> ctx, Log log ) throws IOException, RaftLogCompactedException
     {
         Outcome<MEMBER> outcome = new Outcome<>( LEADER, ctx );
 

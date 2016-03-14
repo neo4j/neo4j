@@ -23,10 +23,9 @@ import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.raft.ConsensusListener;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
+import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
-import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -92,9 +91,9 @@ public class StateMachineApplier extends LifecycleAdapter implements ConsensusLi
         }
     }
 
-    private void applyUpTo( long commitIndex ) throws IOException
+    private void applyUpTo( long commitIndex ) throws IOException, RaftLogCompactedException
     {
-        try ( IOCursor<RaftLogEntry> cursor = raftLog.getEntryCursor( lastApplied + 1 ) )
+        try ( RaftLogCursor cursor = raftLog.getEntryCursor( lastApplied + 1 ) )
         {
             while ( cursor.next() && lastApplied < commitIndex )
             {
@@ -113,7 +112,7 @@ public class StateMachineApplier extends LifecycleAdapter implements ConsensusLi
     }
 
     @Override
-    public synchronized void start() throws IOException
+    public synchronized void start() throws IOException, RaftLogCompactedException
     {
         lastApplied = lastAppliedStorage.getInitialState().get();
         log.info( "Replaying commands from index %d to index %d", lastApplied, raftLog.commitIndex() );

@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
@@ -164,7 +165,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
      *
      * @param memberSet The other members.
      */
-    public synchronized void bootstrapWithInitialMembers( RaftGroup<MEMBER> memberSet ) throws BootstrapException
+    public synchronized void bootstrapWithInitialMembers( RaftGroup<MEMBER> memberSet ) throws BootstrapException, RaftLogCompactedException
     {
         if ( entryLog.appendIndex() >= 0 )
         {

@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
@@ -59,7 +60,7 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
         this.entryLog = entryLog;
     }
 
-    public ComparableRaftState( ReadableRaftState<RaftTestMember> original ) throws IOException
+    public ComparableRaftState( ReadableRaftState<RaftTestMember> original ) throws IOException, RaftLogCompactedException
     {
         this( original.myself(), original.votingMembers(), original.replicationMembers(), new ComparableRaftLog( original.entryLog() ) );
     }
@@ -130,7 +131,7 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
         return entryLog;
     }
 
-    public void update( Outcome<RaftTestMember> outcome ) throws IOException
+    public void update( Outcome<RaftTestMember> outcome ) throws IOException, RaftLogCompactedException
     {
         term = outcome.getTerm();
         votedFor = outcome.getVotedFor();

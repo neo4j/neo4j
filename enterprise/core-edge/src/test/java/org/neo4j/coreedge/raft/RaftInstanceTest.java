@@ -523,7 +523,19 @@ public class RaftInstanceTest
         }
 
         @Override
+        public long prune( long safeIndex )
+        {
+            return -1;
+        }
+
+        @Override
         public long appendIndex()
+        {
+            return -1;
+        }
+
+        @Override
+        public long prevIndex()
         {
             return -1;
         }
@@ -541,7 +553,7 @@ public class RaftInstanceTest
         }
 
         @Override
-        public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+        public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
         {
             if ( startExploding )
             {
@@ -549,8 +561,14 @@ public class RaftInstanceTest
             }
             else
             {
-                return IOCursor.getEmpty();
+                return RaftLogCursor.empty();
             }
+        }
+
+        @Override
+        public long skip( long index, long term )
+        {
+            return -1;
         }
 
         public void startExploding()

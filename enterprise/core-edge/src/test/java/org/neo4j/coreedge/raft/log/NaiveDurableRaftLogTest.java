@@ -58,11 +58,11 @@ public class NaiveDurableRaftLogTest
 
         File entriesFile = new File( directory, "entries.log" );
         File contentFile = new File( directory, "content.log" );
-        File commitFile = new File( directory, "commit.log" );
+        File metaFile = new File( directory, "meta.log" );
 
         when( fsa.open( Matchers.eq( entriesFile ), anyString() ) ).thenReturn( entriesChannel );
         when( fsa.open( Matchers.eq( contentFile ), anyString() ) ).thenReturn( contentChannel );
-        when( fsa.open( Matchers.eq( commitFile ), anyString() ) ).thenReturn( commitChannel );
+        when( fsa.open( Matchers.eq( metaFile ), anyString() ) ).thenReturn( commitChannel );
 
         NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),
                 NullLogProvider.getInstance());
@@ -97,11 +97,11 @@ public class NaiveDurableRaftLogTest
 
         File entriesFile = new File( directory, "entries.log" );
         File contentFile = new File( directory, "content.log" );
-        File commitFile = new File( directory, "commit.log" );
+        File metaFile = new File( directory, "meta.log" );
 
         when( fsa.open( Matchers.eq( entriesFile ), anyString() ) ).thenReturn( entriesChannel );
         when( fsa.open( Matchers.eq( contentFile ), anyString() ) ).thenReturn( contentChannel );
-        when( fsa.open( Matchers.eq( commitFile ), anyString() ) ).thenReturn( commitChannel );
+        when( fsa.open( Matchers.eq( metaFile ), anyString() ) ).thenReturn( commitChannel );
 
         NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),
                 NullLogProvider.getInstance());
@@ -139,11 +139,11 @@ public class NaiveDurableRaftLogTest
 
         File entriesFile = new File( directory, "entries.log" );
         File contentFile = new File( directory, "content.log" );
-        File commitFile = new File( directory, "commit.log" );
+        File metaFile = new File( directory, "meta.log" );
 
         when( fsa.open( Matchers.eq( entriesFile ), anyString() ) ).thenReturn( entriesChannel );
         when( fsa.open( Matchers.eq( contentFile ), anyString() ) ).thenReturn( contentChannel );
-        when( fsa.open( Matchers.eq( commitFile ), anyString() ) ).thenReturn( commitChannel );
+        when( fsa.open( Matchers.eq( metaFile ), anyString() ) ).thenReturn( commitChannel );
 
         NaiveDurableRaftLog log = new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),
                 NullLogProvider.getInstance());

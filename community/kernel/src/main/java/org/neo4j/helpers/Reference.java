@@ -17,13 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.helpers;
 
-public interface LogHeaderVisitor
+public class Reference<T>
 {
-    /***
-     * Used for visiting log headers in reverse order of age, meaning latest first.
-     * Stops visiting when false is returned.
-     */
-    boolean visit( LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog );
+    private T t;
+
+    public Reference( T initial )
+    {
+        this.t = initial;
+    }
+
+    public void set( T t )
+    {
+        this.t = t;
+    }
+
+    public T get()
+    {
+        return t;
+    }
+
+    @Override
+    public String toString()
+    {
+        return t.toString();
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        return t.equals( obj );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return t.hashCode();
+    }
 }

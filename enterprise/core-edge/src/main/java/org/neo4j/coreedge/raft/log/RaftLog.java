@@ -38,8 +38,7 @@ public interface RaftLog extends ReadableRaftLog
      * through truncation).
      *
      * @param entry The log entry.
-     * @return Returns the index at which the entry was appended, or -1
-     * if the entry was not accepted.
+     * @return the index at which the entry was appended.
      */
     long append( RaftLogEntry entry ) throws IOException;
 
@@ -49,7 +48,7 @@ public interface RaftLog extends ReadableRaftLog
      *
      * @param fromIndex The start index (inclusive).
      */
-    void truncate( long fromIndex ) throws IOException;
+    void truncate( long fromIndex ) throws IOException, RaftLogCompactedException;
 
     /**
      * Signals the safe replication of any entries previously appended up to and
@@ -62,4 +61,34 @@ public interface RaftLog extends ReadableRaftLog
      */
     void commit( long commitIndex ) throws IOException;
 
+    /**
+     * Attempt to prune (delete) a prefix of the log, no further than the safeIndex.
+     * <p/>
+     * Implementations can choose to prune a shorter prefix if this is convenient for
+     * their storage mechanism. The return value tells the caller how much was actually pruned.
+     *
+     * @param safeIndex Highest index that may be pruned.
+     *
+     * @return The new prevIndex for the log, which will be at most safeIndex.
+     */
+    long prune( long safeIndex ) throws IOException, RaftLogCompactedException;
+
+    /**
+     * Skip up to the supplied index if it is not already present.
+     * <p/>
+     * If the entry was not present then it gets defined with the
+     * supplied term, but without content, and thus can be used
+     * only for log matching from a later index.
+     * <p/>
+     * This is useful when a snapshot starting from a later index
+     * has been downloaded and thus earlier entries are irrelevant
+     * and possibly non-existent in the cluster.
+     *
+     * @param index the index we want to skip to
+     * @param term the term of the index
+     *
+     * @return The appendIndex after this call, which
+     *         will be at least index.
+     */
+    long skip( long index, long term ) throws IOException;
 }

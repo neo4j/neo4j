@@ -31,17 +31,24 @@ import static org.neo4j.coreedge.raft.log.PhysicalRaftLog.RecordType.APPEND;
 
 public class RaftLogAppendRecord extends RaftLogRecord
 {
+    private final long appendIndex;
     private final RaftLogEntry logEntry;
 
-    RaftLogAppendRecord( long logIndex, RaftLogEntry logEntry )
+    RaftLogAppendRecord( long appendIndex, RaftLogEntry logEntry )
     {
-        super( APPEND, logIndex );
+        super( APPEND );
+        this.appendIndex = appendIndex;
         this.logEntry = logEntry;
     }
 
-    public RaftLogEntry getLogEntry()
+    public RaftLogEntry logEntry()
     {
         return logEntry;
+    }
+
+    public long logIndex()
+    {
+        return appendIndex;
     }
 
     public static RaftLogAppendRecord read( ReadableChannel channel, ChannelMarshal<ReplicatedContent> marshal ) throws IOException
@@ -67,6 +74,9 @@ public class RaftLogAppendRecord extends RaftLogRecord
     @Override
     public String toString()
     {
-        return String.format( "RaftLogAppendRecord{%s, %s}", super.toString(), logEntry );
+        return "RaftLogAppendRecord{" +
+               "appendIndex=" + appendIndex +
+               ", logEntry=" + logEntry +
+               '}';
     }
 }

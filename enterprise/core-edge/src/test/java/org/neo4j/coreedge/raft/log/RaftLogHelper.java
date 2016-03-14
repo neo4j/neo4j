@@ -21,21 +21,70 @@ package org.neo4j.coreedge.raft.log;
 
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.ReadableRaftLog;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+
 import org.neo4j.cursor.IOCursor;
 
 public class RaftLogHelper
 {
-    public static RaftLogEntry readLogEntry( ReadableRaftLog raftLog, long index ) throws IOException
+    public static RaftLogEntry readLogEntry( ReadableRaftLog raftLog, long index ) throws RaftLogCompactedException, IOException
     {
-        try ( IOCursor<RaftLogEntry> cursor = raftLog.getEntryCursor( index ) )
+        try
         {
-            if ( cursor.next() )
+            try ( RaftLogCursor cursor = raftLog.getEntryCursor( index ) )
             {
-                return cursor.get();
+                if ( cursor.next() )
+                {
+                    return cursor.get();
+                }
             }
         }
-        throw new IndexOutOfBoundsException();
+        // TODO: Weirdness all because of IOCursor...
+        catch ( IOException e )
+        {
+            if( e.getCause() instanceof RaftLogCompactedException )
+            {
+                throw (RaftLogCompactedException)e.getCause();
+            }
+            throw e;
+        }
+        throw new RaftLogCompactedException();
+    }
+
+    public static Matcher<? super RaftLog> hasNoContent( long index )
+    {
+        return new TypeSafeMatcher<RaftLog>()
+        {
+            @Override
+            protected boolean matchesSafely( RaftLog log )
+            {
+                try
+                {
+                    readLogEntry( log, index );
+                    return false;
+                }
+                catch ( IOException e )
+                {
+                    if( e.getCause() instanceof RaftLogCompactedException )
+                    {
+                        // expected
+                        return true;
+                    }
+                }
+                catch ( RaftLogCompactedException e )
+                {
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "Log should not contain entry at index " ).appendValue( index );
+            }
+        };
     }
 }

@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.roles;
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.logging.Log;
@@ -37,7 +38,7 @@ public class Candidate implements RaftMessageHandler
 {
     @Override
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message,
-                                            ReadableRaftState<MEMBER> ctx, Log log ) throws IOException
+                                            ReadableRaftState<MEMBER> ctx, Log log ) throws IOException, RaftLogCompactedException
     {
         Outcome<MEMBER> outcome = new Outcome<>( CANDIDATE, ctx );
 

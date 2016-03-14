@@ -30,6 +30,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.RaftMessage;
 import org.neo4j.coreedge.raft.RaftMessages.Timeout.Election;
 import org.neo4j.coreedge.raft.ReplicatedString;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.outcome.Outcome;
@@ -224,7 +225,7 @@ public class FollowerTest
     }
 
     private void appendSomeEntriesToLog( RaftState<RaftTestMember> raft, Follower follower, int numberOfEntriesToAppend,
-                                         int term ) throws IOException
+                                         int term ) throws IOException, RaftLogCompactedException
     {
         for ( int i = 0; i < numberOfEntriesToAppend; i++ )
         {

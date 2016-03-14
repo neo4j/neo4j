@@ -175,6 +175,10 @@ public class CoreEdgeClusterSettings
     public static final Setting<Integer> state_machine_flush_window_size =
             setting( "core_edge.state_machine_flush_window_size", INTEGER, "100" );
 
+    @Description( "RAFT log pruning strategy" )
+    public static final Setting<String> raft_log_pruning =
+            setting( "core_edge.raft_log_pruning", STRING, "7 days" );
+
     @Description( "RAFT log implementation" )
     public static final Setting<String> raft_log_implementation =
             setting( "core_edge.raft_log_implementation", STRING, "PHYSICAL" );
