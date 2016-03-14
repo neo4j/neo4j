@@ -67,7 +67,7 @@ public abstract class IndexType
         void removeFieldsFromDocument( Document document, String key, Object value )
         {
             Set<String> values = null;
-            if ( value != null && value.toString() != null )
+            if ( value != null )
             {
                 String stringValue = value.toString();
                 values = new HashSet<>( Arrays.asList(
@@ -78,7 +78,7 @@ public abstract class IndexType
                 }
             }
             document.removeFields( key );
-            if ( value != null && value.toString() != null )
+            if ( value != null )
             {
                 for ( String existingValue : values )
                 {
@@ -137,7 +137,7 @@ public abstract class IndexType
         {
             String exactKey = exactKey( key );
             Set<String> values = null;
-            if ( value != null && value.toString() != null )
+            if ( value != null )
             {
                 String stringValue = value.toString();
                 values = new HashSet<>( Arrays.asList( document.getValues( exactKey ) ) );
@@ -148,7 +148,7 @@ public abstract class IndexType
             }
             document.removeFields( exactKey );
             document.removeFields( key );
-            if ( value != null && value.toString() != null )
+            if ( value != null )
             {
                 for ( String existingValue : values )
                 {
