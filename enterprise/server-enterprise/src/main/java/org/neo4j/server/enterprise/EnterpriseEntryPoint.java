@@ -20,11 +20,12 @@
 package org.neo4j.server.enterprise;
 
 import org.neo4j.server.BlockingBootstrapper;
+import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.ServerBootstrapper;
 
 public class EnterpriseEntryPoint
 {
-    private static BlockingBootstrapper bootstrapper;
+    private static Bootstrapper bootstrapper;
 
     public static void main( String[] args )
     {

@@ -21,7 +21,7 @@ package org.neo4j.server;
 
 public class CommunityEntryPoint
 {
-    private static BlockingBootstrapper bootstrapper;
+    private static Bootstrapper bootstrapper;
 
     public static void main( String[] args )
     {
