@@ -1,4 +1,4 @@
-# Guidelines
+## Guidelines
 
 Please note that GitHub issues are only meant for bug reports/feature requests.  If you have questions on how to use Neo4j, please ask on [StackOverflow](http://stackoverflow.com/questions/tagged/neo4j) instead of creating an issue here.
 
@@ -15,7 +15,7 @@ To help us understand your issue, please specify important details, primarily:
 
 Additionally, include (as appropriate) log-files, stacktraces, and other debug output.
 
-# Example bug report
+## Example bug report
 
 I discovered that when I mount `data/` to a volume on my host, and then stop the container, the `write.lock` is not removed as well as a number of other files not being cleaned up properly.
 
