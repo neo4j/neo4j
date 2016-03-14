@@ -175,11 +175,12 @@ Server: SUCCESS { "type": "r" }
 
 ----
 
-=== Error handling
+[[bolt-examples-reset]]
+=== Error handling with RESET
 
 This illustrates how the server behaves when a request fails, and shows how the server ignores incoming messages until a `RESET` message is received.
 
-.Error handling
+.Error handling with RESET
 [source,bolt_exchange]
 ----
 # Handshake
@@ -256,6 +257,112 @@ Server: SUCCESS { "fields": ["num"] }
 
   00 0f b1 70  a1 86 66 69  65 6c 64 73  91 83 6e 75
   6d 00 00
+----
+
+[[bolt-examples-ack-failure]]
+=== Error handling with ACK_FAILURE
+
+This illustrates how to handle errors with `ACK_FAILURE`.
+`ACK_FAILURE` will not roll back transactions or interrupt messages ahead in line.
+Instead, it only clears the error state and moves the session either to `IDLE` or to `IN_TRANSCATION`.
+
+This is helpful, because it means you always have to run "ROLLBACK" to roll back an open transaction.
+For some use cases, that helps minimize complexity, because it cuts down the number of error recovery paths.
+
+.Error handling with ACK_FAILURE
+[source,bolt_exchange]
+----
+# Handshake
+Client: <connect>
+Client: 60 60 B0 17
+Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
+Server: 00 00 00 01
+
+Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credentials": "secret"}
+
+  00 40 B1 01  8C 4D 79 43  6C 69 65 6E  74 2F 31 2E
+  30 A3 86 73  63 68 65 6D  65 85 62 61  73 69 63 89
+  70 72 69 6E  63 69 70 61  6C 85 6E 65  6F 34 6A 8B
+  63 72 65 64  65 6E 74 69  61 6C 73 86  73 65 63 72
+  65 74 00 00
+
+Server: SUCCESS {}
+
+  00 03 b1 70  a0 00 00
+
+
+# We explicitly create a transaction
+Client: RUN "BEGIN" {}
+
+  00 09 B2 10  85 42 45 47  49 4E A0 00  00
+
+Client: PULL_ALL
+
+  00 02 B0 3F  00 00
+
+Server: SUCCESS { "fields": [] }
+
+  00 0B B1 70  A1 86 66 69  65 6C 64 73  90 00 00
+
+Server: SUCCESS {}
+
+  00 03 B1 70  A0 00 00
+
+
+# And then send a message with a syntax error
+Client: RUN "This will cause a syntax error" {}
+
+  00 23 b2 10  d0 1e 54 68  69 73 20 77  69 6c 6c 20
+  63 61 75 73  65 20 61 20  73 79 6e 74  61 78 20 65
+  72 72 6f 72  a0 00 00
+
+
+# Server responds with failure
+Server: FAILURE { "code": "Neo.ClientError.Statement.SyntaxError",
+                  "message": "Invalid input 'T': expected <init> (line 1, column 1 (offset: 0))
+                          "This will cause a syntax error"
+                           ^"}
+
+  00 9E B1 7F  A2 84 63 6F  64 65 D0 25  4E 65 6F 2E
+  43 6C 69 65  6E 74 45 72  72 6F 72 2E  53 74 61 74
+  65 6D 65 6E  74 2E 53 79  6E 74 61 78  45 72 72 6F
+  72 87 6D 65  73 73 61 67  65 D0 65 49  6E 76 61 6C
+  69 64 20 69  6E 70 75 74  20 27 54 27  3A 20 65 78
+  70 65 63 74  65 64 20 3C  69 6E 69 74  3E 20 28 6C
+  69 6E 65 20  31 2C 20 63  6F 6C 75 6D  6E 20 31 20
+  28 6F 66 66  73 65 74 3A  20 30 29 29  0A 22 54 68
+  69 73 20 77  69 6C 6C 20  63 61 75 73  65 20 61 20
+  73 79 6E 74  61 78 20 65  72 72 6F 72  22 0A 20 5E
+  00 00
+
+# Further requests are ignored
+Client: PULL_ALL
+
+  00 02 b0 3f 00 00
+
+Server: IGNORED
+
+  00 02 b0 7e 00 00
+
+
+# Until the error is acknowledged
+Client: ACK_FAILURE
+
+  00 02 B0 0E  00 00
+
+Server: SUCCESS {}
+
+  00 03 b1 70  a0 00 00
+
+
+# The transaction remains in place, and can be rolled back
+Client: RUN "ROLLBACK" {}
+
+  00 0C B2 10  88 52 4F 4C  4C 42 41 43  4B A0 00 00
+
+Server: SUCCESS { "fields": [] }
+
+  00 0B B1 70  A1 86 66 69  65 6C 64 73  90 00 00
 ----
 
 === Accessing basic result metadata

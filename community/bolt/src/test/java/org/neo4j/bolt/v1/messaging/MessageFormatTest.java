@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
 import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
+import org.neo4j.bolt.v1.messaging.message.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.message.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
@@ -81,6 +82,7 @@ public class MessageFormatTest
         assertSerializes( new FailureMessage( Status.General.UnknownError, "Err" ) );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new ResetMessage() );
+        assertSerializes( new AckFailureMessage() );
         assertSerializes( new InitMessage( "MyClient/1.0", map("scheme", "basic") ) );
     }
 

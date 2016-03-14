@@ -118,6 +118,13 @@ public class MonitoredSessions implements Sessions
         }
 
         @Override
+        public <A> void ackFailure( A attachment, Callback<Void,A> callback )
+        {
+            monitor.messageReceived();
+            delegate.ackFailure( attachment, withMonitor( callback ) );
+        }
+
+        @Override
         public void interrupt()
         {
             delegate.interrupt();

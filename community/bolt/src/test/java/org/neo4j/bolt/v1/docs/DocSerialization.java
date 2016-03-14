@@ -170,6 +170,9 @@ public class DocSerialization
                     case "RESET":
                         writer.handleResetMessage();
                         break;
+                    case "ACK_FAILURE":
+                        writer.handleAckFailureMessage();
+                        break;
                     default:
                         throw new RuntimeException( "Unknown value: " + type );
                 }

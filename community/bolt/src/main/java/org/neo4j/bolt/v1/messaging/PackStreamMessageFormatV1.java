@@ -43,7 +43,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public interface MessageTypes
     {
         byte MSG_INIT = 0x01;
+        byte MSG_ACK_FAILURE = 0x0E;
         byte MSG_RESET = 0x0F;
+
         byte MSG_RUN = 0x10;
         byte MSG_DISCARD_ALL = 0x2F;
         byte MSG_PULL_ALL = 0x3F;
@@ -59,6 +61,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         switch( type )
         {
         case MessageTypes.MSG_INIT:        return "MSG_INIT";
+        case MessageTypes.MSG_ACK_FAILURE: return "MSG_ACK_FAILURE";
         case MessageTypes.MSG_RESET:       return "MSG_RESET";
         case MessageTypes.MSG_RUN:         return "MSG_RUN";
         case MessageTypes.MSG_DISCARD_ALL: return "MSG_DISCARD_ALL";
@@ -73,14 +76,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
     public static class Writer implements MessageFormat.Writer
     {
-        public static final MessageBoundaryHook NO_OP = new MessageBoundaryHook()
-        {
-            @Override
-            public void onMessageComplete() throws IOException
-            {
-
-            }
-        };
+        public static final MessageBoundaryHook NO_OP = () -> { };
 
         private final Neo4jPack.Packer packer;
         private final MessageBoundaryHook onMessageComplete;
@@ -191,6 +187,13 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         }
 
         @Override
+        public void handleAckFailureMessage() throws IOException
+        {
+            packer.packStructHeader( 0, MessageTypes.MSG_ACK_FAILURE );
+            onMessageComplete.onMessageComplete();
+        }
+
+        @Override
         public void flush() throws IOException
         {
             packer.flush();
@@ -253,7 +256,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                         unpackInitMessage( output );
                         break;
                     case MessageTypes.MSG_RESET:
-                        unpackResetMessage( output );
+                        output.handleResetMessage();
+                        break;
+                    case MessageTypes.MSG_ACK_FAILURE:
+                        output.handleAckFailureMessage();
                         break;
                     default:
                         throw new BoltIOException( Status.Request.Invalid,
@@ -340,11 +346,6 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             String clientName = unpacker.unpackString();
             Map<String,Object> credentials = unpacker.unpackMap();
             output.handleInitMessage( clientName, credentials );
-        }
-
-        private <E extends Exception> void unpackResetMessage( MessageHandler<E> output ) throws IOException, E
-        {
-            output.handleResetMessage();
         }
 
     }

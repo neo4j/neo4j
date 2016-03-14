@@ -171,6 +171,12 @@ public class MonitoredSessionsTest
         }
 
         @Override
+        public <A> void ackFailure( A attachment, Callback<Void,A> callback )
+        {
+            
+        }
+
+        @Override
         public void interrupt()
         {
 

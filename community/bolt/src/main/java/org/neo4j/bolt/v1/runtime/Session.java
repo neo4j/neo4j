@@ -153,8 +153,32 @@ public interface Session extends AutoCloseable
     <A> void discardAll( A attachment, Callback<Void,A> callback );
 
     /**
+     * Clear any outstanding error condition. This differs from {@link #reset(Object, Callback)} in two
+     * important ways:
+     *
+     * 1) If there was an explicitly created transaction, the session will move back
+     *    to IN_TRANSACTION, rather than IDLE. This allows a more natural flow for client
+     *    side drivers, where explicitly opened transactions always are ended with COMMIT or ROLLBACK,
+     *    even if an error occurs. In all other cases, the session will move to the IDLE state.
+     *
+     * 2) It will not interrupt any ahead-in-line messages.
+     */
+    <A> void ackFailure( A attachment, Callback<Void,A> callback );
+
+
+    /**
      * Reset the session to an IDLE state. This clears any outstanding failure condition, disposes
      * of any outstanding result records and rolls back the current transaction (if any).
+     *
+     * This differs from {@link #reset(Object, Callback)} in that it is more "radical" - it does not
+     * matter what the state of the session is, as long as it is open, reset will move it back to IDLE.
+     *
+     * This is designed to cater to two use cases:
+     *
+     * 1) Rather than create new sessions over and over, drivers can maintain a pool of sessions,
+     *    and reset them before each re-use. Since establishing sessions can be high overhead,
+     *    this is quite helpful.
+     * 2) Kill any stuck or long running operation
      */
     <A> void reset( A attachment, Callback<Void,A> callback );
 

@@ -88,6 +88,12 @@ public class SessionWorkerFacade implements Session
     }
 
     @Override
+    public <A> void ackFailure( A attachment, Callback<Void,A> callback )
+    {
+        queue( session -> session.ackFailure( attachment, callback ) );
+    }
+
+    @Override
     public void interrupt()
     {
         worker.interrupt();
