@@ -21,9 +21,17 @@ package org.neo4j.coreedge.raft.elections;
 
 import org.junit.Test;
 
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.function.Predicates;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
@@ -36,6 +44,32 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  */
 public class ElectionPerformanceIT
 {
+    /**
+     * This class simply waits for a single entry to have been committed for each member,
+     * which should be the initial member set entry, making it possible for every member
+     * to perform elections. We need this before we start disconnecting members.
+     */
+    private class BootstrapWaiter implements RaftStateMachine
+    {
+        private AtomicLong count = new AtomicLong();
+
+        @Override
+        public void notifyCommitted( long commitIndex )
+        {
+            count.incrementAndGet();
+        }
+
+        @Override
+        public void downloadSnapshot()
+        {
+        }
+
+        private void await( long awaitedCount ) throws InterruptedException, TimeoutException
+        {
+            Predicates.await( () -> count.get() >= awaitedCount, 30, SECONDS, 100, MILLISECONDS );
+        }
+    }
+
     @Test
     public void electionPerformance_NormalConditions() throws Throwable
     {
@@ -51,13 +85,16 @@ public class ElectionPerformanceIT
         final int iterations = 10;
 
         RaftTestNetwork<RaftTestMember> net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
-        Fixture fixture = new Fixture( asSet( 0L, 1L, 2L ), net, electionTimeout, heartbeatInterval );
+        Set<Long> members = asSet( 0L, 1L, 2L );
+        BootstrapWaiter bootstrapWaiter = new BootstrapWaiter();
+        Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval, bootstrapWaiter );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );
 
         try
         {
             // when running scenario
             fixture.boot();
+            bootstrapWaiter.await( members.size() );
             scenario.run( iterations, 10 * electionTimeout );
         }
         finally
@@ -91,13 +128,16 @@ public class ElectionPerformanceIT
         final int iterations = 100;
 
         RaftTestNetwork<RaftTestMember> net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
-        Fixture fixture = new Fixture( asSet( 0L, 1L, 2L ), net, electionTimeout, heartbeatInterval );
+        Set<Long> members = asSet( 0L, 1L, 2L );
+        BootstrapWaiter bootstrapWaiter = new BootstrapWaiter();
+        Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval, bootstrapWaiter );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );
 
         try
         {
             // when running scenario
             fixture.boot();
+            bootstrapWaiter.await( members.size() );
             scenario.run( iterations, 10 * electionTimeout );
         }
         finally

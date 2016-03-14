@@ -58,6 +58,7 @@ public class DisconnectLeaderScenario
             {
                 timeoutCount++;
             }
+            fixture.net.reset();
             Thread.sleep( ThreadLocalRandom.current().nextLong( electionTimeout ) );
         }
     }
@@ -71,11 +72,7 @@ public class DisconnectLeaderScenario
         RaftTestMember newLeader = ElectionUtil.waitForLeaderAgreement( new FilteringIterable<>( fixture.rafts, raft -> !raft.identity().equals( oldLeader ) ), leaderStabilityMaxTimeMillis );
         assert !newLeader.equals( oldLeader ); // this should be guaranteed by the waitForLeaderAgreement call
 
-        long endTime = System.currentTimeMillis();
-
-        fixture.net.reconnect( oldLeader );
-
-        return endTime - startTime;
+        return System.currentTimeMillis() - startTime;
     }
 
     private boolean hadOneOrMoreCollisions( long result )
