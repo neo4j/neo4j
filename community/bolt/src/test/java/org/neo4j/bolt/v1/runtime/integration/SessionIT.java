@@ -434,7 +434,6 @@ public class SessionIT
 
         // Then
         assertThat( ((Record) stream[0]).fields()[0], equalTo( (Object) 1L ) );
-
     }
 
     private String createLocalIrisData( Session session ) throws IOException, InterruptedException

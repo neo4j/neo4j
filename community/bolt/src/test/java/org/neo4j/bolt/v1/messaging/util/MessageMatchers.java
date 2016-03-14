@@ -49,6 +49,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -180,7 +181,7 @@ public class MessageMatchers
                 assertThat( t, instanceOf( FailureMessage.class ) );
                 FailureMessage msg = (FailureMessage) t;
                 assertThat( msg.status(), equalTo( status ) );
-                assertThat( msg.message(), equalTo( message ) );
+                assertThat( msg.message(), containsString( message ) );
                 return true;
             }
 
