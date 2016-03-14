@@ -29,7 +29,6 @@ import java.util.TimerTask;
 import org.jboss.netty.channel.ChannelException;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Predicates;
@@ -50,20 +49,12 @@ import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.helpers.Exceptions.peel;
 
-/**
- * Wrapper around a {@link ClusterClient} to fit the environment of the Neo4j server.
- * <p>
- * Configuration of the cluster client can be specified in the neo4j configuration file, specified by the
- * org.neo4j.config.file system property.
- *
- * @author Mattias Persson
- */
-public class StandaloneClusterClient implements AutoCloseable
+public class ArbiterBootstrapper implements AutoCloseable
 {
     private final LifeSupport life = new LifeSupport();
     private final Timer timer;
 
-    public StandaloneClusterClient( Config config ) throws IOException
+    public ArbiterBootstrapper( Config config ) throws IOException
     {
         start( config );
 
@@ -129,7 +120,7 @@ public class StandaloneClusterClient implements AutoCloseable
 
     public static void main( String[] args ) throws IOException
     {
-        new StandaloneClusterClient( getConfig( args ) );
+        new ArbiterBootstrapper( getConfig( args ) );
     }
 
     @Override

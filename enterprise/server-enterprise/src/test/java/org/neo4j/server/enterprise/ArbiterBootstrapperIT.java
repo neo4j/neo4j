@@ -19,13 +19,6 @@
  */
 package org.neo4j.server.enterprise;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -38,6 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -63,19 +63,21 @@ import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.enterprise.StandaloneClusterClientTestProxy.START_SIGNAL;
+import static org.neo4j.server.enterprise.ArbiterBootstrapperTestProxy.START_SIGNAL;
 import static org.neo4j.test.StreamConsumer.IGNORE_FAILURES;
 
-public class StandaloneClusterClientIT
+public class ArbiterBootstrapperIT
 {
     @Test
     public void canJoinWithExplicitInitialHosts() throws Exception
@@ -237,16 +239,16 @@ public class StandaloneClusterClientIT
         AtomicInteger port = new AtomicInteger();
         clients[0].addClusterListener( joinAwaitingListener( latch, port ) );
 
-        boolean clientStarted = startStandaloneClusterClient( configFile, config, latch );
+        boolean arbiterStarted = startArbiter( configFile, config, latch );
         if ( expectedAssignedPort == null )
         {
-            assertFalse( format( "Should not be able to start cluster client given config file:%s " +
-                    "and arguments:%s", configInConfigFile, config ), clientStarted );
+            assertFalse( format( "Should not be able to start arbiter given config file:%s " +
+                    "and arguments:%s", configInConfigFile, config ), arbiterStarted );
         }
         else
         {
-            assertTrue( format( "Should be able to start client client given config file:%s " +
-                    "and arguments:%s", configInConfigFile, config ), clientStarted );
+            assertTrue( format( "Should be able to start arbiter given config file:%s " +
+                    "and arguments:%s", configInConfigFile, config ), arbiterStarted );
             assertEquals( expectedAssignedPort.intValue(), port.get() );
         }
     }
@@ -265,21 +267,21 @@ public class StandaloneClusterClientIT
         };
     }
 
-    private boolean startStandaloneClusterClient( File configFile, Map<String, String> config, CountDownLatch latch )
+    private boolean startArbiter( File configFile, Map<String, String> config, CountDownLatch latch )
             throws Exception
     {
         Process process = null;
         ProcessStreamHandler handler = null;
         try
         {
-            process = startStandaloneClusterClientProcess( configFile, config );
+            process = startArbiterProcess( configFile, config );
             new InputStreamAwaiter( process.getInputStream() ).awaitLine( START_SIGNAL, 20, SECONDS );
             handler = new ProcessStreamHandler( process, false, "", IGNORE_FAILURES );
             handler.launch();
 
-            // Latch is triggered when this cluster client we just spawned joins the cluster,
+            // Latch is triggered when the arbiter we just spawned joins the cluster,
             // or rather when the first client sees it as joined. If the latch awaiting times out it
-            // (most likely) means that this cluster client couldn't be started. The reason for not
+            // (most likely) means that the arbiter couldn't be started. The reason for not
             // being able to start is assumed in this test to be that the specified port already is in use.
             return latch.await( 10, SECONDS );
         }
@@ -305,7 +307,7 @@ public class StandaloneClusterClientIT
         }
     }
 
-    private Process startStandaloneClusterClientProcess( File configFile, Map<String, String> config )
+    private Process startArbiterProcess( File configFile, Map<String, String> config )
             throws Exception
     {
         List<String> args = new ArrayList<>( asList( "java", "-cp", getProperty( "java.class.path" ),
@@ -314,7 +316,7 @@ public class StandaloneClusterClientIT
         {
             args.add( "-D" + ServerSettings.SERVER_CONFIG_FILE_KEY + "=" + configFile.getAbsolutePath() );
         }
-        args.add( StandaloneClusterClientTestProxy.class.getName() );
+        args.add( ArbiterBootstrapperTestProxy.class.getName() );
 
         for ( Map.Entry<String, String> entry : config.entrySet() )
         {
