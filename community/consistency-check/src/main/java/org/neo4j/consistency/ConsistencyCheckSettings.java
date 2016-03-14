@@ -53,10 +53,4 @@ public class ConsistencyCheckSettings
 
     @Description( "Perform checks between nodes, relationships, properties, types and tokens." )
     public static final Setting<Boolean> consistency_check_graph = setting( "tools.consistency_checker.check_graph", BOOLEAN, TRUE );
-
-    @SuppressWarnings("unchecked")
-    @Description("File name for inconsistencies log file. If not specified, logs to a file in the store directory.")
-    public static final
-    Setting<File> consistency_check_report_directory = setting( "tools.consistency_checker.report_directory", PATH,
-            GraphDatabaseSettings.logs_directory.getDefaultValue() );
 }
