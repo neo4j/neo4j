@@ -20,9 +20,8 @@
 package cypher.cucumber.reporter
 
 import java.io.{File, PrintStream}
-
-import cypher.GlueSteps
 import cypher.cucumber.CucumberAdapter
+import cypher.feature.steps.CypherTCKSteps
 import gherkin.formatter.model.{Match, Result, Step}
 
 import scala.util.matching.Regex
@@ -44,7 +43,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) ex
   private var query: String = null
   private var status: String = Result.PASSED
   private val pattern: Regex = """running( parametrized)?: (.*)""".r
-  private val newPattern: Regex = GlueSteps.EXECUTING_QUERY.r
+  private val newPattern: Regex = CypherTCKSteps.EXECUTING_QUERY.r
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())

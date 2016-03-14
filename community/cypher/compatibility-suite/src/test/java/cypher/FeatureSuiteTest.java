@@ -21,43 +21,40 @@ package cypher;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
-import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 
-@RunWith( Enclosed.class )
+@RunWith( DownloadedFeatures.class )
 public class FeatureSuiteTest
 {
     @RunWith( Cucumber.class )
-    @CucumberOptions( plugin = {
-            "pretty", "html:target/rule-interpreted",
-            "cypher.cucumber.reporter.CypherResultReporter:target/rule-interpreted",
-            "cypher.cucumber.db.DatabaseProvider:target/dbs",
-            "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/rule.json",
-    } )
+    @CucumberOptions(
+            plugin = {
+                    "pretty",
+                    "html:target/rule-interpreted",
+                    "cypher.cucumber.reporter.CypherResultReporter:target/rule-interpreted",
+                    "cypher.cucumber.db.DatabaseProvider:target/dbs",
+                    "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/rule.json"
+            },
+            glue = { "classpath:cypher/feature/steps" },
+            features = { "target/features" }
+    )
     public static class RuleInterpreted
     {
     }
 
     @RunWith( Cucumber.class )
-    @CucumberOptions( plugin = {
-            "pretty", "html:target/cost-interpreted",
-            "cypher.cucumber.reporter.CypherResultReporter:target/cost-interpreted",
-            "cypher.cucumber.db.DatabaseProvider:target/dbs",
-            "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-interpreted.json",
-    } )
+    @CucumberOptions(
+            plugin = {
+                    "pretty",
+                    "html:target/cost-interpreted",
+                    "cypher.cucumber.reporter.CypherResultReporter:target/cost-interpreted",
+                    "cypher.cucumber.db.DatabaseProvider:target/dbs",
+                    "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-interpreted.json",
+            },
+            glue = { "classpath:cypher/feature/steps" },
+            features = { "target/features" }
+    )
     public static class CostInterpreted
     {
     }
-
-    // The compiled runtime is not officially supported, and it fails on running these tests
-//    @RunWith( Cucumber.class )
-//    @CucumberOptions( plugin = {
-//            "pretty", "html:target/cost-compiled",
-//            "cypher.cucumber.reporter.CypherResultReporter:target/cost-compiled",
-//            "cypher.cucumber.db.DatabaseProvider:target/dbs",
-//            "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-compiled.json",
-//    } )
-//    public static class CostCompiled
-//    {
-//    }
 }

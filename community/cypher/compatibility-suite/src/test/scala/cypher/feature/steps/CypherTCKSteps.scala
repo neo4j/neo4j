@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher
+package cypher.feature.steps
 
 import java.io.File
 import java.nio.file.{Files, Path}
@@ -25,7 +25,7 @@ import java.util
 
 import _root_.cucumber.api.DataTable
 import _root_.cucumber.api.scala.{EN, ScalaDsl}
-import cypher.GlueSteps._
+import cypher.feature.steps.CypherTCKSteps._
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
 import cypher.feature.parser.{Accepters, constructResultMatcher, parseParameters, statisticsParser}
@@ -34,7 +34,7 @@ import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, Gr
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{FunSuiteLike, Matchers}
 
-class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Accepters {
+class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Accepters {
 
   val Background = new Step("Background")
 
@@ -122,7 +122,7 @@ class GlueSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Ac
 
 }
 
-object GlueSteps {
+object CypherTCKSteps {
 
   // for Background
   val BACKGROUND = "^$"
