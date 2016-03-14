@@ -48,6 +48,25 @@ public class SessionMatchers
         };
     }
 
+    public static Matcher<RecordingCallback.Call> successButRequiresPasswordChange()
+    {
+        return new TypeSafeMatcher<RecordingCallback.Call>()
+        {
+            @Override
+            protected boolean matchesSafely( RecordingCallback.Call item )
+            {
+                return item instanceof RecordingCallback.InitSuccess
+                       && ((RecordingCallback.InitSuccess) item).credentialsExpired();
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "SUCCESS (but password change required)" );
+            }
+        };
+    }
+
     public static Matcher<RecordingCallback.Call> streamContaining( final Matcher<?>... values )
     {
         return new TypeSafeMatcher<RecordingCallback.Call>()

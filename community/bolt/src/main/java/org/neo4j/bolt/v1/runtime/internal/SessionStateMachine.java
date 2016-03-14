@@ -30,6 +30,7 @@ import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -48,6 +49,7 @@ import org.neo4j.udc.UsageData;
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.exceptions.Status.Security.CredentialsExpired;
 
 /**
  * State-machine based implementation of {@link Session}. With this approach,
@@ -74,6 +76,7 @@ public class SessionStateMachine implements Session, SessionState
                         {
                             AuthenticationResult authResult = ctx.spi.authenticate( authToken );
                             ctx.accessMode = authResult.getAccessMode();
+                            ctx.credentialsExpired = authResult.credentialsExpired();
                             ctx.result( authResult.credentialsExpired() );
                             ctx.spi.udcRegisterClient( clientName );
                             ctx.setQuerySourceFromClientNameAndPrincipal( clientName, authToken.get( Authentication.PRINCIPAL ) );
@@ -458,6 +461,23 @@ public class SessionStateMachine implements Session, SessionState
 
         State error( SessionStateMachine ctx, Throwable err )
         {
+            if( err instanceof AuthorizationViolationException &&
+                ctx.credentialsExpired )
+            {
+                // TODO: This is *way* too high up the stack to create this message, this should
+                //       happen much further down.
+                return error( ctx, new Neo4jError( CredentialsExpired,
+                        String.format("The credentials you provided were valid, but must be changed before you can " +
+                        "use this instance. If this is the first time you are using Neo4j, this is to " +
+                        "ensure you are not using the default credentials in production. If you are not " +
+                        "using default credentials, you are getting this message because an administrator " +
+                        "requires a password change.%n" +
+                        "Changing your password is easy to do via the Neo4j Browser.%n" +
+                        "If you are connecting via a shell or programmatically via a driver, " +
+                        "just issue a `CALL sys.changePassword('new password')` statement in the current " +
+                        "session, and then restart your driver with the new password configured."),
+                        err ) );
+            }
             return error( ctx, Neo4jError.from( err ) );
         }
 
@@ -536,6 +556,17 @@ public class SessionStateMachine implements Session, SessionState
 
     /** The current session auth state to be used for starting transactions */
     private AccessMode accessMode;
+
+    /**
+     * If the current user has provided valid but needs-to-be-changed credentials,
+     * this flag gets set. This is not awesome - it'd be better to have a special
+     * access mode for this state, that would help disambiguate from being unauthenticated
+     * as well. Did things this way to minimize risk of introducing bugs this late
+     * in the 3.0 cycle. A further note towards adding a special AccessMode is that
+     * we need to set things up to change access mode anyway whenever the user changes
+     * credentials or is upgraded. As it is now, a new session needs to be created.
+     */
+    private boolean credentialsExpired;
 
     /** These are the "external" actions the state machine can take */
     private final SPI spi;

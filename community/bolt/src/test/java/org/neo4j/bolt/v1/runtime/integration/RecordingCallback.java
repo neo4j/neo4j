@@ -82,6 +82,12 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
         {
             results.add( new StatementSuccess( (StatementMetadata) result ) );
         }
+        else if( result instanceof Boolean )
+        {
+            // TODO: Using Boolean as the payload for init results should be
+            //       changed, since it makes this check really brittle.
+            results.add( new InitSuccess( (Boolean)result ));
+        }
         else
         {
             throw new RuntimeException( "Unknown result type: " + result );
@@ -215,6 +221,27 @@ public class RecordingCallback<V, A> implements Session.Callback<V,A>
         public String toString()
         {
             return "SUCCESS " + meta;
+        }
+    }
+
+    public static class InitSuccess extends Success
+    {
+        private final boolean credentialsExpired;
+
+        public InitSuccess( boolean credentialsExpired )
+        {
+            this.credentialsExpired = credentialsExpired;
+        }
+
+        public boolean credentialsExpired()
+        {
+            return credentialsExpired;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "SUCCESS " + (credentialsExpired ? "(but password change required)" : "");
         }
     }
 

@@ -52,6 +52,7 @@ public class TestSessions implements TestRule, Sessions
     private Sessions actual;
     private LinkedList<Session> startedSessions = new LinkedList<>();
     private final LifeSupport life = new LifeSupport();
+    private boolean authEnabled = false;
 
     @Override
     public Statement apply( final Statement base, Description description )
@@ -62,7 +63,7 @@ public class TestSessions implements TestRule, Sessions
             public void evaluate() throws Throwable
             {
                 Map<Setting<?>,String> config = new HashMap<>();
-                config.put( GraphDatabaseSettings.auth_enabled, "false" );
+                config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
                 gdb = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
                 Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
                 DependencyResolver resolver = gdb.getDependencyResolver();
@@ -103,6 +104,12 @@ public class TestSessions implements TestRule, Sessions
         Session session = actual.newSession( connectionDescriptor, isEncrypted );
         startedSessions.add( session );
         return session;
+    }
+
+    public TestSessions withAuthEnabled( boolean authEnabled )
+    {
+        this.authEnabled = authEnabled;
+        return this;
     }
 
     public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
