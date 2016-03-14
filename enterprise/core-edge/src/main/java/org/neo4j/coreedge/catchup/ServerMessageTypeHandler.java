@@ -57,9 +57,9 @@ public class ServerMessageTypeHandler extends ChannelInboundHandlerAdapter
             {
                 protocol.expect( NextMessage.GET_STORE );
             }
-            else if ( requestMessageType.equals( RequestMessageType.LOCK ) )
+            else if ( requestMessageType.equals( RequestMessageType.RAFT_STATE ) )
             {
-                protocol.expect( NextMessage.LOCK_REQUEST );
+                protocol.expect( NextMessage.GET_RAFT_STATE );
             }
             else
             {

@@ -54,6 +54,7 @@ public class Outcome<MEMBER> implements Message
     /* Follower */
     private MEMBER votedFor;
     private boolean renewElectionTimeout;
+    private boolean needsFreshSnapshot;
 
     /* Candidate */
     private Set<MEMBER> votesForMe;
@@ -102,6 +103,7 @@ public class Outcome<MEMBER> implements Message
 
         votedFor = ctx.votedFor();
         renewElectionTimeout = false;
+        needsFreshSnapshot = false;
 
         votesForMe = (currentRole == Role.CANDIDATE) ? new HashSet<>( ctx.votesForMe() ) : new HashSet<>();
 
@@ -147,6 +149,11 @@ public class Outcome<MEMBER> implements Message
     public void renewElectionTimeout()
     {
         this.renewElectionTimeout = true;
+    }
+
+    public void markNeedForFreshSnapshot()
+    {
+        this.needsFreshSnapshot = true;
     }
 
     public void addVoteForMe( MEMBER voteFrom )
@@ -196,6 +203,7 @@ public class Outcome<MEMBER> implements Message
                ", lastLogIndexBeforeWeBecameLeader=" + lastLogIndexBeforeWeBecameLeader +
                ", updatedFollowerStates=" + followerStates +
                ", renewElectionTimeout=" + renewElectionTimeout +
+               ", needsFreshSnapshot=" + needsFreshSnapshot +
                ", outgoingMessages=" + outgoingMessages +
                ", electedLeader=" + electedLeader +
                ", steppingDown=" + steppingDown +
@@ -240,6 +248,11 @@ public class Outcome<MEMBER> implements Message
     public boolean electionTimeoutRenewed()
     {
         return renewElectionTimeout;
+    }
+
+    public boolean needsFreshSnapshot()
+    {
+        return needsFreshSnapshot;
     }
 
     public Set<MEMBER> getVotesForMe()

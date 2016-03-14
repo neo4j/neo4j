@@ -20,8 +20,10 @@
 package org.neo4j.coreedge.raft.replication.tx;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
@@ -40,13 +42,14 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static java.lang.String.format;
+import static java.util.Collections.singletonMap;
 
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpired;
 
 public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
 {
-    private final GlobalSessionTrackerState<MEMBER> sessionTrackerState;
+    private GlobalSessionTrackerState<MEMBER> sessionTrackerState;
     private final GlobalSession myGlobalSession;
     private final ReplicatedLockTokenStateMachine<MEMBER> lockTokenStateMachine;
     private final TransactionCommitProcess commitProcess;
@@ -71,7 +74,7 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
         this.sessionTrackerStorage = storage;
         this.sessionTrackerState = storage.getInitialState();
         this.log = logProvider.getLog( getClass() );
-        this.lastCommittedIndex = recoverTransactionLogState.findLastCommittedIndex();
+        this.lastCommittedIndex = recoverTransactionLogState.findLastAppliedIndex();
     }
 
     @Override
@@ -87,6 +90,21 @@ public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine
     public synchronized void flush() throws IOException
     {
         sessionTrackerStorage.persistStoreData( sessionTrackerState );
+    }
+
+    @Override
+    public Map<RaftStateType, Object> snapshot()
+    {
+        return singletonMap( RaftStateType.SESSION_TRACKER, sessionTrackerState );
+    }
+
+    @Override
+    public void installSnapshot( Map<RaftStateType, Object> snapshot )
+    {
+        if ( snapshot.containsKey( RaftStateType.SESSION_TRACKER ) )
+        {
+            sessionTrackerState = (GlobalSessionTrackerState<MEMBER>) snapshot.get( RaftStateType.SESSION_TRACKER );
+        }
     }
 
     private void handleTransaction( ReplicatedTransaction<MEMBER> replicatedTx, long logIndex )

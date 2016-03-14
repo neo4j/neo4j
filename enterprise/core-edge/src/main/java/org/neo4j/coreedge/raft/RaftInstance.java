@@ -56,7 +56,6 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
 /**
@@ -97,7 +96,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private RenewableTimeoutService.RenewableTimeout electionTimer;
     private RaftMembershipManager<MEMBER> membershipManager;
 
-    private final ConsensusListener consensusListener;
+    private final RaftStateMachine raftStateMachine;
     private final long electionTimeout;
     private final long leaderWaitTimeout;
 
@@ -112,7 +111,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     public RaftInstance( MEMBER myself, StateStorage<TermState> termStorage,
             StateStorage<VoteState<MEMBER>> voteStorage, RaftLog entryLog,
-            ConsensusListener consensusListener, long electionTimeout, long heartbeatInterval,
+            RaftStateMachine raftStateMachine, long electionTimeout, long heartbeatInterval,
             RenewableTimeoutService renewableTimeoutService,
             final Inbound inbound, final Outbound<MEMBER> outbound, long leaderWaitTimeout,
             LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
@@ -122,7 +121,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     {
         this.myself = myself;
         this.entryLog = entryLog;
-        this.consensusListener = consensusListener;
+        this.raftStateMachine = raftStateMachine;
         this.electionTimeout = electionTimeout;
         this.heartbeatInterval = heartbeatInterval;
 
@@ -249,18 +248,24 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         return state;
     }
 
-    private void handleOutcome( Outcome<MEMBER> outcome ) throws IOException
+    public void downloadSnapshot()
     {
+        raftStateMachine.downloadSnapshot();
+    }
+
+    private void checkForSnapshotNeed( Outcome<MEMBER> outcome )
+    {
+        if( outcome.needsFreshSnapshot() )
+        {
+            downloadSnapshot();
+        }
     }
 
     private void notifyLeaderChanges( Outcome<MEMBER> outcome )
     {
-        if ( leaderChanged( outcome, state.leader() ) )
+        for ( Listener<MEMBER> listener : leaderListeners )
         {
-            for ( Listener<MEMBER> listener : leaderListeners )
-            {
-                listener.receive( outcome.getLeader() );
-            }
+            listener.receive( outcome.getLeader() );
         }
     }
 
@@ -303,7 +308,10 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
             Outcome<MEMBER> outcome = currentRole.handler.handle(
                     (RaftMessages.RaftMessage<MEMBER>) incomingMessage, state, log );
 
-            state.update( outcome );
+            boolean newLeaderWasElected = leaderChanged( outcome, state.leader() );
+            boolean newCommittedEntry = newCommittedEntry( state, outcome.getLogCommands() );
+
+            state.update( outcome ); // updates to raft log happen within
             sendMessages( outcome );
 
             handleTimers( outcome );
@@ -314,14 +322,34 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
             volatileLeader.set( outcome.getLeader() );
 
-            raftStateMachine.notifyUpdate();
-            notifyLeaderChanges( outcome );
+            if( newCommittedEntry )
+            {
+                raftStateMachine.notifyCommitted( state.entryLog().commitIndex() );
+            }
+            if( newLeaderWasElected )
+            {
+                notifyLeaderChanges( outcome );
+            }
+
+            checkForSnapshotNeed( outcome );
         }
         catch ( Throwable e )
         {
             log.error( "Failed to process RAFT message " + incomingMessage, e );
             databaseHealthSupplier.get().panic( e );
         }
+    }
+
+    private static boolean newCommittedEntry( RaftState state, Collection<LogCommand> logCommands )
+    {
+        for ( LogCommand logCommand : logCommands )
+        {
+            if( logCommand instanceof CommitCommand )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void driveMembership( Outcome<MEMBER> outcome )

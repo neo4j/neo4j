@@ -19,20 +19,22 @@
  */
 package org.neo4j.coreedge.raft;
 
-import java.io.IOException;
-import java.util.LinkedList;
-
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.coreedge.raft.RaftMessages.NewEntry.Request;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.RaftTestMember;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
@@ -60,7 +62,7 @@ public class CatchUpTest
         // then
         for ( long aMember : allMembers )
         {
-            assertLogEntries( fixture.members().withId( aMember ).raftLog(), 42 );
+            assertThat( integerValues( fixture.members().withId( aMember ).raftLog() ), hasItems( 42 ) );
         }
     }
 
@@ -96,11 +98,11 @@ public class CatchUpTest
         // then
         for ( long awakeMember : awakeMembers )
         {
-            assertLogEntries( fixture.members().withId( awakeMember ).raftLog(), 10, 20, 30, 40 );
+            assertThat( integerValues( fixture.members().withId( awakeMember ).raftLog() ),
+                    hasItems( 10, 20, 30, 40 ) );
         }
 
-        int[] nothing = {};
-        assertLogEntries( fixture.members().withId( sleepyId ).raftLog(), nothing );
+        assertThat( integerValues( fixture.members().withId( sleepyId ).raftLog() ), empty() );
 
         // when
         net.reconnect( sleepyId );
@@ -108,26 +110,21 @@ public class CatchUpTest
         net.processMessages();
 
         // then
-        assertLogEntries( fixture.members().withId( sleepyId ).raftLog(), 10, 20, 30, 40 );
+        assertThat( integerValues( fixture.members().withId( sleepyId ).raftLog() ), hasItems( 10, 20, 30, 40 ) );
     }
 
-    private void assertLogEntries( ReadableRaftLog log, int... expectedValues ) throws IOException
+    private List<Integer> integerValues( ReadableRaftLog log ) throws IOException, RaftLogCompactedException
     {
-        LinkedList<Integer> expected = new LinkedList<>();
-        for ( int value : expectedValues )
-        {
-            expected.add( value );
-        }
-
+        List<Integer> actual = new ArrayList<>();
         for ( long logIndex = 0; logIndex <= log.appendIndex(); logIndex++ )
         {
             ReplicatedContent content = readLogEntry( log, logIndex ).content();
             if ( content instanceof ReplicatedInteger )
             {
                 ReplicatedInteger integer = (ReplicatedInteger) content;
-                assertEquals( (int) expected.pop(), integer.get() );
+                actual.add( integer.get() );
             }
         }
-        assertTrue( expected.isEmpty() );
+        return actual;
     }
 }

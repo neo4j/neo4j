@@ -51,9 +51,9 @@ public class Leader implements RaftMessageHandler
     {
         long commitIndex = ctx.leaderCommit();
         long commitIndexTerm = ctx.entryLog().readEntryTerm( commitIndex );
+        Heartbeat<MEMBER> heartbeat = new Heartbeat<>( ctx.myself(), ctx.term(), commitIndex, commitIndexTerm );
         for ( MEMBER to : replicationTargets( ctx ) )
         {
-            Heartbeat<MEMBER> heartbeat = new Heartbeat<>( ctx.myself(), ctx.term(), commitIndex, commitIndexTerm );
             outcome.addOutgoingMessage( new RaftMessages.Directed<>( to, heartbeat ) );
         }
     }
@@ -171,11 +171,21 @@ public class Leader implements RaftMessageHandler
                         }
                     }
                 }
-                else // Response indicated failure. Must go back a log entry and retry - this is where catchup happens
+                else // Response indicated failure.
                 {
-                    outcome.addShipCommand( new ShipCommand.Mismatch( res.appendIndex(), res.from() ) );
+                    if( res.appendIndex() >= ctx.entryLog().prevIndex() )
+                    {
+                        // Signal a mismatch to the log shipper, which will serve an earlier entry.
+                        outcome.addShipCommand( new ShipCommand.Mismatch( res.appendIndex(), res.from() ) );
+                    }
+                    else
+                    {
+                        // There are no earlier entries, message the follower that we have compacted so that
+                        // it can take appropriate action.
+                        outcome.addOutgoingMessage( new RaftMessages.Directed<>( res.from(),
+                                new RaftMessages.LogCompactionInfo<>( ctx.myself(), ctx.term(), ctx.entryLog().prevIndex() ) ) );
+                    }
                 }
-
                 break;
             }
 

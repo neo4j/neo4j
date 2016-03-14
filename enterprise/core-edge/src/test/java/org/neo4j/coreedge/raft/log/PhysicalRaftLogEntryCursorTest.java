@@ -116,18 +116,6 @@ public class PhysicalRaftLogEntryCursorTest
         assertFalse( entryCursor.next() ); // record cursor is done, there should be no more entries/
     }
 
-    @Test
-    public void shouldReadTermOf() throws Exception
-    {
-        // given
-
-
-
-        // when
-
-        // then
-    }
-
     private static class StubRecordCursor implements IOCursor<RaftLogRecord>
     {
         private final Iterator<RaftLogRecord> iterator;

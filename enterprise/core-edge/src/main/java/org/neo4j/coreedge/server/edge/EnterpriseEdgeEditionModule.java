@@ -46,6 +46,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -166,13 +167,15 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new StoreCopyClient( edgeToCoreClient ), new TxPullClient( edgeToCoreClient ),
                 new TransactionLogCatchUpFactory() );
 
+        final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
+
         life.add( new EdgeServerStartupProcess( storeFetcher,
                 new LocalDatabase( platformModule.storeDir,
-                        new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(),
-                                platformModule.pageCache ),
+                        new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache ),
                         new StoreFiles( new DefaultFileSystemAbstraction() ),
-                        dependencies.provideDependency( NeoStoreDataSource.class ), platformModule.dependencies
-                        .provideDependency( TransactionIdStore.class ) ),
+                        dependencies.provideDependency( NeoStoreDataSource.class ),
+                        dependencies.provideDependency( TransactionIdStore.class ),
+                        databaseHealthSupplier ),
                 txPollingClient, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ),
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider ) );
     }

@@ -26,9 +26,12 @@ import java.util.Set;
 
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.RaftInstance;
+import org.neo4j.coreedge.raft.RaftInstance.BootstrapException;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
+import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
@@ -43,7 +46,7 @@ public class Fixture
     final RaftTestNetwork<RaftTestMember> net;
     final List<DelayedRenewableTimeoutService> timeoutServices = new ArrayList<>();
 
-    public Fixture( Set<Long> memberIds, RaftTestNetwork<RaftTestMember> net, long electionTimeout, long heartbeatInterval ) throws Throwable
+    public Fixture( Set<Long> memberIds, RaftTestNetwork<RaftTestMember> net, long electionTimeout, long heartbeatInterval, RaftStateMachine stateMachine ) throws Throwable
     {
         this.net = net;
 
@@ -66,6 +69,7 @@ public class Fixture
                             .outbound( outbound )
                             .timeoutService( timeoutService )
                             .raftLog( new InMemoryRaftLog() )
+                            .stateMachine( stateMachine )
                             .build();
 
             rafts.add( raftInstance );
@@ -85,10 +89,17 @@ public class Fixture
         return timeoutService;
     }
 
-    public void boot() throws RaftInstance.BootstrapException
+    public void boot() throws BootstrapException
     {
         net.start();
-        Iterables.first( rafts ).bootstrapWithInitialMembers( new RaftTestGroup( members ) );
+        try
+        {
+            Iterables.first( rafts ).bootstrapWithInitialMembers( new RaftTestGroup( members ) );
+        }
+        catch ( RaftLogCompactedException e )
+        {
+            throw new BootstrapException( e );
+        }
     }
 
     public void teardown() throws InterruptedException

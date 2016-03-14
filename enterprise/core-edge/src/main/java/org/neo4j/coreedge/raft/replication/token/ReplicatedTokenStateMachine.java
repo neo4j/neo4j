@@ -21,7 +21,9 @@ package org.neo4j.coreedge.raft.replication.token;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 
+import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
@@ -42,6 +44,8 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TokenFactory;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+
+import static java.util.Collections.emptyMap;
 
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
@@ -67,7 +71,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
         this.tokenFactory = tokenFactory;
         this.type = type;
         this.log = logProvider.getLog( getClass() );
-        this.lastCommittedIndex = txLogState.findLastCommittedIndex();
+        this.lastCommittedIndex = txLogState.findLastAppliedIndex();
     }
 
     @Override
@@ -145,5 +149,17 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     public void flush() throws IOException
     {
         // already implicitly flushed to the transaction log.
+    }
+
+
+    @Override
+    public Map<RaftStateType, Object> snapshot()
+    {
+        return emptyMap();
+    }
+
+    @Override
+    public void installSnapshot( Map<RaftStateType, Object> snapshot )
+    {
     }
 }

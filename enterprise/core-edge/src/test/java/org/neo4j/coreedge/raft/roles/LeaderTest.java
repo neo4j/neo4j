@@ -56,6 +56,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
+import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesResponse;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;

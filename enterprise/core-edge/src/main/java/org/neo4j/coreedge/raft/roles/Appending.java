@@ -87,8 +87,8 @@ public class Appending
             outcome.addLogCommand( new BatchAppendLogEntries( baseIndex, offset, request.entries() ) );
         }
 
-        Follower.commitToLogOnUpdate( state, request.prevLogIndex() + request.entries().length, request.leaderCommit
-                (), outcome );
+        Follower.commitToLogOnUpdate(
+                state, request.prevLogIndex() + request.entries().length, request.leaderCommit(), outcome );
 
         long endMatchIndex = request.prevLogIndex() + request.entries().length; // this is the index of the last incoming entry
         if ( endMatchIndex >= 0 )

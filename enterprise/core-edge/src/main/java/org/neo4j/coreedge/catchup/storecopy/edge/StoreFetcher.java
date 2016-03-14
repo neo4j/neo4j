@@ -22,10 +22,11 @@ package org.neo4j.coreedge.catchup.storecopy.edge;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpWriter;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.Log;
@@ -63,9 +64,9 @@ public class StoreFetcher
 
             try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache ) )
             {
-                long lastPulledTxId = txPullClient.pullTransactions( from, lastFlushedTxId, writer );
+                log.info( "Pulling transactions from: %d", lastFlushedTxId - 1 );
+                long lastPulledTxId = txPullClient.pullTransactions( from, lastFlushedTxId - 1, writer );
                 log.info( "Txs streamed up to %d", lastPulledTxId );
-                writer.setCorrectTransactionId( lastPulledTxId );
             }
         }
         catch ( IOException e )

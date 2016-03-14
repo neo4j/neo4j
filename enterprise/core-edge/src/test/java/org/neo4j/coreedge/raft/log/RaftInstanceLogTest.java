@@ -25,7 +25,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import org.neo4j.coreedge.raft.ConsensusListener;
+import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstanceBuilder;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
@@ -44,7 +44,7 @@ import static org.neo4j.coreedge.server.RaftTestMember.member;
 public class RaftInstanceLogTest
 {
     @Mock
-    ConsensusListener consensusListener;
+    RaftStateMachine raftStateMachine;
 
     private RaftTestMember myself = member( 0 );
     private ReplicatedContent content = ReplicatedInteger.valueOf( 1 );
@@ -60,7 +60,7 @@ public class RaftInstanceLogTest
 
         raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .raftLog( testEntryLog )
-                .consensusListener( consensusListener )
+                .stateMachine( raftStateMachine )
                 .build();
     }
 
@@ -351,6 +351,6 @@ public class RaftInstanceLogTest
 
         // then
         assertEquals( 2, testEntryLog.commitIndex() );
-        verify( consensusListener ).notifyCommitted();
+        verify( raftStateMachine ).notifyCommitted( testEntryLog.commitIndex() );
     }
 }
