@@ -40,7 +40,15 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
  * A test suite that is used for measuring the election performance and
- * guard against regressions in this area.
+ * guarding against regressions in this area. The outcome assertions are very
+ * relaxed so that false positives are avoided in CI and adjustments of the
+ * limits should be made by looking at statistics and reasoning about what
+ * type of performance should be expected, taking all parameters into account.
+ *
+ * Major regressions that severely affect the election performance and the
+ * ability to perform an election at all should be caught by this test. Very
+ * rare false positives should not be used as an indication for increasing the
+ * limits.
  */
 public class ElectionPerformanceIT
 {
@@ -110,10 +118,10 @@ public class ElectionPerformanceIT
          * to guide further action. Perhaps the power of the test has to be improved, but
          * the intention here is not to catch anything but the most major of regressions. */
 
-        assertThat( result.nonCollidingAverage, lessThan( 800d ) );
+        assertThat( result.nonCollidingAverage, lessThan( 2.0 * electionTimeout ) );
         if ( result.collisionCount > 3 )
         {
-            assertThat( result.collidingAverage, lessThan( 3000d ) );
+            assertThat( result.collidingAverage, lessThan( 6.0 * electionTimeout ) );
         }
         assertThat( result.timeoutCount, is( 0L ) );
     }
@@ -153,12 +161,14 @@ public class ElectionPerformanceIT
          * to guide further action. Perhaps the power of the test has to be improved, but
          * the intention here is not to catch anything but the most major of regressions. */
 
-        assertThat( result.nonCollidingAverage, lessThan( 50d ) );
-        assertThat( result.collisionRate, lessThan( 0.30d ) );
+        assertThat( result.nonCollidingAverage, lessThan( 2.0 * electionTimeout ) );
+
+        // because of the high number of iterations, it is possible to assert on the collision rate
+        assertThat( result.collisionRate, lessThan( 0.50d ) );
 
         if ( result.collisionCount > 10 )
         {
-            assertThat( result.collidingAverage, lessThan( 120d ) );
+            assertThat( result.collidingAverage, lessThan( 5.0*electionTimeout ) );
         }
         assertThat( result.timeoutCount, lessThanOrEqualTo( 1L ) ); // for GC or whatever reason
     }
