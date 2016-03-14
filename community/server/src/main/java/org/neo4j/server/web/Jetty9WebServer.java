@@ -19,6 +19,30 @@
  */
 package org.neo4j.server.web;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.BindException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.BlockingQueue;
+import java.util.function.Consumer;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import ch.qos.logback.access.jetty.RequestLogImpl;
 import ch.qos.logback.access.servlet.TeeFilter;
 import org.eclipse.jetty.server.Request;
@@ -36,30 +60,6 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.BindException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.BlockingQueue;
-import java.util.function.Consumer;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.helpers.HostnamePort;
@@ -111,15 +111,12 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
-    private static final int DEFAULT_HTTPS_PORT = 7473;
-    public static final int DEFAULT_PORT = 80;
-    public static final String DEFAULT_ADDRESS = "0.0.0.0";
+    public static final HostnamePort DEFAULT_ADDRESS = new HostnamePort( "0.0.0.0", 80 );
 
     private Server jetty;
     private HandlerCollection handlers;
-    private int jettyHttpPort = DEFAULT_PORT;
-    private int jettyHttpsPort = DEFAULT_HTTPS_PORT;
-    private String jettyAddr = DEFAULT_ADDRESS;
+    private HostnamePort jettyAddress = DEFAULT_ADDRESS;
+    private Optional<HostnamePort> jettyHttpsAddress = Optional.empty();
 
     private final HashMap<String, String> staticContent = new HashMap<>();
     private final Map<String, JaxRsServletHolderFactory> jaxRSPackages =
@@ -129,7 +126,6 @@ public class Jetty9WebServer implements WebServer
     private final List<FilterDefinition> filters = new ArrayList<>();
 
     private int jettyMaxThreads;
-    private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
@@ -148,26 +144,20 @@ public class Jetty9WebServer implements WebServer
     {
         if ( jetty == null )
         {
-            JettyThreadCalculator jettyThreadCalculator = new JettyThreadCalculator(jettyMaxThreads);
-            QueuedThreadPool pool = createQueuedThreadPool( jettyThreadCalculator );
+            JettyThreadCalculator jettyThreadCalculator = new JettyThreadCalculator( jettyMaxThreads );
 
-            jetty = new Server( pool );
+            jetty = new Server( createQueuedThreadPool( jettyThreadCalculator ) );
+            jetty.addConnector( connectorFactory.createConnector( jetty, jettyAddress, jettyThreadCalculator ) );
 
-            jetty.addConnector( connectorFactory.createConnector( jetty, jettyAddr, jettyHttpPort, jettyThreadCalculator ) );
-
-            if ( httpsEnabled )
+            jettyHttpsAddress.ifPresent( ( address ) ->
             {
-                if ( httpsCertificateInformation != null )
-                {
-                    jetty.addConnector(
-                            sslSocketFactory.createConnector( jetty, httpsCertificateInformation, jettyAddr,
-                                    jettyHttpsPort, jettyThreadCalculator ) );
-                }
-                else
+                if ( httpsCertificateInformation == null )
                 {
                     throw new RuntimeException( "HTTPS set to enabled, but no HTTPS configuration provided" );
                 }
-            }
+                jetty.addConnector( sslSocketFactory.createConnector(
+                        jetty, httpsCertificateInformation, address, jettyThreadCalculator ) );
+            } );
 
             if ( jettyCreatedCallback != null )
             {
@@ -176,17 +166,12 @@ public class Jetty9WebServer implements WebServer
         }
 
         handlers = new HandlerList();
-
         jetty.setHandler( handlers );
-
-        MovedContextHandler redirector = new MovedContextHandler();
-
-        handlers.addHandler( redirector );
+        handlers.addHandler( new MovedContextHandler() );
 
         loadAllMounts();
 
         startJetty();
-
     }
 
     private QueuedThreadPool createQueuedThreadPool( JettyThreadCalculator jtc )
@@ -221,15 +206,9 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setPort( int portNo )
+    public void setAddress( HostnamePort address )
     {
-        jettyHttpPort = portNo;
-    }
-
-    @Override
-    public void setAddress( String addr )
-    {
-        jettyAddr = addr;
+        jettyAddress = address;
     }
 
     @Override
@@ -361,15 +340,9 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setEnableHttps( boolean enable )
+    public void setHttpsAddress( Optional<HostnamePort> address )
     {
-        httpsEnabled = enable;
-    }
-
-    @Override
-    public void setHttpsPort( int portNo )
-    {
-        jettyHttpsPort = portNo;
+        jettyHttpsAddress = address;
     }
 
     @Override
@@ -391,7 +364,7 @@ public class Jetty9WebServer implements WebServer
         }
         catch( BindException e )
         {
-            throw new PortBindException( new HostnamePort( jettyAddr, jettyHttpPort ), e );
+            throw new PortBindException( jettyAddress, e );
         }
     }
 
@@ -399,13 +372,8 @@ public class Jetty9WebServer implements WebServer
     {
         SessionManager sm = new HashSessionManager();
 
-        final SortedSet<String> mountpoints = new TreeSet<>( new Comparator<String>()
-        {
-            @Override
-            public int compare( final String o1, final String o2 )
-            {
-                return o2.compareTo( o1 );
-            }
+        final SortedSet<String> mountpoints = new TreeSet<>( ( o1, o2 ) -> {
+            return o2.compareTo( o1 );
         } );
 
         mountpoints.addAll( staticContent.keySet() );
@@ -445,7 +413,6 @@ public class Jetty9WebServer implements WebServer
         {
             loadRequestLogging();
         }
-
     }
 
     private int countSet( boolean... booleans )
@@ -521,8 +488,7 @@ public class Jetty9WebServer implements WebServer
             staticContext.setContextPath( mountPoint );
             staticContext.setSessionHandler( sessionHandler );
             staticContext.setInitParameter( "org.eclipse.jetty.servlet.Default.dirAllowed", "false" );
-            URL resourceLoc = getClass().getClassLoader()
-                    .getResource( contentLocation );
+            URL resourceLoc = getClass().getClassLoader().getResource( contentLocation );
             if ( resourceLoc != null )
             {
                 URL url = resourceLoc.toURI().toURL();
@@ -537,9 +503,8 @@ public class Jetty9WebServer implements WebServer
             }
             else
             {
-                log.warn(
-                        "No static content available for Neo Server at port %d, management console may not be available.",
-                        jettyHttpPort );
+                log.warn( "No static content available for Neo Server at %s, management console may not be available.",
+                        jettyAddress );
             }
         }
         catch ( Exception e )

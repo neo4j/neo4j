@@ -51,7 +51,6 @@
     <neo4j-server.mainClass>org.neo4j.server.CommunityBootstrapper</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
-    <neo-server.test.hostname/>
 
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
@@ -447,7 +446,6 @@
         <configuration>
           <systemPropertyVariables>
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-            <neo-server.test.hostname>${neo-server.test.hostname}</neo-server.test.hostname>
             <webdriver.implementation>${webdriver.implementation}</webdriver.implementation>
             <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
             <webdriver.chrome.driver.download.url>${webdriver.chrome.driver.download.url}
@@ -535,6 +533,10 @@
                       classpathref="maven.compile.classpath" failonerror="true">
                   <arg value="org.neo4j.server.configuration.ServerSettings" />
                   <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />
+                </java>
+                <java classname="org.neo4j.tooling.GenerateConfigDocumentation" classpathref="maven.test.classpath" failonerror="true">
+                  <arg value="org.neo4j.server.configuration.ServerSettings$HttpConnector" />
+                  <arg value="${project.build.directory}/docs/ops/configuration-attributes-http-connector.asciidoc" />
                 </java>
               </target>
             </configuration>

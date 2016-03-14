@@ -25,6 +25,7 @@ import javax.ws.rs.core.MediaType;
 import org.junit.After;
 import org.junit.Test;
 
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
@@ -50,16 +51,15 @@ public class ServerConfigDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldPickUpPortFromConfig() throws Exception
+    public void shouldPickUpAddressFromConfig() throws Exception
     {
-        final int NON_DEFAULT_PORT = 4321;
-
-        server = server().onPort( NON_DEFAULT_PORT )
+        HostnamePort nonDefaultAddress = new HostnamePort( "0.0.0.0", 4321 );
+        server = server().onAddress( nonDefaultAddress )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
-        assertEquals( NON_DEFAULT_PORT, server.getWebServerPort() );
+        assertEquals( nonDefaultAddress, server.getAddress() );
 
         JaxRsResponse response = new RestRequest( server.baseUri() ).get();
 

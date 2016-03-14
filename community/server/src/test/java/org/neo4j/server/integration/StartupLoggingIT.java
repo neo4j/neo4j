@@ -45,6 +45,8 @@ import static java.util.Arrays.asList;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import static org.neo4j.server.configuration.ServerSettings.httpConnector;
+
 public class StartupLoggingIT extends ExclusiveServerTestBase
 {
     @Rule
@@ -85,6 +87,8 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
             pairs.add( Pair.of( entry.getKey(), entry.getValue() ) );
         }
         pairs.add( Pair.of( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
+        pairs.add( Pair.of( httpConnector("1").type.name(), "HTTP" ) );
+        pairs.add( Pair.of( httpConnector("1").enabled.name(), "true" ) );
         return pairs.toArray( new Pair[pairs.size()] );
     }
 

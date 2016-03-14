@@ -22,9 +22,11 @@ package org.neo4j.server.web;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.neo4j.helpers.HostnamePort;
+
 public class SimpleUriBuilder {
 
-    public URI buildURI(String address, int port, boolean isSsl)
+    public URI buildURI( HostnamePort address, boolean isSsl)
     {
         StringBuilder sb = new StringBuilder();
         sb.append( "http" );
@@ -36,8 +38,9 @@ public class SimpleUriBuilder {
         }
         sb.append( "://" );
 
-        sb.append( address );
+        sb.append( address.getHost() );
 
+        int port = address.getPort();
         if ( port != 80 && port != 443)
         {
             sb.append( ":" );

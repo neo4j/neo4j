@@ -20,6 +20,7 @@
 package org.neo4j.harness;
 
 import java.net.URI;
+import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
@@ -38,7 +39,7 @@ public interface ServerControls extends AutoCloseable
      * Returns ths URI to the root resource of the instance using the https protocol.
      * For example, https://localhost:7475/.
      */
-    URI httpsURI();
+    Optional<URI> httpsURI();
 
     /** Stop the test instance and delete all files related to it on disk. */
     @Override

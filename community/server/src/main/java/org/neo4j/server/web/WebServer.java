@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
@@ -32,18 +33,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
 
 public interface WebServer
 {
-    void setPort( int portNo );
+    void setAddress( HostnamePort address );
 
-    void setAddress( String addr );
-
-    void setEnableHttps( boolean enable );
-
-    void setHttpsPort( int portNo );
+    void setHttpsAddress( Optional<HostnamePort> address );
 
     void setHttpsCertificateInformation( KeyStoreInformation config );
 

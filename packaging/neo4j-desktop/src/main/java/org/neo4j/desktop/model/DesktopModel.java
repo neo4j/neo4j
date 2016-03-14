@@ -33,6 +33,8 @@ import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DesktopConfigurator;
 import org.neo4j.desktop.ui.DesktopModelListener;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.configuration.Config;
 
@@ -67,9 +69,9 @@ public class DesktopModel
         return format( "%s", Version.getKernel().getReleaseVersion() );
     }
 
-    public int getServerPort()
+    public Setting<HostnamePort> getServerAddress()
     {
-        return serverConfigurator.getServerPort();
+        return serverConfigurator.getServerAddress();
     }
 
     public File getDatabaseDirectory()

@@ -23,15 +23,37 @@ import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
 
-import static org.neo4j.kernel.configuration.Settings.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.HTTP;
+import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.BYTES;
+import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.EMPTY;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
+import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.max;
+import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description("Settings used by the server configuration")
 public interface ServerSettings
@@ -59,11 +81,44 @@ public interface ServerSettings
     @Description("Comma-seperated list of custom security rules for Neo4j to use.")
     Setting<List<String>> security_rules = setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
 
-    @Description("Http port for the Neo4j REST API.")
-    Setting<Integer> webserver_port = setting( "org.neo4j.server.webserver.port", INTEGER, "7474", port );
+    @Description("Configuration options for HTTP connectors.")
+    class HttpConnector extends GraphDatabaseSettings.Connector
+    {
+        @Description("Enable TLS for this connector")
+        public final Setting<Encryption> encryption;
 
-    @Description("Hostname for the Neo4j REST API")
-    Setting<String> webserver_address = BoltKernelExtension.Settings.webserver_address;
+        @Description("Address the connector should bind to")
+        public final Setting<HostnamePort> address;
+        public HttpConnector( String key )
+        {
+            super( key, ConnectorType.HTTP.name() );
+            address = group.scope( setting( "address", HOSTNAME_PORT, "localhost:7474" ) );
+            encryption = group.scope( setting( "encryption", options( Encryption.class ), Encryption.NONE.name() ) );
+        }
+
+        public enum Encryption
+        {
+            NONE, TLS
+        }
+    }
+
+    static HttpConnector httpConnector( String key )
+    {
+        return new HttpConnector( key );
+    }
+
+    static Optional<HttpConnector> httpConnector( Config config, HttpConnector.Encryption encryption )
+    {
+        return config
+                .view( enumerate( GraphDatabaseSettings.Connector.class ) )
+                .map( HttpConnector::new )
+                .filter( ( connConfig ) -> {
+                    return config.get( connConfig.type ) == HTTP
+                            && config.get( connConfig.enabled )
+                            && config.get( connConfig.encryption ) == encryption;
+                } )
+                .findFirst();
+    }
 
     @Description("Number of Neo4j worker threads.")
     Setting<Integer> webserver_max_threads = setting( "dbms.threads.worker_count",
@@ -119,12 +174,6 @@ public interface ServerSettings
             },
             EMPTY );
 
-    @Description("Enable HTTPS for the REST API.")
-    Setting<Boolean> webserver_https_enabled = setting( "org.neo4j.server.webserver.https.enabled", BOOLEAN, FALSE );
-
-    @Description("HTTPS port for the REST API.")
-    Setting<Integer> webserver_https_port = setting( "org.neo4j.server.webserver.https.port", INTEGER, "7473", port );
-
     @Description("Path to the X.509 public certificate to be used by Neo4j for TLS connections")
     Setting<File> tls_certificate_file = BoltKernelExtension.Settings.tls_certificate_file;
 
@@ -142,20 +191,25 @@ public interface ServerSettings
     Setting<File> http_log_config_file = setting( "org.neo4j.server.http.log.config", new HttpLogSetting(),
             NO_DEFAULT );
 
+    @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Enable GC Logging")
     Setting<Boolean> gc_logging_enabled = setting("dbms.logs.gc.enabled", BOOLEAN, FALSE);
 
+    @SuppressWarnings("unused") // used only in the startup scripts
     @Description("GC Logging Options")
     Setting<String> gc_logging_options = setting("dbms.logs.gc.options", STRING, "" +
             "-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime " +
             "-XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution");
 
+    @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Number of GC logs to keep.")
     Setting<Integer> gc_logging_rotation_keep_number = setting("dbms.logs.gc.rotation.keep_number", INTEGER, "5");
 
+    @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Size of each GC log that is kept.")
     Setting<Long> gc_logging_rotation_size = setting("dbms.logs.rotation.gc.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
+    @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Path of the run directory")
     Setting<File> run_directory = setting("dbms.directories.run", PATH, "run");
 

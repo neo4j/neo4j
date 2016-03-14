@@ -21,16 +21,19 @@ package org.neo4j.desktop.runtime;
 
 import java.io.File;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.desktop.config.Installation;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 
-import static org.neo4j.helpers.collection.Pair.pair;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
+import static org.neo4j.helpers.collection.Pair.pair;
 import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
 import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
 
@@ -82,6 +85,8 @@ public class DesktopConfigurator
         return dbDir.getAbsolutePath();
     }
 
-    public int getServerPort(){ return config.get( ServerSettings.webserver_port ); }
-
+    public Setting<HostnamePort> getServerAddress()
+    {
+        return ServerSettings.httpConnector( config, HttpConnector.Encryption.NONE ).get().address;
+    }
 }

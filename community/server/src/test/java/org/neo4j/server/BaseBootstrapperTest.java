@@ -35,6 +35,8 @@ import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static java.util.Arrays.asList;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -157,6 +159,10 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     {
         ArrayList<String> config = new ArrayList<>();
         Collections.addAll( config, params );
+        config.addAll( asList(
+                "-c", "dbms.connector.1.type=HTTP",
+                "-c", "dbms.connector.1.enabled=true"
+        ) );
         return config.toArray( new String[config.size()] );
     }
 

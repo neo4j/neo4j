@@ -38,6 +38,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
@@ -56,7 +57,7 @@ public abstract class Bootstrapper
     private Thread shutdownHook;
     private GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
     private Log log;
-    private String serverPort = "unknown port";
+    private String serverAddress = "unknown address";
 
     /**
      * Start a bootstrapper with the specified command-line arguments, returns a status code indicating success or
@@ -85,7 +86,10 @@ public abstract class Bootstrapper
         try
         {
             Config config = createConfig( log, configFile, configOverrides );
-            serverPort = String.valueOf( config.get( ServerSettings.webserver_port ) );
+
+            serverAddress = ServerSettings.httpConnector( config, HttpConnector.Encryption.NONE )
+                    .map( (connector) -> connector.address.toString() )
+                    .orElse( serverAddress );
 
             checkCompatibility();
 
@@ -103,14 +107,14 @@ public abstract class Bootstrapper
         }
         catch ( TransactionFailureException tfe )
         {
-            String locationMsg = (server == null) ? "" : " Another process may be using database location " +
-                    server.getDatabase().getLocation();
-            log.error( format( "Failed to start Neo Server on port [%s].", serverPort ) + locationMsg, tfe );
+            String locationMsg = (server == null) ? "" :
+                    " Another process may be using database location " + server.getDatabase().getLocation();
+            log.error( format( "Failed to start Neo4j on %s.", serverAddress ) + locationMsg, tfe );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }
         catch ( Exception e )
         {
-            log.error( format( "Failed to start Neo Server on port [%s]", serverPort ), e );
+            log.error( format( "Failed to start Neo4j on %s", serverAddress ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
     }
@@ -132,7 +136,7 @@ public abstract class Bootstrapper
         catch ( Exception e )
         {
             log.error( "Failed to cleanly shutdown Neo Server on port [%s], database [%s]. Reason [%s] ",
-                    serverPort, location, e.getMessage(), e );
+                    serverAddress, location, e.getMessage(), e );
             return 1;
         }
     }

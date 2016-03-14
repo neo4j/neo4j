@@ -9,15 +9,14 @@ This is configured in <<file-locations, _neo4j.conf_>>:
 
 [source,properties]
 ----
-# http port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.port=7474
-
 # Let the webserver only listen on the specified IP. Default is localhost (only
 # accept local connections). Uncomment to allow any connection.
-#org.neo4j.server.webserver.address=0.0.0.0
+dbms.connector.http.type=HTTP
+dbms.connector.http.enabled=true
+#dbms.connector.http.address=0.0.0.0:7474
 ----
 
-If you want the server to listen to external hosts, configure the Web server in _neo4j.conf_ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ which will cause the server to bind to all available network interfaces.
+If you want the server to listen to external hosts, configure the Web server in _neo4j.conf_ by setting the property +dbms.connector.http.address=0.0.0.0:7474+ which will cause the server to bind to all available network interfaces.
 Note that firewalls et cetera have to be configured accordingly as well.
 
 [[security-server-auth]]
@@ -69,15 +68,14 @@ Make sure you set correct permissions on the private key, so that only the Neo4j
 Neo4j also supports chained SSL certificates.
 This requires to have all certificates in PEM format combined in one file and the private key needs to be in DER format.
 
-You can set what port the HTTPS connector should bind to in the same configuration file, as well as turn HTTPS off:
+You can set what port the HTTPS connector should bind to in the same configuration file, as well as turn HTTPS on or off:
 
 [source,properties]
 ----
-# Turn https-support on/off
-org.neo4j.server.webserver.https.enabled=true
-
-# https port (for all data, administrative, and UI access)
-org.neo4j.server.webserver.https.port=443
+dbms.connector.https.type=HTTP
+dbms.connector.https.enabled=true
+dbms.connector.https.encryption=TLS
+dbms.connector.https.address=localhost:7473
 ----
 
 == Arbitrary code execution ==

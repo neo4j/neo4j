@@ -19,18 +19,17 @@
  */
 package org.neo4j.bolt;
 
-import io.netty.channel.Channel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import org.bouncycastle.operator.OperatorCreationException;
-
 import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Clock;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Function;
+
+import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import org.bouncycastle.operator.OperatorCreationException;
 
 import org.neo4j.bolt.security.ssl.Certificates;
 import org.neo4j.bolt.security.ssl.KeyStoreFactory;
@@ -53,6 +52,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -69,13 +69,11 @@ import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
+
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
-import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 
@@ -87,64 +85,13 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 {
     public static class Settings
     {
-        @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
+        @Description("Path to the X.509 public certificate to be used by Neo4j for TLS connections")
         public static Setting<File> tls_certificate_file = setting(
                 "dbms.security.tls_certificate_file", PATH, "neo4j-home/ssl/snakeoil.cert" );
 
-        @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
+        @Description("Path to the X.509 private key to be used by Neo4j for TLS connections")
         public static final Setting<File> tls_key_file = setting(
                 "dbms.security.tls_key_file", PATH, "neo4j-home/ssl/snakeoil.key" );
-
-        @Description( "Hostname for the Neo4j REST API" )
-        public static final Setting<String> webserver_address =
-                setting( "org.neo4j.server.webserver.address", STRING,
-                        "localhost", illegalValueMessage( "Must be a valid hostname", org.neo4j.kernel.configuration
-                                .Settings.matches( ANY ) ) );
-
-
-        public static <T> Setting<T> connector( int i, Setting<T> setting )
-        {
-            String name = format( "dbms.connector.%s", i );
-            return new Setting<T>()
-            {
-                @Override
-                public String name()
-                {
-                    return format( "%s.%s", name, setting.name() );
-                }
-
-                @Override
-                public String getDefaultValue()
-                {
-                    return setting.getDefaultValue();
-                }
-
-                @Override
-                public T apply( Function<String,String> settings )
-                {
-                    return setting.apply( settings );
-                }
-
-                @Override
-                public int hashCode()
-                {
-                    return name().hashCode();
-                }
-
-                @Override
-                public boolean equals( Object obj )
-                {
-                    return obj instanceof Setting<?> && ((Setting<?>) obj).name().equals( name() );
-                }
-            };
-        }
-    }
-
-    public enum EncryptionLevel
-    {
-        REQUIRED,
-        OPTIONAL,
-        DISABLED
     }
 
     public interface Dependencies
@@ -194,32 +141,32 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         List<ProtocolInitializer> connectors = config
                 .view( enumerate( GraphDatabaseSettings.Connector.class ) )
                 .map( BoltConnector::new )
-                .filter( (connConfig) -> BOLT.equals( config.get( connConfig.type ) )
-                                         && config.get( connConfig.enabled ) )
-                .map( (connConfig) -> {
+                .filter( ( connConfig ) -> BOLT.equals( config.get( connConfig.type ) )
+                        && config.get( connConfig.enabled ) )
+                .map( ( connConfig ) -> {
+                    HostnamePort address = config.get( connConfig.address );
                     SslContext sslCtx;
                     boolean requireEncryption = false;
                     switch ( config.get( connConfig.encryption_level ) )
                     {
-                    // self signed cert should be generated when encryption is REQUIRED or OPTIONAL on the server
-                    // while no cert is generated if encryption is DISABLED
-                    case REQUIRED:
-                        requireEncryption = true;
-                        // no break here
-                    case OPTIONAL:
-                        sslCtx = createSslContext( config, log );
-                        break;
-                    default:
-                        // case DISABLED:
-                        sslCtx = null;
-                        break;
+                        // self signed cert should be generated when encryption is REQUIRED or OPTIONAL on the server
+                        // while no cert is generated if encryption is DISABLED
+                        case REQUIRED:
+                            requireEncryption = true;
+                            // no break here
+                        case OPTIONAL:
+                            sslCtx = createSslContext( config, log, address );
+                            break;
+                        default:
+                            // case DISABLED:
+                            sslCtx = null;
+                            break;
                     }
 
-                    return new SocketTransport( config.get( connConfig.address ),
-                            sslCtx, logging.getInternalLogProvider(),
+                    return new SocketTransport( address, sslCtx, logging.getInternalLogProvider(),
                             newVersions( logging, requireEncryption ?
-                                                  new EncryptionRequiredSessions( sessions ) : sessions) );
-                })
+                                    new EncryptionRequiredSessions( sessions ) : sessions ) );
+                } )
                 .collect( toList() );
 
         if ( connectors.size() > 0 )
@@ -231,11 +178,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         return life;
     }
 
-    private SslContext createSslContext( Config config, Log log )
+    private SslContext createSslContext( Config config, Log log, HostnamePort address )
     {
         try
         {
-            KeyStoreInformation keyStore = createKeyStore( config, log );
+            KeyStoreInformation keyStore = createKeyStore( config, log, address );
             return SslContextBuilder
                     .forServer( keyStore.getCertificatePath(), keyStore.getPrivateKeyPath() )
                     .build();
@@ -261,23 +208,19 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         return availableVersions;
     }
 
-    private KeyStoreInformation createKeyStore( Configuration connector, Log log )
+    private KeyStoreInformation createKeyStore( Configuration config, Log log, HostnamePort address )
             throws GeneralSecurityException, IOException, OperatorCreationException
     {
-        File privateKeyPath = connector.get( Settings.tls_key_file ).getAbsoluteFile();
-        File certificatePath = connector.get( Settings.tls_certificate_file ).getAbsoluteFile();
+        File privateKeyPath = config.get( Settings.tls_key_file ).getAbsoluteFile();
+        File certificatePath = config.get( Settings.tls_certificate_file ).getAbsoluteFile();
 
-
-        // If neither file is specified
         if ( (!certificatePath.exists() && !privateKeyPath.exists()) )
         {
             log.info( "No SSL certificate found, generating a self-signed certificate.." );
             Certificates certFactory = new Certificates();
-            certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath,
-                    connector.get( Settings.webserver_address ) );
+            certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, address.getHost() );
         }
 
-        // Make sure both files were there, or were generated
         if ( !certificatePath.exists() )
         {
             throw new IllegalStateException(

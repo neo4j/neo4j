@@ -62,7 +62,6 @@ public class ConfigFileBuilder
                 DatabaseManagementSystemSettings.data_directory.name(), directory.getAbsolutePath()+"/data",
                 ServerSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
                 ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
-        config.put( ServerSettings.webserver_port.name(), "7474" );
         for ( Tuple t : nameValuePairs )
             config.put( t.name, t.value );
         ServerTestUtils.writeConfigToFile( config, file );

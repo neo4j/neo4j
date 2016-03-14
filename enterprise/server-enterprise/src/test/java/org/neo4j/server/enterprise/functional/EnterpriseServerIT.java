@@ -30,7 +30,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -72,8 +71,8 @@ public class EnterpriseServerIT
             assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
-            ClientResponse r = client.resource( "http://localhost:" + ServerSettings.webserver_port.getDefaultValue() +
-                    "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
+            ClientResponse r = client.resource( "http://localhost:7474/db/manage/server/ha" )
+                    .accept( APPLICATION_JSON ).get( ClientResponse.class );
             assertEquals( 200, r.getStatus() );
             assertThat( r.getEntity( String.class ), containsString( "master" ) );
         }
@@ -104,8 +103,8 @@ public class EnterpriseServerIT
             assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
-            ClientResponse r = client.resource( "http://localhost:" + ServerSettings.webserver_port.getDefaultValue() +
-                                                "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
+            ClientResponse r = client.resource( "http://localhost:7474/db/manage/server/ha" )
+                    .accept( APPLICATION_JSON ).get( ClientResponse.class );
             assertEquals( 401, r.getStatus() );
         }
         finally
@@ -136,8 +135,8 @@ public class EnterpriseServerIT
             assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
-            ClientResponse r = client.resource( "http://localhost:" + ServerSettings.webserver_port.getDefaultValue() +
-                                                "/db/manage/server/ha" ).accept( APPLICATION_JSON ).get( ClientResponse.class );
+            ClientResponse r = client.resource( "http://localhost:7474/db/manage/server/ha" )
+                    .accept( APPLICATION_JSON ).get( ClientResponse.class );
             assertEquals( 200, r.getStatus() );
             assertThat( r.getEntity( String.class ), containsString( "master" ) );
         }
