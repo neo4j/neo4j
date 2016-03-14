@@ -90,6 +90,22 @@ public class RecoveryTest
     }
 
     @Test
+    public void testRecoveryWithValueObjectsWhoseToStringMethodReturnsNull() throws Exception
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            Node otherNode = db.createNode();
+            Relationship rel = node.createRelationshipTo( otherNode, withName( "recovery" ) );
+	    db.index().forNodes( "node-index" ).add( node, "key1", new ClassWithToStringAlwaysNull() );
+            db.index().forRelationships( "rel-index" ).add( rel, "key1", new ClassWithToStringAlwaysNull() );
+            tx.success();
+        }
+
+        forceRecover();
+    }
+
+    @Test
     public void testAsLittleAsPossibleRecoveryScenario() throws Exception
     {
         try ( Transaction tx = db.beginTx() )
@@ -253,5 +269,15 @@ public class RecoveryTest
             db.shutdown();
             System.exit( 0 );
         }
+    }
+
+    static class ClassWithToStringAlwaysNull {
+
+        @Override
+        public String toString()
+        {
+            return null;
+        }
+
     }
 }
