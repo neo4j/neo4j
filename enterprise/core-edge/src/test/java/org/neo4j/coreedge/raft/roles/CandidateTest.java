@@ -73,7 +73,7 @@ public class CandidateTest
                 .build(), state, log() );
 
         // then
-        assertEquals( LEADER, outcome.getNewRole() );
+        assertEquals( LEADER, outcome.getRole() );
         assertThat( outcome.getLogCommands(), hasItem( new AppendLogEntry( 0,
                 new RaftLogEntry( state.term(), new NewLeaderBarrier() ) ) ) );
     }
@@ -92,7 +92,7 @@ public class CandidateTest
                 .build(), state, log() );
 
         // then
-        assertEquals( CANDIDATE, outcome.getNewRole() );
+        assertEquals( CANDIDATE, outcome.getRole() );
     }
 
     @Test
@@ -111,7 +111,7 @@ public class CandidateTest
                 .build(), state, log() );
 
         // then
-        assertEquals( FOLLOWER, outcome.getNewRole() );
+        assertEquals( FOLLOWER, outcome.getRole() );
         assertEquals( voterTerm, outcome.getTerm() );
     }
 
@@ -131,7 +131,7 @@ public class CandidateTest
                 .build(), state, log() );
 
         // then
-        assertEquals( CANDIDATE, outcome.getNewRole() );
+        assertEquals( CANDIDATE, outcome.getRole() );
     }
 
     public RaftState<RaftTestMember> newState() throws IOException

@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.roles;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
@@ -35,7 +36,7 @@ public class Appending
 {
     public static <MEMBER> void handleAppendEntriesRequest(
             ReadableRaftState<MEMBER> state, Outcome<MEMBER> outcome, RaftMessages.AppendEntries.Request<MEMBER> request )
-            throws IOException
+            throws IOException, RaftLogCompactedException
     {
         if ( request.leaderTerm() < state.term() )
         {
@@ -64,7 +65,7 @@ public class Appending
         long baseIndex = request.prevLogIndex() + 1;
         int offset;
 
-                /* Find possible truncation point. */
+        /* Find possible truncation point. */
         for ( offset = 0; offset < request.entries().length; offset++ )
         {
             long logTerm = state.entryLog().readEntryTerm( baseIndex + offset );
@@ -86,8 +87,8 @@ public class Appending
             outcome.addLogCommand( new BatchAppendLogEntries( baseIndex, offset, request.entries() ) );
         }
 
-        Follower.commitToLogOnUpdate( state, request.prevLogIndex() + request.entries().length, request.leaderCommit
-                (), outcome );
+        Follower.commitToLogOnUpdate(
+                state, request.prevLogIndex() + request.entries().length, request.leaderCommit(), outcome );
 
         long endMatchIndex = request.prevLogIndex() + request.entries().length; // this is the index of the last incoming entry
         if ( endMatchIndex >= 0 )
@@ -98,7 +99,7 @@ public class Appending
     }
 
     public static <MEMBER> void appendNewEntry( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome, ReplicatedContent
-            content ) throws IOException
+            content ) throws IOException, RaftLogCompactedException
     {
         long prevLogIndex = ctx.entryLog().appendIndex();
         long prevLogTerm = prevLogIndex == -1 ? -1 :

@@ -29,8 +29,8 @@ import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
 import org.neo4j.coreedge.raft.replication.shipping.RaftLogShippingManager;
-import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
+import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
@@ -70,7 +70,7 @@ public class RaftInstanceBuilder<MEMBER>
     private StateStorage<RaftMembershipState<MEMBER>> raftMembership =
             new InMemoryStateStorage<>( new RaftMembershipState<>() );
     private Monitors monitors = new Monitors();
-    private ConsensusListener consensusListener = () -> {};
+    private RaftStateMachine raftStateMachine = new RaftStateMachine(){};
 
     public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
     {
@@ -89,7 +89,7 @@ public class RaftInstanceBuilder<MEMBER>
         RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog,
                 clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
-        return new RaftInstance<>( member, termState, voteState, raftLog, consensusListener, electionTimeout,
+        return new RaftInstance<>( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider,
                 membershipManager, logShipping, databaseHealthSupplier, monitors );
     }
@@ -136,9 +136,9 @@ public class RaftInstanceBuilder<MEMBER>
         return this;
     }
 
-    public RaftInstanceBuilder<MEMBER> consensusListener( ConsensusListener consensusListener )
+    public RaftInstanceBuilder<MEMBER> stateMachine( RaftStateMachine raftStateMachine )
     {
-        this.consensusListener = consensusListener;
+        this.raftStateMachine = raftStateMachine;
         return this;
     }
 

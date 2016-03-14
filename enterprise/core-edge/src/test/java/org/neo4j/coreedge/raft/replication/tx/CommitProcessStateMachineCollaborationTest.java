@@ -78,7 +78,7 @@ public class CommitProcessStateMachineCollaborationTest
         ReplicatedLockTokenStateMachine<Object> lockState = lockState( 0 );
 
         RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
 
         final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
                 localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
@@ -113,7 +113,7 @@ public class CommitProcessStateMachineCollaborationTest
         ReplicatedLockTokenStateMachine<Object> lockState = lockState( 1 );
 
         RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
         TriggeredReplicator replicator = new TriggeredReplicator();
         CommittingTransactions txFutures = new StubCommittingTransactionsRegistry( replicator );
 

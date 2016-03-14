@@ -19,10 +19,13 @@
  */
 package org.neo4j.coreedge.raft.roles;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
@@ -32,19 +35,18 @@ import static java.lang.Long.min;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 
-import java.io.IOException;
-
 public class Follower implements RaftMessageHandler
 {
     public static <MEMBER> boolean logHistoryMatches( ReadableRaftState<MEMBER> ctx, long prevLogIndex, long prevLogTerm )
-            throws IOException
+            throws IOException, RaftLogCompactedException
     {
-        // NOTE: A previous log index of -1 means no history,
-        //       so it always matches.
+        // NOTE: A prevLogIndex before or at our log's prevIndex means that we
+        //       already have all history (in a compacted form), so we report that history matches
 
         // NOTE: The entry term for a non existing log index is defined as -1,
         //       so the history for a non existing log entry never matches.
-        return prevLogIndex == -1 || ctx.entryLog().readEntryTerm( prevLogIndex ) == prevLogTerm;
+
+        return prevLogIndex <= ctx.entryLog().prevIndex() || ctx.entryLog().readEntryTerm( prevLogIndex ) == prevLogTerm;
     }
 
     public static <MEMBER> boolean commitToLogOnUpdate( ReadableRaftState<MEMBER> ctx, long indexOfLastNewEntry,
@@ -60,9 +62,22 @@ public class Follower implements RaftMessageHandler
         return false;
     }
 
+    public static <MEMBER> void handleLeaderLogCompaction( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome, RaftMessages.LogCompactionInfo<MEMBER> compactionInfo )
+    {
+        if ( compactionInfo.leaderTerm() < ctx.term() )
+        {
+            return;
+        }
+
+        if( compactionInfo.prevIndex() > ctx.entryLog().appendIndex() )
+        {
+            outcome.markNeedForFreshSnapshot();
+        }
+    }
+
     @Override
     public <MEMBER> Outcome<MEMBER> handle( RaftMessages.RaftMessage<MEMBER> message, ReadableRaftState<MEMBER> ctx, Log log )
-            throws IOException
+            throws IOException, RaftLogCompactedException
     {
         Outcome<MEMBER> outcome = new Outcome<>( FOLLOWER, ctx );
 
@@ -83,6 +98,12 @@ public class Follower implements RaftMessageHandler
             case VOTE_REQUEST:
             {
                 Voting.handleVoteRequest( ctx, outcome, (RaftMessages.Vote.Request<MEMBER>) message );
+                break;
+            }
+
+            case LOG_COMPACTION_INFO:
+            {
+                handleLeaderLogCompaction( ctx, outcome, (RaftMessages.LogCompactionInfo<MEMBER>) message );
                 break;
             }
 

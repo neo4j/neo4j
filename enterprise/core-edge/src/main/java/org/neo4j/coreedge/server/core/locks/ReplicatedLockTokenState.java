@@ -74,9 +74,9 @@ public class ReplicatedLockTokenState<MEMBER>
     {
         private final ChannelMarshal<MEMBER> memberMarshal;
 
-        public Marshal( ChannelMarshal<MEMBER> marshal )
+        public Marshal( ChannelMarshal<MEMBER> memberMarshal )
         {
-            this.memberMarshal = marshal;
+            this.memberMarshal = memberMarshal;
         }
 
         @Override

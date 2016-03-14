@@ -68,6 +68,6 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
     protected void create( File storeDir, Map<String, String> params,
                                       GraphDatabaseFacadeFactory.Dependencies dependencies)
     {
-        new CommunityFacadeFactory().newFacade( storeDir, params, dependencies, this );
+        new CommunityFacadeFactory().initFacade( storeDir, params, dependencies, this );
     }
 }

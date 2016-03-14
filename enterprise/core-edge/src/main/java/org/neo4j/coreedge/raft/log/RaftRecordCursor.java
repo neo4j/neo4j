@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.cursor.CursorValue;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
@@ -31,7 +32,7 @@ public class RaftRecordCursor<T extends ReadableClosablePositionAwareChannel> im
 {
     private final T channel;
     private final ChannelMarshal<ReplicatedContent> marshal;
-    private RaftLogRecord lastFoundRecord;
+    private CursorValue<RaftLogRecord> currentRecord = new CursorValue<>();
 
     public RaftRecordCursor( T channel, ChannelMarshal<ReplicatedContent> marshal )
     {
@@ -48,13 +49,13 @@ public class RaftRecordCursor<T extends ReadableClosablePositionAwareChannel> im
             switch ( PhysicalRaftLog.RecordType.forValue( type ) )
             {
                 case APPEND:
-                    lastFoundRecord = RaftLogAppendRecord.read( channel, marshal );
+                    currentRecord.set( RaftLogAppendRecord.read( channel, marshal ) );
                     return true;
                 case COMMIT:
-                    lastFoundRecord = RaftLogCommitRecord.read( channel );
+                    currentRecord.set( RaftLogCommitRecord.read( channel ) );
                     return true;
                 case CONTINUATION:
-                    lastFoundRecord = RaftLogContinuationRecord.read( channel );
+                    currentRecord.set( RaftLogContinuationRecord.read( channel ) );
                     return true;
                 default:
                     throw new IllegalStateException( "Not really sure how we got here. Read type value was " + type );
@@ -75,6 +76,6 @@ public class RaftRecordCursor<T extends ReadableClosablePositionAwareChannel> im
     @Override
     public RaftLogRecord get()
     {
-        return lastFoundRecord;
+        return currentRecord.get();
     }
 }

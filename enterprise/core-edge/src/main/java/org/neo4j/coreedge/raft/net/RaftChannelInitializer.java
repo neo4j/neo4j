@@ -27,6 +27,7 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import org.neo4j.coreedge.raft.net.codecs.RaftMessageEncoder;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.ByteBufMarshal;
+import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 
 public class RaftChannelInitializer extends ChannelInitializer<SocketChannel>
 {
@@ -43,5 +44,6 @@ public class RaftChannelInitializer extends ChannelInitializer<SocketChannel>
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
         pipeline.addLast( "raftMessageEncoder", new RaftMessageEncoder( marshal ) );
+        pipeline.addLast( new ExceptionLoggingHandler( null ) );
     }
 }

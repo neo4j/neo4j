@@ -25,7 +25,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
+import org.neo4j.coreedge.catchup.storecopy.core.RaftStateSnapshot;
 import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
+import org.neo4j.coreedge.catchup.tx.edge.RaftStateSnapshotListener;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
@@ -42,13 +44,14 @@ import org.neo4j.logging.LogProvider;
 
 public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver,
         StoreFileStreamingCompleteListener,
-        TxStreamCompleteListener, TxPullResponseListener
+        TxStreamCompleteListener, TxPullResponseListener, RaftStateSnapshotListener
 {
     private final PullRequestMonitor pullRequestMonitor;
     private StoreFileStreams storeFileStreams = null;
     private Iterable<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = Listeners.newListeners();
     private Iterable<TxStreamCompleteListener> txStreamCompleteListeners = Listeners.newListeners();
     private Iterable<TxPullResponseListener> txPullResponseListeners = Listeners.newListeners();
+    private Iterable<RaftStateSnapshotListener> raftStateSnapshotListeners = Listeners.newListeners();
 
     private SenderService senderService;
 
@@ -60,16 +63,22 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
-    public void requestStore( AdvertisedSocketAddress from )
+    public void requestStore( AdvertisedSocketAddress serverAddress )
     {
         GetStoreRequest getStoreRequest = new GetStoreRequest();
-        send( from, RequestMessageType.STORE, getStoreRequest );
+        send( serverAddress, RequestMessageType.STORE, getStoreRequest );
     }
 
-    public void pollForTransactions( AdvertisedSocketAddress from, long lastTransactionId )
+    public void requestRaftState( AdvertisedSocketAddress serverAddress )
+    {
+        GetRaftStateRequest getRaftStateRequest = new GetRaftStateRequest();
+        send( serverAddress, RequestMessageType.RAFT_STATE, getRaftStateRequest );
+    }
+
+    public void pollForTransactions( AdvertisedSocketAddress serverAddress, long lastTransactionId )
     {
         TxPullRequest txPullRequest = new TxPullRequest( lastTransactionId );
-        send( from, RequestMessageType.TX_PULL_REQUEST, txPullRequest );
+        send( serverAddress, RequestMessageType.TX_PULL_REQUEST, txPullRequest );
         pullRequestMonitor.txPullRequest( lastTransactionId );
     }
 
@@ -98,6 +107,16 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     public void removeTxPullResponseListener( TxPullResponseListener listener )
     {
         txPullResponseListeners = Listeners.removeListener( listener, txPullResponseListeners );
+    }
+
+    public void addRaftStateSnapshotListener( RaftStateSnapshotListener listener )
+    {
+        raftStateSnapshotListeners = Listeners.addListener( listener, raftStateSnapshotListeners );
+    }
+
+    public void removeRaftStateSnapshotListener( RaftStateSnapshotListener listener )
+    {
+        raftStateSnapshotListeners = Listeners.removeListener( listener, raftStateSnapshotListeners );
     }
 
     public void addStoreFileStreamingCompleteListener( StoreFileStreamingCompleteListener listener )
@@ -151,6 +170,11 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
                 } );
     }
 
+    @Override
+    public void onSnapshotReceived( RaftStateSnapshot snapshot )
+    {
+        Listeners.notifyListeners( raftStateSnapshotListeners, listener -> listener.onSnapshotReceived( snapshot ) );
+    }
 
     public void addTxStreamCompleteListener( TxStreamCompleteListener listener )
     {
@@ -161,5 +185,4 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     {
         txStreamCompleteListeners = Listeners.removeListener( listener, txStreamCompleteListeners );
     }
-
 }

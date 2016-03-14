@@ -101,7 +101,7 @@ public class PhysicalRaftLogRotationTest
         PhysicalRaftLog log = createRaftLog( rotateAtSize, logFileMonitor );
 
         StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < rotateAtSize - 40; i++ )
+        for ( int i = 0; i < rotateAtSize - 60; i++ )
         {
             builder.append( "i" );
         }

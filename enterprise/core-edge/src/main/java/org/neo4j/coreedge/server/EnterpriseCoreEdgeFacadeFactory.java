@@ -32,10 +32,10 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 abstract class EnterpriseCoreEdgeFacadeFactory extends GraphDatabaseFacadeFactory
 {
     @Override
-    public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, Dependencies dependencies,
+    public GraphDatabaseFacade initFacade( File storeDir, Map<String, String> params, Dependencies dependencies,
                                           GraphDatabaseFacade graphDatabaseFacade )
     {
-        return super.newFacade( storeDir, params, dependencies, graphDatabaseFacade );
+        return super.initFacade( storeDir, params, dependencies, graphDatabaseFacade );
     }
 
     protected void makeHazelcastQuiet( PlatformModule platformModule )
@@ -43,7 +43,7 @@ abstract class EnterpriseCoreEdgeFacadeFactory extends GraphDatabaseFacadeFactor
         // Make hazelcast quiet for core and edge servers
         if ( platformModule.config.get( CoreEdgeClusterSettings.disable_middleware_logging ) )
         {
-            // This is clunky, but the documented programmtic way doesn't seem to work
+            // This is clunky, but the documented programmatic way doesn't seem to work
             System.setProperty( "hazelcast.logging.type", "none" );
         }
     }

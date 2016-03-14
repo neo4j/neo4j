@@ -20,10 +20,12 @@
 package org.neo4j.coreedge.server.core;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -56,14 +58,14 @@ public class StateMachineApplierTest
         InMemoryStateStorage<LastAppliedState> lastApplied = new InMemoryStateStorage<>( new LastAppliedState( -1 ) );
         StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 10, health(), getInstance() );
-        applier.setStateMachine( stateMachine );
+        applier.setStateMachine( stateMachine, -1 );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
         raftLog.commit( 0 );
         applier.start();
 
         // when
-        applier.notifyCommitted();
+        applier.notifyUpdate();
 
         // then
         verify( stateMachine ).applyCommand( valueOf( 0 ), 0 );
@@ -83,7 +85,7 @@ public class StateMachineApplierTest
         applier.start();
 
         // when
-        applier.notifyCommitted();
+        applier.notifyUpdate();
 
         // then
         verify( stateMachine, times( 0 ) ).applyCommand( valueOf( 0 ), 0 );
@@ -99,7 +101,7 @@ public class StateMachineApplierTest
         StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 10, health(), getInstance() );
 
-        applier.setStateMachine( stateMachine );
+        applier.setStateMachine( stateMachine, -1 );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
         raftLog.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
@@ -128,7 +130,7 @@ public class StateMachineApplierTest
         StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 5, health(), getInstance() );
 
-        applier.setStateMachine( stateMachine );
+        applier.setStateMachine( stateMachine, -1 );
 
         for ( int i = 0; i < 50; i++ )
         {
@@ -152,7 +154,7 @@ public class StateMachineApplierTest
         InMemoryStateStorage<LastAppliedState> lastApplied = new InMemoryStateStorage<>( new LastAppliedState( -1 ) );
         StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 5, health(), getInstance() );
-        applier.setStateMachine( stateMachine );
+        applier.setStateMachine( stateMachine, -1 );
 
         for ( int i = 0; i < 50; i++ )
         {
@@ -183,13 +185,13 @@ public class StateMachineApplierTest
 
         StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 5, healthSupplier, getInstance() );
-        applier.setStateMachine( stateMachine );
+        applier.setStateMachine( stateMachine, -1 );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
         raftLog.commit( 0 );
 
         // when
-        applier.notifyCommitted();
+        applier.notifyUpdate();
 
         // then
         verify( health ).panic( anyObject() );
@@ -211,7 +213,7 @@ public class StateMachineApplierTest
 
         StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
                 Runnable::run, 5, healthSupplier, getInstance() );
-        applier.setStateMachine( stateMachine );
+        applier.setStateMachine( stateMachine, -1 );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
         raftLog.commit( 0 );
@@ -244,6 +246,18 @@ public class StateMachineApplierTest
 
         @Override
         public void flush() throws IOException
+        {
+            // do nothing
+        }
+
+        @Override
+        public Map<RaftStateType, Object> snapshot()
+        {
+            return null;
+        }
+
+        @Override
+        public void installSnapshot( Map<RaftStateType, Object> snapshot )
         {
             // do nothing
         }

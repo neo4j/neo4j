@@ -26,8 +26,9 @@ public enum ResponseMessageType
     TX( (byte) 1 ),
     STORE_ID( (byte) 2 ),
     FILE( (byte) 3 ),
-    STORY_COPY_FINISHED( (byte) 4 ),
-    TX_STREAM_FINISHED( (byte) 5 ),
+    STORE_COPY_FINISHED( (byte) 4 ),
+    RAFT_STATE_SNAPSHOT( (byte) 5 ),
+    TX_STREAM_FINISHED( (byte) 6 ),
     UNKNOWN( (byte) 200 ),;
 
     private byte messageType;

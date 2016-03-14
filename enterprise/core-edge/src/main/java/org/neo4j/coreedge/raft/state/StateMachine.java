@@ -20,7 +20,9 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
+import java.util.Map;
 
+import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 
 public interface StateMachine
@@ -39,4 +41,8 @@ public interface StateMachine
      * @throws IOException
      */
     void flush() throws IOException;
+
+    Map<RaftStateType, Object> snapshot();
+
+    void installSnapshot(Map<RaftStateType, Object> snapshot);
 }

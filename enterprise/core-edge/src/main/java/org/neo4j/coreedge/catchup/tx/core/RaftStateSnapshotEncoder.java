@@ -17,12 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.edge;
+package org.neo4j.coreedge.catchup.tx.core;
 
-import org.neo4j.coreedge.discovery.EdgeServerConnectionException;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import java.util.List;
 
-public interface EdgeToCoreConnectionStrategy
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageEncoder;
+
+import org.neo4j.coreedge.catchup.storecopy.core.NetworkFlushableByteBuf;
+import org.neo4j.coreedge.catchup.storecopy.core.RaftStateSnapshot;
+
+public class RaftStateSnapshotEncoder extends MessageToMessageEncoder<RaftStateSnapshot>
 {
-    AdvertisedSocketAddress coreServer() throws EdgeServerConnectionException;
+    @Override
+    protected void encode( ChannelHandlerContext ctx, RaftStateSnapshot response, List<Object> out ) throws Exception
+    {
+        ByteBuf encoded = ctx.alloc().buffer();
+        new RaftStateSnapshot.Marshal().marshal( response, new NetworkFlushableByteBuf( encoded ) );
+        out.add( encoded );
+    }
 }

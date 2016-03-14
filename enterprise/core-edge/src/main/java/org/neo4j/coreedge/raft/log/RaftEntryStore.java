@@ -25,5 +25,5 @@ import org.neo4j.cursor.IOCursor;
 
 public interface RaftEntryStore
 {
-    IOCursor<RaftLogAppendRecord> getEntriesFrom( long logIndex ) throws IOException;
+    IOCursor<RaftLogAppendRecord> getEntriesFrom( long logIndex ) throws IOException, RaftLogCompactedException;
 }

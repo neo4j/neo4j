@@ -26,11 +26,23 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.neo4j.coreedge.raft.log.PhysicalRaftLog.RecordType.COMMIT;
 
+/**
+ * The commit record stores the latest commitIndex marking the appended entries
+ * that are appended with consensus and are thus safe to apply.
+ */
 public class RaftLogCommitRecord extends RaftLogRecord
 {
-    public RaftLogCommitRecord( long logIndex )
+    private final long commitIndex;
+
+    public RaftLogCommitRecord( long commitIndex )
     {
-        super( COMMIT, logIndex );
+        super( COMMIT );
+        this.commitIndex = commitIndex;
+    }
+
+    public long commitIndex()
+    {
+        return commitIndex;
     }
 
     public static RaftLogCommitRecord read( ReadableChannel channel ) throws IOException
@@ -48,6 +60,8 @@ public class RaftLogCommitRecord extends RaftLogRecord
     @Override
     public String toString()
     {
-        return String.format( "RaftLogCommitRecord{%s}", super.toString() );
+        return "RaftLogCommitRecord{" +
+               "commitIndex=" + commitIndex +
+               '}';
     }
 }

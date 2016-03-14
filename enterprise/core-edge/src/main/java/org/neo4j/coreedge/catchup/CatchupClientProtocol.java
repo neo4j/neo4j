@@ -37,6 +37,7 @@ public class CatchupClientProtocol
     {
         MESSAGE_TYPE,
         STORE_ID,
+        RAFT_STATE_SNAPSHOT,
         TX_PULL_RESPONSE,
         STORE_COPY_FINISHED,
         TX_STREAM_FINISHED,

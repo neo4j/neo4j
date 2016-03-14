@@ -94,7 +94,7 @@ public class VoteRequestTest
 
         // then
         assertFalse( ((RaftMessages.Vote.Response) messageFor( outcome, member1 )).voteGranted() );
-        assertEquals( role, outcome.getNewRole() );
+        assertEquals( role, outcome.getRole() );
     }
 
     @Test
@@ -134,7 +134,7 @@ public class VoteRequestTest
                 .lastLogTerm( -1 ).build(), state, log() );
 
         // then
-        assertEquals( role, outcome.getNewRole() );
+        assertEquals( role, outcome.getRole() );
     }
 
     @Test
@@ -151,7 +151,7 @@ public class VoteRequestTest
                 .lastLogTerm( -1 ).build(), state, log() );
 
         // then
-        assertEquals( Role.FOLLOWER, outcome.getNewRole() );
+        assertEquals( Role.FOLLOWER, outcome.getRole() );
     }
 
     @Test

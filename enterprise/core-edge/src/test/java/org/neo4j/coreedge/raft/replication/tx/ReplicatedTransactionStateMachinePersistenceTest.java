@@ -60,7 +60,7 @@ public class ReplicatedTransactionStateMachinePersistenceTest
                 .thenReturn( 123L );
 
         RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( 99L );
+        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( 99L );
 
         ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess,
                 new GlobalSessionTrackerState<>(), recoverTransactionLogState );
@@ -139,7 +139,7 @@ public class ReplicatedTransactionStateMachinePersistenceTest
         GlobalSessionTrackerState<RaftTestMember> sessionTrackerState = spy( new GlobalSessionTrackerState<>() );
 
         RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastCommittedIndex()).thenReturn( -1L );
+        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
 
         ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess, sessionTrackerState, recoverTransactionLogState );
 

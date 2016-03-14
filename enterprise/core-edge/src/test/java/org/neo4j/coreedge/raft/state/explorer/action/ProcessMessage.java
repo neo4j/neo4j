@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.outcome.Outcome;
@@ -42,7 +43,7 @@ public class ProcessMessage implements Action
     }
 
     @Override
-    public ClusterState advance( ClusterState previous ) throws IOException
+    public ClusterState advance( ClusterState previous ) throws IOException, RaftLogCompactedException
     {
         ClusterState newClusterState = new ClusterState( previous );
         Queue<RaftMessages.RaftMessage<RaftTestMember>> inboundQueue = new LinkedList<>( previous.queues.get( member ) );
@@ -64,7 +65,7 @@ public class ProcessMessage implements Action
             newClusterState.queues.put( outgoingMessage.to(), outboundQueue );
         }
 
-        newClusterState.roles.put( member, outcome.getNewRole() );
+        newClusterState.roles.put( member, outcome.getRole() );
         newClusterState.states.put( member, newMemberState );
         newClusterState.queues.put( member, inboundQueue );
         return newClusterState;

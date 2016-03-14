@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpWriter;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
@@ -91,8 +92,7 @@ public class StoreFetcherTest
         fetcher.copyStore( localhost, new File( "destination" ) );
 
         // then
-        verify( txPullClient ).pullTransactions( eq( localhost ), eq( lastFlushedTxId ), any( TxPullResponseListener.class ) );
-        verify( writer ).setCorrectTransactionId( lastPulledTxId );
+        verify( txPullClient ).pullTransactions( eq( localhost ), eq( lastFlushedTxId - 1 ), any( TxPullResponseListener.class ) );
     }
 
     @Test

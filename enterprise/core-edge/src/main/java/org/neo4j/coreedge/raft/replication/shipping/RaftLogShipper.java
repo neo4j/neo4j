@@ -24,6 +24,8 @@ import java.io.IOException;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
+import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.net.Outbound;
@@ -152,14 +154,7 @@ public class RaftLogShipper<MEMBER>
             log.error( "Failed to start log shipper to: " + follower, e );
         }
 
-        try
-        {
-            sendSingle( raftLog.appendIndex(), lastLeaderContext );
-        }
-        catch ( IOException e )
-        {
-            log.error( "Exception during send: " + follower, e );
-        }
+        sendSingle( raftLog.appendIndex(), lastLeaderContext );
     }
 
     public synchronized void stop()
@@ -178,7 +173,7 @@ public class RaftLogShipper<MEMBER>
         abortTimeout();
     }
 
-    public synchronized void onMismatch( long lastRemoteAppendIndex, LeaderContext leaderContext ) throws IOException
+    public synchronized void onMismatch( long lastRemoteAppendIndex, LeaderContext leaderContext )
     {
         switch ( mode )
         {
@@ -197,7 +192,7 @@ public class RaftLogShipper<MEMBER>
         lastLeaderContext = leaderContext;
     }
 
-    public synchronized void onMatch( long newMatchIndex, LeaderContext leaderContext ) throws IOException
+    public synchronized void onMatch( long newMatchIndex, LeaderContext leaderContext )
     {
         boolean progress = newMatchIndex > matchIndex;
         matchIndex = max ( newMatchIndex, matchIndex );
@@ -241,7 +236,7 @@ public class RaftLogShipper<MEMBER>
         lastLeaderContext = leaderContext;
     }
 
-    public synchronized void onNewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newLogEntry, LeaderContext leaderContext ) throws IOException
+    public synchronized void onNewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newLogEntry, LeaderContext leaderContext )
     {
         switch ( mode )
         {
@@ -267,7 +262,7 @@ public class RaftLogShipper<MEMBER>
         lastLeaderContext = leaderContext;
     }
 
-    public synchronized void onCommitUpdate( LeaderContext leaderContext ) throws IOException
+    public synchronized void onCommitUpdate( LeaderContext leaderContext )
     {
         switch ( mode )
         {
@@ -301,7 +296,7 @@ public class RaftLogShipper<MEMBER>
                 }
             }
         }
-        catch ( IOException e )
+        catch ( Throwable e )
         {
             log.error( "Exception during timeout handling: " + follower, e );
         }
@@ -354,7 +349,7 @@ public class RaftLogShipper<MEMBER>
     }
 
     /** Returns true if this sent the last batch. */
-    private boolean sendNextBatchAfterMatch( LeaderContext leaderContext ) throws IOException
+    private boolean sendNextBatchAfterMatch( LeaderContext leaderContext )
     {
         long lastIndex = raftLog.appendIndex();
 
@@ -372,7 +367,7 @@ public class RaftLogShipper<MEMBER>
         }
     }
 
-    private void sendCommitUpdate( LeaderContext leaderContext ) throws IOException
+    private void sendCommitUpdate( LeaderContext leaderContext )
     {
         /*
          * This is a commit update. That means that we just received enough success responses to an append
@@ -385,38 +380,48 @@ public class RaftLogShipper<MEMBER>
         outbound.send( follower, appendRequest );
     }
 
-    private void sendSingle( long logIndex, LeaderContext leaderContext ) throws IOException
+    private void sendSingle( long logIndex, LeaderContext leaderContext )
     {
         scheduleTimeout( retryTimeMillis );
 
         lastSentIndex = logIndex;
 
-        long prevLogIndex = logIndex - 1;
-        long prevLogTerm = raftLog.readEntryTerm( prevLogIndex );
-
-        if ( prevLogTerm > leaderContext.term )
+        try
         {
-            log.warn( format( "Aborting send. Not leader anymore? %s, prevLogTerm=%d", leaderContext, prevLogTerm ) );
-            return;
-        }
+            long prevLogIndex = logIndex - 1;
+            long prevLogTerm = raftLog.readEntryTerm( prevLogIndex );
 
-        RaftLogEntry[] logEntries = RaftLogEntry.empty;
-        try ( IOCursor<RaftLogEntry> cursor = raftLog.getEntryCursor( logIndex ) )
-        {
-            if ( cursor.next() )
+            if ( prevLogTerm > leaderContext.term )
             {
-                logEntries = new RaftLogEntry[]{ cursor.get() };
+                log.warn( format( "Aborting send. Not leader anymore? %s, prevLogTerm=%d", leaderContext, prevLogTerm ) );
+                return;
             }
+
+            RaftLogEntry[] logEntries = RaftLogEntry.empty;
+
+            try ( RaftLogCursor cursor = raftLog.getEntryCursor( logIndex ) )
+            {
+                if ( cursor.next() )
+                {
+                    logEntries = new RaftLogEntry[]{cursor.get()};
+                }
+            }
+
+            RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
+                    leader, leaderContext.term, prevLogIndex, prevLogTerm, logEntries, leaderContext.commitIndex );
+
+            outbound.send( follower, appendRequest );
         }
-
-        RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
-                leader, leaderContext.term, prevLogIndex, prevLogTerm, logEntries, leaderContext.commitIndex );
-
-        outbound.send( follower, appendRequest );
-
+        catch ( RaftLogCompactedException | IOException e )
+        {
+            log.warn(
+                    "Tried to send entry at index %d that can't be found in the raft log; it has likely been pruned. " +
+                            "This is a temporary state and the system should recover automatically in a short while.",
+                    logIndex );
+        }
     }
 
-    private void sendNewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newEntry, LeaderContext leaderContext ) throws IOException
+    private void sendNewEntry( long prevLogIndex, long prevLogTerm, RaftLogEntry newEntry, LeaderContext leaderContext )
     {
         scheduleTimeout( retryTimeMillis );
 
@@ -429,43 +434,50 @@ public class RaftLogShipper<MEMBER>
 
     }
 
-    private void sendRange( long startIndex, long endIndex, LeaderContext leaderContext ) throws IOException
+    private void sendRange( long startIndex, long endIndex, LeaderContext leaderContext )
     {
         if ( startIndex > endIndex )
             return;
 
         lastSentIndex = endIndex;
 
-        int batchSize = (int) (endIndex - startIndex + 1);
-        RaftLogEntry[] entries = new RaftLogEntry[batchSize];
-
-        long prevLogIndex = startIndex - 1;
-        long prevLogTerm = raftLog.readEntryTerm( prevLogIndex );
-
-        if ( prevLogTerm > leaderContext.term )
+        try
         {
-            log.warn( format( "Aborting send. Not leader anymore? %s, prevLogTerm=%d", leaderContext, prevLogTerm ) );
-            return;
-        }
+            int batchSize = (int) (endIndex - startIndex + 1);
+            RaftLogEntry[] entries = new RaftLogEntry[batchSize];
 
-        RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
-                leader, leaderContext.term, prevLogIndex, prevLogTerm, entries, leaderContext.commitIndex );
+            long prevLogIndex = startIndex - 1;
+            long prevLogTerm = raftLog.readEntryTerm( prevLogIndex );
 
-        int offset = 0;
-        try ( IOCursor<RaftLogEntry> cursor = raftLog.getEntryCursor( startIndex ) )
-        {
-            while ( offset < batchSize && cursor.next() )
+            if ( prevLogTerm > leaderContext.term )
             {
-                entries[offset] = cursor.get();
-                if( entries[offset].term() > leaderContext.term )
-                {
-                    log.warn( format( "Aborting send. Not leader anymore? %s, entryTerm=%d", leaderContext, entries[offset].term() ) );
-                    return;
-                }
-                offset++;
+                log.warn( format( "Aborting send. Not leader anymore? %s, prevLogTerm=%d", leaderContext, prevLogTerm ) );
+                return;
             }
-        }
 
-        outbound.send( follower, appendRequest );
+            RaftMessages.AppendEntries.Request<MEMBER> appendRequest = new RaftMessages.AppendEntries.Request<>(
+                    leader, leaderContext.term, prevLogIndex, prevLogTerm, entries, leaderContext.commitIndex );
+
+            int offset = 0;
+            try ( RaftLogCursor cursor = raftLog.getEntryCursor( startIndex ) )
+            {
+                while ( offset < batchSize && cursor.next() )
+                {
+                    entries[offset] = cursor.get();
+                    if( entries[offset].term() > leaderContext.term )
+                    {
+                        log.warn( format( "Aborting send. Not leader anymore? %s, entryTerm=%d", leaderContext, entries[offset].term() ) );
+                        return;
+                    }
+                    offset++;
+                }
+            }
+
+            outbound.send( follower, appendRequest );
+        }
+        catch ( IOException | RaftLogCompactedException e )
+        {
+            log.warn( "Exception during batch send", e );
+        }
     }
 }

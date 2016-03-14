@@ -36,6 +36,7 @@ import org.neo4j.coreedge.server.CoreMember;
 import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_REQUEST;
 import static org.neo4j.coreedge.raft.RaftMessages.Type.APPEND_ENTRIES_RESPONSE;
 import static org.neo4j.coreedge.raft.RaftMessages.Type.HEARTBEAT;
+import static org.neo4j.coreedge.raft.RaftMessages.Type.LOG_COMPACTION_INFO;
 import static org.neo4j.coreedge.raft.RaftMessages.Type.NEW_ENTRY_REQUEST;
 import static org.neo4j.coreedge.raft.RaftMessages.Type.VOTE_REQUEST;
 import static org.neo4j.coreedge.raft.RaftMessages.Type.VOTE_RESPONSE;
@@ -123,6 +124,13 @@ public class RaftMessageDecoder extends MessageToMessageDecoder<ByteBuf>
             long commitIndex = buffer.readLong();
 
             list.add( new RaftMessages.Heartbeat<>( from, leaderTerm, commitIndex, commitIndexTerm ) );
+        }
+        else if ( messageType.equals( LOG_COMPACTION_INFO ) )
+        {
+            long leaderTerm = buffer.readLong();
+            long prevIndex = buffer.readLong();
+
+            list.add( new RaftMessages.LogCompactionInfo<>( from, leaderTerm, prevIndex ) );
         }
         else
         {

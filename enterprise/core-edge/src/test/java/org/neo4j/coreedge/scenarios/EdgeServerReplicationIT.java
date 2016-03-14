@@ -19,15 +19,15 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import java.io.File;
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.util.Set;
-
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.raft.NoLeaderFoundException;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
@@ -43,10 +43,12 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static java.io.File.pathSeparator;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.Assert.assertEventually;
 
@@ -204,12 +206,12 @@ public class EdgeServerReplicationIT
         return dir;
     }
 
-    private GraphDatabaseService executeOnLeaderWithRetry( Workload workload ) throws NoLeaderFoundException
+    private GraphDatabaseService executeOnLeaderWithRetry( Workload workload ) throws TimeoutException
     {
         CoreGraphDatabase coreDB;
         while ( true )
         {
-            coreDB = cluster.findLeader( 5000 );
+            coreDB = cluster.awaitLeader( 5000 );
             try ( Transaction tx = coreDB.beginTx() )
             {
                 workload.doWork( coreDB );

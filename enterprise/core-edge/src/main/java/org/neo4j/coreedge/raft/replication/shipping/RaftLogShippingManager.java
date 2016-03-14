@@ -32,7 +32,7 @@ import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.helpers.Clock;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.*;
+import static java.lang.String.format;
 
 public class RaftLogShippingManager<MEMBER> implements RaftMembership.Listener
 {
