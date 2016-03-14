@@ -52,8 +52,8 @@
     <org.neo4j.server.webserver.https.enabled>true</org.neo4j.server.webserver.https.enabled>
     <org.neo4j.webserver.https.port>7473</org.neo4j.webserver.https.port>
 
-    <dbms.security.tls_certificate_file>conf/ssl/snakeoil.cert</dbms.security.tls_certificate_file>
-    <dbms.security.tls_key_file>conf/ssl/snakeoil.key</dbms.security.tls_key_file>
+    <dbms.security.tls_certificate_file>certificates/snakeoil.cert</dbms.security.tls_certificate_file>
+    <dbms.security.tls_key_file>certificates/snakeoil.key</dbms.security.tls_key_file>
     <org.neo4j.webservice.packages>org.neo4j.rest.web</org.neo4j.webservice.packages>
 
     <!-- Runtime properties. These are used to bootstrap the server. All other configuration should happen through a configuration file. Each of these should have a sensible default, so that the server can operate without them defined. -->

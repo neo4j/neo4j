@@ -87,11 +87,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     {
         @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
         public static Setting<File> tls_certificate_file = setting(
-                "dbms.security.tls_certificate_file", PATH, "neo4j-home/ssl/snakeoil.cert" );
+                "dbms.security.tls_certificate_file", PATH, "certificates/snakeoil.cert" );
 
         @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
         public static final Setting<File> tls_key_file = setting(
-                "dbms.security.tls_key_file", PATH, "neo4j-home/ssl/snakeoil.key" );
+                "dbms.security.tls_key_file", PATH, "certificates/snakeoil.key" );
 
         @Description( "Hostname for the Neo4j REST API" )
         public static final Setting<String> webserver_address =

@@ -57,10 +57,10 @@ To provide your own key and certificate, replace the generated key and certifica
 [source,properties]
 ----
 # Certificate location (auto generated if the file does not exist)
-dbms.security.tls_certificate_file=ssl/snakeoil.cert
+dbms.security.tls_certificate_file=certificates/snakeoil.cert
 
 # Private key location (auto generated if the file does not exist)
-dbms.security.tls_key_file=ssl/snakeoil.key
+dbms.security.tls_key_file=certificates/snakeoil.key
 ----
 
 Note that the key should be unencrypted.
