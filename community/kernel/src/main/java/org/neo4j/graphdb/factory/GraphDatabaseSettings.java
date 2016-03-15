@@ -182,16 +182,16 @@ public abstract class GraphDatabaseSettings
                  "procedures will be loaded if they are placed in this directory.")
     public static final Setting<File> plugin_dir = setting("dbms.directories.plugins", PATH, "plugins" );
 
-    @Description( "Threshold for rotation of the internal log." )
-    public static final Setting<Long> store_internal_log_rotation_threshold = setting("store.internal_log.rotation_threshold", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+    @Description( "Threshold for rotation of the debug log." )
+    public static final Setting<Long> store_internal_log_rotation_threshold = setting("dbms.logs.debug.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
-    @Description( "Internal log contexts that should output debug level logging" )
+    @Description( "Debug log contexts that should output debug level logging" )
     @Internal
-    public static final Setting<List<String>> store_internal_debug_contexts = setting( "store.internal_log.debug_contexts",
+    public static final Setting<List<String>> store_internal_debug_contexts = setting( "unsupported.dbms.logs.debug.debug_loggers",
             list( ",", STRING ), "org.neo4j.diagnostics,org.neo4j.cluster.protocol,org.neo4j.kernel.ha" );
 
-    @Description("Log level threshold.")
-    public static final Setting<Level> store_internal_log_level = setting( "store.internal_log.level",
+    @Description("Debug log level threshold.")
+    public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
             options( Level.class ), "INFO" );
 
     @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
@@ -199,12 +199,12 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Long> counts_store_rotation_timeout =
             setting( "unsupported.dbms.counts_store_rotation_timeout", DURATION, "10m" );
 
-    @Description( "Minimum time interval after last rotation of the internal log before it may be rotated again." )
+    @Description( "Minimum time interval after last rotation of the debug log before it may be rotated again." )
     public static final Setting<Long> store_internal_log_rotation_delay =
-            setting("store.internal_log.rotation_delay", DURATION, "300s" );
+            setting("dbms.logs.debug.rotation.delay", DURATION, "300s" );
 
-    @Description( "Maximum number of history files for the internal log." )
-    public static final Setting<Integer> store_internal_log_max_archives = setting("store.internal_log.max_archives", INTEGER, "7", min(1) );
+    @Description( "Maximum number of history files for the debug log." )
+    public static final Setting<Integer> store_internal_log_max_archives = setting("dbms.logs.debug.rotation.keep_number", INTEGER, "7", min(1) );
 
     @Description( "Configures the transaction interval between check-points. The database will not check-point more " +
                   "often  than this (unless check pointing is triggered by a different event), but might check-point " +
