@@ -173,14 +173,6 @@ public interface ServerSettings
     @Description("Enable HTTP request logging.")
     Setting<Boolean> http_logging_enabled = setting( "org.neo4j.server.http.log.enabled", BOOLEAN, FALSE );
 
-    @Description("Enable HTTP content logging.")
-    Setting<Boolean> http_content_logging_enabled = setting( "org.neo4j.server.http.unsafe.content_log.enabled",
-            BOOLEAN, FALSE );
-
-    @Description("Path to a logback configuration file for HTTP request logging.")
-    Setting<File> http_log_config_file = setting( "org.neo4j.server.http.log.config", new HttpLogSetting(),
-            NO_DEFAULT );
-
     @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Enable GC Logging")
     Setting<Boolean> gc_logging_enabled = setting("dbms.logs.gc.enabled", BOOLEAN, FALSE);

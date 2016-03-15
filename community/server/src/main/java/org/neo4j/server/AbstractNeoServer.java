@@ -92,7 +92,6 @@ import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
 import static org.neo4j.server.configuration.ServerSettings.httpConnector;
-import static org.neo4j.server.configuration.ServerSettings.http_log_config_file;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
@@ -325,12 +324,16 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void setUpHttpLogging()
     {
-        if ( !httpLoggingProperlyConfigured() )
+        if ( !getConfig().get( http_logging_enabled ) )
         {
             return;
         }
 
-        webServer.setHttpLoggingConfiguration(config.get( http_log_config_file ), config.get( http_logging_enabled ));
+        System.out.println("HELLO THERE");
+        System.out.println(config.get( GraphDatabaseSettings.logs_directory ).toString() );
+
+        webServer.setHttpLoggingConfiguration(config.get( GraphDatabaseSettings.logs_directory ),
+                config.get( http_logging_enabled ) );
     }
 
     private void setUpTimeoutFilter()
@@ -350,22 +353,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
         Filter filter = new GuardingRequestFilter( guard, getConfig().get( ServerSettings.webserver_limit_execution_time ) );
         webServer.addFilter( filter, "/*" );
-    }
-
-    private boolean httpLoggingProperlyConfigured()
-    {
-        return loggingEnabled() && configLocated();
-    }
-
-    private boolean configLocated()
-    {
-        final File logFile = getConfig().get( http_log_config_file );
-        return logFile != null && logFile.exists();
-    }
-
-    private boolean loggingEnabled()
-    {
-        return getConfig().get( http_logging_enabled );
     }
 
     public HostnamePort getAddress()

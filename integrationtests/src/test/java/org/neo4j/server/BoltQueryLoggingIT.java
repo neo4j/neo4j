@@ -38,7 +38,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.ServerTestUtils.createDummyLogbackConfigFile;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 
@@ -56,7 +55,6 @@ public class BoltQueryLoggingIT
         queriesLog.deleteOnExit();
         this.neo4j = new Neo4jRule()
             .withConfig( ServerSettings.http_logging_enabled, "true" )
-            .withConfig( ServerSettings.http_log_config_file, createDummyLogbackConfigFile() )
             .withConfig( ServerSettings.tls_key_file.name(),
                     getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) )
             .withConfig( ServerSettings.tls_certificate_file.name(),

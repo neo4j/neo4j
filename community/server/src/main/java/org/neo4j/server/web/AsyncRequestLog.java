@@ -24,9 +24,7 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +50,6 @@ public class AsyncRequestLog
 
     public AsyncRequestLog( FileSystemAbstraction fs, String logFile ) throws IOException
     {
-        System.out.println( "logFile = " + logFile );
         NamedThreadFactory threadFactory = new NamedThreadFactory( "HTTP-Log-Rotator", true );
         ExecutorService rotationExecutor = Executors.newCachedThreadPool( threadFactory );
         Supplier<OutputStream> outputSupplier = new RotatingFileOutputStreamSupplier(
@@ -79,6 +76,7 @@ public class AsyncRequestLog
         long requestTimeStamp = request.getTimeStamp();
         long now = System.currentTimeMillis();
         long serviceTime = requestTimeStamp < 0 ? -1 : now - requestTimeStamp;
+
         log.info( "%s - %s [%tc] \"%s\" %s %s \"%s\" \"%s\" %s",
                 remoteHost, user, now, requestURL, statusCode, length, referer, userAgent, serviceTime );
     }

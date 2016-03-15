@@ -49,23 +49,6 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     private CommunityNeoServer server;
 
     @Test
-    public void serverConfigShouldBeVisibleInJMX() throws Throwable
-    {
-        // Given
-        String configValue = tempDir.newFile().getAbsolutePath();
-        server = CommunityServerBuilder.server().withProperty(
-                ServerSettings.http_log_config_file.name(), configValue )
-                .build();
-
-        // When
-        server.start();
-
-        // Then
-        ObjectName name = getObjectName( server.getDatabase().getGraph(), ConfigurationBean.CONFIGURATION_MBEAN_NAME );
-        assertThat( getAttribute( name, ServerSettings.http_log_config_file.name() ), equalTo( (Object)configValue ) );
-    }
-
-    @Test
     public void shouldBeAbleToOverrideShellConfig()  throws Throwable
     {
         // Given

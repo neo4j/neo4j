@@ -25,16 +25,7 @@ import java.net.BindException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Consumer;
 import javax.servlet.DispatcherType;
@@ -130,7 +121,7 @@ public class Jetty9WebServer implements WebServer
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
-    private File requestLoggingConfiguration;
+    private File requestLogFile;
     private final Log log;
 
     public Jetty9WebServer( LogProvider logProvider, Config config )
@@ -331,12 +322,11 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setHttpLoggingConfiguration( File logbackConfigFile, boolean enableContentLogging )
+    public void setHttpLoggingConfiguration( File logsDirectory, boolean enableLogging )
     {
-        this.requestLoggingConfiguration = logbackConfigFile;
-        if(enableContentLogging)
+        if( enableLogging )
         {
-            addFilter( new TeeFilter(), "/*" );
+            this.requestLogFile = new File( logsDirectory, "http.log" );
         }
     }
 
@@ -408,7 +398,7 @@ public class Jetty9WebServer implements WebServer
             }
         }
 
-        if ( requestLoggingConfiguration != null )
+        if ( requestLogFile != null )
         {
             loadRequestLogging();
         }
@@ -431,7 +421,7 @@ public class Jetty9WebServer implements WebServer
     {
         RequestLog requestLog = new AsyncRequestLog(
                 new DefaultFileSystemAbstraction(),
-                requestLoggingConfiguration.getAbsolutePath() );
+                requestLogFile.getAbsolutePath() );
 
         // This makes the request log handler decorate whatever other handlers are already set up
         final RequestLogHandler requestLogHandler = new RequestLogHandler();

@@ -65,20 +65,6 @@ public class ServerTestUtils
         return file;
     }
 
-    public static String createDummyLogbackConfigFile()
-    {
-        try
-        {
-            Path file = Files.createTempFile( "logback", ".xml" );
-            Files.write( file, "<configuration></configuration>".getBytes() );
-            return file.toAbsolutePath().toString();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to create dummy logback configuration file", e );
-        }
-    }
-
     public static File getRelativeFile( Setting<File> setting ) throws IOException
     {
         return getSharedTestTemporaryFolder()

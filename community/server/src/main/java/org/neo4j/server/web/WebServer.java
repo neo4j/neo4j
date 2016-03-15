@@ -45,7 +45,7 @@ public interface WebServer
 
     void setHttpsCertificateInformation( KeyStoreInformation config );
 
-    void setHttpLoggingConfiguration( File logbackConfig, boolean enableContentLogging );
+    void setHttpLoggingConfiguration( File logbackConfig, boolean enableLogging );
 
     void setMaxThreads( int maxThreads );
 
