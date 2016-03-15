@@ -404,7 +404,7 @@ case class With(
 
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
     case li: ReturnItems => li.items.filter(_.alias.isEmpty).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
-    case _                     => Seq()
+    case _               => Seq()
   }
 }
 

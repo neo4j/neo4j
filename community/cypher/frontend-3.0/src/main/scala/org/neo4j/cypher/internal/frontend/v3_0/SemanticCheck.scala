@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{ScopeExpression, Expression, ASTNode}
-
 object SemanticCheckResult {
   val success: SemanticCheck = SemanticCheckResult(_, Vector())
   def error(state: SemanticState, error: SemanticError): SemanticCheckResult = SemanticCheckResult(state, Vector(error))
@@ -40,9 +38,6 @@ trait SemanticChecking {
   private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
   protected def withScopedState(check: => SemanticCheck): SemanticCheck =
     pushStateScope chain check chain popStateScope
-
-  protected def noteScope(astNode: ASTNode): SemanticCheck =
-    state => SemanticCheckResult.success(state.noteCurrentScope(astNode))
 }
 
 

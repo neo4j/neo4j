@@ -27,7 +27,8 @@ class SemanticChecker {
             mkException: (String, InputPosition) => CypherException): SemanticState = {
 
     val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean)
-
+    println(queryText)
+    println(semanticState.scopeTree)
     val scopeTreeIssues = ScopeTreeVerifier.verify(semanticState.scopeTree)
     if (scopeTreeIssues.nonEmpty)
       throw new InternalException(scopeTreeIssues.mkString(s"\n"))

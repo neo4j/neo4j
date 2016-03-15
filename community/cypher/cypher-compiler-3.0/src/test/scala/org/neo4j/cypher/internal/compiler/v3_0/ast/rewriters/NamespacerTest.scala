@@ -67,6 +67,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     ,
     "WITH 1 AS p, count(*) AS rng RETURN p ORDER BY rng" ->
     "WITH 1 AS `  p@10`, count(*) AS rng WITH `  p@10`  AS `  FRESHID36` ORDER BY rng RETURN `  FRESHID36` AS p"
+    ,
+    "MATCH (a),(b) WITH a as a, a.prop as AG1, collect(b.prop) as AG2 RETURN a{prop: AG1, k: AG2} as X" ->
+    "MATCH (a),(b) WITH a as a, a.prop as AG1, collect(b.prop) as AG2 RETURN a{prop: AG1, k: AG2} as X"
   )
 
   tests.foreach {
@@ -98,7 +101,6 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     val renamings = Map(
       Ref(idA1) -> Variable("a@1")(InputPosition(1, 0, 1)),
       Ref(idA2) -> Variable("a@2")(InputPosition(2, 0, 2))
-
     )
 
     val namespacer = Namespacer(renamings)
@@ -111,6 +113,13 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
       idA3 -> infoA3,
       idB5 -> infoB5
     ))
+  }
+
+  test("isolate aggregation and name spacing should be good friends") {
+    val a = parseAndRewrite(
+      """MATCH (actor), (movie:Movie)
+        |RETURN actor{ movies: collect(movie{ .title, .year }) }""".stripMargin)
+
   }
 
   val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, false)

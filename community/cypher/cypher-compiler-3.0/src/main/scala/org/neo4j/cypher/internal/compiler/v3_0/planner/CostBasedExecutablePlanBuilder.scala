@@ -111,8 +111,7 @@ object CostBasedExecutablePlanBuilder {
                        rewriterSequencer: (String) => RewriterStepSequencer,
                        semanticChecker: SemanticChecker,
                        preConditions: Set[RewriterCondition],
-                       monitor: AstRewritingMonitor): (Statement, SemanticTable) =
-  {
+                       monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
     val statementRewriter = StatementRewriter(rewriterSequencer, preConditions, monitor)
     val namespacer = Namespacer(statement, scopeTree)
     val namespacedStatement = statementRewriter.rewriteStatement(statement)(
@@ -121,7 +120,7 @@ object CostBasedExecutablePlanBuilder {
       CNFNormalizer()(monitor)
     )
 
-    val state = semanticChecker.check(namespacedStatement.toString, namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg"))
+    val state = semanticChecker.check(namespacedStatement.toString, namespacedStatement, mkException = (msg, pos) => throw new InternalException(s"Unexpected error during late semantic checking: $msg at $pos"))
     val table = semanticTable.copy(types = state.typeTable, recordedScopes = state.recordedScopes)
 
     val predicateSplitter = PredicateSplitter(table, namespacedStatement)
