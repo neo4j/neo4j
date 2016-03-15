@@ -30,6 +30,9 @@ An object representing a valid Neo4j Server object
 .PARAMETER ForServerInstall
 Retrieve the PrunSrv command line to install a Neo4j Server
 
+.PARAMETER ForServerUninstall
+Retrieve the PrunSrv command line to install a Neo4j Server
+
 .PARAMETER ForConsole
 Retrieve the PrunSrv command line to start a Neo4j Server in the console.
 
@@ -49,6 +52,9 @@ Function Get-Neo4jPrunsrv
         
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerInstallInvoke')]
     [switch]$ForServerInstall
+
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerUninstallInvoke')]
+    [switch]$ForServerUninstall
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ConsoleInvoke')]
     [switch]$ForConsole
@@ -75,6 +81,7 @@ Function Get-Neo4jPrunsrv
     $Name = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
     
     # Find PRUNSRV for this architecture
+    # This check will return the OS architecture even when running a 32bit app on 64bit OS
     switch ( (Get-WMIObject -Class Win32_Processor | Select-Object -First 1).Addresswidth ) {
       32 { $PrunSrvName = 'prunsrv-i386.exe' }  # 4 Bytes = 32bit
       64 { $PrunSrvName = 'prunsrv-amd64.exe' } # 8 Bytes = 64bit
@@ -85,43 +92,45 @@ Function Get-Neo4jPrunsrv
 
     # Build the PRUNSRV command line
     switch ($PsCmdlet.ParameterSetName) {
-      "ServerInstallInvoke" { $PrunArgs += @("//IS//$($Name)") }
-      "ConsoleInvoke"       { $PrunArgs += @("//TS//$($Name)") }
+      "ServerInstallInvoke"   {
+        $PrunArgs += @("//IS//$($Name)")
+
+        $JvmOptions = @('-Dfile.encoding=UTF-8')
+        $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
+        if ($setting -ne $null) { $JvmOptions += $setting.Value }
+
+        $PrunArgs += @('--StartMode=jvm',
+          '--StartMethod=start',
+          "`"--StartPath=$($Neo4jServer.Home)`"",
+          '--StopMode=jvm',
+          '--StopMethod=stop',
+          "`"--StopPath=$($Neo4jServer.Home)`"",
+          "`"--Description=Neo4j Graph Database - $($Neo4jServer.Home)`"",
+          "`"--DisplayName=Neo4j Graph Database - $Name`"",
+          "`"--Jvm=$($JvmDLL)`"",
+          '--LogPath=logs',
+          '--StdOutput=logs\neo4j.log',
+          '--StdError=logs\neo4j-error.log',
+          '--LogPrefix=neo4j-service',
+          '--Classpath=lib/*;plugins/*',
+          "`"--JvmOptions=$($JvmOptions -join ';')`"",
+          '--Startup=auto'
+        )
+
+        if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseEntryPoint' }
+        if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
+        if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterEntryPoint' }
+        if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }    
+        $PrunArgs += @("--StopClass=$($serverMainClass)",
+                       "--StartClass=$($serverMainClass)")
+      }
+      "ServerUninstallInvoke" { $PrunArgs += @("//DS//$($Name)") }
+      "ConsoleInvoke"         { $PrunArgs += @("//TS//$($Name)") }
       default {
         throw "Unknown ParameterSerName $($PsCmdlet.ParameterSetName)"
         return $null
       }
     }
-
-    $JvmOptions = @()
-    $JvmOptions += '-Dfile.encoding=UTF-8'
-    $setting = (Get-Neo4jSetting -ConfigurationFile 'neo4j-wrapper.conf' -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
-    if ($setting -ne $null) { $JvmOptions += $setting.Value }
-
-    $PrunArgs += @('--StartMode=jvm',
-      '--StartMethod=start',
-      "`"--StartPath=$($Neo4jServer.Home)`"",
-      '--StopMode=jvm',
-      '--StopMethod=stop',
-      "`"--StopPath=$($Neo4jServer.Home)`"",
-      "`"--Description=Neo4j Graph Database - $($Neo4jServer.Home)`"",
-      "`"--DisplayName=Neo4j Graph Database - $Name`"",
-      "`"--Jvm=$($JvmDLL)`"",
-      '--LogPath=logs',
-      '--StdOutput=logs\neo4j.log',
-      '--StdError=logs\neo4j-error.log',
-      '--LogPrefix=neo4j-service',
-      '--Classpath=lib/*;plugins/*',
-      "`"--JvmOptions=$([system.String]::Join(";", $JvmOptions))`"",
-      '--Startup=automatic'
-    )
-
-    if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseEntryPoint' }
-    if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
-    if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterEntryPoint' }
-    if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }    
-    $PrunArgs += @("--StopClass=$($serverMainClass)",
-                   "--StartClass=$($serverMainClass)")
     
     Write-Output @{'cmd' = $PrunsrvCMD; 'args' = $PrunArgs}
   }

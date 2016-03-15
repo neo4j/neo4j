@@ -55,26 +55,31 @@ Function Uninstall-Neo4jServer
 
   Process
   {
-    $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
-    
-    # Get the Service object as a WMI object.  Can only do deletions through WMI or SC.EXE
-    $service = Get-WmiObject -Class Win32_Service -Filter "Name='$ServiceName'"
+    $Name = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
+
+    $service = Get-Service -Name $Name -ComputerName '.' -ErrorAction 'SilentlyContinue'
     if ($service -eq $null) 
     {
-      Write-Verbose "Windows Service $ServiceName does not exist"
+      Write-Verbose "Windows Service $Name does not exist"
       Write-Host "Neo4j uninstalled"
       return 0
     }
 
     if ($service.State -ne 'Stopped') {
       Write-Host "Stopping the Neo4j service"
-      Stop-Service -ServiceName $ServiceName -ErrorAction 'Stop' | Out-Null
+      Stop-Service -ServiceName $Name -ErrorAction 'Stop' | Out-Null
     }
-    Write-Verbose "Deleting the service"
-    $service.delete() | Out-Null
-    Write-Host "Neo4j service uninstalled"
+
+    $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerUninstall
+    if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
+
+    Write-Verbose "Uninstalling Neo4j as a service with command line $($prunsrv.cmd) $($prunsrv.args)"
+    $result = (Start-Process -FilePath $prunsrv.cmd -ArgumentList $prunsrv.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home)
+    Write-Verbose "Returned exit code $($result.ExitCode)"
+
+    Write-Output $result.ExitCode
     
-    Write-Output 0
+    Write-Host "Neo4j service uninstalled"
   }
   
   End

@@ -70,10 +70,10 @@ Function Install-Neo4jServer
       Write-Output $result.ExitCode
     } else {
       Write-Verbose "Service already installed"
+      Write-Output 0
     }
     
     Write-Host "Neo4j service installed"
-    return 0
   }
   
   End
