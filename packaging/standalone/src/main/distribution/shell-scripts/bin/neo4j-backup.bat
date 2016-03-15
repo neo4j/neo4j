@@ -1,5 +1,5 @@
 @ECHO OFF
-rem Copyright (c) 2002-2015 "Neo Technology,"
+rem Copyright (c) 2002-2016 "Neo Technology,"
 rem Network Engine for Objects in Lund AB [http://neotechnology.com]
 rem
 rem This file is part of Neo4j.
