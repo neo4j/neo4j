@@ -186,7 +186,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             totalSize += (record.getData().length - offset);
         }
         byte[] bArray = new byte[totalSize];
-        assert header != null : "header should be non-null since records should not be empty";
+        assert header != null : "header should be non-null since records should not be empty: " + records;
         int sourceOffset = header.length;
         int offset = 0;
         for ( byte[] currentArray : byteList )
