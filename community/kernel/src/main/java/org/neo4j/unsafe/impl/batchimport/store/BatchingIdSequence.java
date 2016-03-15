@@ -44,16 +44,27 @@ public class BatchingIdSequence implements IdSequence
     @Override
     public long nextId()
     {
-        long result = nextId++;
-        if ( result == IdGeneratorImpl.INTEGER_MINUS_ONE )
-        {
-            result = nextId++;
-        }
+        long result = peek();
+        nextId++;
         return result;
     }
 
     public void reset()
     {
         nextId = startId;
+    }
+
+    public void set( long nextId )
+    {
+        this.nextId = nextId;
+    }
+
+    public long peek()
+    {
+        if ( nextId == IdGeneratorImpl.INTEGER_MINUS_ONE )
+        {
+            nextId++;
+        }
+        return nextId;
     }
 }

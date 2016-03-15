@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -48,6 +49,9 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
+
+import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_interval_time;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_min_replan_interval;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -164,9 +168,19 @@ public class MetricsKernelExtensionFactoryIT
         }
 
         File metricFile = metricsCsv( outputPath, CypherMetrics.REPLAN_EVENTS );
-        long events = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue >= currentValue );
 
-        // THEN
+        // THEN see that the replan metric have pickup up at least one replan event
+        // since reporting happens in an async fashion then give it some time and check now and then
+        long endTime = currentTimeMillis() + TimeUnit.SECONDS.toMillis( 10 );
+        long events = 0;
+        while ( currentTimeMillis() < endTime && events == 0 )
+        {
+            events = readLongValueAndAssert( metricFile, ( newValue, currentValue ) -> newValue >= currentValue );
+            if ( events == 0 )
+            {
+                Thread.sleep( 300 );
+            }
+        }
         assertThat( events, greaterThan( 0L ) );
     }
 
