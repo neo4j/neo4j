@@ -417,7 +417,7 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Log executed queries that takes longer than the configured threshold. "
             + "_NOTE: This feature is only available in the Neo4j Enterprise Edition_." )
-    public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
+    public static final Setting<Boolean> log_queries = setting("dbms.logs.query.enabled", BOOLEAN, FALSE );
 
     @Description("Path of the logs directory")
     public static final Setting<File> logs_directory = setting("dbms.directories.logs", PATH, "logs");
@@ -430,16 +430,16 @@ public abstract class GraphDatabaseSettings
 
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
                  "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
-    public static final Setting<Long> log_queries_threshold = setting("dbms.querylog.threshold", DURATION, "0s");
+    public static final Setting<Long> log_queries_threshold = setting("dbms.logs.query.threshold", DURATION, "0s");
 
-    @Description( "Specifies at which file size the query log will auto-rotate. " +
-                  "`0` means that no rotation will automatically occur based on file size." )
-    public static final Setting<Long> log_queries_rotation_threshold = setting("dbms.querylog.rotation.threshold",
+    @Description( "The file size in bytes at which the query log will auto-rotate. If set to zero then no rotation " +
+            "will occur. Accepts a binary suffix `k`, `m` or `g`." )
+    public static final Setting<Long> log_queries_rotation_threshold = setting("dbms.logs.query.rotation.size",
             BYTES, "20m",  min( 0L ), max( Long.MAX_VALUE ) );
 
     @Description( "Maximum number of history files for the query log." )
-    public static final Setting<Integer> log_queries_max_archives = setting( "dbms.querylog.max_archives", INTEGER,
-            "7", min( 1 ) );
+    public static final Setting<Integer> log_queries_max_archives = setting( "dbms.logs.query.rotation.keep_number",
+            INTEGER, "7", min( 1 ) );
 
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
                   "flushing data into underlying storage.")
