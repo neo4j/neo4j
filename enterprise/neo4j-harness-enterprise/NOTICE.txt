@@ -35,7 +35,6 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
   Graphite Integration for Metrics
-  hazelcast-all
   Jackson
   JAX-RS provider for JSON content type
   Jetty :: Http Utility

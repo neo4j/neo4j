@@ -439,12 +439,6 @@
       </build>
     </profile>
     <profile>
-      <id>core-edge-tests-only</id>
-      <properties>
-        <test-phase>none</test-phase>
-      </properties>
-    </profile>
-    <profile>
       <id>java8-set-javadoc-doclint</id>
       <activation>
         <jdk>[1.8,)</jdk>

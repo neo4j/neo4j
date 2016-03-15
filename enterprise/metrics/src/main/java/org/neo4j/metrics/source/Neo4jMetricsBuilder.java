@@ -19,11 +19,10 @@
  */
 package org.neo4j.metrics.source;
 
-import com.codahale.metrics.MetricRegistry;
-
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.raft.CoreMetaData;
+import com.codahale.metrics.MetricRegistry;
+
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
@@ -41,8 +40,6 @@ import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.metrics.output.EventReporter;
 import org.neo4j.metrics.source.cluster.ClusterMetrics;
 import org.neo4j.metrics.source.cluster.NetworkMetrics;
-import org.neo4j.metrics.source.coreedge.CoreMetrics;
-import org.neo4j.metrics.source.coreedge.EdgeMetrics;
 import org.neo4j.metrics.source.db.BoltMetrics;
 import org.neo4j.metrics.source.db.CheckPointingMetrics;
 import org.neo4j.metrics.source.db.CypherMetrics;
@@ -81,8 +78,6 @@ public class Neo4jMetricsBuilder
         StoreEntityCounters entityCountStats();
 
         Supplier<ClusterMembers> clusterMembers();
-
-        Supplier<CoreMetaData> raft();
 
         Supplier<TransactionIdStore> transactionIdStore();
     }
@@ -189,26 +184,6 @@ public class Neo4jMetricsBuilder
         {
             life.add( new MemoryBuffersMetrics( registry ) );
             result = true;
-        }
-
-        if ( config.get( MetricsSettings.coreEdgeEnabled ) )
-        {
-            OperationalMode mode = kernelContext.databaseInfo().operationalMode;
-            if ( mode == OperationalMode.core )
-            {
-                life.add( new CoreMetrics( dependencies.monitors(), registry, dependencies.raft() ) );
-                result = true;
-            }
-            else if ( mode == OperationalMode.edge )
-            {
-                life.add( new EdgeMetrics( dependencies.monitors(), registry ) );
-                result = true;
-            }
-            else
-            {
-                logService.getUserLog( getClass() )
-                        .warn( "Core Edge metrics was enabled but the graph database is not in Core/Edge mode." );
-            }
         }
 
         if ( config.get( MetricsSettings.neoServerEnabled ) )
