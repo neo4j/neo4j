@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
+import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -92,6 +93,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
+import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 import static org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -505,7 +507,7 @@ public class NeoStoresTest
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
-
+        long recordVersion = MetaDataStore.versionStringToLong( InternalRecordFormatSelector.select().storeVersion() );
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
@@ -513,7 +515,7 @@ public class NeoStoresTest
             metaDataStore.setRandomNumber( 4 );
             metaDataStore.setCurrentLogVersion( 5 );
             metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 0 );
-            metaDataStore.setStoreVersion( 7 );
+            metaDataStore.setStoreVersion( recordVersion );
             metaDataStore.setGraphNextProp( 8 );
             metaDataStore.setLatestConstraintIntroducingTx( 9 );
         }
@@ -523,7 +525,10 @@ public class NeoStoresTest
         {
             channel.position( 0 );
             channel.write( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
+
         }
+
+        MetaDataStore.setRecord( pageCache, file, Position.STORE_VERSION, recordVersion );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -532,7 +537,7 @@ public class NeoStoresTest
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getRandomNumber() );
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getCurrentLogVersion() );
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getLastCommittedTransactionId() );
-            assertEquals( FIELD_NOT_PRESENT, metaDataStore.getStoreVersion() );
+            assertEquals( recordVersion, metaDataStore.getStoreVersion() );
             assertEquals( 8, metaDataStore.getGraphNextProp() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
         }
@@ -614,7 +619,7 @@ public class NeoStoresTest
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
         StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, NullLogProvider.getInstance() );
-
+        long recordVersion = MetaDataStore.versionStringToLong( select().storeVersion() );
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
@@ -622,7 +627,7 @@ public class NeoStoresTest
             metaDataStore.setRandomNumber( 4 );
             metaDataStore.setCurrentLogVersion( 5 );
             metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 0 );
-            metaDataStore.setStoreVersion( 7 );
+            metaDataStore.setStoreVersion( recordVersion );
             metaDataStore.setGraphNextProp( 8 );
             metaDataStore.setLatestConstraintIntroducingTx( 9 );
         }
@@ -643,7 +648,7 @@ public class NeoStoresTest
             assertEquals( 4, metaDataStore.getRandomNumber() );
             assertEquals( 5, metaDataStore.getCurrentLogVersion() );
             assertEquals( 6, metaDataStore.getLastCommittedTransactionId() );
-            assertEquals( 7, metaDataStore.getStoreVersion() );
+            assertEquals( recordVersion, metaDataStore.getStoreVersion() );
             assertEquals( 8, metaDataStore.getGraphNextProp() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
             assertEquals( new TransactionId( 10, 11 ), metaDataStore.getUpgradeTransaction() );

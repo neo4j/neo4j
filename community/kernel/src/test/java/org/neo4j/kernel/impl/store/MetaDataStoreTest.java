@@ -56,6 +56,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
+import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 
 public class MetaDataStoreTest
 {
@@ -581,10 +583,8 @@ public class MetaDataStoreTest
         fs.mkdir( STORE_DIR );
         fs.create( file ).close();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        for ( MetaDataStore.Position position : positions )
-        {
-            MetaDataStore.setRecord( pageCache, file, position, position.ordinal() + 1 );
-        }
+        long storeVersion = versionStringToLong( select().storeVersion());
+        writeCorrectMetaDataRecord( file, positions, storeVersion );
 
         List<Long> actualValues = new ArrayList<>();
         try ( MetaDataStore store = newMetaDataStore() )
@@ -595,8 +595,16 @@ public class MetaDataStoreTest
             } );
         }
 
-        List<Long> expectedValues = Arrays.stream( positions ).map(
-                p -> p.ordinal() + 1L ).collect( Collectors.toList() );
+        List<Long> expectedValues = Arrays.stream( positions ).map( p -> {
+            if ( p == MetaDataStore.Position.STORE_VERSION )
+            {
+                return storeVersion;
+            }
+            else
+            {
+                return p.ordinal() + 1L;
+            }
+        } ).collect( Collectors.toList() );
 
         assertThat( actualValues, is( expectedValues ) );
     }
@@ -608,10 +616,8 @@ public class MetaDataStoreTest
         fs.mkdir( STORE_DIR );
         fs.create( file ).close();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        for ( MetaDataStore.Position position : positions )
-        {
-            MetaDataStore.setRecord( pageCache, file, position, position.ordinal() + 1 );
-        }
+        long storeVersion = versionStringToLong( select().storeVersion());
+        writeCorrectMetaDataRecord( file, positions, storeVersion );
 
         List<Long> actualValues = new ArrayList<>();
         try ( MetaDataStore store = newMetaDataStore() )
@@ -631,9 +637,34 @@ public class MetaDataStoreTest
             }
         }
 
-        List<Long> expectedValues = Arrays.stream( positions ).map(
-                p -> p.ordinal() + 1L ).collect( Collectors.toList() );
+        List<Long> expectedValues = Arrays.stream( positions ).map( p -> {
+            if ( p == MetaDataStore.Position.STORE_VERSION )
+            {
+                return storeVersion;
+            }
+            else
+            {
+                return p.ordinal() + 1L;
+            }
+        } ).collect( Collectors.toList() );
+
 
         assertThat( actualValues, is( expectedValues ) );
+    }
+
+    private void writeCorrectMetaDataRecord( File file, MetaDataStore.Position[] positions, long storeVersion )
+            throws IOException
+    {
+        for ( MetaDataStore.Position position : positions )
+        {
+            if ( position == MetaDataStore.Position.STORE_VERSION )
+            {
+                MetaDataStore.setRecord( pageCache, file, position, storeVersion );
+            }
+            else
+            {
+                MetaDataStore.setRecord( pageCache, file, position, position.ordinal() + 1 );
+            }
+        }
     }
 }

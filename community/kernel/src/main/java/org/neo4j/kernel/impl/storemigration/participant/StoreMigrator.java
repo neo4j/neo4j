@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -92,7 +93,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.Capability.VERSION_TRAILERS;
 import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.fromVersion;
@@ -419,10 +419,17 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         // that dynamic record store over before doing the "batch import".
         //   Copying this file just as-is assumes that the format hasn't change. If that happens we're in
         // a different situation, where we first need to migrate this file.
+
+        // The token stores also need to be migrated because we use those as-is and ask for their high ids
+        // when using the importer in the store migration scenario.
+        StoreFile[] storesFilesToMigrate = {
+                StoreFile.LABEL_TOKEN_STORE, StoreFile.LABEL_TOKEN_NAMES_STORE,
+                StoreFile.PROPERTY_KEY_TOKEN_STORE, StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE, StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
+                StoreFile.NODE_LABEL_STORE};
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
-            Iterable<StoreFile> storeFiles = iterable( StoreFile.NODE_LABEL_STORE );
-            StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, storeFiles,
+            StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Arrays.asList(storesFilesToMigrate),
                     true, // OK if it's not there (1.9)
                     ExistingTargetStrategy.FAIL, StoreFileType.values() );
         }
