@@ -103,6 +103,6 @@ class ScalaCompatibilityTest extends CypherFunSuite {
   test("should convert traversable to Iterable") {
     val it = Stream[Any](1, 2, 3)
 
-    it shouldBe a [Iterable[Any]]
+    it shouldBe an [Iterable[_]]
   }
 }
