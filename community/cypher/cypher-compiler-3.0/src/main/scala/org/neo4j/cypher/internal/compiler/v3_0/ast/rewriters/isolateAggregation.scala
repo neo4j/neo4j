@@ -51,31 +51,10 @@ case object isolateAggregation extends Rewriter {
         case clause =>
           val originalExpressions = getExpressions(clause)
 
-          val expressionsToGoToWith: Set[Expression] = fixedPoint {
-            (expressions: Set[Expression]) => expressions.flatMap {
-              case e if hasAggregateButIsNotAggregate(e) =>
-                e match {
-                  case ReduceExpression(_, init, coll) => Seq(init, coll)
-                  case FilterExpression(_, expr)       => Seq(expr)
-                  case ExtractExpression(_, expr)      => Seq(expr)
-                  case ListComprehension(_, expr)      => Seq(expr)
-                  case _: MapProjection | _: DesugaredMapProjection =>
-                    throw new InvalidArgumentException("Cannot combine map projection with collections yet!")
-                  case _ => e.arguments
-                }
+          val expressionsToIncludeInWith: Set[Expression] = extractExpressionsToInclude(originalExpressions)
 
-              case e =>
-                Seq(e)
-
-            }
-          }(originalExpressions).filter {
-            //Constant expressions should never be isolated
-            case ConstantExpression(_) => false
-            case expr => true
-          }
-
-          val withReturnItems: Set[ReturnItem] = expressionsToGoToWith.map {
-            case id: Variable => AliasedReturnItem(id.copyId, id.copyId)(id.position)
+          val withReturnItems: Set[ReturnItem] = expressionsToIncludeInWith.map {
+            case id: Variable => AliasedReturnItem(id.bumpId, id.bumpId)(id.position)
             case e              => AliasedReturnItem(e, Variable(AggregationNameGenerator.name(e.position))(e.position))(e.position)
           }
           val pos = clause.position
@@ -92,6 +71,31 @@ case object isolateAggregation extends Rewriter {
       }
 
       q.copy(clauses = newClauses)(q.position)
+  }
+
+  private def extractExpressionsToInclude(originalExpressions: Set[Expression]): Set[Expression] = {
+    val expressionsToGoToWith: Set[Expression] = fixedPoint {
+      (expressions: Set[Expression]) => expressions.flatMap {
+        case e if hasAggregateButIsNotAggregate(e) =>
+          e match {
+            case ReduceExpression(_, init, coll) => Seq(init, coll)
+            case FilterExpression(_, expr) => Seq(expr)
+            case ExtractExpression(_, expr) => Seq(expr)
+            case ListComprehension(_, expr) => Seq(expr)
+            case DesugaredMapProjection(variable, items, _) => items.map(_.exp) :+ variable
+            case _ => e.arguments
+          }
+
+        case e =>
+          Seq(e)
+
+      }
+    }(originalExpressions).filter {
+      //Constant expressions should never be isolated
+      case ConstantExpression(_) => false
+      case expr => true
+    }
+    expressionsToGoToWith
   }
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])

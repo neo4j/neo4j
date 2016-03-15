@@ -29,7 +29,6 @@ case class MapProjection(name: Variable, items: Seq[MapProjectionElement])(val p
 
   override def semanticCheck(ctx: SemanticContext) =
     items.semanticCheck(ctx) chain
-      name.ensureDefined() chain
       super.semanticCheck(ctx) ifOkChain (// We need to remember the scope to later rewrite this ASTNode
       s => SemanticCheckResult.success(s.noteCurrentScope(this)))
 

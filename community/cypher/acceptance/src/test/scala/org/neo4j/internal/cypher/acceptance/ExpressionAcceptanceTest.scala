@@ -141,8 +141,11 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
   }
 
   test("graph projections with aggregation") {
-    intercept[InvalidArgumentException](executeWithAllPlanners(
+    executeWithAllPlanners(
+//      """MATCH (actor), (movie:Movie)
+//        |WITH collect(movie{ .title, .year }) as `  AGGREGATION51`, actor
+//        |RETURN { movies: `  AGGREGATION51` }""".stripMargin).toList
       """MATCH (actor), (movie:Movie)
-        |RETURN actor{ movies: collect(movie{ .title, .year }) }""".stripMargin).toList)
+        |RETURN actor{ p: actor, movies: collect(movie{ .title, .year }) }""".stripMargin).toList
   }
 }
