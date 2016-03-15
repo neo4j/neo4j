@@ -28,7 +28,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.server.security.auth.AuthSubject;
+import org.neo4j.kernel.api.security.AuthSubject;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -197,6 +197,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         // Then
         verify( authSubject ).setPassword( (String) inputArray[0] );
         assertThat( asList( stream ), emptyIterable() );
+        verify( authSubject ).setPassword( (String) inputArray[0] );
     }
 
     @Test

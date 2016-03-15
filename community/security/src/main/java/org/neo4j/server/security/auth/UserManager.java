@@ -19,10 +19,18 @@
  */
 package org.neo4j.server.security.auth;
 
-public enum AuthenticationResult
+import java.io.IOException;
+
+import org.neo4j.server.security.auth.exception.IllegalUsernameException;
+
+public interface UserManager
 {
-    SUCCESS,
-    FAILURE,
-    TOO_MANY_ATTEMPTS,
-    PASSWORD_CHANGE_REQUIRED
+    User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
+            IllegalUsernameException;
+
+    boolean deleteUser( String username ) throws IOException;
+
+    User getUser( String username );
+
+    User setUserPassword( String username, String password ) throws IOException;
 }

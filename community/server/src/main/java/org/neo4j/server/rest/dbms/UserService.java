@@ -30,6 +30,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -37,8 +38,8 @@ import org.neo4j.server.rest.repr.ExceptionRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.User;
+import org.neo4j.server.security.auth.UserManager;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.neo4j.server.rest.web.CustomStatusType.UNPROCESSABLE;
@@ -48,13 +49,17 @@ public class UserService
 {
     public static final String PASSWORD = "password";
 
-    private final AuthManager authManager;
+    private final UserManager userManager;
     private final InputFormat input;
     private final OutputFormat output;
 
     public UserService( @Context AuthManager authManager, @Context InputFormat input, @Context OutputFormat output )
     {
-        this.authManager = authManager;
+        if ( !(authManager instanceof UserManager) )
+        {
+            throw new IllegalArgumentException( "The provided auth manager is not capable of user management" );
+        }
+        this.userManager = (UserManager) authManager;
         this.input = input;
         this.output = output;
     }
@@ -69,7 +74,7 @@ public class UserService
             return output.notFound();
         }
 
-        final User currentUser = authManager.getUser( username );
+        final User currentUser = userManager.getUser( username );
         if ( currentUser == null )
         {
             return output.notFound();
@@ -115,7 +120,7 @@ public class UserService
                     new Neo4jError( Status.Request.Invalid, "Password cannot be empty." ) ) );
         }
 
-        final User currentUser = authManager.getUser( username );
+        final User currentUser = userManager.getUser( username );
         if (currentUser == null)
         {
             return output.notFound();
@@ -127,20 +132,17 @@ public class UserService
                     new Neo4jError( Status.Request.Invalid, "Old password and new password cannot be the same." ) ) );
         }
 
-        final User updatedUser;
         try
         {
-            updatedUser = authManager.setPassword( username, newPassword );
-        } catch ( IOException e )
+            if ( userManager.setUserPassword( username, newPassword ) == null )
+            {
+                return output.notFound();
+            }
+        }
+        catch ( IOException e )
         {
             return output.serverErrorWithoutLegacyStacktrace( e );
         }
-
-        if (updatedUser == null)
-        {
-            return output.notFound();
-        }
-
         return output.ok();
     }
 

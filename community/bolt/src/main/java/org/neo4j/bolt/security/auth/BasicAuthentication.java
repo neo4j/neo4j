@@ -27,22 +27,22 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.security.auth.AuthSubject;
-import org.neo4j.server.security.auth.BasicAuthManager;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthManager;
 
 /**
  * Performs basic authentication with user name and password.
  */
 public class BasicAuthentication implements Authentication
 {
-    private final BasicAuthManager authManager;
+    private final AuthManager authManager;
     private final static String SCHEME = "basic";
     private final Log log;
     private final Supplier<String> identifier;
     private AuthSubject authSubject;
 
 
-    public BasicAuthentication( BasicAuthManager authManager, LogProvider logProvider, Supplier<String> identifier )
+    public BasicAuthentication( AuthManager authManager, LogProvider logProvider, Supplier<String> identifier )
     {
         this.authManager = authManager;
         this.log = logProvider.getLog( getClass() );
