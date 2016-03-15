@@ -23,7 +23,10 @@ import java.io.IOException;
 import java.time.Clock;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.api.security.AuthManager;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
@@ -31,8 +34,12 @@ import org.neo4j.server.security.auth.exception.IllegalUsernameException;
  * Manages server authentication and authorization.
  * <p>
  * Through the BasicAuthManager you can create, update and delete users, and authenticate using credentials.
+ * <p>>
+ * NOTE: AuthManager will manage the lifecycle of the given UserRepository,
+ *       so the given UserRepository should not be added to another LifeSupport.
+ * </p>
  */
-public class BasicAuthManager extends LifecycleAdapter implements AuthManager
+public class BasicAuthManager implements Lifecycle, AuthManager, UserManager
 {
     private final AuthenticationStrategy authStrategy;
     private final UserRepository users;
@@ -56,8 +63,16 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
     }
 
     @Override
+    public void init() throws Throwable
+    {
+        users.init();
+    }
+
+    @Override
     public void start() throws Throwable
     {
+        users.start();
+
         if ( authEnabled && users.numberOfUsers() == 0 )
         {
             newUser( "neo4j", "neo4j", true );
@@ -65,6 +80,17 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
     }
 
     @Override
+    public void stop() throws Throwable
+    {
+        users.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        users.shutdown();
+    }
+
     public AuthenticationResult authenticate( String username, String password )
     {
         AuthSubject subject = login( username, password );
@@ -130,14 +156,14 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
         {
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
-        if ( setPassword( username, password ) == null )
+        if ( setUserPassword( username, password ) == null )
         {
             throw new IllegalArgumentException( "User " + username + " does not exist" );
         }
     }
 
     @Override
-    public User setPassword( String username, String password ) throws IOException
+    public User setUserPassword( String username, String password ) throws IOException
     {
         assertAuthEnabled();
         User existingUser = users.findByName( username );
@@ -162,7 +188,7 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
         } catch ( ConcurrentModificationException e )
         {
             // try again
-            return setPassword( username, password );
+            return setUserPassword( username, password );
         }
     }
 

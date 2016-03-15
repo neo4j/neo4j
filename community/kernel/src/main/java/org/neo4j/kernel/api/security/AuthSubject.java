@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.kernel.api.security;
 
-import org.neo4j.kernel.api.security.AuthenticationResult;
+import java.io.IOException;
 
-/**
- * Strategy for determining if the credentials presented by a user are valid
- */
-public interface AuthenticationStrategy
+import org.neo4j.kernel.api.security.AccessMode;
+
+public interface AuthSubject extends AccessMode
 {
-    /**
-     * Verify a user by password
-     */
-    AuthenticationResult authenticate( User user, String password );
+    void logout();
+
+    AuthenticationResult getAuthenticationResult();
+
+    void setPassword( String password ) throws IOException;
 }

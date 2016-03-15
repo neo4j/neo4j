@@ -17,17 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.kernel.api.security;
 
-import java.io.IOException;
-
-import org.neo4j.kernel.api.security.AccessMode;
-
-public interface AuthSubject extends AccessMode
+public enum AuthenticationResult
 {
-    void logout();
-
-    AuthenticationResult getAuthenticationResult();
-
-    void setPassword( String password ) throws IOException;
+    SUCCESS,
+    FAILURE,
+    TOO_MANY_ATTEMPTS,
+    PASSWORD_CHANGE_REQUIRED
 }

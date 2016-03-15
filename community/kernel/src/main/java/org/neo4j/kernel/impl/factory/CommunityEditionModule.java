@@ -94,7 +94,8 @@ public class CommunityEditionModule extends EditionModule
         dependencies.satisfyDependency(
                 createKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade, life ) );
 
-        dependencies.satisfyDependencies( createAuthManager(config, life, logging.getUserLogProvider()) );
+        life.add( dependencies.satisfyDependency( createAuthManager( config, logging ) ) );
+
         commitProcessFactory = new CommunityCommitProcessFactory();
 
         headerInformationFactory = createHeaderInformationFactory();

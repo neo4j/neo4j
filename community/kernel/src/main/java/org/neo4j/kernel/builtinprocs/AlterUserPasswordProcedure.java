@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.server.security.auth.AuthSubject;
+import org.neo4j.kernel.api.security.AuthSubject;
 
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.helpers.collection.Iterators.map;
