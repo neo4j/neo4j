@@ -60,7 +60,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, final TxPullRequest msg ) throws Exception
     {
-        long startTxId = msg.txId();
+        long startTxId = Math.max( msg.txId(), TransactionIdStore.BASE_TX_ID );
         long endTxId = startTxId;
 
         if ( transactionIdStore.getLastCommittedTransactionId() > startTxId )

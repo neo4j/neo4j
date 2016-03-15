@@ -54,6 +54,10 @@ import static java.util.Collections.singletonMap;
  */
 public abstract class EditionModule
 {
+    public interface SPI
+    {
+    }
+
     public IdGeneratorFactory idGeneratorFactory;
 
     public LabelTokenHolder labelTokenHolder;
@@ -110,5 +114,10 @@ public abstract class EditionModule
             return AuthManager.NO_AUTH;
         }
 
+    }
+
+    protected EditionModule.SPI spi()
+    {
+        return null;
     }
 }

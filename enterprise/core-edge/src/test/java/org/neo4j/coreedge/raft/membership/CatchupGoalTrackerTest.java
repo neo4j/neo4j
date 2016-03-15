@@ -24,10 +24,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.FakeClock;
 
@@ -169,6 +169,12 @@ public class CatchupGoalTrackerTest
             return appendIndex;
         }
 
+        @Override
+        public long prevIndex()
+        {
+            return 0;
+        }
+
         @Override public long commitIndex()
         {
             return 0;
@@ -180,9 +186,9 @@ public class CatchupGoalTrackerTest
         }
 
         @Override
-        public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+        public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
         {
-            return IOCursor.getEmpty();
+            return RaftLogCursor.empty();
         }
     }
 }

@@ -41,7 +41,7 @@ import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 public class Outcome<MEMBER> implements Message
 {
     /* Common */
-    private Role newRole;
+    private Role nextRole;
 
     private long term;
     private MEMBER leader;
@@ -54,6 +54,7 @@ public class Outcome<MEMBER> implements Message
     /* Follower */
     private MEMBER votedFor;
     private boolean renewElectionTimeout;
+    private boolean needsFreshSnapshot;
 
     /* Candidate */
     private Set<MEMBER> votesForMe;
@@ -62,19 +63,21 @@ public class Outcome<MEMBER> implements Message
     /* Leader */
     private FollowerStates<MEMBER> followerStates;
     private Collection<ShipCommand> shipCommands = new ArrayList<>();
+    private boolean electedLeader;
+    private boolean steppingDown;
 
     public Outcome( Role currentRole, ReadableRaftState<MEMBER> ctx )
     {
         defaults( currentRole, ctx );
     }
 
-    public Outcome( Role newRole, long term, MEMBER leader, long leaderCommit, MEMBER votedFor,
+    public Outcome( Role nextRole, long term, MEMBER leader, long leaderCommit, MEMBER votedFor,
             Set<MEMBER> votesForMe, long lastLogIndexBeforeWeBecameLeader,
             FollowerStates<MEMBER> followerStates, boolean renewElectionTimeout,
             Collection<LogCommand> logCommands, Collection<RaftMessages.Directed<MEMBER>> outgoingMessages,
             Collection<ShipCommand> shipCommands )
     {
-        this.newRole = newRole;
+        this.nextRole = nextRole;
         this.term = term;
         this.leader = leader;
         this.leaderCommit = leaderCommit;
@@ -91,7 +94,7 @@ public class Outcome<MEMBER> implements Message
 
     private void defaults( Role currentRole, ReadableRaftState<MEMBER> ctx )
     {
-        newRole = currentRole;
+        nextRole = currentRole;
 
         term = ctx.term();
         leader = ctx.leader();
@@ -100,6 +103,7 @@ public class Outcome<MEMBER> implements Message
 
         votedFor = ctx.votedFor();
         renewElectionTimeout = false;
+        needsFreshSnapshot = false;
 
         votesForMe = (currentRole == Role.CANDIDATE) ? new HashSet<>( ctx.votesForMe() ) : new HashSet<>();
 
@@ -109,7 +113,7 @@ public class Outcome<MEMBER> implements Message
 
     public void setNextRole( Role nextRole )
     {
-        this.newRole = nextRole;
+        this.nextRole = nextRole;
     }
 
     public void setNextTerm( long nextTerm )
@@ -147,6 +151,11 @@ public class Outcome<MEMBER> implements Message
         this.renewElectionTimeout = true;
     }
 
+    public void markNeedForFreshSnapshot()
+    {
+        this.needsFreshSnapshot = true;
+    }
+
     public void addVoteForMe( MEMBER voteFrom )
     {
         this.votesForMe.add( voteFrom );
@@ -167,11 +176,23 @@ public class Outcome<MEMBER> implements Message
         shipCommands.add( shipCommand );
     }
 
+    public void electedLeader()
+    {
+        assert !steppingDown;
+        this.electedLeader = true;
+    }
+
+    public void steppingDown()
+    {
+        assert !electedLeader;
+        this.steppingDown = true;
+    }
+
     @Override
     public String toString()
     {
         return "Outcome{" +
-               "nextRole=" + newRole +
+               "nextRole=" + nextRole +
                ", newTerm=" + term +
                ", leader=" + leader +
                ", leaderCommit=" + leaderCommit +
@@ -182,13 +203,16 @@ public class Outcome<MEMBER> implements Message
                ", lastLogIndexBeforeWeBecameLeader=" + lastLogIndexBeforeWeBecameLeader +
                ", updatedFollowerStates=" + followerStates +
                ", renewElectionTimeout=" + renewElectionTimeout +
+               ", needsFreshSnapshot=" + needsFreshSnapshot +
                ", outgoingMessages=" + outgoingMessages +
+               ", electedLeader=" + electedLeader +
+               ", steppingDown=" + steppingDown +
                '}';
     }
 
-    public Role getNewRole()
+    public Role getRole()
     {
-        return newRole;
+        return nextRole;
     }
 
     public long getTerm()
@@ -226,6 +250,11 @@ public class Outcome<MEMBER> implements Message
         return renewElectionTimeout;
     }
 
+    public boolean needsFreshSnapshot()
+    {
+        return needsFreshSnapshot;
+    }
+
     public Set<MEMBER> getVotesForMe()
     {
         return votesForMe;
@@ -244,5 +273,15 @@ public class Outcome<MEMBER> implements Message
     public Collection<ShipCommand> getShipCommands()
     {
         return shipCommands;
+    }
+
+    public boolean isElectedLeader()
+    {
+        return electedLeader;
+    }
+
+    public boolean isSteppingDown()
+    {
+        return steppingDown;
     }
 }

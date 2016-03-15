@@ -32,9 +32,15 @@ import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
+import org.neo4j.coreedge.catchup.storecopy.edge.GetRaftStateRequestEncoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestEncoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseHandler;
+import org.neo4j.coreedge.catchup.tx.edge.RaftStateSnapshotDecoder;
+import org.neo4j.coreedge.catchup.tx.edge.RaftStateSnapshotHandler;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullRequestEncoder;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
+import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseHandler;
 import org.neo4j.coreedge.server.Expiration;
@@ -75,11 +81,19 @@ public class CoreToCoreClient extends CoreClient
             pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
             pipeline.addLast( new LengthFieldPrepender( 4 ) );
 
+            pipeline.addLast( new TxPullRequestEncoder() );
             pipeline.addLast( new GetStoreRequestEncoder() );
+            pipeline.addLast( new GetRaftStateRequestEncoder() );
             pipeline.addLast( new ResponseMessageTypeEncoder() );
             pipeline.addLast( new RequestMessageTypeEncoder() );
 
             pipeline.addLast( new ClientMessageTypeHandler( protocol, logProvider ) );
+
+            pipeline.addLast( new TxPullResponseDecoder( protocol ) );
+            pipeline.addLast( new TxPullResponseHandler( protocol, owner ) );
+
+            pipeline.addLast( new RaftStateSnapshotDecoder( protocol ) );
+            pipeline.addLast( new RaftStateSnapshotHandler( protocol, owner ) );
 
             pipeline.addLast( new StoreCopyFinishedResponseDecoder( protocol ) );
             pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
@@ -89,7 +103,7 @@ public class CoreToCoreClient extends CoreClient
 
             // keep these after type-specific handlers since they process ByteBufs
             pipeline.addLast( new FileHeaderDecoder( protocol ) );
-            pipeline.addLast( new FileHeaderHandler( protocol ) );
+            pipeline.addLast( new FileHeaderHandler( protocol, logProvider ) );
             pipeline.addLast( new FileContentHandler( protocol, owner ) );
 
             pipeline.addLast( new ExceptionLoggingHandler( logProvider.getLog( getClass() ) ) );

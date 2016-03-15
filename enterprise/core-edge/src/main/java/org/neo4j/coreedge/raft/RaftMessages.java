@@ -39,6 +39,7 @@ public interface RaftMessages
         APPEND_ENTRIES_RESPONSE,
 
         HEARTBEAT,
+        LOG_COMPACTION_INFO,
 
         // Timeouts
         ELECTION_TIMEOUT,
@@ -47,7 +48,6 @@ public interface RaftMessages
         // TODO: Refactor, these are client-facing messages / api. Perhaps not public and instantiated through an api
         // TODO: method instead?
         NEW_ENTRY_REQUEST,
-
         NEW_MEMBERSHIP_TARGET,
     }
 
@@ -421,8 +421,8 @@ public interface RaftMessages
             Heartbeat<?> heartbeat = (Heartbeat<?>) o;
 
             return leaderTerm == heartbeat.leaderTerm &&
-                    commitIndex == heartbeat.commitIndex &&
-                    commitIndexTerm == heartbeat.commitIndexTerm;
+                   commitIndex == heartbeat.commitIndex &&
+                   commitIndexTerm == heartbeat.commitIndexTerm;
         }
 
         @Override
@@ -440,6 +440,66 @@ public interface RaftMessages
         {
             return format( "Heartbeat from %s {leaderTerm=%d, commitIndex=%d, commitIndexTerm=%d}", from, leaderTerm,
                     commitIndex, commitIndexTerm );
+        }
+    }
+
+    class LogCompactionInfo<MEMBER> extends BaseMessage<MEMBER>
+    {
+        private long leaderTerm;
+        private long prevIndex;
+
+        public LogCompactionInfo( MEMBER from, long leaderTerm, long prevIndex )
+        {
+            super( from, Type.LOG_COMPACTION_INFO );
+            this.leaderTerm = leaderTerm;
+            this.prevIndex = prevIndex;
+        }
+
+        public long leaderTerm()
+        {
+            return leaderTerm;
+        }
+
+        public long prevIndex()
+        {
+            return prevIndex;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            if ( !super.equals( o ) )
+            {
+                return false;
+            }
+
+            LogCompactionInfo<?> other = (LogCompactionInfo<?>) o;
+
+            return leaderTerm == other.leaderTerm &&
+                   prevIndex == other.prevIndex;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = super.hashCode();
+            result = 31 * result + (int) (leaderTerm ^ (leaderTerm >>> 32));
+            result = 31 * result + (int) (prevIndex ^ (prevIndex >>> 32));
+            return result;
+        }
+
+        @Override
+        public String toString()
+        {
+            return format( "Log compaction from %s {leaderTerm=%d, prevIndex=%d}", from, leaderTerm, prevIndex );
         }
     }
 

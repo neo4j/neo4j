@@ -36,10 +36,10 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 public class EnterpriseFacadeFactory extends GraphDatabaseFacadeFactory
 {
     @Override
-    public GraphDatabaseFacade newFacade( File storeDir, Map<String,String> params, Dependencies dependencies,
+    public GraphDatabaseFacade initFacade( File storeDir, Map<String,String> params, Dependencies dependencies,
             GraphDatabaseFacade graphDatabaseFacade )
     {
-        return super.newFacade( storeDir, params, dependencies, graphDatabaseFacade );
+        return super.initFacade( storeDir, params, dependencies, graphDatabaseFacade );
     }
 
     @Override

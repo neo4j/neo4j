@@ -40,7 +40,7 @@ public class RecoverTransactionLogState
         this.logProvider = logProvider;
     }
 
-    public long findLastCommittedIndex()
+    public long findLastAppliedIndex()
     {
         TransactionIdStore transactionIdStore = dependencies.resolveDependency( TransactionIdStore.class );
         LogicalTransactionStore transactionStore = dependencies.resolveDependency( LogicalTransactionStore.class );

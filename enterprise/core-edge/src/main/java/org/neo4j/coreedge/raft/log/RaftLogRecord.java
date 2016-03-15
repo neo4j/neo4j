@@ -21,28 +21,15 @@ package org.neo4j.coreedge.raft.log;
 
 public abstract class RaftLogRecord
 {
-    private final long logIndex;
-    private final PhysicalRaftLog.RecordType type;
+    protected final PhysicalRaftLog.RecordType type;
 
-    RaftLogRecord( PhysicalRaftLog.RecordType type, long logIndex )
+    RaftLogRecord( PhysicalRaftLog.RecordType type )
     {
         this.type = type;
-        this.logIndex = logIndex;
-    }
-
-    public long getLogIndex()
-    {
-        return logIndex;
     }
 
     public PhysicalRaftLog.RecordType getType()
     {
         return type;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("type=%s, logIndex=%d", type, logIndex );
     }
 }

@@ -17,11 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.discovery;
+package org.neo4j.coreedge.raft.log;
 
-public class EdgeServerConnectionException extends Exception
+/**
+ * Thrown when the RAFT log cannot be read at the supplied index.
+ */
+public class RaftLogCompactedException extends Exception
 {
-    public EdgeServerConnectionException( String message )
+    public RaftLogCompactedException()
+    {
+    }
+
+    public RaftLogCompactedException( String message )
     {
         super( message );
     }

@@ -55,7 +55,7 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
                     }
                 };
             }
-        }.newFacade( storeDir, params, dependencies, this );
+        }.initFacade( storeDir, params, dependencies, this );
     }
 
 

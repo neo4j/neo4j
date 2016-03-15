@@ -59,8 +59,11 @@ public class ClientMessageTypeHandler extends ChannelInboundHandlerAdapter
                 case FILE:
                     protocol.expect( NextMessage.FILE_HEADER );
                     break;
-                case STORY_COPY_FINISHED:
+                case STORE_COPY_FINISHED:
                     protocol.expect( NextMessage.STORE_COPY_FINISHED );
+                    break;
+                case RAFT_STATE_SNAPSHOT:
+                    protocol.expect( NextMessage.RAFT_STATE_SNAPSHOT );
                     break;
                 case TX_STREAM_FINISHED:
                     protocol.expect( NextMessage.TX_STREAM_FINISHED );

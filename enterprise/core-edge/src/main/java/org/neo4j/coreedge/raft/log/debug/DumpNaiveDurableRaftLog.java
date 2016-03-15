@@ -23,13 +23,14 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
 public class DumpNaiveDurableRaftLog
 {
-    public static void main( String[] args ) throws IOException
+    public static void main( String[] args ) throws IOException, RaftLogCompactedException
     {
         for ( String arg : args )
         {

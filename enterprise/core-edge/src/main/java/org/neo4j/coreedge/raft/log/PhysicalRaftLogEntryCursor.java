@@ -22,20 +22,21 @@ package org.neo4j.coreedge.raft.log;
 import java.io.IOException;
 import java.util.Stack;
 
+import org.neo4j.cursor.CursorValue;
 import org.neo4j.cursor.IOCursor;
 
 public class PhysicalRaftLogEntryCursor implements IOCursor<RaftLogAppendRecord>
 {
     private long NO_SKIP = -1;
-    private final RaftRecordCursor<?> recordCursor;
+    private final IOCursor<RaftLogRecord> recordCursor;
 
     private final Stack<Long> skipStack;
-    private RaftLogAppendRecord currentEntry;
+    private CursorValue<RaftLogAppendRecord> cursorValue = new CursorValue<>();
     private long nextIndex;
     private long skipPoint = NO_SKIP;
     private boolean skipMode = false;
 
-    public PhysicalRaftLogEntryCursor( RaftRecordCursor<?> recordCursor, Stack<Long> skipStack, long fromIndex )
+    public PhysicalRaftLogEntryCursor( IOCursor<RaftLogRecord> recordCursor, Stack<Long> skipStack, long fromIndex )
     {
         this.recordCursor = recordCursor;
         this.skipStack = skipStack;
@@ -62,9 +63,9 @@ public class PhysicalRaftLogEntryCursor implements IOCursor<RaftLogAppendRecord>
                     {
                         // skip records
                     }
-                    else if( record.getLogIndex() == nextIndex )
+                    else if( ((RaftLogAppendRecord)record).logIndex() == nextIndex )
                     {
-                        currentEntry = (RaftLogAppendRecord) record;
+                        cursorValue.set( (RaftLogAppendRecord) record );
 
                         nextIndex++;
                         if( nextIndex == skipPoint )
@@ -88,7 +89,7 @@ public class PhysicalRaftLogEntryCursor implements IOCursor<RaftLogAppendRecord>
                 }
             }
         }
-        currentEntry = null;
+        cursorValue.invalidate();
         return false;
     }
 
@@ -101,6 +102,6 @@ public class PhysicalRaftLogEntryCursor implements IOCursor<RaftLogAppendRecord>
     @Override
     public RaftLogAppendRecord get()
     {
-        return currentEntry;
+        return cursorValue.get();
     }
 }

@@ -26,8 +26,10 @@ import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 
 public abstract class RaftLogVerificationIT
 {
@@ -57,7 +59,7 @@ public abstract class RaftLogVerificationIT
     {
         for ( int i = 0; i < operations(); i++ )
         {
-            raftLog.append( new RaftLogEntry( i * 3, ReplicatedInteger.valueOf( i * 7 ) ) );
+            raftLog.append( new RaftLogEntry( i * 3, valueOf( i * 7 ) ) );
         }
     }
 
@@ -66,7 +68,7 @@ public abstract class RaftLogVerificationIT
     {
         for ( int i = 0; i < operations(); i++ )
         {
-            raftLog.append( new RaftLogEntry( i * 3, ReplicatedInteger.valueOf( i * 7 ) ) );
+            raftLog.append( new RaftLogEntry( i * 3, valueOf( i * 7 ) ) );
             if ( i > 0 && i % 13 == 0 )
             {
                 raftLog.truncate( raftLog.appendIndex() - 10 );
@@ -84,7 +86,7 @@ public abstract class RaftLogVerificationIT
             int r = tlr.nextInt( 10 );
             while( r -->0 )
             {
-                raftLog.append( new RaftLogEntry( i, ReplicatedInteger.valueOf( i ) ) );
+                raftLog.append( new RaftLogEntry( i, valueOf( i ) ) );
             }
 
             r = tlr.nextInt( 10 );
@@ -93,5 +95,19 @@ public abstract class RaftLogVerificationIT
                 raftLog.truncate( r );
             }
         }
+    }
+
+    @Test
+    public void shouldBeAbleToAppendAfterSkip() throws Throwable
+    {
+        int term = 0;
+        raftLog.append( new RaftLogEntry( term, valueOf( 10 ) ) );
+
+        int newTerm = 3;
+        raftLog.skip( 5, newTerm );
+        RaftLogEntry newEntry = new RaftLogEntry( newTerm, valueOf( 20 ) );
+        raftLog.append( newEntry ); // this will be logIndex 6
+
+        assertEquals( newEntry, RaftLogHelper.readLogEntry( raftLog, 6 ) );
     }
 }

@@ -60,8 +60,9 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
 
         logFiles = new PhysicalLogFiles( storeDir, fs );
         logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDir );
+        ReadOnlyTransactionIdStore readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                new ReadOnlyTransactionIdStore( pageCache, storeDir )::getLastCommittedTransactionId, logVersionRepository,
+                () -> readOnlyTransactionIdStore.getLastCommittedTransactionId() - 1, logVersionRepository,
                 new Monitors().newMonitor( PhysicalLogFile.Monitor.class ),
                 new LogHeaderCache( 10 ) ) );
         life.start();
@@ -81,9 +82,6 @@ public class TransactionLogCatchUpWriter implements TxPullResponseListener, Auto
     {
         long currentLogVersion = logVersionRepository.getCurrentLogVersion();
         writer.checkPoint( new LogPosition( currentLogVersion, LOG_HEADER_SIZE ) );
-
-        File currentLogFile = logFiles.getLogFileForVersion( currentLogVersion );
-        writeLogHeader( fs, currentLogFile, currentLogVersion, max( BASE_TX_ID, endTxId ) );
     }
 
     @Override

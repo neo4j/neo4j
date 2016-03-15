@@ -19,6 +19,7 @@
  */
 package org.neo4j.cursor;
 
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -32,7 +33,7 @@ import java.util.function.Supplier;
  * {@link #next()} has been done, or if it returned false, then such accessor methods throw {@link
  * IllegalStateException}.
  */
-public interface RawCursor<T,EXCEPTION extends Exception> extends Supplier<T>, AutoCloseable
+public interface RawCursor<T, EXCEPTION extends Exception> extends Supplier<T>, AutoCloseable
 {
     /**
      * Move the cursor to the next row.
@@ -46,4 +47,19 @@ public interface RawCursor<T,EXCEPTION extends Exception> extends Supplier<T>, A
      */
     @Override
     void close() throws EXCEPTION;
+
+    default void forAll( Consumer<T> consumer ) throws EXCEPTION
+    {
+        try
+        {
+            while ( next() )
+            {
+                consumer.accept( get() );
+            }
+        }
+        finally
+        {
+            close();
+        }
+    }
 }

@@ -146,7 +146,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
             {
                 return new ImpermanentPlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade );
             }
-        }.newFacade( storeDir, new HashMap<>( params ), dependencies, this );
+        }.initFacade( storeDir, new HashMap<>( params ), dependencies, this );
     }
 
     private void trackUnclosedUse( File storeDir )

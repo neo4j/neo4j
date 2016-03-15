@@ -29,6 +29,7 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.DatabaseHealth;
 
 public class LocalDatabase
 {
@@ -38,17 +39,31 @@ public class LocalDatabase
     private final StoreFiles storeFiles;
     private Supplier<NeoStoreDataSource> neoDataSourceSupplier;
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
+    private final Supplier<DatabaseHealth> databaseHealthSupplier;
 
-    public LocalDatabase( File storeDir,
-                          CopiedStoreRecovery copiedStoreRecovery, StoreFiles storeFiles,
-                          Supplier<NeoStoreDataSource> neoDataSourceSupplier,
-                          Supplier<TransactionIdStore> transactionIdStoreSupplier )
+    public LocalDatabase(
+            File storeDir,
+            CopiedStoreRecovery copiedStoreRecovery, StoreFiles storeFiles,
+            Supplier<NeoStoreDataSource> neoDataSourceSupplier,
+            Supplier<TransactionIdStore> transactionIdStoreSupplier,
+            Supplier<DatabaseHealth> databaseHealthSupplier )
     {
         this.storeDir = storeDir;
         this.copiedStoreRecovery = copiedStoreRecovery;
         this.storeFiles = storeFiles;
         this.neoDataSourceSupplier = neoDataSourceSupplier;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
+        this.databaseHealthSupplier = databaseHealthSupplier;
+    }
+
+    public void start() throws IOException
+    {
+        neoDataSourceSupplier.get().start();
+    }
+
+    public void stop()
+    {
+        neoDataSourceSupplier.get().stop();
     }
 
     public StoreId storeId()
@@ -61,14 +76,26 @@ public class LocalDatabase
         storeFiles.delete( storeDir );
     }
 
-    public void copyStoreFrom( AdvertisedSocketAddress from, StoreFetcher storeFetcher ) throws Throwable
+    public void panic( Throwable cause )
     {
-        storeFiles.delete( storeDir );
+        databaseHealthSupplier.get().panic( cause );
+    }
 
-        TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( storeDir );
-        storeFetcher.copyStore( from, tempStore.storeDir() );
-        copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
-        storeFiles.moveTo( tempStore.storeDir(), storeDir );
+    public void copyStoreFrom( AdvertisedSocketAddress from, StoreFetcher storeFetcher ) throws StoreCopyFailedException
+    {
+        try
+        {
+            storeFiles.delete( storeDir );
+
+            TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( storeDir );
+            storeFetcher.copyStore( from, tempStore.storeDir() );
+            copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
+            storeFiles.moveTo( tempStore.storeDir(), storeDir );
+        }
+        catch ( IOException e )
+        {
+            throw new StoreCopyFailedException( e );
+        }
     }
 
     public boolean isEmpty()

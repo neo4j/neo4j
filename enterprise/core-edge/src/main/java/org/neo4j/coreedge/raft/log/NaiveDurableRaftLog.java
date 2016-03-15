@@ -28,7 +28,7 @@ import io.netty.buffer.Unpooled;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.ByteBufMarshal;
-import org.neo4j.cursor.IOCursor;
+import org.neo4j.cursor.CursorValue;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -56,34 +56,42 @@ import org.neo4j.logging.LogProvider;
  * │record length        variable│
  * └─────────────────────────────┘
  * <p>
- * 3. commit.log
+ * 3. meta.log
  * ┌─────────────────────────────┐
- * │committedIndex        8 bytes│
+ * │prevIndex             8 bytes│
+ * │prevTerm              8 bytes│
+ * │commitIndex           8 bytes│
  * ├─────────────────────────────┤
- * │record length         8 bytes│
+ * │record length        24 bytes│
  * └─────────────────────────────┘
  */
 public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 {
     public static final int ENTRY_RECORD_LENGTH = 16;
     public static final int CONTENT_LENGTH_BYTES = 4;
-    public static final int COMMIT_INDEX_BYTES = 8;
+    public static final int META_BYTES = 8 * 3;
     public static final String DIRECTORY_NAME = "raft-log";
 
-    private final StoreChannel entriesChannel;
-    private final StoreChannel contentChannel;
-    private final StoreChannel commitChannel;
+    private StoreChannel entriesChannel;
+    private StoreChannel contentChannel;
+    private final StoreChannel metaChannel;
 
+    private final FileSystemAbstraction fileSystem;
+    private final File directory;
     private final ByteBufMarshal<ReplicatedContent> marshal;
     private final Log log;
     private long appendIndex = -1;
     private long contentOffset;
     private long commitIndex = -1;
     private long term = -1;
+    private long prevIndex = -1;
+    private long prevTerm = -1;
 
     public NaiveDurableRaftLog( FileSystemAbstraction fileSystem, File directory,
                                 ByteBufMarshal<ReplicatedContent> marshal, LogProvider logProvider )
     {
+        this.fileSystem = fileSystem;
+        this.directory = directory;
         this.marshal = marshal;
 
         directory.mkdirs();
@@ -92,10 +100,11 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         {
             entriesChannel = fileSystem.open( new File( directory, "entries.log" ), "rw" );
             contentChannel = fileSystem.open( new File( directory, "content.log" ), "rw" );
-            commitChannel = fileSystem.open( new File( directory, "commit.log" ), "rw" );
-            appendIndex = entriesChannel.size() / ENTRY_RECORD_LENGTH - 1;
+            metaChannel = fileSystem.open( new File( directory, "meta.log" ), "rw" );
+            readMetadata();
+
+            appendIndex = prevIndex + entriesChannel.size() / ENTRY_RECORD_LENGTH;
             contentOffset = contentChannel.size();
-            commitIndex = readCommitIndex();
             log = logProvider.getLog( getClass() );
 
             log.info( "Raft log created. AppendIndex: %d, commitIndex: %d", appendIndex, commitIndex );
@@ -114,7 +123,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         boolean shouldThrow;
         shouldThrow = forceAndCloseChannel( entriesChannel, container );
         shouldThrow = forceAndCloseChannel( contentChannel, container ) || shouldThrow;
-        shouldThrow = forceAndCloseChannel( commitChannel, container ) || shouldThrow;
+        shouldThrow = forceAndCloseChannel( metaChannel, container ) || shouldThrow;
         if ( shouldThrow )
         {
             throw container;
@@ -160,10 +169,10 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 
         try
         {
-            int length = writeContent( logEntry );
-            writeEntry( new Entry( logEntry.term(), contentOffset ) );
-            contentOffset += length;
             appendIndex++;
+            int length = writeContent( logEntry, contentChannel );
+            writeEntry( appendIndex - (prevIndex + 1), new Entry( logEntry.term(), contentOffset ), entriesChannel );
+            contentOffset += length;
             return appendIndex;
         }
         catch ( MarshallingException | IOException e )
@@ -173,7 +182,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public void truncate( long fromIndex ) throws IOException
+    public void truncate( long fromIndex ) throws IOException, RaftLogCompactedException
     {
         if ( fromIndex <= commitIndex )
         {
@@ -207,18 +216,74 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             actualNewCommitIndex = appendIndex;
         }
         // INVARIANT: If newCommitIndex was greater than appendIndex, commitIndex is equal to appendIndex
-        storeCommitIndex( actualNewCommitIndex );
         commitIndex = actualNewCommitIndex;
+        storeMetadata();
+    }
 
-//        while ( commitIndex < actualNewCommitIndex )
-//        {
-//            commitIndex++;
-//            for ( Listener listener : listeners )
-//            {
-//                ReplicatedContent content = readEntryContent( commitIndex );
-//                listener.onCommitted( content, commitIndex );
-//            }
-//        }
+    @Override
+    public long prune( long safeIndex ) throws IOException, RaftLogCompactedException
+    {
+        try
+        {
+            if( safeIndex > prevIndex )
+            {
+                long safeIndexTerm = readEntryTerm( safeIndex );
+
+                StoreChannel tempEntriesChannel = fileSystem.open( new File( directory, "temp-entries.log" ), "rw" );
+                StoreChannel tempContentChannel = fileSystem.open( new File( directory, "temp-content.log" ), "rw" );
+
+                contentOffset = 0;
+                for ( long i = safeIndex + 1; i <= appendIndex; i++ )
+                {
+                    RaftLogEntry logEntry = readLogEntry( i );
+                    int length = writeContent( logEntry, tempContentChannel );
+                    writeEntry( i - (safeIndex + 1), new Entry( logEntry.term(), contentOffset ), tempEntriesChannel );
+                    contentOffset += length;
+                }
+                tempEntriesChannel.close();
+                tempContentChannel.close();
+                entriesChannel.close();
+                contentChannel.close();
+                fileSystem.deleteFile( new File( directory, "entries.log" ) );
+                fileSystem.deleteFile( new File( directory, "content.log" ) );
+                fileSystem.renameFile( new File( directory, "temp-entries.log" ), new File( directory, "entries.log" ) );
+                fileSystem.renameFile( new File( directory, "temp-content.log" ), new File( directory, "content.log" ) );
+                entriesChannel = fileSystem.open( new File( directory, "entries.log" ), "rw" );
+                contentChannel = fileSystem.open( new File( directory, "content.log" ), "rw" );
+
+                prevTerm = safeIndexTerm;
+                prevIndex = safeIndex;
+
+                storeMetadata();
+            }
+
+            return prevIndex;
+        }
+        catch ( MarshallingException e )
+        {
+            throw new IOException( e );
+        }
+    }
+
+    @Override
+    public long skip( long index, long term ) throws IOException
+    {
+        if( index > appendIndex )
+        {
+            entriesChannel.close();
+            contentChannel.close();
+            fileSystem.deleteFile( new File( directory, "entries.log" ) );
+            fileSystem.deleteFile( new File( directory, "content.log" ) );
+            entriesChannel = fileSystem.open( new File( directory, "entries.log" ), "rw" );
+            contentChannel = fileSystem.open( new File( directory, "content.log" ), "rw" );
+
+            appendIndex = index;
+            prevIndex = index;
+            prevTerm = term;
+
+            storeMetadata();
+        }
+        return appendIndex;
     }
 
     @Override
@@ -228,15 +293,21 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
+    public long prevIndex()
+    {
+        return prevIndex;
+    }
+
+    @Override
     public long commitIndex()
     {
         return commitIndex;
     }
 
-    private RaftLogEntry readLogEntry( long logIndex ) throws IOException
+    private RaftLogEntry readLogEntry( long logIndex ) throws IOException, RaftLogCompactedException
     {
         Entry entry = readEntry( logIndex );
-        ReplicatedContent content = null;
+        ReplicatedContent content;
         try
         {
             content = readContentFrom( entry.contentPointer );
@@ -251,14 +322,23 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws IOException
+    public long readEntryTerm( long logIndex ) throws IOException, RaftLogCompactedException
     {
+        if( logIndex == prevIndex )
+        {
+            return prevTerm;
+        }
+        else if ( logIndex < prevIndex || logIndex > appendIndex )
+        {
+            return -1;
+        }
+
         return readEntry( logIndex ).term;
     }
-
     private static class Entry
     {
         private final long term;
+
         private final long contentPointer;
 
         public Entry( long term, long contentPointer )
@@ -266,7 +346,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             this.term = term;
             this.contentPointer = contentPointer;
         }
-
         @Override
         public String toString()
         {
@@ -275,31 +354,33 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
                     ", contentPointer=" + contentPointer +
                     '}';
         }
+
     }
 
     @Override
-    public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
     {
-        return new IOCursor<RaftLogEntry>()
+        return new RaftLogCursor()
         {
             private long currentIndex = fromIndex - 1; // the cursor starts "before" the first entry
-            private RaftLogEntry currentEntry;
+            private CursorValue<RaftLogEntry> current = new CursorValue<>();
 
             @Override
             public boolean next() throws IOException
             {
                 currentIndex++;
 
-                boolean hasNext = currentIndex <= appendIndex;
-                if ( hasNext )
+                try
                 {
-                    currentEntry = readLogEntry( currentIndex );
+                    current.set( readLogEntry( currentIndex ) );
+                    return true;
                 }
-                else
+                catch ( RaftLogCompactedException e )
                 {
-                    currentEntry = null;
+                    current.invalidate();
                 }
-                return hasNext;
+
+                return false;
             }
 
             @Override
@@ -310,38 +391,38 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             @Override
             public RaftLogEntry get()
             {
-                return currentEntry;
+                return current.get();
             }
         };
     }
 
-    private void writeEntry( Entry entry ) throws IOException
+    private void writeEntry( long index, Entry entry, StoreChannel entriesChannel ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocate( ENTRY_RECORD_LENGTH );
         buffer.putLong( entry.term );
         buffer.putLong( entry.contentPointer );
         buffer.flip();
 
-        entriesChannel.writeAll( buffer, (appendIndex + 1) * ENTRY_RECORD_LENGTH );
+        entriesChannel.writeAll( buffer, index * ENTRY_RECORD_LENGTH );
         entriesChannel.force( false );
     }
 
-    private Entry readEntry( long logIndex ) throws IOException
+    private Entry readEntry( long logIndex ) throws RaftLogCompactedException, IOException
     {
-        if ( logIndex < 0 || logIndex > appendIndex )
+        if ( logIndex <= prevIndex || logIndex > appendIndex )
         {
-            return new Entry( -1, -1 );
+            throw new RaftLogCompactedException();
         }
 
         ByteBuffer buffer = ByteBuffer.allocate( ENTRY_RECORD_LENGTH );
-        entriesChannel.read( buffer, logIndex * ENTRY_RECORD_LENGTH );
+        entriesChannel.read( buffer, ( logIndex - (prevIndex + 1) ) * ENTRY_RECORD_LENGTH );
         buffer.flip();
         long term = buffer.getLong();
         long contentPointer = buffer.getLong();
         return new Entry( term, contentPointer );
     }
 
-    private int writeContent( RaftLogEntry logEntry ) throws MarshallingException, IOException
+    private int writeContent( RaftLogEntry logEntry, StoreChannel contentChannel ) throws MarshallingException, IOException
     {
         ByteBuf buffer = Unpooled.buffer();
         marshal.marshal( logEntry.content(), buffer );
@@ -372,24 +453,33 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         return marshal.unmarshal( byteBuf );
     }
 
-    private void storeCommitIndex( long commitIndex ) throws IOException
+    private void storeMetadata() throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate( COMMIT_INDEX_BYTES );
+        ByteBuffer buffer = ByteBuffer.allocate( META_BYTES );
+        buffer.putLong( prevIndex );
+        buffer.putLong( prevTerm );
         buffer.putLong( commitIndex );
         buffer.flip();
-        commitChannel.writeAll( buffer, 0 );
-        commitChannel.force( false );
+        metaChannel.writeAll( buffer, 0 );
+        metaChannel.force( false );
     }
 
-    private long readCommitIndex() throws IOException
+    private void readMetadata() throws IOException
     {
-        if ( commitChannel.size() < COMMIT_INDEX_BYTES )
+        if ( metaChannel.size() < META_BYTES )
         {
-            return -1;
+            prevIndex = -1;
+            prevTerm = -1;
+            commitIndex = -1;
         }
-        ByteBuffer buffer = ByteBuffer.allocate( COMMIT_INDEX_BYTES );
-        commitChannel.read( buffer, 0 );
-        buffer.flip();
-        return buffer.getLong();
+        else
+        {
+            ByteBuffer buffer = ByteBuffer.allocate( META_BYTES );
+            metaChannel.read( buffer, 0 );
+            buffer.flip();
+            prevIndex = buffer.getLong();
+            prevTerm = buffer.getLong();
+            commitIndex = buffer.getLong();
+        }
     }
 }

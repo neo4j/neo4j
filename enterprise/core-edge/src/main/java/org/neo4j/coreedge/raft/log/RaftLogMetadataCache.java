@@ -49,11 +49,6 @@ public class RaftLogMetadataCache
 
     public RaftLogEntryMetadata cacheMetadata( long logIndex, long entryTerm, LogPosition position )
     {
-        if ( position.getByteOffset() == -1 )
-        {
-            throw new RuntimeException( "StartEntry.position is " + position );
-        }
-
         RaftLogEntryMetadata result = new RaftLogEntryMetadata( entryTerm, position );
         raftLogEntryCache.put( logIndex, result );
         return result;

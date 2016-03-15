@@ -27,7 +27,7 @@ public enum RequestMessageType implements Message
 {
     TX_PULL_REQUEST( (byte) 1 ),
     STORE( (byte) 2 ),
-    LOCK( (byte) 3 ),
+    RAFT_STATE( (byte) 3 ),
     UNKNOWN( (byte) 404 );
 
     private byte messageType;

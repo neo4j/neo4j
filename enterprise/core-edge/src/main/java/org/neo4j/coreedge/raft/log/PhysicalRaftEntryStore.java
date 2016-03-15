@@ -44,27 +44,34 @@ class PhysicalRaftEntryStore implements RaftEntryStore
     }
 
     @Override
-    public IOCursor<RaftLogAppendRecord> getEntriesFrom( long fromIndex ) throws IOException
+    public IOCursor<RaftLogAppendRecord> getEntriesFrom( long fromIndex ) throws IOException, RaftLogCompactedException
     {
         // generate skip stack and get starting position
         Stack<Long> skipStack = new Stack<>();
         SkipStackGenerator skipStackGenerator = new SkipStackGenerator( fromIndex, skipStack );
         logFile.accept( skipStackGenerator );
 
-        // the skip stack generator scans through the headers and gives us the logs starting position as a side-effect
+        // the skip stack generator scans through the headers and gives us the starting position as a side-effect
+        // this will point to the beginning of the file
         LogPosition startPosition = skipStackGenerator.logStartPosition;
 
         if ( startPosition == null )
         {
-            return IOCursor.getEmpty();
+            throw new RaftLogCompactedException();
         }
 
         RaftLogMetadataCache.RaftLogEntryMetadata logEntryInfo = metadataCache.getMetadata( fromIndex );
-        if( logEntryInfo != null && logEntryInfo.getStartPosition().getLogVersion() == startPosition.getLogVersion() )
+        // the following check is to validate the data received from the cache, instead of invalidating the cache somewhere else
+        if( logEntryInfo != null &&
+                !logEntryInfo.getStartPosition().equals( LogPosition.UNSPECIFIED ) &&
+                logEntryInfo.getStartPosition().getLogVersion() == startPosition.getLogVersion() )
         {
-            // then metadata is valid for this log version, read from there
+            // then metadata is valid for this log version, so we can start from a more efficient position
             startPosition = logEntryInfo.getStartPosition();
         }
+
+        // we now either have a startPosition at the beginning of the file or a more efficient one somewhere further ahead
+        // the entry cursor handles skipping unwanted entries
 
         return new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( logFile.getReader( startPosition ), marshal ),
                 skipStack, fromIndex );

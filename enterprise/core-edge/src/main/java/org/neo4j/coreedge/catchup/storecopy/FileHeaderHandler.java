@@ -23,21 +23,26 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
 
 public class FileHeaderHandler extends SimpleChannelInboundHandler<FileHeader>
 {
     private final CatchupClientProtocol protocol;
+    private final Log log;
 
-    public FileHeaderHandler( CatchupClientProtocol protocol )
+    public FileHeaderHandler( CatchupClientProtocol protocol, LogProvider logProvider )
     {
         this.protocol = protocol;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, FileHeader msg ) throws Exception
     {
+        log.info( "Receiving file: %s (%d bytes)", msg.fileName(), msg.fileLength() );
         ctx.pipeline().get( FileContentHandler.class ).setExpectedFile( msg );
         protocol.expect( NextMessage.FILE_CONTENTS );
     }

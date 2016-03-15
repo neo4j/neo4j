@@ -20,11 +20,16 @@
 package org.neo4j.coreedge.server.core.locks;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.raft.state.StateStorage;
+import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
+
+import static java.util.Collections.singletonMap;
 
 /**
  * Listens for {@link ReplicatedLockTokenRequest}. Keeps track of the current holder of the replicated token,
@@ -69,6 +74,21 @@ public class ReplicatedLockTokenStateMachine<MEMBER> implements StateMachine
     public void flush() throws IOException
     {
         storage.persistStoreData( state );
+    }
+
+    @Override
+    public Map<RaftStateType, Object> snapshot()
+    {
+        return singletonMap( RaftStateType.LOCK_TOKEN, state );
+    }
+
+    @Override
+    public void installSnapshot( Map<RaftStateType, Object> snapshot )
+    {
+        if ( snapshot.containsKey( RaftStateType.ID_ALLOCATION ) )
+        {
+            state = (ReplicatedLockTokenState<MEMBER>) snapshot.get( RaftStateType.LOCK_TOKEN );
+        }
     }
 
     /**

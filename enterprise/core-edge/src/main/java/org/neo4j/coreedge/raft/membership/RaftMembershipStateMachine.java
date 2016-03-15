@@ -213,6 +213,7 @@ public class RaftMembershipStateMachine<MEMBER>
         public void onEntry()
         {
             membershipState.addAdditionalReplicationMember( catchingUpMember );
+            log.info( "Adding replication member: " + catchingUpMember );
         }
 
         @Override
@@ -221,6 +222,7 @@ public class RaftMembershipStateMachine<MEMBER>
             if( !movingToConsensus )
             {
                 membershipState.removeAdditionalReplicationMember( catchingUpMember );
+                log.info( "Removing replication member: " + catchingUpMember );
             }
         }
 
@@ -299,6 +301,7 @@ public class RaftMembershipStateMachine<MEMBER>
         public void onExit()
         {
             membershipState.removeAdditionalReplicationMember( catchingUpMember );
+            log.info( "Removing replication member: " + catchingUpMember );
         }
 
         @Override

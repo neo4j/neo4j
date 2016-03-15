@@ -51,16 +51,7 @@ public class RaftMembershipState<MEMBER> implements RaftMembership<MEMBER>
 
     public RaftMembershipState()
     {
-        this.listeners = new HashSet<>(  );
-    }
-
-    public RaftMembershipState( RaftMembershipState<MEMBER> other )
-    {
-        this.additionalReplicationMembers = new HashSet<>( other.additionalReplicationMembers );
-        this.votingMembers = new HashSet<>( other.votingMembers );
-        this.replicationMembers = new HashSet<>( other.replicationMembers );
-        this.listeners = new HashSet<>( other.listeners );
-        this.logIndex = other.logIndex;
+        this.listeners = new HashSet<>();
     }
 
     public synchronized void setVotingMembers( Set<MEMBER> newVotingMembers )

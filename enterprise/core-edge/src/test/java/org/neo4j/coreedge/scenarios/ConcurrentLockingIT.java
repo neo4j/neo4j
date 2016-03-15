@@ -155,7 +155,7 @@ public class ConcurrentLockingIT
 
     public void createNodes( long nodeCount ) throws Exception
     {
-        GraphDatabaseService coreServer = cluster.findLeader( 5000 );
+        GraphDatabaseService coreServer = cluster.awaitLeader( 5000 );
         try ( Transaction tx = coreServer.beginTx() )
         {
             for ( int i = 0; i < nodeCount; i++ )

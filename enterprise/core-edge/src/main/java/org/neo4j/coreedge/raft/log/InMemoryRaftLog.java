@@ -30,6 +30,9 @@ public class InMemoryRaftLog implements RaftLog
 {
     private final Map<Long, RaftLogEntry> raftLog = new HashMap<>();
 
+    private long prevIndex = -1;
+    private long prevTerm = -1;
+
     private long appendIndex = -1;
     private long commitIndex = -1;
     private long term = -1;
@@ -64,9 +67,35 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
+    public long prune( long safeIndex ) throws RaftLogCompactedException
+    {
+        if( safeIndex > prevIndex )
+        {
+            long removeIndex = prevIndex + 1;
+
+            prevTerm = readEntryTerm( safeIndex );
+            prevIndex = safeIndex;
+
+            do
+            {
+                raftLog.remove( removeIndex );
+                removeIndex++;
+            } while( removeIndex <= safeIndex );
+        }
+
+        return prevIndex;
+    }
+
+    @Override
     public long appendIndex()
     {
         return appendIndex;
+    }
+
+    @Override
+    public long prevIndex()
+    {
+        return prevIndex;
     }
 
     @Override
@@ -75,25 +104,30 @@ public class InMemoryRaftLog implements RaftLog
         return commitIndex;
     }
 
-    private RaftLogEntry readLogEntry( long logIndex )
+    private RaftLogEntry readLogEntry( long logIndex ) throws RaftLogCompactedException
     {
-        if ( logIndex < 0 )
+        if ( logIndex <= prevIndex )
         {
-            throw new IllegalArgumentException( "logIndex must not be negative" );
+            throw new RaftLogCompactedException( "Entry does not exist in log" );
         }
-        if ( logIndex > appendIndex )
+        else if ( logIndex > appendIndex )
         {
-            throw new IllegalArgumentException(
+            throw new RaftLogCompactedException(
                     String.format( "cannot read past last appended index (lastAppended=%d, readIndex=%d)",
                             appendIndex, logIndex ) );
         }
+
         return raftLog.get( logIndex );
     }
 
     @Override
-    public long readEntryTerm( long logIndex )
+    public long readEntryTerm( long logIndex ) throws RaftLogCompactedException
     {
-        if ( logIndex < 0 || logIndex > appendIndex )
+        if( logIndex == prevIndex )
+        {
+            return prevTerm;
+        }
+        else if ( logIndex < prevIndex || logIndex > appendIndex )
         {
             return -1;
         }
@@ -101,11 +135,16 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public synchronized void truncate( long fromIndex )
+    public synchronized void truncate( long fromIndex ) throws RaftLogCompactedException
     {
         if ( fromIndex <= commitIndex )
         {
             throw new IllegalArgumentException( "cannot truncate before the commit index" );
+        }
+        else if( fromIndex <= prevIndex )
+        {
+            prevIndex = -1;
+            prevTerm = -1;
         }
 
         for ( long i = appendIndex; i >= fromIndex; --i )
@@ -121,17 +160,34 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
     {
-        return new IOCursor<RaftLogEntry>()
+        return new RaftLogCursor()
         {
             private long currentIndex = fromIndex - 1; // the cursor starts "before" the first entry
+            RaftLogEntry current = null;
 
             @Override
             public boolean next() throws IOException
             {
                 currentIndex++;
-                return currentIndex <= appendIndex;
+                boolean hasNext = currentIndex <= appendIndex;
+                if( hasNext )
+                {
+                    try
+                    {
+                        current = readLogEntry( currentIndex );
+                    }
+                    catch ( RaftLogCompactedException e )
+                    {
+                        throw new IOException( e );
+                    }
+                }
+                else
+                {
+                    current = null;
+                }
+                return hasNext;
             }
 
             @Override
@@ -142,9 +198,23 @@ public class InMemoryRaftLog implements RaftLog
             @Override
             public RaftLogEntry get()
             {
-                return ( currentIndex <= appendIndex ) ? readLogEntry( currentIndex ) : null;
+                return current;
             }
         };
+    }
+
+    @Override
+    public long skip( long index, long term )
+    {
+        if( index > appendIndex )
+        {
+            raftLog.clear();
+
+            appendIndex = index;
+            prevIndex = index;
+            prevTerm = term;
+        }
+        return appendIndex;
     }
 
     @Override

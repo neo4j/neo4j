@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
@@ -47,7 +48,6 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -56,7 +56,6 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
 /**
@@ -88,7 +87,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         ELECTION, HEARTBEAT
     }
 
-    private final RaftState<MEMBER> raftState;
+    private final RaftState<MEMBER> state;
     private final MEMBER myself;
     private final RaftLog entryLog;
 
@@ -97,7 +96,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     private RenewableTimeoutService.RenewableTimeout electionTimer;
     private RaftMembershipManager<MEMBER> membershipManager;
 
-    private final ConsensusListener consensusListener;
+    private final RaftStateMachine raftStateMachine;
     private final long electionTimeout;
     private final long leaderWaitTimeout;
 
@@ -106,14 +105,13 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     private final Outbound<MEMBER> outbound;
     private final Log log;
-    private volatile boolean handlingMessage = false;
     private Role currentRole = Role.FOLLOWER;
 
     private RaftLogShippingManager<MEMBER> logShipping;
 
     public RaftInstance( MEMBER myself, StateStorage<TermState> termStorage,
             StateStorage<VoteState<MEMBER>> voteStorage, RaftLog entryLog,
-            ConsensusListener consensusListener, long electionTimeout, long heartbeatInterval,
+            RaftStateMachine raftStateMachine, long electionTimeout, long heartbeatInterval,
             RenewableTimeoutService renewableTimeoutService,
             final Inbound inbound, final Outbound<MEMBER> outbound, long leaderWaitTimeout,
             LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
@@ -123,7 +121,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     {
         this.myself = myself;
         this.entryLog = entryLog;
-        this.consensusListener = consensusListener;
+        this.raftStateMachine = raftStateMachine;
         this.electionTimeout = electionTimeout;
         this.heartbeatInterval = heartbeatInterval;
 
@@ -137,7 +135,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
         this.membershipManager = membershipManager;
 
-        this.raftState = new RaftState<>( myself, termStorage, membershipManager, entryLog, voteStorage );
+        this.state = new RaftState<>( myself, termStorage, membershipManager, entryLog, voteStorage );
 
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
 
@@ -166,7 +164,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
      *
      * @param memberSet The other members.
      */
-    public synchronized void bootstrapWithInitialMembers( RaftGroup<MEMBER> memberSet ) throws BootstrapException
+    public synchronized void bootstrapWithInitialMembers( RaftGroup<MEMBER> memberSet ) throws BootstrapException, RaftLogCompactedException
     {
         if ( entryLog.appendIndex() >= 0 )
         {
@@ -200,7 +198,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
         if ( currentRole == LEADER )
         {
-            membershipManager.onFollowerStateChange( raftState.followerStates() );
+            membershipManager.onFollowerStateChange( state.followerStates() );
         }
     }
 
@@ -236,7 +234,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     public synchronized void registerListener( Listener<MEMBER> listener )
     {
         leaderListeners.add( listener );
-        listener.receive( raftState.leader() );
+        listener.receive( state.leader() );
     }
 
     @Override
@@ -247,50 +245,45 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     public ReadableRaftState<MEMBER> state()
     {
-        return raftState;
+        return state;
     }
 
-    private void handleOutcome( Outcome<MEMBER> outcome ) throws IOException
+    public void downloadSnapshot()
     {
-        adjustLogShipping( outcome );
-        notifyLeaderChanges( outcome );
+        raftStateMachine.downloadSnapshot();
+    }
 
-        raftState.update( outcome );
-        membershipManager.processLog( outcome.getLogCommands() );
-        consensusListener.notifyCommitted();
-        volatileLeader.set( outcome.getLeader() );
+    private void checkForSnapshotNeed( Outcome<MEMBER> outcome )
+    {
+        if( outcome.needsFreshSnapshot() )
+        {
+            downloadSnapshot();
+        }
     }
 
     private void notifyLeaderChanges( Outcome<MEMBER> outcome )
     {
-        if ( leaderChanged( outcome, raftState.leader() ) )
+        for ( Listener<MEMBER> listener : leaderListeners )
         {
-            for ( Listener<MEMBER> listener : leaderListeners )
-            {
-                listener.receive( outcome.getLeader() );
-            }
+            listener.receive( outcome.getLeader() );
         }
     }
 
-    private void adjustLogShipping( Outcome<MEMBER> outcome ) throws IOException
+    private void handleLogShipping( Outcome<MEMBER> outcome ) throws IOException
     {
-        MEMBER oldLeader = raftState.leader();
-
-        if ( myself.equals( outcome.getLeader() ) )
+        LeaderContext leaderContext = new LeaderContext( outcome.getTerm(), outcome.getLeaderCommit() );
+        if ( outcome.isElectedLeader() )
         {
-            LeaderContext leaderContext = new LeaderContext( outcome.getTerm(), outcome.getLeaderCommit() );
-
-            if ( !myself.equals( oldLeader ) )
-            {
-                // We became leader, start the log shipping.
-                logShipping.start( leaderContext );
-            }
-
-            logShipping.handleCommands( outcome.getShipCommands(), leaderContext );
+            logShipping.start( leaderContext );
         }
-        else if ( myself.equals( oldLeader ) && !myself.equals( outcome.getLeader() ) )
+        else if ( outcome.isSteppingDown() )
         {
             logShipping.stop();
+        }
+
+        if( outcome.getRole() == LEADER )
+        {
+            logShipping.handleCommands( outcome.getShipCommands(), leaderContext );
         }
     }
 
@@ -310,45 +303,79 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     public synchronized void handle( Message incomingMessage )
     {
-        if ( handlingMessage )
-        {
-            throw new IllegalStateException( "recursive use" );
-        }
-
         try
         {
-            handlingMessage = true;
+            Outcome<MEMBER> outcome = currentRole.handler.handle(
+                    (RaftMessages.RaftMessage<MEMBER>) incomingMessage, state, log );
 
-            Outcome<MEMBER> outcome = currentRole.handler.handle( (RaftMessages.RaftMessage<MEMBER>) incomingMessage,
-                    raftState, log );
+            boolean newLeaderWasElected = leaderChanged( outcome, state.leader() );
+            boolean newCommittedEntry = newCommittedEntry( state, outcome.getLogCommands() );
 
-            handleOutcome( outcome );
-            currentRole = outcome.getNewRole();
+            state.update( outcome ); // updates to raft log happen within
+            sendMessages( outcome );
 
-            for ( RaftMessages.Directed<MEMBER> outgoingMessage : outcome.getOutgoingMessages() )
+            handleTimers( outcome );
+            handleLogShipping( outcome );
+
+            membershipManager.processLog( outcome.getLogCommands() );
+            driveMembership( outcome );
+
+            volatileLeader.set( outcome.getLeader() );
+
+            if( newCommittedEntry )
             {
-                outbound.send( outgoingMessage.to(), outgoingMessage.message() );
+                raftStateMachine.notifyCommitted( state.entryLog().commitIndex() );
             }
-            if ( outcome.electionTimeoutRenewed() )
+            if( newLeaderWasElected )
             {
-                electionTimer.renew();
+                notifyLeaderChanges( outcome );
             }
 
-            membershipManager.onRole( currentRole );
-
-            if ( currentRole == LEADER )
-            {
-                membershipManager.onFollowerStateChange( raftState.followerStates() );
-            }
+            checkForSnapshotNeed( outcome );
         }
-        catch ( IOException e )
+        catch ( Throwable e )
         {
             log.error( "Failed to process RAFT message " + incomingMessage, e );
             databaseHealthSupplier.get().panic( e );
         }
-        finally
+    }
+
+    private static boolean newCommittedEntry( RaftState state, Collection<LogCommand> logCommands )
+    {
+        for ( LogCommand logCommand : logCommands )
         {
-            handlingMessage = false;
+            if( logCommand instanceof CommitCommand )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void driveMembership( Outcome<MEMBER> outcome )
+    {
+        currentRole = outcome.getRole();
+        membershipManager.onRole( currentRole );
+
+        if ( currentRole == LEADER )
+        {
+            membershipManager.onFollowerStateChange( state.followerStates() );
+        }
+    }
+
+    private void handleTimers( Outcome<MEMBER> outcome )
+    {
+        if ( outcome.electionTimeoutRenewed() )
+        {
+            electionTimer.renew();
+        }
+    }
+
+    private void sendMessages( Outcome<MEMBER> outcome )
+    {
+        for ( RaftMessages.Directed<MEMBER> outgoingMessage : outcome.getOutgoingMessages() )
+        {
+            outbound.send( outgoingMessage.to(), outgoingMessage.message() );
         }
     }
 
@@ -389,7 +416,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     public long term()
     {
-        return raftState.term();
+        return state.term();
     }
 
     private long randomTimeoutRange()

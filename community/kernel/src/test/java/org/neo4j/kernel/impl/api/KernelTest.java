@@ -105,7 +105,7 @@ public class KernelTest
                         }
                     };
                 }
-            }.newFacade( storeDir, params, dependencies, this );
+            }.initFacade( storeDir, params, dependencies, this );
         }
     }
 }

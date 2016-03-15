@@ -22,15 +22,17 @@ package org.neo4j.coreedge.raft.state.explorer;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
+import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.cursor.IOCursor;
 
 public class ComparableRaftLog extends InMemoryRaftLog
 {
-    public ComparableRaftLog( ReadableRaftLog raftLog ) throws IOException
+    public ComparableRaftLog( ReadableRaftLog raftLog ) throws IOException, RaftLogCompactedException
     {
-        try ( IOCursor<RaftLogEntry> cursor = raftLog.getEntryCursor( 0 ) )
+        try ( RaftLogCursor cursor = raftLog.getEntryCursor( 0 ) )
         {
             while ( cursor.next() )
             {

@@ -56,7 +56,7 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public void truncate( long fromIndex ) throws IOException
+    public void truncate( long fromIndex ) throws IOException, RaftLogCompactedException
     {
         delegate.truncate( fromIndex );
         appendIndexMonitor.appendIndex( delegate.appendIndex() );
@@ -70,9 +70,21 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
+    public long prune( long safeIndex ) throws IOException, RaftLogCompactedException
+    {
+        return delegate.prune( safeIndex );
+    }
+
+    @Override
     public long appendIndex()
     {
         return delegate.appendIndex();
+    }
+
+    @Override
+    public long prevIndex()
+    {
+        return delegate.prevIndex();
     }
 
     @Override
@@ -82,14 +94,20 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws IOException
+    public long readEntryTerm( long logIndex ) throws IOException, RaftLogCompactedException
     {
         return delegate.readEntryTerm( logIndex );
     }
 
     @Override
-    public IOCursor<RaftLogEntry> getEntryCursor( long fromIndex ) throws IOException
+    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException, RaftLogCompactedException
     {
         return delegate.getEntryCursor( fromIndex );
+    }
+
+    @Override
+    public long skip( long index, long term ) throws IOException
+    {
+        return delegate.skip( index, term );
     }
 }

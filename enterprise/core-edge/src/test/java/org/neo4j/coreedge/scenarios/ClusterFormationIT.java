@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TargetDirectory;
@@ -83,7 +84,7 @@ public class ClusterFormationIT
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit( (Runnable) () -> {
-            CoreGraphDatabase leader = cluster.getLeader();
+            CoreGraphDatabase leader = cluster.getDbWithRole( Role.LEADER );
             try ( Transaction tx = leader.beginTx() )
             {
                 leader.createNode();

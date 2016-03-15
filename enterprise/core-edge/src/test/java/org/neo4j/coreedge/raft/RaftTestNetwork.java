@@ -58,6 +58,12 @@ public class RaftTestNetwork<T>
         reconnectOutbound( endpoint );
     }
 
+    public void reset()
+    {
+        inboundChannels.values().forEach( Inbound::reconnect );
+        outboundChannels.values().forEach( Outbound::reconnect );
+    }
+
     public void disconnectInbound( T endpoint )
     {
         inboundChannels.get( endpoint ).disconnect();

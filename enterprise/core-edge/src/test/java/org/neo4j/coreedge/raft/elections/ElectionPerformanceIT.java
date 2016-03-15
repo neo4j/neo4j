@@ -21,9 +21,17 @@ package org.neo4j.coreedge.raft.elections;
 
 import org.junit.Test;
 
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.RaftTestNetwork;
 import org.neo4j.coreedge.server.RaftTestMember;
+import org.neo4j.function.Predicates;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
@@ -32,10 +40,44 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
  * A test suite that is used for measuring the election performance and
- * guard against regressions in this area.
+ * guarding against regressions in this area. The outcome assertions are very
+ * relaxed so that false positives are avoided in CI and adjustments of the
+ * limits should be made by looking at statistics and reasoning about what
+ * type of performance should be expected, taking all parameters into account.
+ *
+ * Major regressions that severely affect the election performance and the
+ * ability to perform an election at all should be caught by this test. Very
+ * rare false positives should not be used as an indication for increasing the
+ * limits.
  */
 public class ElectionPerformanceIT
 {
+    /**
+     * This class simply waits for a single entry to have been committed for each member,
+     * which should be the initial member set entry, making it possible for every member
+     * to perform elections. We need this before we start disconnecting members.
+     */
+    private class BootstrapWaiter implements RaftStateMachine
+    {
+        private AtomicLong count = new AtomicLong();
+
+        @Override
+        public void notifyCommitted( long commitIndex )
+        {
+            count.incrementAndGet();
+        }
+
+        @Override
+        public void downloadSnapshot()
+        {
+        }
+
+        private void await( long awaitedCount ) throws InterruptedException, TimeoutException
+        {
+            Predicates.await( () -> count.get() >= awaitedCount, 30, SECONDS, 100, MILLISECONDS );
+        }
+    }
+
     @Test
     public void electionPerformance_NormalConditions() throws Throwable
     {
@@ -51,13 +93,16 @@ public class ElectionPerformanceIT
         final int iterations = 10;
 
         RaftTestNetwork<RaftTestMember> net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
-        Fixture fixture = new Fixture( asSet( 0L, 1L, 2L ), net, electionTimeout, heartbeatInterval );
+        Set<Long> members = asSet( 0L, 1L, 2L );
+        BootstrapWaiter bootstrapWaiter = new BootstrapWaiter();
+        Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval, bootstrapWaiter );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );
 
         try
         {
             // when running scenario
             fixture.boot();
+            bootstrapWaiter.await( members.size() );
             scenario.run( iterations, 10 * electionTimeout );
         }
         finally
@@ -73,10 +118,10 @@ public class ElectionPerformanceIT
          * to guide further action. Perhaps the power of the test has to be improved, but
          * the intention here is not to catch anything but the most major of regressions. */
 
-        assertThat( result.nonCollidingAverage, lessThan( 800d ) );
+        assertThat( result.nonCollidingAverage, lessThan( 2.0 * electionTimeout ) );
         if ( result.collisionCount > 3 )
         {
-            assertThat( result.collidingAverage, lessThan( 3000d ) );
+            assertThat( result.collidingAverage, lessThan( 6.0 * electionTimeout ) );
         }
         assertThat( result.timeoutCount, is( 0L ) );
     }
@@ -91,13 +136,16 @@ public class ElectionPerformanceIT
         final int iterations = 100;
 
         RaftTestNetwork<RaftTestMember> net = new RaftTestNetwork<>( ( i, o ) -> networkLatency );
-        Fixture fixture = new Fixture( asSet( 0L, 1L, 2L ), net, electionTimeout, heartbeatInterval );
+        Set<Long> members = asSet( 0L, 1L, 2L );
+        BootstrapWaiter bootstrapWaiter = new BootstrapWaiter();
+        Fixture fixture = new Fixture( members, net, electionTimeout, heartbeatInterval, bootstrapWaiter );
         DisconnectLeaderScenario scenario = new DisconnectLeaderScenario( fixture, electionTimeout );
 
         try
         {
             // when running scenario
             fixture.boot();
+            bootstrapWaiter.await( members.size() );
             scenario.run( iterations, 10 * electionTimeout );
         }
         finally
@@ -113,12 +161,14 @@ public class ElectionPerformanceIT
          * to guide further action. Perhaps the power of the test has to be improved, but
          * the intention here is not to catch anything but the most major of regressions. */
 
-        assertThat( result.nonCollidingAverage, lessThan( 50d ) );
-        assertThat( result.collisionRate, lessThan( 0.30d ) );
+        assertThat( result.nonCollidingAverage, lessThan( 2.0 * electionTimeout ) );
+
+        // because of the high number of iterations, it is possible to assert on the collision rate
+        assertThat( result.collisionRate, lessThan( 0.50d ) );
 
         if ( result.collisionCount > 10 )
         {
-            assertThat( result.collidingAverage, lessThan( 120d ) );
+            assertThat( result.collidingAverage, lessThan( 5.0*electionTimeout ) );
         }
         assertThat( result.timeoutCount, lessThanOrEqualTo( 1L ) ); // for GC or whatever reason
     }
