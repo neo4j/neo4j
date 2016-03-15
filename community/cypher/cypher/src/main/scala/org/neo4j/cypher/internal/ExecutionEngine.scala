@@ -25,8 +25,8 @@ import java.util.{Map => JavaMap}
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v3_1.{LRUCache => LRUCachev3_0, _}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
+import org.neo4j.cypher.internal.compiler.v3_1.{LRUCache => LRUCachev3_1, _}
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -73,8 +73,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
 
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
-  private val preParsedQueries = new LRUCachev3_0[String, PreParsedQuery](getPlanCacheSize)
-  private val parsedQueries = new LRUCachev3_0[String, ParsedQuery](getPlanCacheSize)
+  private val preParsedQueries = new LRUCachev3_1[String, PreParsedQuery](getPlanCacheSize)
+  private val parsedQueries = new LRUCachev3_1[String, ParsedQuery](getPlanCacheSize)
 
   private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
@@ -130,14 +130,14 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
     preParsedQueries.getOrElseUpdate(queryText, compiler.preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
-  protected def planQuery(queryText: String, session: QuerySession): (PreparedPlanExecution, TransactionalContextWrapper) = {
+  protected def planQuery(queryText: String, session: QuerySession): (PreparedPlanExecution, TransactionalContextWrapperv3_1) = {
     val phaseTracer = compilationTracer.compileQuery(queryText)
     try {
 
       val preParsedQuery = preParseQuery(queryText)
       val executionMode = preParsedQuery.executionMode
       val cacheKey = preParsedQuery.statementWithVersionAndPlanner
-      val externalTransactionalContext = new TransactionalContextWrapper(session.get(TransactionalContext.METADATA_KEY))
+      val externalTransactionalContext = new TransactionalContextWrapperv3_1(session.get(TransactionalContext.METADATA_KEY))
 
       var n = 0
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
@@ -151,7 +151,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
           // fetch plan cache
           val cache = getOrCreateFromSchemaState(tc.readOperations, {
             cacheMonitor.cacheFlushDetected(tc.statement)
-            val lruCache = new LRUCachev3_0[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+            val lruCache = new LRUCachev3_1[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
             new QueryCache(cacheAccessor, lruCache)
           })
 
@@ -219,7 +219,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
       queryService, GraphDatabaseSettings.forbid_exhaustive_shortestpath,
       GraphDatabaseSettings.forbid_exhaustive_shortestpath.getDefaultValue.toBoolean
     )
-    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_0)) && (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
+    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_0) || (version != CypherVersion.v3_1)) &&
+      (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"
       log.error(message)

@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Argument
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CTInteger
-import org.neo4j.cypher.internal.spi.v3_0.MonoDirectionalTraversalMatcher
+import org.neo4j.cypher.internal.spi.v3_1.MonoDirectionalTraversalMatcher
 import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionPlan, ExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._

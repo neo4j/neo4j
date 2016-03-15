@@ -21,17 +21,17 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expander, KernelPredicate}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.PatternNode
-import org.neo4j.cypher.internal.compiler.v3_0.spi._
-import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
-import org.neo4j.cypher.internal.spi.v3_0.ExceptionTranslationSupport
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expander, KernelPredicate}
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
+import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
+import org.neo4j.cypher.internal.spi.v3_1.ExceptionTranslationSupport
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 import scala.collection.Iterator
 
-class ExceptionTranslatingQueryContextFor3_0(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
+class ExceptionTranslatingQueryContextFor3_1(val inner: QueryContext) extends QueryContext with ExceptionTranslationSupport {
   override type EntityAccessor = inner.EntityAccessor
 
   override def entityAccessor = inner.entityAccessor
@@ -144,7 +144,7 @@ class ExceptionTranslatingQueryContextFor3_0(val inner: QueryContext) extends Qu
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
     inner.withAnyOpenQueryContext(qc =>
       translateException(
-        work(new ExceptionTranslatingQueryContextFor3_0(qc))
+        work(new ExceptionTranslatingQueryContextFor3_1(qc))
       ))
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean =

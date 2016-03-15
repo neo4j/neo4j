@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{QueryContext, QueryTransacti
 import org.neo4j.cypher.internal.frontend.v3_1.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_1.symbols
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AccessMode
@@ -58,7 +58,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val readOps = mock[ReadOperations]
     val entityAccessor = mock[NodeManager]
     val queryContext = mock[QueryContext]
-    val transactionalContext = mock[TransactionalContextWrapper]
+    val transactionalContext = mock[TransactionalContextWrapperv3_1]
     when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[QueryTransactionalContext])
     when(transactionalContext.readOperations).thenReturn(readOps)
     when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[NodeProxy])

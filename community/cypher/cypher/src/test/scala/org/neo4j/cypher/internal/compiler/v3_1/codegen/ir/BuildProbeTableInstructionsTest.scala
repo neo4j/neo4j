@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, JoinTabl
 import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticTable, symbols}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
@@ -44,7 +44,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
   private val entityAccessor = mock[NodeManager]
   private val queryContext = mock[QueryContext]
-  private val transactionalContext = mock[TransactionalContextWrapper]
+  private val transactionalContext = mock[TransactionalContextWrapperv3_1]
   private val readOps = mock[ReadOperations]
   private val allNodeIds = mutable.ArrayBuffer[Long]()
 

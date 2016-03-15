@@ -17,15 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.spi.v3_1
 
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
-import org.neo4j.kernel.impl.query.QuerySession
-
-case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
-  def execute(transactionalContext: TransactionalContextWrapperv3_1, params: Map[String, Any], session: QuerySession) =
-    plan.run(transactionalContext, executionMode, params ++ extractedParams, session)
-
-  def profile(transactionalContext: TransactionalContextWrapperv3_1, params: Map[String, Any], session: QuerySession) =
-    plan.run(transactionalContext, CypherExecutionMode.profile, params ++ extractedParams, session)
-}
+//This class should live here, but until we have to touch
+//disk, let's have it in the compiler. Convenient.
+case object HardcodedGraphStatistics
+  extends org.neo4j.cypher.internal.compiler.v3_1.HardcodedGraphStatisticsValues

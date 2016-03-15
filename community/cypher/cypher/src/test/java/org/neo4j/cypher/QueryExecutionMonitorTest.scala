@@ -228,7 +228,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing {
     val session = graph.session()
 
     // when
-    val result = engine.execute("CYPHER 3,0 RETURN 42", Map.empty[String, Any], session).javaIterator.close()
+    val result = engine.execute("CYPHER 3.0 RETURN 42", Map.empty[String, Any], session).javaIterator.close()
 
     // then
     verify(monitor, times(1)).startQueryExecution(session, "CYPHER 3.0 RETURN 42", Collections.emptyMap())

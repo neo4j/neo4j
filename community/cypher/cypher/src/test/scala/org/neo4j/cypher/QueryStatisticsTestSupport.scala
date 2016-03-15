@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import java.util
 
 import org.neo4j.cypher.internal.QueryStatistics
-import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_0
+import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_1.{CompiledRuntimeName, CostBasedPlannerName}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
@@ -48,7 +48,7 @@ trait QueryStatisticsTestSupport {
       implicit val session = new QuerySession(null) {
         override def toString: String = s"test-session\ttest"
       }
-      val r = new ExecutionResultWrapperFor3_0(actual, CostBasedPlannerName.default, CompiledRuntimeName)
+      val r = new ExecutionResultWrapperFor3_1(actual, CostBasedPlannerName.default, CompiledRuntimeName)
       apply(r.queryStatistics())
     }
   }

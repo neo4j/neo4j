@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_0
+package org.neo4j.cypher.internal.spi.v3_1
 
 import java.net.URL
 
@@ -25,8 +25,8 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.DynamicIterable
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
+import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
@@ -35,7 +35,7 @@ import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.api.{KernelStatement, KernelTransactionImplementation}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.coreapi.{PropertyContainerLocker, InternalTransaction}
+import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -66,7 +66,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should_mark_transaction_successful_if_successful") {
     // GIVEN
     when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
-    val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, outerTx, statement, locker))
+    val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, statement, locker))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
@@ -83,7 +83,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should_mark_transaction_failed_if_not_successful") {
     // GIVEN
     when(outerTx.success()).thenThrow(new AssertionError("Shouldn't be called"))
-    val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, outerTx, statement, locker))
+    val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, statement, locker))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close(success = false)
@@ -103,7 +103,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, outerTx, stmt, locker))
+    val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, stmt, locker))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
@@ -124,7 +124,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     // GIVEN
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, outerTx, stmt, locker))
+    val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, stmt, locker))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN
@@ -143,7 +143,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AccessMode.Static.READ)
     val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, outerTx, stmt, locker))
+    val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, outerTx, stmt, locker))
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN

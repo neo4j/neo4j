@@ -36,8 +36,6 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
 
     execute(s"CYPHER 2.3 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
     execute(s"CYPHER 2.3 $query").columnAs[Long]("count(*)").next() shouldBe 1
-    execute(s"CYPHER 3.0 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
-    execute(s"CYPHER 3.0 $query").columnAs[Long]("count(*)").next() shouldBe 1
     execute(s"CYPHER 3.1 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
     execute(s"CYPHER 3.1 $query").columnAs[Long]("count(*)").next() shouldBe 1
   }

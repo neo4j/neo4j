@@ -29,13 +29,13 @@ import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.api.{ReadOperations, Statement}
 import org.neo4j.kernel.impl.query.TransactionalContext
 
-case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
+case class TransactionalContextWrapperv3_1(tc: TransactionalContext) extends QueryTransactionalContext {
 
   override type ReadOps = ReadOperations
 
   override type DbmsOps = DbmsOperations
 
-  def provideContext(): TransactionalContextWrapper = TransactionalContextWrapper(tc.provideContext())
+  def provideContext(): TransactionalContextWrapperv3_1 = TransactionalContextWrapperv3_1(tc.provideContext())
 
   def isOpen: Boolean = tc.isOpen
 

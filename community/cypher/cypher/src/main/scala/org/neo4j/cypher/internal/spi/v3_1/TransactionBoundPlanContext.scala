@@ -17,19 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v2_3
+package org.neo4j.cypher.internal.spi.v3_1
 
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.EntityProducer
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
-import org.neo4j.cypher.internal.compiler.v2_3.spi._
+import org.neo4j.cypher.internal.LastCommittedTxIdProvider
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.EntityProducer
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.ExpanderStep
+import org.neo4j.cypher.internal.compiler.v3_1.spi._
+import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_1.{CypherExecutionException, symbols}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
+import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
+import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProcedureSignature}
 
 import scala.collection.JavaConverters._
 
@@ -82,6 +86,13 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
     case _: KernelException => None
   }
 
+  override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
+    val labelId = tc.statement.readOperations().labelGetForName(labelName)
+    val propertyKeyId = tc.statement.readOperations().propertyKeyGetForName(propertyKey)
+
+    tc.statement.readOperations().constraintsGetForLabelAndPropertyKey(labelId, propertyKeyId).hasNext
+  }
+
   def checkNodeIndex(idxName: String) {
     if (!tc.statement.readOperations().nodeLegacyIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
@@ -114,8 +125,37 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
   val statistics: GraphStatistics =
     InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations), MutableGraphStatisticsSnapshot())
 
-  val txIdProvider: () => Long = tc.graph
-    .getDependencyResolver
-    .resolveDependency(classOf[TransactionIdStore])
-    .getLastCommittedTransactionId
+  val txIdProvider = LastCommittedTxIdProvider(tc.graph)
+
+  override def procedureSignature(name: QualifiedProcedureName) = {
+    val kn = new KernelProcedureSignature.ProcedureName(name.namespace.asJava, name.name)
+    val ks = tc.statement.readOperations().procedureGet(kn)
+    val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType())))
+    val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))))
+    val mode = asCypherProcMode(ks.mode())
+
+    ProcedureSignature(name, input, output, mode)
+  }
+
+  private def asCypherProcMode(mode: KernelProcedureSignature.Mode): ProcedureAccessMode = mode match {
+    case KernelProcedureSignature.Mode.READ_ONLY => ProcedureReadOnlyAccess
+    case KernelProcedureSignature.Mode.READ_WRITE => ProcedureReadWriteAccess
+    case KernelProcedureSignature.Mode.DBMS => ProcedureDbmsAccess
+    case _ => throw new CypherExecutionException(
+      "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null )
+  }
+
+  private def asCypherType(neoType: AnyType): CypherType = neoType match {
+    case Neo4jTypes.NTString => symbols.CTString
+    case Neo4jTypes.NTInteger => symbols.CTInteger
+    case Neo4jTypes.NTFloat => symbols.CTFloat
+    case Neo4jTypes.NTNumber => symbols.CTNumber
+    case Neo4jTypes.NTBoolean => symbols.CTBoolean
+    case l: Neo4jTypes.ListType => symbols.CTList(asCypherType(l.innerType()))
+    case Neo4jTypes.NTMap => symbols.CTMap
+    case Neo4jTypes.NTNode => symbols.CTNode
+    case Neo4jTypes.NTRelationship => symbols.CTRelationship
+    case Neo4jTypes.NTPath => symbols.CTPath
+    case Neo4jTypes.NTAny => symbols.CTAny
+  }
 }

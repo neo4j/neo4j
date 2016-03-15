@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_0}
+import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor3_1, ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_0}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CantCompileQueryException, CantHandleQueryException}
@@ -102,7 +102,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   //todo once the compiled runtime handles dumpToString and plan descriptions, we should enable it by default here
   //in that way we will notice when we support new queries
   override def databaseConfig(): Map[Setting[_], String] =
-    Map(GraphDatabaseSettings.cypher_parser_version -> CypherVersion.v3_0.name,
+    Map(GraphDatabaseSettings.cypher_parser_version -> CypherVersion.v3_1.name,
       GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10")
 
   val newPlannerMonitor = new NewPlannerMonitor
@@ -279,7 +279,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     eengine.execute(queryText, params.toMap, graph.session()) match {
-      case e: ExecutionResultWrapperFor3_0 => RewindableExecutionResult(e)
+      case e: ExecutionResultWrapperFor3_1 => RewindableExecutionResult(e)
       case e: ExecutionResultWrapperFor2_3 => RewindableExecutionResult(e)
     }
   }

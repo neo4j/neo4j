@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Literal
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, PropertyKeyId, SemanticDirection, ast}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_0.{TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
+import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v3_1.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -228,7 +228,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def runSimulation(graph: GraphDatabaseQueryService, pipes: Seq[Pipe]) = {
     val results = new ListBuffer[DataPoint]
     graph.withTx { tx =>
-      val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
+      val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val state = QueryStateHelper.emptyWith(queryContext)
       for (x <- 0 to 25) {
@@ -289,7 +289,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
-      val transactionalContext = new TransactionalContextWrapper(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
+      val transactionalContext = new TransactionalContextWrapperv3_1(new Neo4jTransactionalContext(graph, tx, graph.statement, new PropertyContainerLocker))
       val ctx = new TransactionBoundPlanContext(transactionalContext)
       val literal = Literal(42)
 

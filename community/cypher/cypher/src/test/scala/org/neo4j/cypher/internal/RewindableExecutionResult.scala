@@ -23,7 +23,7 @@ import java.io.PrintWriter
 import java.util
 
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, ExecutionResultWrapperFor3_0, exceptionHandlerFor2_3, exceptionHandlerFor3_0}
+import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, READ_WRITE, _}
@@ -72,8 +72,8 @@ object RewindableExecutionResult {
   }
 
   def apply(in: ExecutionResult): InternalExecutionResult = in match {
-    case ExecutionResultWrapperFor3_0(inner, planner, runtime) =>
-      exceptionHandlerFor3_0.runSafely(current(inner, planner, runtime))
+    case ExecutionResultWrapperFor3_1(inner, planner, runtime) =>
+      exceptionHandlerFor3_1.runSafely(current(inner, planner, runtime))
     case ExecutionResultWrapperFor2_3(inner, planner, runtime) =>
       exceptionHandlerFor2_3.runSafely(compatibility(inner, planner, runtime))
 

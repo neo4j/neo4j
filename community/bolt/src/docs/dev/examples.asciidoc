@@ -488,7 +488,7 @@ Server: SUCCESS {
             "args": {
               "runtime-impl": "INTERPRETED",
               "planner-impl": "IDP",
-              "version": "CYPHER 3.0",
+              "version": "CYPHER 3.1",
               "KeyNames": "num",
               "EstimatedRows": 1.0,
               "planner": "COST",
@@ -512,7 +512,7 @@ Server: SUCCESS {
   2D 69 6D 70  6C 8B 49 4E  54 45 52 50  52 45 54 45
   44 8C 70 6C  61 6E 6E 65  72 2D 69 6D  70 6C 83 49
   44 50 87 76  65 72 73 69  6F 6E 8A 43  59 50 48 45
-  52 20 33 2E  30 88 4B 65  79 4E 61 6D  65 73 83 6E
+  52 20 33 2E  31 88 4B 65  79 4E 61 6D  65 73 83 6E
   75 6D 8D 45  73 74 69 6D  61 74 65 64  52 6F 77 73
   C1 3F F0 00  00 00 00 00  00 87 70 6C  61 6E 6E 65
   72 84 43 4F  53 54 87 72  75 6E 74 69  6D 65 8B 49
@@ -528,6 +528,7 @@ Server: SUCCESS {
   91 83 6E 75  6D 8C 6F 70  65 72 61 74  6F 72 54 79
   70 65 8E 50  72 6F 64 75  63 65 52 65  73 75 6C 74
   73 00 00
+
 
 # Profiling the query will execute it, and the returned plan now includes the number of rows emitted from
 # each part of the plan, as well as the number of database primitive operations that were executed.
@@ -559,7 +560,7 @@ Server: SUCCESS {
               "KeyNames":"num",
               "runtime":"INTERPRETED",
               "runtime-impl":"INTERPRETED",
-              "version":"CYPHER 3.0",
+              "version":"CYPHER 3.1",
               "EstimatedRows":1.0,
               "planner":"COST",
               "DbHits":0,
@@ -594,7 +595,7 @@ Server: SUCCESS {
   65 8B 49 4E  54 45 52 50  52 45 54 45  44 8C 72 75
   6E 74 69 6D  65 2D 69 6D  70 6C 8B 49  4E 54 45 52
   50 52 45 54  45 44 87 76  65 72 73 69  6F 6E 8A 43
-  59 50 48 45  52 20 33 2E  30 8D 45 73  74 69 6D 61
+  59 50 48 45  52 20 33 2E  31 8D 45 73  74 69 6D 61
   74 65 64 52  6F 77 73 C1  3F F0 00 00  00 00 00 00
   87 70 6C 61  6E 6E 65 72  84 43 4F 53  54 86 44 62
   48 69 74 73  00 84 52 6F  77 73 01 8C  6F 70 65 72
@@ -611,6 +612,7 @@ Server: SUCCESS {
   73 00 8B 69  64 65 6E 74  69 66 69 65  72 73 91 83
   6E 75 6D 86  64 62 48 69  74 73 00 8B  69 64 65 6E
   74 69 66 69  65 72 73 91  83 6E 75 6D  00 00
+
 
 ----
 === Accessing notifications
@@ -660,7 +662,7 @@ Server: SUCCESS {
             "args": {
               "runtime-impl": "INTERPRETED",
               "planner-impl": "IDP",
-              "version": "CYPHER 3.0",
+              "version": "CYPHER 3.1",
               "KeyNames": "n, m",
               "EstimatedRows": 0.0,
               "planner": "COST",
@@ -701,7 +703,7 @@ Server: SUCCESS {
   2D 69 6D 70  6C 8B 49 4E  54 45 52 50  52 45 54 45
   44 8C 70 6C  61 6E 6E 65  72 2D 69 6D  70 6C 83 49
   44 50 87 76  65 72 73 69  6F 6E 8A 43  59 50 48 45
-  52 20 33 2E  30 88 4B 65  79 4E 61 6D  65 73 84 6E
+  52 20 33 2E  31 88 4B 65  79 4E 61 6D  65 73 84 6E
   2C 20 6D 8D  45 73 74 69  6D 61 74 65  64 52 6F 77
   73 C1 00 00  00 00 00 00  00 00 87 70  6C 61 6E 6E
   65 72 84 43  4F 53 54 87  72 75 6E 74  69 6D 65 8B

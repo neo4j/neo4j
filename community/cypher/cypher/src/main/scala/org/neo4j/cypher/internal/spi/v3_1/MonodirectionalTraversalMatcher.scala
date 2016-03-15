@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_0
+package org.neo4j.cypher.internal.spi.v3_1
 
-import org.neo4j.cypher.internal.compiler.v3_0._
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
-import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v3_1._
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.{EntityProducer, QueryState}
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Argument
 import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.kernel.{Traversal, Uniqueness}

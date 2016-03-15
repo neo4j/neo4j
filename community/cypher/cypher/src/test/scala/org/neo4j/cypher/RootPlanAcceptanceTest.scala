@@ -170,7 +170,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       given("match (n) return n")
         .withPlanner(planner)
         .withRuntime(runtime)
-        .shouldHaveCypherVersion(CypherVersion.v3_0)
+        .shouldHaveCypherVersion(CypherVersion.v3_1)
         .shouldHavePlanner(planner)
         .shouldHaveRuntime(runtime)
     }

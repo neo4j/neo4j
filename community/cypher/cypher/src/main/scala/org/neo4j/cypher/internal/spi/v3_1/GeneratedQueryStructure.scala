@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_0
+package org.neo4j.cypher.internal.spi.v3_1
 
 import java.util
 
@@ -32,16 +32,16 @@ import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen.{CompiledConversionUtils, CompiledExpandUtils, CompiledMathHelper, NodeIdWrapper, RelationshipIdWrapper}
-import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.DirectionConverter
-import org.neo4j.cypher.internal.compiler.v3_0.codegen._
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan._
-import org.neo4j.cypher.internal.compiler.v3_0.helpers._
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Id, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultVisitor, QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, ParameterNotFoundException, SemanticDirection, symbols}
+import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.DirectionConverter
+import org.neo4j.cypher.internal.compiler.v3_1.codegen._
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
+import org.neo4j.cypher.internal.compiler.v3_1.helpers._
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_1.{CypherExecutionException, ParameterNotFoundException, SemanticDirection, symbols}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.collection.MapUtil
@@ -189,7 +189,7 @@ private case class Fields(closer: FieldReference,
 
 private class AuxGenerator(val packageName: String, val generator: codegen.CodeGenerator) {
 
-  import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure._
+  import org.neo4j.cypher.internal.spi.v3_1.GeneratedQueryStructure._
 
   private val types: mutable.Map[Map[String, CypherType], TypeReference] = mutable.Map.empty
   private var nameId = 0
@@ -212,7 +212,7 @@ private class AuxGenerator(val packageName: String, val generator: codegen.CodeG
 private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator, tracing: Boolean = true,
                           event: Option[String] = None, var locals:Map[String,LocalVariable]=Map.empty)(implicit context: CodeGenContext)
   extends MethodStructure[Expression] {
-  import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure._
+  import org.neo4j.cypher.internal.spi.v3_1.GeneratedQueryStructure._
 
 
   private case class HashTable(valueType: TypeReference, listType: TypeReference, tableType: TypeReference,
