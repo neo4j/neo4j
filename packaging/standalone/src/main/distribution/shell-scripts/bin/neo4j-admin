@@ -179,50 +179,6 @@ check_java() {
   fi
 }
 
-cmd_core_convert_args() {
-  declare database=''
-
-  while [[ -n "${1:-}" ]]; do
-    declare arg="$1"
-    shift
-    case "${arg}" in
-      -h|--help)
-        usage
-        ;;
-      -d)
-        if [[ -n "${1:-}" ]]; then
-          database="${1}"
-          shift
-        fi
-        ;;
-      --database=*)
-        set -- "-d" "${arg#*=}" "$@"
-        ;;
-      --database)
-        ;;
-      *)
-        bad_usage "unrecognized core-convert argument '${arg}'"
-        ;;
-    esac
-  done
-
-  [[ -z "${database}" ]] && bad_usage "you must provide the --database option with an argument"
-
-  retval=${database}
-}
-
-cmd_core_convert() {
-  cmd_core_convert_args "$@"
-  declare -r database="${retval}"
-
-  setup_neo4jhome_and_script
-  cd "${NEO4J_HOME}"
-  setup_paths
-  check_java
-  build_classpath
-  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli" --database=${database} --config=${NEO4J_CONFIG}
-}
-
 bad_usage() {
   echo "Error: $1" >&2
   echo >&2
@@ -242,10 +198,6 @@ usage() {
       Import a database from a pre-3.0 Neo4j installation. <source-directory> is the database location (e.g.
       <neo4j-root>/data/graph.db).
 
-  ${PROGRAM} core-convert --database=<database-name>
-
-    Converts a database created in a non core-edge Neo4j installation into one that is core format friendly.
-
   ${PROGRAM} help
 
     Display this help text.
@@ -259,7 +211,6 @@ main() {
   shift
   case "${command}" in
     import)         cmd_import "$@" ;;
-    core-convert)   cmd_core_convert "$@" ;;
     help|--help|-h) usage ;;
     *)              bad_usage "unrecognised command '${command}'" ;;
   esac
