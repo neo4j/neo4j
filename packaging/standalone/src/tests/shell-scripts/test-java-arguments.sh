@@ -75,6 +75,16 @@ for run_command in run_console run_daemon; do
     test_expect_java_arg '-Xloggc:$(neo4j_home)/logs/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution'
     test_expect_java_arg '-XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=8 -XX:GCLogFileSize=10m'
   "
+
+  test_expect_success "should pass config dir location" "
+    ${run_command} &&
+    test_expect_java_arg '--config-dir=./conf'
+  "
+
+  test_expect_success "should be able to override config dir location" "
+    NEO4J_CONF=/some/other/conf/dir ${run_command} &&
+    test_expect_java_arg '--config-dir=/some/other/conf/dir'
+  "
 done
 
 test_expect_success "should set heap size constraints when checking version" "

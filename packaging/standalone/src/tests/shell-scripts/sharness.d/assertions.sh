@@ -2,7 +2,7 @@ test_expect_java_arg() {
   arg="$1"
   end="$((SECONDS+5))"
   while true; do
-    if grep --fixed-strings --regexp "${arg}" java-args >&2 ; then
+    if grep --fixed-strings --regexp "${arg}" java-args >/dev/null ; then
       break
     fi
 
@@ -54,7 +54,7 @@ test_expect_stderr_matching() {
 
 test_expect_file_matching() {
   expected_pattern=$1
-  content="$(cat ${2})"
+  content="$(cat "${2}")"
   echo "${content}" | grep "${expected_pattern}" >/dev/null
   exit_code="$?"
   if [[ "${exit_code}" -eq 0 ]]; then

@@ -21,4 +21,11 @@ test_expect_success "should write a specific message in HA mode" "
   test_expect_stdout_matching 'This HA instance will be operational once it has joined the cluster' run_daemon
 "
 
+test_expect_success "should respect log directory configuration" "
+  mkdir -p '$(neo4j_home)/other-log-dir' &&
+  set_config 'dbms.directories.logs' 'other-log-dir' neo4j.conf &&
+  run_daemon &&
+  test_expect_file_matching 'stdout from java' '$(neo4j_home)/other-log-dir/neo4j.log'
+"
+
 test_done
