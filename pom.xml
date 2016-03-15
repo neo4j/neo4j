@@ -26,7 +26,6 @@
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
     <lucene.version>5.5.0</lucene.version>
-    <logback-classic.version>1.1.2</logback-classic.version>
     <bouncycastle.version>1.53</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <hsqldb.version>2.3.2</hsqldb.version>
@@ -633,21 +632,6 @@
         <groupId>log4j</groupId>
         <artifactId>log4j</artifactId>
         <version>1.2.17</version>
-      </dependency>
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-classic</artifactId>
-        <version>${logback-classic.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-core</artifactId>
-        <version>${logback-classic.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-access</artifactId>
-        <version>${logback-classic.version}</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.janino</groupId>

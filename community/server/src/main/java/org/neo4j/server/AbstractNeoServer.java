@@ -329,9 +329,6 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
-        System.out.println("HELLO THERE");
-        System.out.println(config.get( GraphDatabaseSettings.logs_directory ).toString() );
-
         webServer.setHttpLoggingConfiguration(config.get( GraphDatabaseSettings.logs_directory ),
                 config.get( http_logging_enabled ) );
     }
