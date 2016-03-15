@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.ha;
 
-import org.neo4j.helpers.collection.Pair;
-import org.w3c.dom.Document;
-
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -51,8 +49,6 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
@@ -60,7 +56,6 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.client.Clusters;
-import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.member.ClusterMemberEvents;
@@ -72,9 +67,9 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -101,7 +96,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -309,17 +303,47 @@ public class ClusterManager
                 // This port is already taken but not bound yet, ignore it
                 continue;
             }
+
             try
             {
-                ServerSocket socket = new ServerSocket( port );
-                // Port is available, return it
+                // try binding it at wildcard
+                ServerSocket ss = new ServerSocket();
+                ss.setReuseAddress( false );
+                ss.bind( new InetSocketAddress( port ) );
+                ss.close();
+            }
+            catch ( IOException e )
+            {
+                except.add( port );
+                continue;
+            }
+
+            try
+            {
+                // try binding it at loopback
+                ServerSocket ss = new ServerSocket();
+                ss.setReuseAddress( false );
+                ss.bind( new InetSocketAddress( InetAddress.getLoopbackAddress(), port ) );
+                ss.close();
+            }
+            catch ( IOException e )
+            {
+                except.add( port );
+                continue;
+            }
+
+            try
+            {
+                // try connecting to it at loopback
+                Socket socket = new Socket( InetAddress.getLoopbackAddress(), port );
                 socket.close();
-                return port;
+                except.add( port );
+                continue;
             }
             catch ( IOException ex )
             {
-                // Port was already bound, try the next one
-                except.add( port );
+                // Port very likely free!
+                return port;
             }
         }
 
@@ -794,7 +818,7 @@ public class ClusterManager
     public static class Builder implements ClusterBuilder<Builder>
     {
         private File root;
-        private Provider provider = clusterOfSize( 3 );
+        private Provider provider;
         private final Map<String,IntFunction<String>> commonConfig = new HashMap<>();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
