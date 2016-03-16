@@ -61,7 +61,9 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpi
 
 public class Cluster
 {
-    public static final String CLUSTER_NAME = "core-neo4j";
+    private static final String CLUSTER_NAME = "core-neo4j";
+    private static final int DEFAULT_TIMEOUT_MS = 15_000;
+    private static final int DEFAULT_BACKOFF_MS = 100;
 
     private final File parentDir;
     private final DiscoveryServiceFactory discoveryServiceFactory;
@@ -382,6 +384,11 @@ public class Cluster
         return null;
     }
 
+    public CoreGraphDatabase awaitLeader() throws TimeoutException
+    {
+        return awaitCoreGraphDatabaseWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
+    }
+
     public CoreGraphDatabase awaitLeader( long timeoutMillis ) throws TimeoutException
     {
         return awaitCoreGraphDatabaseWithRole( timeoutMillis, Role.LEADER );
@@ -422,16 +429,25 @@ public class Cluster
         edgeServers.add( startEdgeServer( 999, edgeDatabaseStoreFileLocation, advertisedAddresses ) );
     }
 
+    /**
+     * Perform a transaction against the core cluster, selecting the target and retrying as necessary.
+     */
     public CoreGraphDatabase coreTx( BiConsumer<CoreGraphDatabase,Transaction> op ) throws TimeoutException, InterruptedException
     {
+        // this currently wraps the leader-only strategy, since it is the recommended and only approach
         return leaderTx( op );
     }
 
+    /**
+     * Perform a transaction against the leader of the core cluster, retrying as necessary.
+     */
     private CoreGraphDatabase leaderTx( BiConsumer<CoreGraphDatabase,Transaction> op ) throws TimeoutException, InterruptedException
     {
-        while( true )
+        long endTime = System.currentTimeMillis() + DEFAULT_TIMEOUT_MS;
+
+        do
         {
-            CoreGraphDatabase db = awaitCoreGraphDatabaseWithRole( 5000, Role.LEADER );
+            CoreGraphDatabase db = awaitCoreGraphDatabaseWithRole( DEFAULT_TIMEOUT_MS, Role.LEADER );
 
             try
             {
@@ -445,14 +461,16 @@ public class Cluster
                 if( isTransientFailure( e ) )
                 {
                     // sleep and retry
-                    Thread.sleep( 100 );
+                    Thread.sleep( DEFAULT_BACKOFF_MS );
                 }
                 else
                 {
                     throw e;
                 }
             }
-        }
+        } while ( System.currentTimeMillis() < endTime );
+
+        throw new TimeoutException( "Transaction did not succeed in time" );
     }
 
     private boolean isTransientFailure( TransactionFailureException e )
