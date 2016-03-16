@@ -54,7 +54,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.ReadOperations;
@@ -105,6 +104,7 @@ import org.neo4j.kernel.impl.util.MutableInteger;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.FailureOutput;
 
 import static java.lang.String.format;

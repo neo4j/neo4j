@@ -185,14 +185,13 @@ public class QuorumWritesIT
 
         HighlyAvailableGraphDatabase replacement =
                 (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( new File( clusterRule.directory( "another" ),
-                        "replacement" ).getAbsolutePath() ).
-                setConfig( ClusterSettings.cluster_server, ":5010" ).
-                setConfig( HaSettings.ha_server, ":6010" ).
-                setConfig( ClusterSettings.server_id, "3" ).
-                setConfig( ClusterSettings.initial_hosts, cluster.getInitialHostsConfigString() ).
-                setConfig( HaSettings.tx_push_factor, "0" ).
-                newGraphDatabase();
+                        newEmbeddedDatabaseBuilder( new File( clusterRule.directory( "another" ), "replacement" ) ).
+                        setConfig( ClusterSettings.cluster_server, ":5010" ).
+                        setConfig( HaSettings.ha_server, ":6010" ).
+                        setConfig( ClusterSettings.server_id, "3" ).
+                        setConfig( ClusterSettings.initial_hosts, cluster.getInitialHostsConfigString() ).
+                        setConfig( HaSettings.tx_push_factor, "0" ).
+                        newGraphDatabase();
 
         latch3.await();
         latch4.await();

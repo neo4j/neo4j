@@ -146,11 +146,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         return new ReadOnlyRelationshipProxy( actual.getRelationshipById( id ) );
     }
 
-    @Override
-    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
-    {
-        return actual.getAllRelationshipTypes();
-    }
 
     @Override
     public ResourceIterable<Relationship> getAllRelationships()
@@ -180,9 +175,27 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
+    public ResourceIterable<Label> getAllLabelsInUse()
+    {
+        return actual.getAllLabelsInUse();
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+    {
+        return actual.getAllRelationshipTypesInUse();
+    }
+
+    @Override
     public ResourceIterable<Label> getAllLabels()
     {
         return actual.getAllLabels();
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+    {
+        return actual.getAllRelationshipTypes();
     }
 
     @Override
@@ -1042,11 +1055,5 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     public ResourceIterator<Node> findNodes( Label label )
     {
         return actual.findNodes( label );
-    }
-
-    @Override
-    public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )
-    {
-        return actual.findNodesByLabelAndProperty( label, key, value );
     }
 }

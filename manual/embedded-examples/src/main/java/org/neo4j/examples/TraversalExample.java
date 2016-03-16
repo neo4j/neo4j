@@ -44,11 +44,11 @@ public class TraversalExample
     private GraphDatabaseService db;
     private TraversalDescription friendsTraversal;
 
-    private static final String DB_PATH = "target/neo4j-traversal-example";
+    private static final File DB_PATH = new File( "target/neo4j-traversal-example" );
 
     public static void main( String[] args ) throws IOException
     {
-        FileUtils.deleteRecursively( new File( DB_PATH ) );
+        FileUtils.deleteRecursively( DB_PATH );
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         TraversalExample example = new TraversalExample( database );
         Node joe = example.createData();

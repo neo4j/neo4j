@@ -46,7 +46,7 @@ public class ConflictingServerIdIT
         {
 
             GraphDatabaseBuilder masterBuilder = new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( path( 1 ) )
+                .newEmbeddedDatabaseBuilder( path( 1 ) )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + ( 5001 + 1 ) )
                 .setConfig( ClusterSettings.server_id, "" + 1 )
@@ -55,7 +55,7 @@ public class ConflictingServerIdIT
             master = (HighlyAvailableGraphDatabase) masterBuilder.newGraphDatabase();
 
             GraphDatabaseBuilder db21Builder = new TestHighlyAvailableGraphDatabaseFactory()
-                    .newHighlyAvailableDatabaseBuilder( path( 2 ) )
+                    .newEmbeddedDatabaseBuilder( path( 2 ) )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + ( 5001 + 2 ) )
                     .setConfig( ClusterSettings.server_id, "" + 2 )
@@ -64,7 +64,7 @@ public class ConflictingServerIdIT
             dbWithId21 = (HighlyAvailableGraphDatabase) db21Builder.newGraphDatabase();
 
             GraphDatabaseBuilder db22Builder = new TestHighlyAvailableGraphDatabaseFactory()
-                    .newHighlyAvailableDatabaseBuilder( path( 3 ) )
+                    .newEmbeddedDatabaseBuilder( path( 3 ) )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + 3) )
                     .setConfig( ClusterSettings.server_id, "" + 2 ) // Conflicting with the above
@@ -106,8 +106,8 @@ public class ConflictingServerIdIT
         }
     }
 
-    private String path( int i )
+    private File path( int i )
     {
-        return new File( testDirectory.graphDbDir(), "" + i ).getAbsolutePath();
+        return new File( testDirectory.graphDbDir(), "" + i );
     }
 }

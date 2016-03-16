@@ -25,9 +25,9 @@ import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
+import org.neo4j.string.UTF8;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;

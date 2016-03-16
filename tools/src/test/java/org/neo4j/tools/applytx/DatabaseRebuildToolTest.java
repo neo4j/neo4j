@@ -192,7 +192,7 @@ public class DatabaseRebuildToolTest
 
     private void databaseWithSomeTransactions( File dir )
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir.getAbsolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir );
         Node[] nodes = new Node[10];
         for ( int i = 0; i < nodes.length; i++ )
         {

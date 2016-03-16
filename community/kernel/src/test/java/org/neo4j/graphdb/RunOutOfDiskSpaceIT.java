@@ -49,7 +49,7 @@ public class RunOutOfDiskSpaceIT
         // Given
         TransactionFailureException exceptionThrown = null;
 
-        String storeDir = testDirectory.absolutePath();
+        File storeDir = testDirectory.absolutePath();
         LimitedFileSystemGraphDatabase db = new LimitedFileSystemGraphDatabase( storeDir );
 
         try ( Transaction tx = db.beginTx() )
@@ -94,7 +94,7 @@ public class RunOutOfDiskSpaceIT
         // Given
         TransactionFailureException expectedCommitException = null;
         TransactionFailureException expectedStartException = null;
-        String storeDir = testDirectory.absolutePath();
+        File storeDir = testDirectory.absolutePath();
         LimitedFileSystemGraphDatabase db = cleanup.add( new LimitedFileSystemGraphDatabase( storeDir ) );
 
 

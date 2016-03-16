@@ -110,7 +110,7 @@ public class TestBranchedData
 
         // WHEN
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        String storeDir = slave.getStoreDir();
+        File storeDir = new File( slave.getStoreDir() );
         RepairKit starter = cluster.shutdown( slave );
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         createNode( master, "B1" );
@@ -245,7 +245,7 @@ public class TestBranchedData
     }
 
     @SuppressWarnings( "unchecked" )
-    private void createNodeOffline( String storeDir, String name )
+    private void createNodeOffline( File storeDir, String name )
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try

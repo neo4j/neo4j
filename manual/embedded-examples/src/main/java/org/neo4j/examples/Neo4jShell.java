@@ -19,6 +19,7 @@
 package org.neo4j.examples;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class Neo4jShell
 {
-    private static final String DB_PATH = "neo4j-store";
+    private static final File DB_PATH = new File( "neo4j-store" );
     private static final String USERNAME_KEY = "username";
     private static GraphDatabaseService graphDb;
 

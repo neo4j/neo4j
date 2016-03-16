@@ -24,9 +24,9 @@ import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
+import org.neo4j.string.UTF8;
 
 /**
  * Utility for reading and writing property values from/into a channel. Supports neo4j property types,

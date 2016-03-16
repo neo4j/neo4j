@@ -102,7 +102,7 @@ import org.neo4j.server.rest.repr.ScoredNodeRepresentation;
 import org.neo4j.server.rest.repr.ScoredRelationshipRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
-import org.neo4j.tooling.GlobalGraphOperations;
+
 
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -1437,7 +1437,7 @@ public class DatabaseActions
 
     public ListRepresentation getAllLabels( boolean inUse )
     {
-        ResourceIterable<Label> labels = inUse ? graphDb.getAllLabels() : GlobalGraphOperations.at( graphDb ).getAllLabels();
+        ResourceIterable<Label> labels = inUse ? graphDb.getAllLabelsInUse() : graphDb.getAllLabels();
         Collection<ValueRepresentation> labelNames = Iterables.asSet( map( new Function<Label,ValueRepresentation>()
         {
             @Override

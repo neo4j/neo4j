@@ -148,7 +148,7 @@ public class DatabaseRebuildTool
 
     private static GraphDatabaseBuilder newDbBuilder( File path, Args args )
     {
-        GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path.getAbsolutePath() );
+        GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path );
         for ( Map.Entry<String, String> entry : args.asMap().entrySet() )
         {
             if ( entry.getKey().startsWith( "D" ) )

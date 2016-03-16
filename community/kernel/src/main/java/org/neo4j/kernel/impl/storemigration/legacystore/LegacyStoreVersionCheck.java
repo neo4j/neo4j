@@ -23,11 +23,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
+import org.neo4j.string.UTF8;
 
 public class LegacyStoreVersionCheck
 {

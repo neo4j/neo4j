@@ -37,7 +37,7 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class JavaQuery
 {
-    private static final String DB_PATH = "target/java-query-db";
+    private static final File DB_PATH = new File( "target/java-query-db" );
     String resultString;
     String columnsString;
     String nodeResult;
@@ -105,7 +105,7 @@ public class JavaQuery
     {
         try
         {
-            deleteRecursively( new File( DB_PATH ) );
+            deleteRecursively( DB_PATH );
         }
         catch ( IOException e )
         {

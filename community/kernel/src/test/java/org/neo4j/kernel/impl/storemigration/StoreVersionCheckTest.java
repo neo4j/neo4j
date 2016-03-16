@@ -26,10 +26,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 

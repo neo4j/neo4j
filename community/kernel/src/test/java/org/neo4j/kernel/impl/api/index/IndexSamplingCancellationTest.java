@@ -40,6 +40,7 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
@@ -61,7 +62,7 @@ public class IndexSamplingCancellationTest
         @Override
         protected void configure( GraphDatabaseFactory factory )
         {
-            factory.addKernelExtension( new InMemoryIndexProviderFactory( index ) );
+            ((TestGraphDatabaseFactory) factory).addKernelExtension( new InMemoryIndexProviderFactory( index ) );
         }
 
         @Override

@@ -587,10 +587,10 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public GraphDatabaseBuilder newHighlyAvailableDatabaseBuilder(String path)
+        public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File file )
         {
             getCurrentState().addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( factory ) );
-            return super.newHighlyAvailableDatabaseBuilder( path );
+            return super.newEmbeddedDatabaseBuilder( file );
         }
 
         void awaitPopulationStarted( GraphDatabaseService db )

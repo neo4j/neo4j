@@ -53,7 +53,7 @@ public class BigLabelStoreGenerator
         long batchSize = parseLong( withDefault( System.getenv().get( "BATCH_SIZE" ), "100000" ) );
         long numNodes = parseLong( withDefault( System.getenv( "NUM_NODES" ), "1000000" ) );
         int numLabels = parseInt( withDefault( System.getenv( "NUM_LABELS" ), "5" ) );
-        String graphDbPath = System.getenv( "GRAPH_DB" );
+        File graphDbPath = new File( System.getenv( "GRAPH_DB" ) );
 
         System.out.println( format( "# BATCH_SIZE: %d, NUM_NODES: %d, NUM_LABELS: %d, GRAPH_DB: '%s'",
                 batchSize, numNodes, numLabels, graphDbPath ) );
@@ -98,7 +98,7 @@ public class BigLabelStoreGenerator
         System.out.println( format( "nodes: %d, ratio: %d, labelings: %d, duration: %d", numNodes, 100, labelings, duration ) );
     }
 
-    private static GraphDatabaseService createGraphDatabaseService( String graphDbPath )
+    private static GraphDatabaseService createGraphDatabaseService( File graphDbPath )
     {
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         GraphDatabaseBuilder graphBuilder = factory.newEmbeddedDatabaseBuilder( graphDbPath );

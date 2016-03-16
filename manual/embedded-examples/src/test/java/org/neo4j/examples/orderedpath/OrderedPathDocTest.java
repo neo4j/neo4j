@@ -22,7 +22,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,10 +48,9 @@ public class OrderedPathDocTest
     @BeforeClass
     public static void setUp() throws IOException
     {
-        File dir = new File( OrderedPath.DB_PATH );
-        if ( dir.exists() )
+        if ( OrderedPath.DB_PATH.exists() )
         {
-            FileUtils.deleteRecursively( dir );
+            FileUtils.deleteRecursively( OrderedPath.DB_PATH );
         }
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
         orderedPath = new OrderedPath( db );

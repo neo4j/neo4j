@@ -43,7 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.helpers.UTF8;
+import org.neo4j.string.UTF8;
 
 public class InternalJettyServletRequest extends Request
 {

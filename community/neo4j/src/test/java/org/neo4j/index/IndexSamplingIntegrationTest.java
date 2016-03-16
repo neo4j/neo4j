@@ -61,7 +61,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Given
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
             IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
             {
@@ -108,7 +108,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Given
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
@@ -146,7 +146,7 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Then
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )

@@ -73,9 +73,9 @@ public class TargetDirectory
             return this;
         }
 
-        public String absolutePath()
+        public File absolutePath()
         {
-            return directory().getAbsolutePath();
+            return directory().getAbsoluteFile();
         }
 
         public File directory()

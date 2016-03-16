@@ -28,12 +28,12 @@ import org.neo4j.logging.slf4j.Slf4jLogProvider;
 
 public class EmbeddedNeo4jWithSLF4JLogging
 {
-    private static final String DB_PATH = "target/neo4j-store";
+    private static final File DB_PATH = new File( "target/neo4j-store" );
     private static GraphDatabaseService graphDb;
 
     public static void main( final String[] args ) throws IOException
     {
-        FileUtils.deleteRecursively( new File( DB_PATH ) );
+        FileUtils.deleteRecursively( DB_PATH );
 
         // START SNIPPET: startDbWithSlf4jLogProvider
         graphDb = new GraphDatabaseFactory().setUserLogProvider( new Slf4jLogProvider() ).newEmbeddedDatabase( DB_PATH );

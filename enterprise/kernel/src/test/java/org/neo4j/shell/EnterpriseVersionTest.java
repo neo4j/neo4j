@@ -19,11 +19,11 @@
  */
 package org.neo4j.shell;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 import org.neo4j.test.TargetDirectory;
 
@@ -32,7 +32,6 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
 public class EnterpriseVersionTest
@@ -68,7 +67,7 @@ public class EnterpriseVersionTest
         StartClient client = new StartClient( new PrintStream( out ), new PrintStream( err ) );
 
         // when
-        client.start( new String[]{"-path", dir.absolutePath(),
+        client.start( new String[]{"-path", dir.absolutePath().getPath(),
                 "-c", "dbinfo -g Configuration unsupported.dbms.edition"}, ctrlCHandler );
 
         // then

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.batchinsert;
+package org.neo4j.unsafe.batchinsert.internal;
 
 import java.io.File;
 import java.io.IOException;
@@ -150,6 +150,9 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchRelationship;
+import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 
 import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
@@ -158,10 +161,6 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
-/**
- * @deprecated will be moved to an internal package in a future release
- */
-@Deprecated
 public class BatchInserterImpl implements BatchInserter
 {
     private final LifeSupport life;
@@ -224,7 +223,7 @@ public class BatchInserterImpl implements BatchInserter
         );
     }
 
-    BatchInserterImpl( final File storeDir, final FileSystemAbstraction fileSystem,
+    public BatchInserterImpl( final File storeDir, final FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         rejectAutoUpgrade( stringParams );

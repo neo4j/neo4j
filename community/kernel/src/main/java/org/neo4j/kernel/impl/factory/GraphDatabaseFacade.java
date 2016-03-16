@@ -392,15 +392,32 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+    public ResourceIterable<Label> getAllLabelsInUse()
     {
-        return all( TokenAccess.RELATIONSHIP_TYPES );
+        return allInUse( TokenAccess.LABELS );
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+    {
+        return allInUse( TokenAccess.RELATIONSHIP_TYPES );
+    }
+    private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
+    {
+        assertTransactionOpen();
+        return () -> tokens.inUse( spi.currentStatement() );
     }
 
     @Override
     public ResourceIterable<Label> getAllLabels()
     {
         return all( TokenAccess.LABELS );
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+    {
+        return all( TokenAccess.RELATIONSHIP_TYPES );
     }
 
     @Override
@@ -412,7 +429,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private <T> ResourceIterable<T> all( final TokenAccess<T> tokens )
     {
         assertTransactionOpen();
-        return () -> tokens.inUse( spi.currentStatement() );
+        return () -> tokens.all( spi.currentStatement() );
     }
 
     @Override
@@ -475,13 +492,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public ResourceIterator<Node> findNodes( final Label myLabel )
     {
         return allNodesWithLabel( myLabel );
-    }
-
-    @Override
-    public ResourceIterable<Node> findNodesByLabelAndProperty( final Label myLabel, final String key,
-            final Object value )
-    {
-        return () -> nodesByLabelAndProperty( myLabel, key, value );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )

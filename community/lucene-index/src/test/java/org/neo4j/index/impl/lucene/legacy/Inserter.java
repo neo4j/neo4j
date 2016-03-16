@@ -34,7 +34,7 @@ public class Inserter
 {
     public static void main( String[] args ) throws IOException
     {
-        String path = args[0];
+        File path = new File( args[0] );
         final GraphDatabaseService db = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( path )
                 .setConfig( GraphDatabaseSettings.auth_store, Files.createTempFile("auth", "").toString() )

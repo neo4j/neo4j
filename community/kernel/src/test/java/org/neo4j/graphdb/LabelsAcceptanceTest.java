@@ -390,7 +390,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldListLabels() throws Exception
+    public void shouldListAllExistingLabels() throws Exception
     {
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -406,6 +406,31 @@ public class LabelsAcceptanceTest
         // Then
         assertEquals( 2, labels.size() );
         assertThat( map( Label::name, labels ), hasItems( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() ) );
+    }
+
+    @Test
+    public void shouldListAllLabelsInUse() throws Exception
+    {
+        // Given
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        createNode( db, Labels.MY_LABEL );
+        Node node = createNode( db, Labels.MY_OTHER_LABEL );
+        try( Transaction tx = db.beginTx() )
+        {
+            node.delete();
+            tx.success();
+        }
+        List<Label> labels = null;
+
+        // When
+        try (Transaction tx = db.beginTx())
+        {
+            labels = asList( db.getAllLabelsInUse() );
+        }
+
+        // Then
+        assertEquals( 1, labels.size() );
+        assertThat( map( Label::name, labels ), hasItems( Labels.MY_LABEL.name() ) );
     }
 
     @Test

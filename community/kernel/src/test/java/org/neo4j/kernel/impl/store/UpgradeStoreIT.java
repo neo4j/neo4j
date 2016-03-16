@@ -37,7 +37,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -56,6 +55,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -304,7 +304,7 @@ public class UpgradeStoreIT
 
     private GraphDatabaseService startDb( File path )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( path.getAbsolutePath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( path.getAbsoluteFile() );
     }
 
     private void startAndStopDb( File path )
@@ -314,7 +314,7 @@ public class UpgradeStoreIT
 
     private GraphDatabaseBuilder builderFor( File path )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path.getAbsolutePath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path.getAbsoluteFile() );
     }
 
     private void setOlderNeoStoreVersion( File path ) throws IOException

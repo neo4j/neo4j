@@ -28,7 +28,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.UTF8;
+import org.neo4j.string.UTF8;
 
 //START SNIPPET: HelloWorldResource
 @Path( "/helloworld" )

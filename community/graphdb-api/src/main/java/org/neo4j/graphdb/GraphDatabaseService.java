@@ -147,45 +147,26 @@ public interface GraphDatabaseService
     ResourceIterator<Node> findNodes( Label label );
 
     /**
-     * Returns all nodes having the label, and the wanted property value.
-     * If an online index is found, it will be used to look up the requested
-     * nodes.
-     * <p>
-     * If no indexes exist for the label/property combination, the database will
-     * scan all labeled nodes looking for the property value.
-     * <p>
-     * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
-     * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
-     * <p>
-     * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
-     * <p>
-     * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
-     * <p>
-     * Please ensure that the returned {@link ResourceIterable} is closed correctly and as soon as possible
+     * Returns all labels currently in the underlying store. Labels are added to the store the first time
+     * they are used. This method guarantees that it will return all labels currently in use.
+     *
+     * Please take care that the returned {@link ResourceIterable} is closed correctly and as soon as possible
      * inside your transaction to avoid potential blocking of write operations.
      *
-     * @param label consider nodes with this label
-     * @param key   required property key
-     * @param value required property value
-     * @return an iterable containing all matching nodes. See {@link ResourceIterable} for responsibilities.
-     * @deprecated Use {@link #findNodes(Label, String, Object)}
+     * @return all labels in the underlying store.
      */
-    @Deprecated
-    ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value );
+    ResourceIterable<Label> getAllLabelsInUse();
 
     /**
      * Returns all relationship types currently in the underlying store.
      * Relationship types are added to the underlying store the first time they
-     * are used in a successfully commited {@link Node#createRelationshipTo
-     * node.createRelationshipTo(...)}. Note that this method is guaranteed to
-     * return all known relationship types, but it does not guarantee that it
-     * won't return <i>more</i> than that (e.g. it can return "historic"
-     * relationship types that no longer have any relationships in the node
-     * space).
+     * are used in a successfully committed {@link Node#createRelationshipTo
+     * node.createRelationshipTo(...)}. This method guarantees that it will
+     * return all relationship types currently in use.
      *
      * @return all relationship types in the underlying store
      */
-    ResourceIterable<RelationshipType> getAllRelationshipTypes();
+    ResourceIterable<RelationshipType> getAllRelationshipTypesInUse();
 
     /**
      * Returns all labels currently in the underlying store. Labels are added to the store the first time
@@ -198,6 +179,20 @@ public interface GraphDatabaseService
      * @return all labels in the underlying store.
      */
     ResourceIterable<Label> getAllLabels();
+
+    /**
+     * Returns all relationship types currently in the underlying store.
+     * Relationship types are added to the underlying store the first time they
+     * are used in a successfully committed {@link Node#createRelationshipTo
+     * node.createRelationshipTo(...)}. Note that this method is guaranteed to
+     * return all known relationship types, but it does not guarantee that it
+     * won't return <i>more</i> than that (e.g. it can return "historic"
+     * relationship types that no longer have any relationships in the node
+     * space).
+     *
+     * @return all relationship types in the underlying store
+     */
+    ResourceIterable<RelationshipType> getAllRelationshipTypes();
 
     /**
      * Returns all property keys currently in the underlying store. This method guarantees that it will return all

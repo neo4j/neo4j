@@ -104,7 +104,7 @@ public class ImportToolDocIT
 
         // WHEN
         String[] arguments = arguments(
-                "--into", directory.absolutePath(),
+                "--into", directory.absolutePath().getAbsolutePath(),
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships", roles.getAbsolutePath() );
@@ -157,7 +157,7 @@ public class ImportToolDocIT
 
         // WHEN
         String[] arguments = arguments(
-                "--into", directory.absolutePath(),
+                "--into", directory.absolutePath().getAbsolutePath(),
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships", roles.getAbsolutePath(),
@@ -224,7 +224,7 @@ public class ImportToolDocIT
 
         // WHEN
         String[] arguments = arguments(
-                "--into", directory.absolutePath(),
+                "--into", directory.absolutePath().getAbsolutePath(),
                 "--nodes", moviesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + movies.getAbsolutePath(),
                 "--nodes", actorsHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + actors.getAbsolutePath(),
                 "--relationships", rolesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + roles.getAbsolutePath());
@@ -299,7 +299,7 @@ public class ImportToolDocIT
 
         // WHEN
         String[] arguments = arguments(
-                "--into", directory.absolutePath(),
+                "--into", directory.absolutePath().getAbsolutePath(),
                 "--nodes", moviesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + moviesPart1.getAbsolutePath() +
                         MULTI_FILE_DELIMITER + moviesPart2.getAbsolutePath(),
                 "--nodes", actorsHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + actorsPart1.getAbsolutePath() +
@@ -360,7 +360,7 @@ public class ImportToolDocIT
         }
         // WHEN
         String[] arguments = arguments(
-                "--into", directory.absolutePath(),
+                "--into", directory.absolutePath().getAbsolutePath(),
                 "--nodes:" + join( new String[] { "Movie" }, ":" ),
                     movies.getAbsolutePath(),
                 "--nodes:" + join( new String[] { "Movie", "Sequel" }, ":" ),
@@ -416,7 +416,7 @@ public class ImportToolDocIT
         }
         // WHEN
         String[] arguments = arguments(
-                "--into", directory.absolutePath(),
+                "--into", directory.absolutePath().getAbsolutePath(),
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships:" + join( new String[] { "ACTED_IN" }, ":" ), roles.getAbsolutePath());
@@ -468,7 +468,7 @@ public class ImportToolDocIT
         }
         // WHEN
         String[] arguments = arguments(
-                "--into", directory.absolutePath(),
+                "--into", directory.absolutePath().getAbsolutePath(),
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships:" + join( new String[] { "ACTED_IN" }, ":" ), roles.getAbsolutePath());
@@ -523,7 +523,7 @@ public class ImportToolDocIT
         // WHEN
         File badFile = new File( directory.directory(), Configuration.BAD_FILE_NAME );
         String[] arguments = arguments(
-                "--into", directory.absolutePath(),
+                "--into", directory.absolutePath().getAbsolutePath(),
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships", roles.getAbsolutePath() );
@@ -556,7 +556,7 @@ public class ImportToolDocIT
         // WHEN
         File badFile = new File( directory.directory(), Configuration.BAD_FILE_NAME );
         String[] arguments = arguments(
-                "--into", directory.absolutePath(),
+                "--into", directory.absolutePath().getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--skip-duplicate-nodes" );
         importTool( arguments );
@@ -604,7 +604,7 @@ public class ImportToolDocIT
 
         // WHEN
         String[] arguments = arguments(
-                "--into", directory.absolutePath(),
+                "--into", directory.absolutePath().getAbsolutePath(),
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships", roles.getAbsolutePath() );
@@ -698,8 +698,8 @@ public class ImportToolDocIT
         }
         String documentationArgs = StringUtils.join( cleanedArguments, " " );
         documentationArgs =
-                documentationArgs.replace( dir + File.separator, "" ).replace( directory.absolutePath(),
-                        "path_to_target_directory" );
+                documentationArgs.replace( dir + File.separator, "" ).replace(
+                        directory.absolutePath().getAbsolutePath(), "path_to_target_directory" );
         String docsCommand = "neo4j-import " + documentationArgs;
         try ( PrintStream out = new PrintStream( file( "ops", fileName ) ) )
         {

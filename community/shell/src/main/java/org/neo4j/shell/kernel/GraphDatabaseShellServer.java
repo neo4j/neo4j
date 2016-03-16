@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.kernel;
 
+import java.io.File;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Map;
@@ -27,10 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Response;
 import org.neo4j.shell.Session;
@@ -60,14 +61,14 @@ public class GraphDatabaseShellServer extends AbstractAppServer
      * @param configFileOrNull path to a configuration file or <code>null</code>
      * @throws RemoteException if an RMI error occurs.
      */
-    public GraphDatabaseShellServer( String path, boolean readOnly, String configFileOrNull )
+    public GraphDatabaseShellServer( File path, boolean readOnly, String configFileOrNull )
             throws RemoteException
     {
         this( instantiateGraphDb( new GraphDatabaseFactory(), path, readOnly, configFileOrNull ), readOnly );
         this.graphDbCreatedHere = true;
     }
 
-    public GraphDatabaseShellServer( GraphDatabaseFactory factory, String path, boolean readOnly, String configFileOrNull )
+    public GraphDatabaseShellServer( GraphDatabaseFactory factory, File path, boolean readOnly, String configFileOrNull )
             throws RemoteException
     {
         this( instantiateGraphDb(  factory, path, readOnly, configFileOrNull ), readOnly );
@@ -197,7 +198,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         }
     }
 
-    private static GraphDatabaseAPI instantiateGraphDb( GraphDatabaseFactory factory, String path, boolean readOnly,
+    private static GraphDatabaseAPI instantiateGraphDb( GraphDatabaseFactory factory, File path, boolean readOnly,
             String configFileOrNull )
     {
         GraphDatabaseBuilder builder = factory.

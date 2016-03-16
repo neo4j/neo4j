@@ -74,7 +74,7 @@ public class AStarPerformanceIT
                 new long[]{291, 86707},
                 new long[]{188345, 158468}
         };
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.getAbsolutePath() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.getAbsoluteFile() );
         PathFinder<WeightedPath> algo = aStar( allTypesAndDirections(),
                 doubleCostEvaluator( "weight", 0 ), GeoDataGenerator.estimateEvaluator() );
         for ( int i = 0; i < 10; i++ )
