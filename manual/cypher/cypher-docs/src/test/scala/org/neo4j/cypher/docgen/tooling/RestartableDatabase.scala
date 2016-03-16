@@ -40,7 +40,7 @@ package org.neo4j.cypher.docgen.tooling
  */
 import org.neo4j.cypher.ExecutionEngineHelper
 import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.test.TestGraphDatabaseFactory

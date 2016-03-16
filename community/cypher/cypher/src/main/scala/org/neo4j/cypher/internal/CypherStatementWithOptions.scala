@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_1.notification.InternalNotification
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy, CypherVersion, InvalidArgumentException}
 
 import scala.annotation.tailrec
@@ -44,7 +44,7 @@ object CypherStatementWithOptions {
             val newVersion = mergeOption(version, CypherVersion(v), "Can't specify multiple conflicting Cypher versions")
             recurse(tail, newVersion, planner, runtime, updateStrategy, executionMode)
           case p: PlannerPreParserOption if p.name == GreedyPlannerOption.name =>
-            throw new InvalidArgumentException("The greedy planner has been removed in Neo4j 3.0. Please use the cost planner instead.")
+            throw new InvalidArgumentException("The greedy planner has been removed in Neo4j 3.1. Please use the cost planner instead.")
           case p: PlannerPreParserOption =>
             val newPlanner = mergeOption(planner, CypherPlanner(p.name), "Can't specify multiple conflicting Cypher planners")
             recurse(tail, version, newPlanner, runtime, updateStrategy, executionMode)

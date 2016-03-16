@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.docgen.tooling
 
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
-import org.neo4j.cypher.internal.frontend.v3_0.InternalException
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.prettifier.Prettifier
+import org.neo4j.cypher.internal.frontend.v3_1.InternalException
 import org.neo4j.kernel.GraphDatabaseQueryService
 
 case class ContentWithInit(init: Seq[String], queryResultPlaceHolder: QueryResultPlaceHolder) {

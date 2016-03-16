@@ -24,8 +24,8 @@ import java.io.{File, PrintWriter, StringWriter}
 import org.junit.Test
 import org.neo4j.cypher._
 import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_0.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.prettifier.Prettifier
 import org.neo4j.cypher.internal.javacompat.GraphImpl
 import org.neo4j.cypher.internal.{ExecutionEngine, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService

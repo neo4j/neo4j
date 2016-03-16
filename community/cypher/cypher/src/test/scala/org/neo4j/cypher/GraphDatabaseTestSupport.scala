@@ -20,14 +20,14 @@
 package org.neo4j.cypher
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.compiler.v3_0.CypherCompilerConfiguration
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp.DefaultIDPSolverConfig
-import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.compiler.v3_1.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.DefaultIDPSolverConfig
+import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundPlanContext
-import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
+import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
@@ -237,7 +237,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
   def planContext: PlanContext = {
-    val tc = mock[TransactionalContextWrapper]
+    val tc = mock[TransactionalContextWrapperv3_1]
     when(tc.statement).thenReturn(statement)
     when(tc.readOperations).thenReturn(statement.readOperations())
     when(tc.graph).thenReturn(graph)

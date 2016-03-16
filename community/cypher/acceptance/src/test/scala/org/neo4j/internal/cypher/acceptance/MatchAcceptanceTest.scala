@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathImpl
 import org.neo4j.graphdb._
 
 import scala.collection.JavaConverters._

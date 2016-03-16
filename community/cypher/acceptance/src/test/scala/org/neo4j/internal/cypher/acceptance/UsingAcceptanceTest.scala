@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_0.IDPPlannerName
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
+import org.neo4j.cypher.internal.compiler.v3_1.IDPPlannerName
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.KeyNames
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
 import org.neo4j.graphdb.schema.Schema
 import org.neo4j.graphdb.{QueryExecutionException, Result}

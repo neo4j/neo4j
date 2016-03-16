@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Assert._
 import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v3_0.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 import org.neo4j.graphdb.Node
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 

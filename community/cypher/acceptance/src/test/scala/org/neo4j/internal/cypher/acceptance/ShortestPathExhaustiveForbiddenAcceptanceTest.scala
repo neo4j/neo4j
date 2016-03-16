@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.frontend.v3_0.notification.ExhaustiveShortestPathForbiddenNotification
-import org.neo4j.cypher.internal.frontend.v3_0.{ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_1.notification.ExhaustiveShortestPathForbiddenNotification
+import org.neo4j.cypher.internal.frontend.v3_1.{ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException, InputPosition}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, ExhaustiveShortestPathForbiddenException}
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting

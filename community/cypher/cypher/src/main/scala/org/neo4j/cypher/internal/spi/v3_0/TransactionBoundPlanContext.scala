@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v3_0.spi._
 import org.neo4j.cypher.internal.frontend.v3_0.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherExecutionException, symbols}
-import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
+import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.proc.{Neo4jTypes, ProcedureSignature => KernelProced
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
+class TransactionBoundPlanContext(tc: TransactionalContextWrapperv3_1)
   extends TransactionBoundTokenContext(tc.statement) with PlanContext {
 
   @Deprecated

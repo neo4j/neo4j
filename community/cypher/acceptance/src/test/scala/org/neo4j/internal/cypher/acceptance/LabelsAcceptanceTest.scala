@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
 import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine
