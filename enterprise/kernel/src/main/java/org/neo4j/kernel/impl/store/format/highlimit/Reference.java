@@ -87,9 +87,7 @@ enum Reference
 
     private final int numberOfBytes;
     private final short highHeader;
-    private final short headerMask;
     private final int headerShift;
-    private short signBitMask;
     private final long valueOverflowMask;
 
     Reference( int numberOfBytes, byte header, int headerBits )
@@ -97,9 +95,7 @@ enum Reference
         this.numberOfBytes = numberOfBytes;
         this.headerShift = Byte.SIZE - headerBits;
         this.highHeader = (short) (((byte) (header << headerShift)) & 0xFF);
-        this.headerMask = (short) (((byte) (0xFF << headerShift)) & 0xFF);
         this.valueOverflowMask = ~valueMask( numberOfBytes, headerShift - 1 /*sign bit uses one bit*/ );
-        this.signBitMask = (short) (0x1 << (headerShift - 1));
     }
 
     private long valueMask( int numberOfBytes, int headerShift )
@@ -134,31 +130,6 @@ enum Reference
             adapter.put( (byte) (absoluteReference >>> shift), source );
         }
         while ( shift > 0 );
-    }
-
-    private boolean canDecode( short firstByte )
-    {
-        return (firstByte & headerMask) == highHeader;
-    }
-
-    private <SOURCE> long decode( short firstByte, SOURCE source, DataAdapter<SOURCE> adapter )
-    {
-        int shift = (numberOfBytes-1) << 3;
-        boolean positive = (firstByte & signBitMask) == 0;
-
-        // first (most significant) byte
-        long mask = ~(0xFFL << (headerShift - 1));
-        long result = (mask & firstByte) << shift;
-
-        do // rest of the bytes
-        {
-            shift -= 8;
-            long currentByte = adapter.get( source ) & 0xFFL;
-            result |= (currentByte << shift);
-        }
-        while ( shift > 0 );
-
-        return positive ? result : ~result;
     }
 
     private int maxBitsSupported()
@@ -216,16 +187,26 @@ enum Reference
 
     public static <SOURCE> long decode( SOURCE source, DataAdapter<SOURCE> adapter )
     {
-        short firstByte = (short) (adapter.get( source ) & 0xFF);
-        for ( Reference encoding : ENCODINGS )
+        PageCursor cursor = (PageCursor) source;
+
+        int offset = cursor.getOffset();
+        int header = cursor.getByte( offset ) & 0xFF;
+        int sizeMarks = Integer.numberOfLeadingZeros( (~(header & 0xF8)) & 0xFF ) - 24;
+        int signShift = 8 - sizeMarks - (sizeMarks == 5 ? 1 : 2);
+        long signBit = ~((header >>> signShift) & 1) + 1;
+        long register = (header & ((1 << signShift) - 1)) << 16;
+        register += cursor.getShort( ++offset ) & 0xFFFFL; // 3 bytes
+        offset++;
+
+        while ( sizeMarks > 0 )
         {
-            if ( encoding.canDecode( firstByte ) )
-            {
-                return encoding.decode( firstByte, source, adapter );
-            }
+            register <<= 8;
+            register += cursor.getByte( ++offset ) & 0xFF;
+            sizeMarks--;
         }
-        throw new UnsupportedOperationException( "Reference with first byte " + firstByte + " wasn't recognized"
-                + " as a reference" );
+
+        cursor.setOffset( offset + 1 );
+        return signBit ^ register;
     }
 
     /**
