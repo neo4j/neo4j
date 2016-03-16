@@ -394,4 +394,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     {
         return new PropertyRecord( -1 );
     }
+
+    @Override
+    protected void verifyAfterReading( PropertyRecord record, RecordLoad mode )
+    {
+        super.verifyAfterReading( record, mode );
+        record.verifyRecordIsWellFormed();
+    }
 }

@@ -153,7 +153,7 @@ public abstract class RecordFormatTest
     {
         // GIVEN
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        try ( PagedFile dontUseStoreFile = pageCache.map( new File( "store" ), PAGE_SIZE, CREATE ) )
+        try ( PagedFile storeFile = pageCache.map( new File( "store" ), PAGE_SIZE, CREATE ) )
         {
             long totalUnusedBytesPrimary = 0;
             long totalUnusedBytesSecondary = 0;
@@ -162,12 +162,9 @@ public abstract class RecordFormatTest
             RecordKey<R> key = keySupplier.get();
             Generator<R> generator = generatorSupplier.get();
             int recordSize = format.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
-            RecordBoundaryCheckingPagedFile storeFile =
-                    new RecordBoundaryCheckingPagedFile( dontUseStoreFile, recordSize );
             BatchingIdSequence idSequence = new BatchingIdSequence( random.nextBoolean() ?
                     idSureToBeOnTheNextPage( PAGE_SIZE, recordSize ) : 10 );
             long smallestUnusedBytesPrimary = recordSize;
-            long smallestUnusedBytesSecondary = recordSize;
 
             // WHEN
             long time = currentTimeMillis();
@@ -180,30 +177,7 @@ public abstract class RecordFormatTest
                 try
                 {
                     writeRecord( written, format, storeFile, recordSize, idSequence );
-
-                    long recordsUsedForWriting = storeFile.nextCalls();
-                    long unusedBytes = storeFile.unusedBytes();
-                    storeFile.resetMeasurements();
-
                     readAndVerifyRecord( written, read, format, key, storeFile, recordSize );
-
-                    if ( written.inUse() )
-                    {
-                        // unused access don't really count for "wasted space"
-                        if ( recordsUsedForWriting == 1 )
-                        {
-                            totalUnusedBytesPrimary += unusedBytes;
-                            smallestUnusedBytesPrimary = Math.min( smallestUnusedBytesPrimary, unusedBytes );
-                        }
-                        else
-                        {
-                            totalUnusedBytesSecondary += unusedBytes;
-                            smallestUnusedBytesSecondary = Math.min( smallestUnusedBytesSecondary, unusedBytes );
-                        }
-                        totalRecordsRequiringSecondUnit += (recordsUsedForWriting > 1 ? 1 : 0);
-                    }
-
-                    storeFile.resetMeasurements();
                     idSequence.reset();
                 }
                 catch ( Throwable t )

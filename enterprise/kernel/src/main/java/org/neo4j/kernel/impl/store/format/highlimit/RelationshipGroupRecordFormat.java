@@ -70,11 +70,11 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     {
         record.initialize( inUse,
                 cursor.getShort() & 0xFFFF,
-                decode( cursor, headerByte, HAS_OUTGOING_BIT, NULL ),
-                decode( cursor, headerByte, HAS_INCOMING_BIT, NULL ),
-                decode( cursor, headerByte, HAS_LOOP_BIT, NULL ),
-                decode( cursor ),
-                decode( cursor, headerByte, HAS_NEXT_BIT, NULL ) );
+                decodeCompressedReference( cursor, headerByte, HAS_OUTGOING_BIT, NULL ),
+                decodeCompressedReference( cursor, headerByte, HAS_INCOMING_BIT, NULL ),
+                decodeCompressedReference( cursor, headerByte, HAS_LOOP_BIT, NULL ),
+                decodeCompressedReference( cursor ),
+                decodeCompressedReference( cursor, headerByte, HAS_NEXT_BIT, NULL ) );
         return null;
     }
 

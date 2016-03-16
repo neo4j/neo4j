@@ -779,6 +779,8 @@ public enum LongerShortString
         if ( encoding == ENCODING_LATIN1 ) return decodeLatin1( blocks, offset, stringLength );
 
         LongerShortString table = getEncodingTable( encoding );
+        assert table != null: "We only decode LongerShortStrings after we have consistently read the PropertyBlock " +
+                              "data from the page cache. Thus, we should never have an invalid encoding header here.";
         char[] result = new char[stringLength];
         // encode shifts in the bytes with the first char at the MSB, therefore
         // we must "unshift" in the reverse order
@@ -818,6 +820,9 @@ public enum LongerShortString
         }
     }
 
+    /**
+     * Get encoding table for the given encoding header, or {@code null} if the encoding header is invalid.
+     */
     private static LongerShortString getEncodingTable( int encodingHeader )
     {
         if ( encodingHeader < 0 | ENCODINGS_BY_ENCODING.length <= encodingHeader )

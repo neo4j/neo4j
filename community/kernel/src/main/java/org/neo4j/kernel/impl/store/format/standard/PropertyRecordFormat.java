@@ -69,7 +69,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
         while ( cursor.getOffset() - offsetAtBeginning < RECORD_SIZE )
         {
             long block = cursor.getLong();
-            PropertyType type = PropertyType.getPropertyType( block, true );
+            PropertyType type = PropertyType.getPropertyTypeOrNull( block );
             if ( type == null )
             {
                 // We assume that storage is defragged
@@ -157,7 +157,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
         for ( int i = 0; i < blocks; i++ )
         {
             long block = cursor.getLong();
-            if ( PropertyType.getPropertyType( block, true ) != null )
+            if ( PropertyType.getPropertyTypeOrNull( block ) != null )
             {
                 return true;
             }

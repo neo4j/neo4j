@@ -158,6 +158,7 @@ abstract class MuninnPageCursor extends PageCursor
         pointer = victimPage; // make all future page access go to the victim page
         pageSize = 0; // make all future bound checks fail
         page = null; // make all future page navigation fail
+        currentPageId = UNBOUND_PAGE_ID;
     }
 
     @Override

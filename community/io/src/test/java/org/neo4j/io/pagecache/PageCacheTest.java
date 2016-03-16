@@ -532,6 +532,49 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
+    @Test
+    public void nextWithNegativeInitialPageIdMustReturnFalse() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            try ( PageCursor cursor = pf.io( -1, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertFalse( cursor.next() );
+            }
+            try ( PageCursor cursor = pf.io( -1, PF_SHARED_READ_LOCK ) )
+            {
+                assertFalse( cursor.next() );
+            }
+        }
+    }
+
+    @Test
+    public void nextWithNegativePageIdMustReturnFalse() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            long pageId = 12;
+            try ( PageCursor cursor = pf.io( pageId, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next( -1 ) );
+                assertThat( cursor.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+            }
+            try ( PageCursor cursor = pf.io( pageId, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                assertFalse( cursor.next( -1 ) );
+                assertThat( cursor.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+            }
+        }
+    }
+
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void rewindMustStartScanningOverFromTheBeginning() throws IOException
     {
@@ -2506,6 +2549,66 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         catch ( IllegalStateException e )
         {
             // Yay!
+        }
+    }
+
+    @Test
+    public void shouldRetryFromUnboundReadCursorMustNotThrow() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertFalse( cursor.shouldRetry() );
+        }
+    }
+
+    @Test
+    public void shouldRetryFromUnboundWriteCursorMustNotThrow() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertFalse( cursor.shouldRetry() );
+        }
+    }
+
+    @Test
+    public void shouldRetryFromUnboundLinkedReadCursorMustNotThrow() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            try ( PageCursor linked = cursor.openLinkedCursor( 1 ) )
+            {
+                assertFalse( cursor.shouldRetry() );
+            }
+        }
+    }
+
+    @Test
+    public void shouldRetryFromUnboundLinkedWriteCursorMustNotThrow() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            try ( PageCursor linked = cursor.openLinkedCursor( 1 ) )
+            {
+                assertFalse( cursor.shouldRetry() );
+            }
         }
     }
 

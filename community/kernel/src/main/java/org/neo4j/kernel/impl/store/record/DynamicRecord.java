@@ -148,7 +148,7 @@ public class DynamicRecord extends AbstractBaseRecord
                 .append( getId() )
                 .append( ",used=" ).append(inUse() ).append( "," )
                 .append("(" ).append( length ).append( "),type=" );
-        PropertyType type = PropertyType.getPropertyType( this.type << 24, true );
+        PropertyType type = PropertyType.getPropertyTypeOrNull( (long) (this.type << 24) );
         if ( type == null ) buf.append( this.type ); else buf.append( type.name() );
         buf.append( ",data=" );
         if ( type == PropertyType.STRING && data.length <= MAX_CHARS_IN_TO_STRING )

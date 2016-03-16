@@ -72,9 +72,9 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
 
         // Now read the rest of the data. The adapter will take care of moving the cursor over to the
         // other unit when we've exhausted the first one.
-        long nextRel = decode( cursor, headerByte, HAS_RELATIONSHIP_BIT, NULL );
-        long nextProp = decode( cursor, headerByte, HAS_PROPERTY_BIT, NULL );
-        long labelField = decode( cursor, headerByte, HAS_LABELS_BIT, NULL_LABELS );
+        long nextRel = decodeCompressedReference( cursor, headerByte, HAS_RELATIONSHIP_BIT, NULL );
+        long nextProp = decodeCompressedReference( cursor, headerByte, HAS_PROPERTY_BIT, NULL );
+        long labelField = decodeCompressedReference( cursor, headerByte, HAS_LABELS_BIT, NULL_LABELS );
         record.initialize( inUse, nextProp, dense, nextRel, labelField );
         return null;
     }

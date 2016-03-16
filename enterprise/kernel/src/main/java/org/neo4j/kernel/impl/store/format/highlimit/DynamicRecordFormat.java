@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat.payloadTooBigErrorMessage;
 import static org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat.readData;
 
@@ -69,9 +70,9 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
         if ( mode.shouldLoad( inUse ) )
         {
             int length = cursor.getShort() | cursor.getByte() << 16;
-            if ( length > recordSize )
+            if ( length > recordSize | length < 0 )
             {
-                return payloadTooBigErrorMessage( record, recordSize, length );
+                return payloadLengthErrorMessage( record, recordSize, length );
             }
             long next = cursor.getLong();
             boolean isStartRecord = (headerByte & START_RECORD_BIT) != 0;
@@ -79,6 +80,19 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
             readData( record, cursor );
         }
         return null;
+    }
+
+    private String payloadLengthErrorMessage( DynamicRecord record, int recordSize, int length )
+    {
+        return length < 0 ?
+               negativePayloadErrorMessage( record, length ) :
+               payloadTooBigErrorMessage( record, recordSize, length );
+    }
+
+    private String negativePayloadErrorMessage( DynamicRecord record, int length )
+    {
+        return format( "DynamicRecord[%s] claims to have a negative payload of %s bytes.",
+                record.getId(), length );
     }
 
     @Override
