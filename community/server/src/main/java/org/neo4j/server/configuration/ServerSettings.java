@@ -173,6 +173,12 @@ public interface ServerSettings
     @Description("Enable HTTP request logging.")
     Setting<Boolean> http_logging_enabled = setting( "org.neo4j.server.http.log.enabled", BOOLEAN, FALSE );
 
+    @Description("Number of HTTP logs to keep.")
+    Setting<Integer> http_logging_rotation_keep_number = setting("dbms.logs.http.rotation.keep_number", INTEGER, "5");
+
+    @Description("Size of each HTTP log that is kept.")
+    Setting<Long> http_logging_rotation_size = setting("dbms.logs.http.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+
     @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Enable GC Logging")
     Setting<Boolean> gc_logging_enabled = setting("dbms.logs.gc.enabled", BOOLEAN, FALSE);

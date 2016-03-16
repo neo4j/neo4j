@@ -74,6 +74,8 @@ public class Jetty9WebServer implements WebServer
     private boolean wadlEnabled;
     private Collection<InjectableProvider<?>> defaultInjectables;
     private Consumer<Server> jettyCreatedCallback;
+    private Long logRotationSize;
+    private Integer logRotationKeepNumber;
 
     private static class FilterDefinition
     {
@@ -321,9 +323,11 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setHttpLoggingConfiguration( File logsDirectory )
+    public void setHttpLoggingConfiguration(File logsDirectory, Long rotationSize, Integer rotationKeepNumber)
     {
         this.requestLogFile = new File( logsDirectory, "http.log" );
+        this.logRotationSize = rotationSize;
+        this.logRotationKeepNumber = rotationKeepNumber;
     }
 
     @Override
@@ -417,8 +421,8 @@ public class Jetty9WebServer implements WebServer
     {
         RequestLog requestLog = new AsyncRequestLog(
                 new DefaultFileSystemAbstraction(),
-                requestLogFile.getAbsolutePath() );
-
+                requestLogFile.getAbsolutePath(),
+                logRotationSize, logRotationKeepNumber );
         // This makes the request log handler decorate whatever other handlers are already set up
         final RequestLogHandler requestLogHandler = new RequestLogHandler();
         requestLogHandler.setRequestLog( requestLog );

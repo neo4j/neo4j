@@ -91,8 +91,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
-import static org.neo4j.server.configuration.ServerSettings.httpConnector;
-import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
+import static org.neo4j.server.configuration.ServerSettings.*;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
@@ -329,7 +328,8 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
-        webServer.setHttpLoggingConfiguration( config.get( GraphDatabaseSettings.logs_directory ) );
+        webServer.setHttpLoggingConfiguration( config.get( GraphDatabaseSettings.logs_directory ),
+                config.get( http_logging_rotation_size ), config.get( http_logging_rotation_keep_number ) );
     }
 
     private void setUpTimeoutFilter()

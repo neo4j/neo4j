@@ -48,12 +48,12 @@ public class AsyncRequestLog
     private final ExecutorService asyncLogProcessingExecutor;
     private final AsyncEvents<AsyncLogEvent> asyncEventProcessor;
 
-    public AsyncRequestLog( FileSystemAbstraction fs, String logFile ) throws IOException
+    public AsyncRequestLog( FileSystemAbstraction fs, String logFile, long rotationSize, int rotationKeepNumber ) throws IOException
     {
         NamedThreadFactory threadFactory = new NamedThreadFactory( "HTTP-Log-Rotator", true );
         ExecutorService rotationExecutor = Executors.newCachedThreadPool( threadFactory );
         Supplier<OutputStream> outputSupplier = new RotatingFileOutputStreamSupplier(
-                fs, new File( logFile ), 0, TimeUnit.DAYS.toMillis( 1 ), 7, rotationExecutor );
+                fs, new File( logFile ), rotationSize, 0, rotationKeepNumber, rotationExecutor );
         FormattedLogProvider logProvider = FormattedLogProvider.withUTCTimeZone().toOutputStream( outputSupplier );
         asyncLogProcessingExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "HTTP-Log-Writer" ) );
         asyncEventProcessor = new AsyncEvents<>( this, this );
