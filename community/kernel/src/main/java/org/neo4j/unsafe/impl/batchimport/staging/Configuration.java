@@ -55,13 +55,13 @@ public interface Configuration
         @Override
         public int batchSize()
         {
-            return 20_000;
+            return 10_000;
         }
 
         @Override
         public int movingAverageSize()
         {
-            return 1000;
+            return 100;
         }
 
         @Override

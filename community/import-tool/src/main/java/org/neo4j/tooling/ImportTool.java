@@ -74,7 +74,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
-import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
@@ -497,9 +497,9 @@ public class ImportTool
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
             @Override
-            public long pageSize()
+            public long pageCacheMemory()
             {
-                return defaultSettingsSuitableForTests ? kibiBytes( 32 ) : super.pageSize();
+                return defaultSettingsSuitableForTests ? mebiBytes( 8 ) : super.pageCacheMemory();
             }
 
             @Override
