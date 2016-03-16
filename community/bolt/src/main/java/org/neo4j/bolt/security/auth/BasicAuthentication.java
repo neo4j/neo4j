@@ -62,17 +62,17 @@ public class BasicAuthentication implements Authentication
         String password = safeCast( CREDENTIALS, authToken );
         if ( authToken.containsKey( NEW_CREDENTIALS ) )
         {
-            return update( user, password, safeCast( NEW_CREDENTIALS, authToken ) );
+            return update( user, password, safeCast( NEW_CREDENTIALS, authToken ), authToken );
         }
         else
         {
-            return authenticate( user, password );
+            return authenticate( user, password, authToken );
         }
     }
 
-    private AuthenticationResult authenticate( String user, String password ) throws AuthenticationException
+    private AuthenticationResult authenticate( String user, String password, Map<String,Object> authToken ) throws AuthenticationException
     {
-        authSubject = authManager.login( user, password );
+        authSubject = authManager.login( user, password, authToken );
         boolean credentialsExpired = false;
         switch ( authSubject.getAuthenticationResult() )
         {
@@ -90,9 +90,10 @@ public class BasicAuthentication implements Authentication
         return new BasicAuthenticationResult( authSubject, credentialsExpired );
     }
 
-    private AuthenticationResult update( String user, String password, String newPassword ) throws AuthenticationException
+    private AuthenticationResult update( String user, String password, String newPassword,
+            Map<String,Object> authToken ) throws AuthenticationException
     {
-        authSubject = authManager.login( user, password );
+        authSubject = authManager.login( user, password, authToken );
         switch ( authSubject.getAuthenticationResult() )
         {
         case SUCCESS:
