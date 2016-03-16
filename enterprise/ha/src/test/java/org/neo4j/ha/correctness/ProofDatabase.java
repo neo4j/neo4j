@@ -19,8 +19,6 @@
  */
 package org.neo4j.ha.correctness;
 
-import static org.neo4j.graphdb.Label.label;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,6 +33,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileUtils;
 
+import static org.neo4j.graphdb.Label.label;
+
 public class ProofDatabase
 {
     private final GraphDatabaseService gds;
@@ -44,7 +44,7 @@ public class ProofDatabase
     {
         File dbDir = new File( location );
         cleanDbDir( dbDir );
-        this.gds = new GraphDatabaseFactory().newEmbeddedDatabase( dbDir.getPath() );
+        this.gds = new GraphDatabaseFactory().newEmbeddedDatabase( dbDir );
     }
 
     public Node newState( ClusterState state )

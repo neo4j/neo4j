@@ -51,11 +51,11 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public abstract class DatabaseRule extends ExternalResource implements GraphDatabaseAPI
 {
@@ -372,9 +372,28 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
+    public ResourceIterable<Label> getAllLabelsInUse()
+    {
+        return database.getAllLabelsInUse();
+    }
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
+    {
+        return database.getAllRelationshipTypesInUse();
+    }
+
+    @Override
     public ResourceIterable<Label> getAllLabels()
     {
         return database.getAllLabels();
+    }
+
+
+    @Override
+    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+    {
+        return database.getAllRelationshipTypes();
     }
 
     @Override
@@ -401,17 +420,6 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         return database.findNodes( label );
     }
 
-    @Override
-    public ResourceIterable<Node> findNodesByLabelAndProperty( Label label, String key, Object value )
-    {
-        return database.findNodesByLabelAndProperty( label, key, value );
-    }
-
-    @Override
-    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
-    {
-        return database.getAllRelationshipTypes();
-    }
 
     @Override
     public boolean isAvailable( long timeout )

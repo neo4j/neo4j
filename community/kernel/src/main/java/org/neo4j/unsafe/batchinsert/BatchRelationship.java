@@ -22,8 +22,8 @@ package org.neo4j.unsafe.batchinsert;
 import org.neo4j.graphdb.RelationshipType;
 
 /**
- * Simple relationship wrapping start node id, end node id and relationship 
- * type. 
+ * Simple relationship wrapping start node id, end node id and relationship
+ * type.
  */
 public final class BatchRelationship
 {
@@ -32,7 +32,7 @@ public final class BatchRelationship
     private final long endNodeId;
     private final RelationshipType type;
 
-    BatchRelationship( long id, long startNodeId, long endNodeId,
+    public BatchRelationship( long id, long startNodeId, long endNodeId,
         RelationshipType type )
     {
         this.id = id;

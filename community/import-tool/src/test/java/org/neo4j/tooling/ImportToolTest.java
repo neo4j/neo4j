@@ -86,7 +86,6 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 public class ImportToolTest
@@ -193,7 +192,7 @@ public class ImportToolTest
         // THEN
         try ( Transaction tx = dbRule.beginTx() )
         {
-            long nodeCount = Iterables.count( at( dbRule ).getAllNodes() );
+            long nodeCount = Iterables.count( dbRule.getAllNodes() );
             assertEquals( 4097, nodeCount );
 
             tx.success();
@@ -371,7 +370,7 @@ public class ImportToolTest
                 }
             }
 
-            long nodeCount = Iterables.count( at( dbRule ).getAllNodes() );
+            long nodeCount = Iterables.count( dbRule.getAllNodes() );
             assertEquals( 10, nodeCount );
             tx.success();
         }
@@ -1271,7 +1270,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 assertTrue( "Didn't expect node with name '" + name + "'", names.remove( name ) );
@@ -1370,7 +1369,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 assertTrue( "Didn't expect node with name '" + name + "'", names.remove( name ) );
@@ -1428,7 +1427,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 assertTrue( "Didn't expect node with name '" + name + "'", names.remove( name ) );
@@ -1514,7 +1513,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 String name = (String) node.getProperty( "name" );
                 assertTrue( "Didn't expect node with name '" + name + "'", names.remove( name ) );

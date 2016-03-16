@@ -191,7 +191,7 @@ public class TestMigration
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
     private void removeProvidersFromIndexDbFile( File storeDir )

@@ -19,12 +19,12 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -32,11 +32,11 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationSchemaIndexProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 public class SchemaIndexWaitingAcceptanceTest
@@ -52,7 +52,7 @@ public class SchemaIndexWaitingAcceptanceTest
             List<KernelExtensionFactory<?>> extensions;
             extensions = Collections.<KernelExtensionFactory<?>>singletonList( singleInstanceSchemaIndexProviderFactory(
                     "test", provider ) );
-            databaseFactory.addKernelExtensions( extensions );
+            ((TestGraphDatabaseFactory) databaseFactory).addKernelExtensions( extensions );
         }
     };
 

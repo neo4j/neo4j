@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -64,10 +65,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
     }
 
-    public GraphDatabaseService newImpermanentDatabase( Map<Setting<?>, String> config )
+    public GraphDatabaseService newImpermanentDatabase( Map<Setting<?>,String> config )
     {
         GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder();
-        for ( Map.Entry<Setting<?>, String> entry : config.entrySet() )
+        for ( Map.Entry<Setting<?>,String> entry : config.entrySet() )
         {
             builder.setConfig( entry.getKey(), entry.getValue() );
         }
@@ -129,16 +130,21 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
-    @Override
     public TestGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
-        return (TestGraphDatabaseFactory) super.addKernelExtensions( newKernelExtensions );
+        getCurrentState().addKernelExtensions( newKernelExtensions );
+        return this;
     }
 
-    @Override
     public TestGraphDatabaseFactory addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
     {
-        return (TestGraphDatabaseFactory) super.addKernelExtension( newKernelExtension );
+        return addKernelExtensions( Collections.singletonList( newKernelExtension ) );
+    }
+
+    public TestGraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    {
+        getCurrentState().setKernelExtensions( newKernelExtensions );
+        return this;
     }
 
     @Override
@@ -164,18 +170,19 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     }
 
     protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
-                                                                                     final TestGraphDatabaseFactoryState state )
+            final TestGraphDatabaseFactoryState state )
     {
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
-            @SuppressWarnings("deprecation")
-            public GraphDatabaseService newDatabase( Map<String, String> config )
+            @SuppressWarnings( "deprecation" )
+            public GraphDatabaseService newDatabase( Map<String,String> config )
             {
                 return new CommunityFacadeFactory()
                 {
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    protected PlatformModule createPlatform( File storeDir, Map<String,String> params,
+                            Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
                         return new ImpermanentGraphDatabase.ImpermanentPlatformModule( storeDir, params, databaseInfo(),
                                 dependencies, graphDatabaseFacade )
@@ -195,12 +202,12 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                             }
 
                             @Override
-                            protected LogService createLogService(LogProvider logProvider)
+                            protected LogService createLogService( LogProvider logProvider )
                             {
                                 final LogProvider internalLogProvider = state.getInternalLogProvider();
                                 if ( internalLogProvider == null )
                                 {
-                                    return super.createLogService(logProvider);
+                                    return super.createLogService( logProvider );
                                 }
 
                                 final LogProvider userLogProvider = state.databaseDependencies().userLogProvider();
@@ -222,12 +229,13 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
                         };
                     }
-                }.newFacade( storeDir, config, GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
+                }.newFacade( storeDir, config,
+                        GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
     }
 
-    private Path tempFile(String name)
+    private Path tempFile( String name )
     {
         try
         {

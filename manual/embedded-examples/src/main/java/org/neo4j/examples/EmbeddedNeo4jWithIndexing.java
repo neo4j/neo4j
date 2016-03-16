@@ -30,14 +30,14 @@ import org.neo4j.io.fs.FileUtils;
 
 public class EmbeddedNeo4jWithIndexing
 {
-    private static final String DB_PATH = "target/neo4j-store";
+    private static final File DB_PATH = new File( "target/neo4j-store" );
     private static final String USERNAME_KEY = "username";
     private static GraphDatabaseService graphDb;
     private static Index<Node> nodeIndex;
 
     public static void main( final String[] args ) throws IOException
     {
-        FileUtils.deleteRecursively( new File( DB_PATH ) );
+        FileUtils.deleteRecursively( DB_PATH );
 
         // START SNIPPET: startDb
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );

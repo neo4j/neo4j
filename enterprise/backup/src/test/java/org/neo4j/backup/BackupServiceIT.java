@@ -324,7 +324,7 @@ public class BackupServiceIT
         // it should be possible to at this point to start db based on our backup and create couple of properties
         // their ids should not clash with already existing
         GraphDatabaseService backupBasedDatabase =
-                new GraphDatabaseFactory().newEmbeddedDatabase( backupDir.getAbsolutePath() );
+                new GraphDatabaseFactory().newEmbeddedDatabase( backupDir.getAbsoluteFile() );
         try
         {
             try ( Transaction transaction = backupBasedDatabase.beginTx() )

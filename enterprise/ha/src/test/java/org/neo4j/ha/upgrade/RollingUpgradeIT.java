@@ -314,11 +314,11 @@ public class RollingUpgradeIT
             break;
         }
 
-        startStandaloneDbToRunUpgrade( storeDir, i );
+        startStandaloneDbToRunUpgrade( storeDirFile, i );
 
         // start that db up in this JVM
         newDbs[i] = (GraphDatabaseAPI) new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( storeDir )
+                .newEmbeddedDatabaseBuilder( storeDirFile )
                 .setConfig( config( i ) )
                 .newGraphDatabase();
         debug( "Started " + i + " as current version" );
@@ -355,7 +355,7 @@ public class RollingUpgradeIT
         }
     }
 
-    private void startStandaloneDbToRunUpgrade( String storeDir, int dbIndex )
+    private void startStandaloneDbToRunUpgrade( File storeDir, int dbIndex )
     {
         GraphDatabaseService tempDbForUpgrade = null;
         try

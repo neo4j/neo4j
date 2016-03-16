@@ -23,10 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.index.storage.layout.FolderLayout;
+import org.neo4j.string.UTF8;
 
 /**
  * Helper class for storing a failure message that happens during an OutOfDisk situation in

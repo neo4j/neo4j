@@ -42,7 +42,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
 
 public class HaCountsIT
 {
@@ -81,7 +80,7 @@ public class HaCountsIT
 
         try ( Transaction tx = master.beginTx() )
         {
-            for ( Node node : at( master ).getAllNodes() )
+            for ( Node node : master.getAllNodes() )
             {
                 for ( Relationship relationship : node.getRelationships() )
                 {

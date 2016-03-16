@@ -36,7 +36,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.test.ha.ClusterRule;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -157,8 +156,7 @@ public class ClusterTransactionIT
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         try ( Transaction tx = master.beginTx() )
         {
-            GlobalGraphOperations gops = GlobalGraphOperations.at( master );
-            assertThat( Iterables.count( gops.getAllNodes() ), is( 3L ) );
+            assertThat( Iterables.count( master.getAllNodes() ), is( 3L ) );
         }
     }
 }

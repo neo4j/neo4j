@@ -25,22 +25,21 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
 
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -49,8 +48,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -59,7 +56,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.Math.max;
-
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -315,11 +311,12 @@ public class StoreCopyClient
 
     private GraphDatabaseService newTempDatabase( File tempStore )
     {
-        GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
+        ExternallyManagedPageCache.GraphDatabaseFactoryWithPageCacheFactory factory =
+                ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
         return factory
-                .setUserLogProvider( NullLogProvider.getInstance() )
                 .setKernelExtensions( kernelExtensions )
-                .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
+                .setUserLogProvider( NullLogProvider.getInstance() )
+                .newEmbeddedDatabaseBuilder( tempStore.getAbsoluteFile() )
                 .setConfig( "dbms.backup.enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade,

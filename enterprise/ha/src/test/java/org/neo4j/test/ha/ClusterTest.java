@@ -24,6 +24,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.logging.Level;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -43,7 +44,6 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
@@ -220,10 +220,10 @@ public class ClusterTest
         HighlyAvailableGraphDatabase first = null;
         try
         {
-            String masterStoreDir =
-                    testDirectory.directory( "testConflictingClusterPortsMaster" ).getAbsolutePath();
+            File masterStoreDir =
+                    testDirectory.directory( "testConflictingClusterPortsMaster" );
             first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( masterStoreDir )
+                    newEmbeddedDatabaseBuilder( masterStoreDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.server_id, "1" )
@@ -232,10 +232,10 @@ public class ClusterTest
 
             try
             {
-                String slaveStoreDir =
-                        testDirectory.directory( "testConflictingClusterPortsSlave" ).getAbsolutePath();
+                File slaveStoreDir =
+                        testDirectory.directory( "testConflictingClusterPortsSlave" );
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                        newHighlyAvailableDatabaseBuilder( slaveStoreDir )
+                        newEmbeddedDatabaseBuilder( slaveStoreDir )
                         .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                         .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
                         .setConfig( ClusterSettings.server_id, "2" )
@@ -264,10 +264,10 @@ public class ClusterTest
         HighlyAvailableGraphDatabase first = null;
         try
         {
-            String storeDir =
-                    testDirectory.directory( "testConflictingHaPorts" ).getAbsolutePath();
+            File storeDir =
+                    testDirectory.directory( "testConflictingHaPorts" );
              first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( storeDir )
+                     newEmbeddedDatabaseBuilder( storeDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.server_id, "1" )
@@ -277,7 +277,7 @@ public class ClusterTest
             try
             {
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                        newHighlyAvailableDatabaseBuilder( storeDir )
+                        newEmbeddedDatabaseBuilder( storeDir )
                         .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                         .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" )
                         .setConfig( ClusterSettings.server_id, "2" )
@@ -338,8 +338,7 @@ public class ClusterTest
     public void givenEmptyHostListWhenClusterStartupThenFormClusterWithSingleInstance() throws Exception
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( testDirectory.directory(
-                        "singleinstance" ).getAbsolutePath() ).
+                newEmbeddedDatabaseBuilder( testDirectory.directory( "singleinstance" ) ).
                 setConfig( ClusterSettings.server_id, "1" ).
                 setConfig( ClusterSettings.initial_hosts, "" ).
                 newGraphDatabase();

@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.function.Predicate;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,12 +47,12 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils

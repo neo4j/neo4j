@@ -30,7 +30,6 @@ import org.neo4j.server.plugins.Name;
 import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 // START SNIPPET: GetAll
 @Description( "An extension to the Neo4j Server for getting all nodes or relationships" )

@@ -64,8 +64,7 @@ public class BatchInsertDocTest
         BatchInserter inserter = null;
         try
         {
-            inserter = BatchInserters.inserter(
-                    new File( "target/batchinserter-example" ).getAbsolutePath() );
+            inserter = BatchInserters.inserter( tempStoreDir );
 
             Label personLabel = Label.label( "Person" );
             inserter.createDeferredSchemaIndex( personLabel ).on( "name" ).create();
@@ -124,7 +123,7 @@ public class BatchInsertDocTest
         Map<String, String> config = new HashMap<>();
         config.put( "dbms.memory.pagecache.size", "512m" );
         BatchInserter inserter = BatchInserters.inserter(
-                new File( "target/batchinserter-example-config" ).getAbsolutePath(), config );
+                new File( "target/batchinserter-example-config" ).getAbsoluteFile(), config );
         // Insert data here ... and then shut down:
         inserter.shutdown();
         // END SNIPPET: configuredInsert
@@ -144,7 +143,7 @@ public class BatchInsertDocTest
         {
             Map<String, String> config = MapUtil.load( input );
             BatchInserter inserter = BatchInserters.inserter(
-                    "target/docs/batchinserter-example-config", config );
+                    new File( "target/docs/batchinserter-example-config" ), config );
             // Insert data here ... and then shut down:
             inserter.shutdown();
         }

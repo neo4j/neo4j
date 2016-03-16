@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell;
 
+import java.io.File;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -28,7 +30,7 @@ public class StartDbWithShell
 {
     public static void main( String[] args ) throws Exception
     {
-        String path = args.length > 0 ? args[0] : "target/test-data/shell-db";
+        File path = args.length > 0 ? new File( args[0] ) : new File( "target/test-data/shell-db" );
         GraphDatabaseService db = new GraphDatabaseFactory().
             newEmbeddedDatabaseBuilder( path ).
             setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE).

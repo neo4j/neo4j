@@ -50,7 +50,7 @@ public class HaKernelDataTest
         protected HighlyAvailableGraphDatabase createResource( TargetDirectory.TestDirectory dir ) throws Exception
         {
             return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                    newHighlyAvailableDatabaseBuilder( dir.directory().getAbsolutePath() )
+                    newEmbeddedDatabaseBuilder( dir.directory().getAbsoluteFile() )
                     .setConfig( ClusterSettings.server_id, "1" )
                     .setConfig( ClusterSettings.initial_hosts, ":5001" )
                     .newGraphDatabase();

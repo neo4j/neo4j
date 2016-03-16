@@ -1054,9 +1054,9 @@ order by a.COL1""")
 
   private def createReadOnlyEngine(): ExecutionEngine = {
     FileUtils.deleteRecursively(new File("target/readonly"))
-    val old = new TestGraphDatabaseFactory().newEmbeddedDatabase("target/readonly")
+    val old = new TestGraphDatabaseFactory().newEmbeddedDatabase( new File( "target/readonly" ) )
     old.shutdown()
-    val db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/readonly")
+    val db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( new File( "target/readonly" ) )
       .setConfig( GraphDatabaseSettings.read_only, "true" )
       .newGraphDatabase()
     new ExecutionEngine(new GraphDatabaseCypherService(db))

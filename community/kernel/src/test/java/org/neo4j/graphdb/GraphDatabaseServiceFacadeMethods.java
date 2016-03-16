@@ -82,20 +82,6 @@ public class GraphDatabaseServiceFacadeMethods
         }
     };
 
-    static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY =
-        new FacadeMethod<GraphDatabaseService>(
-                "ResourceIterator<Node> findNodes( Label label, String key, Object value )" )
-    {
-        @Override
-        public void call( GraphDatabaseService graphDatabaseService )
-        {
-            for ( Node node : graphDatabaseService.findNodesByLabelAndProperty( label( "bar" ), "baz", 23 ) )
-            {
-
-            }
-        }
-    };
-
     static final FacadeMethod<GraphDatabaseService> FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED =
         new FacadeMethod<GraphDatabaseService>(
                 "ResourceIterator<Node> findNodeByLabelAndProperty( Label label, String key, Object value )" )
@@ -124,6 +110,26 @@ public class GraphDatabaseServiceFacadeMethods
                 }
             };
 
+    static final FacadeMethod<GraphDatabaseService> GET_ALL_LABELS =
+            new FacadeMethod<GraphDatabaseService>( "Iterable<Label> getAllLabels()" )
+            {
+                @Override
+                public void call( GraphDatabaseService graphDatabaseService )
+                {
+                    graphDatabaseService.getAllLabels();
+                }
+            };
+
+    static final FacadeMethod<GraphDatabaseService> GET_ALL_LABELS_IN_USE =
+            new FacadeMethod<GraphDatabaseService>( "Iterable<Label> getAllLabelsInUse()" )
+            {
+                @Override
+                public void call( GraphDatabaseService graphDatabaseService )
+                {
+                    graphDatabaseService.getAllLabelsInUse();
+                }
+            };
+
     static final FacadeMethod<GraphDatabaseService> GET_ALL_RELATIONSHIP_TYPES =
             new FacadeMethod<GraphDatabaseService>( "Iterable<RelationshipType> getAllRelationshipTypes()" )
     {
@@ -133,14 +139,13 @@ public class GraphDatabaseServiceFacadeMethods
             graphDatabaseService.getAllRelationshipTypes();
         }
     };
-
-    static final FacadeMethod<GraphDatabaseService> GET_ALL_LABELS =
-            new FacadeMethod<GraphDatabaseService>( "Iterable<Label> getAllLabels()" )
+    static final FacadeMethod<GraphDatabaseService> GET_ALL_RELATIONSHIP_TYPES_IN_USE =
+            new FacadeMethod<GraphDatabaseService>( "Iterable<RelationshipType> getAllRelationshipTypesInUse()" )
     {
         @Override
         public void call( GraphDatabaseService graphDatabaseService )
         {
-            graphDatabaseService.getAllLabels();
+            graphDatabaseService.getAllRelationshipTypesInUse();
         }
     };
 
@@ -166,19 +171,20 @@ public class GraphDatabaseServiceFacadeMethods
 
     static final Iterable<FacadeMethod<GraphDatabaseService>> ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS =
         unmodifiableCollection( asList(
-            CREATE_NODE,
-            CREATE_NODE_WITH_LABELS,
-            GET_NODE_BY_ID,
-            GET_RELATIONSHIP_BY_ID,
-            GET_ALL_NODES,
-            FIND_NODES_BY_LABEL_AND_PROPERTY,
-            FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED,
-            FIND_NODES_BY_LABEL,
-            GET_ALL_RELATIONSHIP_TYPES,
-            GET_ALL_LABELS,
-            GET_ALL_PROPERTY_KEYS,
-            SCHEMA
-            // TODO: INDEX
+                CREATE_NODE,
+                CREATE_NODE_WITH_LABELS,
+                GET_NODE_BY_ID,
+                GET_RELATIONSHIP_BY_ID,
+                GET_ALL_NODES,
+                FIND_NODES_BY_LABEL_AND_PROPERTY_DEPRECATED,
+                FIND_NODES_BY_LABEL,
+                GET_ALL_LABELS,
+                GET_ALL_LABELS_IN_USE,
+                GET_ALL_RELATIONSHIP_TYPES,
+                GET_ALL_RELATIONSHIP_TYPES_IN_USE,
+                GET_ALL_PROPERTY_KEYS,
+                SCHEMA
+                // TODO: INDEX
         ) );
 
 

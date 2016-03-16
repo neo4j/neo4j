@@ -44,8 +44,9 @@ public class TestIndexDelectionFs
     @BeforeClass
     public static void doBefore() throws IOException
     {
-        FileUtils.deleteRecursively( new File( "target/test-data/deletion" ) );
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( "target/test-data/deletion" );
+        File directory = new File( "target/test-data/deletion" );
+        FileUtils.deleteRecursively( directory );
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
     }
 
     @AfterClass

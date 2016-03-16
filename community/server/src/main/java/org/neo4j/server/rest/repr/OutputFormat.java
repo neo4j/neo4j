@@ -22,7 +22,6 @@ package org.neo4j.server.rest.repr;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -31,10 +30,10 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.StreamingOutput;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.server.rest.web.NodeNotFoundException;
 import org.neo4j.server.rest.web.RelationshipNotFoundException;
 import org.neo4j.server.web.HttpHeaderUtils;
+import org.neo4j.string.UTF8;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;

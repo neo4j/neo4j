@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -34,6 +33,7 @@ import org.neo4j.kernel.impl.store.ShortArray;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
 import static org.neo4j.kernel.impl.store.PropertyType.BOOL;

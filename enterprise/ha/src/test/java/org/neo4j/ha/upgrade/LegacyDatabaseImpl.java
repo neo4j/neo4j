@@ -61,10 +61,10 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     public static void main( String[] args ) throws Exception
     {
         Args arguments = Args.parse( args );
-        String storeDir = arguments.orphans().get( 0 );
+        File storeDir = new File( arguments.orphans().get( 0 ) );
 
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestHighlyAvailableGraphDatabaseFactory()
-                .newHighlyAvailableDatabaseBuilder( storeDir )
+                .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( arguments.asMap() )
                 .newGraphDatabase();
 
@@ -73,9 +73,9 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     }
 
     private final GraphDatabaseAPI db;
-    private final String storeDir;
+    private final File storeDir;
 
-    public LegacyDatabaseImpl( String storeDir, GraphDatabaseAPI db ) throws RemoteException
+    public LegacyDatabaseImpl( File storeDir, GraphDatabaseAPI db ) throws RemoteException
     {
         super();
         this.storeDir = storeDir;
@@ -150,7 +150,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     @Override
     public String getStoreDir()
     {
-        return storeDir;
+        return storeDir.getPath();
     }
 
     @Override

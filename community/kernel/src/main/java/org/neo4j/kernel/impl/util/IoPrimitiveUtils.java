@@ -26,10 +26,10 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
+import org.neo4j.string.UTF8;
 
 public abstract class IoPrimitiveUtils
 {

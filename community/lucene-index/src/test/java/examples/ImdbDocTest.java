@@ -614,10 +614,10 @@ public class ImdbDocTest
     @Test
     public void batchInsert() throws Exception
     {
-        Neo4jTestCase.deleteFileOrDirectory( new File(
-                "target/neo4jdb-batchinsert" ) );
+        File file = new File( "target/neo4jdb-batchinsert" );
+        Neo4jTestCase.deleteFileOrDirectory( file );
         // START SNIPPET: batchInsert
-        BatchInserter inserter = BatchInserters.inserter( "target/neo4jdb-batchinsert" );
+        BatchInserter inserter = BatchInserters.inserter( file );
         BatchInserterIndexProvider indexProvider =
                 new LuceneBatchInserterIndexProvider( inserter );
         BatchInserterIndex actors =
@@ -636,7 +636,7 @@ public class ImdbDocTest
         inserter.shutdown();
         // END SNIPPET: batchInsert
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( "target/neo4jdb-batchinsert" );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( file );
         try ( Transaction tx = db.beginTx() )
         {
             Index<Node> index = db.index().forNodes( "actors" );

@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
+import org.neo4j.string.UTF8;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 

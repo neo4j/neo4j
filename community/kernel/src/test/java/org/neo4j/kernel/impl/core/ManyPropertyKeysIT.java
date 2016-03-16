@@ -117,7 +117,7 @@ public class ManyPropertyKeysIT
 
     private GraphDatabaseAPI database()
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsoluteFile() );
     }
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException

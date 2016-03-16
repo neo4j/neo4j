@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.io.File;
-import java.util.Map;
-
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -40,23 +40,23 @@ import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 @Ignore( "Requires a lot of disk space" )
 public class ProveFiveBillionIT
 {
-    private static final String PATH = "target/var/5b";
+    private static final File PATH = new File( "target/var/5b" );
     private static final RelationshipType TYPE = RelationshipType.withName( "CHAIN" );
 
     @Test
     public void proveIt() throws Exception
     {
-        deleteFileOrDirectory( new File( PATH ) );
+        deleteFileOrDirectory( PATH );
         BatchInserter inserter = BatchInserters.inserter( PATH/*, stringMap(
                 "neostore.nodestore.db.mapped_memory", "300M",
                 "neostore.relationshipstore.db.mapped_memory", "800M",
                 "neostore.propertystore.db.mapped_memory", "100M",
                 "neostore.propertystore.db.strings.mapped_memory", "100M" ) */);
-        
+
         // Create one giant chain of nodes n1->n2->n3 where each node will have
         // an int property and each rel a long string property. This will yield
         // 5b nodes/relationships, 10b property records and 5b dynamic records.
-        
+
         // Start off by creating the first 4 billion (or so) entities with the
         // batch inserter just to speed things up a little
         long first = inserter.createNode(map());
@@ -74,7 +74,7 @@ public class ProveFiveBillionIT
         }
         inserter.shutdown();
         System.out.println( "Switch to embedded" );
-        
+
         // Then create the rest with embedded graph db.
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
         Node firstNode = db.getNodeById( first );
@@ -92,7 +92,7 @@ public class ProveFiveBillionIT
                 tx = db.beginTx();
             }
         }
-        
+
         // Here we have a huge db. Loop through it and count chain length.
 /*        long count = 0;
         Node node = db.getReferenceNode();
@@ -106,7 +106,7 @@ public class ProveFiveBillionIT
         }
         System.out.println( count );
         assertTrue( count > 4900000000L );*/
-        
+
         db.shutdown();
     }
 }
