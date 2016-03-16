@@ -130,8 +130,6 @@ public class EdgeServerReplicationIT
         cluster.shutdownCoreServers();
         cluster = Cluster.start( dir.directory(), 3, 0 );
 
-        System.out.println("restarted cluster...");
-
         // when
         executeOnLeaderWithRetry( db -> {
             Node node = db.createNode();

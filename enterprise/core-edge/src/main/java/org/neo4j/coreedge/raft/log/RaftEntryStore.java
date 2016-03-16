@@ -23,6 +23,12 @@ import java.io.IOException;
 
 import org.neo4j.cursor.IOCursor;
 
+/**
+ * The only responsibility of a {@link RaftEntryStore} is to provide {@link IOCursor}s that run over a series of
+ * {@link RaftLogAppendRecord}s. The cursor is expected to start at the specified logIndex and run until the end of the
+ * raft log.Semantics as to whether truncated entries are returned, the behaviour when the end is reached and other
+ * details are purposefully left to the implementations.
+ */
 public interface RaftEntryStore
 {
     IOCursor<RaftLogAppendRecord> getEntriesFrom( long logIndex ) throws IOException, RaftLogCompactedException;

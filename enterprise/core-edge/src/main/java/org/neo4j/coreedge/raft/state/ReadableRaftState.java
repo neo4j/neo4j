@@ -47,4 +47,6 @@ public interface ReadableRaftState<MEMBER>
     FollowerStates<MEMBER> followerStates();
 
     ReadableRaftLog entryLog();
+
+    long commitIndex();
 }

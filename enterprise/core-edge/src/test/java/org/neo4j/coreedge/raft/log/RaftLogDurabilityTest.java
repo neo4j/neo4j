@@ -32,10 +32,10 @@ import org.junit.runners.Parameterized.Parameters;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
+import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
 import org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -46,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
+import static org.neo4j.coreedge.raft.log.RaftLogHelper.hasNoContent;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.NAIVE;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.PHYSICAL;
@@ -82,11 +83,12 @@ public class RaftLogDurabilityTest
             int metadataCacheSize = 8;
             int fileHeaderCacheSize = 2;
 
-            PhysicalRaftLog log = new PhysicalRaftLog( fileSystem, directory, rotateAtSizeBytes,
-                    entryCacheSize, metadataCacheSize, fileHeaderCacheSize,
-                    new PhysicalLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(), () -> mock(
+            PhysicalRaftLog log = new PhysicalRaftLog( fileSystem, directory, rotateAtSizeBytes, "1 files",
+                    entryCacheSize, fileHeaderCacheSize,
+                    new PhysicalRaftLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(), () -> mock(
                     DatabaseHealth.class ),
-                    NullLogProvider.getInstance() );
+                    NullLogProvider.getInstance(), new RaftLogMetadataCache( metadataCacheSize ) );
+            log.init();
             log.start();
             return log;
         };
@@ -107,7 +109,6 @@ public class RaftLogDurabilityTest
 
         verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog -> {
             assertThat( myLog.appendIndex(), is( 0L ) );
-            assertThat( myLog.commitIndex(), is( -1L ) );
             assertThat( readLogEntry( myLog, 0 ), equalTo( logEntry ) );
         } );
     }
@@ -119,11 +120,9 @@ public class RaftLogDurabilityTest
 
         RaftLogEntry logEntry = new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) );
         log.append( logEntry );
-        log.commit( 0 );
 
         verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog -> {
             assertThat( myLog.appendIndex(), is( 0L ) );
-            assertThat( myLog.commitIndex(), is( 0L ) );
         } );
     }
 
@@ -158,9 +157,8 @@ public class RaftLogDurabilityTest
         log.append( logEntryB );
         log.truncate( 1 );
 
-        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog -> {
-            assertThat( myLog.appendIndex(), is( 0L ) );
-        } );
+        verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(),
+                myLog -> assertThat( myLog.appendIndex(), is( 0L ) ) );
     }
 
     @Test
@@ -235,6 +233,8 @@ public class RaftLogDurabilityTest
         final long finalAppendIndex = log.appendIndex();
         final long finalPrunedIndex = prunedIndex;
         verifyCurrentLogAndNewLogLoadedFromFileSystem( log, fsRule.get(), myLog -> {
+            assertThat( log, hasNoContent( 0 ) );
+            assertThat( log, hasNoContent( finalPrunedIndex ) );
             assertThat( myLog.prevIndex(), equalTo( finalPrunedIndex ) );
             assertThat( myLog.appendIndex(), is( finalAppendIndex ) );
             assertThat( readLogEntry( myLog, finalPrunedIndex + 1 ).content(), equalTo( valueOf( (int) finalPrunedIndex + 1 ) ) );

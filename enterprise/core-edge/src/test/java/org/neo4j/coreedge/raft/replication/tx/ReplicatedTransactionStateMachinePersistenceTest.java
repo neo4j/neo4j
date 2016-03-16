@@ -22,13 +22,16 @@ package org.neo4j.coreedge.raft.replication.tx;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
@@ -36,6 +39,7 @@ import java.util.UUID;
 
 import org.junit.Test;
 
+import org.mockito.stubbing.Stubber;
 import org.neo4j.coreedge.raft.replication.session.GlobalSession;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
 import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
@@ -85,50 +89,51 @@ public class ReplicatedTransactionStateMachinePersistenceTest
         verify( commitProcess, times( 1 ) ).commit( any(), any(), any() );
     }
 
-//    @Test
-//    public void shouldUpdateSessionStateOnRecoveryEvenIfTxCommittedOnFirstTry() throws Exception
-//    {
-//        // given
-//        TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
-//
-//        GlobalSessionTrackerState<RaftTestMember> sessionTracker = mock( GlobalSessionTrackerState.class );
-//        when( sessionTracker.validateOperation( any(), any() ) ).thenReturn( true );
-//
-//        Stubber stubber = doThrow( new RuntimeException() );
-//        stubber.when( sessionTracker ).update( any(), any(), anyLong() );
-//        stubber.doNothing().when( sessionTracker ).update( any(), any(), anyLong() );
-//
-//        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess, sessionTracker );
-//
-//        ReplicatedTransaction<RaftTestMember> rtx = replicatedTx();
-//
-//        // when
-//        // we try to commit but fail on session update, and then try to do recovery
-//        try
-//        {
-//            // transaction gets committed at log index 99. It will reach the tx log but not the session state
-//            stateMachine.applyCommand( rtx, 99 );
-//            fail( "test setup should have resulted in an exception by now" );
-//        }
-//        catch ( RuntimeException totallyExpectedByTestSetup )
-//        {
-//            // dully ignored
-//        }
-//        // reset state so we can do proper validation below
-//        reset( commitProcess );
-//
-//        // now let's do recovery. The log contains the last tx, so the last committed log index is the previous: 99
-//        stateMachine.setLastCommittedIndex( 99 );
-//
-//        // however, the raft log will give us the same tx, as we did not return successfully from the last
-//        // onReplicated()
-//        stateMachine.applyCommand( rtx, 99 );
-//
-//        // then
-//        // there should be no commit of tx, but an update on the session state
-//        verifyZeroInteractions( commitProcess );
-//        verify( sessionTracker, times( 2 ) ).update( any(), any(), eq( 99L ) );
-//    }
+    @Test
+    public void shouldUpdateSessionStateOnRecoveryEvenIfTxCommittedOnFirstTry() throws Exception
+    {
+        // given
+        TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
+
+        GlobalSessionTrackerState<RaftTestMember> sessionTracker = mock( GlobalSessionTrackerState.class );
+        when( sessionTracker.validateOperation( any(), any() ) ).thenReturn( true );
+
+        Stubber stubber = doThrow( new RuntimeException() );
+        stubber.when( sessionTracker ).update( any(), any(), anyLong() );
+        stubber.doNothing().when( sessionTracker ).update( any(), any(), anyLong() );
+
+        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = stateMachine( commitProcess, sessionTracker,
+                mock( RecoverTransactionLogState.class ) );
+
+        ReplicatedTransaction<RaftTestMember> rtx = replicatedTx();
+
+        // when
+        // we try to commit but fail on session update, and then try to do recovery
+        try
+        {
+            // transaction gets committed at log index 99. It will reach the tx log but not the session state
+            stateMachine.applyCommand( rtx, 99 );
+            fail( "test setup should have resulted in an exception by now" );
+        }
+        catch ( RuntimeException totallyExpectedByTestSetup )
+        {
+            // dully ignored
+        }
+        // reset state so we can do proper validation below
+        reset( commitProcess );
+
+        // now let's do recovery. The log contains the last tx, so the last committed log index is the previous: 99
+        stateMachine.setLastCommittedIndex( 99 );
+
+        // however, the raft log will give us the same tx, as we did not return successfully from the last
+        // onReplicated()
+        stateMachine.applyCommand( rtx, 99 );
+
+        // then
+        // there should be no commit of tx, but an update on the session state
+        verifyZeroInteractions( commitProcess );
+        verify( sessionTracker, times( 2 ) ).update( any(), any(), eq( 99L ) );
+    }
 
     @Test
     public void shouldSkipUpdatingSessionStateForSameIndexAfterSuccessfulUpdate() throws Exception
@@ -161,8 +166,9 @@ public class ReplicatedTransactionStateMachinePersistenceTest
         verify( sessionTrackerState, times( 1 ) ).update( any(), any(), eq( 99L ) );
     }
 
-    public ReplicatedTransactionStateMachine<RaftTestMember> stateMachine( TransactionCommitProcess commitProcess,
-                                                                           GlobalSessionTrackerState<RaftTestMember> sessionTrackerState, RecoverTransactionLogState recoverTransactionLogState )
+    public ReplicatedTransactionStateMachine<RaftTestMember> stateMachine(
+            TransactionCommitProcess commitProcess, GlobalSessionTrackerState<RaftTestMember> sessionTrackerState,
+            RecoverTransactionLogState recoverTransactionLogState )
     {
         return new ReplicatedTransactionStateMachine<>(
                 commitProcess,

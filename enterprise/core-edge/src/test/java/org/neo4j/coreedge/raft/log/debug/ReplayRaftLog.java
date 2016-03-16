@@ -53,7 +53,7 @@ public class ReplayRaftLog
         NaiveDurableRaftLog log = new NaiveDurableRaftLog( new DefaultFileSystemAbstraction(),
                 logDirectory, new CoreReplicatedContentMarshal(), NullLogProvider.getInstance() );
 
-        long totalCommittedEntries = log.commitIndex();
+        long totalCommittedEntries = log.appendIndex(); // Not really, but we need to have a way to pass in the commit index
 
 
 //        File target = new File( to );

@@ -26,7 +26,6 @@ import org.neo4j.coreedge.raft.RaftMessageHandler;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
 import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
-import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -37,6 +36,7 @@ import org.neo4j.helpers.collection.FilteringIterable;
 import org.neo4j.logging.Log;
 
 import static java.lang.Math.max;
+
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
@@ -162,11 +162,10 @@ public class Leader implements RaftMessageHandler
                         // TODO: Test that mismatch between voting and participating members affects commit outcome
 
                         long quorumAppendIndex = Followers.quorumAppendIndex( ctx.votingMembers(), outcome.getFollowerStates() );
-                        if ( quorumAppendIndex > ctx.entryLog().commitIndex() )
+                        if ( quorumAppendIndex > ctx.commitIndex() )
                         {
                             outcome.setLeaderCommit( quorumAppendIndex );
-
-                            outcome.addLogCommand( new CommitCommand( quorumAppendIndex ) );
+                            outcome.setCommitIndex( quorumAppendIndex );
                             outcome.addShipCommand( new ShipCommand.CommitUpdate() );
                         }
                     }
@@ -180,7 +179,6 @@ public class Leader implements RaftMessageHandler
                     }
                     else
                     {
-                    System.out.println("WOULD LIKE TO BE IN HERE");
                         // There are no earlier entries, message the follower that we have compacted so that
                         // it can take appropriate action.
                         outcome.addOutgoingMessage( new RaftMessages.Directed<>( response.from(),

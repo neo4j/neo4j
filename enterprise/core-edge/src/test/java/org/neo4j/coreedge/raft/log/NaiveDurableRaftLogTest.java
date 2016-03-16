@@ -75,13 +75,6 @@ public class NaiveDurableRaftLogTest
         verify( entriesChannel ).force( anyBoolean() );
         verify( contentChannel, times( 2 ) ).writeAll( any( ByteBuffer.class ), anyInt() );
         verify( contentChannel ).force( anyBoolean() );
-
-        // When
-        log.commit( 2 );
-
-        // Then
-        verify( commitChannel ).writeAll( any( ByteBuffer.class ), anyInt() );
-        verify( commitChannel ).force( anyBoolean() );
     }
 
     @Test

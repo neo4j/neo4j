@@ -124,14 +124,15 @@ public class CoreToCoreCopySnapshotIT
         // given
         File dbDir = dir.directory();
         Map<String,String> params = stringMap(
-                CoreEdgeClusterSettings.raft_log_pruning.name(), "1 files",
-                CoreEdgeClusterSettings.raft_log_rotation_size.name(), "10K" );
+                CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
+                CoreEdgeClusterSettings.raft_log_pruning.name(), "3 entries",
+                CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K" );
 
         cluster = Cluster.start( dbDir, 3, 0, params );
 
         CoreGraphDatabase source =
                 cluster.coreTx( ( db, tx ) -> {
-                    createStore( db, 100 );
+                    createStore( db, 10000 );
                     tx.success();
                 } );
 

@@ -47,6 +47,7 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
     private long lastLogIndexBeforeWeBecameLeader = -1;
     private FollowerStates<MEMBER> followerStates = new FollowerStates<>();
     private final RaftLog entryLog;
+    private long commitIndex = -1;
 
     public RaftState( MEMBER myself, StateStorage<TermState> termStorage, RaftMembership<MEMBER> membership,
                       RaftLog entryLog, StateStorage<VoteState<MEMBER>> voteStorage )
@@ -126,6 +127,13 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
         return entryLog;
     }
 
+    @Override
+    public long commitIndex()
+    {
+        return commitIndex;
+    }
+
+
     public void update( Outcome<MEMBER> outcome ) throws IOException, RaftLogCompactedException
     {
         if ( termState.update( outcome.getTerm() ) )
@@ -146,5 +154,6 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
         {
             logCommand.applyTo( entryLog );
         }
+        commitIndex = outcome.getCommitIndex();
     }
 }

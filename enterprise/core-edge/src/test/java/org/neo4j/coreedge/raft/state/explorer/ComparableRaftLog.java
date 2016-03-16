@@ -39,6 +39,5 @@ public class ComparableRaftLog extends InMemoryRaftLog
                 append( cursor.get() );
             }
         }
-        commit( raftLog.commitIndex() );
     }
 }

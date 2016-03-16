@@ -56,11 +56,11 @@ public class RaftStateTest
                 new InMemoryStateStorage<>( new VoteState<>( ) ) );
 
         raftState.update( new Outcome<>( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, initialFollowerStates(), true, emptyLogCommands(),
-                emptyOutgoingMessages(), Collections.emptySet() ) );
+                emptyOutgoingMessages(), Collections.emptySet(), -1) );
 
         // when
         raftState.update( new Outcome<>( CANDIDATE, 1, null, -1, null, new HashSet<>(), -1, new FollowerStates<>(), true, emptyLogCommands(),
-                emptyOutgoingMessages(), Collections.emptySet() ) );
+                emptyOutgoingMessages(), Collections.emptySet(), -1) );
 
         // then
         assertEquals( 0, raftState.followerStates().size() );

@@ -106,7 +106,7 @@ public class PositionAwarePhysicalFlushableChannel implements FlushablePositionA
         channel.close();
     }
 
-    void setChannel( LogVersionedStoreChannel channel )
+    public void setChannel( LogVersionedStoreChannel channel )
     {
         this.logVersionedStoreChannel = channel;
         this.channel.setChannel( channel );

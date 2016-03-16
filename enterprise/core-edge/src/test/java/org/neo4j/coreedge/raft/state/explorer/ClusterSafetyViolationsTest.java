@@ -19,10 +19,16 @@
  */
 package org.neo4j.coreedge.raft.state.explorer;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.junit.Test;
 
+import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.roles.Role;
+import org.neo4j.coreedge.server.RaftTestMember;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -46,15 +52,15 @@ public class ClusterSafetyViolationsTest
         clusterState.states.get( member( 0 ) ).entryLog.append( new RaftLogEntry( 1, valueOf( 2 ) ) );
         clusterState.states.get( member( 1 ) ).entryLog.append( new RaftLogEntry( 1, valueOf( 3 ) ) );
 
-        clusterState.states.get( member( 0 ) ).entryLog.commit( 0 );
-        clusterState.states.get( member( 1 ) ).entryLog.commit( 0 );
+        commit( clusterState, member( 0 ), 0 );
+        commit( clusterState, member( 1 ), 0 );
 
         // then
         assertFalse( inconsistentCommittedLogEntries( clusterState ) );
 
         // when
-        clusterState.states.get( member( 0 ) ).entryLog.commit( 1 );
-        clusterState.states.get( member( 1 ) ).entryLog.commit( 1 );
+        commit( clusterState, member( 0 ), 1 );
+        commit( clusterState, member( 1 ), 1 );
 
         // then
         assertTrue( inconsistentCommittedLogEntries( clusterState ) );
@@ -72,15 +78,15 @@ public class ClusterSafetyViolationsTest
         clusterState.states.get( member( 0 ) ).entryLog.append( new RaftLogEntry( 1, valueOf( 2 ) ) );
         clusterState.states.get( member( 1 ) ).entryLog.append( new RaftLogEntry( 2, valueOf( 2 ) ) );
 
-        clusterState.states.get( member( 0 ) ).entryLog.commit( 0 );
-        clusterState.states.get( member( 1 ) ).entryLog.commit( 0 );
+        commit( clusterState, member( 0 ), 0 );
+        commit( clusterState, member( 1 ), 0 );
 
         // then
         assertFalse( inconsistentCommittedLogEntries( clusterState ) );
 
         // when
-        clusterState.states.get( member( 0 ) ).entryLog.commit( 1 );
-        clusterState.states.get( member( 1 ) ).entryLog.commit( 1 );
+        commit( clusterState, member( 0 ), 1 );
+        commit( clusterState, member( 1 ), 1 );
 
         // then
         assertTrue( inconsistentCommittedLogEntries( clusterState ) );
@@ -100,22 +106,22 @@ public class ClusterSafetyViolationsTest
         clusterState.states.get( member( 1 ) ).entryLog.append( new RaftLogEntry( 1, valueOf( 2 ) ) );
         clusterState.states.get( member( 2 ) ).entryLog.append( new RaftLogEntry( 2, valueOf( 2 ) ) );
 
-        clusterState.states.get( member( 0 ) ).entryLog.commit( 0 );
-        clusterState.states.get( member( 1 ) ).entryLog.commit( 0 );
-        clusterState.states.get( member( 2 ) ).entryLog.commit( 0 );
+        commit( clusterState, member( 0 ), 0 );
+        commit( clusterState, member( 1 ), 0 );
+        commit( clusterState, member( 2 ), 0 );
 
         // then
         assertFalse( inconsistentCommittedLogEntries( clusterState ) );
 
         // when
-        clusterState.states.get( member( 0 ) ).entryLog.commit( 1 );
-        clusterState.states.get( member( 1 ) ).entryLog.commit( 1 );
+        commit( clusterState, member( 0 ), 1 );
+        commit( clusterState, member( 1 ), 1 );
 
         // then
         assertFalse( inconsistentCommittedLogEntries( clusterState ) );
 
         // when
-        clusterState.states.get( member( 2 ) ).entryLog.commit( 1 );
+        commit( clusterState, member( 2 ), 1 );
 
         // then
         assertTrue( inconsistentCommittedLogEntries( clusterState ) );
@@ -157,5 +163,13 @@ public class ClusterSafetyViolationsTest
 
         // then
         assertFalse( multipleLeadersInSameTerm( clusterState ) );
+    }
+
+    private void commit( ClusterState clusterState, RaftTestMember member, long commitIndex ) throws IOException, RaftLogCompactedException
+    {
+        ComparableRaftState state = clusterState.states.get( member );
+        Outcome<RaftTestMember> outcome = new Outcome<>( clusterState.roles.get( member ), state );
+        outcome.setCommitIndex( commitIndex );
+        state.update( outcome );
     }
 }
