@@ -392,23 +392,16 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
-    {
-        return allInUse( TokenAccess.RELATIONSHIP_TYPES );
-    }
-
-    @Override
-    public ResourceIterable<Label> getAllLabels()
+    public ResourceIterable<Label> getAllLabelsInUse()
     {
         return allInUse( TokenAccess.LABELS );
     }
 
     @Override
-    public ResourceIterable<String> getAllPropertyKeys()
+    public ResourceIterable<RelationshipType> getAllRelationshipTypesInUse()
     {
-        return allInUse( TokenAccess.PROPERTY_KEYS );
+        return allInUse( TokenAccess.RELATIONSHIP_TYPES );
     }
-
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
     {
         assertTransactionOpen();
@@ -416,19 +409,19 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public ResourceIterable<RelationshipType> getAllExistingRelationshipTypes()
-    {
-        return all( TokenAccess.RELATIONSHIP_TYPES );
-    }
-
-    @Override
-    public ResourceIterable<Label> getAllExistingLabelsInUseAndNot()
+    public ResourceIterable<Label> getAllLabels()
     {
         return all( TokenAccess.LABELS );
     }
 
     @Override
-    public ResourceIterable<String> getAllExistingPropertyKeysInUseAndNot()
+    public ResourceIterable<RelationshipType> getAllRelationshipTypes()
+    {
+        return all( TokenAccess.RELATIONSHIP_TYPES );
+    }
+
+    @Override
+    public ResourceIterable<String> getAllPropertyKeys()
     {
         return all( TokenAccess.PROPERTY_KEYS );
     }

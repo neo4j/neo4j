@@ -1437,7 +1437,7 @@ public class DatabaseActions
 
     public ListRepresentation getAllLabels( boolean inUse )
     {
-        ResourceIterable<Label> labels = inUse ? graphDb.getAllLabels() : graphDb.getAllExistingLabelsInUseAndNot();
+        ResourceIterable<Label> labels = inUse ? graphDb.getAllLabelsInUse() : graphDb.getAllLabels();
         Collection<ValueRepresentation> labelNames = Iterables.asSet( map( new Function<Label,ValueRepresentation>()
         {
             @Override

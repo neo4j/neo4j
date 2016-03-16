@@ -52,8 +52,8 @@ public class DatabaseMetadataService
         {
             GraphDatabaseAPI db = database.getGraph();
             Iterable<RelationshipType> relationshipTypes = inUse
-                                                           ? db.getAllRelationshipTypes()
-                                                           : db.getAllExistingRelationshipTypes();
+                                                           ? db.getAllRelationshipTypesInUse()
+                                                           : db.getAllRelationshipTypes();
             return Response.ok()
                     .type( MediaType.APPLICATION_JSON )
                     .entity( generateJsonRepresentation( relationshipTypes ) )
