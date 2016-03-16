@@ -20,8 +20,8 @@
 package org.neo4j.coreedge.raft.log;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -76,4 +76,100 @@ public class RaftLogMetadataCacheTest
         assertNull( metadata );
     }
 
+    @Test
+    public void shouldRemoveUpTo() throws Exception
+    {
+        // given
+        int cacheSize = 100;
+        RaftLogMetadataCache cache = new RaftLogMetadataCache( cacheSize );
+
+        for ( int i = 0; i < cacheSize; i++ )
+        {
+            cache.cacheMetadata( i, i, new LogPosition( i, i ) );
+        }
+
+        // when
+        int upTo = 30;
+        cache.removeUpTo( upTo );
+
+        // then
+        long i = 0;
+        for ( ; i <= upTo; i++ )
+        {
+            assertNull( cache.getMetadata( i ) );
+        }
+        for ( ; i < cacheSize; i++ )
+        {
+            RaftLogMetadataCache.RaftLogEntryMetadata metadata = cache.getMetadata( i );
+            assertNotNull( metadata );
+            assertEquals( i, metadata.getEntryTerm() );
+        }
+    }
+
+    @Test
+    public void shouldRemoveUpwardsFrom() throws Exception
+    {
+        // given
+        int cacheSize = 100;
+        RaftLogMetadataCache cache = new RaftLogMetadataCache( cacheSize );
+
+        for ( int i = 0; i < cacheSize; i++ )
+        {
+            cache.cacheMetadata( i, i, new LogPosition( i, i ) );
+        }
+
+        // when
+        int upFrom = 60;
+        cache.removeUpwardsFrom( upFrom );
+
+        // then
+        long i = 0;
+        for ( ; i < upFrom; i++ )
+        {
+            RaftLogMetadataCache.RaftLogEntryMetadata metadata = cache.getMetadata( i );
+            assertNotNull( metadata );
+            assertEquals( i, metadata.getEntryTerm() );
+        }
+        for ( ; i < cacheSize; i++ )
+        {
+            assertNull( cache.getMetadata( i ) );
+        }
+    }
+
+    @Test
+    public void shouldAcceptAndReturnIndexesInRangeJustDeleted() throws Exception
+    {
+        // given
+        int cacheSize = 100;
+        RaftLogMetadataCache cache = new RaftLogMetadataCache( cacheSize );
+
+        for ( int i = 0; i < cacheSize; i++ )
+        {
+            cache.cacheMetadata( i, i, new LogPosition( i, i ) );
+        }
+
+        // when
+        int upFrom = 60;
+        cache.removeUpwardsFrom( upFrom );
+
+        // and we add something in the deleted range
+        int insertedIndex = 70;
+        long insertedTerm = 150;
+        cache.cacheMetadata( insertedIndex, insertedTerm, new LogPosition( insertedIndex, insertedIndex ) );
+
+        // then
+        // nothing should be resurrected in the deleted range just because we inserted something there
+        int i = upFrom;
+        for ( ; i < insertedIndex; i++ )
+        {
+            assertNull( cache.getMetadata( i ) );
+        }
+        // i here should be insertedIndex
+        assertEquals( insertedTerm, cache.getMetadata( i ).getEntryTerm() );
+        i++; // to continue iteration in the rest of the deleted range
+        for (; i < cacheSize; i++ )
+        {
+            assertNull( cache.getMetadata( i ) );
+        }
+    }
 }

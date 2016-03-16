@@ -29,7 +29,7 @@ public final class EntryCountThreshold implements Threshold
 {
     private final long maxTransactionCount;
 
-    EntryCountThreshold( long maxTransactionCount )
+    public EntryCountThreshold( long maxTransactionCount )
     {
         this.maxTransactionCount = maxTransactionCount;
     }

@@ -65,7 +65,7 @@ public class ClusterSafetyViolations
             RaftLogEntry clusterLogEntry = null;
             for ( ComparableRaftState memberState : state.states.values() )
             {
-                if ( index <= memberState.entryLog().commitIndex() )
+                if ( index <= memberState.commitIndex() )
                 {
                     RaftLogEntry memberLogEntry = readLogEntry( memberState.entryLog(), index );
                     if ( clusterLogEntry == null )
@@ -80,7 +80,7 @@ public class ClusterSafetyViolations
                         }
                     }
                 }
-                if ( index < memberState.entryLog().commitIndex() )
+                if ( index < memberState.commitIndex() )
                 {
                     moreLog = true;
                 }

@@ -19,11 +19,6 @@
  */
 package org.neo4j.coreedge.raft.log.debug;
 
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles.getLogVersion;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -31,23 +26,26 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Stack;
 import java.util.TreeSet;
 
-import org.neo4j.coreedge.raft.log.PhysicalRaftLogEntryCursor;
-import org.neo4j.coreedge.raft.log.RaftRecordCursor;
+import org.neo4j.coreedge.raft.log.RaftLogAppendRecord;
+import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFiles;
+import org.neo4j.coreedge.raft.log.physical.SingleVersionReader;
+import org.neo4j.coreedge.raft.log.physical.VersionIndexRanges;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+
+import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles.getLogVersion;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class DumpPhysicalRaftLog
 {
@@ -65,6 +63,8 @@ public class DumpPhysicalRaftLog
     public int dump( String filenameOrDirectory, String logPrefix, PrintStream out ) throws IOException
     {
         int logsFound = 0;
+        PhysicalRaftLogFiles files = new PhysicalRaftLogFiles( new File( filenameOrDirectory ), fileSystem, marshal, new VersionIndexRanges() );
+
         for ( String fileName : filenamesOf( filenameOrDirectory, logPrefix ) )
         {
             logsFound++;
@@ -86,13 +86,11 @@ public class DumpPhysicalRaftLog
             out.println( "Logical log format:" + logHeader.logFormatVersion + "version: " + logHeader.logVersion +
                     " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
 
-            PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
-                    fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
-            ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
 
+            SingleVersionReader reader = new SingleVersionReader( files, fileSystem, marshal );
 
-            try ( PhysicalRaftLogEntryCursor cursor = new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( logChannel, marshal ),
-                    new Stack<>(), 0 ) )
+            try ( IOCursor<RaftLogAppendRecord> cursor = reader.readEntriesFrom( new LogPosition( 0, LogHeader
+                    .LOG_HEADER_SIZE ) ) )
             {
                 while ( cursor.next() )
                 {
@@ -158,7 +156,7 @@ public class DumpPhysicalRaftLog
             {
                 System.out.println("Reading file " + fileAsString );
                 new DumpPhysicalRaftLog( new DefaultFileSystemAbstraction(), new CoreReplicatedContentMarshal() )
-                        .dump( fileAsString, PhysicalLogFile.DEFAULT_NAME, printer.getFor( fileAsString ) );
+                        .dump( fileAsString, PhysicalRaftLogFiles.BASE_FILE_NAME, printer.getFor( fileAsString ) );
             }
         }
     }

@@ -69,7 +69,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 {
     public static final int ENTRY_RECORD_LENGTH = 16;
     public static final int CONTENT_LENGTH_BYTES = 4;
-    public static final int META_BYTES = 8 * 3;
+    public static final int META_BYTES = 8 * 2;
     public static final String DIRECTORY_NAME = "raft-log";
 
     private StoreChannel entriesChannel;
@@ -204,23 +204,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public void commit( final long newCommitIndex ) throws IOException
-    {
-        if ( commitIndex == appendIndex )
-        {
-            return;
-        }
-        long actualNewCommitIndex = newCommitIndex;
-        if ( newCommitIndex > appendIndex )
-        {
-            actualNewCommitIndex = appendIndex;
-        }
-        // INVARIANT: If newCommitIndex was greater than appendIndex, commitIndex is equal to appendIndex
-        commitIndex = actualNewCommitIndex;
-        storeMetadata();
-    }
-
-    @Override
     public long prune( long safeIndex ) throws IOException, RaftLogCompactedException
     {
         try
@@ -298,11 +281,11 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         return prevIndex;
     }
 
-    @Override
-    public long commitIndex()
-    {
-        return commitIndex;
-    }
+//    @Override
+//    public long commitIndex()
+//    {
+//        return commitIndex;
+//    }
 
     private RaftLogEntry readLogEntry( long logIndex ) throws IOException, RaftLogCompactedException
     {
@@ -318,7 +301,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         }
 
         return new RaftLogEntry( entry.term, content );
-
     }
 
     @Override
@@ -335,6 +317,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 
         return readEntry( logIndex ).term;
     }
+
     private static class Entry
     {
         private final long term;
@@ -354,7 +337,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
                     ", contentPointer=" + contentPointer +
                     '}';
         }
-
     }
 
     @Override
@@ -458,7 +440,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         ByteBuffer buffer = ByteBuffer.allocate( META_BYTES );
         buffer.putLong( prevIndex );
         buffer.putLong( prevTerm );
-        buffer.putLong( commitIndex );
         buffer.flip();
         metaChannel.writeAll( buffer, 0 );
         metaChannel.force( false );
@@ -470,7 +451,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
         {
             prevIndex = -1;
             prevTerm = -1;
-            commitIndex = -1;
         }
         else
         {
@@ -479,7 +459,6 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             buffer.flip();
             prevIndex = buffer.getLong();
             prevTerm = buffer.getLong();
-            commitIndex = buffer.getLong();
         }
     }
 }

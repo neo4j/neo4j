@@ -23,9 +23,10 @@ import java.util.Objects;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 
+import static java.lang.String.format;
+
 public class RaftLogEntry
 {
-
     public static final RaftLogEntry[] empty = new RaftLogEntry[0];
     private final long term;
     private final ReplicatedContent content;
@@ -75,7 +76,7 @@ public class RaftLogEntry
     @Override
     public String toString()
     {
-        return String.format( "RaftLogEntry{term=%d, content=%s}", term, content );
+        return format( "{term=%d, content=%s}", term, content );
     }
 
 }

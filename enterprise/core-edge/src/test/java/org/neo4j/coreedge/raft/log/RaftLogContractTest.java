@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.raft.ReplicatedString;
 
+import static jdk.nashorn.internal.runtime.regexp.joni.Config.log;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,7 +47,6 @@ public abstract class RaftLogContractTest
         // then
         assertThat( log.appendIndex(), is( -1L ) );
         assertThat( log.prevIndex(), is( -1L ) );
-        assertThat( log.commitIndex(), is( -1L ) );
         assertThat( log.readEntryTerm( 0 ), is( -1L ) );
         assertThat( log.readEntryTerm( -1 ), is( -1L ) );
     }
@@ -79,35 +79,7 @@ public abstract class RaftLogContractTest
         log.append( logEntry );
 
         assertThat( log.appendIndex(), is( 0L ) );
-        assertThat( log.commitIndex(), is( -1L ) );
         assertThat( readLogEntry( log, 0 ), equalTo( logEntry ) );
-    }
-
-    @Test
-    public void shouldNotCommitWhenNoAppendedData() throws Exception
-    {
-        RaftLog log = createRaftLog();
-
-        log.commit( 10 );
-
-        assertThat( log.appendIndex(), is( -1L ) );
-        assertThat( log.commitIndex(), is( -1L ) );
-    }
-
-    @Test
-    public void shouldCommitOutOfOrderAppend() throws Exception
-    {
-        RaftLog log = createRaftLog();
-
-        log.commit( 10 );
-
-        RaftLogEntry logEntry = new RaftLogEntry( 1, valueOf( 1 ) );
-        log.append( logEntry );
-
-        log.commit( 10 );
-
-        assertThat( log.appendIndex(), is( 0L ) );
-        assertThat( log.commitIndex(), is( 0L ) );
     }
 
     @Test
@@ -211,132 +183,39 @@ public abstract class RaftLogContractTest
     }
 
     @Test
-    public void shouldCommitAndThenTruncateSubsequentEntry() throws Exception
+    public void shouldAppendAndThenTruncateSubsequentEntry() throws Exception
     {
         // given
         RaftLog log = createRaftLog();
         log.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        long toCommit = log.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
-        long toTruncate = log.append( new RaftLogEntry( 1, valueOf( 2 ) ) );
-
-        // when
-        log.commit( toCommit );
-        log.truncate( toTruncate );
-
-        // then
-        assertThat( log.appendIndex(), is( toCommit ) );
-        assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
-    }
-
-    @Test
-    public void shouldTruncateAndThenCommitPreviousEntry() throws Exception
-    {
-        // given
-        RaftLog log = createRaftLog();
-        log.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        long toCommit = log.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
+        long toBeSpared = log.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
         long toTruncate = log.append( new RaftLogEntry( 1, valueOf( 2 ) ) );
 
         // when
         log.truncate( toTruncate );
-        log.commit( toCommit );
 
         // then
-        assertThat( log.appendIndex(), is( toCommit ) );
-        assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
+        assertThat( log.appendIndex(), is( toBeSpared ) );
+        assertThat( log.readEntryTerm( toBeSpared ), is( 0L ) );
     }
 
     @Test
-    public void shouldCommitAfterTruncatingAndAppending() throws Exception
+    public void shouldAppendAfterTruncating() throws Exception
     {
         // given
         RaftLog log = createRaftLog();
         log.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
         long toCommit = log.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
         long toTruncate = log.append( new RaftLogEntry( 1, valueOf( 2 ) ) );
-
-        /*
-          0 1 2 Tr(2) 2 C*(1)
-         */
 
         // when
         log.truncate( toTruncate );
         long lastAppended = log.append( new RaftLogEntry( 2, valueOf( 3 ) ) );
-        log.commit( toCommit );
 
         // then
         assertThat( log.appendIndex(), is( lastAppended ) );
         assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
         assertThat( log.readEntryTerm( lastAppended ), is( 2L ) );
-    }
-
-    @Test
-    public void shouldCommitAfterAppendingAndTruncating() throws Exception
-    {
-        // given
-        RaftLog log = createRaftLog();
-        log.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        long toCommit = log.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
-        long toTruncate = log.append( new RaftLogEntry( 1, valueOf( 2 ) ) );
-
-        // when
-        log.truncate( toTruncate );
-        log.commit( toCommit );
-
-        // then
-        assertThat( log.appendIndex(), is( toCommit ) );
-        assertThat( log.readEntryTerm( toCommit ), is( 0L ) );
-    }
-
-    @Test
-    public void shouldNotAllowTruncationAtLastCommit() throws Exception
-    {
-        // given
-        RaftLog log = createRaftLog();
-        log.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        long toCommit = log.append( new RaftLogEntry( 1, valueOf( 2 ) ) );
-
-        log.commit( toCommit );
-
-        try
-        {
-            // when
-            log.truncate( toCommit );
-            fail( "Truncation at this point should have failed" );
-        }
-        catch ( IllegalArgumentException truncationFailed )
-        {
-            // awesome
-        }
-
-        // then
-        assertThat( log.appendIndex(), is( toCommit ) );
-    }
-
-    @Test
-    public void shouldNotAllowTruncationBeforeLastCommit() throws Exception
-    {
-        // given
-        RaftLog log = createRaftLog();
-        log.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        long toTryToTruncate = log.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
-        long toCommit = log.append( new RaftLogEntry( 1, valueOf( 2 ) ) );
-
-        log.commit( toCommit );
-
-        try
-        {
-            // when
-            log.truncate( toTryToTruncate );
-            fail( "Truncation at this point should have failed" );
-        }
-        catch ( IllegalArgumentException truncationFailed )
-        {
-            // awesome
-        }
-
-        // then
-        assertThat( log.appendIndex(), is( toCommit ) );
     }
 
     @Test
@@ -466,4 +345,39 @@ public abstract class RaftLogContractTest
         }
         assertThat( readLogEntry( log, newEntryIndex ).content(), is( valueOf( newContentValue ) ) );
     }
+
+    @Test
+    public void shouldProperlyReportExistenceOfIndexesAfterSkipping() throws Exception
+    {
+        // given
+        RaftLog log = createRaftLog();
+        long term = 0;
+        long existingEntryIndex = log.append( new RaftLogEntry( term, valueOf( 100 ) ) );
+
+        long skipIndex = 15;
+
+        // when
+        log.skip( skipIndex, term );
+
+        // then
+        assertEquals( skipIndex, log.appendIndex() );
+
+        // all indexes starting from the next of the last appended to the skipped index (and forward) should not be present
+        for ( long i = existingEntryIndex + 1; i < skipIndex + 2; i++ )
+        {
+            try
+            {
+                readLogEntry( log, i );
+                fail( "Should have thrown exception at index " + i );
+            }
+            catch ( RaftLogCompactedException e )
+            {
+                // expected
+            }
+        }
+    }
+
+    // TODO: Test what happens when the log has rotated, *not* pruned and then skipping happens which causes
+    // TODO: archived logs to be forgotten about. Does it still return the entries or at least fail gracefully?
+    // TODO: In the case of PhysicalRaftLog, are the ranges kept properly up to date to notify of non existing files?
 }

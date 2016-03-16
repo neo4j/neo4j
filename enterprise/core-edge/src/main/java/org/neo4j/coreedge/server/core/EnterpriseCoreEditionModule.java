@@ -54,6 +54,8 @@ import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogMetadataCache;
+import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
@@ -136,7 +138,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -523,6 +524,7 @@ public class EnterpriseCoreEditionModule
                 return new InMemoryRaftLog();
             case PHYSICAL:
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
+                String pruneConf = config.get( CoreEdgeClusterSettings.raft_log_pruning );
                 int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_entry_cache_size );
                 int metaDataCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
                 int headerCacheSize = config.get( CoreEdgeClusterSettings.raft_log_header_cache_size );
@@ -530,8 +532,8 @@ public class EnterpriseCoreEditionModule
                 return life.add( new PhysicalRaftLog(
                         fileSystem,
                         new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
-                        rotateAtSize, entryCacheSize, metaDataCacheSize, headerCacheSize,
-                        new PhysicalLogFile.Monitor.Adapter(), marshal, databaseHealthSupplier, logProvider ) );
+                        rotateAtSize, pruneConf, entryCacheSize, headerCacheSize,
+                        new PhysicalRaftLogFile.Monitor.Adapter(), marshal, databaseHealthSupplier, logProvider, new RaftLogMetadataCache( metaDataCacheSize ) ) );
             case NAIVE:
             default:
                 return life.add( new NaiveDurableRaftLog(
@@ -563,20 +565,20 @@ public class EnterpriseCoreEditionModule
     }
 
     private static RaftInstance<CoreMember> createRaft( LifeSupport life,
-            Outbound<AdvertisedSocketAddress> outbound,
-            CoreDiscoveryService discoveryService,
-            Config config,
-            MessageLogger<AdvertisedSocketAddress> messageLogger,
-            RaftLog raftLog,
-            RaftStateMachine raftStateMachine,
-            FileSystemAbstraction fileSystem,
-            File clusterStateDirectory,
-            CoreMember myself,
-            LogProvider logProvider,
-            RaftServer<CoreMember> raftServer,
-            DelayedRenewableTimeoutService raftTimeoutService,
-            Supplier<DatabaseHealth> databaseHealthSupplier,
-            Monitors monitors )
+                                                        Outbound<AdvertisedSocketAddress> outbound,
+                                                        CoreDiscoveryService discoveryService,
+                                                        Config config,
+                                                        MessageLogger<AdvertisedSocketAddress> messageLogger,
+                                                        RaftLog raftLog,
+                                                        RaftStateMachine raftStateMachine,
+                                                        FileSystemAbstraction fileSystem,
+                                                        File clusterStateDirectory,
+                                                        CoreMember myself,
+                                                        LogProvider logProvider,
+                                                        RaftServer<CoreMember> raftServer,
+                                                        DelayedRenewableTimeoutService raftTimeoutService,
+                                                        Supplier<DatabaseHealth> databaseHealthSupplier,
+                                                        Monitors monitors )
     {
         StateStorage<TermState> termState;
         try

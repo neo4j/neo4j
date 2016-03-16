@@ -35,7 +35,6 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.net.Inbound;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
-import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.ShipCommand;
 import org.neo4j.coreedge.raft.state.RaftState;
@@ -48,7 +47,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -62,7 +60,6 @@ import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterables.single;
 
@@ -109,6 +106,7 @@ public class LeaderTest
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
         when( logMock.appendIndex() ).thenReturn( 100l );
 
+        when( state.commitIndex() ).thenReturn( -1L );
         when( state.entryLog() ).thenReturn( logMock );
         when( state.followerStates() ).thenReturn( followerState );
         when( state.term() ).thenReturn( 4l ); // both leader and follower are in the same term
@@ -150,6 +148,7 @@ public class LeaderTest
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
         when( logMock.appendIndex() ).thenReturn( 100l );
 
+        when( state.commitIndex() ).thenReturn( -1L );
         when( state.entryLog() ).thenReturn( logMock );
         when( state.followerStates() ).thenReturn( followerState );
         when( state.term() ).thenReturn( 4l ); // both leader and follower are in the same term
@@ -191,9 +190,9 @@ public class LeaderTest
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
         when( logMock.appendIndex() ).thenReturn( 100l );
-        when( logMock.commitIndex() ).thenReturn( 100l ); // assume that everything is committed, so we don't deal
         // with commit requests in this test
 
+        when( state.commitIndex() ).thenReturn( -1L );
         when( state.entryLog() ).thenReturn( logMock );
         when( state.followerStates() ).thenReturn( followerState );
         when( state.term() ).thenReturn( 231l ); // both leader and follower are in the same term
@@ -245,9 +244,9 @@ public class LeaderTest
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
         when( logMock.appendIndex() ).thenReturn( 100l );
-        when( logMock.commitIndex() ).thenReturn( 100l ); // assume that everything is committed, so we don't deal
         //  with commit requests in this test
 
+        when( state.commitIndex() ).thenReturn( -1L );
         when( state.entryLog() ).thenReturn( logMock );
         when( state.followerStates() ).thenReturn( followerState );
         when( state.term() ).thenReturn( 4l ); // both leader and follower are in the same term
@@ -300,8 +299,8 @@ public class LeaderTest
         {
             log.append( new RaftLogEntry( 0, valueOf( i ) ) );
         }
-        log.commit( 100 ); // assume that everything is committed, so we don't deal with commit requests in this test
 
+        when( state.commitIndex() ).thenReturn( -1L );
         when( state.entryLog() ).thenReturn( log );
         when( state.followerStates() ).thenReturn( followerState );
         when( state.term() ).thenReturn( 4l ); // both leader and follower are in the same term
@@ -424,10 +423,11 @@ public class LeaderTest
                 new RaftMessages.AppendEntries.Response<>( member1, 0, true, 0, 0 ), state, log() );
 
         // then
-        assertThat( firstOrNull( outcome.getLogCommands() ), instanceOf( CommitCommand.class ) );
-        assertEquals( 0, outcome.getLeaderCommit() );
+        assertEquals( 0L, outcome.getCommitIndex() );
+        assertEquals( 0L, outcome.getLeaderCommit() );
     }
 
+    // TODO move this someplace else, since log no longer holds the commit
     @Test
     public void leaderShouldCommitAllPreviouslyAppendedEntriesWhenCommittingLaterEntryInSameTerm() throws Exception
     {
@@ -453,7 +453,7 @@ public class LeaderTest
         state.update( outcome );
 
         // then
-        assertEquals( 2, raftLog.commitIndex() );
+        assertEquals( 2, state.commitIndex() );
     }
 
     private Log log()

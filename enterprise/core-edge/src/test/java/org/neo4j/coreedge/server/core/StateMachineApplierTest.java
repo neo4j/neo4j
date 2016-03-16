@@ -36,7 +36,6 @@ import org.neo4j.coreedge.raft.state.StateMachineApplier;
 import org.neo4j.kernel.internal.DatabaseHealth;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -61,11 +60,9 @@ public class StateMachineApplierTest
         applier.setStateMachine( stateMachine, -1 );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        raftLog.commit( 0 );
-        applier.start();
 
         // when
-        applier.notifyUpdate();
+        applier.notifyCommitted( 0 );
 
         // then
         verify( stateMachine ).applyCommand( valueOf( 0 ), 0 );
@@ -82,10 +79,9 @@ public class StateMachineApplierTest
                 Runnable::run, 10, health(), getInstance() );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        applier.start();
 
         // when
-        applier.notifyUpdate();
+        applier.notifyCommitted( -1 );
 
         // then
         verify( stateMachine, times( 0 ) ).applyCommand( valueOf( 0 ), 0 );
@@ -107,12 +103,12 @@ public class StateMachineApplierTest
         raftLog.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
         raftLog.append( new RaftLogEntry( 0, valueOf( 2 ) ) );
         raftLog.append( new RaftLogEntry( 0, valueOf( 3 ) ) );
-        raftLog.commit( 3 );
 
         lastApplied.persistStoreData( new LastAppliedState( 1 ) );
 
         // when
         applier.start();
+        applier.notifyCommitted( 3 );
 
         // then
         verify( stateMachine ).applyCommand( valueOf( 2 ), 2 );
@@ -136,10 +132,10 @@ public class StateMachineApplierTest
         {
             raftLog.append( new RaftLogEntry( 0, valueOf( i ) ) );
         }
-        raftLog.commit( 49 );
+        applier.start();
 
         // when
-        applier.start();
+        applier.notifyCommitted( 49 );
 
         // then
         verify( stateMachine, times( 10 ) ).flush();
@@ -160,10 +156,9 @@ public class StateMachineApplierTest
         {
             raftLog.append( new RaftLogEntry( 0, valueOf( i ) ) );
         }
-        raftLog.commit( 49 );
 
         // when
-        applier.start();
+        applier.notifyCommitted( 49 );
 
         // then
         assertEquals( 45L, lastApplied.getInitialState().get() );
@@ -184,50 +179,16 @@ public class StateMachineApplierTest
         when( healthSupplier.get() ).thenReturn( health );
 
         StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
-                Runnable::run, 5, healthSupplier, getInstance() );
+                Runnable::run, 10, healthSupplier, getInstance() );
         applier.setStateMachine( stateMachine, -1 );
 
         raftLog.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
-        raftLog.commit( 0 );
 
         // when
-        applier.notifyUpdate();
+        applier.notifyCommitted( 0 );
 
         // then
         verify( health ).panic( anyObject() );
-    }
-
-    @Test
-    public void shouldNotStartIfUnableToApplyOnStartUp() throws Exception
-    {
-        // given
-        InMemoryRaftLog raftLog = new InMemoryRaftLog();
-
-        StateMachine stateMachine = new FailingStateMachine();
-
-        InMemoryStateStorage<LastAppliedState> lastApplied = new InMemoryStateStorage<>( new LastAppliedState( -1 ) );
-
-        Supplier<DatabaseHealth> healthSupplier = health();
-        DatabaseHealth health = mock( DatabaseHealth.class );
-        when( healthSupplier.get() ).thenReturn( health );
-
-        StateMachineApplier applier = new StateMachineApplier( raftLog, lastApplied,
-                Runnable::run, 5, healthSupplier, getInstance() );
-        applier.setStateMachine( stateMachine, -1 );
-
-        raftLog.append( new RaftLogEntry( 0, valueOf( 1 ) ) );
-        raftLog.commit( 0 );
-
-        // when
-        try
-        {
-            applier.start();
-            fail( "Should have thrown IllegalStateException" );
-        }
-        catch ( IllegalStateException ignored )
-        {
-            // expected
-        }
     }
 
     @SuppressWarnings("unchecked")

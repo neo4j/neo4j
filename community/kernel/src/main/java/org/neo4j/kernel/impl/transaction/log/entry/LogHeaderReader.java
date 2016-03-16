@@ -44,9 +44,14 @@ public class LogHeaderReader
 
     public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
+        return readLogHeader( fileSystem, file, true );
+    }
+
+    public static LogHeader readLogHeader( FileSystemAbstraction fileSystem, File file, boolean strict) throws IOException
+    {
         try ( StoreChannel channel = fileSystem.open( file, "r" ) )
         {
-            return readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), channel, true );
+            return readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), channel, strict );
         }
     }
 

@@ -77,6 +77,10 @@ public class Appending
             }
             else if ( logTerm != request.entries()[offset].term() )
             {
+                if ( baseIndex + offset <= state.commitIndex() )
+                {
+                    throw new IllegalStateException( "Cannot truncate at index " + (baseIndex + offset) + " when commit index is at " + state.commitIndex() );
+                }
                 outcome.addLogCommand( new TruncateLogCommand( baseIndex + offset ) );
                 break;
             }

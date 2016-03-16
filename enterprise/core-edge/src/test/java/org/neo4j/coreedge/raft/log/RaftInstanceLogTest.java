@@ -308,49 +308,4 @@ public class RaftInstanceLogTest
         assertEquals( 6, testEntryLog.readEntryTerm( 8 ) );
         assertEquals( 6, testEntryLog.readEntryTerm( 9 ) );
     }
-
-    // throw exception if trying to overwrite a position where a truncate hasn't happened
-    @Test
-    public void shouldThrowAnExceptionIfOverwritingTheLog() throws Exception
-    {
-        // given
-        // Follower[ 1 2 2 3 ]
-        // Leader  [ 1 4 4 ]
-        // Follower will end up as [1 4 4 3 ]  [ 1 2 2 3 4 4 ]
-
-        // when
-
-        // then
-    }
-
-
-    // Leader   C-1 A3  [1,2,2,2] sends [1-3]
-    // Follower C-1 A3  [1,1,1,1] => [1,2,2,2]
-
-    // Match = Same term, Same index
-    // None of the entries match
-    // Some of the entries match
-    // All of the entries match
-
-    @Test
-    public void shouldUpdateCommitIndexIfNecessary() throws Exception
-    {
-        //  If leaderCommit > commitIndex, set commitIndex = min(leaderCommit, index of last new entry)
-
-        // given
-
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 1 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 4 ) ) );
-        testEntryLog.append( new RaftLogEntry( 1, ReplicatedInteger.valueOf( 7 ) ) );
-
-        testEntryLog.commit( 1 );
-
-        // when
-        raft.handle(
-                appendEntriesRequest().leaderTerm( 2 ).prevLogIndex( 2 ).prevLogTerm( 1 ).leaderCommit( 2 ).build() );
-
-        // then
-        assertEquals( 2, testEntryLog.commitIndex() );
-        verify( raftStateMachine ).notifyCommitted( testEntryLog.commitIndex() );
-    }
 }

@@ -34,7 +34,7 @@ public class RaftLogAppendRecord extends RaftLogRecord
     private final long appendIndex;
     private final RaftLogEntry logEntry;
 
-    RaftLogAppendRecord( long appendIndex, RaftLogEntry logEntry )
+    public RaftLogAppendRecord( long appendIndex, RaftLogEntry logEntry )
     {
         super( APPEND );
         this.appendIndex = appendIndex;
@@ -74,9 +74,6 @@ public class RaftLogAppendRecord extends RaftLogRecord
     @Override
     public String toString()
     {
-        return "RaftLogAppendRecord{" +
-               "appendIndex=" + appendIndex +
-               ", logEntry=" + logEntry +
-               '}';
+        return String.format( "%d: %s", appendIndex, logEntry );
     }
 }

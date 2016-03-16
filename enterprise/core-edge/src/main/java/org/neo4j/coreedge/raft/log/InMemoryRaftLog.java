@@ -57,16 +57,6 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public void commit( long commitIndex )
-    {
-        if ( commitIndex > appendIndex )
-        {
-            commitIndex = appendIndex;
-        }
-        this.commitIndex = commitIndex;
-    }
-
-    @Override
     public long prune( long safeIndex ) throws RaftLogCompactedException
     {
         if( safeIndex > prevIndex )
@@ -96,12 +86,6 @@ public class InMemoryRaftLog implements RaftLog
     public long prevIndex()
     {
         return prevIndex;
-    }
-
-    @Override
-    public long commitIndex()
-    {
-        return commitIndex;
     }
 
     private RaftLogEntry readLogEntry( long logIndex ) throws RaftLogCompactedException

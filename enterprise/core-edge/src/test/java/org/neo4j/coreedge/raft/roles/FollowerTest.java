@@ -47,6 +47,7 @@ import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
+import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -166,6 +167,7 @@ public class FollowerTest
         assertEquals( 1, state.entryLog().readEntryTerm( 0 ) );
     }
 
+    // TODO move this to outcome tests
     @Test
     public void followerLearningAboutHigherCommitCausesValuesTobeAppliedToItsLog() throws Exception
     {
@@ -185,7 +187,47 @@ public class FollowerTest
         state.update( outcome );
 
         // then
-        assertEquals( 3, state.entryLog().commitIndex() );
+        assertEquals( 3, state.commitIndex() );
+    }
+
+    @Test
+    public void shouldUpdateCommitIndexIfNecessary() throws Exception
+    {
+        //  If leaderCommit > commitIndex, set commitIndex = min( leaderCommit, index of last new entry )
+        // given
+        RaftState<RaftTestMember> state = raftState()
+                                        .myself( myself )
+                                        .build();
+
+        Follower follower = new Follower();
+
+        int localAppendIndex = 2;
+        int localCommitIndex =  localAppendIndex - 1;
+        int term = 0;
+        appendSomeEntriesToLog( state, follower, localAppendIndex + 1, term ); // append index is 0 based
+
+        // the next when-then simply verifies that the test is setup properly, with commit and append index as expected
+        // when
+        Outcome<RaftTestMember> raftTestMemberOutcome = new Outcome<>( FOLLOWER, state );
+        raftTestMemberOutcome.setCommitIndex( localCommitIndex );
+        state.update( raftTestMemberOutcome );
+
+        // then
+        assertEquals( localAppendIndex, state.entryLog().appendIndex() );
+        assertEquals( localCommitIndex, state.commitIndex() );
+
+        // when
+        // an append req comes in with leader commit index > localAppendIndex but localCommitIndex < localAppendIndex
+        Outcome<RaftTestMember> outcome = follower.handle( appendEntriesRequest()
+                .leaderTerm( term ).prevLogIndex( 2 )
+                .prevLogTerm( term ).leaderCommit( localCommitIndex + 4 )
+                .build(), state, log() );
+
+        state.update( outcome );
+
+        // then
+        // The local commit index must be brought as far along as possible
+        assertEquals( 2, state.commitIndex() );
     }
 
     @Test

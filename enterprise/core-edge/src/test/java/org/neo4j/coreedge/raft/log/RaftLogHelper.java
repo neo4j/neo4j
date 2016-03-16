@@ -50,7 +50,7 @@ public class RaftLogHelper
             }
             throw e;
         }
-        throw new RaftLogCompactedException();
+        throw new RaftLogCompactedException("Asked for raft log entry at index " + index + " but it was not found");
     }
 
     public static Matcher<? super RaftLog> hasNoContent( long index )

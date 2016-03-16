@@ -51,6 +51,8 @@ public class Outcome<MEMBER> implements Message
     private Collection<LogCommand> logCommands = new ArrayList<>();
     private Collection<RaftMessages.Directed<MEMBER>> outgoingMessages = new ArrayList<>();
 
+    private long commitIndex;
+
     /* Follower */
     private MEMBER votedFor;
     private boolean renewElectionTimeout;
@@ -66,16 +68,17 @@ public class Outcome<MEMBER> implements Message
     private boolean electedLeader;
     private boolean steppingDown;
 
+
     public Outcome( Role currentRole, ReadableRaftState<MEMBER> ctx )
     {
         defaults( currentRole, ctx );
     }
 
     public Outcome( Role nextRole, long term, MEMBER leader, long leaderCommit, MEMBER votedFor,
-            Set<MEMBER> votesForMe, long lastLogIndexBeforeWeBecameLeader,
-            FollowerStates<MEMBER> followerStates, boolean renewElectionTimeout,
-            Collection<LogCommand> logCommands, Collection<RaftMessages.Directed<MEMBER>> outgoingMessages,
-            Collection<ShipCommand> shipCommands )
+                    Set<MEMBER> votesForMe, long lastLogIndexBeforeWeBecameLeader,
+                    FollowerStates<MEMBER> followerStates, boolean renewElectionTimeout,
+                    Collection<LogCommand> logCommands, Collection<RaftMessages.Directed<MEMBER>> outgoingMessages,
+                    Collection<ShipCommand> shipCommands, long commitIndex )
     {
         this.nextRole = nextRole;
         this.term = term;
@@ -90,6 +93,7 @@ public class Outcome<MEMBER> implements Message
         this.logCommands.addAll( logCommands );
         this.outgoingMessages.addAll( outgoingMessages );
         this.shipCommands.addAll( shipCommands );
+        this.commitIndex = commitIndex;
     }
 
     private void defaults( Role currentRole, ReadableRaftState<MEMBER> ctx )
@@ -109,6 +113,8 @@ public class Outcome<MEMBER> implements Message
 
         lastLogIndexBeforeWeBecameLeader = (currentRole == Role.LEADER) ? ctx.lastLogIndexBeforeWeBecameLeader() : -1;
         followerStates = (currentRole == Role.LEADER) ? ctx.followerStates() : new FollowerStates<>();
+
+        commitIndex = ctx.commitIndex();
     }
 
     public void setNextRole( Role nextRole )
@@ -283,5 +289,15 @@ public class Outcome<MEMBER> implements Message
     public boolean isSteppingDown()
     {
         return steppingDown;
+    }
+
+    public long getCommitIndex()
+    {
+        return commitIndex;
+    }
+
+    public void setCommitIndex( long commitIndex )
+    {
+        this.commitIndex = commitIndex;
     }
 }

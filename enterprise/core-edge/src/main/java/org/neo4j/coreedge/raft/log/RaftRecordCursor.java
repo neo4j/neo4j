@@ -51,9 +51,6 @@ public class RaftRecordCursor<T extends ReadableClosablePositionAwareChannel> im
                 case APPEND:
                     currentRecord.set( RaftLogAppendRecord.read( channel, marshal ) );
                     return true;
-                case COMMIT:
-                    currentRecord.set( RaftLogCommitRecord.read( channel ) );
-                    return true;
                 case CONTINUATION:
                     currentRecord.set( RaftLogContinuationRecord.read( channel ) );
                     return true;

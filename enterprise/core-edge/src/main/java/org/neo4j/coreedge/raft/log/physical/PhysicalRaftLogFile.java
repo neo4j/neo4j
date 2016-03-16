@@ -1,0 +1,315 @@
+/*
+ * Copyright (c) 2002-2016 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.coreedge.raft.log.physical;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.function.Supplier;
+
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderVisitor;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
+
+/**
+ * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
+ */
+public class PhysicalRaftLogFile implements LogFile, Lifecycle
+{
+    public interface Monitor
+    {
+        void opened( File logFile, long logVersion, long lastTransactionId, boolean clean );
+
+        class Adapter implements Monitor
+        {
+            @Override
+            public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
+            {
+            }
+        }
+    }
+
+    public static final String DEFAULT_VERSION_SUFFIX = ".";
+    private final long rotateAtSize;
+    private final FileSystemAbstraction fileSystem;
+    private final Supplier<Long> lastCommittedId;
+    private final PhysicalRaftLogFiles logFiles;
+    private final LogHeaderCache logHeaderCache;
+    private final Monitor monitor;
+    private final ByteBuffer headerBuffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
+    private PositionAwarePhysicalFlushableChannel writer;
+    private final LogVersionBridge readerLogVersionBridge;
+
+    private volatile PhysicalLogVersionedStoreChannel channel;
+
+    public PhysicalRaftLogFile( FileSystemAbstraction fileSystem, PhysicalRaftLogFiles logFiles, long rotateAtSize,
+                                Supplier<Long> lastCommittedId, Monitor monitor, LogHeaderCache logHeaderCache
+    )
+    {
+        this.fileSystem = fileSystem;
+        this.rotateAtSize = rotateAtSize;
+        this.lastCommittedId = lastCommittedId;
+        this.monitor = monitor;
+        this.logHeaderCache = logHeaderCache;
+        this.logFiles = logFiles;
+        this.readerLogVersionBridge = new ReaderRaftLogVersionBridge( fileSystem, logFiles );
+    }
+
+    @Override
+    public void init() throws IOException
+    {
+        // Make sure at least a bare bones log file is available before recovery
+        channel = openLogChannelForVersion( logFiles.getHighestLogVersion() );
+        channel.close();
+    }
+
+    @Override
+    public void start() throws IOException
+    {
+        // Recovery has taken place before this, so the log file has been truncated to last known good tx
+        // Just read header and move to the end
+
+        channel = openLogChannelForVersion( logFiles.getHighestLogVersion() );
+        // Move to the end
+        channel.position( channel.size() );
+
+        writer = new PositionAwarePhysicalFlushableChannel( channel );
+    }
+
+    @Override
+    public void stop()
+    {
+        // nothing to stop
+    }
+
+    // In order to be able to write into a logfile after life.stop during shutdown sequence
+    // we will close channel and writer only during shutdown phase when all pending changes (like last
+    // checkpoint) are already in
+    @Override
+    public void shutdown() throws IOException
+    {
+        if ( writer != null )
+        {
+            writer.close();
+        }
+        if ( channel != null )
+        {
+            channel.close();
+        }
+    }
+
+    @Override
+    public boolean rotationNeeded() throws IOException
+    {
+        /*
+         * Whereas channel.size() should be fine, we're safer calling position() due to possibility
+         * of this file being memory mapped or whatever.
+         */
+        return channel.position() >= rotateAtSize;
+    }
+
+    @Override
+    public synchronized void rotate() throws IOException
+    {
+        channel = rotate( channel );
+        writer.setChannel( channel );
+    }
+
+    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog ) throws IOException
+    {
+        /*
+         * The store is now flushed. If we fail now the recovery code will open the
+         * current log file and replay everything. That's unnecessary but totally ok.
+         */
+        currentLog.flush();
+        /*
+         * The log version is now in the store, flushed and persistent. If we crash
+         * now, on recovery we'll attempt to open the version we're about to create
+         * (but haven't yet), discover it's not there. That will lead to creating
+         * the file, setting the header and continuing. We'll do just that now.
+         * Note that by this point, rotation is done. The next few lines are
+         * "simply overhead" for continuing to work with the new file.
+         */
+        PhysicalLogVersionedStoreChannel newLog = openLogChannelForNextVersion();
+        currentLog.close();
+        return newLog;
+    }
+
+    private PhysicalLogVersionedStoreChannel openLogChannelForNextVersion() throws IOException
+    {
+        long forVersion = logFiles.registerNextVersion( lastCommittedId.get() );
+
+        long lastTxId = lastCommittedId.get();
+        writeLogHeader( headerBuffer, forVersion, lastTxId );
+        logHeaderCache.putHeader( forVersion, lastTxId );
+
+        File toOpen = logFiles.getLogFileForVersion( forVersion );
+        StoreChannel storeChannel = fileSystem.open( toOpen, "rw" );
+        storeChannel.writeAll( headerBuffer );
+        monitor.opened( toOpen, forVersion, lastTxId, true );
+
+        return new PhysicalLogVersionedStoreChannel( storeChannel, forVersion, CURRENT_LOG_VERSION );
+    }
+
+    private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
+    {
+        File toOpen = logFiles.getLogFileForVersion( forVersion );
+        StoreChannel storeChannel = fileSystem.open( toOpen, "rw" );
+        LogHeader header = readLogHeader( headerBuffer, storeChannel, false );
+        if ( header == null )
+        {
+            // Either the header is not there in full or the file was new. Don't care
+            long lastTxId = lastCommittedId.get();
+            writeLogHeader( headerBuffer, forVersion, lastTxId );
+            logHeaderCache.putHeader( forVersion, lastTxId );
+            logFiles.createdFile( forVersion, lastTxId );
+            storeChannel.writeAll( headerBuffer );
+            monitor.opened( toOpen, forVersion, lastTxId, true );
+        }
+        byte formatVersion = header == null ? CURRENT_LOG_VERSION : header.logFormatVersion;
+        return new PhysicalLogVersionedStoreChannel( storeChannel, forVersion, formatVersion );
+    }
+
+    @Override
+    public FlushablePositionAwareChannel getWriter()
+    {
+        return writer;
+    }
+
+    @Override
+    public ReadableLogChannel getReader( LogPosition position ) throws IOException
+    {
+        PhysicalLogVersionedStoreChannel logChannel = openForVersion( logFiles, fileSystem, position.getLogVersion() );
+        logChannel.position( position.getByteOffset() );
+        return new ReadAheadLogChannel( logChannel, readerLogVersionBridge );
+    }
+
+    public static PhysicalLogVersionedStoreChannel openForVersion( PhysicalRaftLogFiles logFiles,
+            FileSystemAbstraction fileSystem,
+            long version ) throws IOException
+    {
+        final File fileToOpen = logFiles.getLogFileForVersion( version );
+
+        if ( !fileSystem.fileExists( fileToOpen ) )
+        {
+            throw new FileNotFoundException( String.format( "File does not exist [%s]",
+                    fileToOpen.getCanonicalPath() ) );
+        }
+
+        StoreChannel rawChannel;
+        try
+        {
+            rawChannel = fileSystem.open( fileToOpen, "rw" );
+        }
+        catch ( FileNotFoundException cause )
+        {
+            throw Exceptions.withCause( new FileNotFoundException( String.format( "File could not be opened [%s]",
+                    fileToOpen.getCanonicalPath() ) ), cause );
+        }
+
+        ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
+        LogHeader header = readLogHeader( buffer, rawChannel, true );
+        assert header != null && header.logVersion == version : "went ham: " + header ;
+
+        return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
+    }
+
+
+    public static PhysicalLogVersionedStoreChannel tryOpenForVersion( PhysicalRaftLogFiles logFiles,
+            FileSystemAbstraction fileSystem, long version )
+    {
+        try
+        {
+            return openForVersion( logFiles, fileSystem, version );
+        }
+        catch ( IOException ex )
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException
+    {
+        try ( ReadableLogChannel reader = getReader( startingFromPosition ) )
+        {
+            visitor.visit( startingFromPosition, reader );
+        }
+    }
+
+    @Override
+    public void accept( LogHeaderVisitor visitor ) throws IOException
+    {
+        // Start from the where we're currently at and go backwards in time (versions)
+        long logVersion = logFiles.getHighestLogVersion();
+        long highTransactionId = lastCommittedId.get();
+        while ( logFiles.versionExists( logVersion ) )
+        {
+            Long previousLogLastTxId = logHeaderCache.getLogHeader( logVersion );
+            if ( previousLogLastTxId == null )
+            {
+                LogHeader header = readLogHeader( fileSystem, logFiles.getLogFileForVersion( logVersion ) );
+                assert logVersion == header.logVersion;
+                logHeaderCache.putHeader( header.logVersion, header.lastCommittedTxId );
+                previousLogLastTxId = header.lastCommittedTxId;
+            }
+
+            long lowTransactionId = previousLogLastTxId + 1;
+            LogPosition position = LogPosition.start( logVersion );
+            if ( !visitor.visit( position, lowTransactionId, highTransactionId ) )
+            {
+                break;
+            }
+            logVersion--;
+            highTransactionId = previousLogLastTxId;
+        }
+    }
+
+    @Override
+    public File currentLogFile()
+    {
+        return logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
+    }
+
+    @Override
+    public long currentLogVersion()
+    {
+        return logFiles.getHighestLogVersion();
+    }
+}

@@ -56,6 +56,7 @@ public class RaftStateBuilder
     private RaftLog entryLog = new InMemoryRaftLog();
     public Set<RaftTestMember> votesForMe = emptySet();
     public long lastLogIndexBeforeWeBecameLeader = -1;
+    public long commitIndex = -1;
     private FollowerStates<RaftTestMember> followerStates = new FollowerStates<>();
 
     public RaftStateBuilder myself( RaftTestMember myself )
@@ -112,13 +113,20 @@ public class RaftStateBuilder
         return this;
     }
 
+    public RaftStateBuilder commitIndex( long commitIndex )
+    {
+        this.commitIndex = commitIndex;
+        return this;
+    }
+
     public RaftState<RaftTestMember> build() throws IOException
     {
         StateStorage<TermState> termStore = new InMemoryStateStorage<>( new TermState() );
         StateStorage<VoteState<RaftTestMember>> voteStore = new InMemoryStateStorage<>( new VoteState<>( ) );
         StubMembership membership = new StubMembership();
 
-        RaftState<RaftTestMember> state = new RaftState<>( myself, termStore, membership, entryLog, voteStore );
+        RaftState<RaftTestMember> state = new RaftState<>( myself, termStore, membership, entryLog, voteStore
+        );
 
         Collection<RaftMessages.Directed<RaftTestMember>> noMessages = Collections.emptyList();
         List<LogCommand> noLogCommands = Collections.emptyList();
@@ -126,7 +134,7 @@ public class RaftStateBuilder
         try
         {
             state.update( new Outcome<>( null, term, leader, leaderCommit, votedFor, votesForMe, lastLogIndexBeforeWeBecameLeader,
-                    followerStates, false, noLogCommands, noMessages, Collections.emptySet() ) );
+                    followerStates, false, noLogCommands, noMessages, Collections.emptySet(), commitIndex ) );
         }
         catch ( RaftLogCompactedException e )
         {

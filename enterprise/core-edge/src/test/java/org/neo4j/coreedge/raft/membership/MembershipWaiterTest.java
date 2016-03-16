@@ -51,11 +51,11 @@ public class MembershipWaiterTest
 
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, valueOf( 0 ) ) );
-        raftLog.commit( 0 );
         RaftState<RaftTestMember> raftState = RaftStateBuilder.raftState()
                 .votingMembers( member( 0 ) )
                 .leaderCommit( 0 )
                 .entryLog( raftLog )
+                .commitIndex( 0L )
                 .build();
 
         CompletableFuture<Boolean> future = waiter.waitUntilCaughtUpMember( raftState );

@@ -79,11 +79,6 @@ public class CatchupGoalTest
             return 0;
         }
 
-        @Override public long commitIndex()
-        {
-            return 0;
-        }
-
         @Override public long readEntryTerm( long logIndex ) throws IOException
         {
             return 0;
