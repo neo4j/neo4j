@@ -104,7 +104,7 @@ public class SettingsDocumenterTest
             "|===%n" +
             "|Description a|Public with default.%n" +
             "|Valid values a|public.default is a path%n" +
-            "|Default value m|/tmp%n" +
+            "|Default value m|" + File.separator + "tmp%n" +
             "|===%n" +
             "endif::nonhtmloutput[]%n" +
             "%n" +
@@ -115,7 +115,7 @@ public class SettingsDocumenterTest
             "|===%n" +
             "|Description a|Public with default.%n" +
             "|Valid values a|public.default is a path%n" +
-            "|Default value m|/tmp%n" +
+            "|Default value m|" + File.separator + "tmp%n" +
             "|===%n" +
             "endif::nonhtmloutput[]%n" +
             "%n" +
@@ -126,7 +126,7 @@ public class SettingsDocumenterTest
             "|===%n" +
             "|Description a|Public deprecated.%n" +
             "|Valid values a|public.deprecated is a path%n" +
-            "|Default value m|/tmp%n" +
+            "|Default value m|" + File.separator + "tmp%n" +
             "|Deprecated a|The `public.deprecated` configuration setting has been deprecated.%n" +
             "|===%n" +
             "endif::nonhtmloutput[]%n" +
@@ -138,7 +138,7 @@ public class SettingsDocumenterTest
             "|===%n" +
             "|Description a|Public deprecated.%n" +
             "|Valid values a|public.deprecated is a path%n" +
-            "|Default value m|/tmp%n" +
+            "|Default value m|" + File.separator + "tmp%n" +
             "|Deprecated a|The `public.deprecated` configuration setting has been deprecated.%n" +
             "|===%n" +
             "endif::nonhtmloutput[]%n" +

@@ -45,9 +45,9 @@ public class SettingsDocumenter
     private static final List<String> CONFIG_NAMES_BLACKLIST = Arrays.asList( "round_robin", "keep_all", "keep_last",
             "keep_none", "metrics.neo4j", "i.e", "e.g", "fixed_ascending", "fixed_descending" );
 
-    public static final String IFDEF_HTMLOUTPUT = "ifndef::nonhtmloutput[]\n";
-    public static final String IFDEF_NONHTMLOUTPUT = "ifdef::nonhtmloutput[]\n";
-    public static final String ENDIF = "endif::nonhtmloutput[]\n\n";
+    public static final String IFDEF_HTMLOUTPUT = String.format("ifndef::nonhtmloutput[]%n");
+    public static final String IFDEF_NONHTMLOUTPUT = String.format("ifdef::nonhtmloutput[]%n");
+    public static final String ENDIF = String.format("endif::nonhtmloutput[]%n%n");
 
     private PrintStream out;
 
