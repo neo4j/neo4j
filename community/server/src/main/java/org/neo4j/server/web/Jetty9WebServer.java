@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.web;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.URI;
@@ -54,7 +53,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.neo4j.bolt.security.ssl.KeyStoreInformation;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.PortBindException;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -74,8 +72,7 @@ public class Jetty9WebServer implements WebServer
     private boolean wadlEnabled;
     private Collection<InjectableProvider<?>> defaultInjectables;
     private Consumer<Server> jettyCreatedCallback;
-    private Long logRotationSize;
-    private Integer logRotationKeepNumber;
+    private RequestLog requestLog;
 
     private static class FilterDefinition
     {
@@ -122,7 +119,6 @@ public class Jetty9WebServer implements WebServer
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
-    private File requestLogFile;
     private final Log log;
 
     public Jetty9WebServer( LogProvider logProvider, Config config )
@@ -163,6 +159,11 @@ public class Jetty9WebServer implements WebServer
         handlers.addHandler( new MovedContextHandler() );
 
         loadAllMounts();
+
+        if ( requestLog != null )
+        {
+            loadRequestLogging();
+        }
 
         startJetty();
     }
@@ -323,11 +324,9 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setHttpLoggingConfiguration(File logsDirectory, Long rotationSize, Integer rotationKeepNumber)
+    public void setRequestLog( RequestLog requestLog )
     {
-        this.requestLogFile = new File( logsDirectory, "http.log" );
-        this.logRotationSize = rotationSize;
-        this.logRotationKeepNumber = rotationKeepNumber;
+        this.requestLog = requestLog;
     }
 
     @Override
@@ -397,11 +396,6 @@ public class Jetty9WebServer implements WebServer
                 throw new RuntimeException( format( "content-key '%s' is not mapped", contentKey ) );
             }
         }
-
-        if ( requestLogFile != null )
-        {
-            loadRequestLogging();
-        }
     }
 
     private int countSet( boolean... booleans )
@@ -419,10 +413,6 @@ public class Jetty9WebServer implements WebServer
 
     private void loadRequestLogging() throws IOException
     {
-        RequestLog requestLog = new AsyncRequestLog(
-                new DefaultFileSystemAbstraction(),
-                requestLogFile.getAbsolutePath(),
-                logRotationSize, logRotationKeepNumber );
         // This makes the request log handler decorate whatever other handlers are already set up
         final RequestLogHandler requestLogHandler = new RequestLogHandler();
         requestLogHandler.setRequestLog( requestLog );

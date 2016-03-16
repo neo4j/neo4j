@@ -44,6 +44,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.RunCarefully;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -79,6 +80,7 @@ import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
@@ -321,15 +323,18 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    private void setUpHttpLogging()
-    {
+    private void setUpHttpLogging() throws IOException {
         if ( !getConfig().get( http_logging_enabled ) )
         {
             return;
         }
 
-        webServer.setHttpLoggingConfiguration( config.get( GraphDatabaseSettings.logs_directory ),
-                config.get( http_logging_rotation_size ), config.get( http_logging_rotation_keep_number ) );
+        AsyncRequestLog requestLog = new AsyncRequestLog(
+                new DefaultFileSystemAbstraction(),
+                new File( config.get( GraphDatabaseSettings.logs_directory ), "http.log" ).toString(),
+                config.get( http_logging_rotation_size ),
+                config.get( http_logging_rotation_keep_number ) );
+        webServer.setRequestLog( requestLog );
     }
 
     private void setUpTimeoutFilter()
