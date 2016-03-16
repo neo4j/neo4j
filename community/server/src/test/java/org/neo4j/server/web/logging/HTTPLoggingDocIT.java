@@ -38,10 +38,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
+import static org.neo4j.test.Assert.assertEventually;
 
 public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 {
@@ -79,6 +82,48 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
             // then
             File httpLog = new File( logDirectory, "http.log" );
             assertThat( httpLog.exists(), is( false ) );
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess() throws Exception
+    {
+        // given
+        final File logDirectory =
+                testDirectory.directory( "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-logdir" );
+        FileUtils.forceMkdir( logDirectory );
+        System.out.println(logDirectory);
+        final File confDir =
+                testDirectory.directory( "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-confdir" );
+        FileUtils.forceMkdir( confDir );
+
+        final String query = "?explicitlyEnabled=" + randomString();
+
+        NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning()
+                .withProperty( ServerSettings.http_logging_enabled.name(), "true" )
+                .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.getAbsolutePath() )
+                .usingDataDir( testDirectory.directory(
+                        "givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess-dbdir"
+                ).getAbsolutePath() )
+                .build();
+        try
+        {
+            server.start();
+
+            FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
+
+            // when
+            JaxRsResponse response = new RestRequest().get( functionalTestHelper.managementUri() + query );
+            assertThat( response.getStatus(), is( 200 ) );
+            response.close();
+
+            // then
+            File httpLog = new File( logDirectory, "http.log" );
+            assertEventually( "request appears in log", fileContentSupplier( httpLog ), containsString( query ), 5, TimeUnit.SECONDS );
         }
         finally
         {

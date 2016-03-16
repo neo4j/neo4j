@@ -68,7 +68,7 @@ public class AsyncRequestLog
         // %h %l %user [%t{dd/MMM/yyyy:HH:mm:ss Z}] "%r" %s %b "%i{Referer}" "%i{User-Agent}" %D
         String remoteHost = request.getRemoteHost();
         String user = request.getRemoteUser();
-        String requestURL = request.getRequestURI();
+        String requestURL = request.getRequestURI() + "?" + request.getQueryString();
         int statusCode = response.getStatus();
         long length = response.getContentLength();
         String referer = request.getHeader( "Referer" );
