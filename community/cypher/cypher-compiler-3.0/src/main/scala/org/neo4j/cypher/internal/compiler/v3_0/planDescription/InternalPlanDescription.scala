@@ -186,9 +186,12 @@ final case class PlanDescriptionImpl(id: Id,
   }
 }
 
-final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription]) extends InternalPlanDescription {
+object CompactedPlanDescription {
+  def create(similar: Seq[InternalPlanDescription]): InternalPlanDescription =
+    if (similar.size == 1) similar.head else CompactedPlanDescription(similar)
+}
 
-  def planDescription = if (similar.size == 1) similar.head else this
+final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription]) extends InternalPlanDescription {
 
   override def name: String = s"${similar.head.name}(${similar.size})"
 
@@ -198,9 +201,22 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 
   override def children: Children = similar.last.children
 
-  override def arguments: Seq[Argument] = similar.foldLeft(Set.empty[Argument]){ (acc, plan) =>
-    acc ++ plan.arguments
-  }.toSeq
+  override val arguments: Seq[Argument] = {
+    var dbHits: Option[Long] = None
+    var time: Option[Long] = None
+    var rows: Option[Long] = None
+
+    similar.foldLeft(Set.empty[Argument]) {
+      (acc, plan) =>
+        val args = plan.arguments.filter {
+          case DbHits(v) => dbHits = Some(dbHits.map(_ + v).getOrElse(v)); false
+          case Time(v) => time = Some(time.map(_ + v).getOrElse(v)); false
+          case Rows(v) => rows = Some(rows.map(o => Math.max(o, v)).getOrElse(v)); false
+          case _ => true
+        }
+        acc ++ args
+    }.toSeq ++ dbHits.map(DbHits.apply) ++ time.map(Time.apply) ++ rows.map(Rows.apply)
+  }
 
   override def find(name: String): Seq[InternalPlanDescription] = similar.last.find(name)
 
