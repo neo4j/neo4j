@@ -46,7 +46,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -115,7 +114,7 @@ public class CoreServerReplicationIT
                 assertEventually( "node to appear on core server " + config.get( raft_advertised_address ), nodeCount,
                         greaterThan(  0L ), 15, SECONDS );
 
-                for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+                for ( Node node : db.getAllNodes() )
                 {
                     assertEquals( "baz_bat", node.getProperty( "foobar" ) );
                 }
@@ -167,7 +166,7 @@ public class CoreServerReplicationIT
                 assertEventually( "node to appear on core server " + config.get( HaSettings.ha_server ), nodeCount,
                         equalTo( 2L ), 3, SECONDS );
 
-                for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+                for ( Node node : db.getAllNodes() )
                 {
                     assertEquals( "baz_bat", node.getProperty( "foobar" ) );
                 }
@@ -222,7 +221,7 @@ public class CoreServerReplicationIT
                 assertEventually( "node to appear on core server " + config.get( HaSettings.ha_server ), nodeCount,
                         equalTo( 2L ), 1, MINUTES );
 
-                for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+                for ( Node node : db.getAllNodes() )
                 {
                     assertEquals( "baz_bat", node.getProperty( "foobar" ) );
                 }
@@ -268,7 +267,7 @@ public class CoreServerReplicationIT
                                 .raft_listen_address ), nodeCount,
                         is( 15L ), 1, MINUTES );
 
-                for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+                for ( Node node : db.getAllNodes() )
                 {
                     DependencyResolver dependencyResolver = db.getDependencyResolver();
                     InstanceId id = dependencyResolver.resolveDependency( Config.class ).get( server_id );

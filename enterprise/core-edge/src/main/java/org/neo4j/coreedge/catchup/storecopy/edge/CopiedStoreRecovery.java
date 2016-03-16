@@ -23,7 +23,6 @@ import java.io.File;
 
 import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -53,11 +52,12 @@ public class CopiedStoreRecovery
 
     private GraphDatabaseService newTempDatabase( File tempStore )
     {
-        GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
+        ExternallyManagedPageCache.GraphDatabaseFactoryWithPageCacheFactory factory =
+                ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
         return factory
-                .setUserLogProvider( NullLogProvider.getInstance() )
                 .setKernelExtensions( kernelExtensions )
-                .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
+                .setUserLogProvider( NullLogProvider.getInstance() )
+                .newEmbeddedDatabaseBuilder( tempStore )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade,
                         config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )

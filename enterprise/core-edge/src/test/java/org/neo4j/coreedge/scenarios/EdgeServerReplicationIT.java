@@ -38,7 +38,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.io.File.pathSeparator;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -150,7 +149,7 @@ public class EdgeServerReplicationIT
                 assertEventually( "node to appear on edge server", nodeCount, is( nodesBeforeEdgeServerStarts + 1l ),
                         1, MINUTES );
 
-                for ( Node node : GlobalGraphOperations.at( edgeDB ).getAllNodes() )
+                for ( Node node : edgeDB.getAllNodes() )
                 {
                     assertEquals( "baz_bat", node.getProperty( "foobar" ) );
                 }

@@ -39,7 +39,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;
@@ -104,7 +103,7 @@ public class ConvertNonCoreEdgeStoreIT
                 assertEventually( "node to appear on core server " + config.get( raft_advertised_address ), nodeCount,
                         greaterThan( 0L ), 15, SECONDS );
 
-                Assert.assertEquals( 2001, count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+                Assert.assertEquals( 2001, count( db.getAllNodes() ) );
 
                 tx.success();
             }

@@ -37,7 +37,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.metrics.source.coreedge.CoreMetrics;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -173,7 +172,7 @@ public class CoreEdgeMetricsIT
             assertEventually( "node to appear on core server " + config.get( raft_advertised_address ), nodeCount,
                     greaterThan( 0L ), 15, SECONDS );
 
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            for ( Node node : db.getAllNodes() )
             {
                 assertEquals( "baz_bat", node.getProperty( "foobar" ) );
             }
