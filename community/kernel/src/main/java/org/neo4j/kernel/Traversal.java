@@ -31,6 +31,7 @@ import org.neo4j.graphdb.impl.StandardExpander;
 import org.neo4j.graphdb.impl.traversal.ShortestPathsBranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
+import org.neo4j.graphdb.traversal.BranchOrderingPolicies;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.SideSelectorPolicy;
@@ -243,7 +244,7 @@ public class Traversal
     @Deprecated
     public static BranchOrderingPolicy preorderDepthFirst()
     {
-        return CommonBranchOrdering.PREORDER_DEPTH_FIRST;
+        return BranchOrderingPolicies.PREORDER_DEPTH_FIRST;
     }
 
     /**
@@ -260,7 +261,7 @@ public class Traversal
     @Deprecated
     public static BranchOrderingPolicy postorderDepthFirst()
     {
-        return CommonBranchOrdering.POSTORDER_DEPTH_FIRST;
+        return BranchOrderingPolicies.POSTORDER_DEPTH_FIRST;
     }
 
     /**
@@ -276,7 +277,7 @@ public class Traversal
     @Deprecated
     public static BranchOrderingPolicy preorderBreadthFirst()
     {
-        return CommonBranchOrdering.PREORDER_BREADTH_FIRST;
+        return BranchOrderingPolicies.PREORDER_BREADTH_FIRST;
     }
 
     /**
@@ -293,7 +294,7 @@ public class Traversal
     @Deprecated
     public static BranchOrderingPolicy postorderBreadthFirst()
     {
-        return CommonBranchOrdering.POSTORDER_BREADTH_FIRST;
+        return BranchOrderingPolicies.POSTORDER_BREADTH_FIRST;
     }
 
     /**
