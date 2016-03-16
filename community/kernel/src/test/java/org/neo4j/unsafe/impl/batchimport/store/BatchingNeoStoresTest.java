@@ -40,9 +40,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.BLOCK_HEADER_SIZE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores.calculateOptimalPageSize;
 
 public class BatchingNeoStoresTest
 {
@@ -82,6 +85,58 @@ public class BatchingNeoStoresTest
             assertEquals( size + BLOCK_HEADER_SIZE, store.getPropertyStore().getArrayBlockSize() );
             assertEquals( size + BLOCK_HEADER_SIZE, store.getPropertyStore().getStringBlockSize() );
         }
+    }
+
+    @Test
+    public void shouldCalculateBigPageSizeForBiggerMemory() throws Exception
+    {
+        // GIVEN
+        long memorySize = mebiBytes( 240 );
+
+        // WHEN
+        int pageSize = calculateOptimalPageSize( memorySize, 60 );
+
+        // THEN
+        assertEquals( mebiBytes( 4 ), pageSize );
+    }
+
+    @Test
+    public void shouldCalculateSmallPageSizeForSmallerMemory() throws Exception
+    {
+        // GIVEN
+        long memorySize = mebiBytes( 100 );
+
+        // WHEN
+        int pageSize = calculateOptimalPageSize( memorySize, 60 );
+
+        // THEN
+        assertEquals( mebiBytes( 1 ), pageSize );
+    }
+
+    @Test
+    public void shouldNotGoLowerThan8kPageSizeForSmallMemory() throws Exception
+    {
+        // GIVEN
+        long memorySize = kibiBytes( 8*30 );
+
+        // WHEN
+        int pageSize = calculateOptimalPageSize( memorySize, 60 );
+
+        // THEN
+        assertEquals( kibiBytes( 8 ), pageSize );
+    }
+
+    @Test
+    public void shouldNotGoHigherThan8mPageSizeForBigMemory() throws Exception
+    {
+        // GIVEN
+        long memorySize = mebiBytes( 700 );
+
+        // WHEN
+        int pageSize = calculateOptimalPageSize( memorySize, 60 );
+
+        // THEN
+        assertEquals( mebiBytes( 8 ), pageSize );
     }
 
     private void someDataInTheDatabase()
