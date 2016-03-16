@@ -439,13 +439,26 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     result should be (empty)
   }
 
-  test("match (n:X) where EXISTS(n.prop) return n, EXISTS( (n)--() ) AS b") {
+  test("match (n:X) return n, EXISTS( (n)--() ) AS b") {
     val n1 = createLabeledNode(Map("prop" -> 42), "X")
     val n2 = createLabeledNode(Map("prop" -> 42), "X")
 
     relate(n1, createNode())
 
     val result = executeWithAllPlanners("match (n:X) return n, EXISTS( (n)--() ) AS b")
+
+    result.toList should equal(List(
+      Map("n" -> n1, "b" -> true),
+      Map("n" -> n2, "b" -> false)))
+  }
+
+  test("match (n:X) return n, exists( (n)--() ) AS b, not uppercase") {
+    val n1 = createLabeledNode(Map("prop" -> 42), "X")
+    val n2 = createLabeledNode(Map("prop" -> 42), "X")
+
+    relate(n1, createNode())
+
+    val result = executeWithAllPlanners("match (n:X) return n, exists( (n)--() ) AS b")
 
     result.toList should equal(List(
       Map("n" -> n1, "b" -> true),

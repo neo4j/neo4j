@@ -39,6 +39,19 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
     })
   }
 
+  test("capitalized COUNTS nodes using count store") {
+    // Given
+    withModel(
+
+      // When
+      query = "MATCH (n) RETURN COUNT(n)", f = { result =>
+
+        // Then
+        result.columnAs("COUNT(n)").toSet[Int] should equal(Set(2))
+
+      })
+  }
+
   test("counts nodes using count store with count(*)") {
     // Given
     withModel(

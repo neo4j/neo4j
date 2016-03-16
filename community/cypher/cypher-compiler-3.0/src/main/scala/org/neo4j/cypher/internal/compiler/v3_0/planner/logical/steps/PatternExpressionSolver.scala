@@ -208,7 +208,7 @@ case class CollectionSubQueryExpressionSolver[T <: Expression](namer: T => (T, M
     }
     topDown(inner, stopper = {
       case _: ScopeExpression | _: CaseExpression => true
-      case _@FunctionInvocation(FunctionName(name), _, _) => name == Exists.name
+      case f:FunctionInvocation => f.function contains Exists
       case _ => false
     })
   }
