@@ -73,16 +73,16 @@ find_java_cmd() {
 check_java() {
   find_java_cmd
 
-  version_command="${JAVA_CMD} -version ${JAVA_MEMORY_OPTS}"
+  version_command=("${JAVA_CMD}" "-version" "${JAVA_MEMORY_OPTS[@]}")
 
-  JAVA_VERSION=$(${version_command} 2>&1 | awk -F '"' '/version/ {print $2}')
+  JAVA_VERSION=$("${version_command[@]}" 2>&1 | awk -F '"' '/version/ {print $2}')
   if [[ "${JAVA_VERSION}" < "1.8" ]]; then
     echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
     show_java_help
     exit 1
   fi
 
-  if ! (${version_command} 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
+  if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
     echo "WARNING! You are using an unsupported Java runtime. "
     show_java_help
   fi
@@ -193,25 +193,29 @@ setup_configurable_paths() {
 }
 
 setup_java_opts() {
-  JAVA_MEMORY_OPTS=""
-  [[ "${dbms_memory_heap_initial_size:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xms${dbms_memory_heap_initial_size}m"
-  [[ "${dbms_memory_heap_max_size:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xmx${dbms_memory_heap_max_size}m"
+  JAVA_OPTS=("-server")
 
-  JAVA_GC_LOGGING_OPTS=""
-  if [ "${dbms_logs_gc_enabled:-}" = "true" ]; then
-      [[ ${dbms_logs_gc_options:-} ]] || dbms_logs_gc_options="-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution -XX:+UseGCLogFileRotation"
-      [[ ${dbms_logs_gc_rotation_size:-} ]] || dbms_logs_gc_rotation_size="20m"
-      [[ ${dbms_logs_gc_rotation_keep_number:-} ]] || dbms_logs_gc_rotation_keep_number="5"
+  JAVA_MEMORY_OPTS=("") # Bash treats empty arrays as undefined so we need a fake entry
+  [[ -n "${dbms_memory_heap_initial_size:-}" ]] && JAVA_MEMORY_OPTS+=("-Xms${dbms_memory_heap_initial_size}m")
+  [[ -n "${dbms_memory_heap_max_size:-}" ]] && JAVA_MEMORY_OPTS+=("-Xmx${dbms_memory_heap_max_size}m")
+  JAVA_OPTS+=("${JAVA_MEMORY_OPTS[@]}")
 
-      JAVA_GC_LOGGING_OPTS="-Xloggc:${NEO4J_LOG}/gc.log ${dbms_logs_gc_options} -XX:NumberOfGCLogFiles=${dbms_logs_gc_rotation_keep_number} -XX:GCLogFileSize=${dbms_logs_gc_rotation_size}";
+  if [[ "${dbms_logs_gc_enabled:-}" = "true" ]]; then
+    JAVA_OPTS+=("-Xloggc:${NEO4J_LOG}/gc.log" \
+                "-XX:+UseGCLogFileRotation" \
+                "-XX:NumberOfGCLogFiles=${dbms_logs_gc_rotation_keep_number:-5}" \
+                "-XX:GCLogFileSize=${dbms_logs_gc_rotation_size:-20m}")
+    if [[ -n "${dbms_logs_gc_options:-}" ]]; then
+      JAVA_OPTS+=(${dbms_logs_gc_options}) # unquoted to split on spaces
+    else
+      JAVA_OPTS+=("-XX:+PrintGCDetails" "-XX:+PrintGCDateStamps" "-XX:+PrintGCApplicationStoppedTime" \
+                  "-XX:+PrintPromotionFailure" "-XX:+PrintTenuringDistribution")
+    fi
   fi
 
-  JAVA_OPTS="-server"
-  [[ "${JAVA_MEMORY_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_MEMORY_OPTS}"
-  [[ "${dbms_jvm_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${dbms_jvm_additional}"
-  [[ "${JAVA_GC_LOGGING_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_GC_LOGGING_OPTS}"
-
-  return 0
+  if [[ -n "${dbms_jvm_additional:-}" ]]; then
+    JAVA_OPTS+=(${dbms_jvm_additional}) # unquoted to split on spaces
+  fi
 }
 
 build_classpath() {
@@ -219,7 +223,7 @@ build_classpath() {
 }
 
 assemble_command_line() {
-  retval=("${JAVA_CMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dfile.encoding=UTF-8 "${MAIN_CLASS}" \
+  retval=("${JAVA_CMD}" "-cp" "${CLASSPATH}" "${JAVA_OPTS[@]}" "-Dfile.encoding=UTF-8" "${MAIN_CLASS}" \
           "--config-dir=${NEO4J_CONF}")
 }
 
