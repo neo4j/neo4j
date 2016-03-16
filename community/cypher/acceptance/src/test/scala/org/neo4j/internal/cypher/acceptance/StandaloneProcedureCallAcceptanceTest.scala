@@ -317,4 +317,16 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
   test("should fail if calling non-existent procedure") {
     a [CypherExecutionException] shouldBe thrownBy(execute("CALL no.such.thing.exists(42)"))
   }
+
+  test("should be able to find indexes from built-in-procedure") {
+    // Given
+    graph.createIndex("A", "prop")
+
+    //When
+    val result = execute("CALL db.indexes")
+
+    // Then
+    result.toList should equal(
+      List(Map("description" -> "INDEX ON :A(prop)", "state" -> "ONLINE")))
+  }
 }
