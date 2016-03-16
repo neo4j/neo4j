@@ -329,8 +329,7 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
-        webServer.setHttpLoggingConfiguration(config.get( GraphDatabaseSettings.logs_directory ),
-                config.get( http_logging_enabled ) );
+        webServer.setHttpLoggingConfiguration( config.get( GraphDatabaseSettings.logs_directory ) );
     }
 
     private void setUpTimeoutFilter()

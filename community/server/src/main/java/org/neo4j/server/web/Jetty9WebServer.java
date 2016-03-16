@@ -321,12 +321,9 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setHttpLoggingConfiguration( File logsDirectory, boolean enableLogging )
+    public void setHttpLoggingConfiguration( File logsDirectory )
     {
-        if( enableLogging )
-        {
-            this.requestLogFile = new File( logsDirectory, "http.log" );
-        }
+        this.requestLogFile = new File( logsDirectory, "http.log" );
     }
 
     @Override
