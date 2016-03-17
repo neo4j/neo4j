@@ -89,7 +89,9 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // then
         assertEquals( ConsistencyCheckService.Result.FAILURE, result );
-        File reportFile = new File( fixture.directory(), defaultLogFileName( timestamp ) );
+        File reportFile = new File(
+                configuration.get( GraphDatabaseSettings.logs_directory ),
+                defaultLogFileName( timestamp ) );
         assertTrue( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
     }
 
@@ -101,7 +103,7 @@ public class ConsistencyCheckServiceIntegrationTest
         ConsistencyCheckService service = new ConsistencyCheckService();
         File specificLogFile = new File( testDirectory.directory(), "specific_logfile.txt" );
         Config configuration = new Config(
-                settings( ConsistencyCheckSettings.consistency_check_report_file.name(), specificLogFile.getPath() ),
+                settings( GraphDatabaseSettings.logs_directory.name(), specificLogFile.getPath() ),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class
         );
 

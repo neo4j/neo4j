@@ -23,6 +23,36 @@ PROGRAM="$(basename "$0")"
 NEO4J_ROOT="$(cd "$(dirname "$0")"/.. && dirs -l +0)"
 readonly PROGRAM NEO4J_ROOT
 
+parse_config() {
+  # - plain key-value pairs become environment variables
+  # - keys have '.' chars changed to '_'
+  # - keys of the form KEY.# (where # is a number) are concatenated into a single environment variable named KEY
+  parse_line() {
+    line="$1"
+    if [[ "${line}" =~ ^([^#\s][^=]+)=(.+)$ ]]; then
+      key="${BASH_REMATCH[1]//./_}"
+      value="${BASH_REMATCH[2]}"
+      if [[ "${key}" =~ ^(.*)_([0-9]+)$ ]]; then
+        key="${BASH_REMATCH[1]}"
+      fi
+      if [[ "${!key:-}" ]]; then
+        export ${key}="${!key} ${value}"
+      else
+        export ${key}="${value}"
+      fi
+    fi
+  }
+
+  for file in "neo4j-wrapper.conf" "neo4j.conf"; do
+    path="${NEO4J_CONFIG}/${file}"
+    if [ -e "${path}" ]; then
+      while read line; do
+        parse_line "${line}"
+      done <"${path}"
+    fi
+  done
+}
+
 cmd_import_args() {
   declare database=''
   declare source=''
@@ -84,8 +114,10 @@ cmd_import() {
 
   case "${mode}" in
     database)
-      cp -r "${source}" "${NEO4J_ROOT}/data/databases/${database}"
-      rm -f "${NEO4J_ROOT}/data/databases/${database}/messages.log"
+      setup_neo4jhome_and_script
+      setup_paths
+      cp -r "${source}" "${NEO4J_DATA}/databases/${database}"
+      rm -f "${NEO4J_DATA}/databases/${database}/messages.log"
       ;;
     *)
       bad_usage "unrecognised mode '${mode}'"
@@ -140,7 +172,7 @@ detect_os() {
 setup_neo4jhome_and_script() {
   SCRIPT=$0
 
-  cd "$(dirname "${SCRIPT}")"
+  pushd "$(dirname "${SCRIPT}")"
   SCRIPT="$(basename "${SCRIPT}")"
 
   while [ -L "${SCRIPT}" ]
@@ -151,6 +183,7 @@ setup_neo4jhome_and_script() {
   done
 
   NEO4J_HOME="$(cd "$(dirname "${SCRIPT}")/.." && dirs -l +0)"
+  popd
 }
 
 build_classpath() {
@@ -159,6 +192,8 @@ build_classpath() {
 
 setup_paths() {
   [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
+  parse_config
+  NEO4J_DATA="${NEO4J_ROOT}/${dbms_directories_data:-data}"
 }
 
 check_java() {
