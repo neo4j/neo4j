@@ -23,9 +23,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.storageengine.api.Token;
 
+/**
+ * Token cache that provide id -> TOKEN and name -> id mappings.
+ * Name -> id mapping will be updated last since it's used as part of the check for token existence in a cache.
+ * As soon as token visible through it - it's considered added into a cache.
+ *
+ * Implementation does not provide any atomicity guarantees. Mapping updates will be visible independently from each
+ * other.
+ * Implementation is not thread safe.
+ *
+ * @param <TOKEN> token type
+ */
 public class InMemoryTokenCache<TOKEN extends Token>
 {
     private final Map<String, Integer> nameToId = new CopyOnWriteHashMap<>();
@@ -43,11 +56,13 @@ public class InMemoryTokenCache<TOKEN extends Token>
         idToToken.clear();
     }
 
-    private static void putAndEnsureUnique( Map<String,Integer> nameToId, Token token, String tokenType )
+    private void putAndEnsureUnique( Map<String,Integer> nameToId, Token token, String tokenType )
     {
-        Integer previous;
-        if ( (previous = nameToId.put( token.name(), token.id() )) != null && previous != token.id() )
+        Integer previous = nameToId.putIfAbsent( token.name(), token.id() );
+        if ( previous != null && previous != token.id() )
         {
+            // since we optimistically put token into a map before, now we need to remove it.
+            idToToken.remove( token.id(), token );
             throw new NonUniqueTokenException( tokenType, token.name(), token.id(), previous );
         }
     }
@@ -59,18 +74,18 @@ public class InMemoryTokenCache<TOKEN extends Token>
 
         for ( TOKEN token : tokens )
         {
-            putAndEnsureUnique( newNameToId, token, tokenType );
             newIdToToken.put( token.id(), token );
+            putAndEnsureUnique( newNameToId, token, tokenType );
         }
 
-        nameToId.putAll( newNameToId );
         idToToken.putAll( newIdToToken );
+        nameToId.putAll( newNameToId );
     }
 
     public void put( TOKEN token ) throws NonUniqueTokenException
     {
-        putAndEnsureUnique( nameToId, token, tokenType );
         idToToken.put( token.id(), token );
+        putAndEnsureUnique( nameToId, token, tokenType );
     }
 
     public Integer getId( String name )
