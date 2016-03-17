@@ -52,6 +52,11 @@ class SemanticTable(
       throw new InternalException(s"Did not find any type information for variable $s", e)
   }
 
+  def contains(expr: String): Boolean = types.exists {
+    case (Variable(name), _) => name == expr
+    case _ => false
+  }
+
   def isNode(expr: String) = getTypeFor(expr) == symbols.CTNode.invariant
 
   def isRelationship(expr: String) = getTypeFor(expr) == symbols.CTRelationship.invariant

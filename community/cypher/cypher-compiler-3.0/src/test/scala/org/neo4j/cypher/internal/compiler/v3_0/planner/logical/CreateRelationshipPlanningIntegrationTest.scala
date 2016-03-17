@@ -75,5 +75,58 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
     )
   }
 
+  test("should plan only one create node when the other node is already in scope when creating a relationship") {
+    planFor("MATCH (n) CREATE (n)-[r:T]->(b)").plan should equal(
+      EmptyResult(
+        CreateRelationship(
+          CreateNode(
+            AllNodesScan(IdName("n"), Set())(solved),
+            IdName("b"), Seq.empty, None)(solved),
+          IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("b"), None)(solved)
+      )(solved)
+    )
+  }
+
+  test("should not plan two create nodes when they are already in scope when creating a relationship") {
+    planFor("MATCH (n) MATCH (m) CREATE (n)-[r:T]->(m)").plan should equal(
+      EmptyResult(
+        CreateRelationship(
+          CartesianProduct(
+            AllNodesScan(IdName("n"), Set())(solved),
+            AllNodesScan(IdName("m"), Set())(solved)
+          )(solved),
+          IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("m"), None)(solved)
+      )(solved)
+    )
+  }
+
+  test("should not plan two create nodes when they are already in scope and aliased when creating a relationship") {
+    planFor("MATCH (n) MATCH (m) WITH n AS a, m AS b CREATE (a)-[r:T]->(b)").plan should equal(
+      EmptyResult(
+        CreateRelationship(
+          Projection(
+            CartesianProduct(
+              AllNodesScan(IdName("n"), Set())(solved),
+              AllNodesScan(IdName("m"), Set())(solved)
+            )(solved), Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos)))(solved),
+          IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(solved)
+      )(solved)
+    )
+  }
+
+  test("should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
+    planFor("MATCH (n) WITH n AS a CREATE (a)-[r:T]->(b)").plan should equal(
+      EmptyResult(
+        CreateRelationship(
+          CreateNode(
+            Projection(
+              AllNodesScan(IdName("n"), Set())(solved),
+              Map("a" -> Variable("n")(pos)))(solved),
+            IdName("b"), Seq.empty, None)(solved),
+          IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(solved)
+      )(solved)
+    )
+  }
+
   private def relType(name: String): RelTypeName = RelTypeName(name)(pos)
 }

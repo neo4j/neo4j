@@ -1524,4 +1524,24 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     assertStats(result, nodesCreated = 731, relationshipsCreated = 1247, propertiesWritten = 230, labelsAdded = 730)
   }
+
+  test("should not create nodes when aliases are applied to variable names") {
+    createNode()
+
+    val query = "MATCH (n) MATCH (m) WITH n AS a, m AS b CREATE (a)-[r:T]->(b) RETURN id(a) as a, id(b) as b"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+    assertStats(result, relationshipsCreated = 1)
+    result.toList should equal(List(Map("a" -> 0, "b" -> 0)))
+  }
+
+  test("should create only one node when an alias is applied to a variable name") {
+    createNode()
+
+    val query = "MATCH (n) WITH n AS a CREATE (a)-[r:T]->(b) RETURN id(a) as a"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+    assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
+    result.toList should equal(List(Map("a" -> 0)))
+  }
 }

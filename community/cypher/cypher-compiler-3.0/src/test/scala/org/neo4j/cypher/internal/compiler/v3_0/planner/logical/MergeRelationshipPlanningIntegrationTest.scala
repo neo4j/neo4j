@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.LazyType
 import org.neo4j.cypher.internal.compiler.v3_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
@@ -88,5 +89,105 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
     plan should not be using[AssertSameNode]
     plan shouldBe using[NodeUniqueIndexSeek]
+  }
+
+  test("should plan only one create node when the other node is already in scope when creating a relationship") {
+    planFor("MATCH (n) MERGE (n)-[r:T]->(b)").plan should equal(
+      EmptyResult(
+        Apply(
+          AllNodesScan(IdName("n"), Set())(solved),
+          AntiConditionalApply(
+            Optional(
+              Expand(
+                Argument(Set(IdName("n")))(solved)(),
+                IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved),
+              Set(IdName("n"))
+            )(solved),
+            MergeCreateRelationship(
+              MergeCreateNode(
+                Argument(Set(IdName("n")))(solved)(),
+                IdName("b"), Seq.empty, None)(solved),
+              IdName("r"), IdName("n"), LazyType("T"), IdName("b"), None)(solved),
+            Seq(IdName("b"), IdName("r")))(solved)
+        )(solved)
+      )(solved)
+    )
+  }
+
+  test("should not plan two create nodes when they are already in scope when creating a relationship") {
+    planFor("MATCH (n) MATCH (m) MERGE (n)-[r:T]->(m)").plan should equal(
+      EmptyResult(
+        Apply(
+          CartesianProduct(
+            AllNodesScan(IdName("n"), Set())(solved),
+            AllNodesScan(IdName("m"), Set())(solved)
+          )(solved),
+          AntiConditionalApply(
+            Optional(
+              Expand(
+                Argument(Set(IdName("n"), IdName("m")))(solved)(),
+                IdName("n"), OUTGOING, List(RelTypeName("T")(pos)), IdName("m"), IdName("r"), ExpandInto)(solved),
+              Set(IdName("n"), IdName("m"))
+            )(solved),
+            MergeCreateRelationship(
+              Argument(Set(IdName("n"), IdName("m")))(solved)(),
+              IdName("r"), IdName("n"), LazyType("T"), IdName("m"), None)(solved),
+            Seq(IdName("r")))(solved)
+        )(solved)
+      )(solved)
+    )
+  }
+
+  test("should not plan two create nodes when they are already in scope and aliased when creating a relationship") {
+    planFor("MATCH (n) MATCH (m) WITH n AS a, m AS b MERGE (a)-[r:T]->(b)").plan should equal(
+      EmptyResult(
+        Apply(
+          Projection(
+            CartesianProduct(
+              AllNodesScan(IdName("n"), Set())(solved),
+              AllNodesScan(IdName("m"), Set())(solved)
+            )(solved),
+            Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos))
+          )(solved),
+          AntiConditionalApply(
+            Optional(
+              Expand(
+                Argument(Set(IdName("a"), IdName("b")))(solved)(),
+                IdName("a"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandInto)(solved),
+              Set(IdName("a"), IdName("b"))
+            )(solved),
+            MergeCreateRelationship(
+              Argument(Set(IdName("a"), IdName("b")))(solved)(),
+              IdName("r"), IdName("a"), LazyType("T"), IdName("b"), None)(solved),
+            Seq(IdName("r")))(solved)
+        )(solved)
+      )(solved)
+    )
+  }
+
+  test("should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
+    planFor("MATCH (n) WITH n AS a MERGE (a)-[r:T]->(b)").plan should equal(
+      EmptyResult(
+        Apply(
+          Projection(
+            AllNodesScan(IdName("n"), Set())(solved),
+            Map("a" -> Variable("n")(pos))
+          )(solved),
+          AntiConditionalApply(
+            Optional(
+              Expand(
+                Argument(Set(IdName("a")))(solved)(),
+                IdName("a"), OUTGOING, List(RelTypeName("T")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved),
+              Set(IdName("a"))
+            )(solved),
+            MergeCreateRelationship(
+              MergeCreateNode(
+                Argument(Set(IdName("a")))(solved)(),
+                IdName("b"), Seq.empty, None)(solved),
+              IdName("r"), IdName("a"), LazyType("T"), IdName("b"), None)(solved),
+            Seq(IdName("b"), IdName("r")))(solved)
+        )(solved)
+      )(solved)
+    )
   }
 }
