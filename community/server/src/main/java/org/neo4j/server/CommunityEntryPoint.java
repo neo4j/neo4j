@@ -19,13 +19,30 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
-
-import org.neo4j.helpers.collection.Pair;
-
-public interface Bootstrapper
+public class CommunityEntryPoint
 {
-    int start( File configFile, Pair<String, String>... configOverrides );
+    private static Bootstrapper bootstrapper;
 
-    int stop();
+    public static void main( String[] args )
+    {
+        int status = ServerBootstrapper.start( new CommunityBootstrapper(), args );
+        if ( status != 0 )
+        {
+            System.exit( status );
+        }
+    }
+
+    public static void start( String[] args )
+    {
+        bootstrapper = new BlockingBootstrapper( new CommunityBootstrapper() );
+        System.exit( ServerBootstrapper.start( bootstrapper, args ) );
+    }
+
+    public static void stop( @SuppressWarnings("UnusedParameters") String[] args )
+    {
+        if ( bootstrapper != null )
+        {
+            bootstrapper.stop();
+        }
+    }
 }

@@ -153,22 +153,56 @@ Function Get-Java
     # Shell arguments for the Neo4jServer and Arbiter classes
     if ($PsCmdlet.ParameterSetName -eq 'ServerInvoke')
     {
-      if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseBootstrapper' }
-      if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityBootstrapper' }
-      if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.StandaloneClusterClient' }
+      if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseEntryPoint' }
+      if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
+      if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterEntryPoint' }
 
       if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
 
-      # Note -DserverMainClass must appear before -jar in the argument list.  Changing this order raises a Null Pointer Exception in the Windows Service Wrapper
-      $ShellArgs = @( `
-        "-DworkingDir=`"$($Neo4jServer.Home)`"" `
-        ,"-Djava.util.logging.config.file=`"$($Neo4jServer.Home)\conf\windows-wrapper-logging.properties`"" `
-        ,"-DconfigFile=`"conf/neo4j-wrapper.conf`"" `
-        ,"-Dfile.encoding=UTF-8" `
-        ,"-DserverClasspath=`"lib/*;plugins/*`"" `
-        ,"-DserverMainClass=$($serverMainClass)" `
-        ,"-jar","`"$($Neo4jServer.Home)\bin\windows-service-wrapper-5.jar`""
+      # Build the Java command line
+      $ClassPath="$($Neo4jServer.Home)/lib/*;$($Neo4jServer.Home)/plugins/*"
+      $ShellArgs = @("-cp `"$($ClassPath)`""`
+                    ,'-server' `
+                    ,'-Dorg.neo4j.config.file=conf/neo4j.conf' `
+                    ,'-Dlog4j.configuration=file:conf/log4j.properties' `
+                    ,'-Dneo4j.ext.udc.source=zip-powershell' `
+                    ,'-Dorg.neo4j.cluster.logdirectory=data/log' `
       )
+
+      # Parse Java config settings - Heap
+      $option = (Get-Neo4jSetting -Name 'dbms.memory.heap.initial_size' -Neo4jServer $Neo4jServer)
+      if ($option -ne $null) { $ShellArgs += "-Xms$($option.Value))m" }
+
+      $option = (Get-Neo4jSetting -Name 'dbms.memory.heap.max_size' -Neo4jServer $Neo4jServer)
+      if ($option -ne $null) { $ShellArgs += "-Xmx$($option.Value))m" }
+
+      # Parse Java config settings - Explicit
+      $option = (Get-Neo4jSetting -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
+      if ($option -ne $null) { $ShellArgs += $option.value }
+
+      # Parse Java config settings - GC
+      $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.enabled' -Neo4jServer $Neo4jServer)
+      if (($option -ne $null) -and ($option.Value.ToLower() -eq 'true')) {
+        $ShellArgs += "-Xloggc:$($Neo4jServer.Home)/gc.log"
+
+        $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.options' -Neo4jServer $Neo4jServer)
+        if ($option -ne $null) { $ShellArgs += @('-XX:+PrintGCDetails','-XX:+PrintGCDateStamps','-XX:+PrintGCApplicationStoppedTime','-XX:+PrintPromotionFailure','-XX:+PrintTenuringDistribution','-XX:+UseGCLogFileRotation')}
+
+        $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.rotation.size' -Neo4jServer $Neo4jServer)
+        if ($option -ne $null) {
+          $ShellArgs += "-XX:GCLogFileSize=$($option.value)"
+        } else {
+          $ShellArgs += "-XX:GCLogFileSize=20m"
+        }
+
+        $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.rotation.keep_number' -Neo4jServer $Neo4jServer)
+        if ($option -ne $null) {
+          $ShellArgs += "-XX:NumberOfGCLogFiles=$($option.value)"
+        } else {
+          $ShellArgs += "-XX:NumberOfGCLogFiles=5"
+        }
+      }
+      $ShellArgs += @("-Dfile.encoding=UTF-8",$serverMainClass)
     }
     
     # Shell arguments for the utility classes e.g. Import, Shell

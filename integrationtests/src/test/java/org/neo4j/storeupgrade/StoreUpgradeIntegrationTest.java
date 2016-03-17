@@ -67,12 +67,10 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-import org.neo4j.server.Bootstrapper;
+import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.CommunityBootstrapper;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.database.Database;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -213,14 +211,12 @@ public class StoreUpgradeIntegrationTest
 
             try
             {
-                Bootstrapper bootstrapper = new CommunityBootstrapper();
-                bootstrapper.start( configFile );
+                ServerBootstrapper bootstrapper = new CommunityBootstrapper();
                 try
                 {
-                    NeoServer server = bootstrapper.getServer();
-                    Database database = server.getDatabase();
-                    assertTrue( database.isRunning() );
-                    checkInstance( store, database.getGraph() );
+                    bootstrapper.start( configFile );
+                    assertTrue( bootstrapper.isRunning() );
+                    checkInstance( store, bootstrapper.getServer().getDatabase().getGraph() );
                 }
                 finally
                 {

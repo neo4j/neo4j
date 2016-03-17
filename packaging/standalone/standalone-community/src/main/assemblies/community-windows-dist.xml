@@ -42,29 +42,29 @@
         <include>lib/*.jar</include>
       </includes>
     </fileSet>
+    <!-- do not filter binaries -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>**/*.exe</include>
+      </includes>
+    </fileSet>
+    <!-- filter text files -->
     <fileSet>
       <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
       <outputDirectory></outputDirectory>
       <lineEnding>dos</lineEnding>
       <includes>
         <include>**/*.bat</include>
+        <include>**/*.psd1</include>
+        <include>**/*.psm1</include>
+        <include>**/*.ps1</include>
       </includes>
       <excludes>
         <exclude>**/neo4j-backup*</exclude>
       </excludes>
       <filtered>true</filtered>
-    </fileSet>
-    <!-- Neo4j Powershell Modules -->
-    <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
-      <outputDirectory></outputDirectory>
-      <lineEnding>dos</lineEnding>
-      <includes>
-        <include>**/*.psd1</include>
-        <include>**/*.psm1</include>
-        <include>**/*.ps1</include>
-      </includes>
-	  <filtered>true</filtered>
     </fileSet>
     <!-- upgrade text file -->
     <fileSet>

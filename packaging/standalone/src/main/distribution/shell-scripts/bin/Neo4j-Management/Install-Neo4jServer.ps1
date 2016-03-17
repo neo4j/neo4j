@@ -55,35 +55,25 @@ Function Install-Neo4jServer
 
   Process
   {
-    # Get the Java information
-    $JavaCMD = $null
-    try {
-      $JavaCMD = Get-Java -Neo4jServer $Neo4jServer -ForServer -ErrorAction Stop
-    }
-    catch {
-      $JavaCMD = $null
-    }
-    if ($JavaCMD -eq $null) { Throw 'Unable to locate Java' }
-
     $Name = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
-    $DisplayName = "Neo4j Graph Database - $Name"
-    $Description = "Neo4j Graph Database - $($Neo4jServer.Home)"
-    
-    $binPath = "`"$($JavaCMD.java)`" $($JavaCMD.args -join ' ') $Name"    
 
-    $result = $null
-    # Check if it already exists
     $result = Get-Service -Name $Name -ComputerName '.' -ErrorAction 'SilentlyContinue'
     if ($result -eq $null)
     {
-      Write-Verbose "Installing the Windows Service $Name with Bin Path $binPath"
-      $result = (New-Service -Name $Name -Description $Description -DisplayName $DisplayName -BinaryPathName $binPath -StartupType 'Automatic')
+      $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerInstall
+      if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
+
+      Write-Verbose "Installing Neo4j as a service with command line $($prunsrv.cmd) $($prunsrv.args)"
+      $result = (Start-Process -FilePath $prunsrv.cmd -ArgumentList $prunsrv.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home)
+      Write-Verbose "Returned exit code $($result.ExitCode)"
+
+      Write-Output $result.ExitCode
     } else {
       Write-Verbose "Service already installed"
+      Write-Output 0
     }
     
     Write-Host "Neo4j service installed"
-    return 0
   }
   
   End
