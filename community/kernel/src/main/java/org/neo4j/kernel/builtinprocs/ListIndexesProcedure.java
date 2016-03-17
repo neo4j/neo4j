@@ -20,6 +20,8 @@
 package org.neo4j.kernel.builtinprocs;
 
 import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.Statement;
@@ -35,6 +37,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
@@ -46,6 +49,7 @@ public class ListIndexesProcedure extends CallableProcedure.BasicProcedure
         super( procedureSignature( procedureName )
                 .out( "description", Neo4jTypes.NTString )
                 .out( "state", Neo4jTypes.NTString )
+                .out( "unique", Neo4jTypes.NTBoolean )
                 .build() );
     }
 
@@ -58,13 +62,22 @@ public class ListIndexesProcedure extends CallableProcedure.BasicProcedure
 
         List<IndexDescriptor> indexes =
                 asList( statement.readOperations().indexesGetAll() );
+
+        Set<IndexDescriptor> uniqueIndexes = asSet( statement.readOperations().uniqueIndexesGetAll() );
+        indexes.addAll( uniqueIndexes );
         indexes.sort( (a,b) -> a.userDescription(tokens).compareTo( b.userDescription(tokens) ) );
 
+        return format( indexes, statement, tokens, uniqueIndexes::contains );
+    }
+
+    private RawIterator<Object[],ProcedureException> format(List<IndexDescriptor> indexes,
+            Statement statement, TokenNameLookup tokens, Function<IndexDescriptor, Boolean> unqiue)
+    {
         return map( ( index ) -> {
                     try
                     {
                         return new Object[]{"INDEX ON " + index.userDescription( tokens ),
-                                statement.readOperations().indexGetState( index ).toString()};
+                                statement.readOperations().indexGetState( index ).toString(), unqiue.apply( index )};
                     }
                     catch ( IndexNotFoundKernelException e )
                     {
