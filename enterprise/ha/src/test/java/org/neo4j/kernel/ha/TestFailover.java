@@ -34,7 +34,6 @@ import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 @RunWith( Parameterized.class )
 public class TestFailover
