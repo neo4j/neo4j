@@ -41,6 +41,10 @@ public class QueryStatistics implements org.neo4j.graphdb.QueryStatistics
         return inner.nodesCreated();
     }
 
+    /**
+     * Returns the number of nodes deleted by this query.
+     * @return the number of nodes deleted by this query.
+     */
     @Override
     public int getNodesDeleted()
     {
@@ -57,6 +61,10 @@ public class QueryStatistics implements org.neo4j.graphdb.QueryStatistics
         return inner.relationshipsCreated();
     }
 
+    /**
+     * Returns the number of relationships deleted by this query.
+     * @return the number of relationships deleted by this query.
+     */
     @Override
     public int getRelationshipsDeleted()
     {
@@ -71,24 +79,6 @@ public class QueryStatistics implements org.neo4j.graphdb.QueryStatistics
     public int getPropertiesSet()
     {
         return inner.propertiesSet();
-    }
-
-    /**
-     * Returns the number of nodes deleted by this query.
-     * @return the number of nodes deleted by this query.
-     */
-    public int getDeletedNodes()
-    {
-        return inner.nodesDeleted();
-    }
-
-    /**
-     * Returns the number of relationships deleted by this query.
-     * @return the number of relationships deleted by this query.
-     */
-    public int getDeletedRelationships()
-    {
-        return inner.relationshipsDeleted();
     }
 
     /**

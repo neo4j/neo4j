@@ -66,8 +66,8 @@ object matcherParser extends (String => ValueMatcher) {
 object parseParameters extends (DataTable => java.util.Map[String, AnyRef]) {
 
   override def apply(input: DataTable): util.Map[String, AnyRef] = {
-    val keys = input.topCells().asScala
-    val values = input.cells(1).asScala.head
+    val keys = input.transpose().topCells().asScala
+    val values = input.transpose().cells(1).asScala.head
 
     keys.zipWithIndex.map { case (key, index) =>
       key -> paramsParser(values.get(index))
