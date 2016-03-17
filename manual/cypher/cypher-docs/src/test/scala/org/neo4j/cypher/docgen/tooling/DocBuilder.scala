@@ -50,6 +50,8 @@ trait DocBuilder {
 
   def p(text: String) = current.addContent(Paragraph(text.stripMargin))
 
+  def function(syntax: String, arguments: (String, String)*) = current.addContent(Function(syntax, arguments))
+
   def resultTable() = {
     val queryScope = scope.collectFirst {
       case q: QueryScope => q
