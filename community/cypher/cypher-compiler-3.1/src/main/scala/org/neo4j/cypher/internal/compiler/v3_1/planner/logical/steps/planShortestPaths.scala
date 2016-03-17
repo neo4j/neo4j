@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.{Predicate, QueryGraph}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.frontend.v3_1.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
-import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.Length
+import org.neo4j.cypher.internal.frontend.v3_1.ast.functions.{Nodes, Length}
 
 case object planShortestPaths {
 
@@ -46,8 +46,8 @@ case object planShortestPaths {
 
     val (safePredicates, needFallbackPredicates) = predicates.partition {
       // TODO: Once we support node predicates we should enable all NONE and ALL predicates as safe predicates
-      case NoneIterablePredicate(_, FunctionInvocation(FunctionName("nodes"), _, _)) => false
-      case AllIterablePredicate(_, FunctionInvocation(FunctionName("nodes"), _, _)) => false
+      case NoneIterablePredicate(_, f@FunctionInvocation(_, _, _)) if f.function contains Nodes => false
+      case AllIterablePredicate(_, f@FunctionInvocation(_, _, _)) if f.function contains Nodes => false
       case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case _ => false

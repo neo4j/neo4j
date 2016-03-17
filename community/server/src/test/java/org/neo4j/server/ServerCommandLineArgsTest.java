@@ -19,13 +19,14 @@
  */
 package org.neo4j.server;
 
-import org.junit.Test;
-
 import java.io.File;
+
+import org.junit.Test;
 
 import org.neo4j.helpers.collection.Pair;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 

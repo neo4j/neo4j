@@ -124,8 +124,10 @@ class MathFunctionsTest extends CypherFunSuite with NumericHelper {
   }
 
   test("signTests") {
-    calc(SignFunction(Literal(-1))) should equal(-1)
-    calc(SignFunction(Literal(1))) should equal(1)
+    calc(SignFunction(Literal(-1))).asInstanceOf[Long] should equal(-1L)
+    calc(SignFunction(Literal(1))).asInstanceOf[Long] should equal(1L)
+    calc(SignFunction(Literal(Double.NegativeInfinity))).asInstanceOf[Long] should equal(-1L)
+    calc(SignFunction(Literal(Math.PI))).asInstanceOf[Long] should equal(1L)
     intercept[CypherTypeException](calc(SignFunction(Literal("wut"))))
   }
 

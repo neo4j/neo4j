@@ -88,6 +88,20 @@ case class Paragraph(s: String) extends Content with NoQueries {
   override def asciiDoc(level: Int) = s + NewLine + NewLine
 }
 
+case class Function(syntax: String, arguments: Seq[(String, String)]) extends Content with NoQueries {
+  override def asciiDoc(level: Int) = {
+    val formatted = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("", NewLine, NewLine + NewLine)
+    String.format( """*Syntax:* %s
+                    |
+                    |*Arguments:*
+                    |
+                    |%s""".stripMargin,
+                   syntax,
+                   formatted)
+  }
+
+}
+
 object Admonitions {
 
   object Tip {
@@ -214,7 +228,7 @@ case class ConsoleData(globalInitQueries: Seq[String], localInitQueries: Seq[Str
     val globalInitQueryRows = globalInitQueries.mkString(NewLine)
     val localInitQueryRows = localInitQueries.mkString(NewLine)
     val initQueries =
-      if (globalInitQueryRows.isEmpty() && localInitQueryRows.isEmpty())
+      if (globalInitQueryRows.isEmpty && localInitQueryRows.isEmpty)
           "none"
         else
           globalInitQueryRows + "\n" + localInitQueryRows

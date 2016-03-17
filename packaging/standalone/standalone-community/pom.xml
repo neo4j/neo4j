@@ -27,7 +27,7 @@
   </scm>
 
   <properties>
-    <neo4j.mainClass>org.neo4j.server.CommunityBootstrapper</neo4j.mainClass>
+    <neo4j.mainClass>org.neo4j.server.CommunityEntryPoint</neo4j.mainClass>
   </properties>
 
   <licenses>

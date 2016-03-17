@@ -36,15 +36,6 @@ import static org.neo4j.server.enterprise.EnterpriseServerSettings.mode;
 
 public class EnterpriseBootstrapper extends CommunityBootstrapper
 {
-    public static void main( String[] args )
-    {
-        int exit = start( new EnterpriseBootstrapper(), args );
-        if ( exit != 0 )
-        {
-            System.exit( exit );
-        }
-    }
-
     @Override
     protected NeoServer createNeoServer( Config configurator, GraphDatabaseDependencies dependencies, LogProvider
             userLogProvider )

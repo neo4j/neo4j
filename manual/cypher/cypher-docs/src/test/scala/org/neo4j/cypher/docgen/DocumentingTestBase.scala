@@ -56,7 +56,11 @@ trait DocumentationHelper extends GraphIcing with ExecutionEngineHelper {
   def generateConsole: Boolean
   def db: GraphDatabaseCypherService
 
-  def niceify(in: String): String = in.toLowerCase.replace(" ", "-")
+  def niceify(in: String): String = in.toLowerCase
+    .replace(" ", "-")
+    .replace("(", "")
+    .replace(")", "")
+    .replace("`", "")
 
   def simpleName: String = this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase
 

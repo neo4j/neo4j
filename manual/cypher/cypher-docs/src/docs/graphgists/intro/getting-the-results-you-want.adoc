@@ -197,13 +197,13 @@ LIMIT 10;
 
 == Collecting Aggregation
 
-The most helpful aggregation function is `collect()`, which, as the name says, collects all aggregated values into a _real_ array or list.
-This comes very handy in many situations as you don't loose the detail information while aggregating.
+The most helpful aggregation function is `collect()`, which, appropriately collects all aggregated values into a list.
+This comes very handy in many situations as no information of details is lost while aggregating.
 
-`collect()` is well suited for retrieving the typical parent-child structures, where one core entity (parent, root or head) is returned per row with all it's dependent information in associated lists created with `collect()`.
-This means there's no need to repeat the parent information per each child-row or even running 1+n statements to retrieve the parent and its children individually.
+`collect()` is well suited for retrieving typical parent-child structures, where one core entity (parent, root or head) is returned per row with all its dependent information in associated lists created with `collect()`.
+This means that there is no need to repeat the parent information per each child-row, or even running `n+1` statements to retrieve the parent and its children individually.
 
-To retrieve the cast of each movie in our database you could use this statement:
+To retrieve the cast of each movie in our database this statement could be used:
 
 [source,cypher]
 ----

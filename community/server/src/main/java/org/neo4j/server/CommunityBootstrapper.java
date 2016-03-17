@@ -31,19 +31,10 @@ import org.neo4j.server.configuration.ServerSettings;
 
 import static java.util.Arrays.asList;
 
-public class CommunityBootstrapper extends Bootstrapper
+public class CommunityBootstrapper extends ServerBootstrapper
 {
     public static final List<Class<?>> settingsClasses =
             asList( ServerSettings.class, GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
-
-    public static void main( String[] args )
-    {
-        int exit = start( new CommunityBootstrapper(), args );
-        if ( exit != 0 )
-        {
-            System.exit( exit );
-        }
-    }
 
     @Override
     protected NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
@@ -57,4 +48,5 @@ public class CommunityBootstrapper extends Bootstrapper
     {
         return settingsClasses;
     }
+
 }

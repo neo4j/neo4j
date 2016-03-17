@@ -63,7 +63,7 @@ Function Start-Neo4jServer
   {
     # Running Neo4j as a console app
     if ($PsCmdlet.ParameterSetName -eq 'Console')
-    {
+    {      
       $JavaCMD = Get-Java -Neo4jServer $Neo4jServer -ForServer -ErrorAction Stop
       if ($JavaCMD -eq $null)
       {
@@ -72,7 +72,7 @@ Function Start-Neo4jServer
       }
 
       Write-Verbose "Starting Neo4j as a console with command line $($JavaCMD.java) $($JavaCMD.args)"
-      $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $JavaCMD.args -Wait -NoNewWindow -PassThru -WorkingDirectory $thisServer.Home)
+      $result = (Start-Process -FilePath $JavaCMD.java -ArgumentList $JavaCMD.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home)
       Write-Verbose "Returned exit code $($result.ExitCode)"
 
       Write-Output $result.ExitCode

@@ -242,7 +242,7 @@ case class TanFunction(argument: Expression) extends NullSafeMathFunction(argume
 }
 
 case class RandFunction() extends Expression {
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.random
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Double = math.random
 
   override def arguments = Seq()
 
@@ -296,10 +296,17 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     step.symbolTableDependencies
 }
 
-case class SignFunction(argument: Expression) extends NullSafeMathFunction(argument) {
-  override def apply(value: Double) =  Math.signum(value)
+case class SignFunction(argument: Expression) extends MathFunction(argument) {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+    val value = argument(ctx)
+    if (null == value) null else {
+      Math.signum(asDouble(value)).toLong
+    }
+  }
 
   override def rewrite(f: (Expression) => Expression) = f(SignFunction(argument.rewrite(f)))
+
+  override def calculateType(symbols: SymbolTable) = CTInteger
 }
 
 case class RoundFunction(expression: Expression) extends NullSafeMathFunction(expression) {

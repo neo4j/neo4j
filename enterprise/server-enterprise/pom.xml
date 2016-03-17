@@ -20,7 +20,7 @@
     <bundle.namespace>org.neo4j.server.enterprise</bundle.namespace>
     <short-name>server-enterprise</short-name>
     <version-package>server.enterprise</version-package>
-    <neo4j-server.mainClass>org.neo4j.server.enterprise.EnterpriseBootstrapper</neo4j-server.mainClass>
+    <neo4j-server.mainClass>org.neo4j.server.enterprise.EnterpriseEntryPoint</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>

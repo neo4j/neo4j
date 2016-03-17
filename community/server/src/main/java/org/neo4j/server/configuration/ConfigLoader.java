@@ -25,15 +25,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.shell.ShellSettings;
-
-import static java.util.Arrays.asList;
 
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
@@ -62,11 +59,6 @@ public class ConfigLoader
         Config config = new Config( settings, settingsClasses.calculate( settings ) );
         config.setLogger( log );
         return config;
-    }
-
-    protected Iterable<Class<?>> settingsClasses( HashMap<String, String> settings )
-    {
-        return asList( ServerSettings.class, GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
     }
 
     private HashMap<String, String> calculateSettings( File configFile, File legacyConfigFile, Log log,

@@ -107,8 +107,7 @@ a database that uses <<term-graph, graph>>-based structures
 to represent and store data.
 
 [[term-graph-element]]graph element::
-<<term-node, node>> or <<term-relationship, relationship>>
-that is part of a <<term-graph, graph>>.
+a <<term-node, node>>, <<term-relationship, relationship>>, or <<term-path, path>> which is part of a <<term-graph, graph>>.
 
 [[term-variable]]variable::
 variables are named bindings to values (for example, collections, scalars)
@@ -170,7 +169,7 @@ The opposite of <<term-incoming-relationship, incoming relationship>>.
 <<term-graph, graph>> used to express the shape (that is, connectivity pattern) of the data being searched for in the <<term-data-graph, data graph>>.
 This is what `MATCH` and `WHERE` describe in a Cypher query.
 
-[[term-path]]path::
+[[term-path]]path*::
 collection of alternating <<term-node, nodes>> and <<term-relationship, relationships>> that corresponds to a walk in the <<term-data-graph, data graph>>.
 
 [[term-parameter]]parameter::
@@ -194,7 +193,7 @@ Synonym for <<term-attribute, attribute>>.
 a <<term-graph, graph>> having <<term-directed-relationship, directed>>, <<term-relationship-type, typed>> <<term-relationship, relationships>>.
 Each <<term-node, node>> or relationship may have zero or more associated <<term-property, properties>>.
 
-[[term-query]]query::
+[[term-query]]query*::
 statement that reads or writes data from the database
 
 [[term-relationship]]relationship*::

@@ -21,11 +21,8 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.Before;
@@ -33,14 +30,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.test.server.ExclusiveServerTestBase;
-
-import static java.util.Arrays.asList;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
@@ -48,7 +43,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.Bootstrapper.start;
 import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
 import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
 import static org.neo4j.test.Assert.assertEventually;
@@ -58,7 +52,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
 
-    protected Bootstrapper bootstrapper;
+    protected ServerBootstrapper bootstrapper;
 
     @Before
     public void before() throws IOException
@@ -75,23 +69,29 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         }
     }
 
-    protected abstract Bootstrapper newBootstrapper() throws IOException;
+    protected abstract ServerBootstrapper newBootstrapper() throws IOException;
+
+    protected abstract void start( String[] args );
+
+    protected abstract void stop( String[] args );
 
     @Test
     public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws IOException
     {
         // When
-        int resultCode = start( bootstrapper, commandLineConfig(
-                "-c", configOption( data_directory.name(), tempDir.getRoot().getAbsolutePath() ),
-                "-c", configOption( auth_store.name(), tempDir.newFile().getAbsolutePath() ),
-                "-c", configOption( tls_certificate_file.name(), new File( tempDir.getRoot(), "cert.cert" )
-                        .getAbsolutePath() ),
-                "-c", configOption( tls_key_file.name(), new File( tempDir.getRoot(), "key.key" ).getAbsolutePath() )
-        ) );
+        int resultCode = ServerBootstrapper.start( bootstrapper,
+                "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
+                "-c", configOption( auth_store, tempDir.newFile().getAbsolutePath() ),
+                "-c", configOption( tls_certificate_file,
+                        new File( tempDir.getRoot(), "cert.cert" ).getAbsolutePath() ),
+                "-c", configOption( tls_key_file, new File( tempDir.getRoot(), "key.key" ).getAbsolutePath() ),
+                "-c", "dbms.connector.1.type=HTTP",
+                "-c", "dbms.connector.1.enabled=true"
+        );
 
         // Then
-        assertEquals( Bootstrapper.OK, resultCode );
-        assertNotNull( bootstrapper.getServer() );
+        assertEquals( ServerBootstrapper.OK, resultCode );
+        assertEventually( "Server was not started", bootstrapper::isRunning, is( true ), 1, TimeUnit.MINUTES );
     }
 
     @Test
@@ -102,10 +102,12 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.1.type", "HTTP" );
+        properties.put( "dbms.connector.1.enabled", "true" );
         store( properties, configFile );
 
         // When
-        start( bootstrapper, commandLineConfig( "-C", configFile.getAbsolutePath() ) );
+        ServerBootstrapper.start( bootstrapper, "-C", configFile.getAbsolutePath() );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "ourcustomvalue" ) );
@@ -119,55 +121,21 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.1.type", "HTTP" );
+        properties.put( "dbms.connector.1.enabled", "true" );
         store( properties, configFile );
 
         // When
-        start( bootstrapper, commandLineConfig(
+        ServerBootstrapper.start( bootstrapper,
                 "-C", configFile.getAbsolutePath(),
-                "-c", configOption( forced_kernel_id.name(), "mycustomvalue" ) ) );
+                "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "mycustomvalue" ) );
     }
 
-    @Test
-    public void shouldStopTheServerWhenTheRunFileIsDeleted() throws InterruptedException
+    protected String configOption( Setting<?> setting, String value )
     {
-        File runFile = new File( tempDir.getRoot(), ".run-file" );
-        AtomicBoolean exited = new AtomicBoolean( false );
-
-        new Thread()
-        {
-            @Override
-            public void run()
-            {
-                Bootstrapper.start( bootstrapper, commandLineConfig( "--run-file", runFile.getAbsolutePath() ) );
-                exited.set( true );
-            }
-        }.start();
-
-        assertEventually( "Run-file was not created", runFile::exists, is( true ), 1, TimeUnit.MINUTES );
-        if ( !runFile.delete() )
-        {
-            throw new RuntimeException( "Could not delete " + runFile );
-        }
-        assertEventually( "Bootstrapper did not exit", exited::get, is( true ), 1, TimeUnit.MINUTES );
-        assertThat( "Server was not stopped", bootstrapper.getServer().getDatabase().isRunning(), is( false ) );
-    }
-
-    protected String[] commandLineConfig( String... params )
-    {
-        ArrayList<String> config = new ArrayList<>();
-        Collections.addAll( config, params );
-        config.addAll( asList(
-                "-c", "dbms.connector.1.type=HTTP",
-                "-c", "dbms.connector.1.enabled=true"
-        ) );
-        return config.toArray( new String[config.size()] );
-    }
-
-    protected String configOption( String key, String value )
-    {
-        return key + "=" + value;
+        return setting.name() + "=" + value;
     }
 }
