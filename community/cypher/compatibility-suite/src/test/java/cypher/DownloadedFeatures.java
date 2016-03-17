@@ -55,10 +55,12 @@ public class DownloadedFeatures extends Enclosed
     private static void downloadFeatures()
     {
         File directory = createTargetDirectory();
+        System.out.println( "# feature file directory: " + directory.getAbsolutePath() );
         byte[] buffer = new byte[1024];
         listGitHubFeatureFiles().forEach( ( name, url ) -> {
             try
             {
+                System.out.println( "# downloading url: " + url + " to file: " + name );
                 try ( InputStream input = url.openStream();
                       OutputStream output = new FileOutputStream( new File( directory, name ) ) )
                 {
