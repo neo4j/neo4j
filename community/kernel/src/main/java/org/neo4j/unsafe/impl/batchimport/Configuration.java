@@ -19,12 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
-import static java.lang.Long.parseLong;
 import static java.lang.Math.min;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
@@ -37,6 +37,7 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
      * database directory of the imported database, i.e. <into>/bad.log.
      */
     String BAD_FILE_NAME = "bad.log";
+    long MAX_PAGE_CACHE_MEMORY = mebiBytes( 240 );
 
     /**
      * @return number of relationships threshold for considering a node dense.
@@ -59,16 +60,15 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         @Override
         public long pageCacheMemory()
         {
-            long upperBound = parseLong( GraphDatabaseSettings.pagecache_memory.getDefaultValue() );
             // Get the upper bound of what we can get from the default config calculation
             // We even want to limit amount of memory a bit more since we don't need very much during import
-            return min( mebiBytes( 240 ), upperBound );
+            return min( MAX_PAGE_CACHE_MEMORY, new Config().get( pagecache_memory ) );
         }
 
         @Override
         public int denseNodeThreshold()
         {
-            return Integer.parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
+            return Integer.parseInt( dense_node_threshold.getDefaultValue() );
         }
     }
 
@@ -96,13 +96,13 @@ public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging
         @Override
         public long pageCacheMemory()
         {
-            return defaults.pageCacheMemory();
+            return min( MAX_PAGE_CACHE_MEMORY, config.get( pagecache_memory ) );
         }
 
         @Override
         public int denseNodeThreshold()
         {
-            return config.get( GraphDatabaseSettings.dense_node_threshold );
+            return config.get( dense_node_threshold );
         }
 
         @Override
