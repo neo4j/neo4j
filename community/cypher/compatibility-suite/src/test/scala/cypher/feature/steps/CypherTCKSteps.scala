@@ -34,13 +34,15 @@ import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, Gr
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{FunSuiteLike, Matchers}
 
+import scala.util.{Success, Failure, Try}
+
 class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Accepters {
 
   val Background = new Step("Background")
 
   // Stateful
   var graph: GraphDatabaseService = null
-  var result: Result = null
+  var result: Try[Result] = null
   var params: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
 
   Before() { _ =>
@@ -81,27 +83,59 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN wi
   }
 
   When(EXECUTING_QUERY) { (query: String) =>
-    result = graph.execute(query, params)
+    result = Try { graph.execute(query, params) }
   }
 
   Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
     val matcher = constructResultMatcher(expectedTable)
 
-    matcher should acceptResult(result)
+    matcher should acceptResult(successful(result))
+  }
+
+  Then(EXPECT_ERROR) { (status: String, time: String, detail: String) =>
+    if (time == "runtime") {
+      result match {
+        case Success(triedResult) =>
+          val consumptionResult = Try { while (triedResult.hasNext) triedResult.next() }
+          consumptionResult match {
+            case Failure(e: QueryExecutionException) =>
+              s"Neo.ClientError.Statement.$status" should equal(e.getStatusCode)
+
+              if (e.getMessage == "Expected 0 to be a java.lang.String, but it was a java.lang.Long") detail should equal("MapElementAccessByNonString")
+              else if (e.getMessage == "Expected name to be a java.lang.Number, but it was a java.lang.String") detail should equal("ListElementAccessByNonInteger")
+              else if (e.getMessage == "Expected [Apa] to be a java.lang.Number, but it was a java.util.LinkedList") detail should equal("ListElementAccessByNonInteger")
+              else if (e.getMessage == "Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key (found: 1[12.3])") detail should equal("InvalidElementAccess")
+              else fail(s"Unknown runtime error: $e")
+
+            case Failure(e) =>
+              fail(s"Unknown runtime error: $e")
+
+            case _: Success[_] =>
+              fail("No runtime error was raised")
+          }
+        case Failure(e) =>
+          fail(s"An unexpected compile time error was raised: $e")
+      }
+    }
   }
 
   Then(EXPECT_SORTED_RESULT) { (expectedTable: DataTable) =>
     val matcher = constructResultMatcher(expectedTable)
 
-    matcher should acceptOrderedResult(result)
+    matcher should acceptOrderedResult(successful(result))
   }
 
   Then(EXPECT_EMPTY_RESULT) {
-    result.hasNext shouldBe false
+    successful(result).hasNext shouldBe false
   }
 
   And(SIDE_EFFECTS) { (expectations: DataTable) =>
-    statisticsParser(expectations) should acceptStatistics(result.getQueryStatistics)
+    statisticsParser(expectations) should acceptStatistics(successful(result).getQueryStatistics)
+  }
+
+  private def successful(value: Try[Result]): Result = value match {
+    case Success(r) => r
+    case Failure(e) => fail(s"Expected successful result, but got error: $result")
   }
 
   private def initEmpty() =
@@ -144,5 +178,5 @@ object CypherTCKSteps {
   val EXPECT_RESULT = "^the result should be:$"
   val EXPECT_SORTED_RESULT = "^the result should be, in order:$"
   val EXPECT_EMPTY_RESULT = "^the result should be empty$"
-
+  val EXPECT_ERROR = "^a (.+) should be raised at (.+): (.+)$"
 }
