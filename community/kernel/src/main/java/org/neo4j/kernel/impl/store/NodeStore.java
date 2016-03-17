@@ -204,7 +204,15 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                     }
                 } while ( cursor.shouldRetry() );
             }
-            return isInUse? record : null;
+            if ( isInUse )
+            {
+                return record;
+            }
+            if ( record != null )
+            {
+                record.setInUse( false );
+            }
+            return null;
         }
         catch ( IOException e )
         {

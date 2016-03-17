@@ -767,12 +767,7 @@ public enum ShortArray
 
     public static ShortArray typeOf( byte typeId )
     {
-        ShortArray[] values = ShortArray.values();
-        if ( typeId <= 0 | typeId > values.length )
-        {
-            return null;
-        }
-        return values[typeId - 1];
+        return ShortArray.values()[typeId - 1];
     }
 
     public static ShortArray typeOf( Object array )

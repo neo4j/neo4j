@@ -306,6 +306,9 @@ public enum PropertyType
         }
     };
 
+    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    public static final int BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING = -1;
+
     private final int type;
 
     // TODO In wait of a better place
@@ -413,7 +416,4 @@ public enum PropertyType
     {
         throw new UnsupportedOperationException();
     }
-
-    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
-    public static final int BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING = -1;
 }

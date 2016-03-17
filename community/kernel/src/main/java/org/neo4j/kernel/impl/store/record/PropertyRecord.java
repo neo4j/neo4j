@@ -181,9 +181,9 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
     {
         if ( size() + block.getSize() > PropertyType.getPayloadSize() )
         {
-            malformedMessage = "Exceeded capacity of property record " + this
-                               + ". My current size is reported as " + size() + ". The added block was " + block +
-                               " (note that size is " + block.getSize() + ")";
+            malformedMessage = "Exceeded capacity of PropertyRecord[" + getId() + "]. " +
+                               "PropertyRecord size is " + size() + ". " +
+                               "The added block of type " + block.forceGetType() + " has size " + block.getSize();
         }
 
         blockRecords[blockRecordsCursor++] = block;

@@ -41,6 +41,14 @@ import org.neo4j.io.pagecache.PageCursor;
  * Depending on the adversary each read operation can produce an inconsistent read and require caller to retry using
  * while loop with {@link PageCursor#shouldRetry()} as a condition.
  * <p>
+ * Inconsistent reads are injected by first having a retry-round (the set of operations on the cursor up until the
+ * {@link #shouldRetry()} call) that counts the number of operations performed on the cursor, and otherwise delegates
+ * the read operations to the real page cursor without corrupting them. Then the {@code shouldRetry} will choose a
+ * random operation, and from that point on in the next retry-round, all read operations will return random data. The
+ * {@code shouldRetry} method returns {@code true} for "yes, you should retry" and the round with the actual read
+ * inconsistencies begins. After that round, the client will be told to retry again, and in this third round there will
+ * be no inconsistencies, and there will be no need to retry unless the real page cursor says so.
+ * <p>
  * Write operations will always throw an {@link IllegalStateException} because this is a read cursor.
  * See {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_LOCK} flag.
  */
