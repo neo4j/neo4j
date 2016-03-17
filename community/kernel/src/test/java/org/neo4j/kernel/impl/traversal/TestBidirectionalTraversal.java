@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import java.util.function.Predicate;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.function.Predicate;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -40,10 +40,10 @@ import org.neo4j.graphdb.traversal.BranchCollisionPolicy;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.InitialBranchState;
+import org.neo4j.graphdb.traversal.SideSelectorPolicies;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.SideSelectorPolicies;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 
