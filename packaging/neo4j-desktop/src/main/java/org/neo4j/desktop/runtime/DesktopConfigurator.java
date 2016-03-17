@@ -64,9 +64,6 @@ public class DesktopConfigurator
 
                 /** Desktop-specific config overrides */
                 pair( auth_store.name(), new File( dbDir, "./dbms/auth" ).getAbsolutePath() ),
-                pair( tls_certificate_file.name(), new File( dbDir, "./dbms/ssl/snakeoil.cert" ).getAbsolutePath() ),
-                pair( tls_key_file.name(), new File( dbDir, "./dbms/ssl/snakeoil.key" ).getAbsolutePath() ),
-
                 pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) );
     }
 

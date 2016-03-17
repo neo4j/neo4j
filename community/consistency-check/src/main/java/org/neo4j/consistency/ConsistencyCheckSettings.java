@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
@@ -52,9 +53,4 @@ public class ConsistencyCheckSettings
 
     @Description( "Perform checks between nodes, relationships, properties, types and tokens." )
     public static final Setting<Boolean> consistency_check_graph = setting( "tools.consistency_checker.check_graph", BOOLEAN, TRUE );
-
-    @SuppressWarnings("unchecked")
-    @Description("File name for inconsistencies log file. If not specified, logs to a file in the store directory.")
-    public static final
-    Setting<File> consistency_check_report_file = setting( "tools.consistency_checker.report_file", PATH, NO_DEFAULT );
 }
