@@ -47,7 +47,7 @@ public class DatabaseActionsTest
     private File configFile;
 
     @Test
-    public void shouldCreateMessagesLogInDbDirWithClassicLog() throws Exception
+    public void shouldCreateMessagesLogInWorkingDirectory() throws Exception
     {
         // Given
         Installation installation = mock( Installation.class );
@@ -63,7 +63,7 @@ public class DatabaseActionsTest
             databaseActions.start();
 
             // Then
-            File logFile = new File( storeDir, "debug.log" );
+            File logFile = new File( new File( System.getProperty("user.dir"), "logs" ), "debug.log" );
             assertTrue( logFile.exists() );
         }
         finally

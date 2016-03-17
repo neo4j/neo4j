@@ -224,18 +224,11 @@ public class PlatformModule
         }
         builder.withDefaultLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) );
 
-        File internalLog = config.get( GraphDatabaseSettings.store_internal_log_location );
+        File logsDir = config.get( GraphDatabaseSettings.logs_directory );
         StoreLogService logService;
         try
         {
-            if ( internalLog == null )
-            {
-                logService = builder.inStoreDirectory( fileSystem, storeDir );
-            }
-            else
-            {
-                logService = builder.toFile( fileSystem, internalLog );
-            }
+            logService = builder.inLogsDirectory( fileSystem, logsDir );
         }
         catch ( IOException ex )
         {

@@ -82,15 +82,6 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         {
             return createEmptyAdapter();
         }
-        if ( logsDirectory == null )
-        {
-            dependencies.logger().getInternalLog( getClass() )
-                    .warn( GraphDatabaseSettings.log_queries.name() + " is enabled but " +
-                           GraphDatabaseSettings.logs_directory.name() +
-                           " has not been provided in configuration, hence query logging is suppressed" );
-
-            return createEmptyAdapter();
-        }
 
         return new LifecycleAdapter()
         {

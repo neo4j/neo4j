@@ -62,7 +62,7 @@ public class CsvOutputTest
     }
 
     @Test
-    public void shouldHaveMetricsCsvPathEndUpRelativeToGraphDbDirectoryIfRelativePathSpecified() throws Exception
+    public void shouldHaveMetricsCsvPathEndUpRelativeToWorkingDirectoryIfRelativePathSpecified() throws Exception
     {
         // GIVEN
         String name = "metrics.csv";
@@ -76,11 +76,11 @@ public class CsvOutputTest
         life.start();
 
         // THEN
-        waitForFileToAppear( new File( storeDir, name ) );
+        waitForFileToAppear( new File( System.getProperty( "user.dir" ), name ) );
     }
 
     @Test
-    public void shouldHaveRelativeMetricsCsvPathBeRelativeToGraphDbDirectory() throws Exception
+    public void shouldHaveRelativeMetricsCsvPathBeRelativeToWorkingDirectory() throws Exception
     {
         // GIVEN
         Config config = config(
@@ -93,7 +93,7 @@ public class CsvOutputTest
         life.start();
 
         // THEN
-        waitForFileToAppear( new File( storeDir, "test.csv" ) );
+        waitForFileToAppear( new File( System.getProperty( "user.dir" ), "test.csv" ) );
     }
 
     @Test
