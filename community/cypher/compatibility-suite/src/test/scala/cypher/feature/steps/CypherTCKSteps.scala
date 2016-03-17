@@ -28,7 +28,7 @@ import _root_.cucumber.api.scala.{EN, ScalaDsl}
 import cypher.feature.steps.CypherTCKSteps._
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
-import cypher.feature.parser.{Accepters, constructResultMatcher, parseParameters, statisticsParser}
+import cypher.feature.parser.{MatcherMatchingSupport, constructResultMatcher, parseParameters, statisticsParser}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -36,7 +36,7 @@ import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.util.{Success, Failure, Try}
 
-class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with Accepters {
+class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with MatcherMatchingSupport {
 
   val Background = new Step("Background")
 
@@ -89,7 +89,7 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN wi
   Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
     val matcher = constructResultMatcher(expectedTable)
 
-    matcher should acceptResult(successful(result))
+    matcher should accept(successful(result))
   }
 
   Then(EXPECT_ERROR) { (status: String, time: String, detail: String) =>
@@ -122,7 +122,7 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN wi
   Then(EXPECT_SORTED_RESULT) { (expectedTable: DataTable) =>
     val matcher = constructResultMatcher(expectedTable)
 
-    matcher should acceptOrderedResult(successful(result))
+    matcher should acceptOrdered(successful(result))
   }
 
   Then(EXPECT_EMPTY_RESULT) {
@@ -130,7 +130,7 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN wi
   }
 
   And(SIDE_EFFECTS) { (expectations: DataTable) =>
-    statisticsParser(expectations) should acceptStatistics(successful(result).getQueryStatistics)
+    statisticsParser(expectations) should accept(successful(result).getQueryStatistics)
   }
 
   private def successful(value: Try[Result]): Result = value match {
@@ -153,7 +153,6 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN wi
     cypherConfig().map { case (s, v) => builder.setConfig(s, v) }
     builder
   }
-
 }
 
 object CypherTCKSteps {

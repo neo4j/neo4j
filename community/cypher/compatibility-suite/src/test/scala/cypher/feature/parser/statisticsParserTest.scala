@@ -27,41 +27,41 @@ import org.neo4j.cypher.internal.{QueryStatistics, javacompat}
 class statisticsParserTest extends ParsingTestSupport {
 
   test("should parse added nodes") {
-    statisticsParser(singleRow("+nodes", "1")) should acceptStatistics(stats(QueryStatistics(nodesCreated = 1)))
+    statisticsParser(singleRow("+nodes", "1")) should accept(stats(QueryStatistics(nodesCreated = 1)))
   }
 
   test("should parse deleted nodes") {
-    statisticsParser(singleRow("-nodes", "1")) should acceptStatistics(stats(QueryStatistics(nodesDeleted = 1)))
+    statisticsParser(singleRow("-nodes", "1")) should accept(stats(QueryStatistics(nodesDeleted = 1)))
   }
 
   test("should parse added rels") {
-    statisticsParser(singleRow("+relationships", "1")) should acceptStatistics(stats(QueryStatistics(relationshipsCreated = 1)))
+    statisticsParser(singleRow("+relationships", "1")) should accept(stats(QueryStatistics(relationshipsCreated = 1)))
   }
 
   test("should parse deleted rels") {
-    statisticsParser(singleRow("-relationships", "1")) should acceptStatistics(stats(QueryStatistics(relationshipsDeleted = 1)))
+    statisticsParser(singleRow("-relationships", "1")) should accept(stats(QueryStatistics(relationshipsDeleted = 1)))
   }
 
   test("should parse added labels") {
-    statisticsParser(singleRow("+labels", "1")) should acceptStatistics(stats(QueryStatistics(labelsAdded = 1)))
+    statisticsParser(singleRow("+labels", "1")) should accept(stats(QueryStatistics(labelsAdded = 1)))
   }
 
   test("should parse deleted labels") {
-    statisticsParser(singleRow("-labels", "1")) should acceptStatistics(stats(QueryStatistics(labelsRemoved = 1)))
+    statisticsParser(singleRow("-labels", "1")) should accept(stats(QueryStatistics(labelsRemoved = 1)))
   }
 
   test("should parse added properties") {
-    statisticsParser(singleRow("+properties", "1")) should acceptStatistics(stats(QueryStatistics(propertiesSet = 1)))
+    statisticsParser(singleRow("+properties", "1")) should accept(stats(QueryStatistics(propertiesSet = 1)))
   }
 
   test("should parse deleted properties") {
-    statisticsParser(singleRow("-properties", "1")) should acceptStatistics(stats(QueryStatistics(propertiesSet = 1)))
+    statisticsParser(singleRow("-properties", "1")) should accept(stats(QueryStatistics(propertiesSet = 1)))
   }
 
   test("should parse a mix of stats") {
     statisticsParser(tableOf(Seq("-properties", "1"),
                              Seq("+nodes", "3"),
-                             Seq("+labels", "42"))) should acceptStatistics(stats(QueryStatistics(propertiesSet = 1,
+                             Seq("+labels", "42"))) should accept(stats(QueryStatistics(propertiesSet = 1,
                                                                                                   nodesCreated = 3,
                                                                                                   labelsAdded = 42)))
   }

@@ -26,11 +26,13 @@ import java.{lang, util}
 
 import cypher.feature.parser.matchers.ValueMatcher
 import org.neo4j.graphdb.Relationship
+import org.scalatest.matchers.Matcher
 
 class expectedResultsParserTest extends ParsingTestSupport {
 
   test("should parse null") {
-    parse("null") should accept(null)
+    val matcher: matchers.Matcher[AnyRef] = parse("null")
+    matcher should accept(null)
   }
 
   test("should parse integer") {
@@ -173,7 +175,7 @@ class expectedResultsParserTest extends ParsingTestSupport {
     parse(value) should accept(path(link1, link2))
   }
 
-  private def parse(value: String): ValueMatcher = {
+  private def parse(value: String): cypher.feature.parser.matchers.Matcher[AnyRef] = {
     matcherParser(value)
   }
 

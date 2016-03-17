@@ -19,7 +19,7 @@
  */
 package cypher.feature.parser
 
-import cypher.feature.parser.matchers.{QueryStatisticsMatcher, ResultMatcher, RowMatcher, ValueMatcher}
+import cypher.feature.parser.matchers.ResultMatcher
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -30,9 +30,10 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.convert.DecorateAsJava
+import scala.runtime.ScalaNumberProxy
 
 @RunWith(classOf[JUnitRunner])
-abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava with Accepters {
+abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava with MatcherMatchingSupport {
 
   def node(labels: Seq[String] = Seq.empty, properties: Map[String, AnyRef] = Map.empty): Node = {
     val node = mock(classOf[Node])
@@ -96,50 +97,26 @@ abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAs
 
 }
 
-trait Accepters extends DecorateAsJava {
+trait MatcherMatchingSupport {
 
-  case class accept(value: Any) extends Matcher[ValueMatcher] {
-
-    override def apply(matcher: ValueMatcher): MatchResult = {
+  class Acceptor[T <: AnyRef](value: T) extends Matcher[cypher.feature.parser.matchers.Matcher[_ >: T]] {
+    override def apply(matcher: cypher.feature.parser.matchers.Matcher[_ >: T]): MatchResult = {
       MatchResult(matches = matcher.matches(value),
-                  s"$matcher did not match $value",
-                  s"$matcher unexpectedly matched $value")
+        s"$matcher did not match $value",
+        s"$matcher unexpectedly matched $value")
     }
   }
 
-  case class acceptStatistics(value: QueryStatistics) extends Matcher[QueryStatisticsMatcher] {
+  def accept[T <: AnyRef](value: T) = new Acceptor[T](value)
+  def accept[T <: AnyVal](value: ScalaNumberProxy[T]) = new Acceptor(value.underlying())
+  def accept(value: Boolean) = new Acceptor[java.lang.Boolean](value)
+  def accept(value: Null) = new Acceptor[Null](value)
 
-    override def apply(matcher: QueryStatisticsMatcher): MatchResult = {
-      MatchResult(matches = matcher.matches(value),
-                  s"$matcher did not match $value",
-                  s"$matcher unexpectedly matched $value")
-    }
-  }
-
-  case class acceptRow(value: Map[String, AnyRef]) extends Matcher[RowMatcher] {
-
-    override def apply(matcher: RowMatcher): MatchResult = {
-      MatchResult(matches = matcher.matches(value.asJava),
-                  s"$matcher did not match $value",
-                  s"$matcher unexpectedly matched $value")
-    }
-  }
-
-  case class acceptResult(value: Result) extends Matcher[ResultMatcher] {
-
-    override def apply(matcher: ResultMatcher): MatchResult = {
-      MatchResult(matches = matcher.matches(value),
-                  s"$matcher did not match $value",
-                  s"$matcher unexpectedly matched $value")
-    }
-  }
-
-  case class acceptOrderedResult(value: Result) extends Matcher[ResultMatcher] {
-
+  case class acceptOrdered(value: Result) extends Matcher[ResultMatcher] {
     override def apply(matcher: ResultMatcher): MatchResult = {
       MatchResult(matches = matcher.matchesOrdered(value),
-                  s"$matcher did not match $value",
-                  s"$matcher unexpectedly matched $value")
+                  s"$matcher did not match ordered $value",
+                  s"$matcher unexpectedly matched ordered $value")
     }
   }
 }
