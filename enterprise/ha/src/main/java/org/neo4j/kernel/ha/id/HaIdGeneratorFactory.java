@@ -35,6 +35,7 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -133,7 +134,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         }
     }
 
-    private static final long VALUE_REPRESENTING_NULL = -1;
+    static final long VALUE_REPRESENTING_NULL = -1;
 
     private enum IdGeneratorState
     {
@@ -396,7 +397,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         }
     }
 
-    private static class IdRangeIterator
+    static class IdRangeIterator
     {
         private int position = 0;
         private final long[] defrag;
@@ -418,16 +419,25 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
                 {
                     return defrag[position];
                 }
-                else
+
+                long candidate = nextRangeCandidate();
+                if ( candidate == IdGeneratorImpl.INTEGER_MINUS_ONE )
                 {
-                    int offset = position - defrag.length;
-                    return (offset < length) ? (start + offset) : VALUE_REPRESENTING_NULL;
+                    position++;
+                    candidate = nextRangeCandidate();
                 }
+                return candidate;
             }
             finally
             {
                 ++position;
             }
+        }
+
+        private long nextRangeCandidate()
+        {
+            int offset = position - defrag.length;
+            return (offset < length) ? (start + offset) : VALUE_REPRESENTING_NULL;
         }
 
         @Override
