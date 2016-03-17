@@ -26,6 +26,8 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
@@ -43,6 +45,7 @@ public class ListIndexesProcedure extends CallableProcedure.BasicProcedure
     {
         super( procedureSignature( procedureName )
                 .out( "description", Neo4jTypes.NTString )
+                .out( "state", Neo4jTypes.NTString )
                 .build() );
     }
 
@@ -55,10 +58,20 @@ public class ListIndexesProcedure extends CallableProcedure.BasicProcedure
 
         List<IndexDescriptor> indexes =
                 asList( statement.readOperations().indexesGetAll() );
-
         indexes.sort( (a,b) -> a.userDescription(tokens).compareTo( b.userDescription(tokens) ) );
 
-        return map( ( index ) -> new Object[]{ "INDEX ON " + index.userDescription(tokens) },
+        return map( ( index ) -> {
+                    try
+                    {
+                        return new Object[]{"INDEX ON " + index.userDescription( tokens ),
+                                statement.readOperations().indexGetState( index ).toString()};
+                    }
+                    catch ( IndexNotFoundKernelException e )
+                    {
+                        throw new ProcedureException( Status.Schema.IndexNotFound, e,
+                                "No index on ", index.userDescription( tokens ) );
+                    }
+                },
                 asRawIterator( indexes.iterator() ) );
     }
 }

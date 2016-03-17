@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -51,6 +52,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -79,7 +81,7 @@ public class BuiltInProceduresTest
 
         // When/Then
         assertThat( call("db.indexes"),
-            contains( record( "INDEX ON :User(name)" ) ) );
+            contains( record( "INDEX ON :User(name)", "ONLINE" ) ) );
     }
 
     @Test
@@ -141,7 +143,7 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "sys.procedures" ), contains(
             record( "db.constraints", "db.constraints() :: (description :: STRING?)" ),
-            record( "db.indexes", "db.indexes() :: (description :: STRING?)" ),
+            record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?)" ),
             record( "db.labels", "db.labels() :: (label :: STRING?)" ),
             record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)" ),
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)" ),
@@ -253,8 +255,9 @@ public class BuiltInProceduresTest
         when(read.constraintsGetForRelationshipType(anyInt())).thenReturn( emptyIterator() );
         when(read.indexesGetForLabel( anyInt() )).thenReturn( emptyIterator() );
         when(read.constraintsGetForLabel( anyInt() )).thenReturn( emptyIterator() );
-        when(read.countsForNode( anyInt() )).thenReturn( 1l );
-        when(read.countsForRelationship( anyInt(), anyInt(), anyInt() )).thenReturn( 1l );
+        when(read.countsForNode( anyInt() )).thenReturn( 1L );
+        when(read.countsForRelationship( anyInt(), anyInt(), anyInt() )).thenReturn( 1L );
+        when(read.indexGetState( any( IndexDescriptor.class)  )).thenReturn( InternalIndexState.ONLINE );
     }
 
     private Answer<Iterator<Token>> asTokens( Map<Integer,String> tokens )
