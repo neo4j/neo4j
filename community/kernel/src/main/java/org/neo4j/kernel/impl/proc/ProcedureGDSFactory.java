@@ -67,8 +67,9 @@ public class ProcedureGDSFactory implements ThrowingFunction<CallableProcedure.C
     public GraphDatabaseService apply( CallableProcedure.Context context ) throws ProcedureException
     {
         KernelTransaction transaction = context.get( CallableProcedure.Context.KERNEL_TRANSACTION );
+        Thread owningThread = context.get( CallableProcedure.Context.THREAD );
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
-        facade.init( new ProcedureGDBFacadeSPI( transaction, queryExecutor, storeDir, resolver,
+        facade.init( new ProcedureGDBFacadeSPI( owningThread, transaction, queryExecutor, storeDir, resolver,
                 AutoIndexing.UNSUPPORTED, storeId, availability, urlValidator ) );
         return facade;
     }

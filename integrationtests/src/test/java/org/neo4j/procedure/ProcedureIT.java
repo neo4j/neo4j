@@ -27,11 +27,17 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -39,6 +45,7 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -51,6 +58,7 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -472,9 +480,53 @@ public class ProcedureIT
         }
     }
 
+    private static List<Exception> exceptionsInProcedure = Collections.<Exception>synchronizedList( new ArrayList<>() );
+
+    @Test
+    public void shouldGracefullyFailWhenSpawningThreadsCreatingTransactionInProcedures() throws Throwable
+    {
+        // given
+        Runnable doIt = () -> {
+            Result result = db.execute( "CALL org.neo4j.procedure.unsupportedProcedure()" );
+            result.resultAsString();
+            result.close();
+        };
+
+        int numThreads = 10;
+        Thread[] threads = new Thread[numThreads];
+        for ( int i = 0; i < numThreads; i++ )
+        {
+            threads[i] = new Thread( doIt );
+        }
+
+        // when
+        for ( int i = 0; i < numThreads; i++ )
+        {
+            threads[i].start();
+        }
+
+        for ( int i = 0; i < numThreads; i++ )
+        {
+            threads[i].join();
+        }
+
+        // then
+        Predicates.await( () -> exceptionsInProcedure.size() >= numThreads, 5, TimeUnit.SECONDS );
+
+        for ( Exception exceptionInProcedure : exceptionsInProcedure )
+        {
+            assertThat( Exceptions.stringify( exceptionInProcedure ),
+                    exceptionInProcedure, instanceOf( UnsupportedOperationException.class ) );
+            assertThat( Exceptions.stringify( exceptionInProcedure ), exceptionInProcedure.getMessage(),
+                    equalTo( "Creating new transactions and/or spawning threads " +
+                             "are not supported operations in store procedures." ) );
+        }
+    }
+
     @Before
     public void setUp() throws IOException
     {
+        exceptionsInProcedure.clear();
         new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
         db = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
@@ -723,6 +775,25 @@ public class ProcedureIT
         public void delegatingSideEffect( @Name( "value" ) String value )
         {
             db.execute( "CALL org.neo4j.procedure.sideEffect", map( "value", value ) );
+        }
+
+        private static final ScheduledExecutorService jobs = Executors.newScheduledThreadPool( 5 );
+
+        @Procedure
+        @PerformsWrites
+        public void unsupportedProcedure()
+        {
+            jobs.submit( () -> {
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.createNode();
+                    tx.success();
+                }
+                catch ( Exception e )
+                {
+                    exceptionsInProcedure.add( e );
+                }
+            } );
         }
     }
 }

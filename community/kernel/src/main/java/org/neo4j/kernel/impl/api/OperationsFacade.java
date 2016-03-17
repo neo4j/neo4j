@@ -1409,6 +1409,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             CallableProcedure.BasicContext ctx = new CallableProcedure.BasicContext();
             ctx.put( CallableProcedure.Context.KERNEL_TRANSACTION, tx );
+            ctx.put( CallableProcedure.Context.THREAD, Thread.currentThread() );
             return procedures.call( ctx, name, input );
         }
     }
