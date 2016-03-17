@@ -31,10 +31,10 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.legacyindex.AutoIndexing;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 
 class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
 {
+    private final Thread transactionThread;
     private final KernelTransaction transaction;
     private final Supplier<QueryExecutionEngine> queryExecutor;
 
@@ -54,11 +55,12 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     private final ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator;
     private final File storeDir;
 
-    public ProcedureGDBFacadeSPI( KernelTransaction transaction, Supplier<QueryExecutionEngine> queryExecutor,
+    public ProcedureGDBFacadeSPI( Thread transactionThread,  KernelTransaction transaction, Supplier<QueryExecutionEngine> queryExecutor,
             File storeDir, DependencyResolver resolver, AutoIndexing autoIndexing,
             Supplier<StoreId> storeId, CoreAPIAvailabilityGuard availability,
             ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator )
     {
+        this.transactionThread = transactionThread;
         this.transaction = transaction;
         this.queryExecutor = queryExecutor;
         this.storeDir = storeDir;
@@ -99,22 +101,34 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         return "ProcedureGraphDatabaseService";
     }
 
+    private void assertSameThread()
+    {
+        if ( transactionThread != Thread.currentThread() )
+        {
+            throw new UnsupportedOperationException( "Creating new transactions and/or spawning threads are " +
+                                                     "not supported operations in store procedures." );
+        }
+    }
+
     @Override
     public KernelTransaction currentTransaction()
     {
         availability.assertDatabaseAvailable();
+        assertSameThread();
         return transaction;
     }
 
     @Override
     public boolean isInOpenTransaction()
     {
+        assertSameThread();
         return transaction.isOpen();
     }
 
     @Override
     public Statement currentStatement()
     {
+        assertSameThread();
         return transaction.acquireStatement();
     }
 
@@ -124,6 +138,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
+            assertSameThread();
             return queryExecutor.get().executeQuery( query, parameters, querySession );
         }
         catch ( QueryExecutionKernelException e )

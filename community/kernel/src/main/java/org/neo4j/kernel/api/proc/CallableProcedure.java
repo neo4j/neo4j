@@ -43,6 +43,7 @@ public interface CallableProcedure
     {
         Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( "KernelTransaction", KernelTransaction.class );
         Key<AccessMode> ACCESS_MODE = Key.key( "AccessMode", AccessMode.class );
+        Key<Thread> THREAD = Key.key( "Thread", Thread.class );
 
         <T> T get( Key<T> key ) throws ProcedureException;
     }
