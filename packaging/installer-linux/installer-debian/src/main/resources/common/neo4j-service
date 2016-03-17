@@ -35,7 +35,7 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 NAME=neo4j
 DAEMON=/var/lib/$NAME/bin/$NAME
-PIDFILE=/var/lib/${NAME}/data/neo4j-service.pid
+PIDFILE=/var/lib/${NAME}/run/neo4j.pid
 SCRIPTNAME=/etc/init.d/$NAME-service
 
 [ -x "$DAEMON" ] || exit 0
