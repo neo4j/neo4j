@@ -182,10 +182,6 @@ public abstract class GraphDatabaseSettings
                  "procedures will be loaded if they are placed in this directory.")
     public static final Setting<File> plugin_dir = setting("dbms.directories.plugins", PATH, "plugins" );
 
-    @Description("The location of the internal diagnostics log.")
-    @Internal
-    public static final Setting<File> store_internal_log_location = setting("store.internal_log.location", PATH, NO_DEFAULT );
-
     @Description( "Threshold for rotation of the internal log." )
     public static final Setting<Long> store_internal_log_rotation_threshold = setting("store.internal_log.rotation_threshold", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
@@ -424,7 +420,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
 
     @Description("Path of the logs directory")
-    public static final Setting<File> logs_directory = setting("dbms.directories.logs", PATH, NO_DEFAULT);
+    public static final Setting<File> logs_directory = setting("dbms.directories.logs", PATH, "logs");
 
     @Internal
     public static final Setting<File> log_queries_filename = derivedSetting("dbms.querylog.filename",

@@ -138,21 +138,6 @@ public class QueryLoggerIT
     }
 
     @Test
-    public void shouldSuppressQueryLoggingIfTheGivenPathIsNull() throws Exception
-    {
-        GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
-                .newGraphDatabase();
-
-        executeQueryAndShutdown( database );
-
-        inMemoryLog.assertContainsMessageContaining( GraphDatabaseSettings.log_queries.name() +
-                                                     " is enabled but " +
-                                                     GraphDatabaseSettings.logs_directory.name() +
-                                                     " has not been provided in configuration, hence query logging is" +
-                                                     " suppressed" );
-    }
-
-    @Test
     public void disabledQueryLogging() throws IOException
     {
         final File logFilename = new File( testDirectory.graphDbDir(), "query.log" );

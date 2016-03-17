@@ -55,6 +55,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -73,8 +74,7 @@ import static java.util.stream.Collectors.toList;
 import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
-import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.Settings.*;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.boltNetworkIO;
 
 /**
@@ -85,13 +85,22 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 {
     public static class Settings
     {
-        @Description("Path to the X.509 public certificate to be used by Neo4j for TLS connections")
-        public static Setting<File> tls_certificate_file = setting(
-                "dbms.security.tls_certificate_file", PATH, "neo4j-home/ssl/snakeoil.cert" );
+        @Description( "Directory for storing certificates to be used by Neo4j for TLS connections" )
+        public static Setting<File> certificates_directory = setting(
+                "dbms.directories.certificates", PATH, "certificates"
+        );
 
-        @Description("Path to the X.509 private key to be used by Neo4j for TLS connections")
-        public static final Setting<File> tls_key_file = setting(
-                "dbms.security.tls_key_file", PATH, "neo4j-home/ssl/snakeoil.key" );
+        @Internal
+        @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
+        public static Setting<File> tls_certificate_file = derivedSetting(
+                "dbms.security.tls_certificate_file", certificates_directory,
+                ( certificates ) -> new File( certificates, "neo4j.cert" ), PATH );
+
+        @Internal
+        @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
+        public static final Setting<File> tls_key_file = derivedSetting(
+                "dbms.security.tls_key_file", certificates_directory,
+                (certificates ) -> new File( certificates, "neo4j.key" ), PATH );
     }
 
     public interface Dependencies
