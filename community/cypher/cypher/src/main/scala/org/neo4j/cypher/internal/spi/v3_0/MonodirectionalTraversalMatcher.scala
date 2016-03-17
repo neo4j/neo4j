@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
 import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.kernel.{Traversal, Uniqueness}
+import org.neo4j.kernel.Traversal
+import org.neo4j.graphdb.traversal.Uniqueness
 
 import scala.collection.JavaConverters._
 

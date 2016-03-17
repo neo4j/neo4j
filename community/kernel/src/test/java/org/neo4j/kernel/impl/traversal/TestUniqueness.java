@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -39,10 +39,10 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.kernel.Traversal.traversal;
-import static org.neo4j.kernel.Uniqueness.NODE_GLOBAL;
-import static org.neo4j.kernel.Uniqueness.NODE_LEVEL;
-import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_GLOBAL;
-import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_LEVEL;
+import static org.neo4j.graphdb.traversal.Uniqueness.NODE_GLOBAL;
+import static org.neo4j.graphdb.traversal.Uniqueness.NODE_LEVEL;
+import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_GLOBAL;
+import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_LEVEL;
 
 public class TestUniqueness extends TraversalTestBase
 {

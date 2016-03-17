@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

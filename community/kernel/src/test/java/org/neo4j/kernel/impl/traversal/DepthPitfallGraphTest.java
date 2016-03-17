@@ -19,23 +19,24 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.kernel.Traversal.traversal;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+import static org.neo4j.kernel.Traversal.traversal;
 
 public class DepthPitfallGraphTest extends TraversalTestBase
 {

@@ -19,15 +19,15 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
-import static org.neo4j.kernel.Traversal.traversal;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
+
+import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
+import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
+import static org.neo4j.kernel.Traversal.traversal;
 
 public class AllPaths extends TraversalPathFinder
 {

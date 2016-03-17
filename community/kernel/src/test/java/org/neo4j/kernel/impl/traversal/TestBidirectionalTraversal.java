@@ -45,7 +45,7 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -54,8 +54,8 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfContainsAll;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 import static org.neo4j.kernel.Traversal.traversal;
-import static org.neo4j.kernel.Uniqueness.NODE_PATH;
-import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_PATH;
+import static org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH;
+import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_PATH;
 
 public class TestBidirectionalTraversal extends TraversalTestBase
 {
