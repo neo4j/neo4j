@@ -279,15 +279,22 @@ public interface PageCursor extends AutoCloseable
      * an equivalent io() call. In other words, the next call to next() will
      * move the cursor to the starting page that was specified in the io() that
      * produced the cursor.
-     * @throws IOException
      */
-    void rewind() throws IOException;
+    void rewind();
 
     /**
      * Moves the cursor to the next page, if any, and returns true when it is
      * ready to be processed. Returns false if there are no more pages to be
      * processed. For instance, if the cursor was requested with PF_NO_GROW
      * and the page most recently processed was the last page in the file.
+     * <p>
+     * <strong>NOTE: When using read locks, read operations can be inconsistent
+     * and may return completely random data. The data returned from a
+     * read-locked page cursor should not be interpreted until after
+     * {@link #shouldRetry()} has returned {@code false}.</strong>
+     * Not interpreting the data also implies that you cannot throw exceptions
+     * from data validation errors until after {@link #shouldRetry()} has told
+     * you that your read was consistent.
      */
     boolean next() throws IOException;
 
@@ -296,6 +303,14 @@ public interface PageCursor extends AutoCloseable
      * and returns true when it is ready to be processed. Returns false if
      * for instance, the cursor was requested with PF_NO_GROW and the page
      * most recently processed was the last page in the file.
+     * <p>
+     * <strong>NOTE: When using read locks, read operations can be inconsistent
+     * and may return completely random data. The data returned from a
+     * read-locked page cursor should not be interpreted until after
+     * {@link #shouldRetry()} has returned {@code false}.</strong>
+     * Not interpreting the data also implies that you cannot throw exceptions
+     * from data validation errors until after {@link #shouldRetry()} has told
+     * you that your read was consistent.
      */
     boolean next( long pageId ) throws IOException;
 

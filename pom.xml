@@ -32,7 +32,7 @@
     <logback-classic.version>1.1.2</logback-classic.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <hsqldb.version>2.3.2</hsqldb.version>
-    <test.runner.jvm.settings>-Xmx1G -XX:MaxPermSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data</test.runner.jvm.settings>
+    <test.runner.jvm.settings>-Xmx1G -XX:MaxPermSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -XX:-OmitStackTraceInFastThrow</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
     <git.commit.id.branch>unknown-branch-${project.version}</git.commit.id.branch>
     <git.commit.id>unknown-commit</git.commit.id>
