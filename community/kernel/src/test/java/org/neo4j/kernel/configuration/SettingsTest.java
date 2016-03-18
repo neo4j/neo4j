@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Test;
-
 import java.io.File;
+
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -46,8 +46,9 @@ public class SettingsTest {
     @Test
     public void doNotModifyAbsolutePaths()
     {
-        File thePath = Settings.PATH.apply( "/some/absolute/path" );
+        File absolutePath = new File( "some/path" ).getAbsoluteFile();
+        File thePath = Settings.PATH.apply( absolutePath.toString() );
 
-        assertEquals( new File( "/some/absolute/path" ), thePath );
+        assertEquals( absolutePath, thePath );
     }
 }
