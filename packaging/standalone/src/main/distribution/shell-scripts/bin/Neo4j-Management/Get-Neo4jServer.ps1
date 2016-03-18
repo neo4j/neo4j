@@ -86,9 +86,16 @@ Function Get-Neo4jServer
     $Neo4jDir = Get-Item $Neo4jHome
     $Neo4jHome = $Neo4jDir.FullName.TrimEnd('\')
 
+    $ConfDir = Get-Neo4jEnv 'NEO4J_CONF'
+    if ($ConfDir -eq $null)
+    {
+      $ConfDir = (Join-Path -Path $Neo4jHome -ChildPath 'conf')
+    }
+
     # Get the information about the server
     $serverProperties = @{
       'Home' = $Neo4jHome;
+      'ConfDir' = $ConfDir;
       'ServerVersion' = '';
       'ServerType' = 'Community';
       'DatabaseMode' = '';

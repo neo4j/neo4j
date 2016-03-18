@@ -99,7 +99,7 @@ Function Get-Neo4jSetting
     $ConfigurationFile | ForEach-Object -Process `
     {
       $filename = $_
-      $filePath = Join-Path -Path $Neo4jServer.Home -ChildPath "conf\$filename"
+      $filePath = Join-Path -Path $Neo4jServer.ConfDir -ChildPath $filename
       if (Test-Path -Path $filePath)
       {
         $keyPairsFromFile = Get-KeyValuePairsFromConfFile -filename $filePath        
