@@ -127,6 +127,7 @@ the relevant Commercial Agreement.
                     <include>org.neo4j.build:licensecheck-config:*</include>
                   </includes>
                   <excludes>
+                    <exclude>org.neo4j:neo4j-cypher-frontend-3.0</exclude>
                     <exclude>org.neo4j:neo4j-cypher-frontend-2.3</exclude>
                     <exclude>org.neo4j:neo4j-cypher-compiler-2.3</exclude>
                     <exclude>org.neo4j:neo4j-cypher-compiler-1.9_2.11</exclude>
