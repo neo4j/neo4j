@@ -733,7 +733,7 @@ public enum ShortArray
             requiredBits = 64;
         }
         ShortArray type = typeOf( (byte)typeId );
-        return type.createArray(arrayLength, bits, requiredBits);
+        return type == null? null : type.createArray(arrayLength, bits, requiredBits);
     }
 
 
@@ -772,7 +772,7 @@ public enum ShortArray
 
     public static ShortArray typeOf( byte typeId )
     {
-        return ShortArray.values()[typeId-1];
+        return ShortArray.values()[typeId - 1];
     }
 
     public static ShortArray typeOf( Object array )

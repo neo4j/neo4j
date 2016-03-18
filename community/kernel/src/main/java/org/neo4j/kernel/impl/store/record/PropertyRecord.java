@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.api.store.PropertyBlockCursor;
 
@@ -45,6 +46,7 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
     private long entityId = -1;
     private Boolean nodeIdSet;
     private List<DynamicRecord> deletedRecords;
+    private String malformedMessage;
 
     // state for the Iterator aspect of this class.
     private int blockRecordsIteratorCursor;
@@ -178,12 +180,27 @@ public class PropertyRecord extends Abstract64BitRecord implements Iterable<Prop
 
     public void addPropertyBlock( PropertyBlock block )
     {
-        assert size() + block.getSize() <= PropertyType.getPayloadSize() :
-                "Exceeded capacity of property record " + this
-                + ". My current size is reported as " + size() + "The added block was " + block +
-                " (note that size is " + block.getSize() + ")";
+        if ( size() + block.getSize() > PropertyType.getPayloadSize() )
+        {
+            malformedMessage = "Exceeded capacity of PropertyRecord[" + getId() + "]. " +
+                               "PropertyRecord size is " + size() + ". " +
+                               "The added block of type " + block.forceGetType() + " has size " + block.getSize();
+        }
 
         blockRecords[blockRecordsCursor++] = block;
+    }
+
+    public void verifyRecordIsWellFormed()
+    {
+        if ( malformedMessage != null )
+        {
+            throw new InvalidRecordException( malformedMessage );
+        }
+    }
+
+    public void setMalformedMessage( String message )
+    {
+        malformedMessage = message;
     }
 
     public void setPropertyBlock( PropertyBlock block )

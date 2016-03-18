@@ -369,6 +369,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
             {
                 throw new InvalidRecordException( "PropertyRecord[" + record.getId() + "] not in use" );
             }
+            record.verifyRecordIsWellFormed();
 
             return record;
         }
@@ -423,7 +424,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
 
         while ( cursor.getOffset() - offsetAtBeginning < RECORD_SIZE )
         {
-            PropertyBlock newBlock = getPropertyBlock( cursor );
+            PropertyBlock newBlock = getPropertyBlock( cursor, record );
             if ( newBlock != null )
             {
                 record.addPropertyBlock( newBlock );
@@ -450,7 +451,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
      * result is returned, that has inUse() return false. Also, the argument is not
      * touched.
      */
-    private PropertyBlock getPropertyBlock( PageCursor cursor )
+    private PropertyBlock getPropertyBlock( PageCursor cursor, PropertyRecord record )
     {
         long header = cursor.getLong();
         PropertyType type = PropertyType.getPropertyType( header, true );
@@ -461,6 +462,19 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
         PropertyBlock toReturn = new PropertyBlock();
         // toReturn.setInUse( true );
         int numBlocks = type.calculateNumberOfBlocksUsed( header );
+        if ( numBlocks == PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING )
+        {
+            record.setMalformedMessage( "Invalid type or encoding of property block" );
+            return null;
+        }
+        if ( numBlocks > PropertyType.getPayloadSizeLongs() )
+        {
+            // We most likely got an inconsistent read, so return null to signal failure for now
+            record.setMalformedMessage(
+                    "I was given an array of size " + numBlocks +", but I wanted it to be " +
+                    PropertyType.getPayloadSizeLongs() );
+            return null;
+        }
         long[] blockData = new long[numBlocks];
         blockData[0] = header; // we already have that
         for ( int i = 1; i < numBlocks; i++ )

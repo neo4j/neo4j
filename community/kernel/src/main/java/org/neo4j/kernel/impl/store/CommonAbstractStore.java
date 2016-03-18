@@ -540,11 +540,14 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             long nextPageId = storeFile.getLastPageId();
             int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
+            long highestId = getNumberOfReservedLowIds();
             while ( nextPageId >= 0 && cursor.next( nextPageId ) )
             {
                 nextPageId--;
+                boolean found;
                 do
                 {
+                    found = false;
                     int currentRecord = recordsPerPage;
                     while ( currentRecord-- > 0 )
                     {
@@ -553,11 +556,17 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                         if ( isRecordInUse( cursor ) )
                         {
                             // We've found the highest id in use
-                            return recordId + 1 /*+1 since we return the high id*/;
+                            found = true;
+                            highestId = recordId + 1; /*+1 since we return the high id*/;
+                            break;
                         }
                     }
                 }
                 while ( cursor.shouldRetry() );
+                if ( found )
+                {
+                    return highestId;
+                }
             }
 
             return getNumberOfReservedLowIds();

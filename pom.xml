@@ -30,7 +30,7 @@
     <bouncycastle.version>1.52</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <hsqldb.version>2.3.2</hsqldb.version>
-    <test.runner.jvm.settings>-Xmx1G -XX:MaxPermSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true</test.runner.jvm.settings>
+    <test.runner.jvm.settings>-Xmx1G -XX:MaxPermSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true -XX:-OmitStackTraceInFastThrow</test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
   </properties>
 
