@@ -27,9 +27,8 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
-import org.neo4j.function.Functions;
-import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slaves;
@@ -86,7 +85,7 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
     {
         // Return all cluster members which are currently SLAVEs,
         // are alive, and convert to Slave with a cache if possible
-        return map( withDefaults( slaveForMember(), Functions.map( slaves ) ),
+        return map( withDefaults( slaveForMember(), slaves::get ),
                         filter( inRole( HighAvailabilityModeSwitcher.SLAVE ),
                                 clusterMembers.getAliveMembers() ) );
     }

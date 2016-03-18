@@ -19,33 +19,28 @@
  */
 package org.neo4j.helpers;
 
-import org.hamcrest.CoreMatchers;
-import org.junit.Test;
-
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import org.hamcrest.CoreMatchers;
+import org.junit.Test;
 
 import org.neo4j.function.Functions;
 import org.neo4j.kernel.configuration.Settings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.function.Functions.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class FunctionsTest
 {
     @Test
-    public void testMap() throws Exception
-    {
-        assertThat( map( stringMap( "foo", "bar" ) ).apply( "foo" ), equalTo( "bar" ) );
-    }
-
-    @Test
     public void testWithDefaults() throws Exception
     {
-        assertThat( Functions.withDefaults( map( stringMap( "foo", "bar" ) ), Functions.<String, String>nullFunction() ).apply( "foo" ), equalTo( "bar" ) );
-        assertThat( Functions.withDefaults( map( stringMap( "foo", "bar" ) ), map( stringMap( "foo", "xyzzy" ) ) ).apply( "foo" ), equalTo( "xyzzy" ) );
+        assertThat( Functions.withDefaults( stringMap( "foo", "bar" )::get, Functions.<String,String>nullFunction() )
+                .apply( "foo" ), equalTo( "bar" ) );
+        assertThat( Functions.withDefaults( stringMap( "foo", "bar" )::get, stringMap( "foo", "xyzzy" )::get )
+                .apply( "foo" ), equalTo( "xyzzy" ) );
     }
 
     @Test

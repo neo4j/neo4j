@@ -19,11 +19,9 @@
  */
 package org.neo4j.function;
 
-import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Constructors for basic {@link Function} and {@link BiFunction} types
@@ -31,10 +29,6 @@ import java.util.function.Supplier;
  */
 public final class Functions
 {
-    public static <From, To> Function<From,To> map( final Map<From,To> map )
-    {
-        return map::get;
-    }
 
     public static <From, To> Function<From,To> withDefaults( final Function<From,To> defaults, final Function<From,
             To> f )

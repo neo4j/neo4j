@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Setting;
 
 /**
@@ -57,7 +56,7 @@ public class SystemPropertiesConfiguration
         // For each system property, see if it passes validation
         // If so, add it to result set
         Map<String,String> result = new HashMap<String,String>( config );
-        Function<String,String> systemPropertiesFunction = Functions.map( systemProperties );
+        Function<String,String> systemPropertiesFunction = systemProperties::get;
         for ( Map.Entry<Object,Object> prop : System.getProperties().entrySet() )
         {
             String key = (String) prop.getKey();
