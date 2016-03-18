@@ -80,7 +80,7 @@ public class ClusterSettings
             list( ",", HOSTNAME_PORT ), MANDATORY );
 
     @Description( "Host and port to bind the cluster management communication." )
-    public static final Setting<HostnamePort> cluster_server = setting( "ha.cluster_server", HOSTNAME_PORT,
+    public static final Setting<HostnamePort> cluster_server = setting( "ha.host.coordination", HOSTNAME_PORT,
             "0.0.0.0:5001-5099" );
 
     @Description( "Whether to allow this instance to create a cluster if unable to join." )

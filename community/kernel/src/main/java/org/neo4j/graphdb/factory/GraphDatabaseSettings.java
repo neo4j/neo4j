@@ -182,16 +182,16 @@ public abstract class GraphDatabaseSettings
                  "procedures will be loaded if they are placed in this directory.")
     public static final Setting<File> plugin_dir = setting("dbms.directories.plugins", PATH, "plugins" );
 
-    @Description( "Threshold for rotation of the internal log." )
-    public static final Setting<Long> store_internal_log_rotation_threshold = setting("store.internal_log.rotation_threshold", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+    @Description( "Threshold for rotation of the debug log." )
+    public static final Setting<Long> store_internal_log_rotation_threshold = setting("dbms.logs.debug.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
-    @Description( "Internal log contexts that should output debug level logging" )
+    @Description( "Debug log contexts that should output debug level logging" )
     @Internal
-    public static final Setting<List<String>> store_internal_debug_contexts = setting( "store.internal_log.debug_contexts",
+    public static final Setting<List<String>> store_internal_debug_contexts = setting( "unsupported.dbms.logs.debug.debug_loggers",
             list( ",", STRING ), "org.neo4j.diagnostics,org.neo4j.cluster.protocol,org.neo4j.kernel.ha" );
 
-    @Description("Log level threshold.")
-    public static final Setting<Level> store_internal_log_level = setting( "store.internal_log.level",
+    @Description("Debug log level threshold.")
+    public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
             options( Level.class ), "INFO" );
 
     @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
@@ -199,12 +199,12 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Long> counts_store_rotation_timeout =
             setting( "unsupported.dbms.counts_store_rotation_timeout", DURATION, "10m" );
 
-    @Description( "Minimum time interval after last rotation of the internal log before it may be rotated again." )
+    @Description( "Minimum time interval after last rotation of the debug log before it may be rotated again." )
     public static final Setting<Long> store_internal_log_rotation_delay =
-            setting("store.internal_log.rotation_delay", DURATION, "300s" );
+            setting("dbms.logs.debug.rotation.delay", DURATION, "300s" );
 
-    @Description( "Maximum number of history files for the internal log." )
-    public static final Setting<Integer> store_internal_log_max_archives = setting("store.internal_log.max_archives", INTEGER, "7", min(1) );
+    @Description( "Maximum number of history files for the debug log." )
+    public static final Setting<Integer> store_internal_log_max_archives = setting("dbms.logs.debug.rotation.keep_number", INTEGER, "7", min(1) );
 
     @Description( "Configures the transaction interval between check-points. The database will not check-point more " +
                   "often  than this (unless check pointing is triggered by a different event), but might check-point " +
@@ -417,7 +417,7 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Log executed queries that takes longer than the configured threshold. "
             + "_NOTE: This feature is only available in the Neo4j Enterprise Edition_." )
-    public static final Setting<Boolean> log_queries = setting("dbms.querylog.enabled", BOOLEAN, FALSE );
+    public static final Setting<Boolean> log_queries = setting("dbms.logs.query.enabled", BOOLEAN, FALSE );
 
     @Description("Path of the logs directory")
     public static final Setting<File> logs_directory = setting("dbms.directories.logs", PATH, "logs");
@@ -430,16 +430,16 @@ public abstract class GraphDatabaseSettings
 
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
                  "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
-    public static final Setting<Long> log_queries_threshold = setting("dbms.querylog.threshold", DURATION, "0s");
+    public static final Setting<Long> log_queries_threshold = setting("dbms.logs.query.threshold", DURATION, "0s");
 
-    @Description( "Specifies at which file size the query log will auto-rotate. " +
-                  "`0` means that no rotation will automatically occur based on file size." )
-    public static final Setting<Long> log_queries_rotation_threshold = setting("dbms.querylog.rotation.threshold",
+    @Description( "The file size in bytes at which the query log will auto-rotate. If set to zero then no rotation " +
+            "will occur. Accepts a binary suffix `k`, `m` or `g`." )
+    public static final Setting<Long> log_queries_rotation_threshold = setting("dbms.logs.query.rotation.size",
             BYTES, "20m",  min( 0L ), max( Long.MAX_VALUE ) );
 
     @Description( "Maximum number of history files for the query log." )
-    public static final Setting<Integer> log_queries_max_archives = setting( "dbms.querylog.max_archives", INTEGER,
-            "7", min( 1 ) );
+    public static final Setting<Integer> log_queries_max_archives = setting( "dbms.logs.query.rotation.keep_number",
+            INTEGER, "7", min( 1 ) );
 
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
                   "flushing data into underlying storage.")
