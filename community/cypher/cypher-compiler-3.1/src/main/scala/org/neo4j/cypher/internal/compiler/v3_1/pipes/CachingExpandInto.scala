@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
-import java.util.concurrent.ThreadLocalRandom
-
 import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, SemanticDirection}
-import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
 
-import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Used by pipes that needs to expand between two known nodes.
@@ -65,7 +63,7 @@ trait CachingExpandInto {
         return Iterator.empty
       }
 
-      relIterator(query, fromNode, toNode, fromDegree < toDegree, relTypes, relCache, dir)
+      relIterator(query, fromNode, toNode, preserveDirection = fromDegree < toDegree, relTypes, relCache, dir)
     }
     // iterate from a non-dense node
     else if (toNodeIsDense)
@@ -74,7 +72,15 @@ trait CachingExpandInto {
       relIterator(query, fromNode, toNode, preserveDirection = false, relTypes, relCache, dir)
     //both nodes are non-dense, choose a random starting point
     else
-      relIterator(query, fromNode, toNode, ThreadLocalRandom.current().nextBoolean(), relTypes, relCache, dir)
+      relIterator(query, fromNode, toNode, alternate(), relTypes, relCache, dir)
+  }
+
+  private var alternateState = false
+
+  private def alternate(): Boolean = {
+    val result = !alternateState
+    alternateState = result
+    result
   }
 
   private def relIterator(query: QueryContext, fromNode: Node,  toNode: Node, preserveDirection: Boolean,
@@ -143,5 +149,4 @@ trait CachingExpandInto {
       }
     }
   }
-
 }

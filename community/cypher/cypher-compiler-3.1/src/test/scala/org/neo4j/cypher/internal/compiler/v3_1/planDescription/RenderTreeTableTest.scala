@@ -30,8 +30,6 @@ import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.scalatest.BeforeAndAfterAll
 
-import scala.collection.immutable
-
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   private val defaultLocale = Locale.getDefault
@@ -659,7 +657,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
       """+--------------+------+---------+-----------+--------------------------------------------------------------------------------------------------+-------+
         || Operator     | Rows | DB Hits | Time (ms) | Variables                                                                                        | Other |
         |+--------------+------+---------+-----------+--------------------------------------------------------------------------------------------------+-------+
-        || +OPERATOR(2) |    2 |       2 |    12.346 | var_A, var_B, var_a -- var_b, var_c, var_d, var_e, var_f, var_g, var_h, var_i, var_j, var_k, ... |       |
+        || +OPERATOR(2) |    2 |       4 |    24.691 | var_A, var_B, var_a -- var_b, var_c, var_d, var_e, var_f, var_g, var_h, var_i, var_j, var_k, ... |       |
         || |            +------+---------+-----------+--------------------------------------------------------------------------------------------------+-------+
         || +NODE        |    2 |       2 |    12.346 | var_b, var_c, var_d, var_e, var_f, var_g, var_h, var_i, var_j, var_k, var_l, var_m, var_n, ...   |       |
         || |            +------+---------+-----------+--------------------------------------------------------------------------------------------------+-------+

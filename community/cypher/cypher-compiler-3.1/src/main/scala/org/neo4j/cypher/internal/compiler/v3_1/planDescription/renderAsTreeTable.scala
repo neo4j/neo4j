@@ -124,7 +124,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       }
     }
     val similar = compactPlanAcc(Seq.empty[InternalPlanDescription], plan)
-    new CompactedPlanDescription(similar).planDescription
+    CompactedPlanDescription.create(similar)
   }
 
   private def details(description: InternalPlanDescription)(implicit columns: mutable.Map[String,Int]): Predef.Map[String, Justified] = description.arguments.flatMap {
