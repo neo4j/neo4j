@@ -207,7 +207,7 @@ public interface ServerSettings
 
     @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Size of each GC log that is kept.")
-    Setting<Long> gc_logging_rotation_size = setting("dbms.logs.rotation.gc.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+    Setting<Long> gc_logging_rotation_size = setting("dbms.logs.gc.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
     @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Path of the run directory")

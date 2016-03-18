@@ -31,18 +31,18 @@ It must be a positive integer and must be unique among all Neo4j instances in th
 
 For example, +ha.server_id=1+.
 
-=== ha.cluster_server
+=== ha.host.coordination
 
-+ha.cluster_server+ is an address/port setting that specifies where the Neo4j instance will listen for cluster communications (like hearbeat messages).
++ha.host.coordination+ is an address/port setting that specifies where the Neo4j instance will listen for cluster communications (like hearbeat messages).
 The default port is +5001+.
 In the absence of a specified IP address, Neo4j will attempt to find a valid interface for binding.
 While this behavior typically results in a well-behaved server, it is _strongly recommended_ that users explicitly choose an IP address bound to the network interface of their choosing to ensure a coherent cluster deployment.
 
-For example, +ha.cluster_server=192.168.33.22:5001+ will listen for cluster communications on the network interface bound to the 192.168.33.0 subnet on port 5001.
+For example, +ha.host.coordination=192.168.33.22:5001+ will listen for cluster communications on the network interface bound to the 192.168.33.0 subnet on port 5001.
 
 === ha.initial_hosts
 
-+ha.initial_hosts+ is a comma separated list of address/port pairs, which specify how to reach other Neo4j instances in the cluster (as configured via their +ha.cluster_server+ option).
++ha.initial_hosts+ is a comma separated list of address/port pairs, which specify how to reach other Neo4j instances in the cluster (as configured via their +ha.host.coordination+ option).
 These hostname/ports will be used when the Neo4j instances start, to allow them to find and join the cluster.
 Specifying an instance's own address is permitted.
 
@@ -54,25 +54,25 @@ Do _not_ use any whitespace in this configuration option.
 For example, +ha.initial_hosts=192.168.33.22:5001,192.168.33.21:5001+ will attempt to reach Neo4j instances listening on
 192.168.33.22 on port 5001 and 192.168.33.21 on port 5001 on the 192.168.33.0 subnet.
 
-=== ha.server
+=== ha.host.data
 
-+ha.server+ is an address/port setting that specifies where the Neo4j instance will listen for transactions (changes to the graph data) from the cluster master.
++ha.host.data+ is an address/port setting that specifies where the Neo4j instance will listen for transactions (changes to the graph data) from the cluster master.
 The default port is +6001+.
 In the absence of a specified IP address, Neo4j will attempt to find a valid interface for binding.
 While this behavior typically results in a well-behaved server, it is _strongly recommended_ that users explicitly choose an IP address bound to the network interface of their choosing to ensure a coherent cluster topology.
 
-+ha.server+ must user a different port to +ha.cluster_server+.
++ha.host.data+ must use a different port to +ha.host.coordination+.
 
-For example, +ha.server=192.168.33.22:6001+ will listen for cluster communications on the network interface bound to the 192.168.33.0 subnet on port 6001.
+For example, +ha.host.data=192.168.33.22:6001+ will listen for cluster communications on the network interface bound to the 192.168.33.0 subnet on port 6001.
 
 [TIP]
 .Address/port format
 ====
-The +ha.cluster_server+ and +ha.server+ configuration options are specified as +<IP address>:<port>+.
+The +ha.host.coordination+ and +ha.host.data+ configuration options are specified as +<IP address>:<port>+.
 
-For +ha.server+ the IP address _must be_ the address assigned to one of the host's network interfaces.
+For +ha.host.data+ the IP address _must be_ the address assigned to one of the host's network interfaces.
 
-For +ha.cluster_server+ the IP address _must be_ the address assigned to one of the host's network interfaces, or the value +0.0.0.0+, which will cause Neo4j to listen on every network interface.
+For +ha.host.coordination+ the IP address _must be_ the address assigned to one of the host's network interfaces, or the value +0.0.0.0+, which will cause Neo4j to listen on every network interface.
 
 Either the address or the port can be omitted, in which case the default for that part will be used.
 If the address is omitted, then the port must be preceded with a colon (eg. +:5001+).
@@ -239,11 +239,11 @@ ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 
 # IP and port for this instance to bind to for communicating cluster information
 # with the other neo4j instances in the cluster.
-ha.cluster_server = 127.0.0.1:5001
+ha.host.coordination = 127.0.0.1:5001
 
 # IP and port for this instance to bind to for communicating data with the
 # other neo4j instances in the cluster.
-ha.server = 127.0.0.1:6363
+ha.host.data = 127.0.0.1:6363
 
 # HA - High Availability
 # SINGLE - Single mode, default.
@@ -274,11 +274,11 @@ ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 
 # IP and port for this instance to bind to for communicating cluster information
 # with the other neo4j instances in the cluster.
-ha.cluster_server = 127.0.0.1:5002
+ha.host.coordination = 127.0.0.1:5002
 
 # IP and port for this instance to bind to for communicating data with the
 # other neo4j instances in the cluster.
-ha.server = 127.0.0.1:6364
+ha.host.data = 127.0.0.1:6364
 
 # HA - High Availability
 # SINGLE - Single mode, default.
@@ -309,11 +309,11 @@ ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
 
 # IP and port for this instance to bind to for communicating cluster information
 # with the other neo4j instances in the cluster.
-ha.cluster_server = 127.0.0.1:5003
+ha.host.coordination = 127.0.0.1:5003
 
 # IP and port for this instance to bind to for communicating data with the
 # other neo4j instances in the cluster.
-ha.server = 127.0.0.1:6365
+ha.host.data = 127.0.0.1:6365
 
 # HA - High Availability
 # SINGLE - Single mode, default.
