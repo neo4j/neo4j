@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.configuration.docs;
 
-import org.junit.Test;
-
 import java.io.File;
+
+import org.junit.Test;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
@@ -31,6 +31,8 @@ import org.neo4j.kernel.configuration.Internal;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
@@ -103,8 +105,8 @@ public class SettingsDocumenterTest
             "[cols=\"<1h,<4\"]%n" +
             "|===%n" +
             "|Description a|Public with default.%n" +
-            "|Valid values a|public.default is a path%n" +
-            "|Default value m|" + File.separator + "tmp%n" +
+            "|Valid values a|public.default is an integer%n" +
+            "|Default value m|1%n" +
             "|===%n" +
             "endif::nonhtmloutput[]%n" +
             "%n" +
@@ -114,8 +116,8 @@ public class SettingsDocumenterTest
             "[cols=\"<1h,<4\"]%n" +
             "|===%n" +
             "|Description a|Public with default.%n" +
-            "|Valid values a|public.default is a path%n" +
-            "|Default value m|" + File.separator + "tmp%n" +
+            "|Valid values a|public.default is an integer%n" +
+            "|Default value m|1%n" +
             "|===%n" +
             "endif::nonhtmloutput[]%n" +
             "%n" +
@@ -125,8 +127,8 @@ public class SettingsDocumenterTest
             "[cols=\"<1h,<4\"]%n" +
             "|===%n" +
             "|Description a|Public deprecated.%n" +
-            "|Valid values a|public.deprecated is a path%n" +
-            "|Default value m|" + File.separator + "tmp%n" +
+            "|Valid values a|public.deprecated is a boolean%n" +
+            "|Default value m|false%n" +
             "|Deprecated a|The `public.deprecated` configuration setting has been deprecated.%n" +
             "|===%n" +
             "endif::nonhtmloutput[]%n" +
@@ -137,8 +139,8 @@ public class SettingsDocumenterTest
             "[cols=\"<1h,<4\"]%n" +
             "|===%n" +
             "|Description a|Public deprecated.%n" +
-            "|Valid values a|public.deprecated is a path%n" +
-            "|Default value m|" + File.separator + "tmp%n" +
+            "|Valid values a|public.deprecated is a boolean%n" +
+            "|Default value m|false%n" +
             "|Deprecated a|The `public.deprecated` configuration setting has been deprecated.%n" +
             "|===%n" +
             "endif::nonhtmloutput[]%n" +
@@ -245,15 +247,15 @@ public class SettingsDocumenterTest
         Setting<File> public_nodefault = setting("public.nodefault", PATH, NO_DEFAULT);
 
         @Description("Public with default")
-        Setting<File> public_with_default = setting("public.default", PATH, "/tmp");
+        Setting<Integer> public_with_default = setting("public.default", INTEGER, "1");
 
         @Deprecated
         @Description("Public deprecated")
-        Setting<File> public_deprecated = setting("public.deprecated", PATH, "/tmp");
+        Setting<Boolean> public_deprecated = setting("public.deprecated", BOOLEAN, "false");
 
         @Internal
         @Description("Internal with default")
-        Setting<File> internal_with_default = setting("internal.default", PATH, "/tmp");
+        Setting<String> internal_with_default = setting("internal.default", STRING, "something");
     }
 
     @Group( "group" )
