@@ -112,11 +112,11 @@ public abstract class LuceneIndex implements LegacyIndex
 
     protected Object getCorrectValue( Object value )
     {
-        if ( value instanceof ValueContext )
-        {
-            return ((ValueContext) value).getCorrectValue();
-        }
-        return value.toString();
+        Object result = value instanceof ValueContext
+                ? ((ValueContext) value).getCorrectValue()
+                : value.toString();
+        assertValidValue( value );
+        return result;
     }
 
     private static void assertValidKey( String key )
@@ -126,6 +126,19 @@ public abstract class LuceneIndex implements LegacyIndex
             throw new IllegalArgumentException( "Key " + key + " forbidden" );
         }
     }
+
+    private void assertValidValue( Object singleValue )
+    {
+        if ( singleValue == null )
+        {
+            throw new IllegalArgumentException( "Null value" );
+        }
+        if ( !(singleValue instanceof Number) && singleValue.toString() == null )
+        {
+            throw new IllegalArgumentException( "Value of type " + singleValue.getClass() + " has null toString" );
+        }
+    }
+
 
     /**
      * See {@link Index#remove(PropertyContainer, String, Object)} for more

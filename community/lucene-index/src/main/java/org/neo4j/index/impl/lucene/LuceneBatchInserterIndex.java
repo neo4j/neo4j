@@ -126,20 +126,16 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     private void addSingleProperty( long entityId, Document document, String key, Object value ) {
         for ( Object oneValue : IoPrimitiveUtils.asArray(value) )
         {
-            oneValue = oneValue instanceof ValueContext ? ((ValueContext) oneValue).getCorrectValue() : oneValue.toString();
-	    
-            if ( oneValue.toString() != null )
+            boolean isValueContext = oneValue instanceof ValueContext;
+            oneValue = isValueContext ? ((ValueContext) oneValue).getCorrectValue() : oneValue.toString();
+            type.addToDocument( document, key, oneValue );
+            if ( createdNow )
             {
-            
-                type.addToDocument( document, key, oneValue );
-                if ( createdNow )
-                {
-                    // If we know that the index was created this session
-                    // then we can go ahead and add stuff to the cache directly
-                    // when adding to the index.
-                    addToCache( entityId, key, oneValue );
-                }
-	    }
+                // If we know that the index was created this session
+                // then we can go ahead and add stuff to the cache directly
+                // when adding to the index.
+                addToCache( entityId, key, oneValue );
+            }
         }
     }
 

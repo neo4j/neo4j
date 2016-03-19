@@ -62,11 +62,8 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
         String key = definitions.getKey( command.getKeyId() );
         Object value = command.getValue();
         context.ensureWriterInstantiated();
-        if ( value instanceof Number || ( value != null && value.toString() != null ) )
-        {
-            context.indexType.addToDocument( context.getDocument( new IdData( command.getEntityId() ), true ).document,
+        context.indexType.addToDocument( context.getDocument( new IdData( command.getEntityId() ), true ).document,
                 key, value );
-        }
         return false;
     }
 
@@ -79,10 +76,7 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
         context.ensureWriterInstantiated();
         RelationshipData entityId = new RelationshipData( command.getEntityId(),
                 command.getStartNode(), command.getEndNode() );
-        if ( value instanceof Number || ( value != null && value.toString() != null ) )
-        {
-            context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
-        }
+        context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
         return false;
     }
 
