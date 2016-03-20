@@ -7,39 +7,22 @@ Import-Module "$src\Neo4j-Management.psm1"
 
 InModuleScope Neo4j-Management {
   Describe "Get-Neo4jSetting" {
-  
+
     Context "Invalid or missing specified neo4j installation" {
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })
+      $serverObject = global:New-InvalidNeo4jInstall
+
       $result = Get-Neo4jSetting -Neo4jServer $serverObject
   
       It "return null if invalid directory" {
         $result | Should BeNullOrEmpty      
       }
     }
-  
-    Context "Invalid or missing server object" {
-      It "throws error for an invalid server object" {
-        { Get-Neo4jSetting -Neo4jServer (New-Object -TypeName PSCustomObject) -ErrorAction Stop } | Should Throw
-      }
-    }
     
-    Context "Missing configuration file" {
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })
-      Mock Test-Path { return $false }  
-      Mock Test-Path { return $true } -ParameterFilter { ([string]$Path).EndsWith('neo4j.conf') }
-      Mock Test-Path { return $false } -ParameterFilter { ([string]$Path).EndsWith('neo4j-wrapper.conf') }
-      Mock Get-KeyValuePairsFromConfFile { return @{ "setting"="value"; } } -ParameterFilter { $Filename.EndsWith('neo4j.conf') }
-      Mock Get-KeyValuePairsFromConfFile { throw 'missing file' }           -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
+    Context "Missing configuration file is ignored" {
+      $serverObject = global:New-MockNeo4jInstall
+
+      "setting=value" | Out-File -FilePath "$($serverObject.Home)\conf\neo4j.conf"
+      Remove-Item -Path "$($serverObject.Home)\conf\neo4j-wrapper.conf" | Out-Null
       
       $result = Get-Neo4jSetting -Neo4jServer $serverObject
       
@@ -50,16 +33,10 @@ InModuleScope Neo4j-Management {
     }
   
     Context "Simple configuration settings" {
-      Mock Test-Path { return $true }
-      Mock Get-KeyValuePairsFromConfFile { return @{ "setting1"="value1"; } } -ParameterFilter { $Filename.EndsWith('neo4j.conf') }
-      Mock Get-KeyValuePairsFromConfFile { return @{ "setting2"="value2"; } } -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
+      $serverObject = global:New-MockNeo4jInstall
 
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })
+      "setting1=value1" | Out-File -FilePath "$($serverObject.Home)\conf\neo4j.conf"
+      "setting2=value2" | Out-File -FilePath "$($serverObject.Home)\conf\neo4j-wrapper.conf"
       
       $result = Get-Neo4jSetting -Neo4jServer $serverObject
       
@@ -94,16 +71,11 @@ InModuleScope Neo4j-Management {
     }
   
     Context "Configuration settings with multiple values" {
-      Mock Test-Path { return $true }
-      Mock Get-KeyValuePairsFromConfFile { return @{ "setting1"="value1"; "setting2"=@("value2","value3","value4"; ); } } -ParameterFilter { $Filename.EndsWith('neo4j.conf') }
-      Mock Get-KeyValuePairsFromConfFile { return @{} } -ParameterFilter { $Filename.EndsWith('neo4j-wrapper.conf') }
+      $serverObject = global:New-MockNeo4jInstall
 
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
+      "setting1=value1`n`rsetting2=value2`n`rsetting2=value3`n`rsetting2=value4" | Out-File -FilePath "$($serverObject.Home)\conf\neo4j.conf"
+      "" | Out-File -FilePath "$($serverObject.Home)\conf\neo4j-wrapper.conf"
+
       $result = Get-Neo4jSetting -Neo4jServer $serverObject
       
       # Parse the results and make sure the expected results are there
