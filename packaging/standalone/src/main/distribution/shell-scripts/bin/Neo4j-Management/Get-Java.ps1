@@ -153,6 +153,7 @@ Function Get-Java
     # Shell arguments for the Neo4jServer and Arbiter classes
     if ($PsCmdlet.ParameterSetName -eq 'ServerInvoke')
     {
+      $serverMainClass = ''
       if ($Neo4jServer.ServerType -eq 'Enterprise') { $serverMainClass = 'org.neo4j.server.enterprise.EnterpriseEntryPoint' }
       if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
       if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterEntryPoint' }
