@@ -31,7 +31,7 @@ public class FeatureSuiteTest
             plugin = {
                     "pretty",
                     "html:target/rule-interpreted",
-                    "cypher.cucumber.reporter.CypherResultReporter:target/rule-interpreted",
+                    "cypher.feature.reporting.CypherResultReporter:target/rule-interpreted",
                     "cypher.cucumber.db.DatabaseProvider:target/dbs",
                     "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/rule.json"
             },
@@ -47,7 +47,7 @@ public class FeatureSuiteTest
             plugin = {
                     "pretty",
                     "html:target/cost-interpreted",
-                    "cypher.cucumber.reporter.CypherResultReporter:target/cost-interpreted",
+                    "cypher.feature.reporting.CypherResultReporter:target/cost-interpreted",
                     "cypher.cucumber.db.DatabaseProvider:target/dbs",
                     "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-interpreted.json",
             },

@@ -208,7 +208,6 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-3.1</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -255,7 +254,6 @@
       <groupId>com.novus</groupId>
       <artifactId>salat-core_2.11</artifactId>
       <version>1.9.9</version>
-      <scope>test</scope>
       <exclusions>
         <exclusion>
           <groupId>org.scala-lang</groupId>

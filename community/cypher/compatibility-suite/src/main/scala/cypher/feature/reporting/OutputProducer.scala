@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.cucumber.reporter
+package cypher.feature.reporting
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.QueryTagger
 
