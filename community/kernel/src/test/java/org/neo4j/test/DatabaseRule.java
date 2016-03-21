@@ -27,7 +27,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.function.Functions;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -82,7 +81,10 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     public void executeAndCommit( Consumer<? super GraphDatabaseService> consumer )
     {
-        transaction( Functions.fromConsumer( consumer ), true );
+        transaction( (Function<? super GraphDatabaseService,Void>) t -> {
+            consumer.accept( t );
+            return null;
+        }, true );
     }
 
     public <T> T executeAndCommit( Function<? super GraphDatabaseService, T> function )

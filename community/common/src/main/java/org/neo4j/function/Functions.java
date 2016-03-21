@@ -20,7 +20,6 @@
 package org.neo4j.function;
 
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -70,11 +69,4 @@ public final class Functions
         }
     };
 
-    public static <T> Function<T,Void> fromConsumer( final Consumer<T> consumer )
-    {
-        return t -> {
-            consumer.accept( t );
-            return null;
-        };
-    }
 }
