@@ -37,7 +37,17 @@ public class ServerCommandLineArgsTest
     @Test
     public void shouldPickUpSpecifiedConfigFile() throws Exception
     {
-        Optional<File> expectedFile = Optional.of( new File( "some-dir/" + ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+        Optional<File> expectedFile = Optional.of( new File( "/some-dir/" + ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+        assertEquals( expectedFile, parse( "--config-dir", "/some-dir" ).configFile() );
+        assertEquals( expectedFile, parse( "--config-dir=/some-dir" ).configFile() );
+    }
+
+    @Test
+    public void shouldResolveConfigFileRelativeToWorkingDirectory() throws Exception
+    {
+        Optional<File> expectedFile = Optional.of( new File(
+                new File( System.getProperty( "user.dir" ) ),
+                "some-dir/" + ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
         assertEquals( expectedFile, parse( "--config-dir", "some-dir" ).configFile() );
         assertEquals( expectedFile, parse( "--config-dir=some-dir" ).configFile() );
     }
