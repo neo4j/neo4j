@@ -17,18 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling;
+package org.neo4j.kernel.configuration.docs;
 
 import java.io.File;
 
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.configuration.docs.SettingsDocumenter;
 
 /**
  * Generates Asciidoc for the GraphDatabaseSettings class.
- * @deprecated this will be moved out of public API in the next major release of Neo4j
  */
-@Deprecated
 public class GenerateConfigDocumentation
 {
     public static void main( String[] args ) throws Exception
