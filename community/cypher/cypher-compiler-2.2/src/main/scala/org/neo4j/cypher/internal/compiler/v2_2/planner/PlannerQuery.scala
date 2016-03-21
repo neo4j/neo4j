@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Hint, LabelName}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Hint, Identifier, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{StrictnessMode, IdName, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, StrictnessMode}
 
 import scala.annotation.tailrec
 
@@ -42,6 +42,7 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
     horizon.preferredStrictness orElse tail.flatMap(_.preferredStrictness)
 
   def lastQueryGraph: QueryGraph = tail.map(_.lastQueryGraph).getOrElse(graph)
+  def lastQueryHorizon: QueryHorizon = tail.map(_.lastQueryHorizon).getOrElse(horizon)
 
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
     case None => copy(tail = Some(newTail))
@@ -133,7 +134,18 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
     recurse(in, this)
   }
 
-  def labelInfo: Map[IdName, Set[LabelName]] = lastQueryGraph.selections.labelInfo
+  def labelInfo: Map[IdName, Set[LabelName]] = {
+    val labelInfo = lastQueryGraph.selections.labelInfo
+    val projectedLabelInfo = lastQueryHorizon match {
+      case projection: QueryProjection =>
+        projection.projections.collect {
+          case (projectedName, Identifier(name)) if labelInfo.contains(IdName(name)) =>
+              IdName(projectedName) -> labelInfo(IdName(name))
+        }
+      case _ => Map.empty[IdName, Set[LabelName]]
+    }
+    labelInfo ++ projectedLabelInfo
+  }
 }
 
 object PlannerQuery {
