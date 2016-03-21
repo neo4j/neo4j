@@ -34,7 +34,6 @@ import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Traversal;
 
 @Description( "Clones a subgraph (an example taken from a community mailing list requirement)" )
 public class GraphCloner extends ServerPlugin
@@ -51,7 +50,7 @@ public class GraphCloner extends ServerPlugin
         GraphDatabaseService graphDb = startNode.getGraphDatabase();
         try ( Transaction tx = graphDb.beginTx() )
         {
-            Traverser traverse = traverseToDepth( startNode, depth );
+            Traverser traverse = traverseToDepth( graphDb, startNode, depth );
             Iterator<Node> nodes = traverse.nodes()
                     .iterator();
 
@@ -95,10 +94,10 @@ public class GraphCloner extends ServerPlugin
         }
     }
 
-    private Traverser traverseToDepth( final Node startNode, final int depth )
+    private Traverser traverseToDepth( GraphDatabaseService graphDb, final Node startNode, final int depth )
     {
 
-        TraversalDescription traversalDescription = Traversal.description()
+        TraversalDescription traversalDescription = graphDb.traversalDescription()
                 .expand( PathExpanders.allTypesAndDirections() )
                 .depthFirst()
                 .evaluator( new Evaluator()

@@ -32,7 +32,6 @@ import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_PRUNE;
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.Evaluators.lastRelationshipTypeIs;
-import static org.neo4j.kernel.Traversal.description;
 import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestEvaluators extends TraversalTestBase
@@ -89,9 +88,9 @@ public class TestEvaluators extends TraversalTestBase
         Node h = getNodeWithName( "h" );
         Node g = getNodeWithName( "g" );
         
-        expectPaths( description().evaluator( includeWhereEndNodeIs( c, h, g ) ).traverse( a ),
+        expectPaths( getGraphDb().traversalDescription().evaluator( includeWhereEndNodeIs( c, h, g ) ).traverse( a ),
                 "a,b,c", "a,b,h", "a,f,g" );
-        expectPaths( description().evaluator( includeWhereEndNodeIs( g ) ).traverse( a ), "a,f,g" );
+        expectPaths( getGraphDb().traversalDescription().evaluator( includeWhereEndNodeIs( g ) ).traverse( a ), "a,f,g" );
     }
     
     @Test

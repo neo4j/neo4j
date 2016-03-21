@@ -58,24 +58,9 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 @Deprecated
 public class Traversal
 {
-    /**
-     * Creates a new {@link TraversalDescription} with default value for
-     * everything so that it's OK to call
-     * {@link TraversalDescription#traverse(org.neo4j.graphdb.Node)} without
-     * modification. But it isn't a very useful traversal, instead you should
-     * add rules and behaviors to it before traversing.
-     *
-     * @return a new {@link TraversalDescription} with default values.
-     * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription}
-     */
-    @Deprecated
-    public static TraversalDescription description()
-    {
-        return new MonoDirectionalTraversalDescription();
-    }
 
     /**
-     * More convenient name than {@link #description()} when using static imports.
+     * More convenient name than description() when using static imports.
      * Does the same thing.
      *
      * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription}
