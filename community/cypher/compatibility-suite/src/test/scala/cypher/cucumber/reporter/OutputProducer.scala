@@ -21,11 +21,15 @@ package cypher.cucumber.reporter
 
 import org.neo4j.cypher.internal.compiler.v3_1.ast.QueryTagger
 
+import scala.collection.JavaConverters._
+import scala.collection.immutable.ListMap
 import scala.collection.mutable
 
 trait OutputProducer {
-  def complete(query: String, outcome: Outcome)
+
+  def complete(query: String, outcome: Outcome): Unit
   def dump(): String
+  def dumpTagStats(): java.util.Map[String, Integer]
 }
 
 object JsonProducer extends JsonProducer(tagger = QueryTagger)
@@ -44,4 +48,20 @@ class JsonProducer(tagger: QueryTagger[String]) extends OutputProducer {
 
     grater[JsonResult].toPrettyJSONArray(results.toList)
   }
+
+  override def dumpTagStats(): java.util.Map[String, Integer] = {
+    val tagCounts = results.map(result => result.prettyTags).foldLeft(Map.empty[String, Integer]) {
+      case (map, tags) =>
+        tags.foldLeft(map) {
+          case (inner, tag) =>
+            inner + ((tag, inner.getOrElse(tag, Int.box(0)) + 1))
+        }
+    }
+    println(tagCounts)
+
+    sortByValue(tagCounts).asJava
+  }
+
+  private def sortByValue(map: Map[String, Integer]) = ListMap(map.toList.sortBy(_._2): _*)
+
 }

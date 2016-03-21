@@ -20,7 +20,9 @@
 package cypher.cucumber.reporter
 
 import java.io.{File, PrintStream}
+
 import cypher.cucumber.CucumberAdapter
+import cypher.feature.parser.reporting.ChartWriter
 import cypher.feature.steps.CypherTCKSteps
 import gherkin.formatter.model.{Match, Result, Step}
 
@@ -34,10 +36,12 @@ object CypherResultReporter {
   }
 }
 
-class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) extends CucumberAdapter {
+class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, chartWriter: ChartWriter) extends CucumberAdapter {
 
   def this(reportDir: File) = {
-    this(producer = JsonProducer, jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json"))
+    this(producer = JsonProducer,
+         jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json"),
+         chartWriter = new ChartWriter(CypherResultReporter.createPrintStream(reportDir, "tag_distribution.svg")))
   }
 
   private var query: String = null
@@ -47,6 +51,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) ex
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())
+    chartWriter.dumpSVG(producer.dumpTagStats())
   }
 
   override def close(): Unit = {
