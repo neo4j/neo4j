@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -44,6 +42,8 @@ import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
+import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -52,7 +52,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.function.Functions.constant;
 
 public class DbStructureInvocationTracingAcceptanceTest
 {
@@ -70,7 +69,7 @@ public class DbStructureInvocationTracingAcceptanceTest
         DbStructureVisitor visitor = tracer.newProxy();
 
         // WHEN
-        exerciseVisitor( constant( visitor ) );
+        exerciseVisitor( from -> visitor );
         tracer.close();
 
         // THEN
@@ -84,7 +83,8 @@ public class DbStructureInvocationTracingAcceptanceTest
         StringBuilder output = new StringBuilder();
         InvocationTracer<DbStructureVisitor> tracer =
             new InvocationTracer<>( "Test", packageName, className, DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output );
-        exerciseVisitor( constant ( tracer.newProxy() ) );
+
+        exerciseVisitor( from -> tracer.newProxy() );
         tracer.close();
         final Visitable<DbStructureVisitor> visitable = compileVisitable( classNameWithPackage, output.toString() );
         final DbStructureVisitor visitor = mock( DbStructureVisitor.class );
@@ -105,7 +105,7 @@ public class DbStructureInvocationTracingAcceptanceTest
         InvocationTracer<DbStructureVisitor> tracer1 =
                 new InvocationTracer<>( "Test", packageName, className, DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output1 );
         DbStructureVisitor visitor1 = tracer1.newProxy();
-        exerciseVisitor( constant( visitor1 ) );
+        exerciseVisitor( from -> visitor1 );
         tracer1.close();
         String source1 = output1.toString();
         Visitable<DbStructureVisitor> visitable = compileVisitable( classNameWithPackage, source1 );

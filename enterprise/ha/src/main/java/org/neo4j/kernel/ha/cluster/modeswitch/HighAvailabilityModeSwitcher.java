@@ -33,7 +33,6 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
-import org.neo4j.function.Functions;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
@@ -78,8 +77,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     public static InstanceId getServerId( URI haUri )
     {
         // Get serverId parameter, default to -1 if it is missing, and parse to integer
-        return INSTANCE_ID.apply( withDefaults(
-                Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haUri ) );
+        return INSTANCE_ID.apply( withDefaults( from -> "-1", parameter( "serverId" ) ).apply( haUri ) );
     }
 
     private URI availableMasterId;

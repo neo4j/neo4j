@@ -43,13 +43,6 @@ public class FunctionsTest
     }
 
     @Test
-    public void testConstant() throws Exception
-    {
-        assertThat( Functions.constant( "foo" ).apply( "bar" ), equalTo( "foo" ) );
-
-    }
-
-    @Test
     public void testCompose2() throws Exception
     {
         BiFunction<Integer, Integer, Integer> add = ( from1, from2 ) -> from1 + from2;

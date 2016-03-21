@@ -46,11 +46,6 @@ public final class Functions
             }
         };
     }
-    
-    public static <From, To> Function<From,To> constant( final To value )
-    {
-        return from -> value;
-    }
 
     private static Function IDENTITY = value -> value;
 
