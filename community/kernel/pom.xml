@@ -165,10 +165,6 @@ the relevant Commercial Agreement.
               <title>Helpers</title>
               <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
             </group>
-            <group>
-              <title>Tooling</title>
-              <packages>org.neo4j.tooling:org.neo4j.tooling.*</packages>
-            </group>
           </groups>
         </configuration>
       </plugin>
