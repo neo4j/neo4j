@@ -30,6 +30,7 @@ import org.neo4j.graphalgo.impl.util.DijkstraSelectorFactory;
 import org.neo4j.graphalgo.impl.util.PathInterest;
 import org.neo4j.graphalgo.impl.util.PathInterestFactory;
 import org.neo4j.graphalgo.impl.util.TopFetchingWeightedPathIterator;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.impl.util.NoneStrictMath;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterators.firstOrNull;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
-import static org.neo4j.kernel.Traversal.traversal;
 
 /**
  * Find (one or all) simple shortest path(s) between two nodes.
@@ -114,8 +114,9 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         PathExpander dijkstraExpander = new DijkstraBidirectionalPathExpander( expander, shortestSoFar, true,
                 startSideShortest, endSideShortest, epsilon);
 
+        GraphDatabaseService db = start.getGraphDatabase();
 
-        TraversalDescription side = traversal().expand( dijkstraExpander, stateFactory )
+        TraversalDescription side = db.traversalDescription().expand( dijkstraExpander, stateFactory )
                 .order( new DijkstraSelectorFactory( interest, costEvaluator ) )
                 .evaluator( new DijkstraBidirectionalEvaluator( costEvaluator ) )
                 .uniqueness( Uniqueness.NODE_PATH );

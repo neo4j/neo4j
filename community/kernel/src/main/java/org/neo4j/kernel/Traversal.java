@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 
 /**
  * A factory for objects regarding traversal of the graph. F.ex. it has a
- * method {@link #traversal()} for creating a new
+ * method traversal() for creating a new
  * {@link TraversalDescription}, methods for creating new
  * {@link TraversalBranch} instances and more.
  *
@@ -58,37 +58,6 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 @Deprecated
 public class Traversal
 {
-
-    /**
-     * More convenient name than description() when using static imports.
-     * Does the same thing.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription}
-     */
-    @Deprecated
-    public static TraversalDescription traversal()
-    {
-        return new MonoDirectionalTraversalDescription();
-    }
-
-    /**
-     * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription}
-     */
-    @Deprecated
-    public static TraversalDescription traversal( UniquenessFactory uniqueness )
-    {
-        return new MonoDirectionalTraversalDescription().uniqueness( uniqueness );
-    }
-
-    /**
-     * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#traversalDescription}
-     */
-    @Deprecated
-    public static TraversalDescription traversal( UniquenessFactory uniqueness, Object optionalUniquenessParameter )
-    {
-        return new MonoDirectionalTraversalDescription().uniqueness( uniqueness, optionalUniquenessParameter );
-    }
-
     /**
      * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#bidirectionalTraversalDescription}
      */

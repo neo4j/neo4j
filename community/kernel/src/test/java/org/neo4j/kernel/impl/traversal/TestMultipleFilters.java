@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import java.util.function.Predicate;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.function.Predicate;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -101,7 +101,7 @@ public class TestMultipleFilters extends TraversalTestBase
                 path -> Evaluation.ofIncludes( Iterables
                                                        .count( path.endNode().getRelationships( Direction.OUTGOING ) ) <= 2 );
 
-        TraversalDescription description = traversal().evaluator( mustBeConnectedToK );
+        TraversalDescription description = getGraphDb().traversalDescription().evaluator( mustBeConnectedToK );
         expectNodes( description.traverse( node( "a" ) ), "b", "c" );
         expectNodes( description.evaluator( mustNotHaveMoreThanTwoOutRels ).traverse( node( "a" ) ), "c" );
     }
@@ -113,10 +113,10 @@ public class TestMultipleFilters extends TraversalTestBase
         MustBeConnectedToNodeFilter mustBeConnectedToE = new MustBeConnectedToNodeFilter( getNodeWithName( "e" ) );
 
         // Nodes connected (OUTGOING) to c (which "a" is)
-        expectNodes( traversal().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
+        expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).traverse( node( "a" ) ), "a" );
         // Nodes connected (OUTGOING) to c AND e (which none is)
-        expectNodes( traversal().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE ).traverse( node( "a" ) ) );
+        expectNodes( getGraphDb().traversalDescription().evaluator( mustBeConnectedToC ).evaluator( mustBeConnectedToE ).traverse( node( "a" ) ) );
         // Nodes connected (OUTGOING) to c OR e (which "a" and "b" is)
-        expectNodes( traversal().evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) ).traverse( node( "a" ) ), "a", "b" );
+        expectNodes( getGraphDb().traversalDescription().evaluator( includeIfAcceptedByAny( mustBeConnectedToC, mustBeConnectedToE ) ).traverse( node( "a" ) ), "a", "b" );
     }
 }

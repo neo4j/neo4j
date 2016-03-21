@@ -73,12 +73,12 @@ public class TestOrderByTypeExpander extends TraversalTestBase
     {
         PathExpander expander =
             new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
-        Iterator<Node> itr = traversal().depthFirst().expand(
+        Iterator<Node> itr = getGraphDb().traversalDescription().depthFirst().expand(
                 expander ).traverse( node( "A1" ) ).nodes().iterator();
         assertOrder( itr, "A1", "C1", "C2", "C3", "A2", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
 
         expander = new OrderedByTypeExpander().add( next ).add( firstComment ).add( comment );
-        itr = traversal().depthFirst().expand(
+        itr = getGraphDb().traversalDescription().depthFirst().expand(
                 expander ).traverse( node( "A1" ) ).nodes().iterator();
         assertOrder( itr, "A1", "A2", "A3", "C7", "C8", "C9", "C4", "C5", "C6", "C1", "C2", "C3" );
     }
@@ -91,7 +91,8 @@ public class TestOrderByTypeExpander extends TraversalTestBase
                 .add( firstComment )
                 .add( comment )
                 .add( next, OUTGOING );
-        Iterator<Node> itr = traversal().depthFirst().expand( expander ).traverse( node( "A2" ) ).nodes().iterator();
+        Iterator<Node> itr =
+                getGraphDb().traversalDescription().depthFirst().expand( expander ).traverse( node( "A2" ) ).nodes().iterator();
         assertOrder( itr, "A2", "A1", "C1", "C2", "C3", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );
     }
 

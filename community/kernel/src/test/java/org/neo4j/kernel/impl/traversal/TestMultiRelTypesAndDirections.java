@@ -45,13 +45,13 @@ public class TestMultiRelTypesAndDirections extends TraversalTestBase
     @Test
     public void testCIsReturnedOnDepthTwoDepthFirst()
     {
-        testCIsReturnedOnDepthTwo( traversal().depthFirst() );
+        testCIsReturnedOnDepthTwo( getGraphDb().traversalDescription().depthFirst() );
     }
 
     @Test
     public void testCIsReturnedOnDepthTwoBreadthFirst()
     {
-        testCIsReturnedOnDepthTwo( traversal().breadthFirst() );
+        testCIsReturnedOnDepthTwo( getGraphDb().traversalDescription().breadthFirst() );
     }
 
     private void testCIsReturnedOnDepthTwo( TraversalDescription description )

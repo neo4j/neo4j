@@ -30,6 +30,7 @@ import org.neo4j.graphalgo.impl.util.PathInterest;
 import org.neo4j.graphalgo.impl.util.PathInterestFactory;
 import org.neo4j.graphalgo.impl.util.WeightedPathIterator;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.InitialBranchState;
@@ -42,7 +43,6 @@ import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
-import static org.neo4j.kernel.Traversal.traversal;
 
 /**
  * Implementation of A* algorithm, see {@link AStar}, but using the traversal
@@ -50,8 +50,9 @@ import static org.neo4j.kernel.Traversal.traversal;
  */
 public class TraversalAStar implements PathFinder<WeightedPath>
 {
-    private final TraversalDescription traversalDescription;
     private final CostEvaluator<Double> costEvaluator;
+    private final PathExpander expander;
+    private final InitialBranchState initialState;
     private Traverser lastTraverser;
 
     private final EstimateEvaluator<Double> estimateEvaluator;
@@ -85,7 +86,8 @@ public class TraversalAStar implements PathFinder<WeightedPath>
         this.costEvaluator = costEvaluator;
         this.estimateEvaluator = estimateEvaluator;
         this.stopAfterLowestWeight = stopAfterLowestWeight;
-        this.traversalDescription = traversal().uniqueness( Uniqueness.NONE ).expand( expander, initialState );
+        this.expander = expander;
+        this.initialState = initialState;
     }
 
     @Override
@@ -110,6 +112,10 @@ public class TraversalAStar implements PathFinder<WeightedPath>
         else {
             interest = PathInterestFactory.single();
         }
+
+        GraphDatabaseService db = start.getGraphDatabase();
+        TraversalDescription traversalDescription = db.traversalDescription().uniqueness( Uniqueness.NONE )
+                .expand( expander, initialState );
 
         lastTraverser = traversalDescription.order(
                 new SelectorFactory( end, interest ) )

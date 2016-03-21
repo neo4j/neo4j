@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -28,7 +29,6 @@ import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 import static org.neo4j.graphdb.traversal.SideSelectorPolicies.LEVEL_STOP_DESCENT_ON_RESULT;
 import static org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH;
 import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
-import static org.neo4j.kernel.Traversal.traversal;
 
 /**
  * Implements shortest path algorithm, see {@link ShortestPath}, but using
@@ -60,7 +60,8 @@ public class TraversalShortestPath extends TraversalPathFinder
     @Override
     protected Traverser instantiateTraverser( Node start, Node end )
     {
-        TraversalDescription sideBase = traversal().breadthFirst().uniqueness( NODE_PATH );
+        GraphDatabaseService db = start.getGraphDatabase();
+        TraversalDescription sideBase = db.traversalDescription().breadthFirst().uniqueness( NODE_PATH );
         return bidirectionalTraversal()
             .mirroredSides( sideBase.expand( expander ) )
             .sideSelector( LEVEL_STOP_DESCENT_ON_RESULT, maxDepth )

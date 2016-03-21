@@ -65,7 +65,7 @@ public class TestSorting extends TraversalTestBase
         try (Transaction tx = beginTx())
         {
             List<Node> nodes = asNodes( abraham, george, dan, zack, andreas, nicholas );
-            assertEquals( nodes, Iterables.asCollection( traversal().evaluator( excludeStartPosition() )
+            assertEquals( nodes, Iterables.asCollection( getGraphDb().traversalDescription().evaluator( excludeStartPosition() )
                     .sort( endNodeProperty( "name" ) ).traverse( getNodeWithName( me ) ).nodes() ) );
             tx.success();
         }
