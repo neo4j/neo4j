@@ -126,11 +126,11 @@ public class BatchingNeoStores implements AutoCloseable
                 initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
                 initialIds.lastCommittedTransactionLogVersion(), initialIds.lastCommittedTransactionLogByteOffset() );
         this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository(
-                neoStores.getPropertyKeyTokenStore(), initialIds.highPropertyKeyTokenId() );
+                neoStores.getPropertyKeyTokenStore() );
         this.labelRepository = new BatchingLabelTokenRepository(
-                neoStores.getLabelTokenStore(), initialIds.highLabelTokenId() );
+                neoStores.getLabelTokenStore() );
         this.relationshipTypeRepository = new BatchingRelationshipTypeTokenRepository(
-                neoStores.getRelationshipTypeTokenStore(), initialIds.highRelationshipTypeTokenId() );
+                neoStores.getRelationshipTypeTokenStore() );
 
         // Initialize kernel extensions
         Dependencies dependencies = new Dependencies();

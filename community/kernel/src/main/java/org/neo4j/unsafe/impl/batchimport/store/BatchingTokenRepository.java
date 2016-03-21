@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -47,11 +48,11 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     private final TokenStore<RECORD, TOKEN> store;
     private int highId;
 
-    public BatchingTokenRepository( TokenStore<RECORD,TOKEN> store, int highId )
+    public BatchingTokenRepository( TokenStore<RECORD,TOKEN> store )
     {
         this.store = store;
         // TODO read the store into the repository, i.e. into existing?
-        this.highId = highId;
+        this.highId = (int)store.getHighId();
     }
 
     public int getOrCreateId( String name )
@@ -158,9 +159,9 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
 
     public static class BatchingPropertyKeyTokenRepository extends BatchingTokenRepository<PropertyKeyTokenRecord, Token>
     {
-        public BatchingPropertyKeyTokenRepository( TokenStore<PropertyKeyTokenRecord, Token> store, int highId )
+        public BatchingPropertyKeyTokenRepository( TokenStore<PropertyKeyTokenRecord, Token> store )
         {
-            super( store, highId );
+            super( store );
         }
 
         @Override
@@ -191,7 +192,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
             else if ( key instanceof Integer )
             {
                 // A raw token id was supplied, just use it
-                return ((Integer)key).intValue();
+                return (Integer) key;
             }
             throw new IllegalArgumentException( "Expected either a String or Integer for property key, but was '" +
                     key + "'" + ", " + key.getClass() );
@@ -200,9 +201,9 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
 
     public static class BatchingLabelTokenRepository extends BatchingTokenRepository<LabelTokenRecord, Token>
     {
-        public BatchingLabelTokenRepository( TokenStore<LabelTokenRecord, Token> store, int highId )
+        public BatchingLabelTokenRepository( TokenStore<LabelTokenRecord, Token> store )
         {
-            super( store, highId );
+            super( store );
         }
 
         @Override
@@ -216,9 +217,9 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
             extends BatchingTokenRepository<RelationshipTypeTokenRecord,RelationshipTypeToken>
     {
         public BatchingRelationshipTypeTokenRepository( TokenStore<RelationshipTypeTokenRecord,
-                RelationshipTypeToken> store, int highId )
+                RelationshipTypeToken> store )
         {
-            super( store, highId );
+            super( store );
         }
 
         @Override
