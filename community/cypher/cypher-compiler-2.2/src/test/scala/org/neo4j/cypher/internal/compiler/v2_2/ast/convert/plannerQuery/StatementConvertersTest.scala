@@ -44,7 +44,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
   def buildPlannerQuery(query: String, cleanStatement: Boolean = true): UnionQuery = {
     val ast = parser.parse(query.replace("\r\n", "\n"))
-    val mkException = new SyntaxExceptionCreator(query, Some(pos))
+    val mkException = new SyntaxExceptionCreator(RawQuery(query, pos))
     val cleanedStatement: Statement =
       if (cleanStatement)
         ast.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))

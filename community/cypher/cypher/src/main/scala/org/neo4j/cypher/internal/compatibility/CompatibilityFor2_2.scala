@@ -154,7 +154,7 @@ trait CompatibilityFor2_2 {
   implicit val indexSearchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
   def produceParsedQuery(statementAsText: String, rawStatement: String, offset: InputPosition) = new ParsedQuery {
-    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText, rawStatement, Some(offset)))
+    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText, Some(RawQuery(rawStatement,offset))))
 
     def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 

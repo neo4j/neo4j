@@ -20,7 +20,8 @@
 package org.neo4j.cypher
 
 import org.neo4j.graphdb.QueryExecutionException
-import collection.JavaConverters._
+
+import scala.collection.JavaConverters._
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -545,6 +546,11 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError("MATCH m, n RETURN m, n, o LIMIT 25",
       "o not defined (line 1, column 25 (offset: 24))")
 
+  }
+
+  test("position should be correct when using cypher options on general syntax exceptions") {
+    executeAndEnsureError("CYPHER planner=cost REXTURN 1",
+                          "Invalid input 'X': expected 'm/M' or 't/T' (line 1, column 23 (offset: 22))")
   }
 
   def executeAndEnsureError(query: String, expected: String) {

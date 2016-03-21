@@ -198,7 +198,7 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
 
   private def ast(queryText: String) = {
     val parsed = parseForRewriting(queryText)
-    val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
+    val mkException = new SyntaxExceptionCreator(RawQuery(queryText, pos))
     val normalized = parsed.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val checkResult = normalized.semanticCheck(SemanticState.clean)
     normalized.endoRewrite(inSequence(expandStar(checkResult.state)))

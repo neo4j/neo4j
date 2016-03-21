@@ -106,7 +106,7 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   private def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val mkException = new SyntaxExceptionCreator(originalQuery, Some(pos))
+    val mkException = new SyntaxExceptionCreator(RawQuery(originalQuery, pos))
     val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
 

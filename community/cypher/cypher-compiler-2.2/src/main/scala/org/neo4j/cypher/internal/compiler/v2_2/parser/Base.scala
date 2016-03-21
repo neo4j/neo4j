@@ -112,7 +112,7 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
-  def parseOrThrow[T](input: String, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]], monitor: Option[ParserMonitor[T]]): T = {
+  def parseOrThrow[T](input: String, rawQuery: Option[RawQuery], rule: Rule1[Seq[T]], monitor: Option[ParserMonitor[T]]): T = {
     monitor.foreach(_.startParsing(input))
     val parsingResults = ReportingParseRunner(rule).run(input)
     parsingResults.result match {
@@ -139,8 +139,8 @@ trait Base extends Parser {
           }
 
           val bufferPosition = BufferPosition(error.getInputBuffer, error.getStartIndex)
-          val position = bufferPosition.withOffset(initialOffset)
-          throw new SyntaxException(s"$message ($position)", input, position.offset)
+          val position = bufferPosition.withOffset(rawQuery.map(_.pos))
+          throw new SyntaxException(s"$message ($position)", rawQuery.map(_.rawStatement).getOrElse(input), position.offset)
         }
 
         throw new ThisShouldNotHappenError("cleishm", "Parsing failed but no parse errors were provided")

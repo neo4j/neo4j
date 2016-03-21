@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compatibility.{WrappedMonitors, StringInfoLogger}
+import org.neo4j.cypher.internal.compatibility.{StringInfoLogger, WrappedMonitors}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -29,7 +30,6 @@ import org.neo4j.helpers.{Clock, FrozenClock}
 import org.neo4j.kernel.impl.util.StringLogger.DEV_NULL
 import org.neo4j.kernel.impl.util.TestLogger.LogCall
 import org.neo4j.kernel.impl.util.{StringLogger, TestLogger}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 
 import scala.collection.Map
 
@@ -147,7 +147,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val compiler = createCompiler(queryPlanTTL = 0, clock = clock, logger = logger)
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
-    val statement = compiler.prepareQuery(query, query).statement
+    val statement = compiler.prepareQuery(query, None).statement
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }

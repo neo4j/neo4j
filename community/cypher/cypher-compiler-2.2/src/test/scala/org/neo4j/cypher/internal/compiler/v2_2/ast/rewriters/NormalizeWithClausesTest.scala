@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.AstConstructionTestSupport
 
 class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
-  val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))
+  val mkException = new SyntaxExceptionCreator(RawQuery("<Query>", pos))
   val rewriterUnderTest: Rewriter = normalizeWithClauses(mkException)
 
   test("ensure identifiers are aliased") {

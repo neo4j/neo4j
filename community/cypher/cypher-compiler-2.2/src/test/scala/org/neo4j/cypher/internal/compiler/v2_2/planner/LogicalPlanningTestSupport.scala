@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonit
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTable, expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTable, GreedyQueryGraphSolver, expandsOnly, expandsOrJoins}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ValidatingRewriterStepSequencer, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.Clock
 
@@ -161,7 +161,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedPipeBuilder, planContext: PlanContext): LogicalPlan = {
     val parsedStatement = parser.parse(queryText)
-    val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
+    val mkException = new SyntaxExceptionCreator(RawQuery(queryText, pos))
     val semanticState = semanticChecker.check(queryText, parsedStatement, mkException)
     val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryText, parsedStatement, semanticState)
     CostBasedPipeBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), rewriterSequencer, semanticChecker, postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {

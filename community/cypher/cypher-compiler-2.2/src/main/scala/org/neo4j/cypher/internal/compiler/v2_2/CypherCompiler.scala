@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.helpers.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{DefaultQueryPlanner, CachedMetricsFactory, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFactory, DefaultQueryPlanner, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{RewriterStepSequencer, PlainRewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 
@@ -125,6 +125,8 @@ object CypherCompilerFactory {
   }
 }
 
+case class RawQuery(rawStatement: String, pos: InputPosition)
+
 case class CypherCompiler(parser: CypherParser,
                           semanticChecker: SemanticChecker,
                           executionPlanBuilder: ExecutionPlanBuilder,
@@ -134,13 +136,13 @@ case class CypherCompiler(parser: CypherParser,
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
                           monitors: Monitors) {
 
-  def planQuery(queryText: String, context: PlanContext, offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText, queryText, offset), context)
+  def planQuery(queryText: String, context: PlanContext, rawQuery: Option[RawQuery] = None): (ExecutionPlan, Map[String, Any]) =
+    planPreparedQuery(prepareQuery(queryText, rawQuery), context)
 
-  def prepareQuery(preparsedQueryText: String, rawQueryText: String, offset: Option[InputPosition] = None): PreparedQuery = {
-    val parsedStatement = parser.parse(preparsedQueryText, offset)
+  def prepareQuery(preparsedQueryText: String, rawQuery: Option[RawQuery]): PreparedQuery = {
+    val parsedStatement = parser.parse(preparsedQueryText, rawQuery)
 
-    val mkException = new SyntaxExceptionCreator(rawQueryText, offset)
+    val mkException = new SyntaxExceptionCreator(rawQuery)
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val originalSemanticState = semanticChecker.check(preparsedQueryText, cleanedStatement, mkException)
 
