@@ -36,6 +36,8 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class ConfigLoader
 {
+    public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
+
     private final SettingsClasses settingsClasses;
 
     public ConfigLoader( SettingsClasses settingsClasses )

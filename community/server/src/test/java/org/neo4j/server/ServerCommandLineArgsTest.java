@@ -24,6 +24,7 @@ import java.io.File;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,21 +36,15 @@ public class ServerCommandLineArgsTest
     @Test
     public void shouldPickUpSpecifiedConfigFile() throws Exception
     {
-        shouldPickUpSpecifiedConfigFile( ServerCommandLineArgs.CONFIG_KEY_ALT_1 );
-        shouldPickUpSpecifiedConfigFile( ServerCommandLineArgs.CONFIG_KEY_ALT_2 );
+        File expectedFile = new File( "some-dir/" + ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
+        assertEquals( expectedFile, parse( "--config-dir", "some-dir" ).configFile() );
+        assertEquals( expectedFile, parse( "--config-dir=some-dir" ).configFile() );
     }
 
-    public void shouldPickUpSpecifiedConfigFile( String key )
+    @Test
+    public void shouldReturnNullIfConfigDirIsNotSpecified()
     {
-        // GIVEN
-        String customConfigFile = "MyConfigFile";
-        String[] args = array( "--" + key, customConfigFile );
-
-        // WHEN
-        ServerCommandLineArgs parsed = ServerCommandLineArgs.parse( args );
-
-        // THEN
-        assertEquals( new File( customConfigFile ), parsed.configFile() );
+        assertEquals( null, parse().configFile() );
     }
 
     @Test
@@ -94,10 +89,15 @@ public class ServerCommandLineArgsTest
 
         // THEN
         assertEquals( asSet(
-                Pair.of( "my_first_option", "first" ),
-                Pair.of( "myoptionenabled", Boolean.TRUE.toString() ),
-                Pair.of( "my_second_option", "second" ) ),
+                        Pair.of( "my_first_option", "first" ),
+                        Pair.of( "myoptionenabled", Boolean.TRUE.toString() ),
+                        Pair.of( "my_second_option", "second" ) ),
 
                 asSet( parsed.configOverrides() ) );
+    }
+
+    private ServerCommandLineArgs parse( String... args )
+    {
+        return ServerCommandLineArgs.parse( args );
     }
 }
