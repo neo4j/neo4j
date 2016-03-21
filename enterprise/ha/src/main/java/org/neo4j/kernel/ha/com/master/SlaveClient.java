@@ -29,7 +29,6 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.function.Functions;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
@@ -58,7 +57,7 @@ public class SlaveClient extends Client<Slave> implements Slave
         super( destinationHostNameOrIp, destinationPort, originHostNameOrIp, logProvider, storeId,
                 Protocol.DEFAULT_FRAME_LENGTH,
                 new ProtocolVersion( SlaveServer.APPLICATION_PROTOCOL_VERSION, INTERNAL_PROTOCOL_VERSION ),
-                HaSettings.read_timeout.apply( Functions.<String, String>nullFunction() ), maxConcurrentChannels,
+                HaSettings.read_timeout.apply( from -> null ), maxConcurrentChannels,
                 chunkSize, NO_OP_RESPONSE_UNPACKER, byteCounterMonitor, requestMonitor, entryReader );
         this.machineId = machineId;
     }

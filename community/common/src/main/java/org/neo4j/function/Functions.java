@@ -46,14 +46,7 @@ public final class Functions
             }
         };
     }
-
-    public static <From, To> Function<From,To> nullFunction()
-    {
-        return from -> {
-            return null; // Always return null
-        };
-    }
-
+    
     public static <From, To> Function<From,To> constant( final To value )
     {
         return from -> value;

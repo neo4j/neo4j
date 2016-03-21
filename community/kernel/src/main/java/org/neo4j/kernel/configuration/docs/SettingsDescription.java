@@ -23,9 +23,9 @@ import java.lang.reflect.Field;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.configuration.Group;
@@ -75,7 +75,7 @@ public class SettingsDescription
                                               : null;
                 try
                 {
-                    Object rawDefault = setting.apply( Functions.<String,String>nullFunction() );
+                    Object rawDefault = setting.apply( from -> null );
                     defaultValue = rawDefault != null ? rawDefault.toString() : null;
                 }
                 catch ( IllegalArgumentException iae )

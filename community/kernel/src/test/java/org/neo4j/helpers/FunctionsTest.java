@@ -22,7 +22,6 @@ package org.neo4j.helpers;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import org.neo4j.function.Functions;
@@ -37,16 +36,10 @@ public class FunctionsTest
     @Test
     public void testWithDefaults() throws Exception
     {
-        assertThat( Functions.withDefaults( stringMap( "foo", "bar" )::get, Functions.<String,String>nullFunction() )
+        assertThat( Functions.withDefaults( stringMap( "foo", "bar" )::get, from -> null )
                 .apply( "foo" ), equalTo( "bar" ) );
         assertThat( Functions.withDefaults( stringMap( "foo", "bar" )::get, stringMap( "foo", "xyzzy" )::get )
                 .apply( "foo" ), equalTo( "xyzzy" ) );
-    }
-
-    @Test
-    public void testNullFunction() throws Exception
-    {
-        assertThat( Functions.nullFunction().apply( "foo" ), CoreMatchers.nullValue() );
     }
 
     @Test
