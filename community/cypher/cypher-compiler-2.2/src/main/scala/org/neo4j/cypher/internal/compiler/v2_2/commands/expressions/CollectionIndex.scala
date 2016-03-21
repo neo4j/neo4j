@@ -30,7 +30,19 @@ with CollectionSupport {
   def arguments = Seq(collection, index)
 
   def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    var idx = CastSupport.castOrFail[Number](index(ctx)).intValue()
+    val number = CastSupport.castOrFail[Number](index(ctx))
+
+    val longValue = number match {
+      case _ : java.lang.Double | _: java.lang.Float =>
+        throw new CypherTypeException(s"Cannot index an array with an non-integer number, got $number")
+      case _ => number.longValue()
+    }
+
+    if (longValue > Int.MaxValue || longValue < Int.MinValue)
+      throw new InvalidArgumentException(s"Cannot index an array using a value bigger than ${Int.MaxValue} or smaller than ${Int.MinValue}, got $number")
+
+    var idx = longValue.toInt
+
     val collectionValue = makeTraversable(value).toList
 
     if (idx < 0)
