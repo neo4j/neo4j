@@ -20,6 +20,7 @@
 package org.neo4j.desktop.runtime;
 
 import java.io.File;
+import java.util.Optional;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.desktop.config.Installation;
@@ -54,7 +55,7 @@ public class DesktopConfigurator
     public void refresh()
     {
         config = new ConfigLoader( CommunityBootstrapper.settingsClasses).loadConfig(
-                installation.getConfigurationsFile(),
+                Optional.of( installation.getConfigurationsFile() ),
                 FormattedLog.toOutputStream( System.out ),
 
                 /** Desktop-specific config overrides */

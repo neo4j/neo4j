@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import org.junit.Rule;
@@ -211,7 +212,7 @@ public class StoreUpgradeIntegrationTest
             ServerBootstrapper bootstrapper = new CommunityBootstrapper();
             try
             {
-                bootstrapper.start( configFile );
+                bootstrapper.start( Optional.of( configFile ) );
                 assertTrue( bootstrapper.isRunning() );
                 checkInstance( store, bootstrapper.getServer().getDatabase().getGraph() );
             }

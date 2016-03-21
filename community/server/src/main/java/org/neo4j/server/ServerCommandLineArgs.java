@@ -21,6 +21,7 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Optional;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Pair;
@@ -62,13 +63,10 @@ public class ServerCommandLineArgs
         return configOverrides;
     }
 
-    public File configFile()
+    public Optional<File> configFile()
     {
-        if ( !args.has( CONFIG_DIR_ARG ) )
-        {
-            return null;
-        }
-        return new File( new File( args.get( CONFIG_DIR_ARG ) ), ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
+        return Optional.ofNullable( args.get( CONFIG_DIR_ARG ) )
+                .map( (dirPath) -> new File( new File( dirPath ), ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
     }
 
     private static Pair<String, String>[] parseConfigOverrides( Args arguments )

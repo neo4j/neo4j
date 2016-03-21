@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.helpers.collection.Pair;
@@ -37,7 +38,7 @@ public class BlockingBootstrapper implements Bootstrapper
 
     @SafeVarargs
     @Override
-    public final int start( File configFile, Pair<String, String>... configOverrides )
+    public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
     {
         int status = wrapped.start( configFile, configOverrides );
         if ( status != ServerBootstrapper.OK )

@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.util.Optional;
 
 import org.junit.Test;
 
@@ -36,7 +37,7 @@ public class ServerCommandLineArgsTest
     @Test
     public void shouldPickUpSpecifiedConfigFile() throws Exception
     {
-        File expectedFile = new File( "some-dir/" + ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
+        Optional<File> expectedFile = Optional.of( new File( "some-dir/" + ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
         assertEquals( expectedFile, parse( "--config-dir", "some-dir" ).configFile() );
         assertEquals( expectedFile, parse( "--config-dir=some-dir" ).configFile() );
     }
@@ -44,7 +45,7 @@ public class ServerCommandLineArgsTest
     @Test
     public void shouldReturnNullIfConfigDirIsNotSpecified()
     {
-        assertEquals( null, parse().configFile() );
+        assertEquals( Optional.empty(), parse().configFile() );
     }
 
     @Test
