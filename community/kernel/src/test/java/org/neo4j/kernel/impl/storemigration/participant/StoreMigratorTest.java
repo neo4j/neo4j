@@ -54,7 +54,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.storemigration.participant.StoreMigrator.readLastTxLogPosition;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_VERSION;
@@ -150,7 +149,7 @@ public class StoreMigratorTest
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
         migrator = new StoreMigrator( fs, pageCache, Config.empty(), logService, schemaIndexProvider );
-        migrator.rebuildCounts( storeDirectory, versionToMigrateFrom );
+        migrator.rebuildCounts( storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =

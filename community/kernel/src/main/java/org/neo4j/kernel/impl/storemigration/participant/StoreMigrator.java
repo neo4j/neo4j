@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.storemigration.participant;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -50,15 +50,12 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.CapabilityType;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -96,11 +93,9 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static java.util.Arrays.stream;
-import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.Capability.VERSION_TRAILERS;
+import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.fromVersion;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -156,44 +151,25 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         writeLastTxChecksum( migrationDir, lastTxChecksum );
         writeLastTxLogPosition( migrationDir, lastTxLogPosition );
 
-        RecordFormats oldFormat = InternalRecordFormatSelector.fromVersion( versionToMigrateFrom );
-        RecordFormats newFormat = InternalRecordFormatSelector.fromVersion( versionToMigrateTo );
+        RecordFormats oldFormat = fromVersion( versionToMigrateFrom );
+        RecordFormats newFormat = fromVersion( versionToMigrateTo );
         if ( !oldFormat.equals( newFormat ) )
         {
-            if ( newFormat.hasSameCapabilities( oldFormat, CapabilityType.FORMAT ) )
-            {
-                // Do direct migration
-                migrateWithDirectMigration( storeDir, migrationDir, oldFormat, newFormat, progressMonitor );
-            }
-            else
-            {
-                // Some form of migration is required (a fallback/catch-all option)
-                migrateWithBatchImporter( storeDir, migrationDir,
-                        lastTxId, lastTxChecksum, lastTxLogPosition.getLogVersion(), lastTxLogPosition.getByteOffset(),
-                        progressMonitor, oldFormat, newFormat );
-            }
+            // Some form of migration is required (a fallback/catch-all option)
+            migrateWithBatchImporter( storeDir, migrationDir,
+                    lastTxId, lastTxChecksum, lastTxLogPosition.getLogVersion(), lastTxLogPosition.getByteOffset(),
+                    progressMonitor, oldFormat, newFormat );
         }
 
         if ( versionToMigrateFrom.equals( LowLimitV2_1.STORE_VERSION ) )
         {
-            removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider, oldFormat );
+            removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider, oldFormat, newFormat );
         }
 
         // DO NOT migrate logs. LegacyLogs is able to migrate logs, but only changes its format, not any
         // contents of it, and since the record format has changed there would be a mismatch between the
         // commands in the log and the contents in the store. If log migration is to be performed there
         // must be a proper translation happening while doing so.
-    }
-
-    private void migrateWithDirectMigration( File storeDir, File migrationDir,
-            RecordFormats oldFormat, RecordFormats newFormat, MigrationProgressMonitor.Section progressMonitor )
-    {
-        DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config );
-        StoreType[] stores = stream( StoreType.values() )
-                // Not interested in migrating MetaData store.
-                .filter( type -> type != META_DATA )
-                .toArray( StoreType[]::new );
-        migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, progressMonitor, stores );
     }
 
     private void writeLastTxChecksum( File migrationDir, long lastTxChecksum ) throws IOException
@@ -302,7 +278,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void removeDuplicateEntityProperties( File storeDir, File migrationDir, PageCache pageCache,
-            SchemaIndexProvider schemaIndexProvider, RecordFormats oldFormat ) throws IOException
+            SchemaIndexProvider schemaIndexProvider, RecordFormats oldFormat, RecordFormats newFormat )
+            throws IOException
     {
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.<StoreFile,StoreFile>iterable(
                 StoreFile.PROPERTY_STORE,
@@ -325,15 +302,17 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         // there are no store trailers
         StoreFile.removeTrailers( oldFormat.storeVersion(), fileSystem, migrationDir, pageCache.pageSize() );
 
-        new PropertyDeduplicator( fileSystem, migrationDir, pageCache, schemaIndexProvider ).deduplicateProperties();
+        new PropertyDeduplicator( fileSystem, migrationDir, pageCache, schemaIndexProvider, newFormat )
+                .deduplicateProperties();
     }
 
-    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache )
+    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache,
+            RecordFormats recordFormats )
     {
         final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
         final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance() );
+                new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance(), recordFormats );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
@@ -367,7 +346,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         {
             Configuration importConfig = new Configuration.Overridden( config );
             AdditionalInitialIds additionalInitialIds =
-                    readAdditionalIds( storeDir, lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
+                    readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
 
             // We have to make sure to keep the token ids if we're migrating properties/labels
             BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem,
@@ -440,10 +419,17 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         // that dynamic record store over before doing the "batch import".
         //   Copying this file just as-is assumes that the format hasn't change. If that happens we're in
         // a different situation, where we first need to migrate this file.
+
+        // The token stores also need to be migrated because we use those as-is and ask for their high ids
+        // when using the importer in the store migration scenario.
+        StoreFile[] storesFilesToMigrate = {
+                StoreFile.LABEL_TOKEN_STORE, StoreFile.LABEL_TOKEN_NAMES_STORE,
+                StoreFile.PROPERTY_KEY_TOKEN_STORE, StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
+                StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE, StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
+                StoreFile.NODE_LABEL_STORE};
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
-            Iterable<StoreFile> storeFiles = iterable( StoreFile.NODE_LABEL_STORE );
-            StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, storeFiles,
+            StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Arrays.asList(storesFilesToMigrate),
                     true, // OK if it's not there (1.9)
                     ExistingTargetStrategy.FAIL, StoreFileType.values() );
         }
@@ -466,35 +452,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private AdditionalInitialIds readAdditionalIds( File storeDir, final long lastTxId, final long lastTxChecksum,
+    private AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum,
             final long lastTxLogVersion, final long lastTxLogByteOffset ) throws IOException
     {
-        final int propertyKeyTokenHighId =
-                readHighIdFromIdFileIfExists( storeDir, StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME );
-        final int labelTokenHighId =
-                readHighIdFromIdFileIfExists( storeDir, StoreFactory.LABEL_TOKEN_STORE_NAME );
-        final int relationshipTypeTokenHighId =
-                readHighIdFromIdFileIfExists( storeDir, StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME );
         return new AdditionalInitialIds()
         {
-            @Override
-            public int highRelationshipTypeTokenId()
-            {
-                return relationshipTypeTokenHighId;
-            }
-
-            @Override
-            public int highPropertyKeyTokenId()
-            {
-                return propertyKeyTokenHighId;
-            }
-
-            @Override
-            public int highLabelTokenId()
-            {
-                return labelTokenHighId;
-            }
-
             @Override
             public long lastCommittedTransactionId()
             {
@@ -519,19 +481,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 return lastTxLogByteOffset;
             }
         };
-    }
-
-    private int readHighIdFromIdFileIfExists( File storeDir, String storeName ) throws IOException
-    {
-        String file = StoreFileType.ID.augment( new File( storeDir, DEFAULT_NAME + storeName ).getPath() );
-        try
-        {
-            return (int) IdGeneratorImpl.readHighId( fileSystem, new File( file ) );
-        }
-        catch ( FileNotFoundException e )
-        {
-            return 0;
-        }
     }
 
     private ExecutionMonitor migrationBatchImporterMonitor( NeoStores legacyStore,
@@ -619,8 +568,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
                 StoreFileType.values() );
 
-        RecordFormats oldFormat = InternalRecordFormatSelector.fromVersion( versionToUpgradeFrom );
-        RecordFormats newFormat = InternalRecordFormatSelector.fromVersion( versionToUpgradeTo );
+        RecordFormats oldFormat = fromVersion( versionToUpgradeFrom );
+        RecordFormats newFormat = fromVersion( versionToUpgradeTo );
         boolean movingAwayFromVersionTrailers =
                 oldFormat.hasCapability( VERSION_TRAILERS ) && !newFormat.hasCapability( VERSION_TRAILERS );
 
@@ -647,7 +596,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void rebuildCounts( File storeDir, String versionToMigrateFrom ) throws IOException
+    public void rebuildCounts( File storeDir, String versionToMigrateFrom, String versionToMigrateTo ) throws
+            IOException
     {
         switch ( versionToMigrateFrom )
         {
@@ -660,7 +610,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     countsStoreFiles, true, null, StoreFileType.STORE );
             File neoStore = new File( storeDir, DEFAULT_NAME );
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-            rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
+            rebuildCountsFromScratch( storeDir, lastTxId, pageCache, fromVersion( versionToMigrateTo ) );
             break;
         default:
             // OK, don't rebuild for other versions

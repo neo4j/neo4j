@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -52,6 +54,9 @@ import org.neo4j.logging.Logger;
 
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.loop;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
+import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -124,6 +129,7 @@ public class NeoStores implements AutoCloseable
         this.createIfNotExist = createIfNotExist;
         this.storeDir = neoStoreFileName.getParentFile();
 
+        verifyRecordFormat();
         stores = new Object[StoreType.values().length];
         for ( StoreType type : storeTypes )
         {
@@ -151,6 +157,30 @@ public class NeoStores implements AutoCloseable
         for ( StoreType type : STORE_TYPES )
         {
             closeStore( type );
+        }
+    }
+
+    private void verifyRecordFormat()
+    {
+        try
+        {
+            String expectedStoreVersion = recordFormats.storeVersion();
+            String actualStoreVersion = versionLongToString( getRecord( pageCache, neoStoreFileName, STORE_VERSION ) );
+            if ( !expectedStoreVersion.equals( actualStoreVersion ) )
+            {
+                throw new StoreUpgrader.UnexpectedUpgradingStoreVersionException( neoStoreFileName.getName(),
+                        actualStoreVersion );
+            }
+        }
+        catch ( NoSuchFileException e )
+        {
+            // Occurs when there is no file, which is obviously when creating a store.
+            // Caught as an exception because we want to leave as much interaction with files as possible
+            // to the page cache.
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
     }
 

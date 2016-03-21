@@ -44,7 +44,6 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 public class PropertyEncoderStepTest
@@ -78,7 +77,7 @@ public class PropertyEncoderStepTest
         // GIVEN
         StageControl control = mock( StageControl.class );
         BatchingPropertyKeyTokenRepository tokens =
-                new BatchingPropertyKeyTokenRepository( neoStores.getPropertyKeyTokenStore(), 0 );
+                new BatchingPropertyKeyTokenRepository( neoStores.getPropertyKeyTokenStore() );
         Step<Batch<InputNode,NodeRecord>> step =
                 new PropertyEncoderStep<>( control, DEFAULT, tokens, neoStores.getPropertyStore() );
         @SuppressWarnings( "rawtypes" )
