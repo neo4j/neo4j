@@ -29,14 +29,14 @@ class RowMatcherTest extends ParsingTestSupport {
     val matcher = new RowMatcher(Map.empty[String, ValueMatcher].asJava)
     val actual = Map.empty[String, AnyRef]
 
-    matcher should acceptRow(actual)
+    matcher should accept(actual.asJava)
   }
 
   test("should match a row with one column") {
     val matcher = new RowMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value")).asJava)
     val actual = Map[String, AnyRef]("key" -> "value")
 
-    matcher should acceptRow(actual)
+    matcher should accept(actual.asJava)
   }
 
   test("should match a row with several columns") {
@@ -44,7 +44,7 @@ class RowMatcherTest extends ParsingTestSupport {
       Map[String, ValueMatcher]("key" -> new StringMatcher("value"), "key2" -> new BooleanMatcher(true)).asJava)
     val actual = Map[String, AnyRef]("key" -> "value", "key2" -> TRUE)
 
-    matcher should acceptRow(actual)
+    matcher should accept(actual.asJava)
   }
 
   test("should match a row with nodes and relationships") {
@@ -55,28 +55,28 @@ class RowMatcherTest extends ParsingTestSupport {
 
     val actual = Map[String, AnyRef]("n" -> node(), "r" -> relationship("T", Map("visited" -> TRUE)))
 
-    matcher should acceptRow(actual)
+    matcher should accept(actual.asJava)
   }
 
   test("should not match if different amount of columns") {
     val matcher = new RowMatcher(Map.empty[String, ValueMatcher].asJava)
     val actual = Map[String, AnyRef]("key" -> "value")
 
-    matcher shouldNot acceptRow(actual)
+    matcher shouldNot accept(actual.asJava)
   }
 
   test("should not match if different amount of columns 2") {
     val matcher = new RowMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("")).asJava)
     val actual = Map.empty[String, AnyRef]
 
-    matcher shouldNot acceptRow(actual)
+    matcher shouldNot accept(actual.asJava)
   }
 
   test("should not match if values are different") {
     val matcher = new RowMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value1")).asJava)
     val actual = Map[String, AnyRef]("key" -> "value2")
 
-    matcher shouldNot acceptRow(actual)
+    matcher shouldNot accept(actual.asJava)
   }
 
 }
