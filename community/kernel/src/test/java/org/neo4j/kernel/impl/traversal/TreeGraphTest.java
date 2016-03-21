@@ -37,7 +37,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
 import static org.neo4j.graphdb.traversal.BranchOrderingPolicies.POSTORDER_BREADTH_FIRST;
 import static org.neo4j.graphdb.traversal.BranchOrderingPolicies.POSTORDER_DEPTH_FIRST;
-import static org.neo4j.kernel.Traversal.traversal;
 
 public class TreeGraphTest extends TraversalTestBase
 {

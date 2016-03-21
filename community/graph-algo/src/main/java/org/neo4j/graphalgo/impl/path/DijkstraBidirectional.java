@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterators.firstOrNull;
-import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 
 /**
  * Find (one or all) simple shortest path(s) between two nodes.
@@ -124,7 +123,7 @@ public class DijkstraBidirectional implements PathFinder<WeightedPath>
         TraversalDescription startSide = side;
         TraversalDescription endSide = side.reverse();
 
-        BidirectionalTraversalDescription traversal = bidirectionalTraversal()
+        BidirectionalTraversalDescription traversal = db.bidirectionalTraversalDescription()
                 .startSide( startSide )
                 .endSide( endSide )
                 .collisionEvaluator( Evaluators.all() )

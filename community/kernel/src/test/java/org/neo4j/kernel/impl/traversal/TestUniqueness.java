@@ -38,7 +38,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
-import static org.neo4j.kernel.Traversal.traversal;
 import static org.neo4j.graphdb.traversal.Uniqueness.NODE_GLOBAL;
 import static org.neo4j.graphdb.traversal.Uniqueness.NODE_LEVEL;
 import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_GLOBAL;

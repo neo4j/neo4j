@@ -30,14 +30,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.helpers.collection.Iterables;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
-import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestPath extends TraversalTestBase
 {
@@ -102,7 +100,8 @@ public class TestPath extends TraversalTestBase
     public void testBidirectionalPath() throws Exception
     {
         TraversalDescription side = getGraphDb().traversalDescription().uniqueness( Uniqueness.NODE_PATH );
-        BidirectionalTraversalDescription bidirectional = bidirectionalTraversal().mirroredSides( side );
+        BidirectionalTraversalDescription bidirectional =
+                getGraphDb().bidirectionalTraversalDescription().mirroredSides( side );
         Path bidirectionalPath = Iterables.first( bidirectional.traverse( a, e ) );
         assertPathIsCorrect( bidirectionalPath );
         

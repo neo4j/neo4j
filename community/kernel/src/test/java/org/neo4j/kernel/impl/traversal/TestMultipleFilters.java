@@ -36,7 +36,6 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfAcceptedByAny;
-import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestMultipleFilters extends TraversalTestBase
 {

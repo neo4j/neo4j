@@ -32,7 +32,6 @@ import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 
 /**
  * Tries to find paths in a graph from a start node to an end node where the
@@ -74,7 +73,7 @@ public class ExactDepthPathFinder extends TraversalPathFinder
                         return new LiteDepthFirstSelector( startSource, startThreshold, expander );
                     }
                 } );
-        return bidirectionalTraversal().startSide( side.expand( expander ).evaluator( toDepth( onDepth / 2 ) ) )
+        return db.bidirectionalTraversalDescription().startSide( side.expand( expander ).evaluator( toDepth( onDepth / 2 ) ) )
                 .endSide( side.expand( expander.reverse() ).evaluator( toDepth( onDepth - onDepth / 2 ) ) )
                 .collisionEvaluator( atDepth( onDepth ) )
                 // TODO Level side selector will make the traversal return wrong result, why?

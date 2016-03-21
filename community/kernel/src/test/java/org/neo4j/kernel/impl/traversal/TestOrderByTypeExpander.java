@@ -33,7 +33,6 @@ import static org.junit.Assert.*;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestOrderByTypeExpander extends TraversalTestBase
 {

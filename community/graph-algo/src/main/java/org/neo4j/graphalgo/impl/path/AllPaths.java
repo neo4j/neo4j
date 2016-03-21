@@ -27,7 +27,6 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 
 import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
-import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
 
 public class AllPaths extends TraversalPathFinder
 {
@@ -56,8 +55,7 @@ public class AllPaths extends TraversalPathFinder
         // Bidirectional traversal
         GraphDatabaseService db = start.getGraphDatabase();
         TraversalDescription base = db.traversalDescription().depthFirst().uniqueness( uniqueness() );
-        return bidirectionalTraversal()
-                .startSide( base.expand( expander ).evaluator( toDepth( maxDepth/2 ) ) )
+        return db.bidirectionalTraversalDescription().startSide( base.expand( expander ).evaluator( toDepth( maxDepth/2 ) ) )
                 .endSide( base.expand( expander.reverse() ).evaluator( toDepth( maxDepth-maxDepth/2 ) ) )
                 .traverse( start, end );
     }

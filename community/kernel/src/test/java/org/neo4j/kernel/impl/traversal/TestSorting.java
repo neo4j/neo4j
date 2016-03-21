@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -33,7 +33,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.traversal.Evaluators.excludeStartPosition;
 import static org.neo4j.graphdb.traversal.Sorting.endNodeProperty;
-import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestSorting extends TraversalTestBase
 {

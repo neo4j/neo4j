@@ -59,15 +59,6 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 public class Traversal
 {
     /**
-     * @deprecated See {@link org.neo4j.graphdb.GraphDatabaseService#bidirectionalTraversalDescription}
-     */
-    @Deprecated
-    public static BidirectionalTraversalDescription bidirectionalTraversal()
-    {
-        return new BidirectionalTraversalDescriptionImpl();
-    }
-
-    /**
      * Creates a new {@link PathExpander} which is set to expand
      * relationships with {@code type} and {@code direction}.
      *
