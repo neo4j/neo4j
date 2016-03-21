@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.builtinprocs.ListIndexesProcedure;
 import org.neo4j.server.security.auth.AuthSubject;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -156,7 +157,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
                 equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)"} ),
-                equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, unique :: BOOLEAN?)"} ),
+                equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)"} ),
                 equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)"}),
                 equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)"} ),
                 equalTo( new Object[]{"sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
@@ -248,8 +249,10 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
                 readOperationsInNewTransaction().procedureCallRead( procedureName( "db", "indexes" ), new Object[0] );
 
         // Then
-        assertThat( stream.next(), equalTo( new Object[]{"INDEX ON :Age(foo)", "ONLINE", true} ) );
-        assertThat( stream.next(), equalTo( new Object[]{"INDEX ON :Person(foo)", "ONLINE", false} ) );
+        assertThat( stream.next(), equalTo( new Object[]{"INDEX ON :Age(foo)", "online",
+                ListIndexesProcedure.IndexType.NODE_UNIQUE_PROPERTY.typeName()} ) );
+        assertThat( stream.next(), equalTo( new Object[]{"INDEX ON :Person(foo)", "online",
+                ListIndexesProcedure.IndexType.NODE_LABEL_PROPERTY.typeName()} ) );
     }
 
     @Test

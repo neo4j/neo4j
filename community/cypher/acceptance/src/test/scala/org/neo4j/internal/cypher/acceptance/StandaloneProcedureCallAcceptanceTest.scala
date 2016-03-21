@@ -327,6 +327,6 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
     // Then
     result.toList should equal(
-      List(Map("description" -> "INDEX ON :A(prop)", "state" -> "ONLINE", "unique" -> false)))
+      List(Map("description" -> "INDEX ON :A(prop)", "state" -> "online", "type" -> "node_label_property")))
   }
 }

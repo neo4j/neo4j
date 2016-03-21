@@ -44,12 +44,33 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ListIndexesProcedure extends CallableProcedure.BasicProcedure
 {
+
+    //When we have decided on what to call different indexes
+    //this should probably be moved to some more central place
+    public enum IndexType
+    {
+        NODE_LABEL_PROPERTY( "node_label_property" ),
+        NODE_UNIQUE_PROPERTY( "node_unique_property" );
+
+        private final String typeName;
+
+        IndexType( String typeName )
+        {
+            this.typeName = typeName;
+        }
+
+        public String typeName()
+        {
+            return typeName;
+        }
+    }
+
     protected ListIndexesProcedure(ProcedureName procedureName)
     {
         super( procedureSignature( procedureName )
                 .out( "description", Neo4jTypes.NTString )
                 .out( "state", Neo4jTypes.NTString )
-                .out( "unique", Neo4jTypes.NTBoolean )
+                .out( "type", Neo4jTypes.NTString )
                 .build() );
     }
 
@@ -67,17 +88,21 @@ public class ListIndexesProcedure extends CallableProcedure.BasicProcedure
         indexes.addAll( uniqueIndexes );
         indexes.sort( (a,b) -> a.userDescription(tokens).compareTo( b.userDescription(tokens) ) );
 
-        return format( indexes, statement, tokens, uniqueIndexes::contains );
+        return format( indexes, statement, tokens, (descriptor) -> {
+            if (uniqueIndexes.contains( descriptor )) return IndexType.NODE_UNIQUE_PROPERTY;
+            else return IndexType.NODE_LABEL_PROPERTY;
+        } );
     }
 
     private RawIterator<Object[],ProcedureException> format(List<IndexDescriptor> indexes,
-            Statement statement, TokenNameLookup tokens, Function<IndexDescriptor, Boolean> unqiue)
+            Statement statement, TokenNameLookup tokens, Function<IndexDescriptor, IndexType> type)
     {
         return map( ( index ) -> {
                     try
                     {
                         return new Object[]{"INDEX ON " + index.userDescription( tokens ),
-                                statement.readOperations().indexGetState( index ).toString(), unqiue.apply( index )};
+                                statement.readOperations().indexGetState( index ).toString().toLowerCase(),
+                                type.apply( index ).typeName()};
                     }
                     catch ( IndexNotFoundKernelException e )
                     {
