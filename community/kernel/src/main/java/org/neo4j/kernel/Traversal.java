@@ -20,16 +20,10 @@
 package org.neo4j.kernel;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PathExpander;
-import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.impl.StandardExpander;
 import org.neo4j.graphdb.impl.traversal.ShortestPathsBranchCollisionDetector;
-import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicies;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
@@ -38,9 +32,6 @@ import org.neo4j.graphdb.traversal.SideSelectorPolicies;
 import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.graphdb.traversal.UniquenessFactory;
-import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
-import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 
 /**
  * A factory for objects regarding traversal of the graph. F.ex. it has a
@@ -58,124 +49,6 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 @Deprecated
 public class Traversal
 {
-    /**
-     * Creates a new {@link PathExpander} which is set to expand
-     * relationships with {@code type} and {@code direction}.
-     *
-     * @param type the {@link RelationshipType} to expand.
-     * @param dir the {@link Direction} to expand.
-     * @return a new {@link PathExpander}.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypeAndDirection}
-     */
-    @Deprecated
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type, Direction dir )
-    {
-        return StandardExpander.create( type, dir );
-    }
-
-    /**
-     * Creates a new {@link PathExpander} which is set to expand
-     * relationships with {@code type} in any direction.
-     *
-     * @param type the {@link RelationshipType} to expand.
-     * @return a new {@link PathExpander}.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forType}
-     */
-    @Deprecated
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type )
-    {
-        return StandardExpander.create( type, Direction.BOTH );
-    }
-
-    /**
-     * Returns an empty {@link PathExpander} which, if not modified, will expand
-     * all relationships when asked to expand a {@link Node}. Criteria
-     * can be added to narrow the {@link Expansion}.
-     * @return an empty {@link PathExpander} which, if not modified, will expand
-     * all relationship for {@link Path}s.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#allTypesAndDirections}
-     */
-    @Deprecated
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> emptyPathExpander()
-    {
-        return StandardExpander.DEFAULT; // TODO: should this be a PROPER empty?
-    }
-
-    /**
-     * Creates a new {@link PathExpander} which is set to expand
-     * relationships with two different types and directions.
-     *
-     * @param type1 a {@link RelationshipType} to expand.
-     * @param dir1 a {@link Direction} to expand.
-     * @param type2 another {@link RelationshipType} to expand.
-     * @param dir2 another {@link Direction} to expand.
-     * @return a new {@link PathExpander}.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypesAndDirections}
-     */
-    @Deprecated
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type1,
-            Direction dir1, RelationshipType type2, Direction dir2 )
-    {
-        return StandardExpander.create( type1, dir1, type2, dir2 );
-    }
-
-    /**
-     * Creates a new {@link PathExpander} which is set to expand
-     * relationships with multiple types and directions.
-     *
-     * @param type1 a {@link RelationshipType} to expand.
-     * @param dir1 a {@link Direction} to expand.
-     * @param type2 another {@link RelationshipType} to expand.
-     * @param dir2 another {@link Direction} to expand.
-     * @param more additional pairs or type/direction to expand.
-     * @return a new {@link PathExpander}.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forTypesAndDirections}
-     */
-    @Deprecated
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> pathExpanderForTypes( RelationshipType type1,
-            Direction dir1, RelationshipType type2, Direction dir2,
-            Object... more )
-    {
-        return StandardExpander.create( type1, dir1, type2, dir2, more );
-    }
-
-    /**
-     * Returns a {@link RelationshipExpander} which expands relationships
-     * of all types and directions.
-     * @return a relationship expander which expands all relationships.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#allTypesAndDirections}
-     */
-    @Deprecated
-    public static <STATE> PathExpander<STATE> pathExpanderForAllTypes()
-    {
-        return PathExpanders.allTypesAndDirections();
-    }
-
-    /**
-     * Returns a {@link PathExpander} which expands relationships
-     * of all types in the given {@code direction}.
-     * @return a path expander which expands all relationships in
-     * the given {@code direction}.
-     *
-     * @deprecated See {@link org.neo4j.graphdb.PathExpanders#forDirection}
-     */
-    @Deprecated
-    @SuppressWarnings( "unchecked" )
-    public static <STATE> PathExpander<STATE> pathExpanderForAllTypes( Direction direction )
-    {
-        return StandardExpander.create( direction );
-    }
 
     /**
      * Returns a "preorder depth first" ordering policy. A depth first selector

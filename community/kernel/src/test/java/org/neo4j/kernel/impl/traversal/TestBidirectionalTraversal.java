@@ -45,7 +45,6 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.Traversal;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -93,7 +92,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
          */
         createGraph( "a TO b", "b TO c", "c TO d", "d TO e", "e TO f", "f TO a" );
 
-        PathExpander<Void> expander = Traversal.pathExpanderForTypes( to, OUTGOING );
+        PathExpander<Void> expander = PathExpanders.forTypeAndDirection( to, OUTGOING );
         expectPaths( getGraphDb().bidirectionalTraversalDescription()
                 .mirroredSides( getGraphDb().traversalDescription().uniqueness( NODE_PATH ).expand( expander ) )
                 .traverse( getNodeWithName( "a" ), getNodeWithName( "f" ) ), "a,b,c,d,e,f" );
