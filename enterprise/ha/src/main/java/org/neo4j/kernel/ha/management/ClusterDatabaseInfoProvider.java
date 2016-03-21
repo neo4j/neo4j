@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.ha.management;
 
-import org.neo4j.function.Functions;
+import java.util.function.Function;
+
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.LastUpdateTime;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
@@ -50,10 +51,12 @@ public class ClusterDatabaseInfoProvider
             return null;
         }
 
+        Function<Object,String> nullSafeToString = from -> from == null ? "" : from.toString();
+
         return new ClusterDatabaseInfo( new ClusterMemberInfo( currentMember.getInstanceId().toString(),
                 currentMember.getHAUri() != null, true, currentMember.getHARole(),
-                Iterables.asArray(String.class, Iterables.map( Functions.TO_STRING, currentMember.getRoleURIs() ) ),
-                Iterables.asArray(String.class, Iterables.map( Functions.TO_STRING, currentMember.getRoles() ) ) ),
+                Iterables.asArray(String.class, Iterables.map( nullSafeToString, currentMember.getRoleURIs() ) ),
+                Iterables.asArray(String.class, Iterables.map( nullSafeToString, currentMember.getRoles() ) ) ),
                 txIdGetter.getLastTxId(), lastUpdateTime.getLastUpdateTime() );
     }
 }

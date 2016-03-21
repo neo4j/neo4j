@@ -58,15 +58,4 @@ public final class Functions
                         function1.apply( function2.apply( from1, from2 ), from2 );
     }
 
-    public static Function<Object,String> TO_STRING = from -> {
-        if ( from != null )
-        {
-            return from.toString();
-        }
-        else
-        {
-            return "";
-        }
-    };
-
 }
