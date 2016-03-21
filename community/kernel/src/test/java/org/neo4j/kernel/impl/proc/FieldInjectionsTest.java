@@ -100,6 +100,27 @@ public class FieldInjectionsTest
         assertEquals( 1337, childProcedure.parentField );
     }
 
+    @Test
+    public void syntheticsAllowed() throws Throwable
+    {
+        // Given
+        ComponentRegistry components = new ComponentRegistry();
+        components.register( int.class, (ctx) -> 1337 );
+        FieldInjections injections = new FieldInjections( components );
+
+        // When
+        List<FieldInjections.FieldSetter> setters = injections.setters( Outer.ClassWithSyntheticField.class );
+
+        // Then
+        Outer.ClassWithSyntheticField syntheticField = new Outer().classWithSyntheticField();
+        for ( FieldInjections.FieldSetter setter : setters )
+        {
+            setter.apply( null, syntheticField );
+        }
+
+        assertEquals( 1337, syntheticField.innerField );
+    }
+
     public static class ProcedureWithNonInjectedMemberFields
     {
         public boolean someState = false;
@@ -126,5 +147,26 @@ public class FieldInjectionsTest
     {
         @Context
         public int childField;
+    }
+
+    //The outer class is just here to force a synthetic field in the inner class.
+    //This is not a realistic scenario but we merely want to make sure the loader
+    //does not choke on synthetic fields since compilers, e.g. groovy, can generate
+    //these.
+    public static class Outer
+    {
+        ClassWithSyntheticField classWithSyntheticField()
+        {
+            return new ClassWithSyntheticField();
+        }
+
+        public class ClassWithSyntheticField
+        {
+            //this class will have a generated field:
+            //synthetic Outer this$0;
+
+            @Context
+            public int innerField;
+        }
     }
 }

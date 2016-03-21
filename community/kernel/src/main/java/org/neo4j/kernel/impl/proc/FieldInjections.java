@@ -89,6 +89,11 @@ public class FieldInjections
         {
             for ( Field field : currentClass.getDeclaredFields() )
             {
+                //ignore synthetic fields
+                if (field.isSynthetic())
+                {
+                    continue;
+                }
                 if ( Modifier.isStatic( field.getModifiers() ) )
                 {
                     if( field.isAnnotationPresent( Context.class ))
