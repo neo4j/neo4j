@@ -21,8 +21,12 @@ package org.neo4j.collection.primitive.hopscotch;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -1267,5 +1271,62 @@ public class PrimitiveLongMapTest
 
         // THEN
         assertThat( counter.get(), is( 3 ) );
+    }
+
+    @Test
+    public void recursivePutGrowInterleavingShouldNotDropOriginalValues()
+    {
+        // List of values which causes calls to put() call grow(), which will call put() which calls grow() again
+        List<Long> lst = Arrays.asList(
+                44988L, 44868L, 44271L, 44399L, 44502L, 44655L, 44348L, 44843L,
+                44254L, 44774L, 44476L, 44664L, 44485L, 44237L, 44953L, 44468L,
+                44970L, 44808L, 44527L, 44987L, 44672L, 44647L, 44467L, 44825L,
+                44740L, 44220L, 44851L, 44902L, 44791L, 44416L, 44365L, 44382L,
+                44885L, 44510L, 44553L, 44894L, 44288L, 44306L, 44450L, 44689L,
+                44305L, 44374L, 44323L, 44493L, 44706L, 44681L, 44578L, 44723L,
+                44331L, 44936L, 44289L, 44919L, 44433L, 44826L, 44757L, 44561L,
+                44595L, 44612L, 44996L, 44646L, 44834L, 44314L, 44544L, 44629L,
+                44357L // <-- this value will cause a grow, which during new table population will cause another grow.
+        );
+
+        verifyMapRetainsAllEntries( lst );
+    }
+
+    @Test
+    public void recursivePutGrowInterleavingShouldNotDropOriginalValuesEvenWhenFirstGrowAddsMoreValuesAfterSecondGrow()
+            throws Exception
+    {
+        // List of values that cause recursive growth like above, but this time the first grow wants to add more values
+        // to the table *after* the second grow has occurred.
+        List<Long> lst = Arrays.asList(
+                85380L, 85124L, 85252L, 85259L, 85005L, 85260L, 85132L, 85141L,
+                85397L, 85013L, 85269L, 85277L, 85149L, 85404L, 85022L, 85150L,
+                85029L, 85414L, 85158L, 85286L, 85421L, 85039L, 85167L, 85294L,
+                85166L, 85431L, 85303L, 85046L, 85311L, 85439L, 85438L, 85184L,
+                85056L, 85063L, 85320L, 85448L, 85201L, 85073L, 85329L, 85456L,
+                85328L, 85337L, 85081L, 85465L, 85080L, 85208L, 85473L, 85218L,
+                85346L, 85090L, 85097L, 85225L, 85354L, 85098L, 85482L, 85235L,
+                85363L, 85107L, 85490L, 85115L, 85499L, 85242L, 85175L, 85371L,
+                85192L // <-- this value will cause a grow, which during new table population will cause another grow.
+        );
+
+        verifyMapRetainsAllEntries( lst );
+    }
+
+    private void verifyMapRetainsAllEntries( List<Long> lst )
+    {
+        PrimitiveLongIntMap map = Primitive.longIntMap();
+        Set<Long> set = new HashSet<>();
+        for ( Long value : lst )
+        {
+            assertThat( map.put( value, 1 ), is( -1 ) );
+            assertTrue( set.add( value ) );
+        }
+
+        assertThat( map.size(), is( set.size() ) );
+        for ( Long aLong : set )
+        {
+            assertThat( map.get( aLong ), is( 1 ) );
+        }
     }
 }
