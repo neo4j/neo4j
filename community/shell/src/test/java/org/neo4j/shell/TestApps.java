@@ -1135,6 +1135,12 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
+    public void allowsCypherToContainExclamationMarks() throws Exception
+    {
+        executeCommand( "RETURN \"a\"+\"!b\";", "a!b" );
+    }
+
+    @Test
     public void shouldAllowQueriesToStartWithOptionalMatch() throws Exception
     {
         executeCommand( "OPTIONAL MATCH (n) RETURN n;" );
