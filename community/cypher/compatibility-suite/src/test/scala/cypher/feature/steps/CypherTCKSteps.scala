@@ -101,10 +101,9 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN wi
             case Failure(e: QueryExecutionException) =>
               s"Neo.ClientError.Statement.$status" should equal(e.getStatusCode)
 
-              if (e.getMessage == "Expected 0 to be a java.lang.String, but it was a java.lang.Long") detail should equal("MapElementAccessByNonString")
-              else if (e.getMessage == "Expected name to be a java.lang.Number, but it was a java.lang.String") detail should equal("ListElementAccessByNonInteger")
-              else if (e.getMessage == "Expected [Apa] to be a java.lang.Number, but it was a java.util.LinkedList") detail should equal("ListElementAccessByNonInteger")
-              else if (e.getMessage == "Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key (found: 1[12.3])") detail should equal("InvalidElementAccess")
+              if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+")) detail should equal("MapElementAccessByNonString")
+              else if (e.getMessage.matches("Expected .+ to be a java.lang.Number, but it was a .+")) detail should equal("ListElementAccessByNonInteger")
+              else if (e.getMessage.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+")) detail should equal("InvalidElementAccess")
               else fail(s"Unknown runtime error: $e")
 
             case Failure(e) =>
