@@ -31,7 +31,6 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.function.Functions.withDefaults;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -70,7 +69,7 @@ public class GraphDatabaseBuilder
         {
             // Test if we can get this setting with an updated config
             Map<String, String> testValue = stringMap( setting.name(), value );
-            setting.apply( withDefaults( config::get, testValue::get ) );
+            setting.apply( key -> testValue.containsKey( key ) ? testValue.get( key ) : config.get( key ) );
 
             // No exception thrown, add it to existing config
             config.put( setting.name(), value );
