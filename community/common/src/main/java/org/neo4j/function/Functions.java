@@ -70,24 +70,6 @@ public final class Functions
         }
     };
 
-    public static <FROM, TO> Function<FROM,TO> cast( final Class<TO> to )
-    {
-        return new Function<FROM,TO>()
-        {
-            @Override
-            public TO apply( FROM from )
-            {
-                return to.cast( from );
-            }
-
-            @Override
-            public String toString()
-            {
-                return "cast(to=" + to.getName() + ")";
-            }
-        };
-    }
-
     public static <T> Function<T,Void> fromConsumer( final Consumer<T> consumer )
     {
         return t -> {

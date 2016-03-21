@@ -45,8 +45,6 @@ import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule.Kind;
 
-import static org.neo4j.function.Functions.cast;
-
 public class SchemaStorage implements SchemaRuleAccess
 {
     public enum IndexRuleKind implements Predicate<SchemaRule.Kind>
@@ -320,5 +318,23 @@ public class SchemaStorage implements SchemaRuleAccess
             throw new DuplicateEntitySchemaRuleException( EntityType.RELATIONSHIP, relationshipTypeId, propertyKeyId );
         }
         return rule;
+    }
+
+    private static <FROM, TO> Function<FROM,TO> cast( final Class<TO> to )
+    {
+        return new Function<FROM,TO>()
+        {
+            @Override
+            public TO apply( FROM from )
+            {
+                return to.cast( from );
+            }
+
+            @Override
+            public String toString()
+            {
+                return "cast(to=" + to.getName() + ")";
+            }
+        };
     }
 }
