@@ -36,7 +36,7 @@ class AvgFunction(val value: Expression)
   def name = "AVG"
 
   private var count: Long = 0L
-  private var sum: OverflowAwareSum[_] = OverflowAwareSum(0)
+  private var sum: OverflowAwareSum[_] = OverflowAwareSum(0L)
 
   def result =
     if (count > 0) {

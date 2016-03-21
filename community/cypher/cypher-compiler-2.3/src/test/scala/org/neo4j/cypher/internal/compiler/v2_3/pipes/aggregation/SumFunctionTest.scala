@@ -58,7 +58,7 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn()
 
     result should equal(0)
-    result shouldBe a [java.lang.Integer]
+    result shouldBe a [java.lang.Long]
   }
 
   test("nullDoesNotChangeTheSum") {
@@ -84,6 +84,6 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(thirdOfMaxInt, thirdOfMaxInt)
     val expected = thirdOfMaxInt + thirdOfMaxInt
     result should equal(expected)
-    result shouldBe a [java.lang.Integer]
+    result shouldBe a [java.lang.Long]
   }
 }
