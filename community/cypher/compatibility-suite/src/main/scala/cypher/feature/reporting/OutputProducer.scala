@@ -19,7 +19,7 @@
  */
 package cypher.feature.reporting
 
-import org.neo4j.cypher.internal.compiler.v3_1.ast.QueryTagger
+import org.neo4j.cypher.internal.compiler.v3_1.ast.{QueryTagger, QueryTags}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.ListMap
@@ -57,9 +57,11 @@ class JsonProducer(tagger: QueryTagger[String]) extends OutputProducer {
             inner + ((tag, inner.getOrElse(tag, Int.box(0)) + 1))
         }
     }
-    println(tagCounts)
+    val withZeros = QueryTags.all.foldLeft(tagCounts) {
+      case (map, tag) => if (map.contains(tag.name)) map else map + ((tag.name, 0))
+    }
 
-    sortByValue(tagCounts).asJava
+    sortByValue(withZeros).asJava
   }
 
   private def sortByValue(map: Map[String, Integer]) = ListMap(map.toList.sortBy(_._2): _*)
