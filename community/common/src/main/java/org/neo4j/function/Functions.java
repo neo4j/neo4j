@@ -47,14 +47,6 @@ public final class Functions
         };
     }
 
-    private static Function IDENTITY = value -> value;
-
-    @SuppressWarnings( "unchecked" )
-    public static <T> Function<T,T> identity()
-    {
-        return IDENTITY;
-    }
-
     public static <From, From2, To> BiFunction<? super Function<From,From2>,? super Function<From2,To>,Function<From,To>> compose()
     {
         return ( f1, f2 ) -> (Function<From,To>) from -> f2.apply( f1.apply( from ) );

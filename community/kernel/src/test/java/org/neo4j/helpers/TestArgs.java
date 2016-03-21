@@ -29,7 +29,6 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import org.neo4j.function.Functions;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validator;
@@ -215,7 +214,7 @@ public class TestArgs
 
         // WHEN
         Collection<Option<String>> options = args.interpretOptionsWithMetadata( "my-option",
-                Converters.<String>mandatory(), Functions.<String>identity() );
+                Converters.<String>mandatory(), value -> value );
 
         // THEN
         assertEquals( 2, options.size() );
@@ -335,7 +334,7 @@ public class TestArgs
 
         // When
         Collection<String> interpreted = args.interpretOptions( "something", Converters.<String>optional(),
-                Functions.<String>identity() );
+                value -> value );
 
         // Then
         assertTrue( interpreted.isEmpty() );
