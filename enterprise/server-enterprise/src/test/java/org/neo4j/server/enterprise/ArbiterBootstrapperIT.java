@@ -52,7 +52,8 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.ServerCommandLineArgs;
+import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.enterprise.functional.DumpPortListenerOnNettyBindFailure;
 import org.neo4j.test.InputStreamAwaiter;
 import org.neo4j.test.ProcessStreamHandler;
@@ -177,23 +178,23 @@ public class ArbiterBootstrapperIT
         life.shutdown();
     }
 
-    private File configFile( Map<String, String> config ) throws IOException
+    private File writeConfig( Map<String, String> config ) throws IOException
     {
-        File configFile = new File( directory, "config-file" );
+        File configFile = new File( directory, ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
         store( config, configFile );
-        return configFile;
+        return directory;
     }
 
     private void startAndAssertJoined( Integer expectedAssignedPort, Map<String, String> config ) throws Exception
     {
         Map<String, String> localCopy = new HashMap<>( config );
         localCopy.put( GraphDatabaseSettings.auth_store.name(), Files.createTempFile( "auth", "" ).toString() );
-        File configFile = configFile( localCopy );
+        File configDir = writeConfig( localCopy );
         CountDownLatch latch = new CountDownLatch( 1 );
         AtomicInteger port = new AtomicInteger();
         clients[0].addClusterListener( joinAwaitingListener( latch, port ) );
 
-        boolean arbiterStarted = startArbiter( configFile, latch );
+        boolean arbiterStarted = startArbiter( configDir, latch );
         if ( expectedAssignedPort == null )
         {
             assertFalse( format( "Should not be able to start arbiter given config file:%s", config ), arbiterStarted );
@@ -219,13 +220,13 @@ public class ArbiterBootstrapperIT
         };
     }
 
-    private boolean startArbiter( File configFile, CountDownLatch latch ) throws Exception
+    private boolean startArbiter( File configDir, CountDownLatch latch ) throws Exception
     {
         Process process = null;
         ProcessStreamHandler handler = null;
         try
         {
-            process = startArbiterProcess( configFile );
+            process = startArbiterProcess( configDir );
             new InputStreamAwaiter( process.getInputStream() ).awaitLine( START_SIGNAL, 20, SECONDS );
             handler = new ProcessStreamHandler( process, false, "", IGNORE_FAILURES );
             handler.launch();
@@ -258,14 +259,14 @@ public class ArbiterBootstrapperIT
         }
     }
 
-    private Process startArbiterProcess( File configFile ) throws Exception
+    private Process startArbiterProcess( File configDir ) throws Exception
     {
         List<String> args = new ArrayList<>( asList( "java", "-cp", getProperty( "java.class.path" ) ) );
-        if ( configFile != null )
-        {
-            args.add( "-D" + ServerSettings.SERVER_CONFIG_FILE_KEY + "=" + configFile.getAbsolutePath() );
-        }
         args.add( ArbiterBootstrapperTestProxy.class.getName() );
+        if ( configDir != null )
+        {
+            args.add( format( "--%s=%s", ServerCommandLineArgs.CONFIG_DIR_ARG, configDir ) );
+        }
         return getRuntime().exec( args.toArray( new String[args.size()] ) );
     }
 

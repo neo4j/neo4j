@@ -41,9 +41,6 @@ import org.neo4j.server.logging.JettyLogBridge;
 
 import static java.lang.String.format;
 
-import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE;
-import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE_KEY;
-
 public abstract class ServerBootstrapper implements Bootstrapper
 {
     public static final int OK = 0;
@@ -154,8 +151,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
     private Config createConfig( Log log, File file, Pair<String, String>[] configOverrides ) throws IOException
     {
-        File standardConfigFile = new File( System.getProperty( SERVER_CONFIG_FILE_KEY, SERVER_CONFIG_FILE ) );
-        return new ConfigLoader( this::settingsClasses ).loadConfig( file, standardConfigFile, log, configOverrides );
+        return new ConfigLoader( this::settingsClasses ).loadConfig( file, log, configOverrides );
     }
 
     private void addShutdownHook()

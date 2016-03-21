@@ -103,7 +103,7 @@ public class CommunityServerBuilder
         final File configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses ).loadConfig( null, configFile, log );
+        Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses ).loadConfig( configFile, log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
     }

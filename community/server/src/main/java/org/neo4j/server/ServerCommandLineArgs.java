@@ -41,7 +41,7 @@ import static org.neo4j.helpers.collection.Pair.pair;
  */
 public class ServerCommandLineArgs
 {
-    private static final String CONFIG_DIR_ARG = "config-dir";
+    public static final String CONFIG_DIR_ARG = "config-dir";
     private final Args args;
     private final Pair<String, String>[] configOverrides;
 

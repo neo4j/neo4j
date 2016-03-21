@@ -195,12 +195,9 @@
         <configuration>
           <mainClass>${neo4j-server.mainClass}</mainClass>
           <classpathScope>test</classpathScope>
-          <systemProperties>
-            <systemProperty>
-              <key>org.neo4j.config.file</key>
-              <value>${basedir}/neo4j-home/conf/neo4j.conf</value>
-            </systemProperty>
-          </systemProperties>
+          <arguments>
+            <argument>--config-dir=${basedir}/neo4j-home/conf</argument>
+          </arguments>
         </configuration>
       </plugin>
 

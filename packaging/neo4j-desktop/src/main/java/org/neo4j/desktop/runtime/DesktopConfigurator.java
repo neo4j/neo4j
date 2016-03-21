@@ -54,12 +54,7 @@ public class DesktopConfigurator
     public void refresh()
     {
         config = new ConfigLoader( CommunityBootstrapper.settingsClasses).loadConfig(
-                /** Future single file, neo4j.conf or similar */
-                null,
-
-                /** Server config file */
                 installation.getConfigurationsFile(),
-
                 FormattedLog.toOutputStream( System.out ),
 
                 /** Desktop-specific config overrides */

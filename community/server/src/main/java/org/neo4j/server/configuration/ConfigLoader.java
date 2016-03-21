@@ -50,28 +50,26 @@ public class ConfigLoader
         this( settings -> settingsClasses );
     }
 
-    public Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String, String>... configOverrides )
+    public Config loadConfig( File configFile, Log log, Pair<String, String>... configOverrides )
     {
         if ( log == null )
         {
             throw new IllegalArgumentException( "log cannot be null " );
         }
 
-        HashMap<String, String> settings = calculateSettings( configFile, legacyConfigFile, log, configOverrides );
+        HashMap<String, String> settings = calculateSettings( configFile, log, configOverrides );
         Config config = new Config( settings, settingsClasses.calculate( settings ) );
         config.setLogger( log );
         return config;
     }
 
-    private HashMap<String, String> calculateSettings( File configFile, File legacyConfigFile, Log log,
-                                                       Pair<String, String>[] configOverrides )
+    private HashMap<String, String> calculateSettings( File config, Log log, Pair<String, String>[] configOverrides )
     {
         HashMap<String, String> settings = new HashMap<>();
-        if ( configFile != null && configFile.exists() )
+        if ( config != null && config.exists() )
         {
-            settings.putAll( loadFromFile( log, configFile ) );
+            settings.putAll( loadFromFile( log, config ) );
         }
-        settings.putAll( loadFromFile( log, legacyConfigFile ) );
         settings.putAll( toMap( configOverrides ) );
         overrideEmbeddedDefaults( settings );
         return settings;

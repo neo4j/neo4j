@@ -62,7 +62,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config config = configLoader.loadConfig( null, configFile, log );
+        Config config = configLoader.loadConfig( configFile, log );
 
         // then
         assertNotNull( config );
@@ -77,7 +77,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config testConf = configLoader.loadConfig( null, configFile, log );
+        Config testConf = configLoader.loadConfig( configFile, log );
 
         // then
         final String EXPECTED_VALUE = "bar";
@@ -94,7 +94,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config testConf = configLoader.loadConfig( null, configFile, log );
+        Config testConf = configLoader.loadConfig( configFile, log );
 
         // then
         assertNotNull( testConf );
@@ -119,7 +119,7 @@ public class ConfigLoaderTest
         }
 
         // when
-        Config config = configLoader.loadConfig( null, file, log );
+        Config config = configLoader.loadConfig( file, log );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -138,7 +138,7 @@ public class ConfigLoaderTest
                 .build();
 
         // when
-        Config config = configLoader.loadConfig( null, configFile, log );
+        Config config = configLoader.loadConfig( configFile, log );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -157,7 +157,7 @@ public class ConfigLoaderTest
         File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );
 
         // When
-        Config config = configLoader.loadConfig( null, nonExistentConfigFile, log );
+        Config config = configLoader.loadConfig( nonExistentConfigFile, log );
 
         // Then
         assertNotNull( config );
