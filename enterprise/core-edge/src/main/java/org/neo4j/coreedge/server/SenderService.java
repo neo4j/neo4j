@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.server;
 
-import org.neo4j.coreedge.network.Message;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -34,6 +33,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
+import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.net.NonBlockingChannel;
 import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.net.monitoring.MessageQueueMonitor;
@@ -49,7 +49,7 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress>
 {
     private final Expiration expiration;
-    private final ConcurrentHashMap<AdvertisedSocketAddress,TimestampedNonBlockingChannel> lazyChannelMap =
+    private final ConcurrentHashMap<AdvertisedSocketAddress, TimestampedNonBlockingChannel> lazyChannelMap =
             new ConcurrentHashMap<>();
     private final ExpiryScheduler scheduler;
     private final ChannelInitializer<SocketChannel> channelInitializer;
@@ -68,7 +68,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                           ChannelInitializer<SocketChannel> channelInitializer,
                           LogProvider logProvider,
                           Monitors monitors,
-                          int maxQueueSize)
+                          int maxQueueSize )
     {
         this.expiration = expiration;
         this.scheduler = expiryScheduler;
@@ -92,7 +92,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
             MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
             TimestampedNonBlockingChannel lazyChannel = getAndUpdateLife( to, monitor );
             NonBlockingChannel nonBlockingChannel = lazyChannel.get();
-            monitor.register(to.socketAddress());
+            monitor.register( to.socketAddress() );
             for ( Object msg : messages )
             {
                 nonBlockingChannel.send( msg );
@@ -209,6 +209,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
             {
                 if ( timestampedChannel.getEndOfLife().expired() )
                 {
+                    System.out.println("Reaping the channel: " + timestampedChannel);
                     timestampedChannel.get().dispose();
                     itr.remove();
                 }

@@ -19,15 +19,15 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.core;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.stream.ChunkedNioStream;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.function.Supplier;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.stream.ChunkedNioStream;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
@@ -60,7 +60,8 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, GetStoreRequest msg ) throws Exception
     {
-        long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint(new SimpleTriggerInfo("Store copy"));
+        System.out.println( "sending store files..." );
+        long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) );
         sendFiles( ctx );
         endStoreCopy( ctx, lastCheckPointedTx );
         protocol.expect( NextMessage.MESSAGE_TYPE );

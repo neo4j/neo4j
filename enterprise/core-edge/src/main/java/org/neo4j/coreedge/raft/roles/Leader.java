@@ -116,34 +116,34 @@ public class Leader implements RaftMessageHandler
 
             case APPEND_ENTRIES_RESPONSE:
             {
-                RaftMessages.AppendEntries.Response<MEMBER> res = (RaftMessages.AppendEntries.Response<MEMBER>) message;
+                RaftMessages.AppendEntries.Response<MEMBER> response = (RaftMessages.AppendEntries.Response<MEMBER>) message;
 
-                if ( res.term() < ctx.term() )
+                if ( response.term() < ctx.term() )
                 {
                     /* Ignore responses from old terms! */
                     break;
                 }
-                else if ( res.term() > ctx.term() )
+                else if ( response.term() > ctx.term() )
                 {
-                    outcome.setNextTerm( res.term() );
+                    outcome.setNextTerm( response.term() );
                     outcome.steppingDown();
                     outcome.setNextRole( FOLLOWER );
                     outcome.replaceFollowerStates( new FollowerStates<>() );
                     break;
                 }
 
-                FollowerState follower = ctx.followerStates().get( res.from() );
+                FollowerState follower = ctx.followerStates().get( response.from() );
 
-                if ( res.success() )
+                if ( response.success() )
                 {
-                    assert res.matchIndex() <= ctx.entryLog().appendIndex();
+                    assert response.matchIndex() <= ctx.entryLog().appendIndex();
 
-                    boolean followerProgressed = res.matchIndex() > follower.getMatchIndex();
+                    boolean followerProgressed = response.matchIndex() > follower.getMatchIndex();
 
-                    outcome.replaceFollowerStates( outcome.getFollowerStates().onSuccessResponse( res.from(),
-                            max( res.matchIndex(), follower.getMatchIndex() ) ) );
+                    outcome.replaceFollowerStates( outcome.getFollowerStates().onSuccessResponse( response.from(),
+                            max( response.matchIndex(), follower.getMatchIndex() ) ) );
 
-                    outcome.addShipCommand( new ShipCommand.Match( res.matchIndex(), res.from() ) );
+                    outcome.addShipCommand( new ShipCommand.Match( response.matchIndex(), response.from() ) );
 
                     /*
                      * Matches from older terms can in complicated leadership change / log truncation scenarios
@@ -152,7 +152,7 @@ public class Leader implements RaftMessageHandler
                      * and are ready for commit.
                      * This is explained nicely in Figure 3.7 of the thesis
                      */
-                    boolean matchInCurrentTerm = ctx.entryLog().readEntryTerm( res.matchIndex() ) == ctx.term();
+                    boolean matchInCurrentTerm = ctx.entryLog().readEntryTerm( response.matchIndex() ) == ctx.term();
 
                     /*
                      * The quorum situation may have changed only if the follower actually progressed.
@@ -173,16 +173,17 @@ public class Leader implements RaftMessageHandler
                 }
                 else // Response indicated failure.
                 {
-                    if( res.appendIndex() >= ctx.entryLog().prevIndex() )
+                    if( response.appendIndex() >= ctx.entryLog().prevIndex() )
                     {
                         // Signal a mismatch to the log shipper, which will serve an earlier entry.
-                        outcome.addShipCommand( new ShipCommand.Mismatch( res.appendIndex(), res.from() ) );
+                        outcome.addShipCommand( new ShipCommand.Mismatch( response.appendIndex(), response.from() ) );
                     }
                     else
                     {
+                    System.out.println("WOULD LIKE TO BE IN HERE");
                         // There are no earlier entries, message the follower that we have compacted so that
                         // it can take appropriate action.
-                        outcome.addOutgoingMessage( new RaftMessages.Directed<>( res.from(),
+                        outcome.addOutgoingMessage( new RaftMessages.Directed<>( response.from(),
                                 new RaftMessages.LogCompactionInfo<>( ctx.myself(), ctx.term(), ctx.entryLog().prevIndex() ) ) );
                     }
                 }

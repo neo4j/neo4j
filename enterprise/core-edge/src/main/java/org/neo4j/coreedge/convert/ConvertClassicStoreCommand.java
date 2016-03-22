@@ -26,14 +26,12 @@ import org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding;
 import org.neo4j.coreedge.raft.state.DurableStateStorageImporter;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -77,11 +75,11 @@ public class ConvertClassicStoreCommand
 
     public void execute() throws Throwable
     {
-        appendNullTransactionLogEntry( databaseDir );
+        appendNullTransactionLogEntryToSetRaftIndexToMinusOne( databaseDir );
         addIdAllocationState( databaseDir );
     }
 
-    private void appendNullTransactionLogEntry( File dbDir) throws TransactionFailureException
+    private void appendNullTransactionLogEntryToSetRaftIndexToMinusOne( File dbDir) throws TransactionFailureException
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( dbDir );
 
