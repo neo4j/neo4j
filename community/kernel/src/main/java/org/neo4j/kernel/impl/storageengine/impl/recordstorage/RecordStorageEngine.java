@@ -375,7 +375,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 appliers.toArray( new BatchTransactionApplier[appliers.size()] ) );
     }
 
-    @Override
     public void satisfyDependencies( DependencySatisfier satisfier )
     {
         satisfier.satisfyDependency( legacyIndexApplierLookup );
