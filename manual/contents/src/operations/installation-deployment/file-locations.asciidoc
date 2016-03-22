@@ -5,12 +5,12 @@ This table shows where important files can be found by default in various Neo4j 
 
 [options="header"]
 |===
-|Package               |Configuration                                  |Data                                |Logs                                     |Metrics                                     |Import                                     |Bin
-|Linux or OS X tarball |_<neo4j-root>/conf/neo4j.conf_                 |_<neo4j-root>/data_                 |_<neo4j-root>/logs_                      |_<neo4j-root>/metrics_                      |_<neo4j-root>/import_                      |_<neo4j-root>/bin_
-|Windows zip           |_<neo4j-root>\conf\neo4j.conf_                 |_<neo4j-root>\data_                 |_<neo4j-root>\logs_                      |_<neo4j-root>\metrics_                      |_<neo4j-root>\import_                      |_<neo4j-root>\bin_
-|Debian/Ubuntu .deb    |_/etc/neo4j/neo4j.conf_                        |_/var/lib/neo4j/data_               |_/var/log/neo4j_                         |_/var/lib/neo4j/metrics_                    |_/var/lib/neo4j/import_                    |_/var/lib/neo4j/bin_
-|Windows desktop       |_%APPDATA%\Neo4j Community Edition\neo4j.conf_ |_%APPDATA%\Neo4j Community Edition_ |_%APPDATA%\Neo4j Community Edition\logs_ |_%APPDATA%\Neo4j Community Edition\metrics_ |_%APPDATA%\Neo4j Community Edition\import_ |_%ProgramFiles%\Neo4j CE {neo4j-version}\bin_
-|OS X desktop          |_$\{HOME\}/Documents/Neo4j/neo4j.conf_         |_$\{HOME\}/Documents/Neo4j_         |_$\{HOME\}/Documents/Neo4j/logs_         |_$\{HOME\}/Documents/Neo4j/metrics_         |_$\{HOME\}/Documents/Neo4j/import_         |(in App)
+|Package               |Configuration                                  |Data                                |Logs                                     |Metrics                                     |Import                                     |Bin                                               |Lib                  |Plugins
+|Linux or OS X tarball |_<neo4j-root>/conf/neo4j.conf_                 |_<neo4j-root>/data_                 |_<neo4j-root>/logs_                      |_<neo4j-root>/metrics_                      |_<neo4j-root>/import_                      |_<neo4j-root>/bin_                                |_<neo4j-root>/lib_   |_<neo4j-root>/plugins_
+|Windows zip           |_<neo4j-root>\conf\neo4j.conf_                 |_<neo4j-root>\data_                 |_<neo4j-root>\logs_                      |_<neo4j-root>\metrics_                      |_<neo4j-root>\import_                      |_<neo4j-root>\bin_                                |_<neo4j-root>\lib_   |_<neo4j-root>\plugins_
+|Debian/Ubuntu .deb    |_/etc/neo4j/neo4j.conf_                        |_/var/lib/neo4j/data_               |_/var/log/neo4j_                         |_/var/lib/neo4j/metrics_                    |_/var/lib/neo4j/import_                    |_/var/lib/neo4j/bin_                              |_/var/lib/neo4j/lib_ |_/var/lib/neo4j/plugins_
+|Windows desktop       |_%APPDATA%\Neo4j Community Edition\neo4j.conf_ |_%APPDATA%\Neo4j Community Edition_ |_%APPDATA%\Neo4j Community Edition\logs_ |_%APPDATA%\Neo4j Community Edition\metrics_ |_%APPDATA%\Neo4j Community Edition\import_ |_%ProgramFiles%\Neo4j CE {neo4j-version}++\++bin_ |(in package)         |_%ProgramFiles%\Neo4j CE {neo4j-version}++\++plugins_
+|OS X desktop          |_$\{HOME\}/Documents/Neo4j/neo4j.conf_         |_$\{HOME\}/Documents/Neo4j_         |_$\{HOME\}/Documents/Neo4j/logs_         |_$\{HOME\}/Documents/Neo4j/metrics_         |_$\{HOME\}/Documents/Neo4j/import_         |(in package)                                      |(in package)         |(in package)
 |===
 
 Please note that the data directory is internal to Neo4j and its structure subject to change between versions without notice.
@@ -38,5 +38,24 @@ The locations of _<neo4j-root>_, _bin_ and _conf_ can be configured using enviro
 |Location       |Default                                   |Environment variable |Notes
 |_<neo4j-root>_ |parent of _bin_                           |`NEO4J_ROOT`         |Must be set explicitly if _bin_ is not a subdirectory.
 |_bin_          |directory where _neo4j_ script is located |`NEO4J_BIN`          |Must be set explicitly if _neo4j_ script is invoked as a symlink.
-|_conf_         |_<neo4j-root>/conf                        |`NEO4J_CONF`         |Must be set explicitly if it is not a subdirectory of _<neo4j-root>_.
+|_conf_         |_<neo4j-root>/conf_                       |`NEO4J_CONF`         |Must be set explicitly if it is not a subdirectory of _<neo4j-root>_.
 |===
+
+== Permissions
+
+The user that Neo4j runs as must have the following permissions
+
+Read only::
+  * _conf_
+  * _import_
+  * _bin_
+  * _lib_
+  * _plugins_
+
+Read and write::
+  * _data_
+  * _logs_
+  * _metrics_
+
+Exectute::
+  * all files in _bin_
