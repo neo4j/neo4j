@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2.{SyntaxExceptionCreator, inSequence}
+import org.neo4j.cypher.internal.compiler.v2_2.{RawQuery, SyntaxExceptionCreator, inSequence}
 
 class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
   val rewriterUnderTest = isolateAggregation
@@ -151,7 +151,7 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
   }
 
   override protected def parseForRewriting(queryText: String) = {
-    val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
+    val mkException = new SyntaxExceptionCreator(RawQuery(queryText, pos))
     super.parseForRewriting(queryText).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
   }
 }

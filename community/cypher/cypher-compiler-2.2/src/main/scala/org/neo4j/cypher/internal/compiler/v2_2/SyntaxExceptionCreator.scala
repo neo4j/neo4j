@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-class SyntaxExceptionCreator(queryText: String, preParserOffset: Option[InputPosition]) extends ((String, InputPosition) => CypherException) {
+class SyntaxExceptionCreator(rawQuery: Option[RawQuery]) extends ((String, InputPosition) => CypherException) {
+  def this(rawQuery: RawQuery) = this(Some(rawQuery))
+
   override def apply(message: String, position: InputPosition): CypherException = {
-    val adjustedPosition = position.withOffset(preParserOffset)
-    new SyntaxException(s"$message ($adjustedPosition)", queryText, adjustedPosition.offset)
+    val adjustedPosition = position.withOffset(rawQuery.map(_.pos))
+    new SyntaxException(s"$message ($adjustedPosition)", rawQuery.map(_.rawStatement).getOrElse(""), adjustedPosition.offset)
   }
 }
