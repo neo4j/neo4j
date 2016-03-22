@@ -63,6 +63,7 @@ case class DatabaseFactory(dbDir: JFile) extends ((String) => Unit) {
       val graph = new GraphDatabaseFactory()
         .newEmbeddedDatabaseBuilder(dbPath)
         .setConfig(GraphDatabaseSettings.load_csv_file_url_root, fileRoot.toAbsolutePath.toString)
+        .setConfig(GraphDatabaseSettings.logs_directory, new JFile(dbDir, "logs").getAbsolutePath)
         .newGraphDatabase()
       script.split(';').filter(_.trim.nonEmpty) foreach { q =>
         graph.execute(q.trim, params)
