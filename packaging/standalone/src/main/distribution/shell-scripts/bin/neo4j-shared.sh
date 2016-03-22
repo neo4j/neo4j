@@ -28,7 +28,6 @@ declare -r PROGRAM="$(basename "$0")"
 #   NEO4J_LOGS
 #   NEO4J_PIDFILE
 #   NEO4J_PLUGINS
-#   CONSOLE_LOG
 #   one per config setting, with dots converted to underscores
 #
 # Changes directory into NEO4J_HOME.
@@ -81,8 +80,7 @@ _setup_configurable_paths() {
   NEO4J_DATA="${dbms_directories_data:-data}"
   NEO4J_LIB="${dbms_directories_lib:-lib}"
   NEO4J_LOGS="${dbms_directories_logs:-logs}"
-  NEO4J_PIDFILE="${dbms_directories_run:-run}/neo4j.pid"
   NEO4J_PLUGINS="${dbms_directories_plugins:-plugins}"
-  CONSOLE_LOG="${NEO4J_LOGS}/neo4j.log"
-  readonly NEO4J_DATA NEO4J_LIB NEO4J_LOGS NEO4J_PIDFILE NEO4J_PLUGINS CONSOLE_LOG
+  NEO4J_RUN="${dbms_directories_run:-run}"
+  readonly NEO4J_DATA NEO4J_LIB NEO4J_LOGS NEO4J_PLUGINS NEO4J_RUN
 }
