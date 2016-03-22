@@ -178,7 +178,7 @@ setup_java_opts() {
 }
 
 build_classpath() {
-  CLASSPATH="${NEO4J_LIB}/*:${NEO4J_HOME}/plugins/*"
+  CLASSPATH="${NEO4J_LIB}/*:${NEO4J_PLUGINS}/*"
 }
 
 assemble_command_line() {
