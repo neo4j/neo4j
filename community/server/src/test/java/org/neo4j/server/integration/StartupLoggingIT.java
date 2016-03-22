@@ -19,10 +19,12 @@
  */
 package org.neo4j.server.integration;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -64,12 +66,12 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         CommunityBootstrapper boot = new CommunityBootstrapper();
         Pair[] propertyPairs = getPropertyPairs();
 
-        boot.start( null, propertyPairs );
+        boot.start( Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
         boot.stop();
 
         List<String> captured = suppressOutput.getOutputVoice().lines();
         assertThat( captured, containsAtLeastTheseLines(
-                warn( "Config file \\[conf.neo4j\\.conf\\] does not exist." ),
+                warn( "Config file \\[nonexistent-file.conf\\] does not exist." ),
                 info( "Starting..." ),
                 info( "Started." ),
                 info( "Remote interface available at http://.+:7474/" ),

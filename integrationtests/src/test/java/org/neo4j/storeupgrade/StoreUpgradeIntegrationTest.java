@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import org.junit.Rule;
@@ -67,10 +68,9 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.CommunityBootstrapper;
+import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -209,23 +209,16 @@ public class StoreUpgradeIntegrationTest
                 props.store( writer, "" );
             }
 
+            ServerBootstrapper bootstrapper = new CommunityBootstrapper();
             try
             {
-                ServerBootstrapper bootstrapper = new CommunityBootstrapper();
-                try
-                {
-                    bootstrapper.start( configFile );
-                    assertTrue( bootstrapper.isRunning() );
-                    checkInstance( store, bootstrapper.getServer().getDatabase().getGraph() );
-                }
-                finally
-                {
-                    bootstrapper.stop();
-                }
+                bootstrapper.start( Optional.of( configFile ) );
+                assertTrue( bootstrapper.isRunning() );
+                checkInstance( store, bootstrapper.getServer().getDatabase().getGraph() );
             }
             finally
             {
-                System.clearProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
+                bootstrapper.stop();
             }
 
             assertConsistentStore( storeDir );

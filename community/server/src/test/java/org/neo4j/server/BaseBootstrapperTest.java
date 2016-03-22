@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -98,7 +99,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     public void canSpecifyConfigFile() throws Throwable
     {
         // Given
-        File configFile = tempDir.newFile( "neo4j.config" );
+        File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
@@ -107,7 +108,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         store( properties, configFile );
 
         // When
-        ServerBootstrapper.start( bootstrapper, "-C", configFile.getAbsolutePath() );
+        ServerBootstrapper.start( bootstrapper, "--config-dir", configFile.getParentFile().getAbsolutePath() );
 
         // Then
         assertThat( bootstrapper.getServer().getConfig().get( forced_kernel_id ), equalTo( "ourcustomvalue" ) );
@@ -117,7 +118,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     public void canOverrideConfigValues() throws Throwable
     {
         // Given
-        File configFile = tempDir.newFile( "neo4j.config" );
+        File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME);
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
@@ -127,7 +128,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 
         // When
         ServerBootstrapper.start( bootstrapper,
-                "-C", configFile.getAbsolutePath(),
+                "--config-dir", configFile.getParentFile().getAbsolutePath(),
                 "-c", configOption( forced_kernel_id, "mycustomvalue" ) );
 
         // Then

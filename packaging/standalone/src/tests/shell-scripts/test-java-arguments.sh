@@ -39,41 +39,68 @@ for run_command in run_console run_daemon; do
     test_expect_java_arg '-Dfile.encoding=UTF-8'
   "
 
-  test_expect_success "should add lib dirs to classpath" "
+  test_expect_success "should construct the classpath" "
     ${run_command} &&
-    test_expect_java_arg '-cp $(neo4j_home)/lib/*'
+    test_expect_java_arg '-cp lib/*:plugins/*'
   "
 
-  test_expect_success "should add plugins to classpath" "
+  test_expect_success "classpath elements should be configurable" "
+    clear_config &&
+    set_config 'dbms.directories.lib' 'some-other-lib' neo4j.conf &&
+    set_config 'dbms.directories.plugins' 'some-other-plugins' neo4j.conf &&
     ${run_command} &&
-    test_expect_java_arg ':$(neo4j_home)/plugins/*'
+    test_expect_java_arg '-cp some-other-lib/*:some-other-plugins/*'
+  "
+
+  test_expect_success "should set gc log location when gc log is enabled" "
+    clear_config &&
+    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
+    ${run_command} &&
+    test_expect_java_arg '-Xloggc:logs/gc.log'
+  "
+
+  test_expect_success "should put gc log into configured logs directory" "
+    mkdir -p '$(neo4j_home)/some-other-logs' &&
+    clear_config &&
+    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
+    set_config 'dbms.directories.logs' 'some-other-logs' neo4j.conf &&
+    ${run_command} &&
+    test_expect_java_arg '-Xloggc:some-other-logs/gc.log'
   "
 
   test_expect_success "should set gc logging options when gc log is enabled" "
     clear_config &&
     set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
-    set_config 'dbms.logs.gc.options' '-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution' neo4j.conf &&
+    set_config 'dbms.logs.gc.options' '-XX:+PrintSomeOtherGCOption' neo4j.conf &&
     ${run_command} &&
-    test_expect_java_arg '-Xloggc:$(neo4j_home)/logs/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution'
+    test_expect_java_arg '-XX:+PrintSomeOtherGCOption'
   "
 
   test_expect_success "should set default gc logging options when none are provided" "
     clear_config &&
     set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
     ${run_command} &&
-    test_expect_java_arg '-Xloggc:$(neo4j_home)/logs/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=20m'
+    test_expect_java_arg '-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution'
   "
 
   test_expect_success "should set gc logging rotation options" "
     clear_config &&
     set_config 'dbms.logs.gc.rotation.size' '10m' neo4j.conf &&
     set_config 'dbms.logs.gc.rotation.keep_number' '8' neo4j.conf &&
-    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
-    set_config 'dbms.logs.gc.options' '-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution -XX:+UseGCLogFileRotation' neo4j.conf &&
+    set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf
 
     ${run_command} &&
-    test_expect_java_arg '-Xloggc:$(neo4j_home)/logs/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution'
     test_expect_java_arg '-XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=8 -XX:GCLogFileSize=10m'
+  "
+
+  test_expect_success "should pass config dir location" "
+    ${run_command} &&
+    test_expect_java_arg '--config-dir=conf'
+  "
+
+  test_expect_success "should be able to override config dir location" "
+    NEO4J_CONF=/some/other/conf/dir ${run_command} &&
+    test_expect_java_arg '--config-dir=/some/other/conf/dir'
   "
 done
 

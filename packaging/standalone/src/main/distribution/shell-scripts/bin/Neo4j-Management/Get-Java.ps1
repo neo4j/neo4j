@@ -163,7 +163,6 @@ Function Get-Java
       $ClassPath="$($Neo4jServer.Home)/lib/*;$($Neo4jServer.Home)/plugins/*"
       $ShellArgs = @("-cp `"$($ClassPath)`""`
                     ,'-server' `
-                    ,'-Dorg.neo4j.config.file=conf/neo4j.conf' `
                     ,'-Dlog4j.configuration=file:conf/log4j.properties' `
                     ,'-Dneo4j.ext.udc.source=zip-powershell' `
                     ,'-Dorg.neo4j.cluster.logdirectory=data/log' `
@@ -202,7 +201,7 @@ Function Get-Java
           $ShellArgs += "-XX:NumberOfGCLogFiles=5"
         }
       }
-      $ShellArgs += @("-Dfile.encoding=UTF-8",$serverMainClass)
+      $ShellArgs += @("-Dfile.encoding=UTF-8",$serverMainClass,"--config-dir=$($Neo4jServer.ConfDir)")
     }
     
     # Shell arguments for the utility classes e.g. Import, Shell

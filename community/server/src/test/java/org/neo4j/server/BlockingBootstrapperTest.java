@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +47,7 @@ public class BlockingBootstrapperTest
         {
             @SafeVarargs
             @Override
-            public final int start( File configFile, Pair<String, String>... configOverrides )
+            public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
             {
                 running.set( true );
                 return 0;
@@ -85,7 +86,7 @@ public class BlockingBootstrapperTest
         {
             @SafeVarargs
             @Override
-            public final int start( File configFile, Pair<String, String>... configOverrides )
+            public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
             {
                 return 1;
             }

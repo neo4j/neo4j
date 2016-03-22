@@ -7,6 +7,7 @@ fake_install() {
   mkdir -p "${path}/conf"
   mkdir -p "${path}/data/databases"
   mkdir -p "${path}/lib"
+  mkdir -p "${path}/logs"
   mkdir -p "${path}/run"
 }
 

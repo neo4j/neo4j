@@ -58,16 +58,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description("Settings used by the server configuration")
 public interface ServerSettings
 {
-    /**
-     * Key for the configuration file system property.
-     */
-    String SERVER_CONFIG_FILE_KEY = "org.neo4j.config.file";
-
-    /**
-     * Default path for the configuration file. The path should always be get/set using System.property.
-     */
-    String SERVER_CONFIG_FILE = "conf/neo4j.conf";
-
     @Description("Maximum request header size")
     @Internal
     Setting<Integer> maximum_request_header_size =
@@ -212,6 +202,10 @@ public interface ServerSettings
     @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Path of the run directory")
     Setting<File> run_directory = setting("dbms.directories.run", PATH, "run");
+
+    @SuppressWarnings("unused") // used only in the startup scripts
+    @Description("Path of the lib directory")
+    Setting<File> lib_directory = setting("dbms.directories.lib", PATH, "lib");
 
     @Description("Timeout for idle transactions.")
     Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );

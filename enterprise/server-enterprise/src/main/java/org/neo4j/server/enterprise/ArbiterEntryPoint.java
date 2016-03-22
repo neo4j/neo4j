@@ -19,21 +19,21 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.server.BlockingBootstrapper;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.ServerBootstrapper;
-import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.ServerCommandLineArgs;
 
 public class ArbiterEntryPoint
 {
     private static Bootstrapper bootstrapper;
 
-    public static void main( String[] args ) throws IOException
+    public static void main( String[] argv ) throws IOException
     {
-        int status = new ArbiterBootstrapper().start( getConfigFile() );
+        ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
+        int status = new ArbiterBootstrapper().start( args.configFile() );
         if ( status != 0 )
         {
             System.exit( status );
@@ -52,22 +52,5 @@ public class ArbiterEntryPoint
         {
             bootstrapper.stop();
         }
-    }
-
-    static File getConfigFile()
-    {
-        String configPath = System.getProperty( ServerSettings.SERVER_CONFIG_FILE_KEY );
-        if ( configPath == null )
-        {
-            throw new RuntimeException( "System property " + ServerSettings.SERVER_CONFIG_FILE_KEY +
-                    " must be provided" );
-        }
-
-        File configFile = new File( configPath );
-        if ( !configFile.exists() )
-        {
-            throw new IllegalArgumentException( configFile + " doesn't exist" );
-        }
-        return configFile;
     }
 }
