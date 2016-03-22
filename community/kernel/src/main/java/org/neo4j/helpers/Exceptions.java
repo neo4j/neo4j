@@ -274,28 +274,6 @@ public class Exceptions
         return cause;
     }
 
-    @Deprecated
-    public static boolean containsStackTraceElement( Throwable cause,
-            final Predicate<StackTraceElement> predicate )
-    {
-        return contains( cause, item -> {
-            for ( StackTraceElement element : item.getStackTrace() )
-            {
-                if ( predicate.test( element ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        } );
-    }
-
-    @Deprecated
-    public static Predicate<StackTraceElement> forMethod( final String name )
-    {
-        return item -> item.getMethodName().equals( name );
-    }
-
     public static String briefOneLineStackTraceInformation( Predicate<StackTraceElement> toInclude )
     {
         StringBuilder builder = new StringBuilder();
