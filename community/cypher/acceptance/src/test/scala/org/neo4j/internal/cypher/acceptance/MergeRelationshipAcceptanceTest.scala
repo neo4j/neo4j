@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{NewPlannerTestSupport, CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport, SyntaxException}
-import org.neo4j.graphdb.{Path, Relationship}
+import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport, SyntaxException}
+import org.neo4j.graphdb.{Path, Relationship, Result}
 
 class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -583,5 +583,25 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val result = updateWithBothPlannersAndCompatibilityMode(query)
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
     result.toList should equal(List(Map("a" -> 0)))
+  }
+
+  test("should not create nodes when aliases are applied to variable names multiple times") {
+    createNode()
+
+    val query = "MATCH (n) MATCH (m) WITH n AS a, m AS b MERGE (a)-[:T]->(b) WITH a AS x, b AS y MERGE (a)-[:T]->(b) RETURN id(x) as x, id(y) as y"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+    assertStats(result, relationshipsCreated = 1)
+    result.toList should equal(List(Map("x" -> 0, "y" -> 0)))
+  }
+
+  test("should create only one node when an alias is applied to a variable name multiple times") {
+    createNode()
+
+    val query = "MATCH (n) WITH n AS a MERGE (a)-[:T]->() WITH a AS x MERGE (x)-[:T]->() RETURN id(x) as x"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+    assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
+    result.toList should equal(List(Map("x" -> 0)))
   }
 }

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v3_0.planner._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_0.ast.Variable
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[IdName] = Seq.empty)
   extends CollectionSupport {
@@ -52,12 +51,14 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
   def currentQueryGraph: QueryGraph = q.lastQueryGraph
 
   def allSeenPatternNodes: Set[IdName] = {
-    val previousPatternNodes = q.allPlannerQueries.init.foldLeft(Set.empty[IdName]) { (acc, current) =>
+    val allPlannerQueries = q.allPlannerQueries
+    val previousPatternNodes = if (allPlannerQueries.length > 1) {
+      val current = allPlannerQueries(allPlannerQueries.length - 2)
       val projectedNodes = current.horizon.exposedSymbols(current.queryGraph).collect {
         case id@IdName(n) if semanticTable.contains(n) && semanticTable.isNode(n) => id
       }
       projectedNodes ++ current.queryGraph.allPatternNodes
-    }
+    } else Set.empty
     previousPatternNodes ++ q.lastQueryGraph.allPatternNodes
   }
 
