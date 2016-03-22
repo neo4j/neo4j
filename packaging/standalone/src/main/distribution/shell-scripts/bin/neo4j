@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -27,14 +27,9 @@
 set -euo pipefail
 [[ "${TRACE:-}" ]] && set -x
 
-setup_calculated_paths() {
-  PROGRAM="$(basename "$0")"
-  if [[ -z "${NEO4J_HOME:-}" ]]; then
-    NEO4J_HOME="$(cd "$(dirname "$0")"/.. && pwd)"
-  fi
-  : "${NEO4J_CONF:=conf}"
-  readonly PROGRAM NEO4J_ROOT NEO4J_CONF
-}
+: "${NEO4J_BIN:=$(dirname "$0")}"
+readonly NEO4J_BIN
+. "${NEO4J_BIN}/neo4j-shared.sh"
 
 find_java_home() {
   [[ "${JAVA_HOME:-}" ]] && return
@@ -156,42 +151,6 @@ check_limits() {
   fi
 }
 
-parse_config() {
-  # - plain key-value pairs become environment variables
-  # - keys have '.' chars changed to '_'
-  # - keys of the form KEY.# (where # is a number) are concatenated into a single environment variable named KEY
-  parse_line() {
-    line="$1"
-    if [[ "${line}" =~ ^([^#\s][^=]+)=(.+)$ ]]; then
-      key="${BASH_REMATCH[1]//./_}"
-      value="${BASH_REMATCH[2]}"
-      if [[ "${key}" =~ ^(.*)_([0-9]+)$ ]]; then
-        key="${BASH_REMATCH[1]}"
-      fi
-      if [[ "${!key:-}" ]]; then
-        export ${key}="${!key} ${value}"
-      else
-        export ${key}="${value}"
-      fi
-    fi
-  }
-
-  for file in "neo4j-wrapper.conf" "neo4j.conf"; do
-    path="${NEO4J_CONF}/${file}"
-    if [ -e "${path}" ]; then
-      while read line; do
-        parse_line "${line}"
-      done <"${path}"
-    fi
-  done
-}
-
-setup_configurable_paths() {
-  NEO4J_PIDFILE="${dbms_directories_run:-run}/neo4j.pid"
-  NEO4J_LOG="${dbms_directories_logs:-logs}"
-  CONSOLE_LOG="${NEO4J_LOG}/neo4j.log"
-}
-
 setup_java_opts() {
   JAVA_OPTS=("-server")
 
@@ -201,7 +160,7 @@ setup_java_opts() {
   JAVA_OPTS+=("${JAVA_MEMORY_OPTS[@]}")
 
   if [[ "${dbms_logs_gc_enabled:-}" = "true" ]]; then
-    JAVA_OPTS+=("-Xloggc:${NEO4J_LOG}/gc.log" \
+    JAVA_OPTS+=("-Xloggc:${NEO4J_LOGS}/gc.log" \
                 "-XX:+UseGCLogFileRotation" \
                 "-XX:NumberOfGCLogFiles=${dbms_logs_gc_rotation_keep_number:-5}" \
                 "-XX:GCLogFileSize=${dbms_logs_gc_rotation_size:-20m}")
@@ -328,10 +287,7 @@ do_status() {
 }
 
 main() {
-  setup_calculated_paths
-  cd "${NEO4J_HOME}"
-  parse_config
-  setup_configurable_paths
+  setup_environment
   setup_java_opts
   check_java
   setup_arbiter_options
