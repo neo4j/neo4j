@@ -90,7 +90,7 @@ show_java_help() {
 
 setup_arbiter_options() {
   is_arbiter() {
-    compgen -G "${NEO4J_HOME}/lib/neo4j-server-enterprise-*.jar" >/dev/null && \
+    compgen -G "${NEO4J_LIB}/neo4j-server-enterprise-*.jar" >/dev/null && \
       [[ "$(echo "${dbms_mode:-}" | tr [:lower:] [:upper:])" == "ARBITER" ]]
   }
 
@@ -178,7 +178,7 @@ setup_java_opts() {
 }
 
 build_classpath() {
-  CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/plugins/*"
+  CLASSPATH="${NEO4J_LIB}/*:${NEO4J_HOME}/plugins/*"
 }
 
 assemble_command_line() {

@@ -203,6 +203,10 @@ public interface ServerSettings
     @Description("Path of the run directory")
     Setting<File> run_directory = setting("dbms.directories.run", PATH, "run");
 
+    @SuppressWarnings("unused") // used only in the startup scripts
+    @Description("Path of the lib directory")
+    Setting<File> lib_directory = setting("dbms.directories.lib", PATH, "lib");
+
     @Description("Timeout for idle transactions.")
     Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );
 
