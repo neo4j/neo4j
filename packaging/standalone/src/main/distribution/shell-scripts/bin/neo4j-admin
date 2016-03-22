@@ -19,39 +19,9 @@
 set -o errexit -o nounset -o pipefail
 [[ "${TRACE:-}" ]] && set -o xtrace
 
-PROGRAM="$(basename "$0")"
-NEO4J_ROOT="$(cd "$(dirname "$0")"/.. && dirs -l +0)"
-readonly PROGRAM NEO4J_ROOT
-
-parse_config() {
-  # - plain key-value pairs become environment variables
-  # - keys have '.' chars changed to '_'
-  # - keys of the form KEY.# (where # is a number) are concatenated into a single environment variable named KEY
-  parse_line() {
-    line="$1"
-    if [[ "${line}" =~ ^([^#\s][^=]+)=(.+)$ ]]; then
-      key="${BASH_REMATCH[1]//./_}"
-      value="${BASH_REMATCH[2]}"
-      if [[ "${key}" =~ ^(.*)_([0-9]+)$ ]]; then
-        key="${BASH_REMATCH[1]}"
-      fi
-      if [[ "${!key:-}" ]]; then
-        export ${key}="${!key} ${value}"
-      else
-        export ${key}="${value}"
-      fi
-    fi
-  }
-
-  for file in "neo4j-wrapper.conf" "neo4j.conf"; do
-    path="${NEO4J_CONFIG}/${file}"
-    if [ -e "${path}" ]; then
-      while read line; do
-        parse_line "${line}"
-      done <"${path}"
-    fi
-  done
-}
+: "${NEO4J_BIN:=$(dirname "$0")}"
+readonly NEO4J_BIN
+. "${NEO4J_BIN}/neo4j-shared.sh"
 
 cmd_import_args() {
   declare database=''
@@ -104,6 +74,9 @@ cmd_import_args() {
   [[ -z "${source}" ]] && bad_usage "you must provide the --from option with an argument"
   [[ -z "${mode}" ]] && bad_usage "you must provide the --mode option with an argument"
 
+  [[ ! -e "${source}" ]] && bad_usage "the --from directory must exist"
+  source="$(cd "${source}" && pwd)"
+
   retval=("${database}" "${source}" "${mode}")
 }
 
@@ -112,10 +85,10 @@ cmd_import() {
   declare -r database="${retval[0]}" source="${retval[1]}" mode="${retval[2]}"
   shift 3
 
+  setup_environment
+
   case "${mode}" in
     database)
-      setup_neo4jhome_and_script
-      setup_paths
       cp -r "${source}" "${NEO4J_DATA}/databases/${database}"
       rm -f "${NEO4J_DATA}/databases/${database}/messages.log"
       ;;
@@ -169,31 +142,8 @@ detect_os() {
   fi
 }
 
-setup_neo4jhome_and_script() {
-  SCRIPT=$0
-
-  pushd "$(dirname "${SCRIPT}")"
-  SCRIPT="$(basename "${SCRIPT}")"
-
-  while [ -L "${SCRIPT}" ]
-  do
-    SCRIPT="$(readlink "${SCRIPT}")"
-    cd "$(dirname "${SCRIPT}")"
-    SCRIPT="$(basename "${SCRIPT}")"
-  done
-
-  NEO4J_HOME="$(cd "$(dirname "${SCRIPT}")/.." && dirs -l +0)"
-  popd
-}
-
 build_classpath() {
   CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/plugins/*"
-}
-
-setup_paths() {
-  [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
-  parse_config
-  NEO4J_DATA="${NEO4J_ROOT}/${dbms_directories_data:-data}"
 }
 
 check_java() {
