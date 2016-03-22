@@ -35,30 +35,33 @@ import org.jfree.data.category.DefaultCategoryDataset;
 import org.w3c.dom.Document;
 
 import java.awt.*;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Map;
+import javax.imageio.ImageIO;
 
 public class ChartWriter
 {
-    private final OutputStream out;
+    private final File outDirectory;
+    private final String filename;
 
-    public ChartWriter( OutputStream out )
+    public ChartWriter( File outDirectory, String filename )
     {
-        this.out = out;
+        this.outDirectory = outDirectory;
+        this.filename = filename;
     }
 
     public void dumpSVG( Map<String,Integer> data )
     {
-        JFreeChart chart = createBarChart( data );
-
         Document document = GenericDOMImplementation.getDOMImplementation().createDocument( null, "svg", null );
         SVGGraphics2D svgGenerator = new SVGGraphics2D( document );
-        chart.draw( svgGenerator, new Rectangle( 1500, 500 ) );
 
-        // Write svg file
-        try ( OutputStreamWriter writer = new OutputStreamWriter( out ) )
+        createBarChart( data ).draw( svgGenerator, new Rectangle( 1500, 500 ) );
+
+        try ( OutputStreamWriter writer = new OutputStreamWriter(
+                new FileOutputStream( new File( outDirectory, filename + ".svg" ) ) ) )
         {
             svgGenerator.stream( writer, true );
         }
@@ -68,8 +71,26 @@ public class ChartWriter
         }
     }
 
+    public void dumpPNG( Map<String,Integer> data )
+    {
+        try ( FileOutputStream output = new FileOutputStream( new File( outDirectory, filename + ".png" ) ) )
+        {
+            ImageIO.write( createBarChart( data ).createBufferedImage( 1500, 500 ), "png", output );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Unexpected error during PNG file creation", e );
+        }
+    }
+
+    private JFreeChart cached = null;
+
     private JFreeChart createBarChart( Map<String,Integer> data )
     {
+        if ( cached != null )
+        {
+            return cached;
+        }
         JFreeChart chart = ChartFactory
                 .createBarChart( "TCK tag distribution", "Tags", "Occurrences in queries",
                         createCategoryDataset( data ) );
@@ -89,6 +110,7 @@ public class ChartWriter
         CategoryAxis domainAxis = plot.getDomainAxis();
         domainAxis.setCategoryLabelPositions( CategoryLabelPositions.createUpRotationLabelPositions( Math.PI / 6.0 ) );
 
+        cached = chart;
         return chart;
     }
 

@@ -41,7 +41,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, ch
   def this(reportDir: File) = {
     this(producer = JsonProducer,
          jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json"),
-         chartWriter = new ChartWriter(CypherResultReporter.createPrintStream(reportDir, "tag_distribution.svg")))
+         chartWriter = new ChartWriter(reportDir, "tags"))
   }
 
   private var query: String = null
@@ -53,6 +53,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, ch
   override def done(): Unit = {
     jsonWriter.println(producer.dump())
     chartWriter.dumpSVG(producer.dumpTagStats())
+    chartWriter.dumpPNG(producer.dumpTagStats())
   }
 
   override def close(): Unit = {
