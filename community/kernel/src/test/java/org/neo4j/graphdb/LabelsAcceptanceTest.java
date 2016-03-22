@@ -39,7 +39,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -554,7 +555,7 @@ public class LabelsAcceptanceTest
     public void shouldAllowManyLabelsAndPropertyCursor()
     {
         // given
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
@@ -571,7 +572,9 @@ public class LabelsAcceptanceTest
         // when
         try ( Transaction tx = db.beginTx() )
         {
-            try (Statement statement = ((TopLevelTransaction)tx).getTransaction().acquireStatement())
+            ThreadToStatementContextBridge bridge =
+                    db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+            try (Statement statement = bridge.getTopLevelTransactionBoundToThisThread( true ).acquireStatement())
             {
                 try ( Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursor( node.getId() ) )
                 {
