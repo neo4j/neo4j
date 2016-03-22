@@ -22,6 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.PathImpl
 import org.neo4j.graphdb._
+import org.neo4j.helpers.collection.Iterators.single
 
 import scala.collection.JavaConverters._
 
@@ -2123,6 +2124,33 @@ return b
 
     val result = executeWithAllPlannersAndCompatibilityMode(query)
     result.columnAs[Long]("count(*)").next shouldBe 6
+  }
+
+  test("aliasing node names should not change estimations but it should simply introduce a projection") {
+    val b = createLabeledNode("B")
+    (0 to 10).foreach { i =>
+      val a = createLabeledNode("A")
+      relate(a, b)
+    }
+
+    val resultNoAlias = graph.execute("MATCH (a:A) with a SKIP 0 MATCH (a)-[]->(b:B) return a, b")
+    resultNoAlias.asScala.toList.size should equal(11)
+    val resultWithAlias = graph.execute("MATCH (a:A) with a as n SKIP 0 MATCH (n)-[]->(b:B) return n, b")
+    resultWithAlias.asScala.toList.size should equal(11)
+
+    var descriptionNoAlias = resultNoAlias.getExecutionPlanDescription
+    var descriptionWithAlias = resultWithAlias.getExecutionPlanDescription
+    descriptionWithAlias.getArguments.get("EstimatedRows") should equal(descriptionNoAlias.getArguments.get("EstimatedRows"))
+    while (descriptionWithAlias.getChildren.isEmpty) {
+      descriptionWithAlias = single(descriptionWithAlias.getChildren.iterator())
+      if ( descriptionWithAlias.getName != "Projection" ) {
+        descriptionNoAlias = single(descriptionNoAlias.getChildren.iterator())
+        descriptionWithAlias.getArguments.get("EstimatedRows") should equal(descriptionNoAlias.getArguments.get("EstimatedRows"))
+      }
+    }
+
+    resultNoAlias.close()
+    resultWithAlias.close()
   }
 
   /**
