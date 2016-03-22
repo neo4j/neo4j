@@ -179,7 +179,8 @@ public class HopScotchHashingAlgorithm
         }
 
         // we couldn't add this value, even in the H-1 neighborhood, so grow table...
-        Table<VALUE> resizedTable = growTable( table, monitor, hashFunction, resizeMonitor );
+        growTable( table, monitor, hashFunction, resizeMonitor );
+        Table<VALUE> resizedTable = resizeMonitor.getLastTable();
 
         // ...and try again
         return put( resizedTable, monitor, hashFunction, key, value, resizeMonitor );
@@ -276,11 +277,14 @@ public class HopScotchHashingAlgorithm
         return hashFunction.hash( key ) & tableMask;
     }
 
-    private static <VALUE> Table<VALUE> growTable( Table<VALUE> oldTable, Monitor monitor,
+    private static <VALUE> void growTable( Table<VALUE> oldTable, Monitor monitor,
             HashFunction hashFunction, ResizeMonitor<VALUE> resizeMonitor )
     {
         assert monitor.tableGrowing( oldTable.capacity(), oldTable.size() );
         Table<VALUE> newTable = oldTable.grow();
+        // Install the new table before populating it with the old data, in case we find it needs to grow even more
+        // while we are populating it. If that happens, we want to end up with the table installed by the final grow.
+        resizeMonitor.tableGrew( newTable );
         long nullKey = oldTable.nullKey();
 
         // place all entries in the new table
@@ -290,17 +294,20 @@ public class HopScotchHashingAlgorithm
             long key = oldTable.key( i );
             if ( key != nullKey )
             {
-                VALUE putResult = put( newTable, monitor, hashFunction, key, oldTable.value( i ), resizeMonitor );
+                // Always use the table from the resize monitor, because any put can cause a grow.
+                Table<VALUE> table = resizeMonitor.getLastTable();
+                VALUE putResult = put( table, monitor, hashFunction, key, oldTable.value( i ), resizeMonitor );
                 if ( putResult != null )
                 {
+                    // If we somehow fail to populate the new table, reinstall the old one.
+                    resizeMonitor.tableGrew( oldTable );
+                    newTable.close();
                     throw new IllegalStateException( "Couldn't add " + key + " when growing table" );
                 }
             }
         }
         assert monitor.tableGrew( oldTable.capacity(), newTable.capacity(), newTable.size() );
-        resizeMonitor.tableGrew( newTable );
         oldTable.close();
-        return newTable;
     }
 
     /**
@@ -411,5 +418,7 @@ public class HopScotchHashingAlgorithm
     public interface ResizeMonitor<VALUE>
     {
         void tableGrew( Table<VALUE> newTable );
+
+        Table<VALUE> getLastTable();
     }
 }
