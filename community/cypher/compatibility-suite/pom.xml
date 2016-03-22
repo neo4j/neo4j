@@ -119,13 +119,6 @@
       <version>1.8</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.apache.xmlgraphics</groupId>
-      <artifactId>batik-dom</artifactId>
-      <version>1.8</version>
-    </dependency>
-
-
     <!-- scala -->
 
     <dependency>

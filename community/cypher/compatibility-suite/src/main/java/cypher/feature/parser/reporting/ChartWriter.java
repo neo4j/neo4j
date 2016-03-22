@@ -19,7 +19,6 @@
  */
 package cypher.feature.parser.reporting;
 
-import org.apache.batik.dom.GenericDOMImplementation;
 import org.apache.batik.svggen.SVGGraphics2D;
 import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
@@ -41,6 +40,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Map;
 import javax.imageio.ImageIO;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 public class ChartWriter
 {
@@ -55,8 +56,7 @@ public class ChartWriter
 
     public void dumpSVG( Map<String,Integer> data )
     {
-        Document document = GenericDOMImplementation.getDOMImplementation().createDocument( null, "svg", null );
-        SVGGraphics2D svgGenerator = new SVGGraphics2D( document );
+        SVGGraphics2D svgGenerator = new SVGGraphics2D( getDocument() );
 
         createBarChart( data ).draw( svgGenerator, new Rectangle( 1500, 500 ) );
 
@@ -68,6 +68,19 @@ public class ChartWriter
         catch ( IOException e )
         {
             throw new RuntimeException( "Unexpected error during SVG file creation", e );
+        }
+    }
+
+    private Document getDocument()
+    {
+        try
+        {
+            return DocumentBuilderFactory.newInstance().newDocumentBuilder().getDOMImplementation()
+                    .createDocument( null, "svg", null );
+        }
+        catch ( ParserConfigurationException e )
+        {
+            throw new RuntimeException( "Unexpected error during DOM document creation", e );
         }
     }
 
