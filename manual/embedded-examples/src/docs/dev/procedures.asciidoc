@@ -232,8 +232,7 @@ This repository is where Maven will find the latest build of Neo4j to use as a d
      <snapshots><enabled>true</enabled></snapshots>
      <releases><enabled>false</enabled></releases>
    </repository>
- </repositories>
-</project>
+  </repositories>
 ----
 
 
