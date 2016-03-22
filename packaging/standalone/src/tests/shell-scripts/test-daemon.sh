@@ -14,7 +14,7 @@ test_expect_success "should start" "
 "
 
 test_expect_success "should output server URL" "
-  grep 'http://localhost:7474' neo4j.stdout
+  test_expect_file_matching 'http://localhost:7474' neo4j.stdout
 "
 
 test_expect_success "should report that it's running" "
@@ -22,8 +22,12 @@ test_expect_success "should report that it's running" "
 "
 
 test_expect_success "should redirect output to neo4j.log" "
-  grep 'stdout from java' neo4j-home/logs/neo4j.log &&
-  grep 'stderr from java' neo4j-home/logs/neo4j.log
+  test_expect_file_matching 'stdout from java' neo4j-home/logs/neo4j.log &&
+  test_expect_file_matching 'stderr from java' neo4j-home/logs/neo4j.log
+"
+
+test_expect_success "should display log path" "
+  test_expect_file_matching 'See $(neo4j_home)/logs/neo4j.log for current status.' neo4j.stdout
 "
 
 test_expect_success "should exit 0 if already running" "

@@ -216,7 +216,7 @@ do_status() {
 
 main() {
   setup_environment
-  CONSOLE_LOG="${NEO4J_LOGS}/neo4j.log"
+  CONSOLE_LOG="$(cd "${NEO4J_LOGS}" && pwd)/neo4j.log"
   NEO4J_PIDFILE="${NEO4J_RUN}/neo4j.pid"
   readonly CONSOLE_LOG NEO4J_PIDFILE
 
