@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # This file is part of Neo4j.
@@ -20,90 +20,20 @@
 # Callers may provide the following environment variables to customize this script:
 #  * JAVA_HOME
 #  * JAVA_CMD
-#  * NEO4J_CONFIG
-#  * NEO4J_LOG
-#  * NEO4J_PIDFILE
+#  * NEO4J_HOME
+#  * NEO4J_CONF
 #  * NEO4J_START_WAIT
 
 set -euo pipefail
 [[ "${TRACE:-}" ]] && set -x
 
-setup_neo4jhome_and_script() {
-  SCRIPT=$0
-
-  cd "$(dirname "${SCRIPT}")"
-  SCRIPT="$(basename "${SCRIPT}")"
-
-  while [ -L "${SCRIPT}" ]
-  do
-    SCRIPT="$(readlink "${SCRIPT}")"
-    cd "$(dirname "${SCRIPT}")"
-    SCRIPT="$(basename "${SCRIPT}")"
-  done
-
-  NEO4J_HOME="$(cd "$(dirname "${SCRIPT}")/.." && dirs -l +0)"
-}
-
-find_java_home() {
-  [[ "${JAVA_HOME:-}" ]] && return
-
-  case "${DIST_OS}" in
-    "macosx")
-      JAVA_HOME="$(/usr/libexec/java_home -v 1.8)"
-      ;;
-    "gentoo")
-      JAVA_HOME="$(java-config --jre-home)"
-      ;;
-  esac
-}
-
-find_java_cmd() {
-  [[ "${JAVA_CMD:-}" ]] && return
-  detect_os
-  find_java_home
-
-  if [[ "${JAVA_HOME:-}" ]] ; then
-    JAVA_CMD="${JAVA_HOME}/bin/java"
-  else
-    if [ "${DIST_OS}" != "macosx" ] ; then
-      # Don't use default java on Darwin because it displays a misleading dialog box
-      JAVA_CMD="$(which java || true)"
-    fi
-  fi
-
-  if [[ ! "${JAVA_CMD:-}" ]]; then
-    echo "ERROR: Unable to find Java executable."
-    show_java_help
-    exit 1
-  fi
-}
-
-check_java() {
-  find_java_cmd
-
-  version_command="${JAVA_CMD} -version ${JAVA_MEMORY_OPTS}"
-
-  JAVA_VERSION=$(${version_command} 2>&1 | awk -F '"' '/version/ {print $2}')
-  if [[ "${JAVA_VERSION}" < "1.8" ]]; then
-    echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
-    show_java_help
-    exit 1
-  fi
-
-  if ! (${version_command} 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
-    echo "WARNING! You are using an unsupported Java runtime. "
-    show_java_help
-  fi
-}
-
-show_java_help() {
-  echo "* Please use Oracle(R) Java(TM) 8 or OpenJDK(TM) to run Neo4j Server."
-  echo "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
-}
+: "${NEO4J_BIN:=$(dirname "$0")}"
+readonly NEO4J_BIN
+. "${NEO4J_BIN}/neo4j-shared.sh"
 
 setup_arbiter_options() {
   is_arbiter() {
-    compgen -G "${NEO4J_HOME}/lib/neo4j-server-enterprise-*.jar" >/dev/null && \
+    compgen -G "${NEO4J_LIB}/neo4j-server-enterprise-*.jar" >/dev/null && \
       [[ "$(echo "${dbms_mode:-}" | tr [:lower:] [:upper:])" == "ARBITER" ]]
   }
 
@@ -143,25 +73,6 @@ check_status() {
   fi
 }
 
-detect_os() {
-  if uname -s | grep -q Darwin; then
-    DIST_OS="macosx"
-  elif [[ -e /etc/gentoo-release ]]; then
-    DIST_OS="gentoo"
-  else
-    DIST_OS="other"
-  fi
-}
-
-# Runs before the server command, making sure that whatever should be in place is
-# in place.
-check_and_repair_env() {
-  if [ ! -d "${NEO4J_LOG}" ]; then
-    echo "${NEO4J_LOG} was missing, recreating..."
-    mkdir -p "${NEO4J_LOG}"
-  fi
-}
-
 check_limits() {
   detect_os
   if [ "${DIST_OS}" != "macosx" ] ; then
@@ -173,68 +84,34 @@ check_limits() {
   fi
 }
 
-parse_config() {
-  # - plain key-value pairs become environment variables
-  # - keys have '.' chars changed to '_'
-  # - keys of the form KEY.# (where # is a number) are concatenated into a single environment variable named KEY
-  parse_line() {
-    line="$1"
-    if [[ "${line}" =~ ^([^#\s][^=]+)=(.+)$ ]]; then
-      key="${BASH_REMATCH[1]//./_}"
-      value="${BASH_REMATCH[2]}"
-      if [[ "${key}" =~ ^(.*)_([0-9]+)$ ]]; then
-        key="${BASH_REMATCH[1]}"
-      fi
-      if [[ "${!key:-}" ]]; then
-        export ${key}="${!key} ${value}"
-      else
-        export ${key}="${value}"
-      fi
-    fi
-  }
-
-  for file in "neo4j-wrapper.conf" "neo4j.conf"; do
-    path="${NEO4J_CONFIG}/${file}"
-    if [ -e "${path}" ]; then
-      while read line; do
-        parse_line "${line}"
-      done <"${path}"
-    fi
-  done
-}
-
-setup_paths() {
-  [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
-  NEO4J_RUN="${NEO4J_HOME}/${dbms_directories_run:-run}"
-  NEO4J_PIDFILE="${NEO4J_RUN}/neo4j.pid"
-  NEO4J_LOG="${NEO4J_HOME}/${dbms_directories_logs:-logs}"
-  CONSOLE_LOG="${NEO4J_LOG}/neo4j.log"
-}
-
 setup_java_opts() {
-  JAVA_MEMORY_OPTS=""
-  [[ "${dbms_memory_heap_initial_size:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xms${dbms_memory_heap_initial_size}m"
-  [[ "${dbms_memory_heap_max_size:-}" ]] && JAVA_MEMORY_OPTS="${JAVA_MEMORY_OPTS} -Xmx${dbms_memory_heap_max_size}m"
+  JAVA_OPTS=("-server")
 
-  JAVA_GC_LOGGING_OPTS=""
-  if [ "${dbms_logs_gc_enabled:-}" = "true" ]; then
-      [[ ${dbms_logs_gc_options:-} ]] || dbms_logs_gc_options="-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution -XX:+UseGCLogFileRotation"
-      [[ ${dbms_logs_gc_rotation_size:-} ]] || dbms_logs_gc_rotation_size="20m"
-      [[ ${dbms_logs_gc_rotation_keep_number:-} ]] || dbms_logs_gc_rotation_keep_number="5"
+  [[ -n "${dbms_memory_heap_initial_size:-}" ]] && JAVA_MEMORY_OPTS+=("-Xms${dbms_memory_heap_initial_size}m")
+  [[ -n "${dbms_memory_heap_max_size:-}" ]] && JAVA_MEMORY_OPTS+=("-Xmx${dbms_memory_heap_max_size}m")
+  [[ -n "${JAVA_MEMORY_OPTS:-}" ]] && JAVA_OPTS+=("${JAVA_MEMORY_OPTS[@]}")
 
-      JAVA_GC_LOGGING_OPTS="-Xloggc:${NEO4J_LOG}/gc.log ${dbms_logs_gc_options} -XX:NumberOfGCLogFiles=${dbms_logs_gc_rotation_keep_number} -XX:GCLogFileSize=${dbms_logs_gc_rotation_size}";
+  if [[ "${dbms_logs_gc_enabled:-}" = "true" ]]; then
+    JAVA_OPTS+=("-Xloggc:${NEO4J_LOGS}/gc.log" \
+                "-XX:+UseGCLogFileRotation" \
+                "-XX:NumberOfGCLogFiles=${dbms_logs_gc_rotation_keep_number:-5}" \
+                "-XX:GCLogFileSize=${dbms_logs_gc_rotation_size:-20m}")
+    if [[ -n "${dbms_logs_gc_options:-}" ]]; then
+      JAVA_OPTS+=(${dbms_logs_gc_options}) # unquoted to split on spaces
+    else
+      JAVA_OPTS+=("-XX:+PrintGCDetails" "-XX:+PrintGCDateStamps" "-XX:+PrintGCApplicationStoppedTime" \
+                  "-XX:+PrintPromotionFailure" "-XX:+PrintTenuringDistribution")
+    fi
   fi
 
-  JAVA_OPTS="-server"
-  [[ "${JAVA_MEMORY_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_MEMORY_OPTS}"
-  [[ "${dbms_jvm_additional:-}" ]] && JAVA_OPTS="${JAVA_OPTS} ${dbms_jvm_additional}"
-  [[ "${JAVA_GC_LOGGING_OPTS}" ]] && JAVA_OPTS="${JAVA_OPTS} ${JAVA_GC_LOGGING_OPTS}"
-
-  return 0
+  if [[ -n "${dbms_jvm_additional:-}" ]]; then
+    JAVA_OPTS+=(${dbms_jvm_additional}) # unquoted to split on spaces
+  fi
 }
 
-build_classpath() {
-  CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/plugins/*"
+assemble_command_line() {
+  retval=("${JAVA_CMD}" "-cp" "${CLASSPATH}" "${JAVA_OPTS[@]}" "-Dfile.encoding=UTF-8" "${MAIN_CLASS}" \
+          "--config-dir=${NEO4J_CONF}")
 }
 
 do_console() {
@@ -248,9 +125,10 @@ do_console() {
 
   check_limits
   build_classpath
-  check_and_repair_env
 
-  exec "${JAVA_CMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dfile.encoding=UTF-8 "${MAIN_CLASS}"
+  assemble_command_line
+  command_line=("${retval[@]}")
+  exec "${command_line[@]}"
 }
 
 do_start() {
@@ -264,10 +142,10 @@ do_start() {
 
   check_limits
   build_classpath
-  check_and_repair_env
 
-  nohup "${JAVA_CMD}" -cp "${CLASSPATH}" ${JAVA_OPTS} -Dfile.encoding=UTF-8 "${MAIN_CLASS}" \
-    >>"${CONSOLE_LOG}" 2>&1 &
+  assemble_command_line
+  command_line=("${retval[@]}")
+  nohup "${command_line[@]}" >>"${CONSOLE_LOG}" 2>&1 &
   echo "$!" >"${NEO4J_PIDFILE}"
 
   : "${NEO4J_START_WAIT:=5}"
@@ -337,10 +215,11 @@ do_status() {
 }
 
 main() {
-  setup_neo4jhome_and_script
-  cd "${NEO4J_HOME}"
-  setup_paths
-  parse_config
+  setup_environment
+  CONSOLE_LOG="$(cd "${NEO4J_LOGS}" && pwd)/neo4j.log"
+  NEO4J_PIDFILE="${NEO4J_RUN}/neo4j.pid"
+  readonly CONSOLE_LOG NEO4J_PIDFILE
+
   setup_java_opts
   check_java
   setup_arbiter_options
@@ -368,7 +247,7 @@ main() {
       ;;
 
     *)
-      echo "Usage: ${SCRIPT} { console | start | stop | restart | status }"
+      echo "Usage: ${PROGRAM} { console | start | stop | restart | status }"
       ;;
   esac
 }

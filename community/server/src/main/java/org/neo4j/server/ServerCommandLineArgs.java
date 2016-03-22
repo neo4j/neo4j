@@ -21,11 +21,13 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Optional;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.neo4j.helpers.collection.Pair.pair;
 
@@ -41,21 +43,20 @@ import static org.neo4j.helpers.collection.Pair.pair;
  */
 public class ServerCommandLineArgs
 {
-    static final String CONFIG_KEY_ALT_1 = "config";
-    static final String CONFIG_KEY_ALT_2 = "C";
-    private final File configFile;
+    public static final String CONFIG_DIR_ARG = "config-dir";
+    private final Args args;
     private final Pair<String, String>[] configOverrides;
 
-    private ServerCommandLineArgs( File configFile, Pair<String, String>[] configOverrides )
+    private ServerCommandLineArgs( Args args, Pair<String, String>[] configOverrides )
     {
-        this.configFile = configFile;
+        this.args = args;
         this.configOverrides = configOverrides;
     }
 
     public static ServerCommandLineArgs parse( String[] argv )
     {
         Args args = Args.parse( argv );
-        return new ServerCommandLineArgs( detemineConfigFile( args ), parseConfigOverrides( args ) );
+        return new ServerCommandLineArgs( args, parseConfigOverrides( args ) );
     }
 
     public Pair<String, String>[] configOverrides()
@@ -63,15 +64,10 @@ public class ServerCommandLineArgs
         return configOverrides;
     }
 
-    public File configFile()
+    public Optional<File> configFile()
     {
-        return configFile;
-    }
-
-    private static File detemineConfigFile( Args arguments )
-    {
-        return new File( arguments.get( CONFIG_KEY_ALT_2,
-                arguments.get( CONFIG_KEY_ALT_1, ServerSettings.SERVER_CONFIG_FILE ) ) );
+        return Optional.ofNullable( args.get( CONFIG_DIR_ARG ) )
+                .map( (dirPath) -> new File( Settings.PATH.apply( dirPath ), ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
     }
 
     private static Pair<String, String>[] parseConfigOverrides( Args arguments )

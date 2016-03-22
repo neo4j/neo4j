@@ -19,39 +19,9 @@
 set -o errexit -o nounset -o pipefail
 [[ "${TRACE:-}" ]] && set -o xtrace
 
-PROGRAM="$(basename "$0")"
-NEO4J_ROOT="$(cd "$(dirname "$0")"/.. && dirs -l +0)"
-readonly PROGRAM NEO4J_ROOT
-
-parse_config() {
-  # - plain key-value pairs become environment variables
-  # - keys have '.' chars changed to '_'
-  # - keys of the form KEY.# (where # is a number) are concatenated into a single environment variable named KEY
-  parse_line() {
-    line="$1"
-    if [[ "${line}" =~ ^([^#\s][^=]+)=(.+)$ ]]; then
-      key="${BASH_REMATCH[1]//./_}"
-      value="${BASH_REMATCH[2]}"
-      if [[ "${key}" =~ ^(.*)_([0-9]+)$ ]]; then
-        key="${BASH_REMATCH[1]}"
-      fi
-      if [[ "${!key:-}" ]]; then
-        export ${key}="${!key} ${value}"
-      else
-        export ${key}="${value}"
-      fi
-    fi
-  }
-
-  for file in "neo4j-wrapper.conf" "neo4j.conf"; do
-    path="${NEO4J_CONFIG}/${file}"
-    if [ -e "${path}" ]; then
-      while read line; do
-        parse_line "${line}"
-      done <"${path}"
-    fi
-  done
-}
+: "${NEO4J_BIN:=$(dirname "$0")}"
+readonly NEO4J_BIN
+. "${NEO4J_BIN}/neo4j-shared.sh"
 
 cmd_import_args() {
   declare database=''
@@ -104,6 +74,9 @@ cmd_import_args() {
   [[ -z "${source}" ]] && bad_usage "you must provide the --from option with an argument"
   [[ -z "${mode}" ]] && bad_usage "you must provide the --mode option with an argument"
 
+  [[ ! -e "${source}" ]] && bad_usage "the --from directory must exist"
+  source="$(cd "${source}" && pwd)"
+
   retval=("${database}" "${source}" "${mode}")
 }
 
@@ -112,106 +85,17 @@ cmd_import() {
   declare -r database="${retval[0]}" source="${retval[1]}" mode="${retval[2]}"
   shift 3
 
+  setup_environment
+
   case "${mode}" in
     database)
-      setup_neo4jhome_and_script
-      setup_paths
       cp -r "${source}" "${NEO4J_DATA}/databases/${database}"
       rm -f "${NEO4J_DATA}/databases/${database}/messages.log"
       ;;
     *)
-      bad_usage "unrecognised mode '${mode}'"
+     bad_usage "unrecognised mode '${mode}'"
       ;;
   esac
-}
-
-find_java_home() {
-  [[ "${JAVA_HOME:-}" ]] && return
-
-  case "${DIST_OS}" in
-    "macosx")
-      JAVA_HOME="$(/usr/libexec/java_home -v 1.8)"
-      ;;
-    "gentoo")
-      JAVA_HOME="$(java-config --jre-home)"
-      ;;
-  esac
-}
-
-find_java_cmd() {
-  [[ "${JAVA_CMD:-}" ]] && return
-  detect_os
-  find_java_home
-
-  if [[ "${JAVA_HOME:-}" ]] ; then
-    JAVA_CMD="${JAVA_HOME}/bin/java"
-  else
-    if [ "${DIST_OS}" != "macosx" ] ; then
-      # Don't use default java on Darwin because it displays a misleading dialog box
-      JAVA_CMD="$(which java || true)"
-    fi
-  fi
-
-  if [[ ! "${JAVA_CMD:-}" ]]; then
-    echo "ERROR: Unable to find Java executable."
-    show_java_help
-    exit 1
-  fi
-}
-
-detect_os() {
-  if uname -s | grep -q Darwin; then
-    DIST_OS="macosx"
-  elif [[ -e /etc/gentoo-release ]]; then
-    DIST_OS="gentoo"
-  else
-    DIST_OS="other"
-  fi
-}
-
-setup_neo4jhome_and_script() {
-  SCRIPT=$0
-
-  pushd "$(dirname "${SCRIPT}")"
-  SCRIPT="$(basename "${SCRIPT}")"
-
-  while [ -L "${SCRIPT}" ]
-  do
-    SCRIPT="$(readlink "${SCRIPT}")"
-    cd "$(dirname "${SCRIPT}")"
-    SCRIPT="$(basename "${SCRIPT}")"
-  done
-
-  NEO4J_HOME="$(cd "$(dirname "${SCRIPT}")/.." && dirs -l +0)"
-  popd
-}
-
-build_classpath() {
-  CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/plugins/*"
-}
-
-setup_paths() {
-  [[ "${NEO4J_CONFIG:-}" ]] || NEO4J_CONFIG="${NEO4J_HOME}/conf"
-  parse_config
-  NEO4J_DATA="${NEO4J_ROOT}/${dbms_directories_data:-data}"
-}
-
-check_java() {
-  find_java_cmd
-
-  version_command="${JAVA_CMD} -version"
-
-  JAVA_VERSION=$(${version_command} 2>&1 | awk -F '"' '/version/ {print $2}')
-  if [[ "${JAVA_VERSION}" < "1.8" ]]; then
-    echo "ERROR! Neo4j cannot be started using java version ${JAVA_VERSION}. "
-    show_java_help
-    exit 1
-  fi
-
-  if ! (${version_command} 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
-    echo "WARNING! You are using an unsupported Java runtime. "
-    show_java_help
-  fi
 }
 
 cmd_core_convert_args() {
@@ -250,12 +134,11 @@ cmd_core_convert() {
   cmd_core_convert_args "$@"
   declare -r database="${retval}"
 
-  setup_neo4jhome_and_script
-  cd "${NEO4J_HOME}"
-  setup_paths
+  setup_environment
+
   check_java
   build_classpath
-  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli" --database=${database} --config=${NEO4J_CONFIG}
+  exec "${JAVA_CMD}" -cp "${CLASSPATH}" -Dfile.encoding=UTF-8 "org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli" --database=${database} --config=${NEO4J_CONF}
 }
 
 bad_usage() {

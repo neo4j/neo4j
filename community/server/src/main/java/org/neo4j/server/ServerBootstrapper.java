@@ -22,6 +22,7 @@ package org.neo4j.server;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,9 +41,6 @@ import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
 import static java.lang.String.format;
-
-import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE;
-import static org.neo4j.server.configuration.ServerSettings.SERVER_CONFIG_FILE_KEY;
 
 public abstract class ServerBootstrapper implements Bootstrapper
 {
@@ -64,7 +62,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
     @Override
     @SafeVarargs
-    public final int start( File configFile, Pair<String, String>... configOverrides )
+    public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
     {
         LogProvider userLogProvider = setupLogging();
         dependencies = dependencies.userLogProvider( userLogProvider );
@@ -152,10 +150,9 @@ public abstract class ServerBootstrapper implements Bootstrapper
         return userLogProvider;
     }
 
-    private Config createConfig( Log log, File file, Pair<String, String>[] configOverrides ) throws IOException
+    private Config createConfig( Log log, Optional<File> file, Pair<String, String>[] configOverrides ) throws IOException
     {
-        File standardConfigFile = new File( System.getProperty( SERVER_CONFIG_FILE_KEY, SERVER_CONFIG_FILE ) );
-        return new ConfigLoader( this::settingsClasses ).loadConfig( file, standardConfigFile, log, configOverrides );
+        return new ConfigLoader( this::settingsClasses ).loadConfig( file, log, configOverrides );
     }
 
     private void addShutdownHook()

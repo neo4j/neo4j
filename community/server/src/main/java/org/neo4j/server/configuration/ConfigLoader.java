@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -36,6 +37,8 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class ConfigLoader
 {
+    public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
+
     private final SettingsClasses settingsClasses;
 
     public ConfigLoader( SettingsClasses settingsClasses )
@@ -48,28 +51,25 @@ public class ConfigLoader
         this( settings -> settingsClasses );
     }
 
-    public Config loadConfig( File configFile, File legacyConfigFile, Log log, Pair<String, String>... configOverrides )
+    public Config loadConfig( Optional<File> configFile, Log log, Pair<String, String>... configOverrides )
     {
         if ( log == null )
         {
             throw new IllegalArgumentException( "log cannot be null " );
         }
 
-        HashMap<String, String> settings = calculateSettings( configFile, legacyConfigFile, log, configOverrides );
+        HashMap<String, String> settings = calculateSettings( configFile, log, configOverrides );
         Config config = new Config( settings, settingsClasses.calculate( settings ) );
         config.setLogger( log );
         return config;
     }
 
-    private HashMap<String, String> calculateSettings( File configFile, File legacyConfigFile, Log log,
+    private HashMap<String, String> calculateSettings( Optional<File> config, Log log,
                                                        Pair<String, String>[] configOverrides )
     {
         HashMap<String, String> settings = new HashMap<>();
-        if ( configFile != null && configFile.exists() )
-        {
-            settings.putAll( loadFromFile( log, configFile ) );
-        }
-        settings.putAll( loadFromFile( log, legacyConfigFile ) );
+
+        config.ifPresent( ( c ) -> settings.putAll( loadFromFile( log, c ) ) );
         settings.putAll( toMap( configOverrides ) );
         overrideEmbeddedDefaults( settings );
         return settings;
@@ -98,29 +98,21 @@ public class ConfigLoader
 
     private static Map<String, String> loadFromFile( Log log, File file )
     {
-        if ( file == null )
+        if ( !file.exists() )
         {
+            log.warn( "Config file [%s] does not exist.", file );
             return new HashMap<>();
         }
 
-        if ( file.exists() )
+        try
         {
-            try
-            {
-                return MapUtil.load( file );
-            }
-            catch ( IOException e )
-            {
-                log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
-            }
+            return MapUtil.load( file );
         }
-        else
+        catch ( IOException e )
         {
-            log.warn( "Config file [%s] does not exist.", file );
+            log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
+            return new HashMap<>();
         }
-
-        // Default to no user-defined config if no config was found
-        return new HashMap<>();
     }
 
     public interface SettingsClasses

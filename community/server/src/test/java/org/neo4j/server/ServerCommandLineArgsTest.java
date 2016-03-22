@@ -20,10 +20,12 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.util.Optional;
 
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,21 +37,25 @@ public class ServerCommandLineArgsTest
     @Test
     public void shouldPickUpSpecifiedConfigFile() throws Exception
     {
-        shouldPickUpSpecifiedConfigFile( ServerCommandLineArgs.CONFIG_KEY_ALT_1 );
-        shouldPickUpSpecifiedConfigFile( ServerCommandLineArgs.CONFIG_KEY_ALT_2 );
+        Optional<File> expectedFile = Optional.of( new File( "/some-dir/" + ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+        assertEquals( expectedFile, parse( "--config-dir", "/some-dir" ).configFile() );
+        assertEquals( expectedFile, parse( "--config-dir=/some-dir" ).configFile() );
     }
 
-    public void shouldPickUpSpecifiedConfigFile( String key )
+    @Test
+    public void shouldResolveConfigFileRelativeToWorkingDirectory() throws Exception
     {
-        // GIVEN
-        String customConfigFile = "MyConfigFile";
-        String[] args = array( "--" + key, customConfigFile );
+        Optional<File> expectedFile = Optional.of( new File(
+                new File( System.getProperty( "user.dir" ) ),
+                "some-dir/" + ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+        assertEquals( expectedFile, parse( "--config-dir", "some-dir" ).configFile() );
+        assertEquals( expectedFile, parse( "--config-dir=some-dir" ).configFile() );
+    }
 
-        // WHEN
-        ServerCommandLineArgs parsed = ServerCommandLineArgs.parse( args );
-
-        // THEN
-        assertEquals( new File( customConfigFile ), parsed.configFile() );
+    @Test
+    public void shouldReturnNullIfConfigDirIsNotSpecified()
+    {
+        assertEquals( Optional.empty(), parse().configFile() );
     }
 
     @Test
@@ -94,10 +100,15 @@ public class ServerCommandLineArgsTest
 
         // THEN
         assertEquals( asSet(
-                Pair.of( "my_first_option", "first" ),
-                Pair.of( "myoptionenabled", Boolean.TRUE.toString() ),
-                Pair.of( "my_second_option", "second" ) ),
+                        Pair.of( "my_first_option", "first" ),
+                        Pair.of( "myoptionenabled", Boolean.TRUE.toString() ),
+                        Pair.of( "my_second_option", "second" ) ),
 
                 asSet( parsed.configOverrides() ) );
+    }
+
+    private ServerCommandLineArgs parse( String... args )
+    {
+        return ServerCommandLineArgs.parse( args );
     }
 }

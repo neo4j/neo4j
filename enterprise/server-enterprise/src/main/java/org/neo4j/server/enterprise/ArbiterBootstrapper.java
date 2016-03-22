@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -57,7 +58,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
 
     @SafeVarargs
     @Override
-    public final int start( File configFile, Pair<String, String>... configOverrides )
+    public final int start( Optional<File> configFile, Pair<String, String>... configOverrides )
     {
         Config config = getConfig( configFile, configOverrides );
         try
@@ -107,17 +108,19 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
     }
 
     @SafeVarargs
-    private static Config getConfig( File configFile, Pair<String, String>... configOverrides )
+    private static Config getConfig( Optional<File> configFile, Pair<String, String>... configOverrides )
     {
         Map<String, String> config = new HashMap<>();
-        try
-        {
-            config.putAll( MapUtil.load( configFile ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to load config file " + configFile, e );
-        }
+        configFile.ifPresent( (file) -> {
+            try
+            {
+                config.putAll( MapUtil.load( file ) );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "Unable to load config file " + configFile, e );
+            }
+        } );
 
         for ( Pair<String, String> configOverride : configOverrides )
         {

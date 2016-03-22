@@ -93,5 +93,26 @@ InModuleScope Neo4j-Management {
          $neoServer.Home | Should Be $Neo4jDir      
       }
     }
+
+    Context "No explicit location for config directory is provided" {
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j'
+      $Neo4jDir = (Get-Item 'TestDrive:\neo4j').FullName.TrimEnd('\')
+
+      It "Defaults config path to $Neo4jDir\conf" {
+         $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\' -ErrorAction Stop
+         $neoServer.ConfDir | Should Be (Join-Path -Path $Neo4jDir -ChildPath 'conf')
+      }
+    }
+
+    Context "NEO4J_CONF environment variable is set" {
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j'
+      $Neo4jDir = (Get-Item 'TestDrive:\neo4j').FullName.TrimEnd('\')
+      [Environment]::SetEnvironmentVariable('NEO4J_CONF','', 'TestDrive:\neo4j-conf')
+
+      It "Defaults config path to $Neo4jDir\conf" {
+         $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\' -ErrorAction Stop
+         $neoServer.ConfDir | Should Be 'TestDrive:\neo4j-conf'
+      }
+    }
   }
 }

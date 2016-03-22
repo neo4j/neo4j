@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -100,28 +101,29 @@ public class CommunityServerBuilder
         {
             throw new IllegalStateException( "Must specify path" );
         }
-        final File configFile = buildBefore();
+        final Optional<File> configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses ).loadConfig( null, configFile, log );
+        Config config = new ConfigLoader( CommunityBootstrapper.settingsClasses )
+                .loadConfig( configFile, log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
     }
 
-    protected CommunityNeoServer build( File configFile, Config config,
+    protected CommunityNeoServer build( Optional<File> configFile, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return new TestCommunityNeoServer( config, configFile, dependencies, logProvider );
     }
 
-    public File createConfigFiles() throws IOException
+    public Optional<File> createConfigFiles() throws IOException
     {
         File temporaryConfigFile = ServerTestUtils.createTempConfigFile();
         File temporaryFolder = ServerTestUtils.createTempDir();
 
         ServerTestUtils.writeConfigToFile( createConfiguration( temporaryFolder ), temporaryConfigFile );
 
-        return temporaryConfigFile;
+        return Optional.of( temporaryConfigFile );
     }
 
     public CommunityServerBuilder withClock( Clock clock )
@@ -320,9 +322,9 @@ public class CommunityServerBuilder
                 config.get( ServerSettings.script_sandboxing_enabled ), database.getGraph() );
     }
 
-    protected File buildBefore() throws IOException
+    protected Optional<File> buildBefore() throws IOException
     {
-        File configFile = createConfigFiles();
+        Optional<File> configFile = createConfigFiles();
 
         if ( preflightTasks == null )
         {
@@ -340,9 +342,9 @@ public class CommunityServerBuilder
 
     private class TestCommunityNeoServer extends CommunityNeoServer
     {
-        private final File configFile;
+        private final Optional<File> configFile;
 
-        private TestCommunityNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory
+        private TestCommunityNeoServer( Config config, Optional<File> configFile, GraphDatabaseFacadeFactory
                 .Dependencies dependencies, LogProvider logProvider )
         {
             super( config, lifecycleManagingDatabase( persistent ? COMMUNITY_FACTORY : IN_MEMORY_DB ), dependencies,
@@ -360,7 +362,7 @@ public class CommunityServerBuilder
         public void stop()
         {
             super.stop();
-            configFile.delete();
+            configFile.ifPresent( File::delete );
         }
     }
 }

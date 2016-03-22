@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,11 +59,11 @@ public class ConfigLoaderTest
     public void shouldProvideAConfiguration() throws IOException
     {
         // given
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
+        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .build();
 
         // when
-        Config config = configLoader.loadConfig( null, configFile, log );
+        Config config = configLoader.loadConfig( configFile, log );
 
         // then
         assertNotNull( config );
@@ -72,12 +73,12 @@ public class ConfigLoaderTest
     public void shouldUseSpecifiedConfigFile() throws Exception
     {
         // given
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
+        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( "foo", "bar" )
                 .build();
 
         // when
-        Config testConf = configLoader.loadConfig( null, configFile, log );
+        Config testConf = configLoader.loadConfig( configFile, log );
 
         // then
         final String EXPECTED_VALUE = "bar";
@@ -88,13 +89,13 @@ public class ConfigLoaderTest
     public void shouldAcceptDuplicateKeysWithSameValue() throws IOException
     {
         // given
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
+        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( "foo", "bar" )
                 .withNameValue( "foo", "bar" )
                 .build();
 
         // when
-        Config testConf = configLoader.loadConfig( null, configFile, log );
+        Config testConf = configLoader.loadConfig( configFile, log );
 
         // then
         assertNotNull( testConf );
@@ -119,7 +120,7 @@ public class ConfigLoaderTest
         }
 
         // when
-        Config config = configLoader.loadConfig( null, file, log );
+        Config config = configLoader.loadConfig( Optional.of( file ), log );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -131,14 +132,14 @@ public class ConfigLoaderTest
     public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages() throws IOException
     {
         // given
-        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
+        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( ServerSettings.third_party_packages.name(),
                         "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
                                 "org.neo4j.extension.extension3=/extension3" )
                 .build();
 
         // when
-        Config config = configLoader.loadConfig( null, configFile, log );
+        Config config = configLoader.loadConfig( configFile, log );
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -154,10 +155,10 @@ public class ConfigLoaderTest
     public void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist()
     {
         // Given
-        File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );
+        Optional<File> nonExistentConfigFile = Optional.of( new File( "/tmp/" + System.currentTimeMillis() ) );
 
         // When
-        Config config = configLoader.loadConfig( null, nonExistentConfigFile, log );
+        Config config = configLoader.loadConfig( nonExistentConfigFile, log );
 
         // Then
         assertNotNull( config );

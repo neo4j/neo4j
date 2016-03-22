@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Optional;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -55,7 +56,7 @@ public class ConfigFileBuilder
         this.directory = directory;
     }
 
-    public File build() throws IOException
+    public Optional<File> build() throws IOException
     {
         File file = new File( directory, "config" );
         Map<String, String> config = MapUtil.stringMap(
@@ -65,7 +66,7 @@ public class ConfigFileBuilder
         for ( Tuple t : nameValuePairs )
             config.put( t.name, t.value );
         ServerTestUtils.writeConfigToFile( config, file );
-        return file;
+        return Optional.of( file );
     }
 
     public ConfigFileBuilder withNameValue( String name, String value )
