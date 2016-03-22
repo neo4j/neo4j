@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, PatternRelationship, StrictnessMode}
 import org.neo4j.cypher.internal.frontend.v3_0.InternalException
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{PeriodicCommitHint, Hint, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Variable, PeriodicCommitHint, Hint, LabelName}
 
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce
@@ -177,7 +177,18 @@ sealed trait PlannerQuery {
     loop(Seq.empty, Some(this))
   }
 
-  def labelInfo: Map[IdName, Set[LabelName]] = lastQueryGraph.selections.labelInfo
+  def labelInfo: Map[IdName, Set[LabelName]] = {
+    val labelInfo = lastQueryGraph.selections.labelInfo
+    val projectedLabelInfo = lastQueryHorizon match {
+      case projection: QueryProjection =>
+        projection.projections.collect {
+          case (projectedName, Variable(name)) if labelInfo.contains(IdName(name)) =>
+              IdName(projectedName) -> labelInfo(IdName(name))
+        }
+      case _ => Map.empty[IdName, Set[LabelName]]
+    }
+    labelInfo ++ projectedLabelInfo
+  }
 }
 
 object PlannerQuery {
