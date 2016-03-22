@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import java.io.File;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -78,7 +80,7 @@ public abstract class EditionModule
 
     public IOLimiter ioLimiter;
 
-    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver)
+    protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
     {
         DiagnosticsManager diagnosticsManager = dependencyResolver.resolveDependency( DiagnosticsManager.class );
         NeoStoreDataSource neoStoreDataSource = dependencyResolver.resolveDependency( NeoStoreDataSource.class );
@@ -96,14 +98,20 @@ public abstract class EditionModule
         config.augment( singletonMap( Configuration.editionName.name(), databaseInfo.edition.toString() ) );
     }
 
-    protected AuthManager createAuthManager(Config config, LifeSupport life, LogProvider logProvider)
+    protected AuthManager createAuthManager( Config config, LifeSupport life, LogProvider logProvider )
     {
-
         boolean authEnabled = config.get( GraphDatabaseSettings.auth_enabled );
-        if ( authEnabled)
+        if ( authEnabled )
         {
-            FileUserRepository users = life.add( new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider ) );
-            return life.add(new BasicAuthManager( users, systemUTC(), true ));
+            File storePath = config.get( GraphDatabaseSettings.auth_store );
+            if ( storePath == null )
+            {
+                logProvider.getLog( EditionModule.class ).warn( "Authentication not enabled because %s is not set.",
+                        GraphDatabaseSettings.auth_store.name() );
+                return AuthManager.NO_AUTH;
+            }
+            FileUserRepository users = life.add( new FileUserRepository( storePath.toPath(), logProvider ) );
+            return life.add( new BasicAuthManager( users, systemUTC(), true ) );
         }
         else
         {

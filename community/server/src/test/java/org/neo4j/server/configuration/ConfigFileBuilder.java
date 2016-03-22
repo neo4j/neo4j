@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 
@@ -72,6 +73,12 @@ public class ConfigFileBuilder
     public ConfigFileBuilder withNameValue( String name, String value )
     {
         nameValuePairs.add( new Tuple( name, value ) );
+        return this;
+    }
+
+    public ConfigFileBuilder withSetting( Setting setting, String value )
+    {
+        nameValuePairs.add( new Tuple( setting.name(), value ) );
         return this;
     }
 }

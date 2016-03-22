@@ -26,14 +26,13 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.BaseBootstrapperTest;
+import org.neo4j.server.ServerBootstrapper;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
 import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
@@ -69,7 +68,6 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         int resultCode = ServerBootstrapper.start( bootstrapper,
                 "-c", configOption( EnterpriseServerSettings.mode, "SINGLE" ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
-                "-c", configOption( auth_store, getRelativePath( folder.getRoot(), auth_store ) ),
                 "-c", configOption( tls_key_file, getRelativePath( folder.getRoot(), tls_key_file ) ),
                 "-c", configOption( tls_certificate_file, getRelativePath( folder.getRoot(), tls_certificate_file ) ),
                 "-c", configOption( tls_certificate_file, getRelativePath( folder.getRoot(), tls_certificate_file ) ),
@@ -90,7 +88,6 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
                 "-c", configOption( ClusterSettings.server_id, "1" ),
                 "-c", configOption( ClusterSettings.initial_hosts, "127.0.0.1:5001" ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
-                "-c", configOption( auth_store, getRelativePath( folder.getRoot(), auth_store ) ),
                 "-c", configOption( tls_key_file, getRelativePath( folder.getRoot(), tls_key_file ) ),
                 "-c", configOption( tls_certificate_file, getRelativePath( folder.getRoot(), tls_certificate_file ) ),
                 "-c", "dbms.connector.1.type=HTTP",
