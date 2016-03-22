@@ -96,6 +96,9 @@
       <aka>Apache 2</aka>
       <aka>Apache License, Version 2.0</aka>
       <aka>Apache License 2.0</aka>
+      <aka>Apache 2.0</aka>
+      <aka>Apache</aka>
+      <aka>ASL</aka>
     </license>
     <license name="BSD License">
       <aka>BSD</aka>
@@ -138,6 +141,7 @@
     <license name="GNU Lesser General Public License, Version 2.1">
       <aka>LGPL2.1</aka>
       <aka>GNU Lesser General Public License</aka>
+      <aka>GNU Lesser General Public Licence</aka>
       <aka>GNU Lesser General Public License (LGPL), Version 2.1</aka>
       <aka>GNU Lesser Public License</aka>
     </license>
