@@ -38,6 +38,10 @@ setup_environment() {
   _setup_configurable_paths
 }
 
+build_classpath() {
+  CLASSPATH="${NEO4J_LIB}/*:${NEO4J_PLUGINS}/*"
+}
+
 _setup_calculated_paths() {
   if [[ -z "${NEO4J_HOME:-}" ]]; then
     NEO4J_HOME="$(cd "$(dirname "$0")"/.. && pwd)"

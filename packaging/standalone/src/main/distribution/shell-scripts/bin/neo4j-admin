@@ -142,10 +142,6 @@ detect_os() {
   fi
 }
 
-build_classpath() {
-  CLASSPATH="${NEO4J_HOME}/lib/*:${NEO4J_HOME}/plugins/*"
-}
-
 check_java() {
   find_java_cmd
 

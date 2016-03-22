@@ -177,10 +177,6 @@ setup_java_opts() {
   fi
 }
 
-build_classpath() {
-  CLASSPATH="${NEO4J_LIB}/*:${NEO4J_PLUGINS}/*"
-}
-
 assemble_command_line() {
   retval=("${JAVA_CMD}" "-cp" "${CLASSPATH}" "${JAVA_OPTS[@]}" "-Dfile.encoding=UTF-8" "${MAIN_CLASS}" \
           "--config-dir=${NEO4J_CONF}")
