@@ -28,4 +28,12 @@ test_expect_success "should respect log directory configuration" "
   test_expect_file_matching 'stdout from java' '$(neo4j_home)/other-log-dir/neo4j.log'
 "
 
+test_expect_success "can configure log directory outside neo4j-root" "
+  clear_config &&
+  mkdir -p other-log-dir &&
+  set_config 'dbms.directories.logs' '$(pwd)/other-log-dir' neo4j.conf &&
+  run_daemon &&
+  test_expect_file_matching 'stdout from java' '$(pwd)/other-log-dir/neo4j.log'
+"
+
 test_done

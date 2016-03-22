@@ -53,7 +53,7 @@ for run_command in run_console run_daemon; do
     clear_config &&
     set_config 'dbms.logs.gc.enabled' 'true' neo4j.conf &&
     ${run_command} &&
-    test_expect_java_arg '-Xloggc:$(neo4j_home)/logs/gc.log'
+    test_expect_java_arg '-Xloggc:logs/gc.log'
   "
 
   test_expect_success "should set gc logging options when gc log is enabled" "
@@ -83,7 +83,7 @@ for run_command in run_console run_daemon; do
 
   test_expect_success "should pass config dir location" "
     ${run_command} &&
-    test_expect_java_arg '--config-dir=./conf'
+    test_expect_java_arg '--config-dir=conf'
   "
 
   test_expect_success "should be able to override config dir location" "

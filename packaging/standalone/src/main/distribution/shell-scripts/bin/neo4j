@@ -32,7 +32,7 @@ setup_calculated_paths() {
   if [[ -z "${NEO4J_HOME:-}" ]]; then
     NEO4J_HOME="$(cd "$(dirname "$0")"/.. && pwd)"
   fi
-  : "${NEO4J_CONF:=./conf}"
+  : "${NEO4J_CONF:=conf}"
   readonly PROGRAM NEO4J_ROOT NEO4J_CONF
 }
 
@@ -187,8 +187,8 @@ parse_config() {
 }
 
 setup_configurable_paths() {
-  NEO4J_PIDFILE="${NEO4J_HOME}/${dbms_directories_run:-run}/neo4j.pid"
-  NEO4J_LOG="${NEO4J_HOME}/${dbms_directories_logs:-logs}"
+  NEO4J_PIDFILE="${dbms_directories_run:-run}/neo4j.pid"
+  NEO4J_LOG="${dbms_directories_logs:-logs}"
   CONSOLE_LOG="${NEO4J_LOG}/neo4j.log"
 }
 
