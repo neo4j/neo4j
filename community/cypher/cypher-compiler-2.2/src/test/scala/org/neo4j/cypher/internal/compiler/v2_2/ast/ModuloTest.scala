@@ -30,18 +30,18 @@ class ModuloTest extends InfixExpressionTestBase(Modulo(_, _)(DummyPosition(0)))
   // 1.1 % 1 => 0.1
   // 1.1 % 1.1 => 0.0
 
-  test("shouldHandleAllSpecializations") {
+  test("should handle all specializations") {
     testValidTypes(CTInteger, CTInteger)(CTInteger)
     testValidTypes(CTInteger, CTFloat)(CTFloat)
     testValidTypes(CTFloat, CTInteger)(CTFloat)
     testValidTypes(CTFloat, CTFloat)(CTFloat)
   }
 
-  test("shouldHandleCombinedSpecializations") {
+  test("should handle combined specializations") {
     testValidTypes(CTFloat | CTInteger, CTFloat | CTInteger)(CTFloat | CTInteger)
   }
 
-  test("shouldFailTypeCheckWhenAddingIncompatible") {
+  test("should fail type check when adding incompatible") {
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Float or Integer but was Boolean"
     )
