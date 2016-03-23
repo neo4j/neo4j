@@ -104,8 +104,7 @@ public class InProcessBuilderTest
                 .withConfig( ServerSettings.tls_key_file.name(),
                     ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) )
                 .withConfig( ServerSettings.tls_certificate_file.name(),
-                    ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) )
-                .withConfig( GraphDatabaseSettings.auth_store.name(), new File(workDir, "auth").getAbsolutePath() );
+                    ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) );
     }
 
     @Test

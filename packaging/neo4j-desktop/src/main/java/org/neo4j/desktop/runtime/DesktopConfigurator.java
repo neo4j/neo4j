@@ -33,7 +33,7 @@ import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.helpers.collection.Pair.pair;
 import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
 import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
@@ -59,7 +59,7 @@ public class DesktopConfigurator
                 FormattedLog.toOutputStream( System.out ),
 
                 /** Desktop-specific config overrides */
-                pair( auth_store.name(), new File( dbDir, "./dbms/auth" ).getAbsolutePath() ),
+                pair( data_directory.name(), new File( dbDir, "./data" ).getAbsolutePath() ),
                 pair( tls_certificate_file.name(), new File( dbDir, "./certificates/snakeoil.cert" ).getAbsolutePath() ),
                 pair( tls_key_file.name(), new File( dbDir, "./certificates/snakeoil.key" ).getAbsolutePath() ),
 

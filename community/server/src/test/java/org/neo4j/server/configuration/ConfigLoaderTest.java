@@ -30,6 +30,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -37,8 +39,10 @@ import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.SuppressOutput;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
@@ -109,7 +113,7 @@ public class ConfigLoaderTest
         // given
         File file = ServerTestUtils.createTempConfigFile( folder.getRoot() );
 
-        try(BufferedWriter out = new BufferedWriter( new FileWriter( file, true ) ))
+        try ( BufferedWriter out = new BufferedWriter( new FileWriter( file, true ) ) )
         {
             out.write( ServerSettings.third_party_packages.name() );
             out.write( "=" );
@@ -162,5 +166,17 @@ public class ConfigLoaderTest
 
         // Then
         assertNotNull( config );
+    }
+
+    @Test
+    public void shouldSetAValueForAuthStoreLocation() throws IOException
+    {
+        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
+                .withSetting( DatabaseManagementSystemSettings.data_directory, "the-data-dir" )
+                .build();
+        Config config = configLoader.loadConfig( configFile, log );
+
+        assertThat( config.get( GraphDatabaseSettings.auth_store ),
+                is( new File( "the-data-dir/dbms/auth" ).getAbsoluteFile() ) );
     }
 }
