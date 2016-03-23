@@ -440,11 +440,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
                     indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering, format );
 
-            // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
-            // true it's not entirely true for the time being. As long as we need this call below, which
-            // makes available one or more internal things to the outside world, there are leaks to plug.
-            storageEngine.satisfyDependencies( dependencies );
-
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                     new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory() );
 
@@ -562,13 +557,20 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             RecordFormats format )
     {
         LabelScanStoreProvider labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
-                HighestSelectionStrategy.getInstance());
-        return life.add(
-                new RecordStorageEngine( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider, propertyKeyTokenHolder,
-                        labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
-                        tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
-                        labelScanStore, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                        format ) );
+                HighestSelectionStrategy.getInstance() );
+        RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config, idGeneratorFactory, pageCache,
+                fs, logProvider, propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStateChangeCallback,
+                constraintSemantics, scheduler, tokenNameLookup, lockService, schemaIndexProvider,
+                indexingServiceMonitor, databaseHealth, labelScanStore, legacyIndexProviderLookup, indexConfigStore,
+                legacyIndexTransactionOrdering, format );
+
+        // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
+        // true it's not entirely true for the time being. As long as we need this call below, which
+        // makes available one or more internal things to the outside world, there are leaks to plug.
+        storageEngine.satisfyDependencies( dependencies );
+
+        return life.add( storageEngine );
+
     }
 
     private TransactionLogModule buildTransactionLogs(
