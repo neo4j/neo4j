@@ -8,34 +8,22 @@ Import-Module "$src\Neo4j-Management.psm1"
 InModuleScope Neo4j-Management {
   Describe "Get-Neo4jWindowsServiceName" {
 
+    Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' } 
 
     Context "Missing service name in configuration files" {
-      Mock Get-Neo4jSetting { throw "Missing service name" }
-
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
+      $serverObject = global:New-MockNeo4jInstall -WindowsService ''
+      
       It "throws error for missing service name in configuration file" {
         { Get-Neo4jWindowsServiceName -Neo4jServer $serverObject -ErrorAction Stop } | Should Throw
       }
     }
 
     Context "Service name in configuration files" {
-      Mock Get-Neo4jSetting { @{ Value = "ServiceName"} }
-
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
+      $serverObject = global:New-MockNeo4jInstall
+      
       It "returns Service name in configuration file" {
-        Get-Neo4jWindowsServiceName -Neo4jServer $serverObject | Should be 'ServiceName'
+        Get-Neo4jWindowsServiceName -Neo4jServer $serverObject | Should be $global:mockServiceName
       }
     }
-
   }
 }

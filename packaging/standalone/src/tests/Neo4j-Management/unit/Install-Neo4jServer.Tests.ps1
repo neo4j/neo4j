@@ -8,14 +8,22 @@ Import-Module "$src\Neo4j-Management.psm1"
 InModuleScope Neo4j-Management {
   Describe "Install-Neo4jServer" {
 
+    # Setup mocking environment
+    #  Mock Java environment
+    $javaHome = global:New-MockJavaHome
+    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+    Mock Test-Path { $false } -ParameterFilter {
+      $Path -like 'Registry::*\JavaSoft\Java Runtime Environment'
+    }
+    Mock Get-ItemProperty { $null } -ParameterFilter {
+      $Path -like 'Registry::*\JavaSoft\Java Runtime Environment*'
+    }
+    # Mock Neo4j environment
+    Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' } 
+    Mock Start-Process { throw "Should not call Start-Process mock" }
+
     Context "Invalid or missing specified neo4j installation" {
-      Mock Get-Java { return @{ 'java' = '' } }
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
+      $serverObject = global:New-InvalidNeo4jInstall
  
       It "return throw if invalid or missing neo4j directory" {
         { Install-Neo4jServer -Neo4jServer $serverObject  -ErrorAction Stop }  | Should Throw      
@@ -23,14 +31,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Invalid or missing servicename in specified neo4j installation" {
-      Mock Get-Java { return @{ 'java' = '' } }
-      Mock Get-Neo4jWindowsServiceName { throw "Could not determine Service Name" }
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
+      $serverObject = global:New-MockNeo4jInstall -WindowsService ''
  
       It "return throw if invalid or missing service name" {
         { Install-Neo4jServer -Neo4jServer $serverObject  -ErrorAction Stop }  | Should Throw      
@@ -38,18 +39,12 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Windows service already exists" {
-      Mock Get-Neo4jWindowsServiceName { return 'SomeServiceName'}
-      Mock Get-Java { return @{ 'java' = 'java.exe'; 'args' = @('arg1','arg2') }}
       Mock Get-Service -Verifiable { return 'Service Exists' }
-      Mock New-Service { throw "Should not call New-Service"}
 
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
+      $serverObject = global:New-MockNeo4jInstall
+      
       $result = Install-Neo4jServer -Neo4jServer $serverObject
+      
       It "returns 0 for service that already exists" {
         $result | Should Be 0
       }
@@ -60,23 +55,9 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Installs windows service with failure" {
-      Mock Get-Neo4jWindowsServiceName { return 'SomeServiceName'}
-      Mock Get-Java { return @{ 'java' = 'java.exe'; 'args' = @('arg1','arg2') }}
-      Mock New-Service { 'fake success' }
-      
-      Mock New-Service -Verifiable { throw "Error installing" }  -ParameterFilter {
-        ($Name -eq 'SomeServiceName') -and
-        ($BinaryPathName -eq '"java.exe" arg1 arg2 SomeServiceName') -and
-        ($StartupType -eq 'Automatic')
-      }
+      Mock Start-Process -Verifiable { throw "Error installing" }
 
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
-      $result = 
+      $serverObject = global:New-MockNeo4jInstall
 
       It "throws when error during installation" {
         { Install-Neo4jServer -Neo4jServer $serverObject } | Should Throw
@@ -88,22 +69,10 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Installs windows service with success" {
-      Mock Get-Neo4jWindowsServiceName { return 'SomeServiceName'}
-      Mock Get-Java { return @{ 'java' = 'java.exe'; 'args' = @('arg1','arg2') }}
-      Mock New-Service { throw 'Did not call New-Service correctly' }
-      
-      Mock New-Service -Verifiable { 'service' }  -ParameterFilter {
-        ($Name -eq 'SomeServiceName') -and
-        ($BinaryPathName -eq '"java.exe" arg1 arg2 SomeServiceName') -and
-        ($StartupType -eq 'Automatic')
-      }
+      Mock Start-Process -Verifiable { @{ 'ExitCode' = 0} }
 
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
+      $serverObject = global:New-MockNeo4jInstall 
+
       $result = Install-Neo4jServer -Neo4jServer $serverObject
 
       It "returns 0 when succesfully installed" {
@@ -114,6 +83,5 @@ InModuleScope Neo4j-Management {
         Assert-VerifiableMocks
       }
     }
-
   }
 }
