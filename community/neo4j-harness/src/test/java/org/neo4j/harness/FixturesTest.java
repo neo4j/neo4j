@@ -19,15 +19,14 @@
  */
 package org.neo4j.harness;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
@@ -38,6 +37,7 @@ import org.neo4j.test.server.HTTP;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -224,9 +224,7 @@ public class FixturesTest
                 .withConfig( ServerSettings.tls_key_file.name(),
                         ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) )
                 .withConfig( ServerSettings.tls_certificate_file.name(),
-                        ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) )
-                .withConfig( GraphDatabaseSettings.auth_store.name(),
-                        ServerTestUtils.getRelativePath( testDir.directory(), GraphDatabaseSettings.auth_store ) );
+                        ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) );
         return serverBuilder;
     }
 

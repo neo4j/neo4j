@@ -19,22 +19,20 @@
  */
 package org.neo4j.harness;
 
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
-
-import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
@@ -43,6 +41,7 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
@@ -116,8 +115,6 @@ public class JUnitRuleTest
 
         GraphDatabaseService db = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.directory() )
-                .setConfig( GraphDatabaseSettings.auth_store, ServerTestUtils
-                        .getRelativePath( testDirectory.directory(), GraphDatabaseSettings.auth_store ) )
                 .newGraphDatabase();
         try {
             db.execute( "create ()" );

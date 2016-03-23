@@ -30,7 +30,6 @@ import java.util.function.Function;
 
 import org.apache.commons.io.FileUtils;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.harness.ServerControls;
@@ -51,8 +50,8 @@ import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.Iterables.append;
@@ -86,7 +85,6 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     {
         setDirectory( workingDir );
         withConfig( auth_enabled, "false" );
-        withConfig( auth_store, getRelativePath( workingDir, auth_store ) );
         withConfig( pagecache_memory, "8m" );
         withConfig( httpConnector( "1" ).type, "HTTP" );
         withConfig( httpConnector( "1" ).enabled, "true" );
@@ -211,7 +209,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private TestServerBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;
-        config.put( DatabaseManagementSystemSettings.data_directory.name(), serverFolder.getAbsolutePath() );
+        config.put( data_directory.name(), serverFolder.getAbsolutePath() );
         return this;
     }
 

@@ -451,7 +451,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, "false" );
 
     @Internal
-    public static final Setting<File> auth_store = setting("dbms.security.auth_store.location", PATH, "data/dbms/auth");
+    public static final Setting<File> auth_store = setting("unsupported.dbms.security.auth_store.location", PATH, NO_DEFAULT);
 
     // Bolt Settings
 

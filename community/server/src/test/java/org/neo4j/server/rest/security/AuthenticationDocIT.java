@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.security;
 
+import java.io.IOException;
+import javax.ws.rs.core.HttpHeaders;
+
 import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
@@ -27,15 +30,9 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import javax.ws.rs.core.HttpHeaders;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -327,11 +324,8 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
 
     public void startServer( boolean authEnabled ) throws IOException
     {
-        File authStore = ServerTestUtils.getRelativeFile( GraphDatabaseSettings.auth_store );
-        FileUtils.deleteFile( authStore);
         server = CommunityServerBuilder.server()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
-                .withProperty( GraphDatabaseSettings.auth_store.name(), authStore.getAbsolutePath() )
                 .build();
         server.start();
     }
