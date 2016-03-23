@@ -19,19 +19,18 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.StringReader;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.function.Functions;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TargetDirectory;
@@ -833,7 +832,7 @@ public class CsvInputTest
 
     private <ENTITY extends InputEntity> DataFactory<ENTITY> given( final CharSeeker data )
     {
-        return config -> dataItem( data, Functions.<ENTITY>identity() );
+        return config -> dataItem( data, (Function<ENTITY,ENTITY>) value -> value );
     }
 
     private <ENTITY extends InputEntity> DataFactory<ENTITY> data( final CharSeeker data,
@@ -921,7 +920,7 @@ public class CsvInputTest
 
     private static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final String data )
     {
-        return data( data, Functions.<ENTITY>identity() );
+        return data( data, value -> value );
     }
 
     private static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final String data,

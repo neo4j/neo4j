@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.function.Functions;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
@@ -158,8 +157,7 @@ public class SchemaStorageTest
         createUniquenessConstraint( LABEL1, PROP1 );
 
         // When
-        Set<NodePropertyConstraintRule> listedRules = asSet( storage.schemaRulesForNodes(
-                Functions.<NodePropertyConstraintRule>identity(), NodePropertyConstraintRule.class, labelId( LABEL1 ),
+        Set<NodePropertyConstraintRule> listedRules = asSet( storage.schemaRulesForNodes( value -> value, NodePropertyConstraintRule.class, labelId( LABEL1 ),
                 Predicates.<NodePropertyConstraintRule>alwaysTrue() ) );
 
         // Then

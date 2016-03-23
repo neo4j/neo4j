@@ -252,10 +252,6 @@ the relevant Commercial Agreement.
                   <packages>org.neo4j.procedure</packages>
                 </group>
                 <group>
-                  <title>Tooling</title>
-                  <packages>org.neo4j.tooling:org.neo4j.tooling.*</packages>
-                </group>
-                <group>
                   <title>Server Plugin API</title>
                   <packages>org.neo4j.server:org.neo4j.server.*</packages>
                 </group>

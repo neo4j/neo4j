@@ -19,16 +19,14 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.junit.Test;
+
 import org.neo4j.consistency.checking.NodeRecordCheck.LabelsField;
 import org.neo4j.consistency.checking.NodeRecordCheck.RelationshipField;
-import org.neo4j.consistency.checking.full.MandatoryProperties;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.function.Functions;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -42,12 +40,11 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import static java.util.Arrays.asList;
 
 public class NodeRecordCheckTest
         extends RecordCheckTestBase<NodeRecord, ConsistencyReport.NodeConsistencyReport, NodeRecordCheck>
@@ -55,7 +52,7 @@ public class NodeRecordCheckTest
     public NodeRecordCheckTest()
     {
         super( new NodeRecordCheck( RelationshipField.NEXT_REL, LabelsField.LABELS,
-                new PropertyChain<>( Functions.<NodeRecord,MandatoryProperties.Check<NodeRecord,ConsistencyReport.NodeConsistencyReport>>nullFunction() ) ),
+                new PropertyChain<>( from -> null ) ),
                 ConsistencyReport.NodeConsistencyReport.class, new int[0] );
     }
 

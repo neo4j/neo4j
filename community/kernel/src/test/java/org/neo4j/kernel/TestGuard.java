@@ -98,7 +98,7 @@ public class TestGuard
             assertEquals( 1, ops3.getOpsCount() );
 
             getGuard( db ).startOperationsCount( MAX_VALUE );
-            count( Traversal.description().breadthFirst().relationships( withName( "REL" ) ).traverse( n0 ) );
+            count( db.traversalDescription().breadthFirst().relationships( withName( "REL" ) ).traverse( n0 ) );
             Guard.OperationsCount ops4 = getGuard( db ).stop();
             assertEquals( 2, ops4.getOpsCount() );
         }

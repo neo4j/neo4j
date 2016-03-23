@@ -22,8 +22,8 @@ package org.neo4j.kernel.ha.management;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
-import org.neo4j.function.Functions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -91,12 +91,13 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
     public ClusterMemberInfo[] getClusterInfo()
     {
         List<ClusterMemberInfo> clusterMemberInfos = new ArrayList<ClusterMemberInfo>(  );
+        Function<Object,String> nullSafeToString = from -> from == null ? "" : from.toString();
         for ( ClusterMember clusterMember : memberInfo.getMembers() )
         {
             ClusterMemberInfo clusterMemberInfo = new ClusterMemberInfo( clusterMember.getInstanceId().toString(),
                     clusterMember.getHAUri() != null, clusterMember.isAlive(), clusterMember.getHARole(),
-                    asArray( String.class, map( Functions.TO_STRING, clusterMember.getRoleURIs() ) ),
-                    asArray( String.class, map( Functions.TO_STRING, clusterMember.getRoles() ) ) );
+                    asArray( String.class, map( nullSafeToString, clusterMember.getRoleURIs() ) ),
+                    asArray( String.class, map( nullSafeToString, clusterMember.getRoles() ) ) );
             clusterMemberInfos.add( clusterMemberInfo );
         }
 

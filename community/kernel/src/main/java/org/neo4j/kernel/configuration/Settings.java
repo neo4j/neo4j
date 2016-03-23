@@ -30,7 +30,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
@@ -143,7 +142,7 @@ public class Settings
         }
         else
         {
-            defaultLookup = Functions.nullFunction();
+            defaultLookup = from -> null;
         }
 
         if ( inheritedSetting != null )
@@ -942,7 +941,7 @@ public class Settings
         @Override
         public String getDefaultValue()
         {
-            return defaultLookup( Functions.<String, String>nullFunction() );
+            return defaultLookup( from -> null );
         }
 
         @Override

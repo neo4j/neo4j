@@ -20,7 +20,7 @@
 package org.neo4j.graphalgo.impl.path;
 
 import org.neo4j.graphdb.PathExpander;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 
 public class AllSimplePaths extends AllPaths
 {

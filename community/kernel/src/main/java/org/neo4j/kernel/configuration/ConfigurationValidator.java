@@ -23,7 +23,6 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.Pair;
 
@@ -47,7 +46,7 @@ public class ConfigurationValidator
     {
         for ( Setting<?> setting : settings.values() )
         {
-            setting.apply( Functions.map( rawConfig ) );
+            setting.apply( rawConfig::get );
         }
     }
 

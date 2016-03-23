@@ -19,17 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+
+import org.junit.Test;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
-import org.neo4j.function.Functions;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -203,7 +202,7 @@ public class DataFactoriesTest
         // GIVEN
         final Reader firstSource = new StringReader( "id:ID\tname:String\tbirth_date:long" );
         final Reader secondSource = new StringReader( "0\tThe node\t123456789" );
-        DataFactory<InputNode> dataFactory = data( Functions.<InputNode>identity(), () -> {
+        DataFactory<InputNode> dataFactory = data( value -> value, () -> {
             try
             {
                 return sources( firstSource, secondSource );

@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
-import org.mockito.InOrder;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
+
+import org.junit.Test;
+import org.mockito.InOrder;
 
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -49,7 +49,6 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.function.Functions.constant;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperationsTest
@@ -285,7 +284,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeUpdatingSchemaState() throws Exception
     {
         // given
-        Function<Object, Object> creator = constant( null );
+        Function<Object, Object> creator = from -> null;
 
         // when
         lockingOps.schemaStateGetOrCreate( state, null, creator );

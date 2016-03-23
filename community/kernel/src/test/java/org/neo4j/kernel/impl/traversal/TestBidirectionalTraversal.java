@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
+import java.util.function.Predicate;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.function.Predicate;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -40,22 +40,19 @@ import org.neo4j.graphdb.traversal.BranchCollisionPolicy;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.InitialBranchState;
+import org.neo4j.graphdb.traversal.SideSelectorPolicies;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.SideSelectorPolicies;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfContainsAll;
-import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
-import static org.neo4j.kernel.Traversal.traversal;
-import static org.neo4j.kernel.Uniqueness.NODE_PATH;
-import static org.neo4j.kernel.Uniqueness.RELATIONSHIP_PATH;
+import static org.neo4j.graphdb.traversal.Uniqueness.NODE_PATH;
+import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_PATH;
 
 public class TestBidirectionalTraversal extends TraversalTestBase
 {
@@ -79,9 +76,9 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     {
         createGraph( "A TO B" );
 
-        Iterables.count( bidirectionalTraversal()
-            .startSide( traversal().uniqueness( Uniqueness.NODE_GLOBAL ) )
-            .endSide( traversal().uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ) )
+        Iterables.count( getGraphDb().bidirectionalTraversalDescription()
+            .startSide( getGraphDb().traversalDescription().uniqueness( Uniqueness.NODE_GLOBAL ) )
+            .endSide( getGraphDb().traversalDescription().uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ) )
             .traverse( getNodeWithName( "A" ), getNodeWithName( "B" ) ) );
     }
 
@@ -95,13 +92,13 @@ public class TestBidirectionalTraversal extends TraversalTestBase
          */
         createGraph( "a TO b", "b TO c", "c TO d", "d TO e", "e TO f", "f TO a" );
 
-        PathExpander<Void> expander = Traversal.pathExpanderForTypes( to, OUTGOING );
-        expectPaths( bidirectionalTraversal()
-                .mirroredSides( traversal().uniqueness( NODE_PATH ).expand( expander ) )
+        PathExpander<Void> expander = PathExpanders.forTypeAndDirection( to, OUTGOING );
+        expectPaths( getGraphDb().bidirectionalTraversalDescription()
+                .mirroredSides( getGraphDb().traversalDescription().uniqueness( NODE_PATH ).expand( expander ) )
                 .traverse( getNodeWithName( "a" ), getNodeWithName( "f" ) ), "a,b,c,d,e,f" );
 
-        expectPaths( bidirectionalTraversal()
-                .mirroredSides( traversal().uniqueness( RELATIONSHIP_PATH ).expand( expander ) )
+        expectPaths( getGraphDb().bidirectionalTraversalDescription()
+                .mirroredSides( getGraphDb().traversalDescription().uniqueness( RELATIONSHIP_PATH ).expand( expander ) )
                 .traverse( getNodeWithName( "a" ), getNodeWithName( "f" ) ), "a,b,c,d,e,f", "a,b,c,d,e,f" );
     }
 
@@ -120,8 +117,8 @@ public class TestBidirectionalTraversal extends TraversalTestBase
         createGraph( "a TO b", "a TO c", "c TO b", "a TO d", "d TO e", "e TO b", "e TO f", "f TO b" );
 
         PathExpander<Void> expander = PathExpanders.forTypeAndDirection( to, OUTGOING );
-        BidirectionalTraversalDescription traversal = bidirectionalTraversal()
-                .mirroredSides( traversal().uniqueness( NODE_PATH ).expand( expander ) );
+        BidirectionalTraversalDescription traversal = getGraphDb().bidirectionalTraversalDescription()
+                .mirroredSides( getGraphDb().traversalDescription().uniqueness( NODE_PATH ).expand( expander ) );
         expectPaths( traversal
                 .collisionEvaluator( includeIfContainsAll( getNodeWithName( "e" ) ) )
                 .traverse( getNodeWithName( "a" ), getNodeWithName( "b" ) ), "a,d,e,b", "a,d,e,f,b" );
@@ -144,7 +141,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
          */
         createGraph( "a TO b", "b TO g", "g TO c", "a TO d", "d TO e", "e TO c", "e TO f", "f TO c" );
 
-        expectPaths( bidirectionalTraversal().mirroredSides( traversal().uniqueness( NODE_PATH ) )
+        expectPaths( getGraphDb().bidirectionalTraversalDescription().mirroredSides( getGraphDb().traversalDescription().uniqueness( NODE_PATH ) )
             .collisionEvaluator( Evaluators.atDepth( 3 ) )
             .collisionEvaluator( Evaluators.includeIfContainsAll( getNodeWithName( "e" ) ) )
             .traverse( getNodeWithName( "a" ), getNodeWithName( "c" ) ),
@@ -164,8 +161,8 @@ public class TestBidirectionalTraversal extends TraversalTestBase
         createGraph( "a TO d", "b TO d", "c TO d", "e TO d", "e TO f", "e TO g" );
 
         PathExpander<Void> expander = PathExpanderBuilder.<Void>empty().add( to ).build();
-        TraversalDescription side = traversal().uniqueness( NODE_PATH ).expand( expander );
-        expectPaths( bidirectionalTraversal().mirroredSides( side ).traverse(
+        TraversalDescription side = getGraphDb().traversalDescription().uniqueness( NODE_PATH ).expand( expander );
+        expectPaths( getGraphDb().bidirectionalTraversalDescription().mirroredSides( side ).traverse(
                     asList( getNodeWithName( "a" ), getNodeWithName( "b" ), getNodeWithName( "c" ) ),
                     asList( getNodeWithName( "f" ), getNodeWithName( "g" ) ) ),
                     "a,d,e,f", "a,d,e,g", "b,d,e,f", "b,d,e,g", "c,d,e,f", "c,d,e,g" );
@@ -182,8 +179,8 @@ public class TestBidirectionalTraversal extends TraversalTestBase
         Node a = getNodeWithName( "a" );
         Node b = getNodeWithName( "b" );
         Relationship r = a.getSingleRelationship( to, OUTGOING );
-        Path path = Iterables.single( bidirectionalTraversal()
-            .mirroredSides( traversal().relationships( to, OUTGOING ).uniqueness( NODE_PATH ) )
+        Path path = Iterables.single( getGraphDb().bidirectionalTraversalDescription()
+            .mirroredSides( getGraphDb().traversalDescription().relationships( to, OUTGOING ).uniqueness( NODE_PATH ) )
             .collisionEvaluator( Evaluators.atDepth( 1 ) )
             .sideSelector( SideSelectorPolicies.LEVEL, 1 )
             .traverse( a, b ) );
@@ -223,10 +220,11 @@ public class TestBidirectionalTraversal extends TraversalTestBase
             }
         };
 
-        Iterables.count( bidirectionalTraversal()
+        Iterables.count( getGraphDb().bidirectionalTraversalDescription()
                 // Just make up a number bigger than the path length (in this case 10) so that we can assert it in
                 // the collision policy later
-                .mirroredSides( traversal( NODE_PATH ).expand( PathExpanders.<Integer>forType( to ),
+                .mirroredSides( getGraphDb().traversalDescription().uniqueness( NODE_PATH ).expand(
+                        PathExpanders.<Integer>forType( to ),
                         new InitialBranchState.State<>( 0, 10 ) ) )
                 .collisionPolicy( collisionPolicy )
                 .traverse( getNodeWithName( "a" ), getNodeWithName( "d" ) ) );

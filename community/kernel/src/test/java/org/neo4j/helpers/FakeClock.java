@@ -24,6 +24,10 @@ import java.util.concurrent.TimeUnit;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+/**
+ * @deprecated please use base your fake clocks on {@link java.time.Clock} instead
+ */
+@Deprecated
 public class FakeClock implements Clock
 {
     private volatile long time;
