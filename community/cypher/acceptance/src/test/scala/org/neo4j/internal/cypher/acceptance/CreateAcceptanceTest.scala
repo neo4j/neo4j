@@ -1528,7 +1528,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should not create nodes when aliases are applied to variable names") {
     createNode()
 
-    val query = "MATCH (n) MATCH (m) WITH n AS a, m AS b CREATE (a)-[r:T]->(b) RETURN id(a) as a, id(b) as b"
+    val query = "MATCH (n) MATCH (m) WITH n AS a, m AS b CREATE (a)-[:T]->(b) RETURN id(a) as a, id(b) as b"
 
     val result = updateWithBothPlannersAndCompatibilityMode(query)
     assertStats(result, relationshipsCreated = 1)
@@ -1538,10 +1538,30 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should create only one node when an alias is applied to a variable name") {
     createNode()
 
-    val query = "MATCH (n) WITH n AS a CREATE (a)-[r:T]->(b) RETURN id(a) as a"
+    val query = "MATCH (n) WITH n AS a CREATE (a)-[:T]->() RETURN id(a) as a"
 
     val result = updateWithBothPlannersAndCompatibilityMode(query)
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
     result.toList should equal(List(Map("a" -> 0)))
+  }
+
+  test("should not create nodes when aliases are applied to variable names multiple times") {
+    createNode()
+
+    val query = "MATCH (n) MATCH (m) WITH n AS a, m AS b CREATE (a)-[:T]->(b) WITH a AS x, b AS y CREATE (x)-[:T]->(y) RETURN id(x) as x, id(y) as y"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+    assertStats(result, relationshipsCreated = 2)
+    result.toList should equal(List(Map("x" -> 0, "y" -> 0)))
+  }
+
+  test("should create only one node when an alias is applied to a variable name multiple times") {
+    createNode()
+
+    val query = "MATCH (n) WITH n AS a CREATE (a)-[:T]->() WITH a AS x CREATE (x)-[:T]->() RETURN id(x) as x"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 2)
+    result.toList should equal(List(Map("x" -> 0)))
   }
 }

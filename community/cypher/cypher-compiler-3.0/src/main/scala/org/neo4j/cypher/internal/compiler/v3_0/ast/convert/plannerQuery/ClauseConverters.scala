@@ -306,10 +306,11 @@ object ClauseConverters {
         //remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(nodes)
 
+        val seenPatternNodes = acc.allSeenPatternNodes
         //create nodes that are not already matched or created
-        val nodesToCreate = dedupedNodes.filterNot(pattern => acc.allSeenPatternNodes(pattern.nodeName))
+        val nodesToCreate = dedupedNodes.filterNot(pattern => seenPatternNodes(pattern.nodeName))
         //we must check that we are not trying to set a pattern or label on any already created nodes
-        val nodesCreatedBefore = dedupedNodes.filter(pattern => acc.allSeenPatternNodes(pattern.nodeName)).toSet
+        val nodesCreatedBefore = dedupedNodes.filter(pattern => seenPatternNodes(pattern.nodeName)).toSet
 
         nodesCreatedBefore.collectFirst {
           case c if c.labels.nonEmpty || c.properties.nonEmpty =>
