@@ -25,6 +25,10 @@ package org.neo4j.helpers;
 @Deprecated
 public interface Clock
 {
+    /**
+     * @deprecated please use {@link java.time.Clock#systemUTC()} instead
+     */
+    @Deprecated
     Clock SYSTEM_CLOCK = new Clock()
     {
         @Override

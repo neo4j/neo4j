@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.Traversal;
 
 public class SpecificDepthTraversalTest extends TraversalTestBase
 {
@@ -48,7 +48,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     public void shouldGetStartNodeOnDepthZero()
     {
-        TraversalDescription description = Traversal.description().evaluator(
+        TraversalDescription description = getGraphDb().traversalDescription().evaluator(
                 Evaluators.atDepth( 0 ) );
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "6" );
     }
@@ -56,7 +56,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     public void shouldGetCorrectNodesFromToDepthOne()
     {
-        TraversalDescription description = Traversal.description().evaluator(
+        TraversalDescription description = getGraphDb().traversalDescription().evaluator(
                 Evaluators.fromDepth( 1 ) ).evaluator( Evaluators.toDepth( 1 ) );
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "5" );
     }
@@ -64,7 +64,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     public void shouldGetCorrectNodeAtDepthOne()
     {
-        TraversalDescription description = Traversal.description().evaluator(
+        TraversalDescription description = getGraphDb().traversalDescription().evaluator(
                 Evaluators.atDepth( 1 ) );
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "5" );
     }
@@ -72,7 +72,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     public void shouldGetCorrectNodesAtDepthZero()
     {
-        TraversalDescription description = Traversal.description().evaluator(
+        TraversalDescription description = getGraphDb().traversalDescription().evaluator(
                 Evaluators.fromDepth( 0 ) ).evaluator( Evaluators.toDepth( 0 ) );
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "6" );
     }
@@ -80,7 +80,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     public void shouldGetStartNodeWhenFromToIsZeroBreadthFirst()
     {
-        TraversalDescription description = Traversal.description().breadthFirst()
+        TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
                 .evaluator(Evaluators.fromDepth(0)).evaluator(Evaluators.toDepth(0));
 
         expectNodes( description.traverse( getNodeWithName( "0" ) ), "0" );
@@ -89,7 +89,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     public void shouldGetStartNodeWhenAtIsZeroBreadthFirst()
     {
-        TraversalDescription description = Traversal.description().breadthFirst()
+        TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
                 .evaluator(Evaluators.atDepth(0));
 
         expectNodes( description.traverse( getNodeWithName( "2" ) ), "2" );
@@ -98,7 +98,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     public void shouldGetSecondNodeWhenFromToIsTwoBreadthFirst()
     {
-        TraversalDescription description = Traversal.description().breadthFirst()
+        TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
                 .evaluator(Evaluators.fromDepth(2)).evaluator(Evaluators.toDepth(2));
 
         expectNodes( description.traverse( getNodeWithName( "5" ) ), "2" );
@@ -107,7 +107,7 @@ public class SpecificDepthTraversalTest extends TraversalTestBase
     @Test
     public void shouldGetSecondNodeWhenAtIsTwoBreadthFirst()
     {
-        TraversalDescription description = Traversal.description().breadthFirst()
+        TraversalDescription description = getGraphDb().traversalDescription().breadthFirst()
                 .evaluator( Evaluators.atDepth( 2 ) );
 
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "4" );

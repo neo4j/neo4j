@@ -37,7 +37,7 @@
             <phase>${generate-config-docs-phase}</phase>
             <configuration>
               <target>
-                <java classname="org.neo4j.tooling.GenerateConfigDocumentation"
+                <java classname="org.neo4j.kernel.configuration.docs.GenerateConfigDocumentation"
                       classpathref="maven.test.classpath" failonerror="true">
                   <arg value="org.neo4j.metrics.MetricsSettings" />
                   <arg value="${project.build.directory}/docs/ops/configuration-attributes.asciidoc" />

@@ -33,8 +33,7 @@ import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
+import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
@@ -121,7 +120,7 @@ public class PagedTraverserTest
 
     private Traverser simpleListTraverser()
     {
-        return Traversal.description()
+        return dbRule.traversalDescription()
                 .expand( PathExpanders.forTypeAndDirection( RelationshipType.withName( "NEXT" ), Direction.OUTGOING ) )
                 .depthFirst()
                 .uniqueness( Uniqueness.NODE_GLOBAL )

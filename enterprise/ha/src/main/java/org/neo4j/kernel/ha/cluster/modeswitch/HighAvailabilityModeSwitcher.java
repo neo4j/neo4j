@@ -33,7 +33,6 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
-import org.neo4j.function.Functions;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.cluster.ClusterSettings.INSTANCE_ID;
-import static org.neo4j.function.Functions.withDefaults;
 import static org.neo4j.helpers.NamedThreadFactory.named;
 import static org.neo4j.helpers.Uris.parameter;
 
@@ -78,8 +76,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     public static InstanceId getServerId( URI haUri )
     {
         // Get serverId parameter, default to -1 if it is missing, and parse to integer
-        return INSTANCE_ID.apply( withDefaults(
-                Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haUri ) );
+        String serverIdParam = parameter( "serverId" ).apply( haUri );
+        return INSTANCE_ID.apply( serverIdParam != null ? serverIdParam : "-1" );
     }
 
     private URI availableMasterId;

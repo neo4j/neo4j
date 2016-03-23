@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.{EntityProducer, QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.Argument
 import org.neo4j.graphdb.traversal._
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.kernel.{Traversal, Uniqueness}
+import org.neo4j.graphdb.traversal.Uniqueness
+import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription
 
 import scala.collection.JavaConverters._
 
@@ -37,10 +38,11 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer
     def reverse() = this
   }
 
-  def baseTraversal(params: ExecutionContext, state:QueryState): TraversalDescription = Traversal.
-    traversal(Uniqueness.RELATIONSHIP_PATH).
-    evaluator(new MyEvaluator).
-    expand(new TraversalPathExpander(params, state), initialStartStep)
+  def baseTraversal(params: ExecutionContext, state:QueryState): TraversalDescription =
+    new MonoDirectionalTraversalDescription()
+      .uniqueness(Uniqueness.RELATIONSHIP_PATH)
+      .evaluator(new MyEvaluator)
+      .expand(new TraversalPathExpander(params, state), initialStartStep)
 
 
   def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterator[Path] = {

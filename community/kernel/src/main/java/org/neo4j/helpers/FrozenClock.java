@@ -19,8 +19,14 @@
  */
 package org.neo4j.helpers;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @deprecated please use {@link java.time.Clock#fixed(Instant, ZoneId)} instead
+ */
+@Deprecated
 public class FrozenClock implements Clock
 {
     private final long nanos;

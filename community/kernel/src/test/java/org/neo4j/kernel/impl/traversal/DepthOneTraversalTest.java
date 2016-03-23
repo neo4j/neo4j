@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-import static org.neo4j.kernel.Traversal.traversal;
 
 public class DepthOneTraversalTest extends TraversalTestBase
 {
@@ -55,12 +55,12 @@ public class DepthOneTraversalTest extends TraversalTestBase
     @Test
     public void shouldGetBothNodesOnDepthOneForDepthFirst()
     {
-        shouldGetBothNodesOnDepthOne( traversal().depthFirst() );
+        shouldGetBothNodesOnDepthOne( getGraphDb().traversalDescription().depthFirst() );
     }
 
     @Test
     public void shouldGetBothNodesOnDepthOneForBreadthFirst()
     {
-        shouldGetBothNodesOnDepthOne( traversal().breadthFirst() );
+        shouldGetBothNodesOnDepthOne( getGraphDb().traversalDescription().breadthFirst() );
     }
 }

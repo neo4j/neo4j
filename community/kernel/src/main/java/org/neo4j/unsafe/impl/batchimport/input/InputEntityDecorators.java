@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.util.function.Function;
 
-import org.neo4j.function.Functions;
 import org.neo4j.helpers.ArrayUtil;
 
 /**
@@ -36,7 +35,7 @@ public class InputEntityDecorators
     {
         if ( labelNamesToAdd == null || labelNamesToAdd.length == 0 )
         {
-            return Functions.identity();
+            return value -> value;
         }
 
         return node -> {
@@ -62,7 +61,7 @@ public class InputEntityDecorators
     {
         if ( defaultType == null )
         {
-            return Functions.identity();
+            return value -> value;
         }
 
         return relationship -> {
@@ -87,6 +86,6 @@ public class InputEntityDecorators
         };
     }
 
-    public static final Function<InputNode,InputNode> NO_NODE_DECORATOR = Functions.identity();
-    public static final Function<InputRelationship,InputRelationship> NO_RELATIONSHIP_DECORATOR = Functions.identity();
+    public static final Function<InputNode,InputNode> NO_NODE_DECORATOR = value -> value;
+    public static final Function<InputRelationship,InputRelationship> NO_RELATIONSHIP_DECORATOR = value -> value;
 }

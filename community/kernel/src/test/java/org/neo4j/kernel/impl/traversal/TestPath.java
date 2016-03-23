@@ -30,14 +30,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.Uniqueness;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
-import static org.neo4j.kernel.Traversal.bidirectionalTraversal;
-import static org.neo4j.kernel.Traversal.traversal;
 
 public class TestPath extends TraversalTestBase
 {
@@ -67,7 +65,7 @@ public class TestPath extends TraversalTestBase
     @Test
     public void testPathIterator()
     {
-        Path path = traversal().evaluator( atDepth( 4 ) ).traverse( node( "A" ) ).iterator().next();
+        Path path = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( node( "A" ) ).iterator().next();
         
         assertPathIsCorrect( path );
     }
@@ -77,20 +75,20 @@ public class TestPath extends TraversalTestBase
     @Test
     public void reverseNodes() throws Exception
     {
-        Path path = Iterables.first( traversal().evaluator( atDepth( 0 ) ).traverse( a ) );
+        Path path = Iterables.first( getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a ) );
         assertContains( path.reverseNodes(), a );
         
-        path = Iterables.first( traversal().evaluator( atDepth( 4 ) ).traverse( a ) );
+        path = Iterables.first( getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a ) );
         assertContainsInOrder( path.reverseNodes(), e, d, c, b, a );
     }
 
     @Test
     public void reverseRelationships() throws Exception
     {
-        Path path = Iterables.first( traversal().evaluator( atDepth( 0 ) ).traverse( a ) );
+        Path path = Iterables.first( getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a ) );
         assertFalse( path.reverseRelationships().iterator().hasNext() );
         
-        path = Iterables.first( traversal().evaluator( atDepth( 4 ) ).traverse( a ) );
+        path = Iterables.first( getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a ) );
         Node[] expectedNodes = new Node[] { e, d, c, b, a };
         int index = 0;
         for ( Relationship rel : path.reverseRelationships() )
@@ -101,8 +99,9 @@ public class TestPath extends TraversalTestBase
     @Test
     public void testBidirectionalPath() throws Exception
     {
-        TraversalDescription side = traversal().uniqueness( Uniqueness.NODE_PATH );
-        BidirectionalTraversalDescription bidirectional = bidirectionalTraversal().mirroredSides( side );
+        TraversalDescription side = getGraphDb().traversalDescription().uniqueness( Uniqueness.NODE_PATH );
+        BidirectionalTraversalDescription bidirectional =
+                getGraphDb().bidirectionalTraversalDescription().mirroredSides( side );
         Path bidirectionalPath = Iterables.first( bidirectional.traverse( a, e ) );
         assertPathIsCorrect( bidirectionalPath );
         
