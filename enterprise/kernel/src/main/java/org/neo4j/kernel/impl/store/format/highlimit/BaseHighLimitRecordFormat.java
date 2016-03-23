@@ -45,13 +45,13 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR
  * hence the format name. The IDs take up between 3-8B depending on the size of the ID where relative ID
  * references are used as often as possible. See {@link Reference}.
  *
- * For consistency, all formats have a one-byte header specifying:
+ * For consistency, all formats have a two-byte header specifying:
  *
  * <ol>
  * <li>0x1: inUse [0=unused, 1=used]</li>
  * <li>0x2: record unit [0=single record, 1=multiple records]</li>
  * <li>0x4: record unit type [1=first, 0=consecutive]
- * <li>0x8 - 0x80 other flags for this record specific to each type</li>
+ * <li>0x8 - 0x8000 other flags for this record specific to each type</li>
  * </ol>
  *
  * NOTE to the rest of the flags is that a good use of them is to denote whether or not an ID reference is
@@ -80,7 +80,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR
 abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
-    private static final int HEADER_BYTE = Byte.BYTES;
+    private static final int HEADER_SIZE = Byte.BYTES + Byte.BYTES;
 
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
@@ -101,6 +101,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             throws IOException
     {
         byte headerByte = primaryCursor.getByte();
+        // Future proof: reading the extra and currently unused header byte used for making future migration easier.
+        byte unusedHeaderByte = primaryCursor.getByte();
         boolean inUse = isInUse( headerByte );
         boolean doubleRecordUnit = has( headerByte, HEADER_BIT_RECORD_UNIT );
         if ( doubleRecordUnit )
@@ -146,7 +148,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
 
     private int calculatePrimaryCursorEndOffset( PageCursor primaryCursor, int recordSize )
     {
-        return primaryCursor.getOffset() + recordSize - HEADER_BYTE;
+        return primaryCursor.getOffset() + recordSize - HEADER_SIZE;
     }
 
     protected abstract void doReadInternal( RECORD record, PageCursor cursor, int recordSize,
@@ -166,6 +168,9 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             headerByte = set( headerByte, HEADER_BIT_RECORD_UNIT, record.requiresSecondaryUnit() );
             headerByte = set( headerByte, HEADER_BIT_FIRST_RECORD_UNIT, true );
             primaryCursor.putByte( headerByte );
+            // Future proof: adding an extra and currently unused header byte to make future migration easier
+            byte unusedHeaderByte = 0;
+            primaryCursor.putByte( unusedHeaderByte );
 
             if ( record.requiresSecondaryUnit() )
             {
@@ -226,7 +231,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     {
         if ( record.inUse() )
         {
-            int requiredLength = HEADER_BYTE + requiredDataLength( record );
+            int requiredLength = HEADER_SIZE + requiredDataLength( record );
             boolean requiresSecondaryUnit = requiredLength > recordSize;
             record.setRequiresSecondaryUnit( requiresSecondaryUnit );
             if ( record.requiresSecondaryUnit() && !record.hasSecondaryUnitId() )

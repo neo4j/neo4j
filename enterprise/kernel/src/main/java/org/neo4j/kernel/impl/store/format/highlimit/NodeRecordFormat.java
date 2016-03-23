@@ -31,12 +31,12 @@ import org.neo4j.kernel.impl.store.record.Record;
  * V: variable between 3B-8B
  *
  * Record format:
- * 1B   header
+ * 2B   header
  * VB   first relationship
  * VB   first property
  * 5B   labels
  *
- * => 12B-22B
+ * => 13B-23B
  */
 class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
 {
