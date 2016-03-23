@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -60,6 +61,7 @@ public class ParallelizeByNodeIdStep extends ProcessorStep<Batch<InputRelationsh
 {
     private static final int MAX_PARALLELIZABLE_BATCHES = 10;
 
+    private final int batchSize;
     private final int idBatchSize;
 
     // Since this step is single-threaded and currently RelationshipEncoderStep isn't then this is a perfect
@@ -72,10 +74,17 @@ public class ParallelizeByNodeIdStep extends ProcessorStep<Batch<InputRelationsh
 
     public ParallelizeByNodeIdStep( StageControl control, Configuration config )
     {
+        this( control, config, 0 );
+    }
+
+    public ParallelizeByNodeIdStep( StageControl control, Configuration config, long firstRecordId )
+    {
         super( control, "PARALLELIZE", config, 1 );
         // x2 since ids array cover both start and end nodes
-        this.idBatchSize = config.batchSize()*2;
+        this.batchSize = config.batchSize();
+        this.idBatchSize = batchSize*2;
         this.concurrentNodeIds = new long[idBatchSize * MAX_PARALLELIZABLE_BATCHES];
+        this.firstRecordId = firstRecordId;
     }
 
     @Override
@@ -92,6 +101,14 @@ public class ParallelizeByNodeIdStep extends ProcessorStep<Batch<InputRelationsh
 
         // Set state for the next batch
         firstRecordId += batch.input.length;
+        if ( firstRecordId <= IdGeneratorImpl.INTEGER_MINUS_ONE &&
+                firstRecordId + batchSize >= IdGeneratorImpl.INTEGER_MINUS_ONE )
+        {
+            // There's this pesky INTEGER_MINUS_ONE ID again. Easiest is to simply skip this batch of ids
+            // or at least the part up to that id and just continue after it.
+            firstRecordId = IdGeneratorImpl.INTEGER_MINUS_ONE + 1;
+        }
+
         if ( batch.parallelizableWithPrevious )
         {
             mergeSortedInto( batch.sortedIds, concurrentNodeIds, concurrentNodeIdsRange );
