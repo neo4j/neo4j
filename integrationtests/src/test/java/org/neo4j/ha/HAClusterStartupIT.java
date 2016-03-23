@@ -61,7 +61,7 @@ public class HAClusterStartupIT
         // setup a cluster with some data and entries in log files in fully functional and shutdown state
         clusterManager.start();
 
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
         try
         {
             cluster.await( allSeesAllAsAvailable() );
@@ -97,7 +97,7 @@ public class HAClusterStartupIT
         clusterManager.start();
 
         // THEN the cluster should work
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
         try
         {
             cluster.await( allSeesAllAsAvailable() );
@@ -123,7 +123,7 @@ public class HAClusterStartupIT
         clusterManager.start();
 
         // THEN the cluster should work
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
         try
         {
             cluster.await( allSeesAllAsAvailable() );
@@ -148,7 +148,7 @@ public class HAClusterStartupIT
         clusterManager.start();
 
         // THEN the cluster should work
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
         try
         {
             cluster.await( allSeesAllAsAvailable(), 120 );
@@ -172,7 +172,7 @@ public class HAClusterStartupIT
         clusterManager.start();
 
         // THEN the cluster should work
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
         try
         {
             cluster.await( allSeesAllAsAvailable() );
@@ -197,7 +197,7 @@ public class HAClusterStartupIT
         clusterManager.start();
 
         // THEN the cluster should work
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
         try
         {
             cluster.await( allSeesAllAsAvailable() );
@@ -221,12 +221,12 @@ public class HAClusterStartupIT
         File newDir = new File( dir.directory(), "new" );
         FileUtils.deleteRecursively( newDir );
         ClusterManager newClusterManager = new ClusterManager.Builder( newDir )
-                .withProvider( clusterOfSize( 3 ) ).withSeedDir( seedDir ).build();
+                .withCluster( clusterOfSize( 3 ) ).withSeedDir( seedDir ).build();
 
         newClusterManager.start();
 
         // THEN the new cluster should work
-        ClusterManager.ManagedCluster newCluster = newClusterManager.getDefaultCluster();
+        ClusterManager.ManagedCluster newCluster = newClusterManager.getCluster();
         HighlyAvailableGraphDatabase newMaster;
         HighlyAvailableGraphDatabase newSlave1;
         HighlyAvailableGraphDatabase newSlave2;

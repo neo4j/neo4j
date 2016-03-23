@@ -30,7 +30,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
+import org.neo4j.cluster.client.Cluster;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -38,7 +40,6 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.Builder;
 import org.neo4j.kernel.impl.ha.ClusterManager.ClusterBuilder;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.ha.ClusterManager.Provider;
 import org.neo4j.kernel.impl.ha.ClusterManager.StoreDirInitializer;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.test.TargetDirectory;
@@ -98,9 +99,9 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     }
 
     @Override
-    public ClusterRule withProvider( Provider provider )
+    public ClusterRule withCluster( Supplier<Cluster> provider )
     {
-        return set( clusterManagerBuilder.withProvider( provider ) );
+        return set( clusterManagerBuilder.withCluster( provider ) );
     }
 
     @Override
@@ -166,7 +167,7 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
         {
             throw new RuntimeException( throwable );
         }
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
         cluster.await( allSeesAllAsAvailable() );
         return cluster;
     }

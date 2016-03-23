@@ -56,7 +56,7 @@ public class DeletionTest
 {
     @ClassRule
     public static ClusterRule clusterRule = new ClusterRule( DeletionTest.class )
-            .withProvider( clusterOfSize( 2 ) );
+            .withCluster( clusterOfSize( 2 ) );
 
     /**
      * The problem would manifest even if the transaction was performed on the Master, it would then occur when the

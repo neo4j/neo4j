@@ -86,7 +86,7 @@ public class TestFailoverWithAdditionalSlaveFailures
     private void testFailoverWithAdditionalSlave( int clusterSize, int[] slaveIndexes ) throws Throwable
     {
         ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) ).
-                withProvider( ClusterManager.clusterOfSize( clusterSize ) )
+                withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                         ClusterSettings.heartbeat_interval.name(), "1" ) )
                 .build();
@@ -94,7 +94,7 @@ public class TestFailoverWithAdditionalSlaveFailures
         try
         {
             manager.start();
-            ClusterManager.ManagedCluster cluster = manager.getDefaultCluster();
+            ClusterManager.ManagedCluster cluster = manager.getCluster();
 
             cluster.await( allSeesAllAsAvailable() );
             cluster.await( masterAvailable() );

@@ -132,7 +132,7 @@ public class LabelScanStoreHaIT
                 } ).build();
         life.add( clusterManager );
         life.start();
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
         cluster.await( allSeesAllAsAvailable() );
         cluster.await( allAvailabilityGuardsReleased() );
     }

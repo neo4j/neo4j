@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.ha;
 
-import org.neo4j.helpers.collection.Pair;
-import org.w3c.dom.Document;
+import org.neo4j.cluster.client.Cluster;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -50,17 +48,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.ClusterClientModule;
-import org.neo4j.cluster.client.Clusters;
-import org.neo4j.cluster.client.ClustersXMLSerializer;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.member.ClusterMemberEvents;
@@ -77,7 +72,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
@@ -101,7 +95,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -144,14 +137,6 @@ public class ClusterManager
         void initializeStoreDir( int serverId, File storeDir ) throws IOException;
     }
 
-    /**
-     * Provides a specification of which clusters to start in {@link ClusterManager#start()}.
-     */
-    public interface Provider
-    {
-        Clusters clusters() throws Throwable;
-    }
-
     public interface RepairKit
     {
         HighlyAvailableGraphDatabase repair() throws Throwable;
@@ -165,12 +150,12 @@ public class ClusterManager
     private final String localAddress;
     private final File root;
     private final Map<String,IntFunction<String>> commonConfig;
-    private final Map<String,ManagedCluster> clusterMap = new HashMap<>();
-    private final Provider clustersProvider;
+    private final Supplier<Cluster> clustersProvider;
     private final HighlyAvailableGraphDatabaseFactory dbFactory;
     private final StoreDirInitializer storeDirInitializer;
     private final Listener<GraphDatabaseService> initialDatasetCreator;
     private final List<Predicate<ManagedCluster>> availabilityChecks;
+    private ManagedCluster managedCluster;
     LifeSupport life;
 
     private ClusterManager( Builder builder )
@@ -216,7 +201,7 @@ public class ClusterManager
      *
      * @param memberCount the total number of members in the cluster to start.
      */
-    public static Provider clusterOfSize( int memberCount )
+    public static Supplier<Cluster> clusterOfSize( int memberCount )
     {
         return clusterOfSize( getLocalAddress(), memberCount );
     }
@@ -227,67 +212,29 @@ public class ClusterManager
      * @param hostname the hostname/ip-address to bind to
      * @param memberCount the total number of members in the cluster to start.
      */
-    public static Provider clusterOfSize( String hostname, int memberCount )
+    public static Supplier<Cluster> clusterOfSize( String hostname, int memberCount )
     {
-        //noinspection unchecked
-        return clustersOfSize( Pair.of( hostname, memberCount ) );
-    }
+        return () -> {
+            final Cluster cluster = new Cluster();
 
-    /**
-     * Provides cluster specifications with default values, but unique names/ports
-     * @param clusterSizes the sizes of the clusters
-     */
-    public static Provider clustersOfSize( final int... clusterSizes )
-    {
-        Pair[] clusters = new Pair[clusterSizes.length];
-        for ( int i = 0; i < clusterSizes.length; i++ )
-        {
-            clusters[i] = Pair.of( getLocalAddress(), clusterSizes[i] );
-        }
-        //noinspection unchecked
-        return clustersOfSize( clusters );
-    }
 
-    /**
-     * /**
-     * Provides cluster specifications with default values, but unique names/ports
-     * @param clusterHostsAndSizes the hostnames and sizes of the clusters
-     */
-    public static Provider clustersOfSize( Pair<String, Integer>... clusterHostsAndSizes )
-    {
-        final Clusters clusters = new Clusters();
-        HashSet<Integer> takenPorts = new HashSet<>();
-
-        for (int clusterCount = 0; clusterCount < clusterHostsAndSizes.length; clusterCount++)
-        {
-            Clusters.Cluster cluster;
-            // Just to avoid having to fix lots of hardcoded tests
-            if (clusterCount == 0) {
-                cluster = new Clusters.Cluster( "neo4j.ha" );
-            } else {
-                cluster = new Clusters.Cluster( "neo4j.ha" + clusterCount );
-            }
-
-            String hostname = clusterHostsAndSizes[clusterCount].first();
-            int memberCount = clusterHostsAndSizes[clusterCount].other();
-
+            HashSet<Integer> takenPorts = new HashSet<>();
             try
             {
                 for ( int i = 0; i < memberCount; i++ )
                 {
                     int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
                     takenPorts.add( port );
-                    cluster.getMembers().add( new Clusters.Member( hostname + ":" + port, true ) );
+                    cluster.getMembers().add( new Cluster.Member( hostname + ":" + port, true ) );
                 }
-                clusters.getClusters().add( cluster );
             }
             catch ( IOException e )
             {
                 // you can't throw a normal exception in a TestRule
                 throw new AssertionError( "Failed to find an open port" );
             }
-        }
-        return provided( clusters );
+            return cluster;
+        };
     }
 
     /**
@@ -331,35 +278,35 @@ public class ClusterManager
      *
      * @param haMemberCount the total number of members in the cluster to start.
      */
-    public static Provider clusterWithAdditionalClients( int haMemberCount, int additionalClientCount )
+    public static Supplier<Cluster> clusterWithAdditionalClients( int haMemberCount, int additionalClientCount )
     {
-        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        HashSet<Integer> takenPorts = new HashSet<>();
+        return () -> {
+            Cluster cluster = new Cluster();
+            HashSet<Integer> takenPorts = new HashSet<>();
 
-        try
-        {
-            for ( int i = 0; i < haMemberCount; i++ )
+            try
             {
-                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                takenPorts.add( port );
-                cluster.getMembers().add( new Clusters.Member( port, true ) );
+                for ( int i = 0; i < haMemberCount; i++ )
+                {
+                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                    takenPorts.add( port );
+                    cluster.getMembers().add( new Cluster.Member( port, true ) );
+                }
+                for ( int i = 0; i < additionalClientCount; i++ )
+                {
+                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                    takenPorts.add( port );
+                    cluster.getMembers().add( new Cluster.Member( port, false ) );
+                }
             }
-            for ( int i = 0; i < additionalClientCount; i++ )
+            catch ( IOException e )
             {
-                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                takenPorts.add( port );
-                cluster.getMembers().add( new Clusters.Member( port, false ) );
+                // you can't throw a normal exception in a TestRule
+                throw new AssertionError( "Failed to find an open port" );
             }
-        }
-        catch ( IOException e )
-        {
-            // you can't throw a normal exception in a TestRule
-            throw new AssertionError( "Failed to find an open port" );
-        }
 
-        final Clusters clusters = new Clusters();
-        clusters.getClusters().add( cluster );
-        return provided( clusters );
+            return cluster;
+        };
     }
 
     /**
@@ -367,39 +314,34 @@ public class ClusterManager
      *
      * @param haMemberCount the total number of members in the cluster to start.
      */
-    public static Provider clusterWithAdditionalArbiters( int haMemberCount, int arbiterCount )
+    public static Supplier<Cluster> clusterWithAdditionalArbiters( int haMemberCount, int arbiterCount )
     {
-        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        HashSet<Integer> takenPorts = new HashSet<>();
+        return () -> {
+            Cluster cluster = new Cluster();
+            HashSet<Integer> takenPorts = new HashSet<>();
 
-        try
-        {
-            for ( int i = 0; i < arbiterCount; i++ )
+            try
             {
-                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                takenPorts.add( port );
-                cluster.getMembers().add( new Clusters.Member( port, false ) );
+                for ( int i = 0; i < arbiterCount; i++ )
+                {
+                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                    takenPorts.add( port );
+                    cluster.getMembers().add( new Cluster.Member( port, false ) );
+                }
+                for ( int i = 0; i < haMemberCount; i++ )
+                {
+                    int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
+                    takenPorts.add( port );
+                    cluster.getMembers().add( new Cluster.Member( port, true ) );
+                }
             }
-            for ( int i = 0; i < haMemberCount; i++ )
+            catch ( IOException e )
             {
-                int port = findFreePort( CLUSTER_MIN_PORT, CLUSTER_MAX_PORT, takenPorts );
-                takenPorts.add( port );
-                cluster.getMembers().add( new Clusters.Member( port, true ) );
+                // you can't throw a normal exception in a TestRule
+                throw new AssertionError( "Failed to find an open port" );
             }
-        }
-        catch ( IOException e )
-        {
-            // you can't throw a normal exception in a TestRule
-            throw new AssertionError( "Failed to find an open port" );
-        }
-        final Clusters clusters = new Clusters();
-        clusters.getClusters().add( cluster );
-        return provided( clusters );
-    }
-
-    public static Provider provided( final Clusters clusters )
-    {
-        return () -> clusters;
+            return cluster;
+        };
     }
 
     /**
@@ -672,7 +614,7 @@ public class ClusterManager
     @Override
     public void start() throws Throwable
     {
-        Clusters clusters = clustersProvider.clusters();
+        Cluster cluster = clustersProvider.get();
 
         life = new LifeSupport();
 
@@ -680,19 +622,15 @@ public class ClusterManager
         // shutdown() or stop()ped properly
         life.start();
 
-        for ( Clusters.Cluster cluster : clusters.getClusters())
+        managedCluster = new ManagedCluster( cluster );
+        life.add( managedCluster );
+
+        availabilityChecks.forEach( managedCluster::await );
+
+        if ( initialDatasetCreator != null )
         {
-            ManagedCluster managedCluster = new ManagedCluster( cluster );
-            clusterMap.put( cluster.getName(), managedCluster );
-            life.add( managedCluster );
-
-            availabilityChecks.forEach( managedCluster::await );
-
-            if ( initialDatasetCreator != null )
-            {
-                initialDatasetCreator.receive( managedCluster.getMaster() );
-                managedCluster.sync();
-            }
+            initialDatasetCreator.receive( managedCluster.getMaster() );
+            managedCluster.sync();
         }
     }
 
@@ -725,18 +663,9 @@ public class ClusterManager
         }
     }
 
-    public ManagedCluster getCluster( String name )
+    public ManagedCluster getCluster()
     {
-        if ( !clusterMap.containsKey( name ) )
-        {
-            throw new IllegalArgumentException( name );
-        }
-        return clusterMap.get( name );
-    }
-
-    public ManagedCluster getDefaultCluster()
-    {
-        return getCluster( "neo4j.ha" );
+        return managedCluster;
     }
 
     public interface ClusterBuilder<SELF>
@@ -749,7 +678,7 @@ public class ClusterManager
 
         SELF withDbFactory( HighlyAvailableGraphDatabaseFactory dbFactory );
 
-        SELF withProvider( Provider provider );
+        SELF withCluster( Supplier<Cluster> provider );
 
         /**
          * Supplies configuration where config values, as opposed to {@link #withSharedConfig(Map)},
@@ -794,7 +723,7 @@ public class ClusterManager
     public static class Builder implements ClusterBuilder<Builder>
     {
         private File root;
-        private Provider provider = clusterOfSize( 3 );
+        private Supplier<Cluster> provider = clusterOfSize( 3 );
         private final Map<String,IntFunction<String>> commonConfig = new HashMap<>();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
@@ -840,7 +769,7 @@ public class ClusterManager
         }
 
         @Override
-        public Builder withProvider( Provider provider )
+        public Builder withCluster( Supplier<Cluster> provider )
         {
             this.provider = provider;
             return this;
@@ -1023,14 +952,14 @@ public class ClusterManager
      */
     public class ManagedCluster extends LifecycleAdapter
     {
-        private final Clusters.Cluster spec;
+        private final Cluster spec;
         private final String name;
         private final Map<InstanceId,HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<>();
         private final List<ObservedClusterMembers> arbiters = new ArrayList<>();
         private final Set<RepairKit> pendingRepairs = Collections.synchronizedSet( new HashSet<RepairKit>() );
         private final HashSet<Integer> takenHaPorts = new HashSet<>();
 
-        ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException, IOException
+        ManagedCluster( Cluster spec ) throws URISyntaxException, IOException
         {
             this.spec = spec;
             this.name = spec.getName();
@@ -1276,7 +1205,7 @@ public class ClusterManager
 
         private void startMember( InstanceId serverId ) throws URISyntaxException, IOException
         {
-            Clusters.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
+            Cluster.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
             StringBuilder initialHosts = new StringBuilder();
             for ( int i = 0; i < spec.getMembers().size(); i++ )
             {

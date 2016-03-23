@@ -55,7 +55,7 @@ public class UpdatePullerSwitchIT
     @Before
     public void setup() throws Exception
     {
-        managedCluster = clusterRule.withProvider( ClusterManager.clusterOfSize( 2 ) )
+        managedCluster = clusterRule.withCluster( ClusterManager.clusterOfSize( 2 ) )
                                     .withSharedSetting( tx_push_factor, "0" )
                                     .withSharedSetting( HaSettings.pull_interval, "100s" )
                                     .startCluster();
