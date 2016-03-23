@@ -26,7 +26,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -124,17 +123,4 @@ public interface StorageEngine
 
     @Deprecated
     void loadSchemaCache();
-
-    /**
-     * TEMPORARY method as this potentially exposes internal services which shouldn't really be accessible
-     * outside the boundaries of this API. This is here as a transitional method while there still
-     * exists abstraction leaks.
-     *
-     * @param satisfier {@link DependencySatisfier} to satisfy with internal service which still are needed
-     * outside this interface.
-     * @deprecated since accessing internal services like this shouldn't be required if all abstractions
-     * are correct and doesn't leak.
-     */
-    @Deprecated
-    void satisfyDependencies( DependencySatisfier satisfier );
 }

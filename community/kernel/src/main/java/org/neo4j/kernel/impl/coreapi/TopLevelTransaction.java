@@ -113,12 +113,6 @@ public class TopLevelTransaction implements InternalTransaction
         return locker.sharedLock(stmt, entity);
     }
 
-    @Deprecated
-    public KernelTransaction getTransaction()
-    {
-        return transaction;
-    }
-
     @Override
     public KernelTransaction.Type transactionType()
     {

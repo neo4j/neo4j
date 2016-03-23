@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -42,17 +43,18 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -60,12 +62,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.Exceptions.contains;
-import static org.neo4j.helpers.Exceptions.containsStackTraceElement;
-import static org.neo4j.helpers.Exceptions.forMethod;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -281,8 +278,8 @@ public class NodeStoreTest
                     public int read( ByteBuffer dst ) throws IOException
                     {
                         Exception stack = new Exception();
-                        if ( containsStackTraceElement( stack, forMethod( "initGenerator" ) ) &&
-                             !containsStackTraceElement( stack, forMethod( "createNodeStore" ) ) )
+                        if ( containsStackTraceElement( stack, item -> item.getMethodName().equals( "initGenerator" ) ) &&
+                             !containsStackTraceElement( stack, item -> item.getMethodName().equals( "createNodeStore" ) ) )
                         {
                             fired.set( true );
                             throw new IOException( "Proving a point here" );
@@ -305,6 +302,21 @@ public class NodeStoreTest
             assertTrue( contains( e, IOException.class ) );
             assertTrue( fired.get() );
         }
+    }
+
+    private static boolean containsStackTraceElement( Throwable cause,
+            final Predicate<StackTraceElement> predicate )
+    {
+        return contains( cause, item -> {
+            for ( StackTraceElement element : item.getStackTrace() )
+            {
+                if ( predicate.test( element ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        } );
     }
 
     @Test
