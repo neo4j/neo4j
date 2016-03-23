@@ -58,8 +58,6 @@ import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.configuration.ServerSettings.httpConnector;
-import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
-import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
 import static org.neo4j.test.Digests.md5Hex;
 
 public abstract class AbstractInProcessServerBuilder implements TestServerBuilder
@@ -89,8 +87,6 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         withConfig( httpConnector( "1" ).type, "HTTP" );
         withConfig( httpConnector( "1" ).enabled, "true" );
         withConfig( httpConnector( "1" ).address, "localhost:" + Integer.toString( freePort( 1001, 5000 ) ) );
-        withConfig( tls_key_file, getRelativePath( workingDir, tls_key_file ) );
-        withConfig( tls_certificate_file, getRelativePath( workingDir, tls_certificate_file ) );
         withConfig( boltConnector( "0" ).type, "BOLT" );
         withConfig( boltConnector( "0" ).enabled, "true" );
         withConfig( boltConnector( "0" ).address, "localhost:" + Integer.toString( freePort( 5001, 9000 ) ) );
