@@ -35,10 +35,10 @@ case "$1" in
         chown -R $NEO_USER:adm /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j
         chmod u+rwx /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j
 
-        update-rc.d neo4j-service defaults
+        update-rc.d neo4j defaults
         
         # Start neo4j
-        invoke-rc.d neo4j-service start
+        invoke-rc.d neo4j start
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

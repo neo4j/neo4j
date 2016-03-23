@@ -6,7 +6,7 @@
 # processname: java
 # config:      /etc/neo4j/neo4j.conf
 # pidfile:     /var/run/neo4j.pid
-# Provides:          neo4j-service
+# Provides:          neo4j
 # Required-Start: 
 # Required-Stop: 
 # Should-Start: 

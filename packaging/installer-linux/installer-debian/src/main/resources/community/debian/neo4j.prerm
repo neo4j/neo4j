@@ -21,7 +21,7 @@ case "$1" in
     remove|upgrade|deconfigure)
 
         # Stop the neo4j service
-        invoke-rc.d neo4j-service stop
+        invoke-rc.d neo4j stop
 
     ;;
 

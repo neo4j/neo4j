@@ -21,7 +21,7 @@
             <!-- Make the Neo4j init scripts available to debuild -->
             <copy toDir="${project.build.outputDirectory}/@{name}/server">
                 <fileset dir="${project.build.sourceDirectory}/../resources/common">
-                    <include name="neo4j-service"/>
+                    <include name="neo4j"/>
                 </fileset>
             </copy>
 
