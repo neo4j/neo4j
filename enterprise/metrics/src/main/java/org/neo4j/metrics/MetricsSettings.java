@@ -97,8 +97,7 @@ public class MetricsSettings
     @Description( "Set to `true` to enable exporting metrics to CSV files" )
     public static Setting<Boolean> csvEnabled = setting( "metrics.csv.enabled", Settings.BOOLEAN, Settings.FALSE );
     @Description( "The target location of the CSV files: a path to a directory wherein a CSV file per reported " +
-                  "field  will be written. Relative paths will be interpreted relative to the configured Neo4j " +
-                  "store directory." )
+                  "field  will be written." )
     public static Setting<File> csvPath = setting( "metrics.csv.path", Settings.PATH, "metrics" );
 
     @Description( "The reporting interval for the CSV files. That is, how often new rows with numbers are appended to " +
