@@ -7,49 +7,49 @@ Import-Module "$src\Neo4j-Management.psm1"
 
 InModuleScope Neo4j-Management {
   Describe "Start-Neo4jServer" {
+    # Setup mocking environment
+    #  Mock Java environment
+    $javaHome = global:New-MockJavaHome
+    Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' } 
+    Mock Test-Path { $false } -ParameterFilter {
+      $Path -like 'Registry::*\JavaSoft\Java Runtime Environment'
+    }
+    Mock Get-ItemProperty { $null } -ParameterFilter {
+      $Path -like 'Registry::*\JavaSoft\Java Runtime Environment*'
+    }
+    # Mock Neo4j environment
+    Mock Get-Neo4jEnv { $global:mockNeo4jHome } -ParameterFilter { $Name -eq 'NEO4J_HOME' } 
+    Mock Start-Process { throw "Should not call Start-Process mock" }
 
-    Context "Invalid or missing server object" {
+    Context "Invalid or missing specified neo4j installation" {
+      $serverObject = global:New-InvalidNeo4jInstall
+
       It "throws error for an invalid server object - Server" {
-        { Start-Neo4jServer -Server -Neo4jServer (New-Object -TypeName PSCustomObject) -ErrorAction Stop } | Should Throw
+        { Start-Neo4jServer -Server -Neo4jServer $serverObject -ErrorAction Stop } | Should Throw
       }
 
       It "throws error for an invalid server object - Console" {
-        { Start-Neo4jServer -Console -Neo4jServer (New-Object -TypeName PSCustomObject) -ErrorAction Stop } | Should Throw
+        { Start-Neo4jServer -Console -Neo4jServer $serverObject -ErrorAction Stop } | Should Throw
       }
     }
     
     # Windows Service Tests
     Context "Missing service name in configuration files" {
       Mock Start-Service { }
-      Mock Get-Neo4jWindowsServiceName { throw "Missing Service Name" }
-
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
+ 
+      $serverObject = global:New-MockNeo4jInstall -WindowsService ''
 
       It "throws error for missing service name in configuration file" {
         { Start-Neo4jServer -Service -Neo4jServer $serverObject -ErrorAction Stop } | Should Throw
       }
-      
-      It "calls Get-Neo4jWindowsServiceName" {
-        Assert-MockCalled Get-Neo4jWindowsServiceName -Times 1
-      }
     }    
 
     Context "Start service succesfully but not running" {
-      Mock Get-Neo4jWindowsServiceName { 'SomeServiceName' }
       Mock Start-Service { throw "Wrong Service name" }
-      Mock Start-Service -Verifiable { @{ Status = 'Start Pending'} } -ParameterFilter { $Name -eq 'SomeServiceName'}
+      Mock Start-Service -Verifiable { @{ Status = 'Start Pending'} } -ParameterFilter { $Name -eq $global:mockServiceName }
       
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
+      $serverObject = global:New-MockNeo4jInstall
+
       $result = Start-Neo4jServer -Service -Neo4jServer $serverObject
 
       It "result is 2" {
@@ -62,16 +62,11 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Start service succesfully" {
-      Mock Get-Neo4jWindowsServiceName { 'SomeServiceName' }
       Mock Start-Service { throw "Wrong Service name" }
-      Mock Start-Service -Verifiable { @{ Status = 'Running'} } -ParameterFilter { $Name -eq 'SomeServiceName'}
+      Mock Start-Service -Verifiable { @{ Status = 'Running'} } -ParameterFilter { $Name -eq $global:mockServiceName }
       
-      $serverObject = (New-Object -TypeName PSCustomObject -Property @{
-        'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
-        'ServerVersion' = '3.0';
-        'ServerType' = 'Enterprise';
-        'DatabaseMode' = '';
-      })      
+      $serverObject = global:New-MockNeo4jInstall
+
       $result = Start-Neo4jServer -Service -Neo4jServer $serverObject
 
       It "result is 0" {
