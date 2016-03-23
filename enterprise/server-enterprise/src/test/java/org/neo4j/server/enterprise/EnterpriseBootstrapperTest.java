@@ -87,9 +87,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
                 "-c", configOption( ClusterSettings.server_id, "1" ),
                 "-c", configOption( ClusterSettings.initial_hosts, "127.0.0.1:5001" ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
-                "-c", configOption( auth_store, getRelativePath( folder.getRoot(), auth_store ) ),
-                "-c", configOption( tls_key_file, getRelativePath( folder.getRoot(), tls_key_file ) ),
-                "-c", configOption( tls_certificate_file, getRelativePath( folder.getRoot(), tls_certificate_file ) ),
+                "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
                 "-c", "dbms.connector.1.type=HTTP",
                 "-c", "dbms.connector.1.enabled=true" );
 
