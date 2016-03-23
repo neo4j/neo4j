@@ -24,10 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_1.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, Rewriter, bottomUp}
-
-import scala.annotation.tailrec
-import scala.collection.mutable
+import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
 
 /**
  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
@@ -74,8 +71,7 @@ case object isolateAggregation extends Rewriter {
   }
 
   private def createRewriterFor(withReturnItems: Set[ReturnItem]): Rewriter = {
-    def inner: Rewriter =
-      Rewriter.lift {
+    def inner = Rewriter.lift {
         case original: Expression =>
           val rewrittenExpression = withReturnItems.collectFirst {
             case item@AliasedReturnItem(expression, variable) if original == expression =>
@@ -84,72 +80,32 @@ case object isolateAggregation extends Rewriter {
           rewrittenExpression getOrElse original
       }
 
-    /*
-    Instead of using topDown, we do it manually here, because we don't want to rewrite the return aliases,
-    only the expressions
-    */
-    new Rewriter {
-
-      override def apply(that: AnyRef): AnyRef = {
-        val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
-        val result = rec(initialStack)
-        assert(result.size == 1)
-        result.head
-      }
-
-      @tailrec
-      def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
-        val (currentJobs, _) = stack.top
-        if (currentJobs.isEmpty) {
-          val (_, newChildren) = stack.pop()
-          if (stack.isEmpty) {
-            newChildren
-          } else {
-            stack.pop() match {
-              case (Nil, _) => throw new InternalException("here only to stop warnings. should never happen")
-              case ((returnItem@AliasedReturnItem(expression, variable)) :: jobs, doneJobs) =>
-                val newExpression = newChildren.head.asInstanceOf[Expression]
-                val newReturnItem = returnItem.copy(expression = newExpression)(returnItem.position)
-                stack.push((jobs, doneJobs += newReturnItem))
-              case (job :: jobs, doneJobs) =>
-                val doneJob = job.dup(newChildren)
-                stack.push((jobs, doneJobs += doneJob))
-            }
-
-            rec(stack)
-          }
-        } else {
-          val (newJob :: jobs, doneJobs) = stack.pop()
-          if (false) {
-            stack.push((jobs, doneJobs += newJob))
-          } else {
-            val rewrittenJob = newJob.rewrite(inner)
-            stack.push((rewrittenJob :: jobs, doneJobs))
-            stack.push((rewrittenJob.children.toList, new mutable.MutableList()))
-          }
-          rec(stack)
-        }
-      }
-
-    }
+    ReturnItemSafeTopDownRewriter(inner)
   }
 
   private def extractExpressionsToInclude(originalExpressions: Set[Expression]): Set[Expression] = {
     val expressionsToGoToWith: Set[Expression] = fixedPoint {
       (expressions: Set[Expression]) => expressions.flatMap {
+        case e@ReduceExpression(_, init, coll) if hasAggregateButIsNotAggregate(e) =>
+          Seq(init, coll)
+
+        case e@FilterExpression(_, expr) if hasAggregateButIsNotAggregate(e) =>
+          Seq(expr)
+
+        case e@ExtractExpression(_, expr) if hasAggregateButIsNotAggregate(e) =>
+          Seq(expr)
+
+        case e@ListComprehension(_, expr) if hasAggregateButIsNotAggregate(e) =>
+          Seq(expr)
+
+        case e@DesugaredMapProjection(variable, items, _) if hasAggregateButIsNotAggregate(e) =>
+          items.map(_.exp) :+ variable
+
         case e if hasAggregateButIsNotAggregate(e) =>
-          e match {
-            case ReduceExpression(_, init, coll) => Seq(init, coll)
-            case FilterExpression(_, expr) => Seq(expr)
-            case ExtractExpression(_, expr) => Seq(expr)
-            case ListComprehension(_, expr) => Seq(expr)
-            case DesugaredMapProjection(variable, items, _) => items.map(_.exp) :+ variable
-            case _ => e.arguments
-          }
+          e.arguments
 
         case e =>
           Seq(e)
-
       }
     }(originalExpressions).filter {
       //Constant expressions should never be isolated
