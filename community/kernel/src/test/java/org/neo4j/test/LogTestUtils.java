@@ -29,7 +29,6 @@ import java.util.function.Predicate;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -45,7 +44,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -139,8 +137,7 @@ public class LogTestUtils
             ReadableLogChannel logChannel = new ReadAheadLogChannel( logVersionedChannel,
                     LogVersionBridge.NO_MORE_CHANNELS );
 
-            return new LogEntryCursor( new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ),
-                    logChannel );
+            return new LogEntryCursor( new VersionAwareLogEntryReader<>(), logChannel );
         }
         catch ( Throwable t )
         {
@@ -197,8 +194,7 @@ public class LogTestUtils
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, LogVersionBridge.NO_MORE_CHANNELS );
-            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>(
-                    new RecordStorageCommandReaderFactory() );
+            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
 
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )

@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -53,8 +52,7 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
                 transactionIdStore::getLastCommittedTransactionId,
                 new ReadOnlyLogVersionRepository( pageCache, fromPath ),
                 monitors.newMonitor( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
-                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader );
     }
 

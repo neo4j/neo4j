@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
@@ -132,8 +131,7 @@ public class UpgradableDatabase
     {
         // check version
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fs );
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
-                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         LatestCheckPointFinder latestCheckPointFinder =
                 new LatestCheckPointFinder( logFiles, fs, logEntryReader );
         try
