@@ -153,21 +153,19 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
      */
     public ClusterManager.ManagedCluster startCluster() throws Exception
     {
-        if ( cluster != null )
+        if ( cluster == null )
         {
-            return cluster;
+            clusterManager = clusterManagerBuilder.withRootDirectory( storeDirectory ).build();
+            try
+            {
+                clusterManager.start();
+            }
+            catch ( Throwable throwable )
+            {
+                throw new RuntimeException( throwable );
+            }
+            cluster = clusterManager.getCluster();
         }
-
-        clusterManager = clusterManagerBuilder.withRootDirectory( storeDirectory ).build();
-        try
-        {
-            clusterManager.start();
-        }
-        catch ( Throwable throwable )
-        {
-            throw new RuntimeException( throwable );
-        }
-        cluster = clusterManager.getCluster();
         cluster.await( allSeesAllAsAvailable() );
         return cluster;
     }
