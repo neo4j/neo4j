@@ -17,21 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
+package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
-case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
-  def calc(a: Number, b: Number): Any = (a, b) match {
-    case (l1: java.lang.Double, _) => l1 % b.doubleValue()
-    case (_, l2: java.lang.Double) => a.doubleValue() % l2
-    case (l1: java.lang.Float, _) => l1 % b.floatValue()
-    case (_, l2: java.lang.Float) => a.floatValue() % l2
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-    //no floating point values, then we treat everything else as longs
-    case _ => a.longValue() % b.longValue()
+class ModuloTest extends CypherFunSuite {
+
+  test("should handle large integers") {
+    // Given
+    val modulo = Modulo(mock[Expression], mock[Expression])
+
+    modulo.calc(16000000000000001L, 16000) should equal (1L)
   }
 
+  test("should handle large integers and floating point values") {
+    // Given
+    val modulo = Modulo(mock[Expression], mock[Expression])
 
-  def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
-
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+    modulo.calc(16000000000000001L, 16000d) should equal (0.0)
+  }
 }
