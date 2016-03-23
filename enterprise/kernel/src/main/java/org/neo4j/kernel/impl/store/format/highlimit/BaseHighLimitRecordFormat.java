@@ -88,13 +88,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
 
     protected BaseHighLimitRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
     {
-        super( recordSize, recordHeaderSize, IN_USE_BIT );
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return getMaxId( HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
+        super( recordSize, recordHeaderSize, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
 
     public void read( RECORD record, PageCursor primaryCursor, RecordLoad mode, int recordSize, PagedFile storeFile )

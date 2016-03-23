@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.highlimit;
 
 import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
@@ -49,7 +50,7 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
 
     protected DynamicRecordFormat()
     {
-        super( INT_STORE_HEADER_READER, RECORD_HEADER_SIZE, IN_USE_BIT );
+        super( INT_STORE_HEADER_READER, RECORD_HEADER_SIZE, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
 
     @Override
@@ -98,11 +99,5 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
     public long getNextRecordReference( DynamicRecord record )
     {
         return record.getNextBlock();
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return getMaxId( HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
 }

@@ -25,8 +25,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.StoreHeader;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
@@ -50,11 +50,13 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
 
     private final Function<StoreHeader,Integer> recordSize;
     private final int recordHeaderSize;
+    private final long maxId;
 
-    protected BaseRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize )
+    protected BaseRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize, int idBits )
     {
         this.recordSize = recordSize;
         this.recordHeaderSize = recordHeaderSize;
+        this.maxId = (1L << idBits) - 1;
     }
 
     @Override
@@ -77,7 +79,7 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
 
     public static long longFromIntAndMod( long base, long modifier )
     {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
+        return modifier == 0 && IdValidator.isReservedId( base ) ? -1 : base | modifier;
     }
 
     @Override
@@ -98,8 +100,9 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
 
     }
 
-    protected long getMaxId(int bits)
+    @Override
+    public final long getMaxId()
     {
-        return (1L << bits) - 1;
+        return maxId;
     }
 }

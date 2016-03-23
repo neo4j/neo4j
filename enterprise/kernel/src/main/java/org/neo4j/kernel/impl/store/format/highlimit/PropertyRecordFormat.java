@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.highlimit;
 
 import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
@@ -46,13 +47,14 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
  * 8B   property block
  *
  * => 39B-49B
- */class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
+ */
+class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 {
     private static final int RECORD_SIZE = 48;
 
     protected PropertyRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT );
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
 
     @Override
@@ -119,11 +121,5 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
     public long getNextRecordReference( PropertyRecord record )
     {
         return record.getNextProp();
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return getMaxId( HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
 }

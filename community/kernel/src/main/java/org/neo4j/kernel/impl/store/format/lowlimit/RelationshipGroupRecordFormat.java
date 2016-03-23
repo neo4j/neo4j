@@ -42,7 +42,8 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
 
     public RelationshipGroupRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT );
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT,
+                LowLimitFormatSettings.RELATIONSHIP_GROUP_MAXIMUM_ID_BITS );
     }
 
     @Override
@@ -125,11 +126,5 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
     public long getNextRecordReference( RelationshipGroupRecord record )
     {
         return record.getNext();
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return getMaxId( LowLimitFormatSettings.RELATIONSHIP_GROUP_MAXIMUM_ID_BITS );
     }
 }

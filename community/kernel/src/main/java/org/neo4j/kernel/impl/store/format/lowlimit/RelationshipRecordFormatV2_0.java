@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format.lowlimit;
 
 import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
@@ -30,7 +31,7 @@ class RelationshipRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<Relatio
 {
     RelationshipRecordFormatV2_0()
     {
-        super( fixedRecordSize( 33 ), 0, IN_USE_BIT );
+        super( fixedRecordSize( 33 ), 0, IN_USE_BIT, LowLimitFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS );
     }
 
     @Override
@@ -98,11 +99,5 @@ class RelationshipRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<Relatio
             throws IOException
     {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return LowLimitFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS;
     }
 }

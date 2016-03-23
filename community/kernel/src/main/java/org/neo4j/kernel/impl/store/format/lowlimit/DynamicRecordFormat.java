@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.NO_DATA;
 
 public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
@@ -38,7 +37,8 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
 
     public DynamicRecordFormat()
     {
-        super( INT_STORE_HEADER_READER, RECORD_HEADER_SIZE, 0x10/*the inUse bit is the lsb in the second nibble*/ );
+        super( INT_STORE_HEADER_READER, RECORD_HEADER_SIZE, 0x10/*the inUse bit is the lsb in the second nibble*/,
+                LowLimitFormatSettings.DYNAMIC_RECORD_MAXIMUM_ID_BITS );
     }
 
     @Override
@@ -141,11 +141,5 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     public long getNextRecordReference( DynamicRecord record )
     {
         return record.getNextBlock();
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return getMaxId( LowLimitFormatSettings.DYNAMIC_RECORD_MAXIMUM_ID_BITS );
     }
 }

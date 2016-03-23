@@ -41,7 +41,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
 
     public PropertyRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0 );
+        super( fixedRecordSize( RECORD_SIZE ), 0, LowLimitFormatSettings.PROPERTY_RECORD_MAXIMUM_ID_BITS );
     }
 
     @Override
@@ -133,12 +133,6 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
     public long getNextRecordReference( PropertyRecord record )
     {
         return record.getNextProp();
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return getMaxId( LowLimitFormatSettings.PROPERTY_RECORD_MAXIMUM_ID_BITS );
     }
 
     /**

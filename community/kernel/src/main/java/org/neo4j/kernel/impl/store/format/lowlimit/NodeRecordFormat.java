@@ -36,19 +36,13 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
 
     public NodeRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT );
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, LowLimitFormatSettings.NODE_RECORD_MAXIMUM_ID_BITS );
     }
 
     @Override
     public NodeRecord newRecord()
     {
         return new NodeRecord( -1 );
-    }
-
-    @Override
-    public long getMaxId()
-    {
-        return getMaxId( LowLimitFormatSettings.NODE_RECORD_MAXIMUM_ID_BITS );
     }
 
     public void read( NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
