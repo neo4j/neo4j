@@ -46,6 +46,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
+import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
@@ -123,7 +124,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
 
-        constraintSemantics = new StandardConstraintSemantics();
+        constraintSemantics = new EnterpriseConstraintSemantics();
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
