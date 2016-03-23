@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.cluster.client.Cluster;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
@@ -43,39 +44,39 @@ public class HAClusterStartupIT
 {
     @Rule
     public final TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+
+    private Cluster cluster;
     private ClusterManager clusterManager;
-    private ClusterManager.ManagedCluster cluster;
+    private ClusterManager.ManagedCluster managedCluster;
     private HighlyAvailableGraphDatabase master;
     private HighlyAvailableGraphDatabase slave1;
     private HighlyAvailableGraphDatabase slave2;
 
     @Before
-    public void instantiateClusterManager()
-    {
-        clusterManager = new ClusterManager.Builder( dir.directory() ).build();
-    }
-
-    @Before
     public void setup() throws Throwable
     {
+        // Re-use the same cluster instances, so that the same store dirs are used throughout the entire test-method
+        cluster = clusterOfSize( 3 ).get();
+        clusterManager = new ClusterManager.Builder( dir.directory() ).withCluster( () -> cluster ).build();
+
         // setup a cluster with some data and entries in log files in fully functional and shutdown state
         clusterManager.start();
 
-        cluster = clusterManager.getCluster();
+        managedCluster = clusterManager.getCluster();
         try
         {
-            cluster.await( allSeesAllAsAvailable() );
+            managedCluster.await( allSeesAllAsAvailable() );
 
-            master = cluster.getMaster();
+            master = managedCluster.getMaster();
             try ( Transaction tx = master.beginTx() )
             {
                 master.createNode();
                 tx.success();
             }
-            cluster.sync();
+            managedCluster.sync();
 
-            slave1 = cluster.getAnySlave();
-            slave2 = cluster.getAnySlave( slave1 );
+            slave1 = managedCluster.getAnySlave();
+            slave2 = managedCluster.getAnySlave( slave1 );
         }
         finally
         {
@@ -97,10 +98,10 @@ public class HAClusterStartupIT
         clusterManager.start();
 
         // THEN the cluster should work
-        cluster = clusterManager.getCluster();
+        managedCluster = clusterManager.getCluster();
         try
         {
-            cluster.await( allSeesAllAsAvailable() );
+            managedCluster.await( allSeesAllAsAvailable() );
         }
         finally
         {
@@ -123,10 +124,10 @@ public class HAClusterStartupIT
         clusterManager.start();
 
         // THEN the cluster should work
-        cluster = clusterManager.getCluster();
+        managedCluster = clusterManager.getCluster();
         try
         {
-            cluster.await( allSeesAllAsAvailable() );
+            managedCluster.await( allSeesAllAsAvailable() );
         }
         finally
         {
@@ -148,10 +149,10 @@ public class HAClusterStartupIT
         clusterManager.start();
 
         // THEN the cluster should work
-        cluster = clusterManager.getCluster();
+        managedCluster = clusterManager.getCluster();
         try
         {
-            cluster.await( allSeesAllAsAvailable(), 120 );
+            managedCluster.await( allSeesAllAsAvailable(), 120 );
         }
         finally
         {
@@ -172,10 +173,10 @@ public class HAClusterStartupIT
         clusterManager.start();
 
         // THEN the cluster should work
-        cluster = clusterManager.getCluster();
+        managedCluster = clusterManager.getCluster();
         try
         {
-            cluster.await( allSeesAllAsAvailable() );
+            managedCluster.await( allSeesAllAsAvailable() );
         }
         finally
         {
@@ -197,10 +198,10 @@ public class HAClusterStartupIT
         clusterManager.start();
 
         // THEN the cluster should work
-        cluster = clusterManager.getCluster();
+        managedCluster = clusterManager.getCluster();
         try
         {
-            cluster.await( allSeesAllAsAvailable() );
+            managedCluster.await( allSeesAllAsAvailable() );
         }
         finally
         {
