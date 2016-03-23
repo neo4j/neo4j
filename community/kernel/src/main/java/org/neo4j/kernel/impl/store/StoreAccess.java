@@ -24,6 +24,8 @@ import java.io.File;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
@@ -72,20 +74,21 @@ public class StoreAccess
         this.counts = store.getCounts();
     }
 
-    public StoreAccess( PageCache pageCache, File storeDir )
+    public StoreAccess( PageCache pageCache, File storeDir, RecordFormats recordFormats )
     {
-        this( new DefaultFileSystemAbstraction(), pageCache, storeDir );
+        this( new DefaultFileSystemAbstraction(), pageCache, storeDir, recordFormats);
     }
 
-    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir )
+    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, RecordFormats recordFormats )
     {
-        this( fileSystem, pageCache, storeDir, Config.defaults() );
+        this( fileSystem, pageCache, storeDir, Config.defaults(), recordFormats );
     }
 
-    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
+    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config,
+            RecordFormats recordFormats )
     {
         this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance() ).openAllNeoStores() );
+                fileSystem, recordFormats, NullLogProvider.getInstance() ).openAllNeoStores() );
         this.closeable = true;
     }
 

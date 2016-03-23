@@ -35,6 +35,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -45,7 +47,7 @@ import org.neo4j.test.PageCacheRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class ResponsePackerIT
 {
@@ -108,7 +110,8 @@ public class ResponsePackerIT
     {
         File storeDir = new File( "/store/" );
         fs.mkdirs( storeDir );
-        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, HighLimit.RECORD_FORMATS,
+                NullLogProvider.getInstance() );
         return storeFactory.openAllNeoStores( true );
     }
 }

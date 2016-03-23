@@ -197,7 +197,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
 
         final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory,
-                pageCache, fs, logProvider, recordFormats );
+                pageCache, fs, recordFormats, logProvider );
         neoStores = storeFactory.openAllNeoStores( true );
 
         try

@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -124,7 +125,8 @@ public class ManyPropertyKeysIT
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, LowLimitV3_0.RECORD_FORMATS,
+                NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )

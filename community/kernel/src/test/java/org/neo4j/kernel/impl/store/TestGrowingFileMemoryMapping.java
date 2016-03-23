@@ -27,6 +27,7 @@ import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -66,7 +67,7 @@ public class TestGrowingFileMemoryMapping
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, NullLogProvider.getInstance() );
+                fileSystemAbstraction, LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
 
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         NodeStore nodeStore = neoStores.getNodeStore();

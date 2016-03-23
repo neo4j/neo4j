@@ -27,8 +27,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -74,29 +72,16 @@ public class StoreFactory
     {
     }
 
-    public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider logProvider )
-    {
-        this( fileSystem, storeDir, pageCache, logProvider, InternalRecordFormatSelector.select() );
-    }
-
-    public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache, LogProvider
-            logProvider, RecordFormats recordFormats )
+    public StoreFactory( FileSystemAbstraction fileSystem, File storeDir, PageCache pageCache,
+            RecordFormats recordFormats, LogProvider logProvider )
     {
         this( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                logProvider, recordFormats );
+                recordFormats, logProvider );
     }
 
     public StoreFactory( File storeDir, Config config,
             IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
-    {
-        this( storeDir, config, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
-                InternalRecordFormatSelector.select( config, NullLogService.getInstance() ));
-    }
-
-    public StoreFactory( File storeDir, Config config,
-            IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, RecordFormats recordFormats )
+            FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider )
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;

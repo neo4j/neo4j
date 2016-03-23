@@ -30,6 +30,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -58,8 +59,8 @@ public class PropertyEncoderStepTest
     {
         File storeDir = new File( "dir" );
         pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        StoreFactory storeFactory =
-                new StoreFactory( fsRule.get(), storeDir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( fsRule.get(), storeDir, pageCache, LowLimitV3_0.RECORD_FORMATS,
+                        NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 

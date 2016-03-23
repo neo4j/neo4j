@@ -39,7 +39,8 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -55,7 +56,6 @@ import org.neo4j.test.impl.EphemeralIdGenerator;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
@@ -83,7 +83,8 @@ public class RecordStorageEngineRule extends ExternalResource
     }
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, LabelScanStore labelScanStore,
-            SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth, File storeDirectory )
+            SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth, File storeDirectory,
+            RecordFormats recordFormats )
     {
         if ( !fs.fileExists( storeDirectory ) && !fs.mkdir( storeDirectory ) )
         {
@@ -102,7 +103,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
                 labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
-                new SynchronizedArrayIdOrderingQueue( 20 ), select( config, NullLogService.getInstance() ) ) );
+                new SynchronizedArrayIdOrderingQueue( 20 ), recordFormats ) );
     }
 
     @Override
@@ -117,6 +118,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
         private LabelScanStore labelScanStore = new InMemoryLabelScanStore();
+        private RecordFormats recordFormats = LowLimitV3_0.RECORD_FORMATS;
         private DatabaseHealth databaseHealth = new DatabaseHealth(
                 new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
@@ -141,6 +143,12 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
+        public Builder recordFormats( RecordFormats recordFormats)
+        {
+            this.recordFormats = recordFormats;
+            return this;
+        }
+
         public Builder databaseHealth( DatabaseHealth databaseHealth )
         {
             this.databaseHealth = databaseHealth;
@@ -157,7 +165,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
         public RecordStorageEngine build()
         {
-            return get( fs, pageCache, labelScanStore, schemaIndexProvider, databaseHealth, storeDirectory );
+            return get( fs, pageCache, labelScanStore, schemaIndexProvider, databaseHealth, storeDirectory, recordFormats );
         }
     }
 }

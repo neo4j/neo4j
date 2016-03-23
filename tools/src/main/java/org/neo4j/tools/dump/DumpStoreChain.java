@@ -28,6 +28,7 @@ import java.util.Set;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -118,8 +119,8 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = Config.defaults();
-            StoreFactory
-                    storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider() );
+            StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs,
+                    LowLimitV3_0.RECORD_FORMATS, logProvider() );
 
             try ( NeoStores neoStores = storeFactory.openNeoStores( getStoreTypes() ) )
             {

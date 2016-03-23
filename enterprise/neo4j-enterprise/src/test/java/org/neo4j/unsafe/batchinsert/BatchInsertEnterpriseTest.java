@@ -31,6 +31,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -62,6 +64,7 @@ public class BatchInsertEnterpriseTest
         // GIVEN
         BatchInserter inserter = BatchInserters.inserter( directory.directory(), stringMap(
                 GraphDatabaseSettings.log_queries.name(), "true",
+                GraphDatabaseFacadeFactory.Configuration.record_format.name(), HighLimit.NAME,
                 GraphDatabaseSettings.log_queries_filename.name(), directory.file( "query.log" ).getAbsolutePath() ) );
         long node1Id, node2Id, relationshipId;
         try

@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -55,7 +56,10 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -83,7 +87,7 @@ import static org.neo4j.test.Property.set;
 public class ExecutionOrderIntegrationTest
 {
     @Rule
-    public final GraphStoreFixture fixture = new GraphStoreFixture()
+    public final GraphStoreFixture fixture = new GraphStoreFixture(getRecordFormats(), getRecordFormatName())
     {
         @Override
         protected void generateInitialData( GraphDatabaseService graphDb )
@@ -108,7 +112,7 @@ public class ExecutionOrderIntegrationTest
         CacheAccess cacheAccess = new DefaultCacheAccess( new DefaultCounts( threads ), threads );
         RecordAccess access = FullCheck.recordAccess( store, cacheAccess );
 
-        FullCheck singlePass = new FullCheck( config(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
+        FullCheck singlePass = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
 
         ConsistencySummaryStatistics singlePassSummary = new ConsistencySummaryStatistics();
         InconsistencyLogger logger = mock( InconsistencyLogger.class );
@@ -124,12 +128,20 @@ public class ExecutionOrderIntegrationTest
                 0, singlePassSummary.getTotalInconsistencyCount() );
     }
 
-    static Config config()
+    private Config getTuningConfiguration()
     {
-        Map<String,String> params = stringMap(
-                // Enable property owners check by default in tests:
-                ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
-        return new Config( params, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        return new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
+                GraphDatabaseFacadeFactory.Configuration.record_format.name(), getRecordFormatName() ) );
+    }
+
+    protected String getRecordFormatName()
+    {
+        return StringUtils.EMPTY;
+    }
+
+    protected RecordFormats getRecordFormats()
+    {
+        return LowLimitV3_0.RECORD_FORMATS;
     }
 
     private static class InvocationLog

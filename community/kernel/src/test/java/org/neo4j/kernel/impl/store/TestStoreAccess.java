@@ -31,6 +31,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -55,7 +56,7 @@ public class TestStoreAccess
         snapshot.deleteFile( messages );
 
         PageCache pageCache = pageCacheRule.getPageCache( snapshot );
-        new StoreAccess( snapshot, pageCache, storeDir ).initialize().close();
+        new StoreAccess( snapshot, pageCache, storeDir, LowLimitV3_0.RECORD_FORMATS ).initialize().close();
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
 

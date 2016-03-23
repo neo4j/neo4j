@@ -26,6 +26,7 @@ import java.util.function.Function;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -71,7 +72,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         {
             Function<File,StoreFactory> createStoreFactory =
                     file -> new StoreFactory( file.getParentFile(), Config.defaults(), idGeneratorFactory, pageCache, fs,
-                            logProvider() );
+                            LowLimitV3_0.RECORD_FORMATS, logProvider() );
 
             for ( String arg : args )
             {

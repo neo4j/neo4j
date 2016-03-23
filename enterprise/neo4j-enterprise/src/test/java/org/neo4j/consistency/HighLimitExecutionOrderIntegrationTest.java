@@ -17,22 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.consistency;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimitWithSmallRecords;
 
-@Service.Implementation( RecordFormats.Factory.class )
-public class HighLimitWithSmallRecordsFactory extends RecordFormats.Factory
+public class HighLimitExecutionOrderIntegrationTest extends ExecutionOrderIntegrationTest
 {
-    public HighLimitWithSmallRecordsFactory()
+    @Override
+    protected RecordFormats getRecordFormats()
     {
-        super( HighLimitWithSmallRecords.NAME );
+        return HighLimitWithSmallRecords.RECORD_FORMATS;
     }
 
     @Override
-    public RecordFormats newInstance()
+    protected String getRecordFormatName()
     {
-        return HighLimitWithSmallRecords.RECORD_FORMATS;
+        return HighLimitWithSmallRecords.NAME;
     }
 }

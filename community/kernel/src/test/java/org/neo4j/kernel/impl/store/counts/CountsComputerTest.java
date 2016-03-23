@@ -35,6 +35,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CountsComputer;
@@ -317,7 +318,9 @@ public class CountsComputerTest
     {
         cleanupCountsForRebuilding();
 
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance()
+
+        );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )
         {

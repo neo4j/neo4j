@@ -59,9 +59,11 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -173,6 +175,7 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+            builder.setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -184,7 +187,7 @@ public class StoreUpgradeIntegrationTest
                 db.shutdown();
             }
 
-            assertConsistentStore( dir );
+            assertConsistentStore( dir, getConfig() );
         }
 
         @Test
@@ -233,6 +236,7 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+            builder.setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -243,7 +247,7 @@ public class StoreUpgradeIntegrationTest
                 db.shutdown();
             }
 
-            assertConsistentStore( dir );
+            assertConsistentStore( dir, getConfig() );
 
             // start the cluster with the db migrated from the old instance
             File haDir = new File( dir.getParentFile(), "ha-stuff" );
@@ -269,8 +273,8 @@ public class StoreUpgradeIntegrationTest
                 clusterManager.safeShutdown();
             }
 
-            assertConsistentStore( new File( master.getStoreDir() ) );
-            assertConsistentStore( new File( slave.getStoreDir() ) );
+            assertConsistentStore( new File( master.getStoreDir() ), getConfig() );
+            assertConsistentStore( new File( slave.getStoreDir() ), getConfig() );
         }
     }
 
@@ -304,6 +308,7 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
+            builder.setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
             try
             {
                 builder.newGraphDatabase();
@@ -582,5 +587,11 @@ public class StoreUpgradeIntegrationTest
             }
         }
         throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );
+    }
+
+    private static Config getConfig()
+    {
+        return new Config( stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
+                HighLimit.NAME ) );
     }
 }

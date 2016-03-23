@@ -57,6 +57,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -171,6 +172,8 @@ public class HighlyAvailableEditionModule
     public HighlyAvailableEditionModule( final PlatformModule platformModule )
     {
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
+
+        formats = HighLimit.RECORD_FORMATS;
 
         final LifeSupport life = platformModule.life;
         life.add( platformModule.dataSourceManager );

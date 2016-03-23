@@ -53,7 +53,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
-import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class TestCommunication
 {

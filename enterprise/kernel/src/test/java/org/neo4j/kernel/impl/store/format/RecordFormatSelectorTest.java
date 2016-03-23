@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -28,33 +30,29 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.record_format;
 
-public class InternalRecordFormatSelectorTest
+public class RecordFormatSelectorTest
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     @Test
-    public void shouldResolveHighLimitsRecordFormat() throws Exception
+    public void selectSpecifiedRecordFormat() throws Exception
     {
+
         Config config = new Config( MapUtil.stringMap( record_format.name(), HighLimit.NAME ) );
-        RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
+        RecordFormats formatSelector = RecordFormatSelector.select( config,
+                LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance() );
         assertEquals( HighLimit.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
 
     @Test
-    public void shouldResolveCommunityRecordFormat() throws Exception
-    {
-        Config config = new Config( MapUtil.stringMap( record_format.name(), LowLimitV3_0.NAME ) );
-        RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
-        assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
-    }
-
-    @Test
-    public void shouldResolveNoRecordFormatToHighLimitDefault() throws Exception
+    public void selectDefaultFormatByDefault() throws Exception
     {
         Config config = Config.empty();
-        RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
+        RecordFormats formatSelector = RecordFormatSelector.select( config,
+                HighLimit.RECORD_FORMATS, NullLogService.getInstance() );
         assertEquals( HighLimit.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
 
@@ -62,15 +60,8 @@ public class InternalRecordFormatSelectorTest
     public void shouldNotResolveNoneExistingRecordFormat() throws Exception
     {
         Config config = new Config( MapUtil.stringMap( record_format.name(), "notAValidRecordFormat" ) );
-        try
-        {
-            RecordFormats formatSelector = InternalRecordFormatSelector.select( config, NullLogService.getInstance() );
-            assertNotNull( formatSelector );
-            fail( "Should not be possible to specify non-existing format" );
-        }
-        catch ( IllegalArgumentException ignored )
-        {
-            // Success
-        }
+        expectedException.expect( IllegalArgumentException.class );
+
+        RecordFormatSelector.select( config, LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance() );
     }
 }

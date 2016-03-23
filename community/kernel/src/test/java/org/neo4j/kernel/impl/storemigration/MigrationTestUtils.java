@@ -30,7 +30,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
@@ -236,7 +236,8 @@ public class MigrationTestUtils
     public static boolean checkNeoStoreHasCurrentFormatVersion( StoreVersionCheck check, File workingDirectory )
     {
         File neostoreFile = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
-        return check.hasVersion( neostoreFile, InternalRecordFormatSelector.select().storeVersion() ).outcome.isSuccessful();
+        return check.hasVersion( neostoreFile, LowLimitV3_0.RECORD_FORMATS.storeVersion() )
+                .outcome.isSuccessful();
     }
 
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )

@@ -42,8 +42,8 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class MasterEpochTest
 {

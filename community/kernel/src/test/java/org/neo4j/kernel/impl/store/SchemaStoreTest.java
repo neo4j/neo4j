@@ -31,6 +31,7 @@ import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -64,7 +65,7 @@ public class SchemaStoreTest
         config = Config.empty();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
         storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
-                fs.get(), NullLogProvider.getInstance() );
+                fs.get(), LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getSchemaStore();
     }

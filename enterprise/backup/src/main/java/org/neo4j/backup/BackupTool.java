@@ -41,6 +41,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -50,6 +51,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.record_format;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 
 public class BackupTool
@@ -260,7 +262,7 @@ public class BackupTool
 
     private static Config readConfiguration( Args arguments ) throws ToolFailureException
     {
-        Map<String,String> specifiedConfig = stringMap();
+        Map<String,String> specifiedConfig = stringMap(record_format.name(), HighLimit.NAME );
 
         String configFilePath = arguments.get( CONFIG, null );
         if ( configFilePath != null )

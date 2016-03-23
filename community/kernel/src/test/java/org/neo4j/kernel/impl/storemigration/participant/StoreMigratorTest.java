@@ -37,11 +37,12 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -100,7 +101,7 @@ public class StoreMigratorTest
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         UpgradableDatabase upgradableDatabase =
                 new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ),
-                        InternalRecordFormatSelector.select() );
+                        selectFormat() );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -117,8 +118,8 @@ public class StoreMigratorTest
                 upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory =
-                new StoreFactory( fs, storeDirectory, pageCache, logService.getInternalLogProvider() );
+        StoreFactory storeFactory = new StoreFactory( fs, storeDirectory, pageCache, LowLimitV3_0.RECORD_FORMATS,
+                logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -132,9 +133,8 @@ public class StoreMigratorTest
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ),
-                        InternalRecordFormatSelector.select() );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
+                new LegacyStoreVersionCheck( fs ), selectFormat() );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -153,7 +153,8 @@ public class StoreMigratorTest
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
-                new StoreFactory( fs, storeDirectory, pageCache, logService.getInternalLogProvider() );
+                new StoreFactory( fs, storeDirectory, pageCache, LowLimitV3_0.RECORD_FORMATS, logService.getInternalLogProvider()
+                );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -169,7 +170,7 @@ public class StoreMigratorTest
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         UpgradableDatabase upgradableDatabase =
                 new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fs ),
-                        InternalRecordFormatSelector.select() );
+                        selectFormat() );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -183,5 +184,10 @@ public class StoreMigratorTest
 
         // THEN it should compute the correct last tx log position
         assertEquals( expectedLogPosition, readLastTxLogPosition( fs, migrationDir ) );
+    }
+
+    private RecordFormats selectFormat()
+    {
+        return LowLimitV3_0.RECORD_FORMATS;
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -55,6 +57,8 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -87,15 +91,42 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private Statistics statistics;
     private final boolean keepStatistics;
     private NeoStores neoStore;
+    private File directory;
+    private long schemaId;
+    private long nodeId;
+    private int labelId;
+    private long nodeLabelsId;
+    private long relId;
+    private long relGroupId;
+    private int propId;
+    private long stringPropId;
+    private long arrayPropId;
+    private int relTypeId;
+    private int propKeyId;
+    private RecordFormats recordFormats = LowLimitV3_0.RECORD_FORMATS;
+    private String formatName = StringUtils.EMPTY;
 
-    public GraphStoreFixture( boolean keepStatistics )
+    public GraphStoreFixture( boolean keepStatistics, RecordFormats recordFormats, String formatName )
     {
         this.keepStatistics = keepStatistics;
+        this.recordFormats = recordFormats;
+        this.formatName = formatName;
+    }
+
+    public GraphStoreFixture(RecordFormats recordFormats, String formatName)
+    {
+        this( false, recordFormats, formatName );
     }
 
     public GraphStoreFixture()
     {
-        this( false );
+        this( false, LowLimitV3_0.RECORD_FORMATS, LowLimitV3_0.NAME );
+    }
+
+    public GraphStoreFixture withRecordFormats( RecordFormats recordFormats )
+    {
+        this.recordFormats = recordFormats;
+        return this;
     }
 
     public void apply( Transaction transaction ) throws TransactionFailureException
@@ -109,7 +140,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            neoStore = new StoreFactory( fileSystem, directory, pageCache, NullLogProvider.getInstance() ).openAllNeoStores();
+            neoStore = new StoreFactory( fileSystem, directory, pageCache, recordFormats,
+                    NullLogProvider.getInstance() ).openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
             {
@@ -400,7 +432,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         // and the next startup of the store would do recovery where the transaction would have been
         // applied and all would have been well.
 
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory )
+                             .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, formatName );
         GraphDatabaseAPI database = (GraphDatabaseAPI) builder.newGraphDatabase();
         try
         {
@@ -427,23 +460,11 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         }
     }
 
-    private File directory;
-    private long schemaId;
-    private long nodeId;
-    private int labelId;
-    private long nodeLabelsId;
-    private long relId;
-    private long relGroupId;
-    private int propId;
-    private long stringPropId;
-    private long arrayPropId;
-    private int relTypeId;
-    private int propKeyId;
-
     private void generateInitialData()
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
         GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder
+                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
                 // tests and records around that. Those tests could change, but the simpler option is to just
                 // keep the block size to 60 and let them be.

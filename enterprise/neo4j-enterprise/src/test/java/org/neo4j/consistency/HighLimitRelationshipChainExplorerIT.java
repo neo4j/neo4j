@@ -19,36 +19,22 @@
  */
 package org.neo4j.consistency;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-import org.neo4j.consistency.checking.full.DetectAllRelationshipInconsistenciesIT;
-import org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest;
-import org.neo4j.consistency.checking.full.FullCheckIntegrationTest;
 import org.neo4j.consistency.repair.RelationshipChainExplorerTest;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimitWithSmallRecords;
 
-@RunWith( Suite.class )
-@Suite.SuiteClasses( {
-        DetectAllRelationshipInconsistenciesIT.class,
-        ExecutionOrderIntegrationTest.class,
-        FullCheckIntegrationTest.class,
-        RelationshipChainExplorerTest.class,
-        ConsistencyCheckServiceIntegrationTest.class
-} )
-public class HighLimitConsistencyCheckIT
+public class HighLimitRelationshipChainExplorerIT extends RelationshipChainExplorerTest
 {
-    @BeforeClass
-    public static void enableTestHighLimitFormat()
+
+    @Override
+    protected RecordFormats getRecordFormats()
     {
-        HighLimitWithSmallRecords.enable();
+        return HighLimitWithSmallRecords.RECORD_FORMATS;
     }
 
-    @AfterClass
-    public static void disableTestHighLimitFormat()
+    @Override
+    protected String getRecordFormatName()
     {
-        HighLimitWithSmallRecords.disable();
+        return HighLimitWithSmallRecords.NAME;
     }
 }

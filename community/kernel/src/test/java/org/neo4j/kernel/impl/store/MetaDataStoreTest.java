@@ -44,6 +44,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
@@ -57,7 +58,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
-import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 
 public class MetaDataStoreTest
 {
@@ -88,7 +88,8 @@ public class MetaDataStoreTest
 
     private MetaDataStore newMetaDataStore() throws IOException
     {
-        StoreFactory storeFactory = new StoreFactory( fs, STORE_DIR, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( fs, STORE_DIR, pageCache, LowLimitV3_0.RECORD_FORMATS,
+                NullLogProvider.getInstance() );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 
@@ -583,7 +584,7 @@ public class MetaDataStoreTest
         fs.mkdir( STORE_DIR );
         fs.create( file ).close();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        long storeVersion = versionStringToLong( select().storeVersion());
+        long storeVersion = versionStringToLong( LowLimitV3_0.RECORD_FORMATS.storeVersion());
         writeCorrectMetaDataRecord( file, positions, storeVersion );
 
         List<Long> actualValues = new ArrayList<>();
@@ -616,7 +617,7 @@ public class MetaDataStoreTest
         fs.mkdir( STORE_DIR );
         fs.create( file ).close();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        long storeVersion = versionStringToLong( select().storeVersion());
+        long storeVersion = versionStringToLong( LowLimitV3_0.RECORD_FORMATS.storeVersion());
         writeCorrectMetaDataRecord( file, positions, storeVersion );
 
         List<Long> actualValues = new ArrayList<>();

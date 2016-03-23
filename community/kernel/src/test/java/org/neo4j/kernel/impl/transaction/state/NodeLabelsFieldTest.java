@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -508,7 +509,9 @@ public class NodeLabelsFieldTest
         fs.get().mkdirs( storeDir );
         Config config = new Config( stringMap( GraphDatabaseSettings.label_block_size.name(), "60" ) );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), LowLimitV3_0.RECORD_FORMATS,
+                NullLogProvider.getInstance()
+        );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }

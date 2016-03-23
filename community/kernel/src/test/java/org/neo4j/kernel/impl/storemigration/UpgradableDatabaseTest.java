@@ -35,11 +35,13 @@ import java.util.Collection;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.PageCacheRule;
@@ -109,7 +111,7 @@ public class UpgradableDatabaseTest
             // given
             final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
-                    new LegacyStoreVersionCheck( fileSystem ), InternalRecordFormatSelector.select() );
+                    new LegacyStoreVersionCheck( fileSystem ), getRecordFormat() );
 
             // when
             final boolean result = storeFilesUpgradeable( workingDirectory, upgradableDatabase );
@@ -128,7 +130,7 @@ public class UpgradableDatabaseTest
             changeVersionNumber( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
             final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
-                    new LegacyStoreVersionCheck( fileSystem ), InternalRecordFormatSelector.select() );
+                    new LegacyStoreVersionCheck( fileSystem ), getRecordFormat() );
 
             // when
             final boolean result = storeFilesUpgradeable( workingDirectory, upgradableDatabase );
@@ -143,7 +145,7 @@ public class UpgradableDatabaseTest
             // given
             final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
-                    new LegacyStoreVersionCheck( fileSystem ), InternalRecordFormatSelector.select() );
+                    new LegacyStoreVersionCheck( fileSystem ), getRecordFormat() );
 
             // when
             boolean currentVersion = upgradableDatabase.hasCurrentVersion( workingDirectory );
@@ -165,7 +167,7 @@ public class UpgradableDatabaseTest
                     shortFileLength );
             final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
-                    new LegacyStoreVersionCheck( fileSystem ), InternalRecordFormatSelector.select() );
+                    new LegacyStoreVersionCheck( fileSystem ), getRecordFormat() );
 
             // when
             final boolean result = storeFilesUpgradeable( workingDirectory, upgradableDatabase );
@@ -184,7 +186,7 @@ public class UpgradableDatabaseTest
             removeCheckPointFromTxLog( fileSystem, workingDirectory );
             final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
-                    new LegacyStoreVersionCheck( fileSystem ), InternalRecordFormatSelector.select() );
+                    new LegacyStoreVersionCheck( fileSystem ), getRecordFormat() );
 
             // when
             final boolean result = storeFilesUpgradeable( workingDirectory, upgradableDatabase );
@@ -232,7 +234,7 @@ public class UpgradableDatabaseTest
             // given
             final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
-                    new LegacyStoreVersionCheck( fileSystem ), InternalRecordFormatSelector.select() );
+                    new LegacyStoreVersionCheck( fileSystem ), getRecordFormat() );
 
             // when
             boolean currentVersion = upgradableDatabase.hasCurrentVersion( workingDirectory );
@@ -247,7 +249,7 @@ public class UpgradableDatabaseTest
             // given
             final UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                     new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
-                    new LegacyStoreVersionCheck( fileSystem ), InternalRecordFormatSelector.select() );
+                    new LegacyStoreVersionCheck( fileSystem ), getRecordFormat() );
             try
             {
                 // when
@@ -261,5 +263,10 @@ public class UpgradableDatabaseTest
                 assertEquals( String.format( MESSAGE, expectedFile, version ), e.getMessage() );
             }
         }
+    }
+
+    private static RecordFormats getRecordFormat()
+    {
+        return LowLimitV3_0.RECORD_FORMATS;
     }
 }

@@ -27,6 +27,8 @@ import java.util.function.LongSupplier;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -54,7 +56,7 @@ public class OnDiskLastTxIdGetterTest
     public void lastTransactionIdIsBaseTxIdWhileNeoStoresAreStopped()
     {
         final StoreFactory storeFactory = new StoreFactory( fs.get(), new File( "store" ),
-                pageCacheRule.getPageCache( fs.get() ), NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs.get() ), HighLimit.RECORD_FORMATS, NullLogProvider.getInstance() );
         final NeoStores neoStores = storeFactory.openAllNeoStores( true );
         neoStores.close();
 

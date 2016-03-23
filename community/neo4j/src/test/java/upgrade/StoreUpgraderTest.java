@@ -49,11 +49,13 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -150,7 +152,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
-                InternalRecordFormatSelector.select() );
+                getRecordFormats() );
         assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fileSystem, dbDirectory, version ) );
 
@@ -176,7 +178,7 @@ public class StoreUpgraderTest
 
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
-                InternalRecordFormatSelector.select() );
+                getRecordFormats() );
 
         try
         {
@@ -204,7 +206,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
-                InternalRecordFormatSelector.select() );
+                getRecordFormats() );
 
         try
         {
@@ -231,7 +233,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
-                InternalRecordFormatSelector.select() );
+                getRecordFormats() );
 
         try
         {
@@ -258,7 +260,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
-                InternalRecordFormatSelector.select() );
+                getRecordFormats() );
 
         try
         {
@@ -279,7 +281,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
-                InternalRecordFormatSelector.select() );
+                getRecordFormats() );
 
         String versionToMigrateTo = upgradableDatabase.currentVersion();
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( dbDirectory ).storeVersion();
@@ -330,14 +332,14 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
-                InternalRecordFormatSelector.select() );
+                getRecordFormats() );
 
         // When
         newUpgrader( upgradableDatabase, allowMigrateConfig, pageCache ).migrateIfNeeded( dbDirectory );
 
         // Then
-        StoreFactory storeFactory =
-                new StoreFactory( fileSystem, dbDirectory, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( fileSystem, dbDirectory, pageCache, LowLimitV3_0.RECORD_FORMATS,
+                        NullLogProvider.getInstance() );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),
@@ -358,7 +360,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
-                InternalRecordFormatSelector.select() );
+                getRecordFormats() );
 
         // When
         newUpgrader( upgradableDatabase, allowMigrateConfig, pageCache ).migrateIfNeeded( dbDirectory );
@@ -382,7 +384,7 @@ public class StoreUpgraderTest
         // When
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
-                InternalRecordFormatSelector.select() );
+                getRecordFormats() );
         StoreUpgrader storeUpgrader = newUpgrader( upgradableDatabase, pageCache );
         storeUpgrader.migrateIfNeeded( dbDirectory );
 
@@ -459,5 +461,10 @@ public class StoreUpgraderTest
                 truncateFile( fileSystem, storeFile, "StringPropertyStore " + version );
             }
         }
+    }
+
+    private RecordFormats getRecordFormats()
+    {
+        return LowLimitV3_0.RECORD_FORMATS;
     }
 }

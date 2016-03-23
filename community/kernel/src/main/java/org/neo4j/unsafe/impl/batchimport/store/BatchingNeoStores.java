@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
@@ -49,6 +50,9 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -183,14 +187,15 @@ public class BatchingNeoStores implements AutoCloseable
      * Useful for store migration where the {@link ParallelBatchImporter} is used as migrator and some of
      * its data need to be communicated by copying a store file.
      */
-    public static void createStore( FileSystemAbstraction fileSystem, String storeDir, Config dbConfig )
+    public static void createStore( FileSystemAbstraction fileSystem, String storeDir, Config dbConfig,
+            RecordFormats newFormat )
             throws IOException
     {
         try ( PageCache pageCache = createPageCache( fileSystem, dbConfig, NullLogProvider.getInstance(),
                 PageCacheTracer.NULL ) )
         {
-            StoreFactory storeFactory =
-                    new StoreFactory( fileSystem, new File( storeDir ), pageCache, NullLogProvider.getInstance() );
+            StoreFactory storeFactory = new StoreFactory( fileSystem, new File( storeDir ), pageCache, newFormat,
+                            NullLogProvider.getInstance() );
             try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
             {
                 neoStores.getMetaDataStore();
@@ -207,8 +212,9 @@ public class BatchingNeoStores implements AutoCloseable
     private NeoStores newNeoStores( PageCache pageCache )
     {
         BatchingIdGeneratorFactory idGeneratorFactory = new BatchingIdGeneratorFactory( fileSystem );
-        StoreFactory storeFactory =
-                new StoreFactory( storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, logProvider );
+        StoreFactory storeFactory = new StoreFactory( storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem,
+                        RecordFormatSelector.select( neo4jConfig, LowLimitV3_0.RECORD_FORMATS,
+                                NullLogService.getInstance()), logProvider);
         return storeFactory.openAllNeoStores( true );
     }
 

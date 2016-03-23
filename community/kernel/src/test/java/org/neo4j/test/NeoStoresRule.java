@@ -30,8 +30,9 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -63,7 +64,8 @@ public class NeoStoresRule extends ExternalResource
     public NeoStores open( String... config )
     {
         Config conf = new Config( stringMap( config ) );
-        return open( InternalRecordFormatSelector.select( conf, NullLogService.getInstance() ), config );
+        return open( RecordFormatSelector.select( conf, LowLimitV3_0.RECORD_FORMATS,
+                NullLogService.getInstance() ), config );
     }
 
     public NeoStores open( RecordFormats format, String... config )
@@ -83,7 +85,7 @@ public class NeoStoresRule extends ExternalResource
         File storeDir = targetDirectory.makeGraphDbDir();
         Config configuration = new Config( stringMap( config ) );
         storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance(), format );
+                pageCache, fs, format, NullLogProvider.getInstance() );
         return neoStores = stores.length == 0
                 ? storeFactory.openAllNeoStores( true )
                 : storeFactory.openNeoStores( true, stores );

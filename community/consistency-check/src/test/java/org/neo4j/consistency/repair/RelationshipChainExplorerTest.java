@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.repair;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -33,8 +34,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -114,7 +118,10 @@ public class RelationshipChainExplorerTest
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
         File storeDirectory = storeLocation.graphDbDir();
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory );
+        GraphDatabaseService database = new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( storeDirectory )
+                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, getRecordFormatName() )
+                .newGraphDatabase();
 
         try ( Transaction transaction = database.beginTx() )
         {
@@ -137,6 +144,16 @@ public class RelationshipChainExplorerTest
         }
         database.shutdown();
         PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        return new StoreAccess( pageCache, storeDirectory ).initialize();
+        return new StoreAccess( pageCache, storeDirectory, getRecordFormats() ).initialize();
+    }
+
+    protected RecordFormats getRecordFormats()
+    {
+        return LowLimitV3_0.RECORD_FORMATS;
+    }
+
+    protected String getRecordFormatName()
+    {
+        return StringUtils.EMPTY;
     }
 }
