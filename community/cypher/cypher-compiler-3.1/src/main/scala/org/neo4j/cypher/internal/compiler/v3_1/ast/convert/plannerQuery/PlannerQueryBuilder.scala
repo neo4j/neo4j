@@ -40,23 +40,27 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
   }
 
   def currentlyAvailableVariables: Set[IdName] = {
-    q.allPlannerQueries.init.foldLeft(Set.empty[IdName]) {
-      case (acc, current) if current.horizon.isInstanceOf[QueryProjection] => // actual projection
-        current.horizon.exposedSymbols(current.queryGraph)
-      case (acc, current) => // with * or horizon which simply introduces new symbols (unwind or load csv)
-        current.horizon.exposedSymbols(current.queryGraph) ++ acc
-    } ++ q.allPlannerQueries.last.lastQueryGraph.allCoveredIds // for the last planner query we should not consider the return projection
+    val allPlannerQueries = q.allPlannerQueries
+    val previousAvailableSymbols = if (allPlannerQueries.length > 1) {
+      val current = allPlannerQueries(allPlannerQueries.length - 2)
+      current.horizon.exposedSymbols(current.queryGraph)
+    } else Set.empty
+
+    // for the last planner query we should not consider the return projection
+    previousAvailableSymbols ++ q.lastQueryGraph.allCoveredIds
   }
 
   def currentQueryGraph: QueryGraph = q.lastQueryGraph
 
   def allSeenPatternNodes: Set[IdName] = {
-    val previousPatternNodes = q.allPlannerQueries.init.foldLeft(Set.empty[IdName]) { (acc, current) =>
+    val allPlannerQueries = q.allPlannerQueries
+    val previousPatternNodes = if (allPlannerQueries.length > 1) {
+      val current = allPlannerQueries(allPlannerQueries.length - 2)
       val projectedNodes = current.horizon.exposedSymbols(current.queryGraph).collect {
         case id@IdName(n) if semanticTable.contains(n) && semanticTable.isNode(n) => id
       }
       projectedNodes ++ current.queryGraph.allPatternNodes
-    }
+    } else Set.empty
     previousPatternNodes ++ q.lastQueryGraph.allPatternNodes
   }
 
