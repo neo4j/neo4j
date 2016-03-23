@@ -116,7 +116,7 @@ import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -796,14 +796,7 @@ public class BatchInserterImpl implements BatchInserter
     @Override
     public void createNode( long id, Map<String, Object> properties, Label... labels )
     {
-        if ( id < 0 || id > maxNodeId )
-        {
-            throw new IllegalArgumentException( "id=" + id );
-        }
-        if ( id == IdGeneratorImpl.INTEGER_MINUS_ONE )
-        {
-            throw new IllegalArgumentException( "id " + id + " is reserved for internal use" );
-        }
+        IdValidator.assertValidId( id, maxNodeId );
         if ( nodeStore.isInUse( id ) )
         {
             throw new IllegalArgumentException( "id=" + id + " already in use" );

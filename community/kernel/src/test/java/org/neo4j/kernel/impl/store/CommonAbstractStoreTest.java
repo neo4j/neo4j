@@ -41,7 +41,11 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.validation.IdCapacityExceededException;
+import org.neo4j.kernel.impl.store.id.validation.NegativeIdException;
+import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -50,9 +54,12 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -79,6 +86,7 @@ public class CommonAbstractStoreTest
     private final PageCache pageCache = mock( PageCache.class );
     private final Config config = Config.empty();
     private final File storeFile = new File( "store" );
+    private RecordFormat<TheRecord> recordFormat = mock( RecordFormat.class );
     private final IdType idType = IdType.RELATIONSHIP; // whatever
 
     private static final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -161,10 +169,62 @@ public class CommonAbstractStoreTest
         }
     }
 
-    @SuppressWarnings( "unchecked" )
+    @Test
+    public void throwsWhenRecordWithNegativeIdIsUpdated()
+    {
+        TheStore store = newStore();
+        TheRecord record = new TheRecord( -1 );
+
+        try
+        {
+            store.updateRecord( record );
+            fail( "Should have failed" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( NegativeIdException.class ) );
+        }
+    }
+
+    @Test
+    public void throwsWhenRecordWithTooHighIdIsUpdated()
+    {
+        long maxFormatId = 42;
+        when( recordFormat.getMaxId() ).thenReturn( maxFormatId );
+
+        TheStore store = newStore();
+        TheRecord record = new TheRecord( maxFormatId + 1 );
+
+        try
+        {
+            store.updateRecord( record );
+            fail( "Should have failed" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( IdCapacityExceededException.class ) );
+        }
+    }
+
+    @Test
+    public void throwsWhenRecordWithReservedIdIsUpdated()
+    {
+        TheStore store = newStore();
+        TheRecord record = new TheRecord( IdGeneratorImpl.INTEGER_MINUS_ONE );
+
+        try
+        {
+            store.updateRecord( record );
+            fail( "Should have failed" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( ReservedIdException.class ) );
+        }
+    }
+
     private TheStore newStore()
     {
-        RecordFormat<TheRecord> recordFormat = mock( RecordFormat.class );
         LogProvider log = NullLogProvider.getInstance();
         TheStore store = new TheStore( storeFile, config, idType, idGeneratorFactory, pageCache, log, recordFormat );
         store.initialise( false );

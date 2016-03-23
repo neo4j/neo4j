@@ -34,7 +34,9 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
@@ -135,10 +137,10 @@ public class BigBatchStoreIT implements RelationshipType
         db = BatchInserters.inserter( PATH.getAbsoluteFile(), fs.get() );
     }
 
-    @Test( expected=IllegalArgumentException.class )
+    @Test( expected = ReservedIdException.class )
     public void makeSureCantCreateNodeWithMagicNumber()
     {
-        long id = (long) Math.pow( 2, 32 )-1;
+        long id = IdGeneratorImpl.INTEGER_MINUS_ONE;
         db.createNode( id, null );
     }
 
