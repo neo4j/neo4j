@@ -55,7 +55,7 @@ For storing metrics in local CSV files add the following settings to _neo4j.conf
 [source,properties]
 ----
 metrics.csv.enabled=true // default is 'false'
-metrics.csv.path=<file or directory path, defaults to "metrics/" in the store directory>
+dbms.directories.metrics=<file or directory path, defaults to "metrics/" in the store directory>
 metrics.csv.interval=<how often to store data, defaults to 3s>
 ----
 
