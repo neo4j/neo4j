@@ -62,21 +62,29 @@ enum Reference
 
     public interface DataAdapter<SOURCE>
     {
-        byte get( SOURCE source );
+        byte getByte( SOURCE source );
 
-        void put( byte oneByte, SOURCE source ) throws IOException;
+        short getShort( SOURCE source );
+
+        void putByte( byte oneByte, SOURCE source ) throws IOException;
     }
 
     public static final DataAdapter<PageCursor> PAGE_CURSOR_ADAPTER = new DataAdapter<PageCursor>()
     {
         @Override
-        public byte get( PageCursor source )
+        public byte getByte( PageCursor source )
         {
             return source.getByte();
         }
 
         @Override
-        public void put( byte oneByte, PageCursor source )
+        public short getShort( PageCursor cursor )
+        {
+            return cursor.getShort();
+        }
+
+        @Override
+        public void putByte( byte oneByte, PageCursor source )
         {
             source.putByte( oneByte );
         }
@@ -124,12 +132,12 @@ enum Reference
         byte signBit = (byte) ((positive ? 0 : 1) << (headerShift - 1));
 
         // first (most significant) byte
-        adapter.put( (byte) (highHeader | signBit | (byte) (absoluteReference >>> shift)), source );
+        adapter.putByte( (byte) (highHeader | signBit | (byte) (absoluteReference >>> shift)), source );
 
         do // rest of the bytes
         {
             shift -= 8;
-            adapter.put( (byte) (absoluteReference >>> shift), source );
+            adapter.putByte( (byte) (absoluteReference >>> shift), source );
         }
         while ( shift > 0 );
     }
@@ -189,19 +197,17 @@ enum Reference
 
     public static <SOURCE> long decode( SOURCE source, DataAdapter<SOURCE> adapter )
     {
-        PageCursor cursor = (PageCursor) source;
-
-        int header = cursor.getByte() & 0xFF;
+        int header = adapter.getByte( source ) & 0xFF;
         int sizeMarks = Integer.numberOfLeadingZeros( (~(header & 0xF8)) & 0xFF ) - 24;
         int signShift = 8 - sizeMarks - (sizeMarks == 5 ? 1 : 2);
         long signBit = ~((header >>> signShift) & 1) + 1;
         long register = (header & ((1 << signShift) - 1)) << 16;
-        register += cursor.getShort() & 0xFFFFL; // 3 bytes
+        register += adapter.getShort( source ) & 0xFFFFL; // 3 bytes
 
         while ( sizeMarks > 0 )
         {
             register <<= 8;
-            register += cursor.getByte() & 0xFF;
+            register += adapter.getByte( source ) & 0xFF;
             sizeMarks--;
         }
 
