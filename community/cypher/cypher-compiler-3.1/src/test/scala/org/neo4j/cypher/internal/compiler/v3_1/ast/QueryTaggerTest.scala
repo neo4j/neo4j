@@ -130,6 +130,40 @@ class QueryTaggerTest extends CypherFunSuite {
     QueryTagger("MATCH n DELETE n") should contain(UpdatesTag)
   }
 
+  test(queryTag(CreateTag)) {
+    QueryTagger("CREATE ()") should contain(CreateTag)
+    QueryTagger("CREATE ()-[:T]->()") should contain(CreateTag)
+  }
+
+  test(queryTag(DeleteTag)) {
+    QueryTagger("CREATE (n) DELETE n") should contain(DeleteTag)
+    QueryTagger("CREATE ()-[r:T]->() DELETE r") should contain(DeleteTag)
+  }
+
+  test(queryTag(SetTag)) {
+    QueryTagger("CREATE (n) SET n:L") should contain(SetTag)
+    QueryTagger("CREATE (n) SET n.prop = 0") should contain(SetTag)
+  }
+
+  test(queryTag(RemoveTag)) {
+    QueryTagger("CREATE (n) REMOVE n:L") should contain(RemoveTag)
+    QueryTagger("CREATE (n) REMOVE n.prop") should contain(RemoveTag)
+  }
+
+  test(queryTag(MergeTag)) {
+    QueryTagger("MERGE ()") should contain(MergeTag)
+    QueryTagger("MERGE ()-[r:T]->()") should contain(MergeTag)
+  }
+
+  test(queryTag(CreateUniqueTag)) {
+    QueryTagger("CREATE UNIQUE ()") should contain(CreateUniqueTag)
+    QueryTagger("CREATE UNIQUE ()-[r:T]->()") should contain(CreateUniqueTag)
+  }
+
+  test(queryTag(ForeachTag)) {
+    QueryTagger("FOREACH (i IN [1,2,3] | CREATE ())") should contain(ForeachTag)
+  }
+
   test("Supports combining tags") {
     QueryTagger("MATCH n RETURN n") should be(Set(
       MatchTag,

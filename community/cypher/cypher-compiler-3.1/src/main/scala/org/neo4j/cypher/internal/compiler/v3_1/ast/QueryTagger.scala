@@ -52,7 +52,31 @@ object QueryTags {
     UnionTag,
     UnwindTag,
     LoadCSVTag,
+
     UpdatesTag,
+    CreateTag,
+    DeleteTag,
+    SetTag,
+    RemoveTag,
+    MergeTag,
+    CreateUniqueTag,
+    ForeachTag,
+
+//    CaseTag,
+//    LimitTag,
+//    SkipTag,
+//    OrderByTag,
+//
+//    CreateIndexTag,
+//    CreateConstraintTag,
+//    DropIndexTag,
+//    DropConstraintTag,
+//
+//    CallTag,
+//
+//    AggregationTag,
+//    MathFunctionTag,
+//    StringFunctionTag,
 
     ComplexExpressionTag,
     FilteringExpressionTag,
@@ -127,6 +151,14 @@ case object LoadCSVTag extends QueryTag("load-csv")
 // Updates
 
 case object UpdatesTag extends QueryTag("updates")
+case object CreateTag extends QueryTag("create")
+case object DeleteTag extends QueryTag("delete")
+case object SetTag extends QueryTag("set")
+case object RemoveTag extends QueryTag("remove")
+case object MergeTag extends QueryTag("merge")
+case object CreateUniqueTag extends QueryTag("create-unique")
+case object ForeachTag extends QueryTag("foreach")
+
 
 // Expressions
 
@@ -173,7 +205,17 @@ object QueryTagger extends QueryTagger[String] {
         Set(LoadCSVTag)
 
       case x: UpdateClause =>
-        Set(UpdatesTag)
+        val specificTag = x match {
+          case u: Create => Set(CreateTag)
+          case u: Delete => Set(DeleteTag)
+          case u: SetClause => Set(SetTag)
+          case u: Remove => Set(RemoveTag)
+          case u: Merge => Set(MergeTag)
+          case u: CreateUnique => Set(CreateUniqueTag)
+          case u: Foreach => Set(ForeachTag)
+          case _ => Set.empty[QueryTag]
+        }
+        specificTag ++ Set(UpdatesTag)
     } ++
 
     // Pattern features
