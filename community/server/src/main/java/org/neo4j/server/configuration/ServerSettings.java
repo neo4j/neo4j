@@ -171,7 +171,7 @@ public interface ServerSettings
     Setting<File> tls_key_file = BoltKernelExtension.Settings.tls_key_file;
 
     @Description("Enable HTTP request logging.")
-    Setting<Boolean> http_logging_enabled = setting( "org.neo4j.server.http.log.enabled", BOOLEAN, FALSE );
+    Setting<Boolean> http_logging_enabled = setting( "dbms.logs.http.enabled", BOOLEAN, FALSE );
 
     @Description("Number of HTTP logs to keep.")
     Setting<Integer> http_logging_rotation_keep_number = setting("dbms.logs.http.rotation.keep_number", INTEGER, "5");

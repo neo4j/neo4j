@@ -411,7 +411,7 @@ public class Jetty9WebServer implements WebServer
         return count;
     }
 
-    private void loadRequestLogging() throws IOException
+    private void loadRequestLogging()
     {
         // This makes the request log handler decorate whatever other handlers are already set up
         final RequestLogHandler requestLogHandler = new RequestLogHandler();
