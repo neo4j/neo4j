@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
@@ -37,8 +36,7 @@ import static org.junit.Assert.assertTrue;
 
 public class VersionAwareLogEntryReaderTest
 {
-    private final VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
-            new RecordStorageCommandReaderFactory() );
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
     @Test
     public void shouldReadAStartLogEntry() throws IOException
@@ -375,8 +373,7 @@ public class VersionAwareLogEntryReaderTest
     public void shouldParseStreamOfZerosAsEmptyLogEntries() throws Exception
     {
         // GIVEN
-        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory() );
+        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         int count = 100;
         channel.put( new byte[count], count );

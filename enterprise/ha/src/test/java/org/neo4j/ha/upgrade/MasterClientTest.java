@@ -23,9 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
@@ -51,7 +48,6 @@ import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.StoreIdTestFactory;
@@ -70,7 +66,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -97,7 +92,7 @@ public class MasterClientTest
     public final LifeRule life = new LifeRule( true );
     private final Monitors monitors = new Monitors();
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
-            new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
+            new VersionAwareLogEntryReader<>();
 
     @Test( expected = MismatchingStoreIdException.class )
     public void newClientsShouldNotIgnoreStoreIdDifferences() throws Throwable

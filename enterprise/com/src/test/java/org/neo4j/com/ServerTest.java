@@ -32,11 +32,10 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.TickingClock;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -80,8 +79,7 @@ public class ServerTest
         try
         {
             protocol.deserializeResponse( channel.asBlockingReadHandler(), ByteBuffer.allocateDirect( 1024 ), 1,
-                    VOID_DESERIALIZER, mock( ResourceReleaser.class ),
-                    new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ) );
+                    VOID_DESERIALIZER, mock( ResourceReleaser.class ), new VersionAwareLogEntryReader<>() );
             fail( "Should have failed." );
         }
         catch ( IllegalStateException e )

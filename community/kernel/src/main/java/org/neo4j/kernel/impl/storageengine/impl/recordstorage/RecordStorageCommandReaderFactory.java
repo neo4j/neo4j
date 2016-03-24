@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV1_9;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_0;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_1;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
@@ -34,22 +33,17 @@ import static java.lang.Math.abs;
 public class RecordStorageCommandReaderFactory implements CommandReaderFactory
 {
     // All supported readers. Key/index is LogEntryVersion byte code.
-    private final CommandReader[] readersNegative, readersNeutral;
+    private final CommandReader[] readers;
 
     public RecordStorageCommandReaderFactory()
     {
-        // These versions have version=0, but are distinguished by the log header format version
-        readersNeutral = new CommandReader[10]; // pessimistic size
-        readersNeutral[LogEntryVersion.V1_9.logHeaderFormatVersion()] = new PhysicalLogCommandReaderV1_9();
-        readersNeutral[LogEntryVersion.V2_0.logHeaderFormatVersion()] = new PhysicalLogCommandReaderV2_0();
-
-        // These versions have each their own version and so are directly distinguishable
-        readersNegative = new CommandReader[10]; // pessimistic size
-        readersNegative[-LogEntryVersion.V2_1.byteCode()] = new PhysicalLogCommandReaderV2_1();
-        readersNegative[-LogEntryVersion.V2_2.byteCode()] = new PhysicalLogCommandReaderV2_2();
-        readersNegative[-LogEntryVersion.V2_2_4.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
-        readersNegative[-LogEntryVersion.V2_3.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
-        readersNegative[-LogEntryVersion.V3_0.byteCode()] = new PhysicalLogCommandReaderV3_0();
+        readers = new CommandReader[10]; // pessimistic size
+        readers[-LogEntryVersion.V2_0.byteCode()] = new PhysicalLogCommandReaderV2_0();
+        readers[-LogEntryVersion.V2_1.byteCode()] = new PhysicalLogCommandReaderV2_1();
+        readers[-LogEntryVersion.V2_2.byteCode()] = new PhysicalLogCommandReaderV2_2();
+        readers[-LogEntryVersion.V2_2_4.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
+        readers[-LogEntryVersion.V2_3.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
+        readers[-LogEntryVersion.V3_0.byteCode()] = new PhysicalLogCommandReaderV3_0();
 
         // A little extra safety check so that we got 'em all
         LogEntryVersion[] versions = LogEntryVersion.values();
@@ -63,25 +57,12 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
     }
 
     @Override
-    public CommandReader byVersion( byte version, byte legacyHeaderVersion )
+    public CommandReader byVersion( byte version )
     {
-        CommandReader[] readers = null;
-        byte key = 0;
-        if ( version == 0 )
+        byte key = (byte) abs( version );
+        if ( key >= readers.length )
         {
-            readers = readersNeutral;
-            key = legacyHeaderVersion;
-        }
-        else if ( version < 0 )
-        {
-            readers = readersNegative;
-            key = (byte) abs( version );
-        }
-
-        if ( readers == null || key >= readers.length )
-        {
-            throw new IllegalArgumentException( "Unsupported version:" + version +
-                    " headerVersion:" + legacyHeaderVersion );
+            throw new IllegalArgumentException( "Unsupported version:" + version );
         }
         return readers[key];
     }
