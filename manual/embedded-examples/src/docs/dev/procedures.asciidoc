@@ -5,69 +5,46 @@
 
 [abstract]
 --
-Compiled procedures are written in Java, deployed into the database, and called from Cypher.
+User-defined procedures are written in Java, deployed into the database, and called from Cypher.
 --
 
-A procedure is a means of extending Neo4j by writing custom code which can be invoked directly from Cypher.
-It can take arguments, perform operations on the database, and return results.
-The procedure is written in the Java programming language and compiled into a _jar_ file.
-A procedure is deployed to the database by dropping the _jar_ file into the _$NEO4J_HOME/plugins_ directory on each server in the cluster.
-The databases must be re-started to pick up the procedure.
+A _procedure_ is a mechanism that allows Neo4j to be extended by writing custom code which can be invoked directly from Cypher.
+Procedures can take arguments, perform operations on the database, and return results.
+
+Procedures are written in Java and compiled into _jar_ files.
+They can be deployed to the database by dropping a _jar_ file into the _$NEO4J_HOME/plugins_ directory on each standalone or clustered server.
+The database must be re-started on each server to pick up new procedures.
 
 Procedures are the preferred means for extending Neo4j.
 Examples of use cases for procedures are:
 
-. To provide access to a product surface that has not yet been opened to Cypher.
-  This includes manual indexes and schema introspection.
-. To perform graph-global operations, for example counting connected components or finding dense nodes.
+. To provide access to functionality that is not available in Cypher, such as manual indexes and schema introspection.
+. To provide access to third party systems.
+. To perform graph-global operations, such as counting connected components or finding dense nodes.
 . To express a procedural operation that is difficult to express declaratively with Cypher.
 
 
-== Using a procedure
+== Calling procedures
 
-To call a stored procedure, use the Cypher `CALL` clause.
-A procedure named `findDenseNodes` defined in the package `org.neo4j.examples` is called using `CALL org.neo4j.examples.findDenseNodes(1000)`.
-See the Cypher documentation on <<query-call, the `CALL` clause.>>
+To call a stored procedure, use a Cypher `CALL` clause.
+The procedure name must be fully qualified, so a procedure named `findDenseNodes` defined in the package `org.neo4j.examples` could be called using:
 
-[NOTE]
---
-A query with a `CALL` clause cannot include any other clauses.
---
-
-The `CALL` example illustrates a reasonable use case for a procedure: to locate _dense nodes_.
-Dense nodes are nodes that have a large number of incoming or outgoing relationships.
-Finding dense nodes is a graph-global operation and a good fit for procedural code, to be called from Cypher.
-
-Continuing with the `CALL` example, a procedure to locate dense nodes might take a `threshold` argument, defining how many relationships are necessary for a node to be considered dense.
-
-.Find dense nodes procedure
-[snippet, java]
+[snippet, cypher]
 ----
-component=neo4j-examples
-source=org/neo4j/examples/ProcedureExample.java
-tag=procedureExample
-classifier=sources
+CALL org.neo4j.examples.findDenseNodes(1000)
 ----
 
-The procedure, if it returns anything, will return a `java.util.stream.Stream` of records.
-
-.Find dense nodes return record
-[snippet, java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/ProcedureExample.java
-tag=outputRecordExample
-classifier=sources
-----
-
-Read more about creating a procedure in <<writing-procedure, Writing a procedure>>.
+A `CALL` may be the only clause within a Cypher statement or may be combined with other clauses.
+Arguments can be supplied directly within the query or taken from the associated parameter set.
+For full details, see the Cypher documentation on <<query-call, the `CALL` clause.>>
 
 
 == Built-in procedures
 
-Neo4j comes with a handful of pre-packaged procedures ready to be used:
+Neo4j comes bundled with a number of built-in procedures.
+These are listed in the table below:
 
-[options="header", cols="m,m,d"]
+[options="header", cols="m,d"]
 |===
 | Procedure name        | Command to invoke procedure | What it does
 | ListLabels            | CALL db.labels()            | List all labels in the database.
@@ -81,34 +58,26 @@ Neo4j comes with a handful of pre-packaged procedures ready to be used:
 |===
 
 
-== Developing Compiled Procedures
+== User-defined procedures
 
 [TIP]
 --
-The example discussed below is available as {procedure-template-url}[a repository on Github].
+The example discussed below is available as {procedure-template-url}[a repository on GitHub].
 To get started quickly you can fork the repository and work with the code as you follow along in the guide below.
 --
 
-Compiled procedures are written in the Java programming language.
-While you can develop Compiled Procedures using a regular text editor it is recommended to use a dedicated Java development environment, like IntelliJ IDEA or Eclipse.
+Custom procedures are written in the Java programming language.
+Procedures are deployed via a _jar_ file that contains the code itself along with any dependencies (excluding Neo4j).
+These files should be placed into the `plugin` directory of each standalone database or cluster member and will become available following the next database restart.
 
-To develop a new Procedure, you need to produce a _jar_ file that contains the procedure along with any non-Neo4j dependencies it has.
-This file is then deployed in the `plugin` directory of each database in your cluster.
-The procedure will become available in each instance after restart.
-
-The general process for building a new Compiled Procedure is:
-
-* Set up a new Java project in your IDE
-* Write a test for the Procedure using Neo4j Harness
-* Write a procedure that makes your test pass
-* Build a _jar_ file from your project and deploy it
+The example that follows shows the steps to create and deploy a new procedure.
 
 
-=== Setting up a new project
+=== Set up a new project
 
 A project can be set up in any way that allows for compiling a procedure and producing a _jar_ file.
-Below is an example configuration using the Maven build system.
-The Maven _pom.xml_ file is broken into pieces with comments for readability, the whole file is available from the {procedure-template-url}[Neo4j Procedure Template] repository.
+Below is an example configuration using the https://maven.apache.org/[Maven] build system.
+For readability, only excerpts from the Maven _pom.xml_ file are shown here, the whole file is available from the {procedure-template-url}[Neo4j Procedure Template] repository.
 
 .Setting up a project with Maven
 [source, xml]
@@ -131,9 +100,8 @@ The Maven _pom.xml_ file is broken into pieces with comments for readability, th
  </properties>
 ----
 
-Next the build dependencies are defined.
-The following two sections are included in the _pom.xml_ between opening and closing `<dependencies></dependencies>` tags.
-(See the linked template repository for the complete example.)
+Next, the build dependencies are defined.
+The following two sections are included in the _pom.xml_ between `<dependencies></dependencies>` tags.
 
 The first dependency section includes the procedure API that procedures use at runtime.
 The scope is set to `provided`, because once the procedure is deployed to a Neo4j instance, this dependency is provided by Neo4j.
@@ -151,7 +119,7 @@ If non-Neo4j dependencies are added to the project, their scope should normally 
 
 Next, the dependencies necessary for testing the procedure are added:
 
-* Neo4j Harness, a utility that allows for starting a light-weight Neo4j instance.
+* Neo4j Harness, a utility that allows for starting a lightweight Neo4j instance.
   It is used to start Neo4j with a specific procedure deployed, which greatly simplifies testing.
 * The Neo4j Java driver, used to send cypher statements that call the procedure.
 * JUnit, a common Java test framework.
@@ -188,10 +156,10 @@ The goal is first to _compile_ the source, then to _package_ it in a _jar_ that 
 Procedures require at least Java 8, so the version `1.8` should be defined as the _source_ and _target version_ in the configuration for the Maven compiler plugin.
 --
 
-The Maven shade plugin is used to _package_ the compiled procedure.
+The https://maven.apache.org/plugins/maven-shade-plugin/[Maven Shade] plugin is used to package the compiled procedure.
 It also includes all dependencies in the package, unless the dependency scope is set to _test_ or _provided_.
 
-Once the procedure is provided in the _plugins_ directory of each Neo4j instance and the instances have restarted, the procedure is available for use.
+Once the procedure has been deployed to the _plugins_ directory of each Neo4j instance and the instances have restarted, the procedure is available for use.
 
 [source, xml]
 ----
@@ -238,10 +206,10 @@ This repository is where Maven will find the latest build of Neo4j to use as a d
 
 === Writing integration tests
 
-The test dependencies include Neo4j Harness and JUnit.
-These can be used to write integration tests for the procedure.
+The test dependencies include _Neo4j Harness_ and _JUnit_.
+These can be used to write integration tests for procedures.
 
-First we decide what the procedure should do, then we write a test that proves that it does it right.
+First, we decide what the procedure should do, then we write a test that proves that it does it right.
 Finally we write a procedure that passes the test.
 
 Below is a template for testing a procedure that accesses Neo4j's full-text indexes from Cypher.
@@ -284,7 +252,7 @@ public class LegacyFullTextIndexTest
 [[writing-procedure]]
 === Writing a procedure
 
-With the test in place, we write a procedure procedure that answers to the expectations of the test.
+With the test in place, we write a procedure procedure that fulfils the expectations of the test.
 The full example is available in the {procedure-template-url}[Neo4j Procedure Template] repository.
 
 Particular things to note:
