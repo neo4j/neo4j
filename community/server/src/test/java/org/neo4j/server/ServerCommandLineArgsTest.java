@@ -37,9 +37,10 @@ public class ServerCommandLineArgsTest
     @Test
     public void shouldPickUpSpecifiedConfigFile() throws Exception
     {
-        Optional<File> expectedFile = Optional.of( new File( "/some-dir/" + ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
-        assertEquals( expectedFile, parse( "--config-dir", "/some-dir" ).configFile() );
-        assertEquals( expectedFile, parse( "--config-dir=/some-dir" ).configFile() );
+        File dir = new File( "/some-dir" ).getAbsoluteFile();
+        Optional<File> expectedFile = Optional.of( new File( dir, ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+        assertEquals( expectedFile, parse( "--config-dir", dir.toString() ).configFile() );
+        assertEquals( expectedFile, parse( "--config-dir=" + dir ).configFile() );
     }
 
     @Test

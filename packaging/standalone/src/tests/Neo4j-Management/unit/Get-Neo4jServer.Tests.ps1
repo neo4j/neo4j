@@ -102,10 +102,9 @@ InModuleScope Neo4j-Management {
 
     Context "NEO4J_CONF environment variable is set" {
       global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j'
-      $Neo4jDir = (Get-Item 'TestDrive:\neo4j').FullName.TrimEnd('\')
-      [Environment]::SetEnvironmentVariable('NEO4J_CONF','', 'TestDrive:\neo4j-conf')
+      Mock Get-Neo4jEnv { 'TestDrive:\neo4j-conf' } -ParameterFilter { $Name -eq 'NEO4J_CONF' }
 
-      It "Defaults config path to $Neo4jDir\conf" {
+      It "Gets conf directory from environment variable" {
          $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\' -ErrorAction Stop
          $neoServer.ConfDir | Should Be 'TestDrive:\neo4j-conf'
       }
