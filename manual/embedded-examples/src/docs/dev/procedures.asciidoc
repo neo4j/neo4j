@@ -264,6 +264,11 @@ Particular things to note:
 
 For more details, see the link:javadocs/index.html?org/neo4j/procedure/Procedure.html[API documentation for procedures].
 
+[NOTE]
+--
+The correct way to signal an error from within a procedure is to throw a `RuntimeException`.
+--
+
 // .Todo
 // --
 // * [ ] Input types
