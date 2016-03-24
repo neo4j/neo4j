@@ -42,7 +42,7 @@ public class HighLimitWithSmallRecords extends HighLimit
      */
     private static final int NODE_RECORD_SIZE = (NodeRecordFormat.RECORD_SIZE / 2) + 1;
     private static final int RELATIONSHIP_RECORD_SIZE = (RelationshipRecordFormat.RECORD_SIZE / 2) + 1;
-    private static final int RELATIONSHIP_GROUP_RECORD_SIZE = (RelationshipGroupRecordFormat.RECORD_SIZE / 2) + 1;
+    private static final int RELATIONSHIP_GROUP_RECORD_SIZE  = (RelationshipGroupRecordFormat.RECORD_SIZE / 2) + 1;
 
     private HighLimitWithSmallRecords()
     {
@@ -60,8 +60,8 @@ public class HighLimitWithSmallRecords extends HighLimit
 
     public static boolean isEnabled()
     {
-        String toggleValue = FeatureToggles.getString( InternalRecordFormatSelector.class,
-                InternalRecordFormatSelector.FORMAT_TOGGLE_NAME, "" );
+        String toggleValue = FeatureToggles
+                .getString( InternalRecordFormatSelector.class, InternalRecordFormatSelector.FORMAT_TOGGLE_NAME, "" );
         return NAME.equals( toggleValue );
     }
 

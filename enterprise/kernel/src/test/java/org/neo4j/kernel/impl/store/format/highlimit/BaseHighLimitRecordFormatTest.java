@@ -40,6 +40,7 @@ public class BaseHighLimitRecordFormatTest
     {
         pageCursor = new StubPageCursor( 0, 8192 );
     }
+
     @Test
     public void secondHeaderByteEmptyTest() throws IOException
     {
@@ -50,8 +51,8 @@ public class BaseHighLimitRecordFormatTest
         nodeRecord.setNextRel( Integer.MAX_VALUE );
         nodeRecord.setNextProp( Integer.MAX_VALUE );
         IntStoreHeader intStoreHeader = new IntStoreHeader( 42 );
-        int recordSize = nodeRecordFormat.getRecordSize( intStoreHeader);
-        nodeRecordFormat.write( nodeRecord, pageCursor, recordSize, null);
+        int recordSize = nodeRecordFormat.getRecordSize( intStoreHeader );
+        nodeRecordFormat.write( nodeRecord, pageCursor, recordSize, null );
 
         //WHEN
         pageCursor.setOffset( 0 );
@@ -59,6 +60,6 @@ public class BaseHighLimitRecordFormatTest
         byte secondHeaderByte = pageCursor.getByte();
 
         //THEN
-        assertEquals((byte) 0 , secondHeaderByte);
+        assertEquals( (byte) 0, secondHeaderByte );
     }
 }
