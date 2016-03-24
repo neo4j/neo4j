@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -1240,8 +1239,7 @@ public class TransactionRecordStateTest
     private CommittedTransactionRepresentation readFromChannel( ReadableLogChannel channel )
             throws IOException
     {
-        LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory() );
+        LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         try ( PhysicalTransactionCursor<ReadableLogChannel> cursor = new PhysicalTransactionCursor<>(
                 channel, logEntryReader ) )
         {

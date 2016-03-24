@@ -38,7 +38,6 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -136,8 +135,7 @@ public class IndexCreationTest
 
         final AtomicBoolean success = new AtomicBoolean( false );
 
-        try ( IOCursor<LogEntry> cursor = new LogEntryCursor( new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory() ), logChannel ) )
+        try ( IOCursor<LogEntry> cursor = new LogEntryCursor( new VersionAwareLogEntryReader<>(), logChannel ) )
         {
             List<StorageCommand> commandsInFirstEntry = new ArrayList<>();
             boolean startFound = false;

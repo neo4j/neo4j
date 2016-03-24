@@ -26,7 +26,6 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -42,8 +41,7 @@ public class MasterServerTest
     {
         Master master = mock( Master.class );
         ConversationManager conversationManager = mock( ConversationManager.class );
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
-                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() );
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         MasterServer masterServer = new MasterServer( master, mock( LogProvider.class ),
                 mock(Server.Configuration.class ), mock( TxChecksumVerifier.class ),
                 mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ), conversationManager, logEntryReader );

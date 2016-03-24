@@ -31,8 +31,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -46,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -282,9 +281,7 @@ public class TestLogPruning
                               new ReadAheadLogChannel( versionedStoreChannel, bridge, 1000 ) )
                 {
                     try ( PhysicalTransactionCursor<ReadableLogChannel> physicalTransactionCursor =
-                            new PhysicalTransactionCursor<>( channel,
-                                    new VersionAwareLogEntryReader<ReadableLogChannel>(
-                                            new RecordStorageCommandReaderFactory() ) ) )
+                            new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
                     {
                         while ( physicalTransactionCursor.next())
                         {

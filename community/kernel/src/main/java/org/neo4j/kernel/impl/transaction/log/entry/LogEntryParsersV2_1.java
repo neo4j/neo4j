@@ -128,8 +128,7 @@ public enum LogEntryParsersV2_1 implements LogEntryParser<IdentifiableLogEntry>
                         LogPositionMarker marker, CommandReaderFactory commandReader ) throws IOException
                 {
                     int identifier = channel.getInt();
-                    StorageCommand command = commandReader.byVersion(
-                            version.byteCode(), version.logHeaderFormatVersion() ).read( channel );
+                    StorageCommand command = commandReader.byVersion( version.byteCode() ).read( channel );
                     return command == null
                             ? null
                             : new IdentifiableLogEntry( new LogEntryCommand( version, command ), identifier );

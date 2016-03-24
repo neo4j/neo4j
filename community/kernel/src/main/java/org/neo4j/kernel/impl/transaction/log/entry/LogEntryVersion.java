@@ -68,10 +68,8 @@ import static java.lang.String.format;
  */
 public enum LogEntryVersion
 {
-    // as of 2011-10-17
-    V1_9( 0, LogEntryParsersV1_9.class, 2 ),
     // as of 2013-02-09: neo4j 2.0 Labels & Indexing
-    V2_0( 0, LogEntryParsersV2_0.class, 3 ),
+    V2_0( 0, LogEntryParsersV2_0.class ),
     // as of 2014-02-06: neo4j 2.1 Dense nodes, split by type/direction into groups
     V2_1( -1, LogEntryParsersV2_1.class ),
     // as of 2014-05-23: neo4j 2.2 Removal of JTA / unified data source
@@ -83,46 +81,21 @@ public enum LogEntryVersion
     V3_0( -6, LogEntryParsersV2_3.class );
 
     public static final LogEntryVersion CURRENT = V3_0;
-    public static final byte NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION = -1;
     private static final LogEntryVersion[] ALL = values();
-    private static final LogEntryVersion[] NEGATIVE = new LogEntryVersion[ALL.length+1]; // pessimistic size
-    private static final LogEntryVersion[] POSITIVE = new LogEntryVersion[ALL.length]; // pessimistic size
+    private static final LogEntryVersion[] LOOKUP_BY_VERSION = new LogEntryVersion[ALL.length + 1]; // pessimistic size
     static
     {
         for ( LogEntryVersion version : ALL )
         {
-            if ( version.byteCode() < 0 )
-            {
-                put( NEGATIVE, -version.byteCode(), version );
-            }
-            else
-            {
-                put( POSITIVE, version.byteCode(), version );
-            }
+            put( LOOKUP_BY_VERSION, -version.byteCode(), version );
         }
     }
 
     private final byte version;
     private final LogEntryParser<LogEntry>[] entryTypes;
-    private final byte logHeaderFormatVersion;
 
-    /**
-     * A little trick to be able to keep multiple versions of the same {@link #byteCode()} in the same array
-     * index. They will form a linked list and be matched against {@link #logHeaderFormatVersion()}.
-     */
-    private LogEntryVersion nextWithSameLogEntryVersion;
-
-    private LogEntryVersion( int version,
-            Class<? extends Enum<? extends LogEntryParser<? extends LogEntry>>> cls )
+    LogEntryVersion( int version, Class<? extends Enum<? extends LogEntryParser<? extends LogEntry>>> cls )
     {
-        this( version, cls, NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private LogEntryVersion( int version,
-            Class<? extends Enum<? extends LogEntryParser<? extends LogEntry>>> cls, int logHeaderFormatVersion )
-    {
-        this.logHeaderFormatVersion = safeCastToByte( logHeaderFormatVersion );
         this.entryTypes = new LogEntryParser[highestCode( cls ) + 1];
         for ( Enum<? extends LogEntryParser<? extends LogEntry>> parser : cls.getEnumConstants() )
         {
@@ -157,62 +130,25 @@ public enum LogEntryVersion
 
     /**
      * Return the correct {@link LogEntryVersion} for the given {@code version} code read from f.ex a log entry.
-     * There's a tie between {@link #V1_9} and {@link #V2_0} that needs to be broken by
-     * {@code logHeaderFormatVersion} as long as those versions are supported. They have the same,
-     * i.e. no log entry version. When we no longer supported those we can get rid of that parameter here.
      * Lookup is fast and can be made inside critical paths, no need for externally caching the returned
      * {@link LogEntryVersion} instance per the input arguments.
      *
      * @param version log entry version
-     * @param logHeaderFormatVersion used to break tie between {@link #V1_9} and {@link #V2_0} as
      * long as we still support those versions.
      */
-    public static LogEntryVersion byVersion( byte version, byte logHeaderFormatVersion )
+    public static LogEntryVersion byVersion( byte version )
     {
-        byte flattenedVersion;
-        LogEntryVersion[] from;
-        if ( version < 0 )
-        {
-            from = NEGATIVE;
-            flattenedVersion = (byte) -version;
-        }
-        else
-        {
-            from = POSITIVE;
-            flattenedVersion = version;
-        }
+        byte flattenedVersion = (byte) -version;
 
-        LogEntryVersion candidate = (flattenedVersion < from.length) ? from[flattenedVersion] : null;
-
-        // Match against logHeaderFormatVersion. Remove this once we drop support for either 1.9 or 2.0
-        while ( candidate != null )
+        if ( flattenedVersion < LOOKUP_BY_VERSION.length)
         {
-            // If our candidate is the only one for this version code then we don't need/want
-            // to additionally match the logHeaderFormatVersion. Otherwise we must do that.
-            if ( candidate.nextWithSameLogEntryVersion == null ||
-                    candidate.logHeaderFormatVersion == logHeaderFormatVersion )
-            {
-                return candidate;
-            }
-            candidate = candidate.nextWithSameLogEntryVersion;
+            return LOOKUP_BY_VERSION[flattenedVersion];
         }
-        throw new IllegalArgumentException( "Unrecognized log entry version " + version +
-                " and logHeaderFormatVersion " + logHeaderFormatVersion );
-    }
-
-    /**
-     * @return log header format version to break tie between those versions with {@link #byteCode()} {@code 0}.
-     * Will be obsolete when if there's <= 1 of those versions left supported.
-     */
-    @Deprecated
-    public byte logHeaderFormatVersion()
-    {
-        return logHeaderFormatVersion;
+        throw new IllegalArgumentException( "Unrecognized log entry version " + version );
     }
 
     private static void put( LogEntryVersion[] array, int index, LogEntryVersion version )
     {
-        version.nextWithSameLogEntryVersion = array[index];
         array[index] = version;
     }
 

@@ -30,9 +30,7 @@ public interface CommandReaderFactory
      * introduce its own scheme.
      *
      * @param version log entry version. Versions are typically 0 or negative numbers.
-     * @param legacyHeaderVersion legacy log header version for breaking tie between multiple versions
-     * of value {@code 0}. Will go away when 1.9 format becomes unsupported.
      * @return {@link CommandReader} for reading commands of that version.
      */
-    CommandReader byVersion( byte version, byte legacyHeaderVersion );
+    CommandReader byVersion( byte version );
 }

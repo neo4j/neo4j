@@ -28,7 +28,6 @@ import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -57,8 +56,7 @@ class LegacyLogEntryReader
 
     LegacyLogEntryReader( FileSystemAbstraction fs )
     {
-        this( fs, from -> new VersionAwareLogEntryReader<>( from.logFormatVersion,
-                new RecordStorageCommandReaderFactory() ) );
+        this( fs, from -> new VersionAwareLogEntryReader<>() );
     }
 
     public Pair<LogHeader, IOCursor<LogEntry>> openReadableChannel( File logFile ) throws IOException

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -29,7 +30,6 @@ import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Exceptions.withMessage;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVersion;
 
 /**
@@ -43,20 +43,16 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVers
  */
 public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionAwareChannel> implements LogEntryReader<SOURCE>
 {
-    // Exists for backwards compatibility until we drop support for one of the two versions (1.9 and 2.0)
-    // that doesn't have log entry version in its format.
-    private final byte logHeaderFormatVersion;
     private final CommandReaderFactory commandReaderFactory;
 
-    public VersionAwareLogEntryReader( byte logHeaderFormatVersion, CommandReaderFactory commandReaderFactory )
+    public VersionAwareLogEntryReader()
     {
-        this.logHeaderFormatVersion = logHeaderFormatVersion;
-        this.commandReaderFactory = commandReaderFactory;
+        this( new RecordStorageCommandReaderFactory() );
     }
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
     {
-        this( NO_PARTICULAR_LOG_HEADER_FORMAT_VERSION, commandReaderFactory );
+        this.commandReaderFactory = commandReaderFactory;
     }
 
     @Override
@@ -84,7 +80,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                         typeCode = channel.get();
                     }
 
-                    version = byVersion( versionCode, logHeaderFormatVersion );
+                    version = byVersion( versionCode );
                     entryReader = version.entryParser( typeCode );
                 }
                 catch ( ReadPastEndException e )

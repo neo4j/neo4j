@@ -32,7 +32,6 @@ import java.util.List;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -69,8 +68,8 @@ public class LogMatchers
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( fileChannel, header.logVersion, header.logFormatVersion );
         ReadableLogChannel logChannel = new ReadAheadLogChannel( versionedStoreChannel, NO_MORE_CHANNELS );
-        return Iterables.asList( new IOCursorAsResourceIterable<>( new LogEntryCursor(
-                new VersionAwareLogEntryReader<>( new RecordStorageCommandReaderFactory() ), logChannel ) ) );
+        LogEntryCursor logEntryCursor = new LogEntryCursor( new VersionAwareLogEntryReader<>(), logChannel );
+        return Iterables.asList( new IOCursorAsResourceIterable<>( logEntryCursor ) );
     }
 
     public static List<LogEntry> logEntries( FileSystemAbstraction fileSystem, File file ) throws IOException

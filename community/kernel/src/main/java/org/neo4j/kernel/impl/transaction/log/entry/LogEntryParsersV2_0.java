@@ -132,8 +132,7 @@ public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
 
                 {
                     int identifier = channel.getInt();
-                    StorageCommand command = commandReader.byVersion(
-                            version.byteCode(), version.logHeaderFormatVersion() ).read( channel );
+                    StorageCommand command = commandReader.byVersion( version.byteCode() ).read( channel );
                     return command == null
                             ? null
                             : new IdentifiableLogEntry( new LogEntryCommand( version, command ), identifier );
