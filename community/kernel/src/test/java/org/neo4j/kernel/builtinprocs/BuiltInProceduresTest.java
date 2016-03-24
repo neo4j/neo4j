@@ -31,13 +31,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -46,8 +46,8 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.Token;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyIterator;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -57,10 +57,13 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION;
+import static org.neo4j.kernel.builtinprocs.ListIndexesProcedure.IndexType.NODE_LABEL_PROPERTY;
+import static org.neo4j.kernel.builtinprocs.ListIndexesProcedure.IndexType.NODE_UNIQUE_PROPERTY;
 
 public class BuiltInProceduresTest
 {
     private final List<IndexDescriptor> indexes = new LinkedList<>();
+    private final List<IndexDescriptor> uniqueIndexes = new LinkedList<>();
     private final List<PropertyConstraint> constraints = new LinkedList<>();
     private final Map<Integer, String> labels = new HashMap<>();
     private final Map<Integer, String> propKeys = new HashMap<>();
@@ -80,8 +83,21 @@ public class BuiltInProceduresTest
         givenIndex( "User", "name" );
 
         // When/Then
-        assertThat( call("db.indexes"),
-            contains( record( "INDEX ON :User(name)", "ONLINE" ) ) );
+
+        List<Object[]> call = call( "db.indexes" );
+        assertThat( call,
+            contains( record( "INDEX ON :User(name)", "online", NODE_LABEL_PROPERTY.typeName() ) ) );
+    }
+
+    @Test
+    public void shouldListAllUniqueIndexes() throws Throwable
+    {
+        // Given
+        givenUniqueConstraint( "User", "name" );
+
+        // When/Then
+        assertThat( call( "db.indexes" ),
+                contains( record( "INDEX ON :User(name)", "online", NODE_UNIQUE_PROPERTY.typeName() ) ) );
     }
 
     @Test
@@ -143,7 +159,7 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "sys.procedures" ), contains(
             record( "db.constraints", "db.constraints() :: (description :: STRING?)" ),
-            record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?)" ),
+            record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)" ),
             record( "db.labels", "db.labels() :: (label :: STRING?)" ),
             record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)" ),
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)" ),
@@ -158,7 +174,7 @@ public class BuiltInProceduresTest
     {
         // When/Then
         assertThat( call( "sys.components" ), contains(
-            record( "Neo4j Kernel", asList( "1.3.37" ) )
+            record( "Neo4j Kernel", singletonList( "1.3.37" ) )
         ) );
     }
 
@@ -175,11 +191,20 @@ public class BuiltInProceduresTest
         indexes.add( new IndexDescriptor( labelId, propId ) );
     }
 
+    private void givenUniqueIndex( String label, String propKey )
+    {
+        int labelId = token( label, labels );
+        int propId = token( propKey, propKeys );
+
+        uniqueIndexes.add( new IndexDescriptor( labelId, propId ) );
+    }
+
     private void givenUniqueConstraint( String label, String propKey )
     {
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
+        uniqueIndexes.add( new IndexDescriptor( labelId, propId )  );
         constraints.add( new UniquenessConstraint( labelId, propId ) );
     }
 
@@ -239,6 +264,7 @@ public class BuiltInProceduresTest
         when(read.labelsGetAllTokens()).thenAnswer( asTokens(labels) );
         when(read.relationshipTypesGetAllTokens()).thenAnswer( asTokens(relTypes) );
         when(read.indexesGetAll()).thenAnswer( (i) -> indexes.iterator() );
+        when(read.uniqueIndexesGetAll()).thenAnswer( (i) -> uniqueIndexes.iterator() );
         when(read.constraintsGetAll()).thenAnswer( (i) -> constraints.iterator() );
         when(read.proceduresGetAll() ).thenReturn( procs.getAll() );
 

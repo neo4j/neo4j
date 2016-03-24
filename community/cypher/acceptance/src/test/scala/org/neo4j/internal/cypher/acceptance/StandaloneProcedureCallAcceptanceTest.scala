@@ -284,7 +284,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
     registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
+    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten')"))
   }
 
   test("should fail if too many arguments") {
@@ -292,7 +292,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
     registerDummyInOutProcedure(Neo4jTypes.NTString, Neo4jTypes.NTNumber)
 
     // Then
-    an [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42)"))
+    a [SyntaxException] shouldBe thrownBy(execute("CALL my.first.proc('ten', 10, 42)"))
   }
 
   test("should fail if implicit argument is missing") {
@@ -327,6 +327,6 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
 
     // Then
     result.toList should equal(
-      List(Map("description" -> "INDEX ON :A(prop)", "state" -> "ONLINE")))
+      List(Map("description" -> "INDEX ON :A(prop)", "state" -> "online", "type" -> "node_label_property")))
   }
 }

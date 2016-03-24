@@ -20,6 +20,8 @@
 package org.neo4j.kernel.builtinprocs;
 
 import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.Statement;
@@ -35,17 +37,40 @@ import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ListIndexesProcedure extends CallableProcedure.BasicProcedure
 {
+
+    //When we have decided on what to call different indexes
+    //this should probably be moved to some more central place
+    public enum IndexType
+    {
+        NODE_LABEL_PROPERTY( "node_label_property" ),
+        NODE_UNIQUE_PROPERTY( "node_unique_property" );
+
+        private final String typeName;
+
+        IndexType( String typeName )
+        {
+            this.typeName = typeName;
+        }
+
+        public String typeName()
+        {
+            return typeName;
+        }
+    }
+
     protected ListIndexesProcedure(ProcedureName procedureName)
     {
         super( procedureSignature( procedureName )
                 .out( "description", Neo4jTypes.NTString )
                 .out( "state", Neo4jTypes.NTString )
+                .out( "type", Neo4jTypes.NTString )
                 .build() );
     }
 
@@ -58,13 +83,26 @@ public class ListIndexesProcedure extends CallableProcedure.BasicProcedure
 
         List<IndexDescriptor> indexes =
                 asList( statement.readOperations().indexesGetAll() );
+
+        Set<IndexDescriptor> uniqueIndexes = asSet( statement.readOperations().uniqueIndexesGetAll() );
+        indexes.addAll( uniqueIndexes );
         indexes.sort( (a,b) -> a.userDescription(tokens).compareTo( b.userDescription(tokens) ) );
 
+        return format( indexes, statement, tokens, (descriptor) -> {
+            if (uniqueIndexes.contains( descriptor )) return IndexType.NODE_UNIQUE_PROPERTY;
+            else return IndexType.NODE_LABEL_PROPERTY;
+        } );
+    }
+
+    private RawIterator<Object[],ProcedureException> format(List<IndexDescriptor> indexes,
+            Statement statement, TokenNameLookup tokens, Function<IndexDescriptor, IndexType> type)
+    {
         return map( ( index ) -> {
                     try
                     {
                         return new Object[]{"INDEX ON " + index.userDescription( tokens ),
-                                statement.readOperations().indexGetState( index ).toString()};
+                                statement.readOperations().indexGetState( index ).toString().toLowerCase(),
+                                type.apply( index ).typeName()};
                     }
                     catch ( IndexNotFoundKernelException e )
                     {
