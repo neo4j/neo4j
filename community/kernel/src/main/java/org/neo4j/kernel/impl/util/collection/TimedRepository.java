@@ -30,7 +30,6 @@ import org.neo4j.helpers.Clock;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Format.duration;
 
 /**
@@ -193,12 +192,6 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         return repo.keySet();
     }
 
-    protected VALUE getValue( KEY key )
-    {
-        Entry entry = repo.get( key );
-        return entry == null ? null : entry.value;
-    }
-
     @Override
     public void run()
     {
@@ -206,9 +199,9 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         for ( KEY key : keys() )
         {
             Entry entry = repo.get( key );
-            if(entry != null && entry.latestActivityTimestamp < maxAllowedAge)
+            if ( (entry != null) && (entry.latestActivityTimestamp < maxAllowedAge) )
             {
-                if(entry.acquire() && entry.latestActivityTimestamp < maxAllowedAge)
+                if ( (entry.latestActivityTimestamp < maxAllowedAge) && entry.acquire() )
                 {
                     end0( key, entry.value );
                 }
