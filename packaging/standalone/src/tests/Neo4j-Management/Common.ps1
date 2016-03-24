@@ -23,6 +23,7 @@ Function global:New-MockJavaHome() {
 Function global:New-InvalidNeo4jInstall($ServerType = 'Enterprise', $ServerVersion = '99.99', $DatabaseMode = '') {
   $serverObject = (New-Object -TypeName PSCustomObject -Property @{
     'Home' =  'TestDrive:\some-dir-that-doesnt-exist';
+    'ConfDir' = 'TestDrive:\some-dir-that-doesnt-exist\conf';
     'ServerVersion' = $ServerVersion;
     'ServerType' = $ServerType;
     'DatabaseMode' = $DatabaseMode;
@@ -66,6 +67,7 @@ Function global:New-MockNeo4jInstall($IncludeFiles = $true, $ServerType = 'Commu
   
   $serverObject = (New-Object -TypeName PSCustomObject -Property @{
     'Home' = $RootDir;
+    'ConfDir' = "$RootDir\conf";
     'ServerVersion' = $ServerVersion;
     'ServerType' = $ServerType;
     'DatabaseMode' = $DatabaseMode;
