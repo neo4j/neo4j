@@ -85,6 +85,8 @@ enum Reference
     // Take one copy here since Enum#values() does an unnecessary defensive copy every time.
     private static final Reference[] ENCODINGS = Reference.values();
 
+    static final int MAX_BITS = 58;
+
     private final int numberOfBytes;
     private final short highHeader;
     private final int headerShift;
@@ -189,23 +191,20 @@ enum Reference
     {
         PageCursor cursor = (PageCursor) source;
 
-        int offset = cursor.getOffset();
-        int header = cursor.getByte( offset ) & 0xFF;
+        int header = cursor.getByte() & 0xFF;
         int sizeMarks = Integer.numberOfLeadingZeros( (~(header & 0xF8)) & 0xFF ) - 24;
         int signShift = 8 - sizeMarks - (sizeMarks == 5 ? 1 : 2);
         long signBit = ~((header >>> signShift) & 1) + 1;
         long register = (header & ((1 << signShift) - 1)) << 16;
-        register += cursor.getShort( ++offset ) & 0xFFFFL; // 3 bytes
-        offset++;
+        register += cursor.getShort() & 0xFFFFL; // 3 bytes
 
         while ( sizeMarks > 0 )
         {
             register <<= 8;
-            register += cursor.getByte( ++offset ) & 0xFF;
+            register += cursor.getByte() & 0xFF;
             sizeMarks--;
         }
 
-        cursor.setOffset( offset + 1 );
         return signBit ^ register;
     }
 

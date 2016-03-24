@@ -23,31 +23,31 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.StubPageCursor;
-import org.neo4j.kernel.impl.store.format.highlimit.Reference;
 import org.neo4j.test.RandomRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;
 
 public class ReferenceTest
 {
+    /**
+     * The current scheme only allows us to use 58 bits for a reference. Adhere to that limit here.
+     */
+    private static final long MASK = numberOfBits( Reference.MAX_BITS );
+    private static final int PAGE_SIZE = 100;
+
     @Rule
     public final RandomRule random = new RandomRule();
-    private final ByteBuffer buffer = ByteBuffer.allocateDirect( 100 );
-    private final StubPageCursor cursor = new StubPageCursor( 0, buffer );
+    private final StubPageCursor cursor = new StubPageCursor( 0, PAGE_SIZE );
 
     @Test
     public void shouldEncodeRandomLongs() throws Exception
     {
-        // WHEN/THEN
-        long mask = numberOfBits( 58 );
         for ( int i = 0; i < 100_000_000; i++ )
         {
-            long reference = limit( random.nextLong(), mask );
+            long reference = limit( random.nextLong() );
             assertDecodedMatchesEncoded( reference );
         }
     }
@@ -65,7 +65,7 @@ public class ReferenceTest
         assertEquals( "Converted reference should be equal to initial value", absoluteReference, absoluteCandidate );
     }
 
-    private long numberOfBits( int count )
+    private static long numberOfBits( int count )
     {
         long result = 0;
         for ( int i = 0; i < count; i++ )
@@ -75,10 +75,7 @@ public class ReferenceTest
         return result;
     }
 
-    /**
-     * The current scheme only allows us to use 58 bits for a reference. Adhere to that limit here.
-     */
-    private long limit( long reference, long mask )
+    private static long limit( long reference )
     {
         boolean positive = true;
         if ( reference < 0 )
@@ -87,7 +84,7 @@ public class ReferenceTest
             reference = ~reference;
         }
 
-        reference &= mask;
+        reference &= MASK;
 
         if ( !positive )
         {
