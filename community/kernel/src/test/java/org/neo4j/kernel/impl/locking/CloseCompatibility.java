@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.locking.Locks.Client;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
@@ -106,5 +107,18 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
         clientA.close();
         Assert.assertFalse( clientA.trySharedLock( NODE, 1l ) );
         Assert.assertFalse( clientA.tryExclusiveLock( NODE, 1l ) );
+    }
+
+    @Test
+    public void releaseTryLocksOnClose() {
+        assertTrue( clientA.trySharedLock( ResourceTypes.NODE, 1L ) );
+        assertTrue( clientB.tryExclusiveLock( ResourceTypes.NODE, 2L ) );
+
+        clientA.close();
+        clientB.close();
+
+        LockCountVisitor lockCountVisitor = new LockCountVisitor();
+        locks.accept( lockCountVisitor );
+        Assert.assertEquals( 0, lockCountVisitor.getLockCount() );
     }
 }
