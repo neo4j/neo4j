@@ -60,7 +60,7 @@ InModuleScope Neo4j-Management {
     }
     
     Context "During uninstall, does not stop service if already stopped" {
-      Mock Get-Service { @{ 'State' = 'Stopped' } } -ParameterFilter { $Name = $global:mockServiceName }
+      Mock Get-Service { @{ 'State' = 'Stopped' } }
       Mock Start-Process { @{ 'ExitCode' = 0 } }   
 
       $serverObject = global:New-MockNeo4jInstall

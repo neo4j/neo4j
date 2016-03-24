@@ -55,6 +55,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Installs windows service with failure" {
+      Mock Get-Service { return $null }
       Mock Start-Process -Verifiable { throw "Error installing" }
 
       $serverObject = global:New-MockNeo4jInstall
@@ -69,6 +70,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Installs windows service with success" {
+      Mock Get-Service { return $null }
       Mock Start-Process -Verifiable { @{ 'ExitCode' = 0} }
 
       $serverObject = global:New-MockNeo4jInstall 
