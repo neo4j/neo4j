@@ -21,7 +21,7 @@ package cypher.cucumber
 
 import java.util
 
-import gherkin.formatter.model.{Result, Background, Examples, Feature, Match, Scenario, ScenarioOutline, Step}
+import gherkin.formatter.model._
 import gherkin.formatter.{Formatter, Reporter}
 
 trait CucumberAdapter extends Formatter with Reporter {

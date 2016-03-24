@@ -106,6 +106,19 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Visualization -->
+    <dependency>
+      <groupId>org.jfree</groupId>
+      <artifactId>jfreechart</artifactId>
+      <version>1.0.19</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>batik-svggen</artifactId>
+      <version>1.8</version>
+    </dependency>
+
     <!-- scala -->
 
     <dependency>
@@ -188,7 +201,6 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-3.1</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -235,7 +247,6 @@
       <groupId>com.novus</groupId>
       <artifactId>salat-core_2.11</artifactId>
       <version>1.9.9</version>
-      <scope>test</scope>
       <exclusions>
         <exclusion>
           <groupId>org.scala-lang</groupId>

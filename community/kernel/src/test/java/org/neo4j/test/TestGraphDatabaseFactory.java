@@ -80,13 +80,13 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return newImpermanentDatabaseBuilder( ImpermanentGraphDatabase.PATH );
     }
 
-    @Override
-    protected void configure( GraphDatabaseBuilder builder )
+    private void configure( GraphDatabaseBuilder builder, File storeDir )
     {
         super.configure( builder );
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         builder.setConfig( GraphDatabaseSettings.auth_store, tempFile( "auth" ).toString() );
+        builder.setConfig( GraphDatabaseSettings.logs_directory, new File( storeDir, "logs" ).getAbsolutePath() );
     }
 
     @Override
@@ -159,11 +159,11 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         GraphDatabaseBuilder.DatabaseCreator creator =
                 createImpermanentDatabaseCreator( storeDir, state );
         TestGraphDatabaseBuilder builder = createImpermanentGraphDatabaseBuilder( creator );
-        configure( builder );
+        configure( builder, storeDir );
         return builder;
     }
 
-    protected TestGraphDatabaseBuilder createImpermanentGraphDatabaseBuilder(
+    private TestGraphDatabaseBuilder createImpermanentGraphDatabaseBuilder(
             GraphDatabaseBuilder.DatabaseCreator creator )
     {
         return new TestGraphDatabaseBuilder( creator );

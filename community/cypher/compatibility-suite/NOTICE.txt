@@ -27,9 +27,27 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
+  Batik AWT utilities
+  Batik Java2D SVG generator
+  Batik utility library
+  casbah-commons
+  casbah-core
+  casbah-query
   Cucumber-JVM Repackaged Dependencies
+  Joda convert
+  Joda-Time
+  json4s-ast
+  json4s-core
+  json4s-native
   Lucene Core
   Lucene Memory
+  MongoDB Java Driver
+  nscala-time
+  parboiled-core
+  parboiled-scala
+  salat-core
+  salat-util
+  XML Commons External Components XML APIs
 
 BSD - Scala License
   Scala Library
@@ -37,6 +55,15 @@ BSD - Scala License
 BSD License
   ANTLR 4 Tool
   Cucumber-JVM Repackaged Dependencies
+  ParaNamer Core
+  Scala Compiler
+  scala-parser-combinators
+  scala-xml
+  Scalap
+
+GNU Lesser General Public License, Version 2.1
+  JCommon
+  JFreeChart
 
 MIT License
   Cucumber-HTML
@@ -44,6 +71,7 @@ MIT License
   Cucumber-JVM: JUnit
   Cucumber-JVM: Scala (2.11)
   Gherkin
+  SLF4J API Module
 
 Dependencies with multiple licenses
 -----------------------------------

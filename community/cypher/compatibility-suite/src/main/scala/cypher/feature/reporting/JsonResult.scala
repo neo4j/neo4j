@@ -17,25 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.cucumber
+package cypher.feature.reporting
 
-import java.util
 
-import cucumber.api.DataTable
+import com.novus.salat.annotations.{Ignore, Key, Persist}
+import org.neo4j.cypher.internal.compiler.v3_1.ast.QueryTag
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.reflect.ClassTag
+import scala.annotation.meta.getter
 
-object DataTableConverter {
-
-  implicit class RighDataTable(dataTable: DataTable) {
-
-    def asScala[T](implicit manifest: ClassTag[T]): List[mutable.Map[String, T]] =
-      toList[T].map(_.asScala)
-
-    def toList[T](implicit manifest: ClassTag[T]): List[util.Map[String, T]] =
-      dataTable.asMaps(classOf[String], manifest.runtimeClass.asInstanceOf[Class[T]]).asScala.toList
+object Outcome {
+  def from(value: String) = value match {
+    case "passed" => Success
+    case _ => Failure
   }
+}
 
+sealed trait Outcome
+
+object Success extends Outcome {
+  override def toString = "success"
+}
+
+object Failure extends Outcome {
+  override def toString = "failure"
+}
+
+case class JsonResult(query: String, @Ignore tags: Set[QueryTag], @Ignore outcome: Outcome) {
+  @Key("tags")
+  @(Persist@getter)
+  val prettyTags: Set[String] = tags.map(_.toString)
+
+  @Key("outcome")
+  @(Persist@getter)
+  val prettyOutcome = outcome.toString
 }

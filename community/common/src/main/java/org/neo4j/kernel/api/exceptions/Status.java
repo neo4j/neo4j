@@ -194,13 +194,13 @@ public interface Status
         SemanticError( ClientError,
                 "The statement is syntactically valid, but expresses something that the database cannot do." ),
         ParameterMissing( ClientError,
-                "The statement is referring to a parameter that was not provided in the request." ),
+                "The statement refers to a parameter that was not provided in the request." ),
         ConstraintVerificationFailed( ClientError,
                 "A constraint imposed by the statement is violated by the data in the database." ),
         EntityNotFound( ClientError,
-                "The statement is directly referring to an entity that does not exist." ),
+                "The statement refers to a non-existent entity." ),
         PropertyNotFound( ClientError,
-                "The statement is referring to a property that does not exist." ),
+                "The statement refers to a non-existent property." ),
         LabelNotFound( ClientError,
                 "The statement is referring to a label that does not exist."),
         TypeError( ClientError,
@@ -519,20 +519,9 @@ public interface Status
 
             Code code = (Code) o;
 
-            if ( !category.equals( code.category ) )
-            {
-                return false;
-            }
-            if ( classification != code.classification )
-            {
-                return false;
-            }
-            if ( !title.equals( code.title ) )
-            {
-                return false;
-            }
+            return category.equals( code.category ) && classification == code.classification &&
+                   title.equals( code.title );
 
-            return true;
         }
 
         @Override

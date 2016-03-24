@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.cucumber.reporter
+package cypher.feature.reporting
 
 import java.io.{File, PrintStream}
+
 import cypher.cucumber.CucumberAdapter
-import cypher.feature.steps.CypherTCKSteps
+import cypher.feature.parser.reporting.ChartWriter
 import gherkin.formatter.model.{Match, Result, Step}
 
 import scala.util.matching.Regex
@@ -34,19 +35,25 @@ object CypherResultReporter {
   }
 }
 
-class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) extends CucumberAdapter {
+class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, chartWriter: ChartWriter)
+  extends CucumberAdapter {
 
   def this(reportDir: File) = {
-    this(producer = JsonProducer, jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json"))
+    this(producer = JsonProducer,
+         jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json"),
+         chartWriter = new ChartWriter(reportDir, "tags"))
   }
 
   private var query: String = null
   private var status: String = Result.PASSED
-  private val pattern: Regex = """running( parametrized)?: (.*)""".r
-  private val newPattern: Regex = CypherTCKSteps.EXECUTING_QUERY.r
+  // This is copied from the constant CypherTCKSteps.EXECUTING_QUERY
+  // Perhaps CypherTCKSteps will move to `main` from `test` some day
+  private val queryPattern: Regex = "^executing query: (.*)$".r
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())
+    chartWriter.dumpSVG(producer.dumpTagStats())
+    chartWriter.dumpPNG(producer.dumpTagStats())
   }
 
   override def close(): Unit = {
@@ -57,8 +64,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream) ex
   override def step(step: Step) {
     if (step.getKeyword.trim == "When") {
       step.getName match {
-        case pattern(_, q) => query = q
-        case newPattern(q) => query = q
+        case queryPattern(q) => query = q
       }
     }
   }
