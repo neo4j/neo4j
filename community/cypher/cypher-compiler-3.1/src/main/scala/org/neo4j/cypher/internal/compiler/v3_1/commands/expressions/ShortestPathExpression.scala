@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates._
-import org.neo4j.cypher.internal.compiler.v3_1.commands.{PathExtractor, Pattern, ShortestPath, SingleNode, _}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.{Pattern, ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Effects, ReadsAllNodes, ReadsAllRelationships}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
@@ -32,7 +32,7 @@ import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 
 import scala.collection.Map
 
-case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates: Seq[Predicate] = Seq.empty) extends Expression with PathExtractor {
+case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates: Seq[Predicate] = Seq.empty) extends Expression {
   val pathPattern: Seq[Pattern] = Seq(shortestPathPattern)
   val pathVariables = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
 
@@ -69,12 +69,12 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
 
   private def createShortestPathPredicate(incomingCtx: ExecutionContext, maybePredicate: Option[Predicate])(implicit state: QueryState): KernelPredicate[Path] =
     new KernelPredicate[Path] {
-      override def test(path: Path): Boolean = maybePredicate.map {
+      override def test(path: Path): Boolean = maybePredicate.forall {
         predicate =>
           incomingCtx += shortestPathPattern.pathName -> path
           incomingCtx += shortestPathPattern.relIterator.get -> path.relationships()
           predicate.isTrue(incomingCtx)
-      }.getOrElse(true)
+      }
     }
 
   private def getEndPoint(m: Map[String, Any], start: SingleNode): Node = m.getOrElse(start.name,

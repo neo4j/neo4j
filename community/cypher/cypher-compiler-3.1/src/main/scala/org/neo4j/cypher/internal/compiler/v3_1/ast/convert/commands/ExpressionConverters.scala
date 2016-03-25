@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.PatternConve
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.DesugaredMapProjection
 import org.neo4j.cypher.internal.compiler.v3_1.ast.{InequalitySeekRangeWrapper, NestedPipeExpression, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.ProjectedPath._
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{Expression => CommandExpression, InequalitySeekRangeExpression, ProjectedPath}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.{InequalitySeekRangeExpression, ProjectedPath, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.compiler.v3_1.commands.{expressions => commandexpressions, predicates, values => commandvalues}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.ast.functions._
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.NonEmptyList
@@ -265,7 +265,10 @@ object ExpressionConverters {
     case e: ast.Property => toCommandProperty(e)
     case e: ast.Parameter => toCommandParameter(e)
     case e: ast.CaseExpression => caseExpression(e)
-    case e: ast.PatternExpression => commands.PathExpression(e.pattern.asLegacyPatterns)
+    case e: ast.PatternExpression =>
+      val legacyPatterns = e.pattern.asLegacyPatterns
+      commands.PathExpression(legacyPatterns, predicates.True(), PathExtractorExpression(legacyPatterns), false)
+    case e: ast.PatternComprehension => commands.PathExpression(e.pattern.asLegacyPatterns, toCommandPredicate(e.predicate), toCommandExpression(e.projection), true)
     case e: ast.ShortestPathExpression => commandexpressions.ShortestPathExpression(e.pattern.asLegacyPatterns(None).head)
     case e: ast.HasLabels => hasLabels(e)
     case e: ast.Collection => commandexpressions.Collection(toCommandExpression(e.expressions): _*)
@@ -302,6 +305,9 @@ object ExpressionConverters {
       case c => predicates.CoercedPredicate(c)
     }
   }
+
+  private def toCommandPredicate(e: Option[ast.Expression]): Predicate =
+    e.map(toCommandPredicate).getOrElse(predicates.True())
 
   def toCommandParameter(e: ast.Parameter) = commandexpressions.ParameterExpression(e.name)
 

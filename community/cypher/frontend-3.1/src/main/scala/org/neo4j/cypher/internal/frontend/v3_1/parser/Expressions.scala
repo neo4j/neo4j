@@ -158,6 +158,7 @@ trait Expressions extends Parser
     | MapLiteral
     | MapProjection
     | ListComprehension
+    | PatternComprehension
     | group("[" ~~ zeroOrMore(Expression, separator = CommaSep) ~~ "]") ~~>> (ast.Collection(_))
     | group(keyword("FILTER") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.FilterExpression(_, _, _))
     | group(keyword("EXTRACT") ~~ "(" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ ")") ~~>> (ast.ExtractExpression(_, _, _, _))
@@ -201,6 +202,10 @@ trait Expressions extends Parser
 
   def ListComprehension: Rule1[ast.ListComprehension] = rule("[") {
     group("[" ~~ FilterExpression ~ optional(WS ~ "|" ~~ Expression) ~~ "]") ~~>> (ast.ListComprehension(_, _, _, _))
+  }
+
+  def PatternComprehension: Rule1[ast.PatternComprehension] = rule("[") {
+    group("[" ~~ RelationshipsPattern ~ optional(WS ~ "WHERE" ~~ Expression) ~~ "|" ~~ Expression ~~ "]") ~~>> (ast.PatternComprehension(_, _, _))
   }
 
   def CaseExpression: Rule1[ast.CaseExpression] = rule("CASE") {

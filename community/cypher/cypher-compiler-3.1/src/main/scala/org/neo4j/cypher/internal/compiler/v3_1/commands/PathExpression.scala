@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.commands
 
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{Predicate, True}
+import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
@@ -29,48 +29,58 @@ import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.MatchingContext
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
-  extends Expression
-  with PathExtractor
-  with PatternGraphBuilder {
-  val variables: Seq[(String, CypherType)] = pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
-  val symbols2 = SymbolTable(variables.toMap)
-  val variablesInClause = Pattern.variables(pathPattern)
+/*
+This class does pattern matching inside an Expression. It's used as a fallback when the
+expression cannot be unnested from inside an expression. It is used for pattern expressions
+and pattern comprehension
+ */
+case class PathExpression(pathPattern: Seq[Pattern], predicate: Predicate,
+                          projection: Expression, allowIntroducingNewIdentifiers: Boolean = false)
+  extends Expression with PatternGraphBuilder {
+  private val variables: Seq[(String, CypherType)] =
+    pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
+  private val symbols2 = SymbolTable(variables.toMap)
+  private val variablesInClause = Pattern.variables(pathPattern)
 
-  val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern), variablesInClause)
-  val interestingPoints: Seq[String] = pathPattern.
+  private val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern), variablesInClause)
+  private val interestingPoints: Seq[String] = pathPattern.
     flatMap(_.possibleStartPoints.map(_._1)).
     filter(isNamed).
     distinct
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyRef = {
     // If any of the points we need is null, the whole expression will return null
     val returnNull = interestingPoints.exists(key => ctx.get(key) match {
-      case None       => throw new AssertionError("This execution plan should not exist.")
       case Some(null) => true
-      case Some(_)    => false
+      case None if !allowIntroducingNewIdentifiers =>
+        throw new AssertionError("This execution plan should not exist.")
+      case _ => false
     })
 
     if (returnNull) {
       null
     } else {
-      matchingContext.getMatches(ctx, state).map(getPath)
+      matchingContext.
+        getMatches(ctx, state). // find matching subgraphs
+        filter(predicate.isTrue(_)(state)). // filter out graphs not matching the predicate
+        map(projection.apply(_)(state)) // project from found subgraphs
     }
   }
 
   override def children = pathPattern :+ predicate
 
-  def arguments: Seq[Expression] = Seq.empty
+  override def arguments = Seq.empty
 
-  def rewrite(f: (Expression) => Expression): Expression = f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.rewriteAsPredicate(f)))
+  override def rewrite(f: (Expression) => Expression) =
+    f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.rewriteAsPredicate(f), projection, allowIntroducingNewIdentifiers))
 
-  def calculateType(symbols: SymbolTable): CypherType = CTList(CTPath)
+  override def calculateType(symbols: SymbolTable) = CTList(CTPath)
 
-  def symbolTableDependencies = {
+  override def symbolTableDependencies = {
     val patternDependencies = pathPattern.flatMap(_.symbolTableDependencies).toSet
     val startPointDependencies = pathPattern.flatMap(_.possibleStartPoints).map(_._1).filter(isNamed).toSet
     patternDependencies ++ startPointDependencies
   }
 
-  override def toString() = s"PathExpression(${pathPattern.mkString(",")}, $predicate)"
+  override def toString() = s"PathExpression(${pathPattern.mkString(",")}, $predicate, $projection)"
 }

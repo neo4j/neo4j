@@ -60,7 +60,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
 
     result.toString should equal(
-      """Selection(List(In(Property(Variable(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42)))))) {
+      """Selection(MutableList(In(Property(Variable(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42)))))) {
         |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
         |    LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |      LHS -> AllNodesScan(IdName(a), Set()) {}
