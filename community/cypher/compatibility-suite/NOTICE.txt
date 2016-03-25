@@ -33,6 +33,7 @@ Apache Software License, Version 2.0
   casbah-commons
   casbah-core
   casbah-query
+  ConcurrentLinkedHashMap
   Cucumber-JVM Repackaged Dependencies
   Joda convert
   Joda-Time
