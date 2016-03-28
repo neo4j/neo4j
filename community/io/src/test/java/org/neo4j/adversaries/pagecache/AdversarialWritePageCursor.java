@@ -276,4 +276,10 @@ class AdversarialWritePageCursor implements PageCursor
         adversary.injectFailure( IndexOutOfBoundsException.class );
         return delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
     }
+
+    @Override
+    public boolean checkAndClearBoundsFlag()
+    {
+        return delegate.checkAndClearBoundsFlag();
+    }
 }

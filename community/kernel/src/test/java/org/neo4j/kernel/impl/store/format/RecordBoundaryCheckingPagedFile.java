@@ -292,6 +292,12 @@ public class RecordBoundaryCheckingPagedFile implements PagedFile
         }
 
         @Override
+        public boolean checkAndClearBoundsFlag()
+        {
+            return false;
+        }
+
+        @Override
         public void setOffset( int offset )
         {
             if ( offset < start || offset >= start + recordSize )

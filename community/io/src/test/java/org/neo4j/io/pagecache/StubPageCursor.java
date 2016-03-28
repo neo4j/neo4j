@@ -106,6 +106,12 @@ public class StubPageCursor implements PageCursor
     }
 
     @Override
+    public boolean checkAndClearBoundsFlag()
+    {
+        return false;
+    }
+
+    @Override
     public byte getByte()
     {
         byte value = getByte( currentOffset );

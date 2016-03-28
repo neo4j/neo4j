@@ -280,4 +280,10 @@ class AdversarialReadPageCursor implements PageCursor
         }
         return lengthInBytes;
     }
+
+    @Override
+    public boolean checkAndClearBoundsFlag()
+    {
+        return delegate.checkAndClearBoundsFlag();
+    }
 }

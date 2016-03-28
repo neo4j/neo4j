@@ -348,4 +348,12 @@ public interface PageCursor extends AutoCloseable
      * @return The number of bytes actually copied.
      */
     int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes );
+
+    /**
+     * Discern whether an out-of-bounds access has occurred since the last call to {@link #next()} or
+     * {@link #next(long)}, or since the last call to {@link #shouldRetry()} that returned {@code true}, or since the
+     * last call to this method.
+     * @return {@code true} if an access was out of bounds.
+     */
+    boolean checkAndClearBoundsFlag();
 }
