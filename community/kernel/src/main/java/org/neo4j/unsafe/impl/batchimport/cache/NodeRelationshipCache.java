@@ -31,7 +31,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 {
     private static final long EMPTY = -1;
 
-    private LongArray array;
+    private final LongArray array;
     private final int denseNodeThreshold;
     private final RelGroupCache relGroupCache;
     private final long base;
@@ -160,16 +160,6 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         return IdFieldManipulator.getCount( field );
     }
 
-    public void fixateNodes()
-    {
-        array = array.fixate();
-    }
-
-    public void fixateGroups()
-    {
-        relGroupCache.fixate();
-    }
-
     public interface GroupVisitor
     {
         /**
@@ -198,8 +188,8 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         private static final int INDEX_LOOP = 3;
 
         // Used for testing high id values. Should always be zero in production
-        private long base;
-        private LongArray array;
+        private final long base;
+        private final LongArray array;
         private final AtomicLong nextFreeId;
 
         RelGroupCache( NumberArrayFactory arrayFactory, long chunkSize, long base )
@@ -391,11 +381,6 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
         {
             array.acceptMemoryStatsVisitor( visitor );
-        }
-
-        void fixate()
-        {
-            array = array.fixate();
         }
     }
 

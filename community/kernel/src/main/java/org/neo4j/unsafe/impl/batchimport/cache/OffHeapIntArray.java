@@ -77,10 +77,4 @@ public class OffHeapIntArray extends OffHeapNumberArray implements IntArray
             UnsafeUtil.putInt( toAddress, fromValue );
         }
     }
-
-    @Override
-    public IntArray fixate()
-    {
-        return this;
-    }
 }

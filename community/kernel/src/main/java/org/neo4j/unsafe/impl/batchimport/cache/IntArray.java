@@ -30,7 +30,4 @@ public interface IntArray extends NumberArray
     int get( long index );
 
     void set( long index, int value );
-
-    @Override
-    IntArray fixate();
 }

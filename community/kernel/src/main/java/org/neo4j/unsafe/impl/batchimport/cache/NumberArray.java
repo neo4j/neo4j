@@ -51,20 +51,4 @@ public interface NumberArray extends MemoryStatsVisitor.Visitable, AutoCloseable
      */
     @Override
     void close();
-
-    /**
-     * The dynamic capability of {@link NumberArray}, i.e {@link NumberArrayFactory#newDynamicIntArray(long, int)}
-     * or {@link NumberArrayFactory#newDynamicLongArray(long, long)} is a central part of {@link NumberArray}.
-     * Manipulating items in dynamic arrays will extend the array behind the scenes. Doing this, even checking
-     * the bounds is expensive, and so fixating a dynamic array after the point where it's known to not need
-     * to grow anymore will have better performance.
-     *
-     * The returned instance will fail with {@link ArrayIndexOutOfBoundsException} if setting a value at an index
-     * that would have required the array to be extended. Although getting a value outside of its current range
-     * will still return the default value that the dynamic array had.
-     *
-     * @return a {@link NumberArray}, or subclass thereof which is a fixed version of this array, if this array
-     * is a dynamic array. A fixed array has better performance than a dynamic array.
-     */
-    NumberArray fixate();
 }

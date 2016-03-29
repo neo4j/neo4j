@@ -203,7 +203,7 @@ public interface NumberArrayFactory
             // the array as a dynamic array, make it grow to the requested length and then fixate.
             DynamicLongArray array = newDynamicLongArray( fractionOf( length ), defaultValue );
             array.ensureChunkAt( length-1 );
-            return array.fixate();
+            return array;
         }
 
         @Override
@@ -214,7 +214,7 @@ public interface NumberArrayFactory
             // the array as a dynamic array, make it grow to the requested length and then fixate.
             DynamicIntArray array = newDynamicIntArray( fractionOf( length ), defaultValue );
             array.ensureChunkAt( length-1 );
-            return array.fixate();
+            return array;
         }
 
         private long fractionOf( long length )

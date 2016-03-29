@@ -43,21 +43,26 @@ abstract class DynamicNumberArray<N extends NumberArray> extends ChunkedNumberAr
     {
         if ( index >= length() )
         {
-            synchronized ( this )
-            {
-                if ( index >= length() )
-                {
-                    NumberArray[] newChunks = Arrays.copyOf( chunks, chunkIndex( index )+1 );
-                    for ( int i = chunks.length; i < newChunks.length; i++ )
-                    {
-                        newChunks[i] = addChunk( chunkSize );
-                    }
-                    chunks = newChunks;
-                }
-            }
+            synchronizedAddChunk( index );
         }
-        return chunkAt( index );
+        return super.chunkAt( index );
     }
 
-    protected abstract N addChunk( long chunkSize );
+    private void synchronizedAddChunk( long index )
+    {
+        synchronized ( this )
+        {
+            if ( index >= length() )
+            {
+                NumberArray[] newChunks = Arrays.copyOf( chunks, chunkIndex( index )+1 );
+                for ( int i = chunks.length; i < newChunks.length; i++ )
+                {
+                    newChunks[i] = addChunk( chunkSize );
+                }
+                chunks = newChunks;
+            }
+        }
+    }
+
+    protected abstract NumberArray addChunk( long chunkSize );
 }

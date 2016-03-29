@@ -73,10 +73,4 @@ public class HeapIntArray extends HeapNumberArray implements IntArray
             set( toIndex+i, fromValue );
         }
     }
-
-    @Override
-    public IntArray fixate()
-    {
-        return this;
-    }
 }

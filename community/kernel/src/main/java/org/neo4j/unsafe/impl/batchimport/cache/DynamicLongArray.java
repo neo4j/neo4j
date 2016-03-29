@@ -65,10 +65,4 @@ public class DynamicLongArray extends DynamicNumberArray<LongArray> implements L
     {
         return factory.newLongArray( chunkSize, defaultValue );
     }
-
-    @Override
-    public LongArray fixate()
-    {
-        return new FixedLongArray( chunks, chunkSize, defaultValue );
-    }
 }

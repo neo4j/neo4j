@@ -65,10 +65,4 @@ public class DynamicIntArray extends DynamicNumberArray<IntArray> implements Int
     {
         return factory.newIntArray( chunkSize, defaultValue );
     }
-
-    @Override
-    public IntArray fixate()
-    {
-        return new FixedIntArray( chunks, chunkSize, defaultValue );
-    }
 }
