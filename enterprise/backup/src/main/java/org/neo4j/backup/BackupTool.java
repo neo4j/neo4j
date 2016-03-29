@@ -36,12 +36,11 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -51,7 +50,6 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.record_format;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 
 public class BackupTool
@@ -152,7 +150,7 @@ public class BackupTool
 
         long timeout = args.getDuration( TIMEOUT, BackupClient.BIG_READ_TIMEOUT );
 
-        URI backupURI = resolveBackupUri( from, args, tuningConfiguration );
+        URI backupURI = resolveBackupUri( from, args );
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
@@ -262,7 +260,7 @@ public class BackupTool
 
     private static Config readConfiguration( Args arguments ) throws ToolFailureException
     {
-        Map<String,String> specifiedConfig = stringMap(record_format.name(), HighLimit.NAME );
+        Map<String,String> specifiedConfig = stringMap();
 
         String configFilePath = arguments.get( CONFIG, null );
         if ( configFilePath != null )
@@ -281,7 +279,7 @@ public class BackupTool
         return new Config( specifiedConfig, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
-    private static URI resolveBackupUri( String from, Args arguments, Config config ) throws ToolFailureException
+    private static URI resolveBackupUri( String from, Args arguments ) throws ToolFailureException
     {
         if ( from.contains( "," ) )
         {
@@ -290,7 +288,7 @@ public class BackupTool
                 checkNoSchemaIsPresent( from );
                 from = "ha://" + from;
             }
-            return resolveUriWithProvider( "ha", from, arguments, config );
+            return resolveUriWithProvider( "ha", from, arguments );
         }
         if ( !from.startsWith( "single://" ) )
         {
@@ -321,7 +319,7 @@ public class BackupTool
         }
     }
 
-    private static URI resolveUriWithProvider( String providerName, String from, Args args, Config config )
+    private static URI resolveUriWithProvider( String providerName, String from, Args args )
             throws ToolFailureException
     {
         BackupExtensionService service;

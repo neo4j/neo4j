@@ -205,6 +205,7 @@ public class StoreUpgradeIntegrationTest
             props.setProperty( DatabaseManagementSystemSettings.data_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+            props.setProperty( GraphDatabaseFacadeFactory.Configuration.record_format.name(), HighLimit.NAME );
             props.setProperty( httpConnector( "1" ).type.name(), "HTTP" );
             props.setProperty( httpConnector( "1" ).enabled.name(), "true" );
             try ( FileWriter writer = new FileWriter( configFile ) )
@@ -355,6 +356,7 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+            builder.setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {

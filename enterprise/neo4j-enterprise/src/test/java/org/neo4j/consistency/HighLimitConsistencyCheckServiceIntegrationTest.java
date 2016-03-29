@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency;
 
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimitWithSmallRecords;
 
 public class HighLimitConsistencyCheckServiceIntegrationTest extends ConsistencyCheckServiceIntegrationTest
@@ -30,9 +29,4 @@ public class HighLimitConsistencyCheckServiceIntegrationTest extends Consistency
         return HighLimitWithSmallRecords.NAME;
     }
 
-    @Override
-    protected RecordFormats getRecordFormats()
-    {
-        return HighLimitWithSmallRecords.RECORD_FORMATS;
-    }
 }

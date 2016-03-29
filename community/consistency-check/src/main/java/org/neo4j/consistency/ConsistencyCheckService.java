@@ -126,8 +126,8 @@ public class ConsistencyCheckService
                 MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
         StoreFactory factory = new StoreFactory( storeDir, consistencyCheckerConfig,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                RecordFormatSelector.select( consistencyCheckerConfig, LowLimitV3_0.RECORD_FORMATS,
-                        NullLogService.getInstance()), logProvider );
+                RecordFormatSelector.autoSelectFormat( consistencyCheckerConfig, NullLogService.getInstance() ),
+                logProvider );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath(tuningConfiguration );

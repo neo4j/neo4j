@@ -84,6 +84,7 @@ import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -130,7 +131,8 @@ public class ClusterManager
 
     public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
-            GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+            GraphDatabaseSettings.pagecache_memory.name(), "8m",
+            GraphDatabaseFacadeFactory.Configuration.record_format.name(), HighLimit.NAME ) );
 
     public interface StoreDirInitializer
     {
@@ -186,7 +188,7 @@ public class ClusterManager
         try
         {
             // Null corresponds to localhost
-            return InetAddress.getByName( null ).getHostAddress();
+            return InetAddress.getByName( "0.0.0.0" ).getHostAddress();
         }
         catch ( UnknownHostException e )
         {

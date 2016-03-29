@@ -46,8 +46,6 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
@@ -64,7 +62,7 @@ import static org.neo4j.test.Property.set;
 public class ConsistencyCheckServiceIntegrationTest
 {
 
-    private final GraphStoreFixture fixture = new GraphStoreFixture(getRecordFormats(), getRecordFormatName())
+    private final GraphStoreFixture fixture = new GraphStoreFixture( getRecordFormatName() )
     {
         @Override
         protected void generateInitialData( GraphDatabaseService graphDb )
@@ -238,10 +236,5 @@ public class ConsistencyCheckServiceIntegrationTest
     protected String getRecordFormatName()
     {
         return StringUtils.EMPTY;
-    }
-
-    protected RecordFormats getRecordFormats()
-    {
-        return LowLimitV3_0.RECORD_FORMATS;
     }
 }

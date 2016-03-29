@@ -47,8 +47,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -98,7 +97,7 @@ public class DetectAllRelationshipInconsistenciesIT
             DependencyResolver resolver = db.getDependencyResolver();
             PageCache pageCache = resolver.resolveDependency( PageCache.class );
             StoreFactory storeFactory = new StoreFactory( fileSystem, directory.directory(), pageCache,
-                    getRecordFormats(), NullLogProvider.getInstance() );
+                    RecordFormatSelector.autoSelectFormat(), NullLogProvider.getInstance() );
 
             try ( NeoStores neoStores = storeFactory.openNeoStores( false, StoreType.RELATIONSHIP ) )
             {
@@ -119,7 +118,7 @@ public class DetectAllRelationshipInconsistenciesIT
             DependencyResolver resolver = db.getDependencyResolver();
             PageCache pageCache = resolver.resolveDependency( PageCache.class );
             StoreFactory storeFactory = new StoreFactory( fileSystem, directory.directory(), pageCache,
-                    getRecordFormats(), NullLogProvider.getInstance() );
+                    RecordFormatSelector.autoSelectFormat(), NullLogProvider.getInstance() );
 
             try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
             {
@@ -163,11 +162,6 @@ public class DetectAllRelationshipInconsistenciesIT
     protected String getRecordFormatName()
     {
         return StringUtils.EMPTY;
-    }
-
-    protected RecordFormats getRecordFormats()
-    {
-        return LowLimitV3_0.RECORD_FORMATS;
     }
 
     private static class Sabotage

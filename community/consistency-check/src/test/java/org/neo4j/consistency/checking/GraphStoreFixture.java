@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -103,30 +103,22 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private long arrayPropId;
     private int relTypeId;
     private int propKeyId;
-    private RecordFormats recordFormats = LowLimitV3_0.RECORD_FORMATS;
     private String formatName = StringUtils.EMPTY;
 
-    public GraphStoreFixture( boolean keepStatistics, RecordFormats recordFormats, String formatName )
+    public GraphStoreFixture( boolean keepStatistics, String formatName )
     {
         this.keepStatistics = keepStatistics;
-        this.recordFormats = recordFormats;
         this.formatName = formatName;
     }
 
-    public GraphStoreFixture(RecordFormats recordFormats, String formatName)
+    public GraphStoreFixture( String formatName )
     {
-        this( false, recordFormats, formatName );
+        this( false, formatName );
     }
 
     public GraphStoreFixture()
     {
-        this( false, LowLimitV3_0.RECORD_FORMATS, LowLimitV3_0.NAME );
-    }
-
-    public GraphStoreFixture withRecordFormats( RecordFormats recordFormats )
-    {
-        this.recordFormats = recordFormats;
-        return this;
+        this( false, LowLimitV3_0.NAME );
     }
 
     public void apply( Transaction transaction ) throws TransactionFailureException
@@ -140,7 +132,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            neoStore = new StoreFactory( fileSystem, directory, pageCache, recordFormats,
+            neoStore = new StoreFactory( fileSystem, directory, pageCache, RecordFormatSelector.autoSelectFormat(),
                     NullLogProvider.getInstance() ).openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )

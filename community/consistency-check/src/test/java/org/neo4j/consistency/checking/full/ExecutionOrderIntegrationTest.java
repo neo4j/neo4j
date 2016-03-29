@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.ComparativeRecordChecker;
@@ -58,8 +57,6 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -87,7 +84,7 @@ import static org.neo4j.test.Property.set;
 public class ExecutionOrderIntegrationTest
 {
     @Rule
-    public final GraphStoreFixture fixture = new GraphStoreFixture(getRecordFormats(), getRecordFormatName())
+    public final GraphStoreFixture fixture = new GraphStoreFixture( getRecordFormatName() )
     {
         @Override
         protected void generateInitialData( GraphDatabaseService graphDb )
@@ -137,11 +134,6 @@ public class ExecutionOrderIntegrationTest
     protected String getRecordFormatName()
     {
         return StringUtils.EMPTY;
-    }
-
-    protected RecordFormats getRecordFormats()
-    {
-        return LowLimitV3_0.RECORD_FORMATS;
     }
 
     private static class InvocationLog

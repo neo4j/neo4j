@@ -90,8 +90,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.AbstractSchemaRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -203,7 +201,7 @@ public class FullCheckIntegrationTest
     }
 
 
-    private final GraphStoreFixture fixture = new GraphStoreFixture(getRecordFormats(), getRecordFormatName())
+    private final GraphStoreFixture fixture = new GraphStoreFixture( getRecordFormatName() )
     {
         @Override
         protected void generateInitialData( GraphDatabaseService db )
@@ -2057,11 +2055,6 @@ public class FullCheckIntegrationTest
     protected String getRecordFormatName()
     {
         return StringUtils.EMPTY;
-    }
-
-    protected RecordFormats getRecordFormats()
-    {
-        return LowLimitV3_0.RECORD_FORMATS;
     }
 
     private int createLabel() throws Exception

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.store.format;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Iterator;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -43,6 +45,9 @@ import static org.neo4j.helpers.collection.Iterables.map;
  */
 public class RecordFormatSelector
 {
+
+    private static final RecordFormats DEFAULT_AUTOSELECT_FORMAT = LowLimitV3_0.RECORD_FORMATS;
+
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
             LowLimitV2_0.RECORD_FORMATS,
             LowLimitV2_1.RECORD_FORMATS,
@@ -130,6 +135,30 @@ public class RecordFormatSelector
             }
         }
         return null;
+    }
+
+    public static RecordFormats autoSelectFormat()
+    {
+        return autoSelectFormat( Config.empty(), NullLogService.getInstance() );
+    }
+
+    public static RecordFormats autoSelectFormat( Config config, LogService logService )
+    {
+        String recordFormat = configuredRecordFormat( config );
+        RecordFormats formats = loadRecordFormat( recordFormat );
+        if ( formats != null )
+        {
+            logService.getInternalLog( RecordFormatSelector.class ).warn( "Selected " +
+                                                     recordFormat.getClass().getName() + " record format." );
+            return formats;
+        }
+        Iterable<RecordFormats.Factory> formatFactories = Service.load( RecordFormats.Factory.class );
+        Iterator<RecordFormats.Factory> factoryIterator = formatFactories.iterator();
+        RecordFormats recordFormats = factoryIterator.hasNext() ? factoryIterator.next().newInstance() : DEFAULT_AUTOSELECT_FORMAT;
+        logService.getInternalLog( RecordFormatSelector.class ).warn( "Selected " +
+                                                                      recordFormats.getClass().getName() + " record " +
+                                                                      "format." );
+        return recordFormats;
     }
 
     private static RecordFormats handleMissingFormat( String recordFormat, LogService logService )

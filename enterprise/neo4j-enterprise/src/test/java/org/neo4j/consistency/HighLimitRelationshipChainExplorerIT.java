@@ -20,18 +20,10 @@
 package org.neo4j.consistency;
 
 import org.neo4j.consistency.repair.RelationshipChainExplorerTest;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimitWithSmallRecords;
 
 public class HighLimitRelationshipChainExplorerIT extends RelationshipChainExplorerTest
 {
-
-    @Override
-    protected RecordFormats getRecordFormats()
-    {
-        return HighLimitWithSmallRecords.RECORD_FORMATS;
-    }
-
     @Override
     protected String getRecordFormatName()
     {
