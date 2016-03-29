@@ -23,6 +23,12 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -31,6 +37,7 @@ import org.neo4j.helpers.FakeClock;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,7 +54,7 @@ public class TimedRepositoryTest
 
     private final long timeout = 100;
     private final FakeClock clock = new FakeClock();
-    private final TimedRepository<Long, Long> repo = new TimedRepository<>( provider, consumer, timeout, clock );
+    private final TimedRepository<Long,Long> repo = new TimedRepository<>( provider, consumer, timeout, clock );
 
     @Test
     public void shouldManageLifecycleWithNoTimeouts() throws Exception
@@ -59,8 +66,8 @@ public class TimedRepositoryTest
         repo.end( 1l );
 
         // Then
-        assertThat(acquired, equalTo(0l));
-        assertThat(reapedValues, equalTo(asList(0l)));
+        assertThat( acquired, equalTo( 0l ) );
+        assertThat( reapedValues, equalTo( asList( 0l ) ) );
     }
 
     @Test
@@ -74,19 +81,19 @@ public class TimedRepositoryTest
         try
         {
             repo.acquire( 1l );
-            fail("Should not have been allowed access.");
+            fail( "Should not have been allowed access." );
         }
-        catch( ConcurrentAccessException e )
+        catch ( ConcurrentAccessException e )
         {
             // Then
-            assertThat( e.getMessage(), equalTo("Cannot access '1', because another client is currently using it." ));
+            assertThat( e.getMessage(), equalTo( "Cannot access '1', because another client is currently using it." ) );
         }
 
         // But when
         repo.release( 1l );
 
         // Then
-        assertThat(repo.acquire( 1l ), equalTo(0l));
+        assertThat( repo.acquire( 1l ), equalTo( 0l ) );
     }
 
     @Test
@@ -101,9 +108,10 @@ public class TimedRepositoryTest
         {
             repo.acquire( 1l );
             fail( "Should not have been able to acquire." );
-        } catch( NoSuchEntryException e )
+        }
+        catch ( NoSuchEntryException e )
         {
-            assertThat(e.getMessage(), equalTo("Cannot access '1', no such entry exists."));
+            assertThat( e.getMessage(), equalTo( "Cannot access '1', no such entry exists." ) );
         }
     }
 
@@ -137,7 +145,7 @@ public class TimedRepositoryTest
         repo.release( 1l );
 
         // Then
-        assertThat( reapedValues, equalTo(asList(0l)));
+        assertThat( reapedValues, equalTo( asList( 0l ) ) );
     }
 
     @Test
@@ -151,10 +159,11 @@ public class TimedRepositoryTest
         {
             repo.begin( 1l );
             fail( "Should not have been able to begin." );
-        } catch( ConcurrentAccessException e )
+        }
+        catch ( ConcurrentAccessException e )
         {
-            assertThat(e.getMessage(), containsString("Cannot begin '1', because Entry") );
-            assertThat(e.getMessage(), containsString(" with that key already exists."));
+            assertThat( e.getMessage(), containsString( "Cannot begin '1', because Entry" ) );
+            assertThat( e.getMessage(), containsString( " with that key already exists." ) );
         }
     }
 
@@ -174,7 +183,7 @@ public class TimedRepositoryTest
         repo.release( 1l );
 
         // But When
-        clock.forward( timeout+1, MILLISECONDS );
+        clock.forward( timeout + 1, MILLISECONDS );
         repo.run();
 
         // Then
@@ -183,11 +192,11 @@ public class TimedRepositoryTest
         try
         {
             repo.acquire( 1l );
-            fail("Should not have been possible to acquire.");
+            fail( "Should not have been possible to acquire." );
         }
-        catch( NoSuchEntryException e)
+        catch ( NoSuchEntryException e )
         {
-            assertThat(e.getMessage(), equalTo("Cannot access '1', no such entry exists."));
+            assertThat( e.getMessage(), equalTo( "Cannot access '1', no such entry exists." ) );
         }
     }
 
@@ -202,14 +211,15 @@ public class TimedRepositoryTest
         {
             repo.begin( 1l );
             fail( "Should not have been able to begin." );
-        } catch( ConcurrentAccessException e )
+        }
+        catch ( ConcurrentAccessException e )
         {
 
             // Then
-            assertThat(e.getMessage(), containsString("Cannot begin '1', because Entry") );
-            assertThat(e.getMessage(), containsString(" with that key already exists."));
+            assertThat( e.getMessage(), containsString( "Cannot begin '1', because Entry" ) );
+            assertThat( e.getMessage(), containsString( " with that key already exists." ) );
         }
-        assertThat(reapedValues, equalTo(asList(1l)));
+        assertThat( reapedValues, equalTo( asList( 1l ) ) );
     }
 
     @Test
@@ -226,5 +236,97 @@ public class TimedRepositoryTest
         //then
         repo.begin( 1l );
         assertThat( reapedValues, equalTo( asList( 0l ) ) );
+    }
+
+    @Test
+    public void unusedEntriesSafelyAcquiredOnCleanup()
+            throws ConcurrentAccessException, NoSuchEntryException, InterruptedException, TimeoutException,
+            BrokenBarrierException
+    {
+        CountDownReaper countDownReaper = new CountDownReaper();
+        final TimedRepository<Object,Long> timedRepository = new TimedRepository<>( provider, countDownReaper, 1, clock );
+        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+        NonStoppableCleaner cleaner = new NonStoppableCleaner( timedRepository );
+        try
+        {
+            singleThreadExecutor.submit( cleaner );
+
+            long entryKey = 1L;
+            long iterations = 100000L;
+            while ( entryKey++ < iterations )
+            {
+                timedRepository.begin( entryKey );
+                timedRepository.acquire( entryKey );
+                clock.forward( 10, TimeUnit.MILLISECONDS );
+                timedRepository.release( entryKey );
+                timedRepository.end( entryKey );
+
+                countDownReaper.await("Reaper should consume entry from cleaner thread or from our 'end' call. " +
+                                      "If it was not consumed it mean cleaner and worker thread where not able to" +
+                                      " figure out who removes entry, and block will ends up in the repo forever.",
+                                      10, SECONDS);
+                countDownReaper.reset();
+            }
+        }
+        finally
+        {
+            cleaner.stop();
+            singleThreadExecutor.shutdownNow();
+        }
+    }
+
+    private static class NonStoppableCleaner implements Runnable
+    {
+        private volatile boolean stop = false;
+        private final TimedRepository<Object,Long> timedRepository;
+
+        NonStoppableCleaner( TimedRepository<Object,Long> timedRepository )
+        {
+            this.timedRepository = timedRepository;
+        }
+
+        @Override
+        public void run()
+        {
+            while (!stop)
+            {
+                timedRepository.run();
+            }
+        }
+
+        public void stop()
+        {
+            stop = true;
+        }
+    }
+
+    private static class CountDownReaper implements Consumer<Long>
+    {
+        private volatile CountDownLatch reaperLatch;
+
+        CountDownReaper( )
+        {
+            reset();
+        }
+
+        public void reset()
+        {
+            reaperLatch = new CountDownLatch( 1 );
+        }
+
+        @Override
+        public void accept( Long aLong )
+        {
+            reaperLatch.countDown();
+        }
+
+        public void await(String message, long timeout, TimeUnit timeUnit) throws InterruptedException
+        {
+            if ( !reaperLatch.await( timeout, timeUnit ) )
+            {
+                throw new IllegalStateException( message );
+            }
+        }
+
     }
 }
