@@ -102,7 +102,7 @@ public class MasterImplConversationStopFuzzIT
         final ExposedConversationManager
                 conversationManager = new ExposedConversationManager( conversationSPI, config, 100, 0 );
 
-        ConversationTestMasterSPI conversationTestMasterSPI = new ConversationTestMasterSPI( conversationManager );
+        ConversationTestMasterSPI conversationTestMasterSPI = new ConversationTestMasterSPI();
         MasterImpl master = new MasterImpl( conversationTestMasterSPI, conversationManager,
                 new Monitors().newMonitor( MasterImpl.Monitor.class ), config );
         life.add( conversationManager);
@@ -310,11 +310,9 @@ public class MasterImplConversationStopFuzzIT
 
     static class ConversationTestMasterSPI implements MasterImpl.SPI
     {
-        private ExposedConversationManager conversationManager;
 
-        public ConversationTestMasterSPI( ExposedConversationManager conversationManager )
+        public ConversationTestMasterSPI()
         {
-            this.conversationManager = conversationManager;
         }
 
         @Override
@@ -366,11 +364,6 @@ public class MasterImplConversationStopFuzzIT
         @Override
         public <T> Response<T> packTransactionObligationResponse( RequestContext context, T response )
         {
-            Conversation conversation = conversationManager.conversationStore.getValue( context );
-            if ( conversation != null )
-            {
-                assertTrue( conversation.isActive() );
-            }
             return packEmptyResponse( response );
         }
 
@@ -462,7 +455,7 @@ public class MasterImplConversationStopFuzzIT
 
     private class ExposedConversationManager extends ConversationManager {
 
-        private ExposedTimedRepository<RequestContext,Conversation> conversationStore;
+        private TimedRepository<RequestContext,Conversation> conversationStore;
 
         public ExposedConversationManager( ConversationSPI spi, Config config, int activityCheckInterval,
                 int lockTimeoutAddition )
@@ -473,26 +466,9 @@ public class MasterImplConversationStopFuzzIT
         @Override
         protected TimedRepository<RequestContext,Conversation> createConversationStore()
         {
-            conversationStore = new ExposedTimedRepository<>( getConversationFactory(), getConversationReaper(),
+            conversationStore = new TimedRepository<>( getConversationFactory(), getConversationReaper(),
                     1, Clock.SYSTEM_CLOCK );
             return conversationStore;
-        }
-
-    }
-
-    private class ExposedTimedRepository<KEY, VALUE> extends TimedRepository<KEY, VALUE>
-    {
-
-        private ExposedTimedRepository(  Factory<VALUE> provider, Consumer<VALUE> reaper, long timeout,
-                Clock clock)
-        {
-            super(provider, reaper, timeout, clock);
-        }
-
-        @Override
-        public VALUE getValue( KEY key )
-        {
-            return super.getValue( key );
         }
     }
 
