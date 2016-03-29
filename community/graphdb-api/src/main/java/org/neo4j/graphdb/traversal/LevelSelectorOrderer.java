@@ -22,6 +22,7 @@ package org.neo4j.graphdb.traversal;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.impl.traversal.AbstractSelectorOrderer;
 
 public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorOrderer.Entry>
 {

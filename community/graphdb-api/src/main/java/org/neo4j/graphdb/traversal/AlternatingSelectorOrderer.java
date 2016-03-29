@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.neo4j.graphdb.impl.traversal.AbstractSelectorOrderer;
+
 public class AlternatingSelectorOrderer extends AbstractSelectorOrderer<Integer>
 {
     public AlternatingSelectorOrderer( BranchSelector startSelector, BranchSelector endSelector )

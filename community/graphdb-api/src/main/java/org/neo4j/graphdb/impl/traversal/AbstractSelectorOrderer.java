@@ -17,24 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.traversal;
+package org.neo4j.graphdb.impl.traversal;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.traversal.BranchSelector;
+import org.neo4j.graphdb.traversal.SideSelector;
+import org.neo4j.graphdb.traversal.TraversalBranch;
+import org.neo4j.graphdb.traversal.TraversalContext;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-@Deprecated
 public abstract class AbstractSelectorOrderer<T> implements SideSelector
 {
-    private static final BranchSelector EMPTY_SELECTOR = new BranchSelector()
-    {
-        @Override
-        public TraversalBranch next( TraversalContext metadata )
-        {
-            return null;
-        }
-    };
+    private static final BranchSelector EMPTY_SELECTOR = metadata -> null;
 
     private final BranchSelector[] selectors;
     @SuppressWarnings( "unchecked" )
@@ -97,8 +90,7 @@ public abstract class AbstractSelectorOrderer<T> implements SideSelector
     protected BranchSelector nextSelector()
     {
         selectorIndex = (selectorIndex+1)%2;
-        BranchSelector selector = selectors[selectorIndex];
-        return selector;
+        return selectors[selectorIndex];
     }
 
     @Override
