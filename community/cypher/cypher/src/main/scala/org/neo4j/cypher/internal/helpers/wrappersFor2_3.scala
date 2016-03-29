@@ -34,7 +34,7 @@ object wrappersFor2_3 {
 
   def as2_3(config: CypherCompilerConfiguration) = CypherCompilerConfiguration2_3(config.queryCacheSize,
     config.statsDivergenceThreshold, config.queryPlanTTL, config.useErrorsOverWarnings,
-    config.nonIndexedLabelWarningThreshold)
+    config.idpMaxTableSize, config.idpIterationDuration, config.nonIndexedLabelWarningThreshold)
 
   /** This is awful but needed until 2.3 is updated no to send in the tracer here */
   def as2_3(tracer: CompilationPhaseTracer): v2_3.CompilationPhaseTracer = {
