@@ -21,8 +21,8 @@ package org.neo4j.coreedge.raft.log;
 
 import java.io.File;
 
+import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 
@@ -43,9 +43,9 @@ public class PhysicalRaftLogVerificationIT extends RaftLogVerificationIT
         int metadataCacheSize = 8;
         int fileHeaderCacheSize = 2;
 
-        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fsa, directory, rotateAtSizeBytes, entryCacheSize, metadataCacheSize, fileHeaderCacheSize,
-                new PhysicalLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(), () -> mock( DatabaseHealth.class ),
-                NullLogProvider.getInstance() );
+        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fsa, directory, rotateAtSizeBytes, "1 files", entryCacheSize,
+                fileHeaderCacheSize, new PhysicalRaftLogFile.Monitor.Adapter(),
+                new DummyRaftableContentSerializer(), () -> mock( DatabaseHealth.class ), NullLogProvider.getInstance(), new RaftLogMetadataCache( metadataCacheSize ) );
 
         newRaftLog.init();
         newRaftLog.start();

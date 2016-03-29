@@ -209,7 +209,6 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
             {
                 if ( timestampedChannel.getEndOfLife().expired() )
                 {
-                    System.out.println("Reaping the channel: " + timestampedChannel);
                     timestampedChannel.get().dispose();
                     itr.remove();
                 }

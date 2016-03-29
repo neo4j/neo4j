@@ -22,6 +22,7 @@ package org.neo4j.coreedge.raft.roles;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -29,7 +30,6 @@ import org.junit.runners.Parameterized;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.RaftState;
 import org.neo4j.coreedge.server.RaftTestMember;
@@ -110,7 +110,7 @@ public class HeartbeatTest
 
         Outcome<RaftTestMember> outcome = role.handler.handle( heartbeat, state, log() );
 
-        assertThat( outcome.getLogCommands(), hasItem(new CommitCommand( 0 )) );
+        assertThat( outcome.getCommitIndex(), Matchers.equalTo(0L) );
     }
 
     @Test

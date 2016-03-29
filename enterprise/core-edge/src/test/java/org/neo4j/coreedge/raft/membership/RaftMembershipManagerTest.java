@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
-import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.state.StateStorage;
@@ -64,9 +63,8 @@ public class RaftMembershipManagerTest
                 1000, new InMemoryStateStorage<>( new RaftMembershipState<>() ) );
 
         // when
-        membershipManager.processLog( asList(
+        membershipManager.processLog( 0, asList(
                 new AppendLogEntry( 0, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 4 ) ) ),
-                new CommitCommand( 0 ),
                 new AppendLogEntry( 1, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 5 ) ) )
         ) );
 
@@ -89,15 +87,15 @@ public class RaftMembershipManagerTest
         // when
         List<LogCommand> logCommands = asList(
                 new AppendLogEntry( 0, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 4 ) ) ),
-                new CommitCommand( 0 ),
                 new AppendLogEntry( 1, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 5 ) ) ),
                 new TruncateLogCommand( 1 )
         );
+
         for ( LogCommand logCommand : logCommands )
         {
             logCommand.applyTo( log );
         }
-        membershipManager.processLog( logCommands );
+        membershipManager.processLog( 0, logCommands );
 
         // then
         assertEquals( new RaftTestGroup( 1, 2, 3, 4 ).getMembers(), membershipManager.votingMembers() );
@@ -119,7 +117,6 @@ public class RaftMembershipManagerTest
         // when
         List<LogCommand> logCommands = asList(
                 new AppendLogEntry( 0, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 4 ) ) ),
-                new CommitCommand( 0 ),
                 new AppendLogEntry( 1, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 5 ) ) ),
                 new AppendLogEntry( 2, new RaftLogEntry( 0, new RaftTestGroup( 1, 2, 3, 6 ) ) ),
                 new TruncateLogCommand( 2 )
@@ -128,7 +125,7 @@ public class RaftMembershipManagerTest
         {
             logCommand.applyTo( log );
         }
-        membershipManager.processLog( logCommands );
+        membershipManager.processLog( 0, logCommands );
 
         // then
         assertEquals( new RaftTestGroup( 1, 2, 3, 5 ).getMembers(), membershipManager.votingMembers() );
@@ -153,7 +150,7 @@ public class RaftMembershipManagerTest
                 1000, stateStorage );
 
         // when
-        membershipManager.processLog( Collections.singletonList( new AppendLogEntry( 0, new RaftLogEntry( 0, new
+        membershipManager.processLog( 0, Collections.singletonList( new AppendLogEntry( 0, new RaftLogEntry( 0, new
                 RaftTestGroup( 1, 2, 3, 4 ) ) ) ) );
 
         // then

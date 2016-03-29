@@ -19,22 +19,23 @@
  */
 package org.neo4j.coreedge.raft.log;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
 import java.io.File;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
+import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class PhysicalRaftLogRotationTest
 {
@@ -48,7 +49,7 @@ public class PhysicalRaftLogRotationTest
         life.shutdown();
     }
 
-    private PhysicalRaftLog createRaftLog( long rotateAtSize, PhysicalLogFile.Monitor logFileMonitor )
+    private PhysicalRaftLog createRaftLog( long rotateAtSize, PhysicalRaftLogFile.Monitor logFileMonitor )
     {
         if ( fileSystem == null )
         {
@@ -57,9 +58,9 @@ public class PhysicalRaftLogRotationTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, rotateAtSize, 100, 10, 10,
+        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, rotateAtSize, "1 files", 100, 10,
                 logFileMonitor, new DummyRaftableContentSerializer(),  () -> mock( DatabaseHealth.class ),
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), new RaftLogMetadataCache( 10 ) );
         life.add( newRaftLog );
         life.init();
         life.start();
@@ -71,7 +72,7 @@ public class PhysicalRaftLogRotationTest
     {
         // Given
         AtomicLong currentVersion = new AtomicLong();
-        PhysicalLogFile.Monitor logFileMonitor =
+        PhysicalRaftLogFile.Monitor logFileMonitor =
                 ( logFile, logVersion, lastTransactionId, clean ) -> currentVersion.set( logVersion );
         int rotateAtSize = 100;
         PhysicalRaftLog log = createRaftLog( rotateAtSize, logFileMonitor );
@@ -95,7 +96,7 @@ public class PhysicalRaftLogRotationTest
     {
         // Given
         AtomicLong currentVersion = new AtomicLong();
-        PhysicalLogFile.Monitor logFileMonitor =
+        PhysicalRaftLogFile.Monitor logFileMonitor =
                 ( logFile, logVersion, lastTransactionId, clean ) -> currentVersion.set( logVersion );
         int rotateAtSize = 100;
         PhysicalRaftLog log = createRaftLog( rotateAtSize, logFileMonitor );
@@ -120,7 +121,7 @@ public class PhysicalRaftLogRotationTest
     public void shouldBeAbleToRecoverToLatestStateAfterRotation() throws Throwable
     {
         int rotateAtSize = 100;
-        PhysicalRaftLog log = createRaftLog( rotateAtSize, new PhysicalLogFile.Monitor.Adapter() );
+        PhysicalRaftLog log = createRaftLog( rotateAtSize, new PhysicalRaftLogFile.Monitor.Adapter() );
 
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < rotateAtSize - 40; i++ )
@@ -130,18 +131,15 @@ public class PhysicalRaftLogRotationTest
 
         ReplicatedString stringThatGetsTheSizeToAlmost100Bytes = new ReplicatedString( builder.toString() );
         int term = 0;
-        long indexToCommit = log.append( new RaftLogEntry( term, stringThatGetsTheSizeToAlmost100Bytes ) );
-        log.commit( indexToCommit );
-        indexToCommit = log.append( new RaftLogEntry( term, ReplicatedInteger.valueOf( 1 ) ) );
-        log.commit( indexToCommit );
+        log.append( new RaftLogEntry( term, stringThatGetsTheSizeToAlmost100Bytes ) );
+        long indexToRestoreTo = log.append( new RaftLogEntry( term, ReplicatedInteger.valueOf( 1 ) ) );
 
         // When
         life.remove( log );
-        log = createRaftLog( rotateAtSize, new PhysicalLogFile.Monitor.Adapter() );
+        log = createRaftLog( rotateAtSize, new PhysicalRaftLogFile.Monitor.Adapter() );
 
         // Then
-        assertEquals( indexToCommit, log.commitIndex() );
-        assertEquals( indexToCommit, log.appendIndex() );
-        assertEquals( term, log.readEntryTerm( indexToCommit ) );
+        assertEquals( indexToRestoreTo, log.appendIndex() );
+        assertEquals( term, log.readEntryTerm( indexToRestoreTo ) );
     }
 }

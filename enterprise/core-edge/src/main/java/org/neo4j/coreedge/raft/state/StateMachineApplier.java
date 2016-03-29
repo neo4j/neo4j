@@ -31,8 +31,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.System.currentTimeMillis;
-
 public class StateMachineApplier extends LifecycleAdapter implements Supplier<StateMachine>
 {
     public static final long NOTHING = -1;
@@ -47,7 +45,7 @@ public class StateMachineApplier extends LifecycleAdapter implements Supplier<St
 
     private Executor executor;
 
-    private long commitIndex = NOTHING;
+    private long tentativeCommitIndex = NOTHING;
     private long lastFlushed = NOTHING;
 
     public StateMachineApplier(
@@ -78,12 +76,11 @@ public class StateMachineApplier extends LifecycleAdapter implements Supplier<St
         return stateMachine;
     }
 
-    public synchronized void notifyUpdate()
+    public synchronized void notifyCommitted( long commitIndex )
     {
-        long commitIndex = raftLog.commitIndex();
-        if ( this.commitIndex != commitIndex )
+        if ( this.tentativeCommitIndex != commitIndex )
         {
-            this.commitIndex = commitIndex;
+            this.tentativeCommitIndex = commitIndex;
             executor.execute( () -> {
                 try
                 {
@@ -123,11 +120,6 @@ public class StateMachineApplier extends LifecycleAdapter implements Supplier<St
     public synchronized void start() throws IOException, RaftLogCompactedException
     {
         lastFlushed = lastApplied = lastAppliedStorage.getInitialState().get();
-        log.info( "Replaying commands from index %d to index %d", lastApplied, raftLog.commitIndex() );
-
-        long start = currentTimeMillis();
-        applyUpTo( raftLog.commitIndex() );
-        log.info( "Replay done, took %d ms", currentTimeMillis() - start );
     }
 
     public long lastFlushed()

@@ -63,13 +63,6 @@ public class MonitoredRaftLog implements RaftLog
     }
 
     @Override
-    public void commit( long commitIndex ) throws IOException
-    {
-        delegate.commit( commitIndex );
-        commitIndexMonitor.commitIndex( delegate.commitIndex() );
-    }
-
-    @Override
     public long prune( long safeIndex ) throws IOException, RaftLogCompactedException
     {
         return delegate.prune( safeIndex );
@@ -85,12 +78,6 @@ public class MonitoredRaftLog implements RaftLog
     public long prevIndex()
     {
         return delegate.prevIndex();
-    }
-
-    @Override
-    public long commitIndex()
-    {
-        return delegate.commitIndex();
     }
 
     @Override

@@ -28,10 +28,10 @@ import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
+import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -78,9 +78,9 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, 10 * 1024, cacheSize, 10, 10,
-                new PhysicalLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(), () -> mock( DatabaseHealth.class ),
-                NullLogProvider.getInstance() );
+        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, 10 * 1024, "1 files", cacheSize, 10,
+                new PhysicalRaftLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(),
+                () -> mock( DatabaseHealth.class ), NullLogProvider.getInstance(), new RaftLogMetadataCache( 10 ) );
         life.add( newRaftLog );
         life.init();
         life.start();
@@ -136,10 +136,8 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         int term = 0;
         ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
         ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
-        long entryIndex1 = raftLog.append( new RaftLogEntry( term, content1 ) );
+        raftLog.append( new RaftLogEntry( term, content1 ) );
         long entryIndex2 = raftLog.append( new RaftLogEntry( term, content2 ) );
-
-        raftLog.commit( entryIndex1 );
 
         // When
         // we restart the raft log
@@ -147,7 +145,6 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         raftLog = createRaftLog( 100 );
 
         // Then
-        assertEquals( entryIndex1, raftLog.commitIndex() );
         assertEquals( entryIndex2, raftLog.appendIndex() );
     }
 
@@ -163,7 +160,6 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         long entryIndex3 = raftLog.append( new RaftLogEntry( term, content ) );
         long entryIndex4 = raftLog.append( new RaftLogEntry( term, content ) );
 
-        raftLog.commit( entryIndex3 );
         raftLog.truncate( entryIndex4 );
 
         // When
@@ -172,7 +168,6 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         raftLog = createRaftLog( 100 );
 
         // Then
-        assertEquals( entryIndex3, raftLog.commitIndex() );
         assertEquals( entryIndex3, raftLog.appendIndex() );
     }
 
@@ -185,10 +180,9 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
         raftLog.append( new RaftLogEntry( term, content ) );
         raftLog.append( new RaftLogEntry( term, content ) );
-        long entryIndex3 = raftLog.append( new RaftLogEntry( term, content ) );
+        raftLog.append( new RaftLogEntry( term, content ) );
         long entryIndex4 = raftLog.append( new RaftLogEntry( term, content ) );
 
-        raftLog.commit( entryIndex3 );
         raftLog.truncate( entryIndex4 );
 
         long entryIndex5 = raftLog.append( new RaftLogEntry( term, content ) );
@@ -199,38 +193,6 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         raftLog = createRaftLog( 100 );
 
         // Then
-        assertEquals( entryIndex3, raftLog.commitIndex() );
         assertEquals( entryIndex5, raftLog.appendIndex() );
-    }
-
-    @Test
-    public void shouldReturnNullOnEndOfFile() throws Exception
-    {
-        PhysicalRaftLog raftLog = createRaftLog( 1 /* cache size */  );
-        raftLog.append(new RaftLogEntry( 0, ReplicatedInteger.valueOf( 0 ) ));
-
-        life.remove( raftLog );
-
-        StoreChannel logStoreChannel = fileSystem.open( new File( "raft-log/raft.log.0" ), "r" );
-        readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), logStoreChannel, false );
-
-        PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
-                logStoreChannel, 0, LogVersions.CURRENT_LOG_VERSION );
-        ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
-
-        try ( PhysicalRaftLogEntryCursor cursor = new PhysicalRaftLogEntryCursor( new RaftRecordCursor<>( logChannel, new DummyRaftableContentSerializer() ),
-                new Stack<>(), 0 ) )
-        {
-            boolean firstRecordEncountered = false;
-            while( cursor.next() )
-            {
-                RaftLogAppendRecord record = cursor.get();
-                if ( record.logIndex() == 0L )
-                {
-                    assertFalse( firstRecordEncountered );
-                }
-                firstRecordEncountered = true;
-            }
-        }
     }
 }

@@ -70,6 +70,6 @@ public class ReplicatedInteger implements ReplicatedContent
     @Override
     public String toString()
     {
-        return format( "ReplicatedInteger{data=%d}", value );
+        return format( "Integer(%d)", value );
     }
 }

@@ -104,7 +104,7 @@ public class MembershipWaiter<MEMBER>
         {
             boolean caughtUpWithLeader = false;
 
-            long localCommit = raftState.entryLog().commitIndex();
+            long localCommit = raftState.commitIndex();
             if ( lastLeaderCommit != -1 )
             {
                 caughtUpWithLeader = localCommit >= lastLeaderCommit;

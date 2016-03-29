@@ -24,6 +24,11 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
+import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
+import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFileInformation;
+import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFiles;
+import org.neo4j.coreedge.raft.log.physical.SingleVersionReader;
+import org.neo4j.coreedge.raft.log.physical.VersionIndexRanges;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
@@ -35,11 +40,8 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
@@ -54,10 +56,10 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.coreedge.raft.log.PhysicalRaftLog.RecordType.COMMIT;
-import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
-// TODO: Handle recovery better; e.g add missing continuation records, faster scan for initial values, ...
+import static org.neo4j.coreedge.raft.log.physical.RaftLogPruneStrategyFactory.fromConfigValue;
+
+// TODO: Handle recovery better; e.g add missing continuation records
 // TODO: Better caching; e.g divide per log version, allow searching for non-exact start point, cache when closing cursor ...
 
 /**
@@ -81,10 +83,10 @@ import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFact
  */
 public class PhysicalRaftLog implements RaftLog, Lifecycle
 {
-    public static final String BASE_FILE_NAME = "raft.log";
     public static final String DIRECTORY_NAME = "raft-log";
 
-    private final PhysicalLogFile logFile;
+    private final PhysicalRaftLogFiles logFiles;
+    private final PhysicalRaftLogFile logFile;
     private final ChannelMarshal<ReplicatedContent> marshal;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final Log log;
@@ -100,13 +102,13 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
 
     private final RaftEntryStore entryStore;
     private final LruCache<Long,RaftLogEntry> entryCache;
-    private final PhysicalLogFiles logFiles;
     private final LogPruning logPruning;
 
-    public PhysicalRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize,
-                            int entryCacheSize, int metaDataCacheSize, int headerCacheSize, PhysicalLogFile.Monitor monitor,
-                            ChannelMarshal<ReplicatedContent> marshal, Supplier<DatabaseHealth> databaseHealthSupplier,
-                            LogProvider logProvider )
+    public PhysicalRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize, String pruningConf,
+                            int entryCacheSize, int headerCacheSize,
+                            PhysicalRaftLogFile.Monitor monitor, ChannelMarshal<ReplicatedContent> marshal,
+                            Supplier<DatabaseHealth> databaseHealthSupplier, LogProvider logProvider,
+                            RaftLogMetadataCache raftLogMetadataCache )
     {
         this.marshal = marshal;
         this.databaseHealthSupplier = databaseHealthSupplier;
@@ -115,20 +117,21 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
 
         directory.mkdirs();
 
-        logFiles = new PhysicalLogFiles( directory, BASE_FILE_NAME, fileSystem );
-        LogVersionRepository logVersionRepository = new FilenameBasedLogVersionRepository( logFiles );
+        VersionIndexRanges ranges = new VersionIndexRanges();
+        logFiles = new PhysicalRaftLogFiles( directory, fileSystem, marshal, ranges );
 
         LogHeaderCache logHeaderCache = new LogHeaderCache( headerCacheSize );
-        logFile = new PhysicalLogFile( fileSystem, logFiles, rotateAtSize,
-                appendIndex::get, logVersionRepository, monitor, logHeaderCache );
+        logFile = new PhysicalRaftLogFile( fileSystem, logFiles, rotateAtSize,
+                appendIndex::get, monitor, logHeaderCache );
 
-        String pruningConf = "0 files";
-        LogFileInformation logFileInformation = new PhysicalLogFileInformation( logFiles, logHeaderCache, this::appendIndex, version -> 0L );
-        LogPruneStrategy logPruneStrategy = fromConfigValue( fileSystem, logFileInformation, logFiles, pruningConf );
+        LogFileInformation logFileInformation = new PhysicalRaftLogFileInformation( logFiles, logHeaderCache,
+                this::appendIndex, version -> 0L );
+        LogPruneStrategy logPruneStrategy = fromConfigValue( fileSystem, logFileInformation, logFiles, pruningConf ) ;
         this.logPruning = new LogPruningImpl( logPruneStrategy, logProvider );
 
-        this.metadataCache = new RaftLogMetadataCache( metaDataCacheSize );
-        this.entryStore = new PhysicalRaftEntryStore( logFile, metadataCache, marshal );
+        this.metadataCache = raftLogMetadataCache;
+        SingleVersionReader reader = new SingleVersionReader( logFiles, fileSystem, marshal );
+        entryStore = new VersionBridgingRaftEntryStore( ranges, reader, metadataCache );
     }
 
     @Override
@@ -179,25 +182,14 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         long newTerm = readEntryTerm( newAppendIndex );
 
         entryCache.clear();
+        metadataCache.removeUpwardsFrom( fromIndex );
+
 
         appendIndex.set( newAppendIndex );
         logRotation.rotateLogFile();
 
         term = newTerm;
         RaftLogContinuationRecord.write( writer, newAppendIndex - 1, term );
-        writer.prepareForFlush().flush();
-    }
-
-    @Override
-    public void commit( long newCommitIndex ) throws IOException
-    {
-        if ( appendIndex.get() == -1 || commitIndex == appendIndex.get() )
-        {
-            return;
-        }
-
-        commitIndex = Math.min( newCommitIndex, appendIndex.get() );
-        RaftLogCommitRecord.write( writer, commitIndex );
         writer.prepareForFlush().flush();
     }
 
@@ -211,12 +203,6 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     public long prevIndex()
     {
         return prevIndex;
-    }
-
-    @Override
-    public long commitIndex()
-    {
-        return commitIndex;
     }
 
     @Override
@@ -269,7 +255,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
             prevTerm = term;
             appendIndex.set( index );
 
-            metadataCache.cacheMetadata( index, term, LogPosition.UNSPECIFIED );
+            metadataCache.clear();
         }
 
         return appendIndex.get();
@@ -290,7 +276,9 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
                 RaftLogAppendRecord raftLogAppendRecord = entriesFrom.get();
                 if ( raftLogAppendRecord.logIndex() == logIndex )
                 {
-                    return raftLogAppendRecord.logEntry();
+                    RaftLogEntry toReturn = raftLogAppendRecord.logEntry();
+                    entryCache.put( logIndex, toReturn );
+                    return toReturn;
                 }
                 else if ( raftLogAppendRecord.logIndex() > logIndex )
                 {
@@ -336,6 +324,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
     @Override
     public void init() throws IOException
     {
+        logFiles.init();
         logFile.init();
     }
 
@@ -350,8 +339,6 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
 
         restorePrevIndexAndTerm();
         restoreAppendIndex();
-
-        restoreCommitIndex();
 
         this.writer = logFile.getWriter();
     }
@@ -380,11 +367,16 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         {
             logPruning.pruneLogs( logVersionToPrune );
             restorePrevIndexAndTerm();
+            metadataCache.removeUpTo( prevIndex - 1 );
         }
 
         return prevIndex;
     }
 
+    /**
+     * Returns the log file version that contains entries which all have index less than the safeIndex argument.
+     * @param safeIndex The index value from which all entries should be less than in the returned log version
+     */
     public long findLogVersionToPrune( long safeIndex ) throws IOException
     {
         final LogPosition[] firstFileToPrune = {LogPosition.UNSPECIFIED};
@@ -443,25 +435,6 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         log.info( "Restored append index at %d", restoredAppendIndex );
     }
 
-    private void restoreCommitIndex() throws IOException
-    {
-        long lowestLogVersion = logFiles.getLowestLogVersion();
-        ReadableLogChannel reader = logFile.getReader( new LogPosition( lowestLogVersion, LogHeader.LOG_HEADER_SIZE ) );
-        try ( RaftRecordCursor<ReadableLogChannel> recordCursor = new RaftRecordCursor<>( reader, marshal ) )
-        {
-            while ( recordCursor.next() )
-            {
-                RaftLogRecord record = recordCursor.get();
-                if( record.getType() == COMMIT )
-                {
-                    commitIndex = ((RaftLogCommitRecord)record).commitIndex();
-                }
-            }
-        }
-
-        log.info( "Restored commit index at %d", commitIndex );
-    }
-
     @Override
     public void stop() throws Throwable
     {
@@ -477,7 +450,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
 
     public enum RecordType
     {
-        APPEND( (byte) 0 ), COMMIT( (byte) 1 ), CONTINUATION( (byte) 2 );
+        APPEND( (byte) 0 ), CONTINUATION( (byte) 1 );
 
         private final byte value;
 
@@ -498,8 +471,6 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
                 case 0:
                     return APPEND;
                 case 1:
-                    return COMMIT;
-                case 2:
                     return CONTINUATION;
                 default:
                     throw new IllegalArgumentException( "Value " + value + " is not a known entry type" );

@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.log;
+package org.neo4j.coreedge.raft.log.physical;
 
-public class RaftCommitEntry
+import java.io.File;
+
+public class VersionFiles
 {
-    private final long commitIndex;
-
-    public RaftCommitEntry( long commitIndex )
+    public Iterable<File> filesInVersionOrder()
     {
-        this.commitIndex = commitIndex;
+        return null;
     }
 }
