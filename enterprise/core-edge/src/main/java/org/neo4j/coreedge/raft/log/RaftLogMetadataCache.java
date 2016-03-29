@@ -20,7 +20,9 @@
 package org.neo4j.coreedge.raft.log;
 
 
+import java.util.Iterator;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.LruCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -52,6 +54,30 @@ public class RaftLogMetadataCache
         RaftLogEntryMetadata result = new RaftLogEntryMetadata( entryTerm, position );
         raftLogEntryCache.put( logIndex, result );
         return result;
+    }
+
+    public void removeUpTo( long upTo )
+    {
+        remove( key -> key <= upTo );
+    }
+
+    public void removeUpwardsFrom( long startingFrom )
+    {
+        remove( key -> key >= startingFrom );
+    }
+
+    private void remove( Predicate<Long> predicate )
+    {
+        Iterator<Long> keys = raftLogEntryCache.keySet().iterator();
+
+        while ( keys.hasNext() )
+        {
+            Long key = keys.next();
+            if ( predicate.test( key ) )
+            {
+                keys.remove();
+            }
+        }
     }
 
     public static class RaftLogEntryMetadata

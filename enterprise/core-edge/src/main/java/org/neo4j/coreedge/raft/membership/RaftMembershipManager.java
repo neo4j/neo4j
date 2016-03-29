@@ -28,11 +28,9 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
-import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -41,7 +39,6 @@ import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
-import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.logging.Log;
@@ -91,13 +88,13 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
                 logProvider, catchupTimeout, raftMembershipState );
     }
 
-    public void processLog( Collection<LogCommand> logCommands ) throws IOException, RaftLogCompactedException
+    public void processLog( long commitIndex, Collection<LogCommand> logCommands ) throws IOException, RaftLogCompactedException
     {
         for ( LogCommand logCommand : logCommands )
         {
             if ( logCommand instanceof TruncateLogCommand )
             {
-                onTruncated();
+                onTruncated(commitIndex);
             }
             if ( logCommand instanceof AppendLogEntry )
             {
@@ -112,24 +109,24 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
                     onAppended( command.entries[i].content(), command.baseIndex + i );
                 }
             }
-            if ( logCommand instanceof CommitCommand )
+        }
+        if ( commitIndex > lastApplied )
+        {
+            long index = lastApplied + 1;
+            try ( RaftLogCursor entryCursor = entryLog.getEntryCursor( index ) )
             {
-                long index = lastApplied + 1;
-                try ( RaftLogCursor entryCursor = entryLog.getEntryCursor( index ) )
+                while ( entryCursor.next() )
                 {
-                    while ( entryCursor.next() )
+                    if ( index == commitIndex + 1 )
                     {
-                        if ( index == entryLog.commitIndex() + 1 )
-                        {
-                            break;
-                        }
-                        ReplicatedContent content = entryCursor.get().content();
-                        onCommitted( content, index );
-                        index++;
+                        break;
                     }
+                    ReplicatedContent content = entryCursor.get().content();
+                    onCommitted( content, index );
+                    index++;
                 }
-                lastApplied = entryLog.commitIndex();
             }
+            lastApplied = commitIndex;
         }
     }
 
@@ -179,7 +176,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         }
     }
 
-    private void onTruncated() throws IOException, RaftLogCompactedException
+    private void onTruncated( long commitIndex ) throws IOException, RaftLogCompactedException
     {
         Pair<Long,RaftGroup<MEMBER>> lastMembershipEntry = findLastMembershipEntry();
 
@@ -188,7 +185,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
             raftMembershipState.setVotingMembers( lastMembershipEntry.other().getMembers() );
             raftMembershipState.logIndex( lastMembershipEntry.first().longValue() );
             stateStorage.persistStoreData( raftMembershipState );
-            uncommittedMemberChanges = lastMembershipEntry.first() <= entryLog.commitIndex() ? 0 : 1;
+            uncommittedMemberChanges = lastMembershipEntry.first() <= commitIndex ? 0 : 1;
         }
         else
         {

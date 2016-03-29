@@ -26,12 +26,12 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.RaftMessages.AppendEntries;
 import org.neo4j.coreedge.raft.RaftMessages.Heartbeat;
 import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
-import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.logging.Log;
 
 import static java.lang.Long.min;
+
 import static org.neo4j.coreedge.raft.roles.Role.CANDIDATE;
 import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 
@@ -54,9 +54,9 @@ public class Follower implements RaftMessageHandler
     {
         long newCommitIndex = min( leaderCommit, indexOfLastNewEntry );
 
-        if ( newCommitIndex > ctx.entryLog().commitIndex() )
+        if ( newCommitIndex > ctx.commitIndex() )
         {
-            outcome.addLogCommand( new CommitCommand( newCommitIndex ) );
+            outcome.setCommitIndex( newCommitIndex );
             return true;
         }
         return false;

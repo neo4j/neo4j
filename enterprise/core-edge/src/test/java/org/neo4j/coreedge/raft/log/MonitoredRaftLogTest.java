@@ -58,7 +58,6 @@ public class MonitoredRaftLogTest
         // When
         log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
         log.append( new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1 ) ) );
-        log.commit( 0 );
 
         assertEquals( 1, appendMonitor.appendIndex() );
         assertEquals( 0, commitMonitor.commitIndex() );

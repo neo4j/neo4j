@@ -32,7 +32,6 @@ import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
-import org.neo4j.coreedge.raft.outcome.CommitCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
 import org.neo4j.coreedge.raft.state.RaftState;
@@ -52,6 +51,8 @@ import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesRequest;
 import static org.neo4j.coreedge.raft.roles.AppendEntriesRequestTest.ContentGenerator.content;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
+
+import org.hamcrest.Matchers;
 
 @RunWith(Parameterized.class)
 public class AppendEntriesRequestTest
@@ -226,7 +227,7 @@ public class AppendEntriesRequestTest
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
-        assertThat( outcome.getLogCommands(), hasItem( new CommitCommand( 0 ) ) );
+        assertThat( outcome.getCommitIndex(), Matchers.equalTo( 0L ) );
     }
 
     @Test
@@ -256,7 +257,7 @@ public class AppendEntriesRequestTest
 
         // then
         assertTrue( ((Response) messageFor( outcome, leader )).success() );
-        assertThat( outcome.getLogCommands(), hasItem( new CommitCommand( 0 ) ) );
+        assertThat( outcome.getCommitIndex(), Matchers.equalTo( 0L ) );
         assertThat( outcome.getLogCommands(), hasItem( new BatchAppendLogEntries( 1, 0,
                 new RaftLogEntry[]{ newLogEntry } ) ) );
     }

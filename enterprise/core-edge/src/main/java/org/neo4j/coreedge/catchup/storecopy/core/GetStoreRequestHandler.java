@@ -60,7 +60,6 @@ public class GetStoreRequestHandler extends SimpleChannelInboundHandler<GetStore
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, GetStoreRequest msg ) throws Exception
     {
-        System.out.println( "sending store files..." );
         long lastCheckPointedTx = checkPointerSupplier.get().tryCheckPoint( new SimpleTriggerInfo( "Store copy" ) );
         sendFiles( ctx );
         endStoreCopy( ctx, lastCheckPointedTx );

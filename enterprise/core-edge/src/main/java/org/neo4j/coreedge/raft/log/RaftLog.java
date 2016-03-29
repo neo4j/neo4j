@@ -51,17 +51,6 @@ public interface RaftLog extends ReadableRaftLog
     void truncate( long fromIndex ) throws IOException, RaftLogCompactedException;
 
     /**
-     * Signals the safe replication of any entries previously appended up to and
-     * including the supplied commitIndex. These entries can now be applied.
-     * <p/>
-     * The implementation must remember which committed entries have already been
-     * applied so that they are not applied multiple times.
-     *
-     * @param commitIndex The end index (inclusive).
-     */
-    void commit( long commitIndex ) throws IOException;
-
-    /**
      * Attempt to prune (delete) a prefix of the log, no further than the safeIndex.
      * <p/>
      * Implementations can choose to prune a shorter prefix if this is convenient for

@@ -48,6 +48,7 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
     protected long lastLogIndexBeforeWeBecameLeader = -1;
     protected FollowerStates<RaftTestMember> followerStates = new FollowerStates<>();
     protected final RaftLog entryLog;
+    private long commitIndex = -1;
 
     public ComparableRaftState( RaftTestMember myself,
                                 Set<RaftTestMember> votingMembers,
@@ -131,6 +132,12 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
         return entryLog;
     }
 
+    @Override
+    public long commitIndex()
+    {
+        return commitIndex;
+    }
+
     public void update( Outcome<RaftTestMember> outcome ) throws IOException, RaftLogCompactedException
     {
         term = outcome.getTerm();
@@ -144,6 +151,8 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
         {
             logCommand.applyTo( entryLog );
         }
+
+        commitIndex = outcome.getCommitIndex();
     }
 
     @Override
@@ -152,7 +161,7 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
         return format( "state{myself=%s, term=%s, leader=%s, leaderCommit=%d, appended=%d, committed=%d, " +
                         "votedFor=%s, votesForMe=%s, lastLogIndexBeforeWeBecameLeader=%d, followerStates=%s}",
                 myself, term, leader, leaderCommit,
-                entryLog.appendIndex(), entryLog.commitIndex(), votedFor, votesForMe,
+                entryLog.appendIndex(), commitIndex, votedFor, votesForMe,
                 lastLogIndexBeforeWeBecameLeader, followerStates );
     }
 

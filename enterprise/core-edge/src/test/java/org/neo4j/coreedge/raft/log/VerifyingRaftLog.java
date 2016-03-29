@@ -57,13 +57,6 @@ class VerifyingRaftLog implements RaftLog
     }
 
     @Override
-    public void commit( long commitIndex ) throws IOException
-    {
-        expected.commit( commitIndex );
-        other.commit( commitIndex );
-    }
-
-    @Override
     public long prune( long safeIndex ) throws IOException, RaftLogCompactedException
     {
         // the expected one should be able to prune exactly, while others are not required to
@@ -86,14 +79,6 @@ class VerifyingRaftLog implements RaftLog
         long prevIndex = expected.appendIndex();
         assertEquals( prevIndex, other.appendIndex() );
         return prevIndex;
-    }
-
-    @Override
-    public long commitIndex()
-    {
-        long commitIndex = expected.commitIndex();
-        assertEquals( commitIndex, other.appendIndex() );
-        return commitIndex;
     }
 
     @Override
@@ -126,7 +111,6 @@ class VerifyingRaftLog implements RaftLog
     public void verifyUsing( RaftLog other ) throws IOException, RaftLogCompactedException
     {
         assertEquals( expected.appendIndex(), other.appendIndex() );
-        assertEquals( expected.commitIndex(), other.commitIndex() );
 
         verifyTraversalUsingCursor( expected, other );
         verifyDirectLookupForwards( expected, other );

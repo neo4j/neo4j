@@ -80,7 +80,7 @@ public class CoreStateMachine extends LifecycleAdapter implements RaftStateMachi
     @Override
     public void notifyCommitted( long commitIndex )
     {
-        stateMachineApplier.notifyUpdate();
+        stateMachineApplier.notifyCommitted( commitIndex );
     }
 
     public void compact()
