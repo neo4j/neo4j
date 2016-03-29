@@ -19,12 +19,12 @@
  */
 package cypher.feature.parser;
 
-import cypher.feature.parser.generated.FeatureResultsLexer;
-import cypher.feature.parser.generated.FeatureResultsParser;
 import cypher.feature.parser.matchers.ValueMatcher;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.opencypher.tools.tck.parsing.generated.FeatureResultsLexer;
+import org.opencypher.tools.tck.parsing.generated.FeatureResultsParser;
 
 public class ResultsParser
 {
