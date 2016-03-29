@@ -21,12 +21,12 @@ package org.neo4j.com;
 
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 
 public class StoreIdTestFactory
 {
-    private static RecordFormats select = HighLimit.RECORD_FORMATS;
+    private static RecordFormats select = RecordFormatSelector.autoSelectFormat();
 
     private static long currentStoreVersionAsLong()
     {

@@ -110,8 +110,7 @@ public class RebuildFromLogsTest
         }
         finally
         {
-            txId = prototype.getDependencyResolver()
-                    .resolveDependency( MetaDataStore.class ).getLastCommittedTransactionId();
+            txId = prototype.getDependencyResolver().resolveDependency( MetaDataStore.class ).getLastCommittedTransactionId();
             prototype.shutdown();
         }
 
@@ -143,8 +142,10 @@ public class RebuildFromLogsTest
 
     private GraphDatabaseAPI db( File rebuiltPath )
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( rebuiltPath )
-                .setConfig( record_format, HighLimit.NAME ).newGraphDatabase();
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( rebuiltPath )
+                .setConfig( record_format, HighLimit.NAME )
+                .newGraphDatabase();
 
     }
 

@@ -64,4 +64,21 @@ public class RecordFormatSelectorTest
 
         RecordFormatSelector.select( config, LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance() );
     }
+
+    @Test
+    public void autoSelectHighLimitFormat()
+    {
+        RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat();
+        assertEquals( "Default autoselectable format should be format from available format provider.",
+                recordFormats, HighLimit.RECORD_FORMATS );
+    }
+
+    @Test
+    public void overrideWithNonExistingFormatFailure()
+    {
+        Config config = new Config( MapUtil.stringMap( record_format.name(), "notAValidRecordFormat" ) );
+        expectedException.expect( IllegalArgumentException.class );
+
+        RecordFormatSelector.autoSelectFormat( config, NullLogService.getInstance() );
+    }
 }

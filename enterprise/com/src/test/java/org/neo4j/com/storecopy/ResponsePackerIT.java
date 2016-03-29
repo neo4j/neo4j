@@ -35,8 +35,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -110,7 +109,7 @@ public class ResponsePackerIT
     {
         File storeDir = new File( "/store/" );
         fs.mkdirs( storeDir );
-        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, HighLimit.RECORD_FORMATS,
+        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, RecordFormatSelector.autoSelectFormat(),
                 NullLogProvider.getInstance() );
         return storeFactory.openAllNeoStores( true );
     }

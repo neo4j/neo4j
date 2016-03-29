@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -42,7 +41,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
  * Rule for opening a {@link NeoStores}, either via {@link #open(String...)}, which just uses an in-memory
- * file system, or via {@link #open(FileSystemAbstraction, PageCache, String...)} which is suitable in an
+ * file system, or via {@link #open(FileSystemAbstraction, PageCache, RecordFormats, String...)} which is suitable in an
  * environment where you already have an fs and page cache available.
  */
 public class NeoStoresRule extends ExternalResource
@@ -64,7 +63,7 @@ public class NeoStoresRule extends ExternalResource
     public NeoStores open( String... config )
     {
         Config conf = new Config( stringMap( config ) );
-        return open( RecordFormatSelector.select( conf, LowLimitV3_0.RECORD_FORMATS,
+        return open( RecordFormatSelector.select( conf, RecordFormatSelector.autoSelectFormat(),
                 NullLogService.getInstance() ), config );
     }
 

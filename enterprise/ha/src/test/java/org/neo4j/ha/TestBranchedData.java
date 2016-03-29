@@ -42,10 +42,12 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeRule;
@@ -247,7 +249,7 @@ public class TestBranchedData
     @SuppressWarnings( "unchecked" )
     private void createNodeOffline( File storeDir, String name )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = startGraphDatabaseService( storeDir );
         try
         {
             createNode( db, name );
@@ -315,7 +317,7 @@ public class TestBranchedData
 
     private void startDbAndCreateNode()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseService db = startGraphDatabaseService( directory.absolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
@@ -325,5 +327,13 @@ public class TestBranchedData
         {
             db.shutdown();
         }
+    }
+
+    private GraphDatabaseService startGraphDatabaseService( File storeDir )
+    {
+        return new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder(  storeDir )
+                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                .newGraphDatabase();
     }
 }

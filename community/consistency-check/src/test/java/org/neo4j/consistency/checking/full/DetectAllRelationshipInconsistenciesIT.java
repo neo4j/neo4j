@@ -149,7 +149,7 @@ public class DetectAllRelationshipInconsistenciesIT
     private Config getTuningConfiguration()
     {
         return new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
-                                GraphDatabaseFacadeFactory.Configuration.record_format.name(), getRecordFormatName() ) );
+                          GraphDatabaseFacadeFactory.Configuration.record_format.name(), getRecordFormatName() ) );
     }
 
     private GraphDatabaseAPI getGraphDatabaseAPI()

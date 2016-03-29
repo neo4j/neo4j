@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -96,7 +96,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
                 mock( Procedures.class ),
                 IOLimiter.unlimited(),
-                LowLimitV3_0.RECORD_FORMATS );
+                RecordFormatSelector.autoSelectFormat() );
 
         return dataSource;
     }

@@ -236,7 +236,7 @@ public class MigrationTestUtils
     public static boolean checkNeoStoreHasCurrentFormatVersion( StoreVersionCheck check, File workingDirectory )
     {
         File neostoreFile = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
-        return check.hasVersion( neostoreFile, LowLimitV3_0.RECORD_FORMATS.storeVersion() )
+        return check.hasVersion( neostoreFile, RecordFormatSelector.autoSelectFormat().storeVersion() )
                 .outcome.isSuccessful();
     }
 

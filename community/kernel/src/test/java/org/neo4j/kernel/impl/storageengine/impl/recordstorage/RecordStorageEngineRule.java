@@ -39,8 +39,8 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -118,7 +118,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
         private LabelScanStore labelScanStore = new InMemoryLabelScanStore();
-        private RecordFormats recordFormats = LowLimitV3_0.RECORD_FORMATS;
+        private RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat();
         private DatabaseHealth databaseHealth = new DatabaseHealth(
                 new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );

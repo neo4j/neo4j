@@ -510,8 +510,7 @@ public class NodeLabelsFieldTest
         Config config = new Config( stringMap( GraphDatabaseSettings.label_block_size.name(), "60" ) );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), LowLimitV3_0.RECORD_FORMATS,
-                NullLogProvider.getInstance()
-        );
+                NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }

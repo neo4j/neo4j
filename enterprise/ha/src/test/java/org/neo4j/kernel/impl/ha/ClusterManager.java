@@ -188,7 +188,7 @@ public class ClusterManager
         try
         {
             // Null corresponds to localhost
-            return InetAddress.getByName( "0.0.0.0" ).getHostAddress();
+            return InetAddress.getByName( null ).getHostAddress();
         }
         catch ( UnknownHostException e )
         {

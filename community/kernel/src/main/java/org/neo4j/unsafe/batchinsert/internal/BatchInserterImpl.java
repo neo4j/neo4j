@@ -114,7 +114,6 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
@@ -247,7 +246,7 @@ public class BatchInserterImpl implements BatchInserter
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
-        recordFormats = RecordFormatSelector.select( config, LowLimitV3_0.RECORD_FORMATS, logService );
+        recordFormats = RecordFormatSelector.autoSelectFormat( config, logService );
         maxNodeId = recordFormats.node().getMaxId();
 
         StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,

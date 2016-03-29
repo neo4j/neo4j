@@ -74,7 +74,7 @@
     </plugins>
   </build>
 
-  <>
+  <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-enterprise-kernel</artifactId>

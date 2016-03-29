@@ -34,11 +34,8 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -52,7 +49,7 @@ public class BatchInsertEnterpriseTest
     private enum Labels implements Label
     {
         One,
-        Two;
+        Two
     }
 
     @Rule

@@ -19,6 +19,7 @@
  */
 package upgrade;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -55,7 +57,6 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -73,6 +74,7 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -87,9 +89,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
@@ -166,7 +165,13 @@ public class StoreUpgraderTest
         // We leave logical logs in place since the new version can read the old
 
         assertFalse( containsAnyStoreFiles( fileSystem, isolatedMigrationDirectoryOf( dbDirectory ) ) );
-        assertConsistentStore( dbDirectory );
+        assertConsistentStore( dbDirectory, getTunnningConfig() );
+    }
+
+    private Config getTunnningConfig()
+    {
+        return new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
+                getRecordFormatsName() ) );
     }
 
     @Test
@@ -338,7 +343,7 @@ public class StoreUpgraderTest
         newUpgrader( upgradableDatabase, allowMigrateConfig, pageCache ).migrateIfNeeded( dbDirectory );
 
         // Then
-        StoreFactory storeFactory = new StoreFactory( fileSystem, dbDirectory, pageCache, LowLimitV3_0.RECORD_FORMATS,
+        StoreFactory storeFactory = new StoreFactory( fileSystem, dbDirectory, pageCache, getRecordFormats(),
                         NullLogProvider.getInstance() );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
@@ -421,7 +426,7 @@ public class StoreUpgraderTest
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
 
         NullLogService instance = NullLogService.getInstance();
-        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, Config.empty(), instance,
+        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTunnningConfig(), instance,
                 schemaIndexProvider );
         SchemaIndexMigrator indexMigrator =
                 new SchemaIndexMigrator( fileSystem, schemaIndexProvider, labelScanStoreProvider );
@@ -463,8 +468,13 @@ public class StoreUpgraderTest
         }
     }
 
-    private RecordFormats getRecordFormats()
+    protected RecordFormats getRecordFormats()
     {
-        return LowLimitV3_0.RECORD_FORMATS;
+        return RecordFormatSelector.autoSelectFormat();
+    }
+
+    protected String getRecordFormatsName()
+    {
+        return StringUtils.EMPTY;
     }
 }

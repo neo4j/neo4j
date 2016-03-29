@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -46,10 +45,7 @@ public class StartupConstraintSemanticsTest
     public void shouldNotAllowOpeningADatabaseWithPECInCommunityEdition() throws Exception
     {
         // given
-        GraphDatabaseService graphDb = new EnterpriseGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( dir.graphDbDir() )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
-                .newGraphDatabase();
+        GraphDatabaseService graphDb = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
         try
         {
             graphDb.execute( "CREATE CONSTRAINT ON (n:Draconian) ASSERT exists(n.required)" );
