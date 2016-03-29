@@ -204,6 +204,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                         createHeaderRecord( pageCursor );
                     }
                     while ( pageCursor.shouldRetry() );
+                    if ( pageCursor.checkAndClearBoundsFlag() )
+                    {
+                        throw new UnderlyingStorageException(
+                                "Out of page bounds when writing header; page size too small: " +
+                                pageCache.pageSize() + " bytes.");
+                    }
                 }
             }
         }
@@ -214,6 +220,27 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
         File idFileName = new File( storageFileName.getPath() + ".id" );
         idGeneratorFactory.create( idFileName, getNumberOfReservedLowIds(), true );
+    }
+
+    protected void checkForOutOfBounds( PageCursor pageCursor, long recordId )
+    {
+        if ( pageCursor.checkAndClearBoundsFlag() )
+        {
+            throwOutOfBoundsException( recordId );
+        }
+    }
+
+    private void throwOutOfBoundsException( long recordId )
+    {
+        RECORD record = newRecord();
+        record.setId( recordId );
+        long pageId = pageIdForRecord( recordId );
+        int offset = offsetForId( recordId );
+        throw new UnderlyingStorageException(
+                "Access to record " + record + " went out of bounds of the page. The record size is " +
+                recordSize + " bytes, and the access was at offset " + offset + " bytes into page " +
+                pageId + ", and the pages have a capacity of " + storeFile.pageSize() + " bytes. " +
+                "The mapped store file in question is " + storageFileName.getAbsolutePath() );
     }
 
     protected void createHeaderRecord( PageCursor cursor ) throws IOException
@@ -263,6 +290,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                             readHeaderAndInitializeRecordFormat( pageCursor );
                         }
                         while ( pageCursor.shouldRetry() );
+                        if ( pageCursor.checkAndClearBoundsFlag() )
+                        {
+                            throw new UnderlyingStorageException(
+                                    "Out of page bounds when reading header; page size too small: " +
+                                    pageCache.pageSize() + " bytes.");
+                        }
                     }
                 }
             }
@@ -293,8 +326,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     public byte[] getRawRecordData( long id ) throws IOException
     {
         byte[] data = new byte[recordSize];
-        long pageId = RecordPageLocationCalculator.pageIdForRecord( id, storeFile.pageSize(), recordSize );
-        int offset = RecordPageLocationCalculator.offsetForId( id, storeFile.pageSize(), recordSize );
+        long pageId = pageIdForRecord( id );
+        int offset = offsetForId( id );
         try ( PageCursor pageCursor = storeFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
             if ( pageCursor.next() )
@@ -305,6 +338,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     pageCursor.getBytes( data );
                 }
                 while ( pageCursor.shouldRetry() );
+                checkForOutOfBounds( pageCursor, id );
             }
         }
         return data;
@@ -365,6 +399,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     recordIsInUse = isInUse( cursor );
                 }
                 while ( cursor.shouldRetry() );
+                checkForOutOfBounds( cursor, id );
             }
             return recordIsInUse;
         }
@@ -396,7 +431,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         openIdGenerator();
 
         long defraggedCount = 0;
-        boolean fastRebuild = doFastIdGeneratorRebuild();
+        boolean fastRebuild = isOnlyFastIdGeneratorRebuildEnabled( configuration );
 
         try
         {
@@ -424,6 +459,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             closeIdGenerator();
             openIdGenerator();
         }
+    }
+
+    protected boolean isOnlyFastIdGeneratorRebuildEnabled( Config config )
+    {
+        return config.get( Configuration.rebuild_idgenerators_fast );
     }
 
     private long rebuildIdGeneratorSlow( PageCursor cursor, int recordsPerPage, int blockSize,
@@ -469,6 +509,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 }
             }
             while ( cursor.shouldRetry() );
+            checkIdScanCursorBounds( cursor );
 
             for ( int i = 0; i < defragged; i++ )
             {
@@ -480,9 +521,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return defragCount;
     }
 
-    protected boolean doFastIdGeneratorRebuild()
+    private void checkIdScanCursorBounds( PageCursor cursor )
     {
-        return configuration.get( Configuration.rebuild_idgenerators_fast );
+        if ( cursor.checkAndClearBoundsFlag() )
+        {
+            throw new UnderlyingStorageException(
+                    "Out of bounds access on page " + cursor.getCurrentPageId() + " detected while scanning the " +
+                    storageFileName + " file for deleted records" );
+        }
     }
 
     /**
@@ -653,11 +699,14 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             long nextPageId = storeFile.getLastPageId();
             int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
+            long highestId = getNumberOfReservedLowIds();
             while ( nextPageId >= 0 && cursor.next( nextPageId ) )
             {
                 nextPageId--;
+                boolean found;
                 do
                 {
+                    found = false;
                     int currentRecord = recordsPerPage;
                     while ( currentRecord-- > 0 )
                     {
@@ -671,12 +720,19 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                             if ( !justLegacyStoreTrailer )
                             {
                                 // We've found the highest id in use
-                                return recordId + 1 /*+1 since we return the high id*/;
+                                found = true;
+                                highestId = recordId + 1; /*+1 since we return the high id*/;
+                                break;
                             }
                         }
                     }
                 }
                 while ( cursor.shouldRetry() );
+                checkIdScanCursorBounds( cursor );
+                if ( found )
+                {
+                    return highestId;
+                }
             }
 
             return getNumberOfReservedLowIds();
@@ -986,6 +1042,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     recordFormat.read( record, cursor, mode, recordSize, storeFile );
                 }
                 while ( cursor.shouldRetry() );
+                checkForOutOfBounds( cursor, id );
                 verifyAfterReading( record, mode );
             }
             else
@@ -1018,6 +1075,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     recordFormat.write( record, cursor, recordSize, storeFile );
                 }
                 while ( cursor.shouldRetry() );
+                checkForOutOfBounds( cursor, id ); // We don't free ids if something weird goes wrong
                 if ( !record.inUse() )
                 {
                     freeId( id );
@@ -1112,6 +1170,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                                 recordFormat.read( record, pageCursor, mode, recordSize, storeFile );
                             }
                             while ( pageCursor.shouldRetry() );
+                            checkForOutOfBounds( pageCursor, currentId );
                             verifyAfterReading( record, mode );
                         }
                         else

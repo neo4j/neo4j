@@ -76,7 +76,7 @@ public abstract class TokenStore<RECORD extends TokenRecord,TOKEN extends Token>
     }
 
     @Override
-    protected boolean doFastIdGeneratorRebuild()
+    protected boolean isOnlyFastIdGeneratorRebuildEnabled( Config config )
     {
         return false;
     }
