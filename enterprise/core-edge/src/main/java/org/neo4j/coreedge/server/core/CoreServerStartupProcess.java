@@ -29,7 +29,7 @@ import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
-import org.neo4j.coreedge.raft.state.StateMachineApplier;
+import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -44,7 +44,7 @@ public class CoreServerStartupProcess
             DataSourceManager dataSourceManager,
             ReplicatedIdGeneratorFactory idGeneratorFactory,
             RaftInstance<CoreMember> raft,
-            StateMachineApplier recoverableStateMachine,
+            CoreState coreState,
             RaftServer<CoreMember> raftServer,
             CatchupServer catchupServer,
             DelayedRenewableTimeoutService raftTimeoutService,
@@ -54,7 +54,7 @@ public class CoreServerStartupProcess
         LifeSupport services = new LifeSupport();
         services.add( dataSourceManager );
         services.add( idGeneratorFactory );
-        services.add( recoverableStateMachine );
+        services.add( coreState );
         services.add( raftServer );
         services.add( catchupServer );
         services.add( raftTimeoutService );

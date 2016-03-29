@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
+import java.util.concurrent.Future;
+
 /**
  * Replicate content across a cluster of servers.
- *
- * Content producers call {@link #replicate(ReplicatedContent)}.
- */
+  */
 public interface Replicator
 {
     /**
@@ -31,26 +31,10 @@ public interface Replicator
      * actually gets replicated, it merely makes an attempt at replication. Other
      * mechanisms must be used to achieve required delivery semantics.
      *
-     * @param content The content to replicate.
-     * @throws ReplicationFailedException Thrown when the replication surely failed.
+     * @param content      The content to replicated.
+     * @param trackResult  Whether to track the result for this operation.
+     *
+     * @return A future that will receive the result when available. Only valid if trackResult is set.
      */
-    void replicate( ReplicatedContent content ) throws ReplicationFailedException;
-
-    /**
-     * Thrown when the replication surely failed, as compared to cases
-     * where the replication may or may not have succeeded, for which
-     * cases this exception does not apply.
-     */
-    class ReplicationFailedException extends Exception
-    {
-        public ReplicationFailedException( Throwable cause )
-        {
-            super( cause );
-        }
-
-        public ReplicationFailedException( String message )
-        {
-            super( message );
-        }
-    }
+    Future<Object> replicate( ReplicatedContent content, boolean trackResult ) throws InterruptedException;
 }

@@ -29,8 +29,6 @@ import io.netty.buffer.Unpooled;
 
 import org.neo4j.coreedge.raft.net.NetworkFlushableChannelNetty4;
 import org.neo4j.coreedge.raft.net.NetworkReadableClosableChannelNetty4;
-import org.neo4j.coreedge.raft.replication.session.GlobalSession;
-import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -43,13 +41,20 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 public class ReplicatedTransactionFactory
 {
-    public static <T> ReplicatedTransaction<T> createImmutableReplicatedTransaction(
-            TransactionRepresentation tx, GlobalSession<T> globalSession, LocalOperationId localOperationId ) throws IOException
+    public static ReplicatedTransaction createImmutableReplicatedTransaction( TransactionRepresentation tx  )
     {
         ByteBuf transactionBuffer = Unpooled.buffer();
 
         NetworkFlushableChannelNetty4 channel = new NetworkFlushableChannelNetty4( transactionBuffer );
-        ReplicatedTransactionFactory.TransactionSerializer.write( tx, channel );
+        try
+        {
+            TransactionSerializer.write( tx, channel );
+        }
+        catch ( IOException e )
+        {
+            // TODO: This should not happen. Not even the IOException, fix it.
+            throw new RuntimeException( e );
+        }
 
         /*
          * This trims down the array to send up to the actual index it was written. While sending additional zeroes
@@ -58,15 +63,23 @@ public class ReplicatedTransactionFactory
         byte[] txBytes = Arrays.copyOf( transactionBuffer.array(), transactionBuffer.writerIndex() );
         transactionBuffer.release();
 
-        return new ReplicatedTransaction<>( txBytes, globalSession, localOperationId );
+        return new ReplicatedTransaction( txBytes );
     }
 
-    public static TransactionRepresentation extractTransactionRepresentation( ReplicatedTransaction replicatedTransaction, byte[] extraHeader ) throws IOException
+    public static TransactionRepresentation extractTransactionRepresentation( ReplicatedTransaction transactionCommand, byte[] extraHeader )
     {
-        ByteBuf txBuffer = Unpooled.wrappedBuffer( replicatedTransaction.getTxBytes() );
+        ByteBuf txBuffer = Unpooled.wrappedBuffer( transactionCommand.getTxBytes() );
         NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( txBuffer );
 
-        return read( channel, extraHeader );
+        try
+        {
+            return read( channel, extraHeader );
+        }
+        catch ( IOException e )
+        {
+            // TODO: This should not happen. Not even the IOException, fix it.
+            throw new RuntimeException( e );
+        }
     }
 
     public static class TransactionSerializer

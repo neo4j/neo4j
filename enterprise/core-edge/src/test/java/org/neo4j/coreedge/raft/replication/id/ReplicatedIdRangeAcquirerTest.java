@@ -29,7 +29,6 @@ import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.raft.state.StateMachines;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.NullLogProvider;
 
@@ -37,16 +36,15 @@ import static org.junit.Assert.assertTrue;
 
 public class ReplicatedIdRangeAcquirerTest
 {
-    private final CoreMember one =
+    private final CoreMember memberA =
             new CoreMember( new AdvertisedSocketAddress( "a:1" ), new AdvertisedSocketAddress( "a:2" ) );
-    private final CoreMember two =
+    private final CoreMember memberB =
             new CoreMember( new AdvertisedSocketAddress( "b:1" ), new AdvertisedSocketAddress( "b:2" ) );
 
-    PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
-    ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine(
-            new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
-    final StateMachines stateMachines = new StateMachines(idAllocationStateMachine);
-    final DirectReplicator replicator = new DirectReplicator( stateMachines );
+    private final ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine(
+            new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+
+    private final DirectReplicator<ReplicatedIdAllocationRequest> replicator = new DirectReplicator<>( idAllocationStateMachine );
 
     @Test
     public void consecutiveAllocationsFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateWhenInitialIdIsZero()
@@ -60,7 +58,6 @@ public class ReplicatedIdRangeAcquirerTest
             throws Exception
     {
         consecutiveAllocationFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateForGivenInitialHighId( 1 );
-
     }
 
     private void consecutiveAllocationFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateForGivenInitialHighId(
@@ -69,10 +66,8 @@ public class ReplicatedIdRangeAcquirerTest
         Set<Long> idAllocations = new HashSet<>();
         int idRangeLength = 8;
 
-        ReplicatedIdGenerator generatorOne = createForMemberWithInitialIdAndRangeLength( one, initialHighId,
-                idRangeLength );
-        ReplicatedIdGenerator generatorTwo = createForMemberWithInitialIdAndRangeLength( two, initialHighId,
-                idRangeLength );
+        ReplicatedIdGenerator generatorOne = createForMemberWithInitialIdAndRangeLength( memberA, initialHighId, idRangeLength );
+        ReplicatedIdGenerator generatorTwo = createForMemberWithInitialIdAndRangeLength( memberB, initialHighId, idRangeLength );
 
         // First iteration is bootstrapping the set, so we do it outside the loop to avoid an if check in there
         long newId = generatorOne.nextId();
@@ -98,8 +93,8 @@ public class ReplicatedIdRangeAcquirerTest
     private ReplicatedIdGenerator createForMemberWithInitialIdAndRangeLength(
             CoreMember member, long initialHighId, int idRangeLength )
     {
-        ReplicatedIdRangeAcquirer acquirer = new ReplicatedIdRangeAcquirer( replicator,
-                pendingRequests, idRangeLength, 1, member, NullLogProvider.getInstance() );
+        ReplicatedIdRangeAcquirer acquirer = new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine,
+                idRangeLength, member, NullLogProvider.getInstance() );
 
         return new ReplicatedIdGenerator( IdType.ARRAY_BLOCK, initialHighId, acquirer,
                 NullLogProvider.getInstance() );

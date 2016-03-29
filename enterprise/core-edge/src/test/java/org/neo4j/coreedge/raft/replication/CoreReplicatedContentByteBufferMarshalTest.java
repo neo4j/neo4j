@@ -25,13 +25,10 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.UUID;
 
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
-import org.neo4j.coreedge.raft.replication.session.GlobalSession;
-import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequestSerializer;
 import org.neo4j.coreedge.raft.replication.token.TokenType;
@@ -53,19 +50,14 @@ public class CoreReplicatedContentByteBufferMarshalTest
 {
     private final ByteBufMarshal<ReplicatedContent> marshal = new CoreReplicatedContentMarshal();
 
-    CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
-            new AdvertisedSocketAddress( "raft:1" ) );
-    GlobalSession<CoreMember> globalSession = new GlobalSession<>( UUID.randomUUID(), coreMember );
-
     @Test
     public void shouldMarshalTransactionReference() throws Exception
     {
         ByteBuf buffer = Unpooled.buffer();
-        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections
-                .<StorageCommand>emptyList() );
+        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections.<StorageCommand>emptyList() );
         representation.setHeader( new byte[]{0}, 1, 1, 1, 1, 1, 1 );
 
-        ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation, globalSession, new LocalOperationId( 0, 0 ) );
+        ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation );
 
         marshal.marshal( replicatedTx, buffer );
 
@@ -76,10 +68,9 @@ public class CoreReplicatedContentByteBufferMarshalTest
     public void shouldMarshalTransactionReferenceWithMissingHeader() throws Exception
     {
         ByteBuf buffer = Unpooled.buffer();
-        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections
-                .<StorageCommand>emptyList() );
+        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections.<StorageCommand>emptyList() );
 
-        ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation, globalSession, new LocalOperationId( 0, 0 ) );
+        ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation );
         marshal.marshal( replicatedTx, buffer );
 
         assertThat( marshal.unmarshal( buffer ), equalTo( replicatedTx ) );

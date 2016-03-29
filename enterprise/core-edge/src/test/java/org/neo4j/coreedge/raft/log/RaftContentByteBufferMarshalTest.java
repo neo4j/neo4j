@@ -25,14 +25,11 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.UUID;
 
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
-import org.neo4j.coreedge.raft.replication.session.GlobalSession;
-import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
@@ -48,9 +45,9 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftContentByteBufferMarshalTest
 {
-    CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
+    CoreMember coreMember = new CoreMember(
+            new AdvertisedSocketAddress( "core:1" ),
             new AdvertisedSocketAddress( "raft:1" ) );
-    GlobalSession globalSession = new GlobalSession( UUID.randomUUID(), coreMember );
 
     @Test
     public void shouldSerializeMemberSet() throws Exception
@@ -89,7 +86,7 @@ public class RaftContentByteBufferMarshalTest
 
         PhysicalTransactionRepresentation txIn = new PhysicalTransactionRepresentation( commands );
         txIn.setHeader( extraHeader, -1, -1, 0, 0, 0, 0 );
-        ReplicatedTransaction in = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( txIn, globalSession, new LocalOperationId( 0, 0 ) );
+        ReplicatedTransaction in = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( txIn );
 
         // when
         ByteBuf buf = Unpooled.buffer();
@@ -121,8 +118,7 @@ public class RaftContentByteBufferMarshalTest
         txIn.setHeader( extraHeader, -1, -1, 0, 0, 0, 0 );
 
         // when
-        ReplicatedTransaction in = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( txIn,
-                globalSession, new LocalOperationId( 0, 0 ) );
+        ReplicatedTransaction in = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( txIn );
 
         // then
         assertEquals( 40, in.getTxBytes().length );

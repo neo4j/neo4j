@@ -29,7 +29,7 @@ import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
 import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
 import org.neo4j.coreedge.catchup.tx.edge.RaftStateSnapshotListener;
-import org.neo4j.coreedge.raft.state.StateMachine;
+import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 
 public class StateFetcher
@@ -41,7 +41,7 @@ public class StateFetcher
         this.coreClient = coreClient;
     }
 
-    public void copyRaftState( AdvertisedSocketAddress from, StateMachine stateMachine ) throws StoreCopyFailedException
+    public void copyRaftState( AdvertisedSocketAddress from, CoreState coreState ) throws StoreCopyFailedException
     {
         HashMap<RaftStateType, Object> map = new HashMap<>();
 
@@ -61,7 +61,7 @@ public class StateFetcher
         try
         {
             HashMap<RaftStateType, Object> snapshot = completableSnapshot.get( 10, TimeUnit.SECONDS );
-            stateMachine.installSnapshot( snapshot );
+            coreState.installSnapshots( snapshot );
 
             coreClient.removeRaftStateSnapshotListener( listener );
         }

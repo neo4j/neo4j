@@ -49,7 +49,7 @@ public class Follower implements RaftMessageHandler
         return prevLogIndex <= ctx.entryLog().prevIndex() || ctx.entryLog().readEntryTerm( prevLogIndex ) == prevLogTerm;
     }
 
-    public static <MEMBER> boolean commitToLogOnUpdate( ReadableRaftState<MEMBER> ctx, long indexOfLastNewEntry,
+    public static <MEMBER> void commitToLogOnUpdate( ReadableRaftState<MEMBER> ctx, long indexOfLastNewEntry,
             long leaderCommit, Outcome<MEMBER> outcome )
     {
         long newCommitIndex = min( leaderCommit, indexOfLastNewEntry );
@@ -57,9 +57,7 @@ public class Follower implements RaftMessageHandler
         if ( newCommitIndex > ctx.commitIndex() )
         {
             outcome.setCommitIndex( newCommitIndex );
-            return true;
         }
-        return false;
     }
 
     public static <MEMBER> void handleLeaderLogCompaction( ReadableRaftState<MEMBER> ctx, Outcome<MEMBER> outcome, RaftMessages.LogCompactionInfo<MEMBER> compactionInfo )

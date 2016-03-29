@@ -19,120 +19,43 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.junit.Test;
+
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
-import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
-import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 @SuppressWarnings("unchecked")
 public class ReplicatedTransactionCommitProcessTest
 {
-    CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
-            new AdvertisedSocketAddress( "raft:1" ) );
+    private Replicator replicator = mock( Replicator.class );
 
     @Test
-    public void shouldReplicateOnlyOnceIfFirstAttemptSuccessful() throws Exception
+    public void shouldReplicateTransaction() throws Exception
     {
         // given
-        Replicator replicator = mock( Replicator.class );
-        ReplicatedTransactionStateMachine transactionStateMachine = mock( ReplicatedTransactionStateMachine.class );
-        CommittingTransaction future = mock( CommittingTransaction.class );
+        CompletableFuture<Object> futureTxId = new CompletableFuture<>();
+        futureTxId.complete( 5L );
 
-        ReplicatedLockTokenStateMachine<Object> currentReplicatedLockState = mock( ReplicatedLockTokenStateMachine.class );
-        when( currentReplicatedLockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, 0 ) );
-
-        when( future.waitUntilCommitted( anyInt(), any( TimeUnit.class ) ) ).thenReturn( 23L );
-        CommittingTransactions txFutures = mock( CommittingTransactionsRegistry.class );
-        when( txFutures.register( any( LocalOperationId.class ) ) ).thenReturn( future );
+        when( replicator.replicate( any( ReplicatedContent.class ), anyBoolean() ) ).thenReturn( futureTxId );
+        ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess( replicator );
 
         // when
-        new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
-                new ConstantTimeRetryStrategy( 1, SECONDS ), NullLogService.getInstance(), txFutures, new Monitors() )
-                .commit( tx(), NULL, INTERNAL );
+        long txId = commitProcess.commit( tx(), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
 
         // then
-        verify( replicator, times( 1 ) ).replicate( any( ReplicatedTransaction.class ) );
-    }
-
-    @Test
-    public void shouldRetryReplicationIfFirstAttemptTimesOut() throws Exception
-    {
-        // given
-        Replicator replicator = mock( Replicator.class );
-        CommittingTransaction future = mock( CommittingTransaction.class );
-
-        ReplicatedLockTokenStateMachine<Object> currentReplicatedLockState = mock( ReplicatedLockTokenStateMachine.class );
-        when( currentReplicatedLockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, 0 ) );
-
-        CommittingTransactions txFutures = mock( CommittingTransactionsRegistry.class );
-        when( txFutures.register( any( LocalOperationId.class ) ) ).thenReturn( future );
-
-        when( future.waitUntilCommitted( anyInt(), any( TimeUnit.class ) ) ).thenThrow( TimeoutException.class )
-                .thenReturn( 23L );
-
-        // when
-        new ReplicatedTransactionCommitProcess( replicator, new LocalSessionPool( coreMember ),
-                new ConstantTimeRetryStrategy( 1, SECONDS ), NullLogService.getInstance(), txFutures, new Monitors() )
-                .commit( tx(), NULL, INTERNAL );
-
-        // then
-        verify( replicator, times( 2 ) ).replicate( any( ReplicatedTransaction.class ) );
-    }
-
-    @Test
-    public void shouldAbortIfFirstReplicationAttemptFails() throws Exception
-    {
-        // given
-        Replicator replicator = mock( Replicator.class );
-        doThrow( Replicator.ReplicationFailedException.class ).when( replicator )
-                .replicate( any( ReplicatedContent.class ) );
-
-        TransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess( replicator,
-                new LocalSessionPool( coreMember ),
-                new ConstantTimeRetryStrategy( 1, SECONDS ), NullLogService.getInstance(),
-                mock( CommittingTransactions.class ), new Monitors() );
-
-        // when
-        try
-        {
-            commitProcess.commit( tx(), NULL, INTERNAL );
-            fail( "should have thrown exception" );
-        }
-        catch ( TransactionFailureException e )
-        {
-            assertEquals( Status.Transaction.TransactionCommitFailed, e.status() );
-        }
+        assertEquals( 5, txId );
     }
 
     private TransactionToApply tx()

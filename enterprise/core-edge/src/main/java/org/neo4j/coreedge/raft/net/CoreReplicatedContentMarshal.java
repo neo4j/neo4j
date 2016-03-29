@@ -19,12 +19,14 @@
  */
 package org.neo4j.coreedge.raft.net;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 
-import io.netty.buffer.ByteBuf;
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetSerializer;
+import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequestSerializer;
@@ -48,6 +50,7 @@ public class CoreReplicatedContentMarshal implements ChannelMarshal<ReplicatedCo
     private static final byte TOKEN_REQUEST_TYPE = 4;
     private static final byte NEW_LEADER_BARRIER_TYPE = 5;
     private static final byte LOCK_TOKEN_REQUEST = 6;
+    private static final byte DISTRIBUTED_OPERATION = 7;
 
     @Override
     public void marshal( ReplicatedContent content, WritableChannel channel ) throws IOException
@@ -81,6 +84,11 @@ public class CoreReplicatedContentMarshal implements ChannelMarshal<ReplicatedCo
             channel.put( LOCK_TOKEN_REQUEST );
             ReplicatedLockTokenSerializer.marshal( (ReplicatedLockTokenRequest<CoreMember>) content, channel );
         }
+        else if( content instanceof DistributedOperation )
+        {
+            channel.put( DISTRIBUTED_OPERATION );
+            ((DistributedOperation) content).serialize( channel );
+        }
         else
         {
             throw new IllegalArgumentException( "Unknown content type " + content.getClass() );
@@ -113,6 +121,9 @@ public class CoreReplicatedContentMarshal implements ChannelMarshal<ReplicatedCo
                     break;
                 case LOCK_TOKEN_REQUEST:
                     content = ReplicatedLockTokenSerializer.unmarshal( channel );
+                    break;
+                case DISTRIBUTED_OPERATION:
+                    content = DistributedOperation.deserialize( channel );
                     break;
                 default:
                     throw new IllegalArgumentException( String.format( "Unknown content type 0x%x", type ) );
@@ -157,6 +168,11 @@ public class CoreReplicatedContentMarshal implements ChannelMarshal<ReplicatedCo
             buffer.writeByte( LOCK_TOKEN_REQUEST );
             ReplicatedLockTokenSerializer.marshal( (ReplicatedLockTokenRequest<CoreMember>) content, buffer );
         }
+        else if( content instanceof DistributedOperation )
+        {
+            buffer.writeByte( DISTRIBUTED_OPERATION );
+            ((DistributedOperation)content).serialize( buffer );
+        }
         else
         {
             throw new IllegalArgumentException( "Unknown content type " + content.getClass() );
@@ -189,6 +205,9 @@ public class CoreReplicatedContentMarshal implements ChannelMarshal<ReplicatedCo
                     break;
                 case LOCK_TOKEN_REQUEST:
                     content = ReplicatedLockTokenSerializer.unmarshal( buffer );
+                    break;
+                case DISTRIBUTED_OPERATION:
+                    content = DistributedOperation.deserialize( buffer );
                     break;
                 default:
                     throw new IllegalArgumentException( String.format( "Unknown content type 0x%x", type ) );

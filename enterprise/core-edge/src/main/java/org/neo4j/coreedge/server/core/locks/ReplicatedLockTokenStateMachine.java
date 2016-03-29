@@ -20,75 +20,60 @@
 package org.neo4j.coreedge.server.core.locks;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.raft.state.StateStorage;
-import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-
-import static java.util.Collections.singletonMap;
 
 /**
  * Listens for {@link ReplicatedLockTokenRequest}. Keeps track of the current holder of the replicated token,
  * which is identified by a monotonically increasing id, and an owning member.
  */
-public class ReplicatedLockTokenStateMachine<MEMBER> implements StateMachine
+public class ReplicatedLockTokenStateMachine<MEMBER> implements StateMachine<ReplicatedLockTokenRequest<MEMBER>>
 {
     private ReplicatedLockTokenState<MEMBER> state;
     private final StateStorage<ReplicatedLockTokenState<MEMBER>> storage;
-    private final PendingLockTokensRequests<MEMBER> pendingLockTokensRequests;
 
-    public ReplicatedLockTokenStateMachine( StateStorage<ReplicatedLockTokenState<MEMBER>> storage,
-                                            PendingLockTokensRequests<MEMBER> pendingLockTokensRequests )
+    public ReplicatedLockTokenStateMachine( StateStorage<ReplicatedLockTokenState<MEMBER>> storage )
     {
         this.storage = storage;
         this.state = storage.getInitialState();
-        this.pendingLockTokensRequests = pendingLockTokensRequests;
-        this.pendingLockTokensRequests.setCurrentToken( state.get() );
     }
 
     @Override
-    public synchronized void applyCommand( ReplicatedContent content, long logIndex )
+    public synchronized Optional<Result> applyCommand( ReplicatedLockTokenRequest<MEMBER> tokenRequest, long commandIndex )
     {
-        if ( content instanceof ReplicatedLockTokenRequest && logIndex > state.ordinal() )
+        if( commandIndex <= state.ordinal() )
         {
-            ReplicatedLockTokenRequest<MEMBER> tokenRequest = (ReplicatedLockTokenRequest<MEMBER>) content;
-            Optional<PendingLockTokenRequest> future = Optional.ofNullable( pendingLockTokensRequests.retrieve( tokenRequest ) );
-            if ( tokenRequest.id() == LockToken.nextCandidateId( currentToken().id() ) )
-            {
-                state.set( tokenRequest, logIndex );
-                pendingLockTokensRequests.setCurrentToken( tokenRequest );
-                future.ifPresent( PendingLockTokenRequest::notifyAcquired );
-            }
-            else
-            {
-                future.ifPresent( PendingLockTokenRequest::notifyLost );
-            }
+            return Optional.empty();
+        }
+
+        if ( tokenRequest.id() == LockToken.nextCandidateId( currentToken().id() ) )
+        {
+            state.set( tokenRequest, commandIndex );
+            return Optional.of( Result.of( true ) );
+        }
+        else
+        {
+            return Optional.of( Result.of( false ) );
         }
     }
 
     @Override
-    public void flush() throws IOException
+    public synchronized void flush() throws IOException
     {
         storage.persistStoreData( state );
     }
 
-    @Override
-    public Map<RaftStateType, Object> snapshot()
+    public synchronized ReplicatedLockTokenState<MEMBER> snapshot()
     {
-        return singletonMap( RaftStateType.LOCK_TOKEN, state );
+        return state;
     }
 
-    @Override
-    public void installSnapshot( Map<RaftStateType, Object> snapshot )
+    public synchronized void installSnapshot( ReplicatedLockTokenState<MEMBER> snapshot )
     {
-        if ( snapshot.containsKey( RaftStateType.ID_ALLOCATION ) )
-        {
-            state = (ReplicatedLockTokenState<MEMBER>) snapshot.get( RaftStateType.LOCK_TOKEN );
-        }
+        state = snapshot;
     }
 
     /**

@@ -21,7 +21,6 @@ package org.neo4j.coreedge.catchup.storecopy.core;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -29,25 +28,25 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetRaftStateRequest;
-import org.neo4j.coreedge.raft.state.StateMachine;
+import org.neo4j.coreedge.raft.state.CoreState;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 
 public class GetRaftStateRequestHandler extends SimpleChannelInboundHandler<GetRaftStateRequest>
 {
     private final CatchupServerProtocol protocol;
-    private final Supplier<StateMachine> stateMachine;
+    private final CoreState coreState;
 
-    public GetRaftStateRequestHandler( CatchupServerProtocol protocol, Supplier<StateMachine> stateMachine )
+    public GetRaftStateRequestHandler( CatchupServerProtocol protocol, CoreState coreState )
     {
         this.protocol = protocol;
-        this.stateMachine = stateMachine;
+        this.coreState = coreState;
     }
 
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, GetRaftStateRequest msg ) throws Exception
     {
-        sendStates( ctx, stateMachine.get().snapshot() );
+        sendStates( ctx, coreState.snapshot() );
         protocol.expect( NextMessage.MESSAGE_TYPE );
     }
 

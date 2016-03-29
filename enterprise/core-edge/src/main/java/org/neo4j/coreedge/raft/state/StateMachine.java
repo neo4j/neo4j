@@ -20,29 +20,21 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.Optional;
 
-import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-
-public interface StateMachine
+public interface StateMachine<Command>
 {
     /**
      * Apply command to state machine, modifying its internal state.
      * Implementations should be idempotent, so that the caller is free to replay commands from any point in the log.
-     *
-     * @param content The replicated content, to be interpreted as a command.
-     * @param logIndex The index of the content.
+     *  @param command Command to the state machine.
+     * @param commandIndex The index of the command.
      */
-    void applyCommand( ReplicatedContent content, long logIndex );
+    Optional<Result> applyCommand( Command command, long commandIndex );
 
     /**
      * Flushes state to durable storage.
      * @throws IOException
      */
     void flush() throws IOException;
-
-    Map<RaftStateType, Object> snapshot();
-
-    void installSnapshot(Map<RaftStateType, Object> snapshot);
 }

@@ -21,10 +21,9 @@ package org.neo4j.coreedge.raft.replication.token;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Map;
+import java.util.Optional;
 
-import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -45,69 +44,55 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TokenFactory;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static java.util.Collections.emptyMap;
-
 import static org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding.encodeLogIndexAsTxHeader;
 
-public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMachine
+public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMachine<ReplicatedTokenRequest>
 {
     protected final Dependencies dependencies;
 
     private final TokenRegistry<TOKEN> tokenRegistry;
     private final TokenFactory<TOKEN> tokenFactory;
-    private final TokenType type;
 
     private final Log log;
     private long lastCommittedIndex = Long.MAX_VALUE;
 
-    // TODO: Clean up all the resolving, which now happens every time with special selection strategies.
-
     public ReplicatedTokenStateMachine( TokenRegistry<TOKEN> tokenRegistry,
-                                        Dependencies dependencies, TokenFactory<TOKEN> tokenFactory, TokenType type,
-                                        LogProvider logProvider, RecoverTransactionLogState txLogState )
+            Dependencies dependencies, TokenFactory<TOKEN> tokenFactory,
+            LogProvider logProvider, RecoverTransactionLogState txLogState )
     {
         this.tokenRegistry = tokenRegistry;
         this.dependencies = dependencies;
         this.tokenFactory = tokenFactory;
-        this.type = type;
         this.log = logProvider.getLog( getClass() );
         this.lastCommittedIndex = txLogState.findLastAppliedIndex();
     }
 
     @Override
-    public void applyCommand( ReplicatedContent content, long logIndex )
+    public synchronized Optional<Result> applyCommand( ReplicatedTokenRequest tokenRequest, long commandIndex )
     {
-        if ( content instanceof ReplicatedTokenRequest && ((ReplicatedTokenRequest) content).type().equals( type ) )
+        if ( commandIndex <= lastCommittedIndex )
         {
-            if ( logIndex > lastCommittedIndex )
-            {
-                ReplicatedTokenRequest tokenRequest = (ReplicatedTokenRequest) content;
-
-                Integer tokenId = tokenRegistry.getId( tokenRequest.tokenName() );
-
-                if ( tokenId == null )
-                {
-                    try
-                    {
-                        Collection<StorageCommand> commands =  ReplicatedTokenRequestSerializer.extractCommands( tokenRequest.commandBytes() );
-                        tokenId = applyToStore( commands, logIndex );
-                    }
-                    catch ( NoSuchEntryException e )
-                    {
-                        throw new IllegalStateException( "Commands did not contain token command" );
-                    }
-
-                    tokenRegistry.addToken( tokenFactory.newToken( tokenRequest.tokenName(), tokenId ) );
-                }
-
-                tokenRegistry.complete( tokenRequest.tokenName(), tokenId );
-            }
-            else
-            {
-                log.info( "Ignoring content at index %d, since already applied up to %d",
-                        logIndex, lastCommittedIndex );
-            }
+            return Optional.empty();
         }
+
+        Integer tokenId = tokenRegistry.getId( tokenRequest.tokenName() );
+
+        if ( tokenId == null )
+        {
+            try
+            {
+                Collection<StorageCommand> commands =  ReplicatedTokenRequestSerializer.extractCommands( tokenRequest.commandBytes() );
+                tokenId = applyToStore( commands, commandIndex );
+            }
+            catch ( NoSuchEntryException e )
+            {
+                throw new IllegalStateException( "Commands did not contain token command" );
+            }
+
+            tokenRegistry.addToken( tokenFactory.newToken( tokenRequest.tokenName(), tokenId ) );
+        }
+
+        return Optional.of( Result.of( tokenId ) );
     }
 
     private int applyToStore( Collection<StorageCommand> commands, long logIndex ) throws NoSuchEntryException
@@ -117,6 +102,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
         PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( commands );
         representation.setHeader( encodeLogIndexAsTxHeader(logIndex), 0, 0, 0, 0L, 0L, 0 );
 
+        // TODO Get rid of the resolving.
         TransactionCommitProcess commitProcess = dependencies.resolveDependency(
                 TransactionRepresentationCommitProcess.class );
 
@@ -146,20 +132,8 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     }
 
     @Override
-    public void flush() throws IOException
+    public synchronized void flush() throws IOException
     {
-        // already implicitly flushed to the transaction log.
-    }
-
-
-    @Override
-    public Map<RaftStateType, Object> snapshot()
-    {
-        return emptyMap();
-    }
-
-    @Override
-    public void installSnapshot( Map<RaftStateType, Object> snapshot )
-    {
+        // already implicitly flushed to the store
     }
 }

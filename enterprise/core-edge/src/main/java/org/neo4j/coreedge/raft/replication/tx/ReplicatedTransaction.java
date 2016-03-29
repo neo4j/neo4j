@@ -19,25 +19,19 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import java.util.Objects;
+import java.util.Arrays;
+import java.util.Optional;
 
-import org.neo4j.coreedge.raft.replication.session.GlobalSession;
-import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.CoreStateMachines;
+import org.neo4j.coreedge.raft.state.Result;
 
-import static java.lang.String.format;
-
-public class ReplicatedTransaction<MEMBER> implements ReplicatedContent
+public class ReplicatedTransaction implements CoreReplicatedContent
 {
     private final byte[] txBytes;
-    private final GlobalSession globalSession;
-    private final LocalOperationId localOperationId;
 
-    public ReplicatedTransaction( byte[] txBytes, GlobalSession globalSession, LocalOperationId localOperationId )
+    public ReplicatedTransaction( byte[] txBytes )
     {
         this.txBytes = txBytes;
-        this.globalSession = globalSession;
-        this.localOperationId = localOperationId;
     }
 
     public byte[] getTxBytes()
@@ -45,45 +39,26 @@ public class ReplicatedTransaction<MEMBER> implements ReplicatedContent
         return txBytes;
     }
 
-    public GlobalSession<MEMBER> globalSession()
+    @Override
+    public Optional<Result> dispatch( CoreStateMachines coreStateMachines, long commandIndex )
     {
-        return globalSession;
+        return coreStateMachines.dispatch( this, commandIndex );
     }
-
-    public LocalOperationId localOperationId()
-    {
-        return localOperationId;
-    }
-
 
     @Override
     public boolean equals( Object o )
     {
         if ( this == o )
-        {
-            return true;
-        }
+        { return true; }
         if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
+        { return false; }
         ReplicatedTransaction that = (ReplicatedTransaction) o;
-        return Objects.equals( globalSession, that.globalSession ) &&
-                Objects.equals( localOperationId, that.localOperationId );
+        return Arrays.equals( txBytes, that.txBytes );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( globalSession, localOperationId );
-    }
-
-    @Override
-    public String toString()
-    {
-
-        return format( "ReplicatedTransaction{globalSession=%s, localOperationId=%s}",
-                globalSession, localOperationId );
-
+        return Arrays.hashCode( txBytes );
     }
 }

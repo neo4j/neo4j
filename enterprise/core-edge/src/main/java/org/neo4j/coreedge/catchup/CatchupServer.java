@@ -45,7 +45,7 @@ import org.neo4j.coreedge.catchup.tx.core.TxPullRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestHandler;
 import org.neo4j.coreedge.catchup.tx.core.TxPullResponseEncoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseEncoder;
-import org.neo4j.coreedge.raft.state.StateMachine;
+import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.coreedge.server.ListenSocketAddress;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -70,7 +70,7 @@ public class CatchupServer extends LifecycleAdapter
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
-    private final Supplier<StateMachine> stateMachine;
+    private final CoreState coreState;
     private final ListenSocketAddress listenAddress;
 
     private EventLoopGroup workerGroup;
@@ -84,10 +84,10 @@ public class CatchupServer extends LifecycleAdapter
                           Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                           Supplier<NeoStoreDataSource> dataSourceSupplier,
                           Supplier<CheckPointer> checkPointerSupplier,
-                          Supplier<StateMachine> stateMachine,
+                          CoreState coreState,
                           ListenSocketAddress listenAddress, Monitors monitors )
     {
-        this.stateMachine = stateMachine;
+        this.coreState = coreState;
         this.listenAddress = listenAddress;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.storeIdSupplier = storeIdSupplier;
@@ -145,7 +145,7 @@ public class CatchupServer extends LifecycleAdapter
                                 checkPointerSupplier ) );
 
                         pipeline.addLast( new GetRaftStateRequestDecoder( protocol ) );
-                        pipeline.addLast( new GetRaftStateRequestHandler( protocol, stateMachine ) );
+                        pipeline.addLast( new GetRaftStateRequestHandler( protocol, coreState ) );
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                     }

@@ -31,7 +31,7 @@ import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftServer;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdGeneratorFactory;
-import org.neo4j.coreedge.raft.state.StateMachineApplier;
+import org.neo4j.coreedge.raft.state.CoreState;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.core.CoreServerStartupProcess;
 import org.neo4j.helpers.collection.Iterables;
@@ -55,7 +55,7 @@ public class CoreServerStartupProcessTest
         DelayedRenewableTimeoutService raftTimeoutService = mock( DelayedRenewableTimeoutService.class );
         MembershipWaiter<CoreMember> membershipWaiter = mock( MembershipWaiter.class );
         RaftInstance raftInstance = mock( RaftInstance.class );
-        StateMachineApplier recoverableStateMachine = mock( StateMachineApplier.class );
+        CoreState recoverableStateMachine = mock( CoreState.class );
 
         LifeSupport lifeSupport = CoreServerStartupProcess.createLifeSupport( dataSourceManager,
                 idGeneratorFactory, raftInstance, recoverableStateMachine, raftServer, catchupServer, raftTimeoutService,

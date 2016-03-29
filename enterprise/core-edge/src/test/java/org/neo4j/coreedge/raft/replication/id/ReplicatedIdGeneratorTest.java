@@ -42,7 +42,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     private final ReplicatedIdRangeAcquirer rangeAcquirer = mock( ReplicatedIdRangeAcquirer.class );
 
     @Before
-    public void stubAcquirer()
+    public void stubAcquirer() throws InterruptedException
     {
         when( rangeAcquirer.acquireIds( IdType.NODE ) )
                 .thenReturn( new IdAllocation( new IdRange( new long[0], 0, 1024 ), -1, 0 ) )

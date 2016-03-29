@@ -19,6 +19,11 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
+import java.util.Optional;
+
+import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
+import org.neo4j.coreedge.raft.state.CoreStateMachines;
+import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -27,7 +32,7 @@ import static java.lang.String.format;
 
 /**
  * This type is handled by the ReplicatedIdAllocationStateMachine. */
-public class ReplicatedIdAllocationRequest implements ReplicatedContent
+public class ReplicatedIdAllocationRequest implements CoreReplicatedContent
 {
     private final CoreMember owner;
     private final IdType idType;
@@ -96,5 +101,11 @@ public class ReplicatedIdAllocationRequest implements ReplicatedContent
     public String toString()
     {
         return format( "ReplicatedIdAllocationRequest{owner=%s, idType=%s, idRangeStart=%d, idRangeLength=%d}", owner, idType, idRangeStart, idRangeLength );
+    }
+
+    @Override
+    public Optional<Result> dispatch( CoreStateMachines coreStateMachines, long commandIndex )
+    {
+        return coreStateMachines.dispatch( this, commandIndex );
     }
 }

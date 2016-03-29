@@ -21,21 +21,18 @@ package org.neo4j.coreedge.raft.replication.session;
 
 import java.util.EmptyStackException;
 import java.util.Stack;
-import java.util.UUID;
-
-import org.neo4j.coreedge.server.CoreMember;
 
 /** Keeps a pool of local sub-sessions, to be used under a single global session. */
-public class LocalSessionPool
+public class LocalSessionPool<MEMBER>
 {
     private final Stack<LocalSession> sessionStack = new Stack<>();
 
-    private final GlobalSession globalSession;
+    private final GlobalSession<MEMBER> globalSession;
     private long nextLocalSessionId;
 
-    public LocalSessionPool( CoreMember owner )
+    public LocalSessionPool( GlobalSession<MEMBER> globalSession )
     {
-        globalSession = new GlobalSession( UUID.randomUUID(), owner );
+        this.globalSession = globalSession;
     }
 
     private LocalSession createSession()
@@ -84,5 +81,10 @@ public class LocalSessionPool
     public synchronized void releaseSession( OperationContext operationContext )
     {
         sessionStack.push( operationContext.localSession() );
+    }
+
+    public synchronized long openSessionCount()
+    {
+        return nextLocalSessionId - sessionStack.size();
     }
 }

@@ -19,120 +19,49 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
-import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
-import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
-import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
-import org.neo4j.coreedge.raft.state.StateMachine;
-import org.neo4j.coreedge.raft.state.StateMachines;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.raft.replication.DirectReplicator;
+import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.logging.NullLogProvider;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static junit.framework.TestCase.fail;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 public class CommitProcessStateMachineCollaborationTest
 {
     @Test
-    public void shouldAlwaysCompleteFutureEvenIfReplicationHappensAtUnfortunateMoment() throws Exception
-    {
-        // given
-        final int numberOfTimesToTimeout = 1;
-        AtomicInteger timeoutCounter = new AtomicInteger( numberOfTimesToTimeout );
-
-        CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
-                new AdvertisedSocketAddress( "raft:1" ) );
-
-        TriggeredReplicator replicator = new TriggeredReplicator();
-        StubCommittingTransactionsRegistry txFutures = new StubCommittingTransactionsRegistry( replicator,
-                timeoutCounter );
-
-        TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
-
-        LocalSessionPool sessionPool = new LocalSessionPool( coreMember );
-        ReplicatedLockTokenStateMachine<Object> lockState = lockState( 0 );
-
-        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
-
-        final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
-                localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
-                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance(),
-                recoverTransactionLogState);
-        StateMachines stateMachines = new StateMachines(stateMachine);
-
-        replicator.setStateMachines( stateMachines );
-
-        ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
-                replicator, sessionPool, new ExponentialBackoffStrategy( 10, SECONDS ),
-                NullLogService.getInstance(), txFutures, new Monitors() );
-
-        // when
-        commitProcess.commit( tx(), NULL, INTERNAL );
-
-        // then
-        assertEquals( 2, replicator.timesReplicated() );
-    }
-
-    @Test
     public void shouldFailTransactionIfLockSessionChanges() throws Exception
     {
         // given
-        CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
-                new AdvertisedSocketAddress( "raft:1" ) );
+        int initialLockSessionId = 23;
+        TransactionToApply transactionToApply = new TransactionToApply( physicalTx( initialLockSessionId ) );
 
-
-        TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
-
-        LocalSessionPool sessionPool = new LocalSessionPool( coreMember );
-        ReplicatedLockTokenStateMachine<Object> lockState = lockState( 1 );
-
+        int finalLockSessionId = 24;
         RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
-        TriggeredReplicator replicator = new TriggeredReplicator();
-        CommittingTransactions txFutures = new StubCommittingTransactionsRegistry( replicator );
-
-        final ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
-                localCommitProcess, sessionPool.getGlobalSession(), lockState, txFutures,
-                new InMemoryStateStorage<>( new GlobalSessionTrackerState<>() ), NullLogProvider.getInstance(),
+        when( recoverTransactionLogState.findLastAppliedIndex() ).thenReturn( -1L );
+        TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
+        ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = new ReplicatedTransactionStateMachine<>(
+                localCommitProcess, lockState( finalLockSessionId ), NullLogProvider.getInstance(),
                 recoverTransactionLogState );
 
-        StateMachines stateMachines = new StateMachines(stateMachine);
-        replicator.setStateMachines(stateMachines);
-
-        ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess(
-                replicator, sessionPool, new ExponentialBackoffStrategy( 10, SECONDS ),
-                NullLogService.getInstance(), txFutures, new Monitors() );
+        DirectReplicator<ReplicatedTransaction> replicator = new DirectReplicator<>( stateMachine );
+        ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess( replicator );
 
         // when
         try
         {
-            commitProcess.commit( tx(), NULL, INTERNAL );
+            commitProcess.commit( transactionToApply, NULL, EXTERNAL );
             fail( "Should have thrown exception." );
         }
         catch ( TransactionFailureException e )
@@ -141,124 +70,17 @@ public class CommitProcessStateMachineCollaborationTest
         }
     }
 
-    public ReplicatedLockTokenStateMachine<Object> lockState( int lockSessionId )
+    public PhysicalTransactionRepresentation physicalTx( int lockSessionId )
     {
-        ReplicatedLockTokenStateMachine<Object> lockState = mock( ReplicatedLockTokenStateMachine.class );
+        PhysicalTransactionRepresentation physicalTx = mock( PhysicalTransactionRepresentation.class );
+        when( physicalTx.getLockSessionId() ).thenReturn( lockSessionId );
+        return physicalTx;
+    }
+
+    public <MEMBER> ReplicatedLockTokenStateMachine<MEMBER> lockState( int lockSessionId )
+    {
+        ReplicatedLockTokenStateMachine<MEMBER> lockState = mock( ReplicatedLockTokenStateMachine.class );
         when( lockState.currentToken() ).thenReturn( new ReplicatedLockTokenRequest<>( null, lockSessionId ) );
         return lockState;
-    }
-
-    private class TriggeredReplicator implements Replicator
-    {
-        private StateMachine stateMachine;
-        private int timesReplicated = 0;
-        private ReplicatedContent content;
-
-        public TriggeredReplicator()
-        {
-        }
-
-        @Override
-        public void replicate( ReplicatedContent content ) throws ReplicationFailedException
-        {
-            this.content = content;
-            timesReplicated++;
-        }
-
-        public void triggerReplication()
-        {
-            stateMachine.applyCommand( content, 1 );
-        }
-
-        public int timesReplicated()
-        {
-            return timesReplicated;
-        }
-
-        public void setStateMachines( StateMachines stateMachine )
-        {
-            this.stateMachine = stateMachine;
-        }
-    }
-
-    private TransactionToApply tx()
-    {
-        TransactionRepresentation tx = mock( TransactionRepresentation.class );
-        when( tx.additionalHeader() ).thenReturn( new byte[]{} );
-        return new TransactionToApply( tx );
-    }
-
-    private class StubCommittingTransactionsRegistry implements CommittingTransactions
-    {
-        CommittingTransactions registry = new CommittingTransactionsRegistry();
-
-        private final TriggeredReplicator replicator;
-        private final AtomicInteger timeoutCounter;
-
-        public StubCommittingTransactionsRegistry( TriggeredReplicator replicator )
-        {
-            this( replicator, new AtomicInteger( 0 ) );
-        }
-
-        public StubCommittingTransactionsRegistry( TriggeredReplicator replicator, AtomicInteger timeoutCounter )
-        {
-            this.replicator = replicator;
-            this.timeoutCounter = timeoutCounter;
-        }
-
-        @Override
-        public CommittingTransaction register( LocalOperationId localOperationId )
-        {
-            return new FutureTxId( registry.register( localOperationId ) );
-        }
-
-        @Override
-        public CommittingTransaction retrieve( LocalOperationId localOperationId )
-        {
-            return registry.retrieve( localOperationId );
-        }
-
-        class FutureTxId implements CommittingTransaction
-        {
-            private final CommittingTransaction delegate;
-
-            public FutureTxId( CommittingTransaction delegate )
-            {
-                this.delegate = delegate;
-            }
-
-            @Override
-            public long waitUntilCommitted( long timeout, TimeUnit unit )
-                    throws InterruptedException, TimeoutException, TransactionFailureException
-            {
-                replicator.triggerReplication();
-                if ( timeoutCounter.getAndDecrement() > 0 )
-                {
-                    throw new TimeoutException();
-                }
-                else
-                {
-                    return delegate.waitUntilCommitted( timeout, unit );
-                }
-            }
-
-            @Override
-            public void notifySuccessfullyCommitted( long txId )
-            {
-                delegate.notifySuccessfullyCommitted( txId );
-            }
-
-            @Override
-            public void notifyCommitFailed( TransactionFailureException e )
-            {
-                delegate.notifyCommitFailed( e );
-            }
-
-            @Override
-            public void close()
-            {
-                delegate.close();
-            }
-        }
     }
 }

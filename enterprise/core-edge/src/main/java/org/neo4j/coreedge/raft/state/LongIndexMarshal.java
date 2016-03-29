@@ -25,51 +25,39 @@ import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class LastAppliedState
+/**
+ * A marshal for an index that starts with -1 at the empty slot before the first real entry at 0.
+ */
+public class LongIndexMarshal implements StateMarshal<Long>
 {
-    private final long lastApplied;
-
-    public LastAppliedState( long lastApplied )
+    @Override
+    public Long startState()
     {
-        this.lastApplied = lastApplied;
+        return -1L;
     }
 
-    public long get()
+    @Override
+    public long ordinal( Long index )
     {
-        return lastApplied;
+        return index;
     }
 
-    public static class Marshal implements StateMarshal<LastAppliedState>
+    @Override
+    public void marshal( Long index, WritableChannel channel ) throws IOException
     {
-        @Override
-        public LastAppliedState startState()
-        {
-            return new LastAppliedState( -1 );
-        }
+        channel.putLong( index );
+    }
 
-        @Override
-        public long ordinal( LastAppliedState lastAppliedState )
+    @Override
+    public Long unmarshal( ReadableChannel source ) throws IOException
+    {
+        try
         {
-            return lastAppliedState.get();
+            return source.getLong();
         }
-
-        @Override
-        public void marshal( LastAppliedState lastAppliedState, WritableChannel channel ) throws IOException
+        catch( ReadPastEndException e )
         {
-            channel.putLong( lastAppliedState.get() );
-        }
-
-        @Override
-        public LastAppliedState unmarshal( ReadableChannel source ) throws IOException
-        {
-            try
-            {
-                return new LastAppliedState( source.getLong() );
-            }
-            catch( ReadPastEndException e )
-            {
-                return null;
-            }
+            return null;
         }
     }
 }
