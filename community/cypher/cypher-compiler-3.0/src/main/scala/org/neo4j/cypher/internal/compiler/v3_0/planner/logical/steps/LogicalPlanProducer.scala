@@ -603,6 +603,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     SetRelationshipPropertiesFromMap(inner, pattern.idName, pattern.expression, pattern.removeOtherProps)(solved)
   }
 
+  def planSetProperty(inner: LogicalPlan, pattern: SetPropertyPattern)
+                     (implicit context: LogicalPlanningContext): LogicalPlan = {
+    val solved = inner.solved.amendQueryGraph(_.addMutatingPatterns(pattern))
+
+    SetProperty(inner, pattern.entityExpression, pattern.propertyKeyName, pattern.expression)(solved)
+  }
+
   def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern)
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
 

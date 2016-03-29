@@ -95,6 +95,8 @@ case object PlanUpdates
       //SET r.prop = 42
       case pattern: SetRelationshipPropertyPattern =>
         context.logicalPlanProducer.planSetRelationshipProperty(source, pattern)
+      case pattern: SetPropertyPattern =>
+        context.logicalPlanProducer.planSetProperty(source, pattern)
       //SET n.prop += {}
       case pattern: SetNodePropertiesFromMapPattern =>
         context.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern)

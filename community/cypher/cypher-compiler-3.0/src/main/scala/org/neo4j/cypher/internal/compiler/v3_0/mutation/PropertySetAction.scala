@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v3_0.InvalidArgumentException
 import org.neo4j.graphdb.{Node, Relationship}
 
 case class PropertySetAction(prop: Property, valueExpression: Expression)
@@ -31,8 +32,10 @@ case class PropertySetAction(prop: Property, valueExpression: Expression)
 
   val Property(mapExpr, propertyKey) = prop
 
-  private val needsExclusiveLock =
-    Expression.hasPropertyReadDependency(mapExpr.asInstanceOf[Variable].entityName, valueExpression, propertyKey.name)
+  private val needsExclusiveLock = mapExpr match {
+    case Variable(entityName) => Expression.hasPropertyReadDependency(entityName, valueExpression, propertyKey.name)
+    case _ => true // we don't know so better safe than sorry!
+  }
 
   def localEffects(symbols: SymbolTable) = Effects.propertyWrite(mapExpr, symbols)(propertyKey.name)
 
@@ -46,7 +49,7 @@ case class PropertySetAction(prop: Property, valueExpression: Expression)
       val (id, ops) = expr match {
         case (e: Relationship) => (e.getId, qtx.relationshipOps)
         case (e: Node) => (e.getId, qtx.nodeOps)
-        case _ => throw new IllegalArgumentException("This should be a node or a relationship")
+        case _ => throw new InvalidArgumentException(s"The expression $mapExpr should have been a node or a relationship, but got $expr")
       }
 
       if (needsExclusiveLock) ops.acquireExclusiveLock(id)
