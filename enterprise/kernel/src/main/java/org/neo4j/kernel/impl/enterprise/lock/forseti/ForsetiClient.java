@@ -101,7 +101,7 @@ public class ForsetiClient implements Locks.Client
      */
     private final ExclusiveLock myExclusiveLock = new ExclusiveLock( this );
 
-    private boolean hasLocks;
+    private volatile boolean hasLocks;
 
     public ForsetiClient( int id,
                           ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps,
@@ -308,6 +308,7 @@ public class ForsetiClient implements Locks.Client
     @Override
     public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
     {
+        hasLocks = true;
         // increment number of active clients if we can't do so we are closed so exiting
         if ( !stateHolder.incrementActiveClients() )
         {
@@ -363,6 +364,7 @@ public class ForsetiClient implements Locks.Client
     @Override
     public boolean trySharedLock( ResourceType resourceType, long resourceId )
     {
+        hasLocks = true;
         // increment number of active clients if we can't do so we are closed so exiting
         if ( !stateHolder.incrementActiveClients() )
         {
