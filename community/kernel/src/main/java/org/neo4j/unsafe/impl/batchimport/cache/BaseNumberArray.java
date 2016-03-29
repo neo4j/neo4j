@@ -19,41 +19,38 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
-
-public abstract class OffHeapNumberArray<N extends NumberArray<N>> extends BaseNumberArray<N>
+/**
+ * Contains basic functionality of fixed size number arrays.
+ */
+abstract class BaseNumberArray<N extends NumberArray<N>> implements NumberArray<N>
 {
-    protected final long address;
-    protected final long length;
-    private boolean closed;
+    protected final int itemSize;
+    private final long base;
 
-    protected OffHeapNumberArray( long length, int itemSize, long base )
+    /**
+     * @param itemSize byte size of each item in this array.
+     * @param base base index to rebase all indexes in accessor methods off of. See {@link #at(long)}.
+     */
+    protected BaseNumberArray( int itemSize, long base )
     {
-        super( itemSize, base );
-        UnsafeUtil.assertHasUnsafe();
-        this.length = length;
-        this.address = UnsafeUtil.allocateMemory( length * itemSize );
+        this.itemSize = itemSize;
+        this.base = base;
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
-    public long length()
+    public N at( long index )
     {
-        return length;
+        return (N)this;
     }
 
-    @Override
-    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
+    /**
+     * Utility for rebasing an external index to internal index.
+     * @param index external index.
+     * @return index into internal data structure.
+     */
+    protected long rebase( long index )
     {
-        visitor.offHeapUsage( length * itemSize );
-    }
-
-    @Override
-    public void close()
-    {
-        if ( !closed )
-        {
-            UnsafeUtil.free( address );
-            closed = true;
-        }
+        return index - base;
     }
 }

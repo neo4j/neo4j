@@ -30,23 +30,30 @@ import org.neo4j.graphdb.Direction;
 public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 {
     private static final long EMPTY = -1;
+    private static final byte[] DEFAULT_VALUE = new byte[10];
+    private static final long MAX_RELATIONSHIP_ID = (1L << 48/*6B*/) - 2/*reserving -1 as legal default value*/;
+    static
+    {
+        // This looks odd, but we're using the array itself to create a default byte[] for another
+        ByteArray array = NumberArrayFactory.HEAP.newByteArray( 1, DEFAULT_VALUE.clone() );
+        array.set6BLong( 0, 0, EMPTY );
+        array.setInt( 0, 6, 0 );
+        array.get( 0, DEFAULT_VALUE );
+    }
 
-    private final LongArray array;
+    private final ByteArray array;
     private final int denseNodeThreshold;
     private final RelGroupCache relGroupCache;
-    private final long base;
 
     public NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold )
     {
-        this( arrayFactory, denseNodeThreshold, 0 );
+        this( arrayFactory, denseNodeThreshold, 1_000_000, 0 );
     }
 
-    NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold, long base )
+    NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold, int chunkSize, long base )
     {
-        int chunkSize = 1_000_000;
-        this.array = arrayFactory.newDynamicLongArray( chunkSize, IdFieldManipulator.emptyField() );
+        this.array = arrayFactory.newDynamicByteArray( chunkSize, DEFAULT_VALUE );
         this.denseNodeThreshold = denseNodeThreshold;
-        this.base = base;
         this.relGroupCache = new RelGroupCache( arrayFactory, chunkSize, base );
     }
 
@@ -57,30 +64,35 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
      */
     public int incrementCount( long nodeId )
     {
-        long field = array.get( nodeId );
-        field = IdFieldManipulator.changeCount( field, 1 );
-        array.set( nodeId, field );
-        return IdFieldManipulator.getCount( field );
+        ByteArray array = this.array.at( nodeId );
+        int count = array.getInt( nodeId, 6 ) + 1;
+        array.setInt( nodeId, 6, count );
+        return count;
     }
 
     public boolean isDense( long nodeId )
     {
-        return fieldIsDense( array.get( nodeId ) );
+        return isDense( array, nodeId );
     }
 
-    private boolean fieldIsDense( long field )
+    private boolean isDense( ByteArray array, long nodeId )
     {
         if ( denseNodeThreshold == EMPTY )
         {   // We haven't initialized the rel group cache yet
             return false;
         }
 
-        return IdFieldManipulator.getCount( field ) >= denseNodeThreshold;
+        return array.getInt( nodeId, 6 ) >= denseNodeThreshold;
     }
 
     public long getAndPutRelationship( long nodeId, int type, Direction direction, long firstRelId,
             boolean incrementCount )
     {
+        if ( firstRelId > MAX_RELATIONSHIP_ID )
+        {
+            throw new IllegalArgumentException( "Illegal relationship id, max is " + MAX_RELATIONSHIP_ID );
+        }
+
         /*
          * OK so the story about counting goes: there's an initial pass for counting number of relationships
          * per node, globally, not per type/direction. After that the relationship group cache is initialized
@@ -88,24 +100,28 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
          * not increment the global count, but it should increment the type/direction counts.
          */
 
-        long field = array.get( nodeId );
-        long existingId = IdFieldManipulator.getId( field );
-        if ( fieldIsDense( field ) )
+        ByteArray array = this.array.at( nodeId );
+        long existingId = all48Bits( array, nodeId, 0 );
+        if ( isDense( array, nodeId ) )
         {
             if ( existingId == EMPTY )
             {
                 existingId = relGroupCache.allocate( type, direction, firstRelId, incrementCount );
-                field = IdFieldManipulator.setId( field, existingId );
-                array.set( nodeId, field );
+                array.set6BLong( nodeId, 0, existingId );
                 return EMPTY;
             }
             return relGroupCache.putRelationship( existingId, type, direction, firstRelId, incrementCount );
         }
 
-        field = IdFieldManipulator.setId( field, firstRelId );
         // Don't increment count for sparse node since that has already been done in a previous pass
-        array.set( nodeId, field );
+        array.set6BLong( nodeId, 0, firstRelId );
         return existingId;
+    }
+
+    private static long all48Bits( ByteArray array, long index, int offset )
+    {
+        long raw = array.get6BLong( index, offset );
+        return raw == -1L ? raw : raw & 0xFFFFFFFFFFFFL;
     }
 
     /**
@@ -114,14 +130,14 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
      */
     public long getFirstRel( long nodeId, GroupVisitor visitor )
     {
-        long field = array.get( nodeId );
-        if ( fieldIsDense( field ) )
+        ByteArray array = this.array.at( nodeId );
+        long id = all48Bits( array, nodeId, 0 );
+        if ( isDense( array, nodeId ) )
         {   // Indirection into rel group cache
-            long relGroupIndex = IdFieldManipulator.getId( field );
-            return relGroupCache.visitGroups( nodeId, relGroupIndex, visitor );
+            return relGroupCache.visitGroups( nodeId, id, visitor );
         }
 
-        return IdFieldManipulator.getId( field );
+        return id;
     }
 
     public void clearRelationships()
@@ -129,11 +145,9 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         long length = array.length();
         for ( long i = 0; i < length; i++ )
         {
-            long field = array.get( i );
-            if ( !fieldIsDense( field ) )
+            if ( !isDense( i ) )
             {
-                field = IdFieldManipulator.cleanId( field );
-                array.set( i, field );
+                array.set6BLong( i, 0, -1 );
             }
         }
         relGroupCache.clearRelationships();
@@ -141,23 +155,14 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 
     public int getCount( long nodeId, int type, Direction direction )
     {
-        long field = array.get( nodeId );
-        if ( fieldIsDense( field ) )
+        ByteArray array = this.array.at( nodeId );
+        if ( isDense( array, nodeId ) )
         {   // Indirection into rel group cache
-            long relGroupIndex = IdFieldManipulator.getId( field );
-            if ( relGroupIndex == EMPTY )
-            {
-                return 0;
-            }
-            relGroupIndex = relGroupCache.findGroupIndexForType( relGroupIndex, type );
-            if ( relGroupIndex == EMPTY )
-            {
-                return 0;
-            }
-            field = relGroupCache.getField( relGroupIndex, relGroupCache.directionIndex( direction ) );
+            long id = all48Bits( array, nodeId, 0 );
+            return id == EMPTY ? 0 : relGroupCache.getCount( id, type, direction );
         }
 
-        return IdFieldManipulator.getCount( field );
+        return array.getInt( nodeId, 6 );
     }
 
     public interface GroupVisitor
@@ -180,41 +185,61 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 
     private static class RelGroupCache implements AutoCloseable, MemoryStatsVisitor.Visitable
     {
-        private static final int ENTRY_SIZE = 4;
+        private static final byte[] DEFAULT_VALUE = new byte[6 + 2 + (6 + 4) * Direction.values().length];
+        static
+        {
+            ByteArray defaultArray = NumberArrayFactory.HEAP.newByteArray( 1, DEFAULT_VALUE.clone() );
+            defaultArray.set6BLong( 0, 0, EMPTY );
+            defaultArray.setShort( 0, 6, (short) EMPTY );
+            for ( int i = 0, offsetBase = 8; i < 3; i++, offsetBase += 10 )
+            {
+                defaultArray.set6BLong( 0, offsetBase, EMPTY );
+                defaultArray.setInt( 0, offsetBase + 6, 0 );
+            }
+            defaultArray.get( 0, DEFAULT_VALUE );
+        }
 
-        private static final int INDEX_NEXT_AND_TYPE = 0;
-        private static final int INDEX_OUT = 1;
-        private static final int INDEX_IN = 2;
-        private static final int INDEX_LOOP = 3;
+        private static final int NEXT_OFFSET = 0;
+        private static final int TYPE_OFFSET = 6;
 
         // Used for testing high id values. Should always be zero in production
         private final long base;
-        private final LongArray array;
+        private final ByteArray array;
         private final AtomicLong nextFreeId;
 
         RelGroupCache( NumberArrayFactory arrayFactory, long chunkSize, long base )
         {
             this.base = base;
             assert chunkSize > 0;
-            this.array = arrayFactory.newDynamicLongArray( chunkSize, -1 );
+            // We can use this array to have "entries" accommodating one entire group, e.g:
+            // - next
+            // - type
+            // - out
+            // - out degree
+            // - in
+            // - in degree
+            // - loop
+            // - loop degree
+            this.array = arrayFactory.newDynamicByteArray( chunkSize, DEFAULT_VALUE );
             this.nextFreeId = new AtomicLong( base );
+        }
+
+        public int getCount( long id, int type, Direction direction )
+        {
+            id = findGroupIndexForType( id, type );
+            return id == EMPTY ? 0 : array.getInt( rebase( id ), countOffset( direction ) );
         }
 
         private void clearRelationships()
         {
-            long length = array.length() / ENTRY_SIZE;
+            long length = array.length();
             for ( long i = 0; i < length; i++ )
             {
-                clearRelationshipId( i, INDEX_OUT );
-                clearRelationshipId( i, INDEX_IN );
-                clearRelationshipId( i, INDEX_LOOP );
+                ByteArray array = this.array.at( i );
+                array.set6BLong( i, directionOffset( Direction.OUTGOING ), EMPTY );
+                array.set6BLong( i, directionOffset( Direction.INCOMING ), EMPTY );
+                array.set6BLong( i, directionOffset( Direction.BOTH ), EMPTY );
             }
-        }
-
-        private void clearRelationshipId( long relGroupIndex, int fieldIndex )
-        {
-            long index = index( relGroupIndex, fieldIndex );
-            array.set( rebase( index ), IdFieldManipulator.cleanId( array.get( index ) ) );
         }
 
         /**
@@ -230,12 +255,10 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             return nextFreeId.getAndIncrement();
         }
 
-        private void initializeGroup( long relGroupIndex, int type )
+        private void initializeGroup( ByteArray array, long relGroupIndex, int type )
         {
-            setField( relGroupIndex, INDEX_NEXT_AND_TYPE, NextFieldManipulator.initialFieldWithType( type ) );
-            setField( relGroupIndex, INDEX_OUT, IdFieldManipulator.emptyField() );
-            setField( relGroupIndex, INDEX_IN, IdFieldManipulator.emptyField() );
-            setField( relGroupIndex, INDEX_LOOP, IdFieldManipulator.emptyField() );
+            array.setShort( rebase( relGroupIndex ), TYPE_OFFSET, (short) type );
+            // All other values are set to defaults automatically
         }
 
         private long visitGroups( long nodeId, long relGroupIndex, GroupVisitor visitor )
@@ -244,11 +267,13 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             long first = -1;
             while ( currentIndex != EMPTY )
             {
-                int type = NextFieldManipulator.getType( getField( currentIndex, INDEX_NEXT_AND_TYPE ) );
-                long out = IdFieldManipulator.getId( getField( currentIndex, INDEX_OUT ) );
-                long in = IdFieldManipulator.getId( getField( currentIndex, INDEX_IN ) );
-                long loop = IdFieldManipulator.getId( getField( currentIndex, INDEX_LOOP ) );
-                long next = NextFieldManipulator.getNext( getField( currentIndex, INDEX_NEXT_AND_TYPE ) );
+                long index = rebase( currentIndex );
+                ByteArray array = this.array.at( index );
+                int type = array.getShort( index, TYPE_OFFSET );
+                long out = all48Bits( array, index, directionOffset( Direction.OUTGOING ) );
+                long in = all48Bits( array, index, directionOffset( Direction.INCOMING ) );
+                long loop = all48Bits( array, index, directionOffset( Direction.BOTH ) );
+                long next = all48Bits( array, index, NEXT_OFFSET );
                 long id = visitor.visit( nodeId, type, next, out, in, loop );
                 if ( first == -1 )
                 {   // This is the one we return
@@ -260,45 +285,37 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             return first;
         }
 
-        private void setField( long relGroupIndex, int index, long field )
+        private int directionOffset( Direction direction )
         {
-            array.set( index( relGroupIndex, index ), field );
+            return 8 + (direction.ordinal() * 10);
         }
 
-        private long getField( long relGroupIndex, int index )
+        private int countOffset( Direction direction )
         {
-            return array.get( index( relGroupIndex, index ) );
-        }
-
-        private int directionIndex( Direction direction )
-        {
-            return direction.ordinal()+1;
-        }
-
-        private long index( long relGroupIndex, int fieldIndex )
-        {
-            return rebase( relGroupIndex ) * ENTRY_SIZE + fieldIndex;
+            return directionOffset( direction ) + 6;
         }
 
         public long allocate( int type, Direction direction, long relId, boolean incrementCount )
         {
-            long logicalPosition = nextFreeId();
-            initializeGroup( logicalPosition, type );
-            putRelField( logicalPosition, direction, relId, incrementCount );
-            return logicalPosition;
+            long index = nextFreeId();
+            ByteArray array = this.array.at( rebase( index ) );
+            initializeGroup( array, index, type );
+            putRelField( array, index, direction, relId, incrementCount );
+            return index;
         }
 
-        private long putRelField( long relGroupIndex, Direction direction, long relId, boolean increment )
+        private long putRelField( ByteArray array, long relGroupIndex, Direction direction,
+                long relId, boolean increment )
         {
-            int directionIndex = directionIndex( direction );
-            long field = getField( relGroupIndex, directionIndex );
-            long previousId = IdFieldManipulator.getId( field );
-            field = IdFieldManipulator.setId( field, relId );
+            long index = rebase( relGroupIndex );
+            int directionOffset = directionOffset( direction );
+            long previousId = all48Bits( array, index, directionOffset );
+            array.set6BLong( index, directionOffset, relId );
             if ( increment )
             {
-                field = IdFieldManipulator.changeCount( field, 1 );
+                int countOffset = countOffset( direction );
+                array.setInt( index, countOffset, array.getInt( index, countOffset ) + 1 );
             }
-            setField( relGroupIndex, directionIndex, field );
             return previousId;
         }
 
@@ -309,47 +326,48 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             long previousIndex = EMPTY;
             while ( currentIndex != EMPTY )
             {
-                long foundType = NextFieldManipulator.getType( getField( currentIndex, INDEX_NEXT_AND_TYPE ) );
+                long currentIndexRebased = rebase( currentIndex );
+                ByteArray array = this.array.at( currentIndexRebased );
+                long foundType = array.getShort( currentIndexRebased, TYPE_OFFSET );
                 if ( foundType == type )
                 {   // Found it
-                    return putRelField( currentIndex, direction, relId, trueForIncrement );
+                    return putRelField( array, currentIndex, direction, relId, trueForIncrement );
                 }
                 else if ( foundType > type )
                 {   // We came too far, create room for it
                     break;
                 }
                 previousIndex = currentIndex;
-                currentIndex = NextFieldManipulator.getNext( getField( currentIndex, INDEX_NEXT_AND_TYPE ) );
+                currentIndex = all48Bits( array, currentIndexRebased, NEXT_OFFSET );
             }
 
             long newIndex = nextFreeId();
             if ( previousIndex == EMPTY )
             {   // We are at the start
-                array.swap( index( currentIndex, 0 ), index( newIndex, 0 ), ENTRY_SIZE );
+                array.swap( rebase( currentIndex ), rebase( newIndex ), 1 );
                 long swap = newIndex;
                 newIndex = currentIndex;
                 currentIndex = swap;
             }
 
-            initializeGroup( newIndex, type );
+            ByteArray array = this.array.at( rebase( newIndex ) );
+            initializeGroup( array, newIndex, type );
             if ( currentIndex != EMPTY )
             {   // We are NOT at the end
-                setNextField( newIndex, currentIndex );
+                setNextField( array, newIndex, currentIndex );
             }
 
             if ( previousIndex != EMPTY )
             {   // We are NOT at the start
-                setNextField( previousIndex, newIndex );
+                setNextField( this.array, previousIndex, newIndex );
             }
 
-            return putRelField( newIndex, direction, relId, trueForIncrement );
+            return putRelField( array, newIndex, direction, relId, trueForIncrement );
         }
 
-        private void setNextField( long relGroupIndex, long next )
+        private void setNextField( ByteArray array, long relGroupIndex, long next )
         {
-            long field = getField( relGroupIndex, INDEX_NEXT_AND_TYPE );
-            field = NextFieldManipulator.setNext( field, next );
-            setField( relGroupIndex, INDEX_NEXT_AND_TYPE, field );
+            array.set6BLong( rebase( relGroupIndex ), NEXT_OFFSET, next );
         }
 
         private long findGroupIndexForType( long relGroupIndex, int type )
@@ -357,7 +375,8 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             long currentIndex = relGroupIndex;
             while ( currentIndex != EMPTY )
             {
-                int foundType = NextFieldManipulator.getType( getField( currentIndex, INDEX_NEXT_AND_TYPE ) );
+                long index = rebase( currentIndex );
+                int foundType = array.getShort( index, TYPE_OFFSET );
                 if ( foundType == type )
                 {   // Found it
                     return currentIndex;
@@ -366,7 +385,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
                 {   // We came too far, create room for it
                     break;
                 }
-                currentIndex = NextFieldManipulator.getNext( getField( currentIndex, INDEX_NEXT_AND_TYPE ) );
+                currentIndex = all48Bits( array, index, 0 );
             }
             return EMPTY;
         }

@@ -25,13 +25,13 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
  * Off-heap version of {@link LongArray} using {@code sun.misc.Unsafe}. Supports arrays with length beyond
  * Integer.MAX_VALUE.
  */
-public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
+public class OffHeapLongArray extends OffHeapRegularNumberArray<LongArray> implements LongArray
 {
     private final long defaultValue;
 
-    public OffHeapLongArray( long length, long defaultValue )
+    public OffHeapLongArray( long length, long defaultValue, long base )
     {
-        super( length, 3 );
+        super( length, 3, base );
         this.defaultValue = defaultValue;
         clear();
     }
@@ -57,7 +57,7 @@ public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
         }
         else
         {
-            for ( long i = 0, adr = address; i < length; i++, adr += stride )
+            for ( long i = 0, adr = address; i < length; i++, adr += itemSize )
             {
                 UnsafeUtil.putLong( adr, defaultValue );
             }
@@ -70,7 +70,7 @@ public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
         long fromAddress = addressOf( fromIndex );
         long toAddress = addressOf( toIndex );
 
-        for ( int i = 0; i < numberOfEntries; i++, fromAddress += stride, toAddress += stride )
+        for ( int i = 0; i < numberOfEntries; i++, fromAddress += itemSize, toAddress += itemSize )
         {
             long fromValue = UnsafeUtil.getLong( fromAddress );
             UnsafeUtil.putLong( fromAddress, UnsafeUtil.getLong( toAddress ) );

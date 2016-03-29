@@ -25,7 +25,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
  *
  * @see NumberArrayFactory
  */
-public interface LongArray extends NumberArray
+public interface LongArray extends NumberArray<LongArray>
 {
     long get( long index );
 

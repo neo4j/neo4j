@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.helpers.Exceptions;
 
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 
 import static org.neo4j.helpers.Format.bytes;
@@ -40,7 +41,18 @@ public interface NumberArrayFactory
      * @param defaultValue value which will represent unset values.
      * @return a fixed size {@link IntArray}.
      */
-    IntArray newIntArray( long length, int defaultValue );
+    default IntArray newIntArray( long length, int defaultValue )
+    {
+        return newIntArray( length, defaultValue, 0 );
+    }
+
+    /**
+     * @param length size of the array.
+     * @param defaultValue value which will represent unset values.
+     * @param base base index to rebase all requested indexes with.
+     * @return a fixed size {@link IntArray}.
+     */
+    IntArray newIntArray( long length, int defaultValue, long base );
 
     /**
      * @param chunkSize the size of each array (number of items). Where new chunks are added when needed.
@@ -54,7 +66,18 @@ public interface NumberArrayFactory
      * @param defaultValue value which will represent unset values.
      * @return a fixed size {@link LongArray}.
      */
-    LongArray newLongArray( long length, long defaultValue );
+    default LongArray newLongArray( long length, long defaultValue )
+    {
+        return newLongArray( length, defaultValue, 0 );
+    }
+
+    /**
+     * @param length size of the array.
+     * @param defaultValue value which will represent unset values.
+     * @param base base index to rebase all requested indexes with.
+     * @return a fixed size {@link LongArray}.
+     */
+    LongArray newLongArray( long length, long defaultValue, long base );
 
     /**
      * @param chunkSize the size of each array (number of items). Where new chunks are added when needed.
@@ -62,6 +85,31 @@ public interface NumberArrayFactory
      * @return dynamically growing {@link LongArray}.
      */
     LongArray newDynamicLongArray( long chunkSize, long defaultValue );
+
+    /**
+     * @param length size of the array.
+     * @param defaultValue value which will represent unset values.
+     * @return a fixed size {@link ByteArray}.
+     */
+    default ByteArray newByteArray( long length, byte[] defaultValue )
+    {
+        return newByteArray( length, defaultValue, 0 );
+    }
+
+    /**
+     * @param length size of the array.
+     * @param defaultValue value which will represent unset values.
+     * @param base base index to rebase all requested indexes with.
+     * @return a fixed size {@link ByteArray}.
+     */
+    ByteArray newByteArray( long length, byte[] defaultValue, long base );
+
+    /**
+     * @param chunkSize the size of each array (number of items). Where new chunks are added when needed.
+     * @param defaultValue value which will represent unset values.
+     * @return dynamically growing {@link ByteArray}.
+     */
+    ByteArray newDynamicByteArray( long chunkSize, byte[] defaultValue );
 
     /**
      * Implements the dynamic array methods, because they are the same in most implementations.
@@ -79,6 +127,12 @@ public interface NumberArrayFactory
         {
             return new DynamicLongArray( this, chunkSize, defaultValue );
         }
+
+        @Override
+        public ByteArray newDynamicByteArray( long chunkSize, byte[] defaultValue )
+        {
+            return new DynamicByteArray( this, chunkSize, defaultValue );
+        }
     }
 
     /**
@@ -87,15 +141,21 @@ public interface NumberArrayFactory
     NumberArrayFactory HEAP = new Adapter()
     {
         @Override
-        public IntArray newIntArray( long length, int defaultValue )
+        public IntArray newIntArray( long length, int defaultValue, long base )
         {
-            return new HeapIntArray( safeCastLongToInt( length ), defaultValue );
+            return new HeapIntArray( safeCastLongToInt( length ), defaultValue, toIntExact( base ) );
         }
 
         @Override
-        public LongArray newLongArray( long length, long defaultValue )
+        public LongArray newLongArray( long length, long defaultValue, long base )
         {
-            return new HeapLongArray( safeCastLongToInt( length ), defaultValue );
+            return new HeapLongArray( safeCastLongToInt( length ), defaultValue, toIntExact( base ) );
+        }
+
+        @Override
+        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
+        {
+            return new HeapByteArray( safeCastLongToInt( length ), defaultValue, toIntExact( base ) );
         }
 
         @Override
@@ -111,15 +171,21 @@ public interface NumberArrayFactory
     NumberArrayFactory OFF_HEAP = new Adapter()
     {
         @Override
-        public IntArray newIntArray( long length, int defaultValue )
+        public IntArray newIntArray( long length, int defaultValue, long base )
         {
-            return new OffHeapIntArray( length, defaultValue );
+            return new OffHeapIntArray( length, defaultValue, base );
         }
 
         @Override
-        public LongArray newLongArray( long length, long defaultValue )
+        public LongArray newLongArray( long length, long defaultValue, long base )
         {
-            return new OffHeapLongArray( length, defaultValue );
+            return new OffHeapLongArray( length, defaultValue, base );
+        }
+
+        @Override
+        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
+        {
+            return new OffHeapByteArray( length, defaultValue, base );
         }
 
         @Override
@@ -144,14 +210,14 @@ public interface NumberArrayFactory
         }
 
         @Override
-        public LongArray newLongArray( long length, long defaultValue )
+        public LongArray newLongArray( long length, long defaultValue, long base )
         {
             OutOfMemoryError error = null;
             for ( NumberArrayFactory candidate : candidates )
             {
                 try
                 {
-                    return candidate.newLongArray( length, defaultValue );
+                    return candidate.newLongArray( length, defaultValue, base );
                 }
                 catch ( OutOfMemoryError e )
                 {   // Allright let's try the next one
@@ -162,14 +228,14 @@ public interface NumberArrayFactory
         }
 
         @Override
-        public IntArray newIntArray( long length, int defaultValue )
+        public IntArray newIntArray( long length, int defaultValue, long base )
         {
             OutOfMemoryError error = null;
             for ( NumberArrayFactory candidate : candidates )
             {
                 try
                 {
-                    return candidate.newIntArray( length, defaultValue );
+                    return candidate.newIntArray( length, defaultValue, base );
                 }
                 catch ( OutOfMemoryError e )
                 {   // Allright let's try the next one
@@ -177,6 +243,24 @@ public interface NumberArrayFactory
                 }
             }
             throw error( length, 4, error );
+        }
+
+        @Override
+        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
+        {
+            OutOfMemoryError error = null;
+            for ( NumberArrayFactory candidate : candidates )
+            {
+                try
+                {
+                    return candidate.newByteArray( length, defaultValue, base );
+                }
+                catch ( OutOfMemoryError e )
+                {   // Allright let's try the next one
+                    error = e;
+                }
+            }
+            throw error( length, defaultValue.length, error );
         }
 
         private OutOfMemoryError error( long length, int itemSize, OutOfMemoryError error )
@@ -196,24 +280,35 @@ public interface NumberArrayFactory
         private final NumberArrayFactory delegate = new Auto( OFF_HEAP, HEAP );
 
         @Override
-        public LongArray newLongArray( long length, long defaultValue )
+        public LongArray newLongArray( long length, long defaultValue, long base )
         {
             // Here we want to have the property of a dynamic array which makes some parts of the array
             // live on heap, some off. At the same time we want a fixed size array. Therefore first create
-            // the array as a dynamic array, make it grow to the requested length and then fixate.
-            DynamicLongArray array = newDynamicLongArray( fractionOf( length ), defaultValue );
-            array.ensureChunkAt( length-1 );
+            // the array as a dynamic array and make it grow to the requested length.
+            LongArray array = newDynamicLongArray( fractionOf( length ), defaultValue );
+            array.at( length-1 );
             return array;
         }
 
         @Override
-        public IntArray newIntArray( long length, int defaultValue )
+        public IntArray newIntArray( long length, int defaultValue, long base )
         {
             // Here we want to have the property of a dynamic array which makes some parts of the array
             // live on heap, some off. At the same time we want a fixed size array. Therefore first create
-            // the array as a dynamic array, make it grow to the requested length and then fixate.
-            DynamicIntArray array = newDynamicIntArray( fractionOf( length ), defaultValue );
-            array.ensureChunkAt( length-1 );
+            // the array as a dynamic array and make it grow to the requested length.
+            IntArray array = newDynamicIntArray( fractionOf( length ), defaultValue );
+            array.at( length-1 );
+            return array;
+        }
+
+        @Override
+        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
+        {
+            // Here we want to have the property of a dynamic array which makes some parts of the array
+            // live on heap, some off. At the same time we want a fixed size array. Therefore first create
+            // the array as a dynamic array and make it grow to the requested length.
+            ByteArray array = newDynamicByteArray( fractionOf( length ), defaultValue );
+            array.at( length-1 );
             return array;
         }
 
@@ -223,15 +318,21 @@ public interface NumberArrayFactory
         }
 
         @Override
-        public DynamicIntArray newDynamicIntArray( long chunkSize, int defaultValue )
+        public IntArray newDynamicIntArray( long chunkSize, int defaultValue )
         {
             return new DynamicIntArray( delegate, chunkSize, defaultValue );
         }
 
         @Override
-        public DynamicLongArray newDynamicLongArray( long chunkSize, long defaultValue )
+        public LongArray newDynamicLongArray( long chunkSize, long defaultValue )
         {
             return new DynamicLongArray( delegate, chunkSize, defaultValue );
+        }
+
+        @Override
+        public ByteArray newDynamicByteArray( long chunkSize, byte[] defaultValue )
+        {
+            return new DynamicByteArray( delegate, chunkSize, defaultValue );
         }
 
         @Override

@@ -24,7 +24,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
  *
  * @see NumberArrayFactory
  */
-public interface NumberArray extends MemoryStatsVisitor.Visitable, AutoCloseable
+public interface NumberArray<N extends NumberArray<N>> extends MemoryStatsVisitor.Visitable, AutoCloseable
 {
     /**
      * @return length of the array, i.e. the capacity.
@@ -51,4 +51,18 @@ public interface NumberArray extends MemoryStatsVisitor.Visitable, AutoCloseable
      */
     @Override
     void close();
+
+    /**
+     * Part of the nature of {@link NumberArray} is that {@link #length()} can be dynamically growing.
+     * For that to work some implementations (those coming from e.g
+     * {@link NumberArrayFactory#newDynamicIntArray(long, int)} and such dynamic calls) has an indirection,
+     * one that is a bit costly when comparing to raw array access. In scenarios where there will be two or
+     * more access to the same index in the array it will be more efficient to resolve this indirection once
+     * and return the "raw" array for that given index so that it can be used directly in multiple calls,
+     * knowing that the returned array holds the given index.
+     *
+     * @param index index into the array which the returned array will contain.
+     * @return array sure to hold the given index.
+     */
+    N at( long index );
 }
