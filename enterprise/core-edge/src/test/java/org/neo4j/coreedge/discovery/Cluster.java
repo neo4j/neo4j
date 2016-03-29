@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -146,33 +148,36 @@ public class Cluster
             List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams )
             throws InterruptedException, ExecutionException
     {
-        List<Callable<CoreGraphDatabase>> coreServerSuppliers = new ArrayList<>();
+        CompletionService<CoreGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
+
         for ( int i = 0; i < noOfCoreServers; i++ )
         {
-            // start up a core server
             final int serverId = i;
-            coreServerSuppliers.add( () -> startCoreServer( serverId, noOfCoreServers, addresses, extraParams ) );
+            ecs.submit( () -> startCoreServer( serverId, noOfCoreServers, addresses, extraParams ) );
         }
 
-        Future<List<CoreGraphDatabase>> coreServerFutures = combine( executor.invokeAll( coreServerSuppliers ) );
-        this.coreServers.addAll( coreServerFutures.get() );
+        for ( int i = 0; i < noOfCoreServers; i++ )
+        {
+            this.coreServers.add( ecs.take().get() );
+        }
     }
 
     private void startEdgeServers( ExecutorService executor, int noOfEdgeServers, final List<AdvertisedSocketAddress>
             addresses )
             throws InterruptedException, ExecutionException
     {
-        List<Callable<EdgeGraphDatabase>> edgeServerSuppliers = new ArrayList<>();
+        CompletionService<EdgeGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
 
         for ( int i = 0; i < noOfEdgeServers; i++ )
         {
-            // start up an edge server
             final int serverId = i;
-            edgeServerSuppliers.add( () -> startEdgeServer( serverId, addresses ) );
+            ecs.submit( () -> startEdgeServer( serverId, addresses ) );
         }
 
-        Future<List<EdgeGraphDatabase>> edgeServerFutures = combine( executor.invokeAll( edgeServerSuppliers ) );
-        this.edgeServers.addAll( edgeServerFutures.get() );
+        for ( int i = 0; i < noOfEdgeServers; i++ )
+        {
+            this.edgeServers.add( ecs.take().get() );
+        }
     }
 
     public CoreGraphDatabase startCoreServer( int serverId, int clusterSize, List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams )
