@@ -36,6 +36,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.server.CommunityBootstrapper;
+import org.neo4j.server.ServerCommandLineArgs;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.SuppressOutput;
 
@@ -43,6 +44,11 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -205,5 +211,81 @@ public class ConfigLoaderTest
                 is( new File( "foo/bar/auth" ).getAbsoluteFile() ) );
     }
 
+    @Test
+    public void shouldWarnForNonExistingSetting() throws IOException
+    {
+        // given
+        File file = ServerTestUtils.createTempConfigFile( folder.getRoot() );
+        Log mockLog = mock(Log.class);
 
+        try ( BufferedWriter out = new BufferedWriter( new FileWriter( file, true ) ) )
+        {
+            out.write( "this.setting.does.not.exist=value" );
+            out.write( System.lineSeparator() );
+        }
+
+        // when
+        Config config = configLoader.loadConfig( Optional.of( file ), mockLog );
+
+        // then
+        verify( mockLog ).warn( "The setting 'this.setting.does.not.exist' is not recognized and will not have any effect." );
+    }
+
+    @Test
+    public void shouldNotWarnForExistingSetting() throws IOException
+    {
+        // given
+        File file = ServerTestUtils.createTempConfigFile( folder.getRoot() );
+        Log mockLog = mock(Log.class);
+
+        try ( BufferedWriter out = new BufferedWriter( new FileWriter( file, true ) ) )
+        {
+            out.write( GraphDatabaseSettings.logs_directory.name() + "=/tmp/log" );
+            out.write( System.lineSeparator() );
+        }
+
+        // when
+        Config config = configLoader.loadConfig( Optional.of( file ), mockLog );
+
+        // then
+        verify( mockLog, times(0) ).warn( "The setting '" + GraphDatabaseSettings.logs_directory.name() +
+                                          "' is not recognized and will not have any effect." );
+    }
+
+    @Test
+    public void shouldWarnForNonExistingCommandLineSetting() throws IOException
+    {
+        // Given
+        File file = ServerTestUtils.createTempConfigFile( folder.getRoot() );
+        String[] args = array(
+                "-c", "this.setting.does.also.not.exist=value" );
+        ServerCommandLineArgs parsed = ServerCommandLineArgs.parse( args );
+
+        Log mockLog = mock(Log.class);
+
+        // When
+        Config config = configLoader.loadConfig( Optional.of( file ), mockLog, parsed.configOverrides() );
+
+        // then
+        verify( mockLog ).warn( "The setting 'this.setting.does.also.not.exist' is not recognized and will not have any effect." );
+    }
+
+    @Test
+    public void shouldNotWarnForExistingCommandLineSetting() throws IOException
+    {
+        // Given
+        File file = ServerTestUtils.createTempConfigFile( folder.getRoot() );
+        String[] args = array(
+                "-c", ServerSettings.http_logging_enabled.name() + "=true" );
+        ServerCommandLineArgs parsed = ServerCommandLineArgs.parse( args );
+
+        Log mockLog = mock(Log.class);
+
+        // When
+        Config config = configLoader.loadConfig( Optional.of( file ), mockLog, parsed.configOverrides() );
+
+        // then
+        verify( mockLog, times(0) ).warn( "The setting '" + ServerSettings.http_logging_enabled.name() +
+                                          "' is not recognized and will not have any effect." );
+    }
 }

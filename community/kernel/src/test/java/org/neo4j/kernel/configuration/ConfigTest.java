@@ -28,12 +28,16 @@ import java.util.Map;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.logging.Log;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
@@ -88,6 +92,34 @@ public class ConfigTest
 
         // Then
         assertThat( config.get( MyMigratingSettings.newer ), is( "hello!" ) );
+    }
+
+    @Test
+    public void shouldWarnForUnrecognizedSettingNames()
+    {
+        // Given
+        Log mockLog = mock( Log.class );
+
+        // When
+        Config config = new Config( stringMap( "unrecognized", "hello!" ), MySettingsWithDefaults.class );
+        config.setLogger( mockLog );
+
+        // Then
+        verify( mockLog ).warn( "The setting 'unrecognized' is not recognized and will not have any effect." );
+    }
+
+    @Test
+    public void shouldNotWarnForMigratedSettingNames()
+    {
+        // Given
+        Log mockLog = mock( Log.class );
+
+        // When
+        Config config = new Config( stringMap( "old", "hello!" ), MyMigratingSettings.class );
+        config.setLogger( mockLog );
+
+        // Then
+        verify( mockLog, times(0) ).warn( "The setting 'old' is not recognized and will not have any effect." );
     }
 
     @Test(expected = InvalidSettingException.class)
