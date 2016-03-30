@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{CastSupport, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_1.mutation.makeValueNeoSafe
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{SetLabelPattern, SetMutatingPattern, SetNodePropertiesFromMapPattern, SetNodePropertyPattern, SetRelationshipPropertiesFromMapPattern, SetRelationshipPropertyPattern}
+import org.neo4j.cypher.internal.compiler.v3_1.planner._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, InvalidArgumentException, SemanticTable}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.Map
@@ -52,6 +52,8 @@ object SetOperation {
       SetRelationshipPropertyOperation(name, LazyPropertyKey(propKey.name), toCommandExpression(expression))
     case SetRelationshipPropertiesFromMapPattern(IdName(name), expression, removeOtherProps) =>
       SetRelationshipPropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps)
+    case SetPropertyPattern(entity, propKey, expression) =>
+      SetPropertyOperation(toCommandExpression(entity), LazyPropertyKey(propKey.name), toCommandExpression(expression))
   }
 
   private[pipes] def toMap(executionContext: ExecutionContext, state: QueryState, expression: Expression) = {
@@ -82,26 +84,8 @@ object SetOperation {
   }
 }
 
-abstract class SetPropertyOperation[T <: PropertyContainer](itemName: String, propertyKey: LazyPropertyKey, expression: Expression) extends SetOperation {
-  private val needsExclusiveLock = Expression.hasPropertyReadDependency(itemName, expression, propertyKey.name)
-
-  override def set(executionContext: ExecutionContext, state: QueryState) = {
-    val item = executionContext.get(itemName).get
-    if (item != null) {
-      val itemId = id(item)
-      val ops = operations(state.query)
-      if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
-
-      try {
-        setProperty(executionContext, state, ops, itemId, propertyKey, expression)
-      } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
-    }
-  }
-
-  protected def id(item: Any): Long
-  protected def operations(qtx: QueryContext): Operations[T]
-
-  private def setProperty(context: ExecutionContext, state: QueryState, ops: Operations[T],
+abstract class AbstractSetPropertyOperation extends SetOperation {
+  protected def setProperty[T <: PropertyContainer](context: ExecutionContext, state: QueryState, ops: Operations[T],
                           itemId: Long, propertyKey: LazyPropertyKey, expression: Expression) = {
     val queryContext = state.query
     val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
@@ -115,12 +99,33 @@ abstract class SetPropertyOperation[T <: PropertyContainer](itemName: String, pr
     }
     else ops.setProperty(itemId, propertyId, value)
   }
+}
 
+abstract class SetEntityPropertyOperation[T <: PropertyContainer](itemName: String, propertyKey: LazyPropertyKey, expression: Expression)
+  extends AbstractSetPropertyOperation {
+
+  private val needsExclusiveLock = Expression.hasPropertyReadDependency(itemName, expression, propertyKey.name)
+
+  override def set(executionContext: ExecutionContext, state: QueryState) = {
+    val item = executionContext.get(itemName).get
+    if (item != null) {
+      val itemId = id(item)
+      val ops = operations(state.query)
+      if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
+
+      try {
+        setProperty[T](executionContext, state, ops, itemId, propertyKey, expression)
+      } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
+    }
+  }
+
+  protected def id(item: Any): Long
+  protected def operations(qtx: QueryContext): Operations[T]
 }
 
 case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey,
                                     expression: Expression)
-  extends SetPropertyOperation[Node](nodeName, propertyKey, expression) {
+  extends SetEntityPropertyOperation[Node](nodeName, propertyKey, expression) {
 
   override def name = "SetNodeProperty"
 
@@ -131,13 +136,36 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
 
 case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPropertyKey,
                                             expression: Expression)
-  extends SetPropertyOperation[Relationship](relName, propertyKey, expression) {
+  extends SetEntityPropertyOperation[Relationship](relName, propertyKey, expression) {
 
   override def name = "SetRelationshipProperty"
 
   override protected def id(item: Any) = CastSupport.castOrFail[Relationship](item).getId
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
+}
+
+case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropertyKey, expression: Expression)
+  extends AbstractSetPropertyOperation {
+
+  override def name: String = "SetProperty"
+
+  override def set(executionContext: ExecutionContext, state: QueryState) = {
+    val resolvedEntity = entityExpr(executionContext)(state)
+    if (resolvedEntity != null) {
+      val (entityId, ops) = resolvedEntity match {
+        case node: Node => (node.getId, state.query.nodeOps)
+        case rel: Relationship => (rel.getId, state.query.relationshipOps)
+        case _ => throw new InvalidArgumentException(s"The expression $entityExpr should have been a node or a relationship, but got $resolvedEntity")
+      }
+      // better safe than sorry let's lock the entity
+      ops.acquireExclusiveLock(entityId)
+
+      try {
+        setProperty(executionContext, state, ops, entityId, propertyKey, expression)
+      } finally ops.releaseExclusiveLock(entityId)
+    }
+  }
 }
 
 abstract class SetPropertyFromMapOperation[T <: PropertyContainer](itemName: String, expression: Expression,

@@ -46,12 +46,10 @@ case class PlanWithTail(planEventHorizon: LogicalPlanningFunction2[PlannerQuery,
         val projectedPlan = planEventHorizon(plannerQuery, applyPlan)(applyContext)
         val projectedContext = applyContext.recurse(projectedPlan)
 
-        val completePlan = projectedPlan.endoRewrite(Eagerness.unnestEager)
-
-        this.apply(completePlan, plannerQuery.tail)(projectedContext)
+        this.apply(projectedPlan, plannerQuery.tail)(projectedContext)
 
       case None =>
-        lhs
+        lhs.endoRewrite(Eagerness.unnestEager)
     }
   }
 }

@@ -60,6 +60,8 @@ case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyK
 
 case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
 
+case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression) extends SetMutatingPattern
+
 case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern with NoSymbols
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols

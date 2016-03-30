@@ -353,6 +353,10 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       SetPipe(source,
         SetRelationshipPropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps))()
 
+    case SetProperty(_, entityExpr, propertyKey, expression) =>
+      SetPipe(source, SetPropertyOperation(
+        toCommandExpression(entityExpr), LazyPropertyKey(propertyKey), toCommandExpression(expression)))()
+
     case RemoveLabels(_, IdName(name), labels) =>
       RemoveLabelsPipe(source, name, labels.map(LazyLabel.apply))()
 

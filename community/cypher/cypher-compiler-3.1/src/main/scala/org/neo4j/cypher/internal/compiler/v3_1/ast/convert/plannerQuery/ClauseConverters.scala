@@ -254,6 +254,9 @@ object ClauseConverters {
     case SetPropertyItem(Property(rel: Variable, propertyKey), expr) if semanticTable.isRelationship(rel) =>
       SetRelationshipPropertyPattern(IdName.fromVariable(rel), propertyKey, expr)
 
+    case SetPropertyItem(Property(entityExpr, propertyKey), expr) =>
+      SetPropertyPattern(entityExpr, propertyKey, expr)
+
     case SetExactPropertiesFromMapItem(node, expression) if semanticTable.isNode(node) =>
       SetNodePropertiesFromMapPattern(IdName.fromVariable(node), expression, removeOtherProps = true)
 
