@@ -62,21 +62,29 @@ enum Reference
 
     public interface DataAdapter<SOURCE>
     {
-        byte get( SOURCE source );
+        byte getByte( SOURCE source );
 
-        void put( byte oneByte, SOURCE source ) throws IOException;
+        short getShort( SOURCE source );
+
+        void putByte( byte oneByte, SOURCE source ) throws IOException;
     }
 
     public static final DataAdapter<PageCursor> PAGE_CURSOR_ADAPTER = new DataAdapter<PageCursor>()
     {
         @Override
-        public byte get( PageCursor source )
+        public byte getByte( PageCursor source )
         {
             return source.getByte();
         }
 
         @Override
-        public void put( byte oneByte, PageCursor source )
+        public short getShort( PageCursor cursor )
+        {
+            return cursor.getShort();
+        }
+
+        @Override
+        public void putByte( byte oneByte, PageCursor source )
         {
             source.putByte( oneByte );
         }
@@ -85,11 +93,11 @@ enum Reference
     // Take one copy here since Enum#values() does an unnecessary defensive copy every time.
     private static final Reference[] ENCODINGS = Reference.values();
 
+    static final int MAX_BITS = 58;
+
     private final int numberOfBytes;
     private final short highHeader;
-    private final short headerMask;
     private final int headerShift;
-    private short signBitMask;
     private final long valueOverflowMask;
 
     Reference( int numberOfBytes, byte header, int headerBits )
@@ -97,9 +105,7 @@ enum Reference
         this.numberOfBytes = numberOfBytes;
         this.headerShift = Byte.SIZE - headerBits;
         this.highHeader = (short) (((byte) (header << headerShift)) & 0xFF);
-        this.headerMask = (short) (((byte) (0xFF << headerShift)) & 0xFF);
         this.valueOverflowMask = ~valueMask( numberOfBytes, headerShift - 1 /*sign bit uses one bit*/ );
-        this.signBitMask = (short) (0x1 << (headerShift - 1));
     }
 
     private long valueMask( int numberOfBytes, int headerShift )
@@ -126,39 +132,14 @@ enum Reference
         byte signBit = (byte) ((positive ? 0 : 1) << (headerShift - 1));
 
         // first (most significant) byte
-        adapter.put( (byte) (highHeader | signBit | (byte) (absoluteReference >>> shift)), source );
+        adapter.putByte( (byte) (highHeader | signBit | (byte) (absoluteReference >>> shift)), source );
 
         do // rest of the bytes
         {
             shift -= 8;
-            adapter.put( (byte) (absoluteReference >>> shift), source );
+            adapter.putByte( (byte) (absoluteReference >>> shift), source );
         }
         while ( shift > 0 );
-    }
-
-    private boolean canDecode( short firstByte )
-    {
-        return (firstByte & headerMask) == highHeader;
-    }
-
-    private <SOURCE> long decode( short firstByte, SOURCE source, DataAdapter<SOURCE> adapter )
-    {
-        int shift = (numberOfBytes-1) << 3;
-        boolean positive = (firstByte & signBitMask) == 0;
-
-        // first (most significant) byte
-        long mask = ~(0xFFL << (headerShift - 1));
-        long result = (mask & firstByte) << shift;
-
-        do // rest of the bytes
-        {
-            shift -= 8;
-            long currentByte = adapter.get( source ) & 0xFFL;
-            result |= (currentByte << shift);
-        }
-        while ( shift > 0 );
-
-        return positive ? result : ~result;
     }
 
     private int maxBitsSupported()
@@ -216,16 +197,21 @@ enum Reference
 
     public static <SOURCE> long decode( SOURCE source, DataAdapter<SOURCE> adapter )
     {
-        short firstByte = (short) (adapter.get( source ) & 0xFF);
-        for ( Reference encoding : ENCODINGS )
+        int header = adapter.getByte( source ) & 0xFF;
+        int sizeMarks = Integer.numberOfLeadingZeros( (~(header & 0xF8)) & 0xFF ) - 24;
+        int signShift = 8 - sizeMarks - (sizeMarks == 5 ? 1 : 2);
+        long signBit = ~((header >>> signShift) & 1) + 1;
+        long register = (header & ((1 << signShift) - 1)) << 16;
+        register += adapter.getShort( source ) & 0xFFFFL; // 3 bytes
+
+        while ( sizeMarks > 0 )
         {
-            if ( encoding.canDecode( firstByte ) )
-            {
-                return encoding.decode( firstByte, source, adapter );
-            }
+            register <<= 8;
+            register += adapter.getByte( source ) & 0xFF;
+            sizeMarks--;
         }
-        throw new UnsupportedOperationException( "Reference with first byte " + firstByte + " wasn't recognized"
-                + " as a reference" );
+
+        return signBit ^ register;
     }
 
     /**
