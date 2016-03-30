@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify, when}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{IdName, LazyMode, LogicalPlan, ProduceResult, Projection}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{CardinalityEstimation, LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, RegularPlannerQuery, RegularQueryProjection, UnionQuery}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
@@ -85,11 +85,8 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(plannerQuery.allHints).thenReturn(Set[Hint]())
 
     val lp = {
-      val plan = mock[Projection]
-      when(plan.availableSymbols).thenReturn(Set.empty[IdName])
-      when(plan.solved).thenReturn(plannerQuery)
-      when(plan.leaves).thenReturn(Seq.empty)
-      plan
+      val plan = SingleRow()(plannerQuery)
+      Projection(plan, Map.empty)(plannerQuery)
     }
 
     val context = mock[LogicalPlanningContext]
