@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.ast
 
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
+import org.neo4j.cypher.internal.frontend.v3_1.ast.functions._
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 
 import scala.annotation.tailrec
@@ -51,9 +52,10 @@ object QueryTags {
     StartTag,
     UnionTag,
     UnwindTag,
-    LoadCSVTag,
+    CallProcedureTag,
 
     UpdatesTag,
+    LoadCSVTag,
     CreateTag,
     DeleteTag,
     SetTag,
@@ -62,22 +64,21 @@ object QueryTags {
     CreateUniqueTag,
     ForeachTag,
 
-//    CaseTag,
-//    LimitTag,
-//    SkipTag,
-//    OrderByTag,
-//
-//    CreateIndexTag,
-//    CreateConstraintTag,
-//    DropIndexTag,
-//    DropConstraintTag,
-//
-//    CallTag,
-//
-//    AggregationTag,
-//    MathFunctionTag,
-//    StringFunctionTag,
+    LimitTag,
+    SkipTag,
+    OrderByTag,
 
+    CreateIndexTag,
+    CreateConstraintTag,
+    DropIndexTag,
+    DropConstraintTag,
+
+
+    AggregationTag,
+    MathFunctionTag,
+    StringFunctionTag,
+
+    CaseTag,
     ComplexExpressionTag,
     FilteringExpressionTag,
     LiteralExpressionTag,
@@ -146,11 +147,15 @@ case object ReturnTag extends QueryTag("return")
 case object StartTag extends QueryTag("start")
 case object UnionTag extends QueryTag("union")
 case object UnwindTag extends QueryTag("unwind")
-case object LoadCSVTag extends QueryTag("load-csv")
+case object SkipTag extends QueryTag("skip")
+case object LimitTag extends QueryTag("limit")
+case object OrderByTag extends QueryTag("order-by")
+case object CallProcedureTag extends QueryTag("call-procedure")
 
 // Updates
 
 case object UpdatesTag extends QueryTag("updates")
+case object LoadCSVTag extends QueryTag("load-csv")
 case object CreateTag extends QueryTag("create")
 case object DeleteTag extends QueryTag("delete")
 case object SetTag extends QueryTag("set")
@@ -159,7 +164,6 @@ case object MergeTag extends QueryTag("merge")
 case object CreateUniqueTag extends QueryTag("create-unique")
 case object ForeachTag extends QueryTag("foreach")
 
-
 // Expressions
 
 case object ComplexExpressionTag extends QueryTag("complex-expr")
@@ -167,6 +171,20 @@ case object FilteringExpressionTag extends QueryTag("filtering-expr")
 case object LiteralExpressionTag extends QueryTag("literal-expr")
 case object ParameterExpressionTag extends QueryTag("parameter-expr")
 case object VariableExpressionTag extends QueryTag("variable-expr")
+case object CaseTag extends QueryTag("case-expr")
+
+// Commands
+
+case object CreateIndexTag extends QueryTag("create-index")
+case object CreateConstraintTag extends QueryTag("create-constraint")
+case object DropIndexTag extends QueryTag("drop-index")
+case object DropConstraintTag extends QueryTag("drop-constraint")
+
+// Functions
+
+case object MathFunctionTag extends QueryTag("math-function")
+case object StringFunctionTag extends QueryTag("string-function")
+case object AggregationTag extends QueryTag("aggregation")
 
 object QueryTagger extends QueryTagger[String] {
 
@@ -202,7 +220,10 @@ object QueryTagger extends QueryTagger[String] {
         Set(UnwindTag)
 
       case x: LoadCSV =>
-        Set(LoadCSVTag)
+        Set(LoadCSVTag, UpdatesTag)
+
+      case x: CallClause =>
+        Set(CallProcedureTag)
 
       case x: UpdateClause =>
         val specificTag = x match {
@@ -243,8 +264,48 @@ object QueryTagger extends QueryTagger[String] {
       case x: Literal => Set(LiteralExpressionTag)
       case x: Parameter => Set(ParameterExpressionTag)
       case x: FilteringExpression => Set(FilteringExpressionTag)
+      case x: CaseExpression => Set(CaseTag)
+    } ++
+
+    // return clause extras
+    lift[ASTNode] {
+      case x: Limit => Set(LimitTag)
+      case x: Skip => Set(SkipTag)
+      case x: OrderBy => Set(OrderByTag)
+    } ++
+
+    // commands
+    lift[ASTNode] {
+      case x: CreateIndex => Set(CreateIndexTag)
+      case x: DropIndex => Set(DropIndexTag)
+      case x: CreateUniquePropertyConstraint => Set(CreateConstraintTag)
+      case x: CreateNodePropertyExistenceConstraint => Set(CreateConstraintTag)
+      case x: CreateRelationshipPropertyExistenceConstraint => Set(CreateConstraintTag)
+      case x: DropUniquePropertyConstraint => Set(DropConstraintTag)
+      case x: DropNodePropertyExistenceConstraint => Set(DropConstraintTag)
+      case x: DropRelationshipPropertyExistenceConstraint => Set(DropConstraintTag)
+    } ++
+
+    // functions
+    lift[ASTNode] {
+      case f: FunctionInvocation if f.function.exists(mathFunctions) => Set(MathFunctionTag)
+      case f: FunctionInvocation if f.function.exists(stringFunctions) => Set(StringFunctionTag)
+      case f: FunctionInvocation if isAggregation(f.function) => Set(AggregationTag)
     }
   ))
+
+  private def isAggregation(function: Option[Function]) = function.exists {
+    case x: AggregatingFunction => true
+    case _ => false
+  }
+
+  private def stringFunctions: Set[Function] = Set(Replace, Substring, Left, Right, LTrim, RTrim,
+                                                   Lower, Upper, Split, Reverse, ToString)
+
+  private def mathFunctions: Set[Function] = Set(Abs, Ceil, Floor, Round, Sign, Rand,
+                                                 Log, Log10, Exp, E, Sqrt,
+                                                 Sin, Cos, Tan, Cot, Asin, Acos, Atan, Atan2,
+                                                 Pi, Degrees, Radians, Haversin)
 
   // run parser and pass statement to next query tagger
   case class fromString(next: QueryTagger[Statement])
