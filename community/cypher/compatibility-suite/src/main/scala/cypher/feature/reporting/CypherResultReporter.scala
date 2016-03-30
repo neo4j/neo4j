@@ -24,6 +24,7 @@ import java.io.{File, PrintStream}
 import cypher.cucumber.CucumberAdapter
 import cypher.feature.parser.reporting.ChartWriter
 import gherkin.formatter.model.{Match, Result, Step}
+import org.opencypher.tools.tck.TCKStepDefinitions
 
 import scala.util.matching.Regex
 
@@ -46,9 +47,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, ch
 
   private var query: String = null
   private var status: String = Result.PASSED
-  // This is copied from the constant CypherTCKSteps.EXECUTING_QUERY
-  // Perhaps CypherTCKSteps will move to `main` from `test` some day
-  private val queryPattern: Regex = "^executing query: (.*)$".r
+  private val queryPattern: Regex = TCKStepDefinitions.EXECUTING_QUERY.r
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())

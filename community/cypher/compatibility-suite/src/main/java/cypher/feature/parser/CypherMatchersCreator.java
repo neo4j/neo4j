@@ -19,8 +19,6 @@
  */
 package cypher.feature.parser;
 
-import cypher.feature.parser.generated.FeatureResultsBaseListener;
-import cypher.feature.parser.generated.FeatureResultsParser;
 import cypher.feature.parser.matchers.BooleanMatcher;
 import cypher.feature.parser.matchers.FloatMatcher;
 import cypher.feature.parser.matchers.IntegerMatcher;
@@ -32,6 +30,8 @@ import cypher.feature.parser.matchers.PathMatcher;
 import cypher.feature.parser.matchers.RelationshipMatcher;
 import cypher.feature.parser.matchers.StringMatcher;
 import cypher.feature.parser.matchers.ValueMatcher;
+import org.opencypher.tools.tck.parsing.generated.FeatureResultsBaseListener;
+import org.opencypher.tools.tck.parsing.generated.FeatureResultsParser;
 
 import java.util.ArrayList;
 import java.util.Deque;

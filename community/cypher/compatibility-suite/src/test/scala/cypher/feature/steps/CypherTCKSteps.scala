@@ -25,16 +25,16 @@ import java.util
 
 import _root_.cucumber.api.DataTable
 import _root_.cucumber.api.scala.{EN, ScalaDsl}
-import cypher.feature.steps.CypherTCKSteps._
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
 import cypher.feature.parser.{MatcherMatchingSupport, constructResultMatcher, parseParameters, statisticsParser}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.opencypher.tools.tck.TCKStepDefinitions._
 import org.scalatest.{FunSuiteLike, Matchers}
 
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with MatcherMatchingSupport {
 
@@ -152,29 +152,4 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN wi
     cypherConfig().map { case (s, v) => builder.setConfig(s, v) }
     builder
   }
-}
-
-object CypherTCKSteps {
-
-  // for Background
-  val BACKGROUND = "^$"
-
-  // for Given
-  val ANY = "^any graph$"
-  val EMPTY = "^an empty graph$"
-  val NAMED_GRAPH = """^the (.*) graph$"""
-
-  // for And
-  val INIT_QUERY = "^having executed: (.*)$"
-  val PARAMETERS = "^parameters are:$"
-  val SIDE_EFFECTS = "^the side effects should be:$"
-
-  // for When
-  val EXECUTING_QUERY = "^executing query: (.*)$"
-
-  // for Then
-  val EXPECT_RESULT = "^the result should be:$"
-  val EXPECT_SORTED_RESULT = "^the result should be, in order:$"
-  val EXPECT_EMPTY_RESULT = "^the result should be empty$"
-  val EXPECT_ERROR = "^a (.+) should be raised at (.+): (.+)$"
 }

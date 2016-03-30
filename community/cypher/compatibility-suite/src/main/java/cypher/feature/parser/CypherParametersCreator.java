@@ -19,8 +19,8 @@
  */
 package cypher.feature.parser;
 
-import cypher.feature.parser.generated.FeatureResultsBaseListener;
-import cypher.feature.parser.generated.FeatureResultsParser;
+import org.opencypher.tools.tck.parsing.generated.FeatureResultsBaseListener;
+import org.opencypher.tools.tck.parsing.generated.FeatureResultsParser;
 
 import java.util.Deque;
 import java.util.HashMap;
@@ -32,7 +32,6 @@ class CypherParametersCreator extends FeatureResultsBaseListener
     private Deque<Object> workload;
     private Deque<Integer> listCounters;
     private Deque<Integer> mapCounters;
-    private Deque<String> names;
 
     private static final String INFINITY = "Inf";
 
@@ -41,7 +40,6 @@ class CypherParametersCreator extends FeatureResultsBaseListener
         this.workload = new LinkedList<>();
         this.listCounters = new LinkedList<>();
         this.mapCounters = new LinkedList<>();
-        this.names = new LinkedList<>();
     }
 
     Object parsed()
