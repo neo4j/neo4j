@@ -84,4 +84,11 @@ public class Conversation implements AutoCloseable
             lockClientCleanupLock.unlock();
         }
     }
+
+    @Override
+    public String toString()
+    {
+        String locks = this.locks.toString();
+        return "Conversation[lockClient: " + locks + "].";
+    }
 }
