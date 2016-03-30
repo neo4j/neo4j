@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
@@ -70,6 +70,85 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // then
     assertStats(result, propertiesWritten = 1)
     a should haveProperty("name").withValue("Andres was here")
+  }
+
+  test("set a property by picking the node trough a simple expression") {
+    // given
+    val a = createNode()
+
+    // when
+    val result = updateWithBothPlannersAndCompatibilityMode("match (n) set (n).name = 'neo4j' return count(*)")
+
+    // then
+    assertStats(result, propertiesWritten = 1)
+    a should haveProperty("name").withValue("neo4j")
+  }
+
+  test("set a property by picking the node trough an expression") {
+    // given
+    val a = createNode()
+
+    // when
+    val result = updateWithBothPlannersAndCompatibilityMode("match (n) set (CASE WHEN true THEN n END).name = 'neo4j' return count(*)")
+
+    // then
+    assertStats(result, propertiesWritten = 1)
+    a should haveProperty("name").withValue("neo4j")
+  }
+
+  test("set a property by picking the relationship trough a simple expression") {
+    // given
+    val r = relate(createNode(), createNode())
+
+    // when
+    val result = updateWithBothPlannersAndCompatibilityMode("match ()-[r]->() set (r).name = 'neo4j' return count(*)")
+
+    // then
+    assertStats(result, propertiesWritten = 1)
+    r should haveProperty("name").withValue("neo4j")
+  }
+
+  test("set a property by picking the relationship trough an expression") {
+    // given
+    val r = relate(createNode(), createNode())
+
+    // when
+    val result = updateWithBothPlannersAndCompatibilityMode("match ()-[r]->() set (CASE WHEN true THEN r END).name = 'neo4j' return count(*)")
+
+    // then
+    assertStats(result, propertiesWritten = 1)
+    r should haveProperty("name").withValue("neo4j")
+  }
+
+  test("should set properties on nodes with foreach and indexes") {
+    val n1 = createNode()
+    val n2 = createNode()
+    val n3 = createNode()
+
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) WITH collect(n) as nodes, {param} as data FOREACH (idx IN range(0,size(nodes)-1) | SET (nodes[idx]).num = data[idx])", "param" ->  Array("1", "2", "3"))
+
+    assertStats(result, propertiesWritten = 3)
+    n1 should haveProperty("num").withValue("1")
+    n2 should haveProperty("num").withValue("2")
+    n3 should haveProperty("num").withValue("3")
+  }
+
+  test("should set properties on relationships with foreach and indexes") {
+    val r1 = relate(createNode(), createNode())
+    val r2 = relate(createNode(), createNode())
+    val r3 = relate(createNode(), createNode())
+
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH ()-[r]->() WITH collect(r) as rels, {param} as data FOREACH (idx IN range(0,size(rels)-1) | SET (rels[idx]).num = data[idx])", "param" ->  Array("1", "2", "3"))
+
+    assertStats(result, propertiesWritten = 3)
+    r1 should haveProperty("num").withValue("1")
+    r2 should haveProperty("num").withValue("2")
+    r3 should haveProperty("num").withValue("3")
+  }
+
+  test("should fail at runtime when the expression is not a node or a relationship") {
+    an [InvalidArgumentException] should be thrownBy
+      updateWithBothPlanners("set (CASE WHEN true THEN {node} END).name = 'neo4j' return count(*)", "node" -> 42)
   }
 
   test("set property for null removes the property") {
