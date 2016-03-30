@@ -129,7 +129,6 @@ the relevant Commercial Agreement.
                   <excludes>
                     <exclude>org.neo4j:neo4j-cypher-frontend-2.3</exclude>
                     <exclude>org.neo4j:neo4j-cypher-compiler-2.3</exclude>
-                    <exclude>org.neo4j:neo4j-cypher-compiler-1.9_2.11</exclude>
                   </excludes>
                 </configuration>
               </execution>
