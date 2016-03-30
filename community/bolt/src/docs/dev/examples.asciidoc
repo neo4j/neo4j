@@ -3,53 +3,6 @@
 
 This section contains concrete examples showing how to perform tasks using the full Bolt protocol stack.
 
-=== Authentication
-
-The first time you connect to neo4j with the default credentials you will be asked to update the password.
-
-.Run query
-[source,bolt_auth]
-----
-# Handshake
-Client: <connect>
-Client: 60 60 B0 17
-Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
-Server: 00 00 00 01
-
-Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credentials": "neo4j"}
-
-    00 3F B1 01  8C 4D 79 43  6C 69 65 6E  74 2F 31 2E
-    30 A3 86 73  63 68 65 6D  65 85 62 61  73 69 63 89
-    70 72 69 6E  63 69 70 61  6C 85 6E 65  6F 34 6A 8B
-    63 72 65 64  65 6E 74 69  61 6C 73 85  6E 65 6F 34
-    6A 00 00
-
-Server: SUCCESS { "credentials_expired": true}
-
-    00 19 B1 70  A1 D0 13 63  72 65 64 65  6E 74 69 61
-    6C 73 5F 65  78 70 69 72  65 64 C3 00  00
-
-Server: <disconnect>
-Client: <connect>
-Client: 60 60 B0 17
-Client: 00 00 00 01  00 00 00 00  00 00 00 00  00 00 00 00
-Server: 00 00 00 01
-
-Client: INIT "MyClient/1.0" { "scheme": "basic", "principal": "neo4j", "credentials": "neo4j", "new_credentials": "secret"}
-
-    00 40 B1 01  8C 4D 79 43  6C 69 65 6E  74 2F 31 2E
-    30 A4 86 73  63 68 65 6D  65 85 62 61  73 69 63 89
-    70 72 69 6E  63 69 70 61  6C 85 6E 65  6F 34 6A 8B
-    63 72 65 64  65 6E 74 69  61 6C 73 85  6E 65 6F 34
-    6A 8F 00 16  6E 65 77 5F  63 72 65 64  65 6E 74 69
-    61 6C 73 86  73 65 63 72  65 74 00 00
-
-Server: SUCCESS { }
-
-   00 03 b1 70  a0 00 00
-
-----
-
 === Running a Cypher query
 
 This illustrates running a simple Cypher query without parameters, and retrieving the results.
