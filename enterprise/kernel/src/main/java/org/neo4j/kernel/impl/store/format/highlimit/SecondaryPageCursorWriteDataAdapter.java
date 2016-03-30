@@ -54,12 +54,6 @@ class SecondaryPageCursorWriteDataAdapter implements DataAdapter<PageCursor>
     }
 
     @Override
-    public short getShort( PageCursor cursor )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void putByte( byte oneByte, PageCursor cursor ) throws IOException
     {
         if ( !switched && cursor.getOffset() == primaryEndOffset )

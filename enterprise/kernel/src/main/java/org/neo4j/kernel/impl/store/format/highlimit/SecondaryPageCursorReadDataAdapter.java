@@ -72,14 +72,6 @@ class SecondaryPageCursorReadDataAdapter implements DataAdapter<PageCursor>, Sec
     }
 
     @Override
-    public short getShort( PageCursor cursor )
-    {
-        byte highByte = getByte( cursor );
-        byte lowByte = getByte( cursor );
-        return (short) (((highByte & 0xFF) << 8) | (lowByte & 0xFF));
-    }
-
-    @Override
     public void putByte( byte oneByte, PageCursor primaryCursor )
     {
         throw new UnsupportedOperationException();

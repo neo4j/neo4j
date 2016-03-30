@@ -64,8 +64,6 @@ enum Reference
     {
         byte getByte( SOURCE source );
 
-        short getShort( SOURCE source );
-
         void putByte( byte oneByte, SOURCE source ) throws IOException;
     }
 
@@ -75,12 +73,6 @@ enum Reference
         public byte getByte( PageCursor source )
         {
             return source.getByte();
-        }
-
-        @Override
-        public short getShort( PageCursor cursor )
-        {
-            return cursor.getShort();
         }
 
         @Override
@@ -254,8 +246,8 @@ enum Reference
         // up 16 places to make room for the next two bytes of payload.
         //
         // <6>
-        // Then we read the next two bytes (with unsigned mask) and save for the sign-bit manipulation, we now have a
-        // complete 3-byte reference.
+        // Then we read the next two bytes (with unsigned mask) and save for the sign-component manipulation, we now
+        // have a complete 3-byte reference.
         //
         // <7>
         // The size marks determines how many more bytes the reference takes up, so we loop through them and shift the
@@ -269,7 +261,7 @@ enum Reference
         int signShift = 8 - sizeMarks - (sizeMarks == 5 ? 1 : 2); // <3>
         long signComponent = ~((header >>> signShift) & 1) + 1; // <4>
         long register = (header & ((1 << signShift) - 1)) << 16; // <5>
-        register += adapter.getShort( source ) & 0xFFFFL; // <6>
+        register += ((adapter.getByte( source ) & 0xFF) << 8) + (adapter.getByte( source ) & 0xFF); // <6>
 
         while ( sizeMarks > 0 ) // <7>
         {

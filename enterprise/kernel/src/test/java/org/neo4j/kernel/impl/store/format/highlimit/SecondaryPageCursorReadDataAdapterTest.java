@@ -42,7 +42,7 @@ public class SecondaryPageCursorReadDataAdapterTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void getShortEntirelyFromPrimaryCursor() throws Exception
+    public void getBytesEntirelyFromPrimaryCursor() throws Exception
     {
         int secondaryPageId = 42;
         int secondaryCursorOffset = 0;
@@ -58,13 +58,20 @@ public class SecondaryPageCursorReadDataAdapterTest
                 newPagedFile( secondaryCursor ), secondaryPageId, secondaryCursorOffset, primaryCursorEndOffset,
                 PagedFile.PF_SHARED_READ_LOCK );
 
-        short read = adapter.getShort( primaryCursor );
+        short read = getShort( adapter, primaryCursor );
 
         assertEquals( value, read );
     }
 
+    private short getShort( SecondaryPageCursorReadDataAdapter adapter, PageCursor cursor )
+    {
+        int a = adapter.getByte( cursor ) & 0xFF;
+        int b = adapter.getByte( cursor ) & 0xFF;
+        return (short) ((a << 8) + b);
+    }
+
     @Test
-    public void getShortEntirelyFromSecondaryCursor() throws Exception
+    public void getBytesEntirelyFromSecondaryCursor() throws Exception
     {
         int secondaryPageId = 42;
         int secondaryCursorOffset = 0;
@@ -80,13 +87,13 @@ public class SecondaryPageCursorReadDataAdapterTest
                 newPagedFile( secondaryCursor ), secondaryPageId, secondaryCursorOffset, primaryCursorEndOffset,
                 PagedFile.PF_SHARED_READ_LOCK );
 
-        short read = adapter.getShort( primaryCursor );
+        short read = getShort( adapter, primaryCursor );
 
         assertEquals( value, read );
     }
 
     @Test
-    public void getShortFromPrimaryAndSecondaryCursor() throws Exception
+    public void getBytesFromPrimaryAndSecondaryCursor() throws Exception
     {
         int secondaryPageId = 42;
         int secondaryCursorOffset = 0;
@@ -107,7 +114,7 @@ public class SecondaryPageCursorReadDataAdapterTest
                 newPagedFile( secondaryCursor ), secondaryPageId, secondaryCursorOffset, primaryCursorEndOffset,
                 PagedFile.PF_SHARED_READ_LOCK );
 
-        short read = adapter.getShort( primaryCursor );
+        short read = getShort( adapter, primaryCursor );
 
         assertEquals( value, read );
     }
