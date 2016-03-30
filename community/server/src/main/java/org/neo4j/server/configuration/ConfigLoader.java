@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
@@ -34,7 +33,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.shell.ShellSettings;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 public class ConfigLoader
@@ -63,16 +62,9 @@ public class ConfigLoader
         HashMap<String, String> settings = calculateSettings( configFile, log, configOverrides );
         Config config = new Config( settings, settingsClasses.calculate( settings ) );
         config.setLogger( log );
-        setServerSettings( config );
         return config;
     }
 
-    private void setServerSettings( Config config )
-    {
-        String authStore = new File( config.get( DatabaseManagementSystemSettings.data_directory ), "dbms/auth" )
-                .toString();
-        config.augment( stringMap( GraphDatabaseSettings.auth_store.name(), authStore ) );
-    }
 
     private HashMap<String, String> calculateSettings( Optional<File> config, Log log,
                                                        Pair<String, String>[] configOverrides )
@@ -104,6 +96,8 @@ public class ConfigLoader
         config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
         config.putIfAbsent( GraphDatabaseSettings.logs_directory.name(), "logs" );
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
+        config.putIfAbsent( GraphDatabaseSettings.auth_store.name(),
+                new File( config.get( data_directory.name() ), "dbms/auth" ).toString() );
     }
 
     private static Map<String, String> loadFromFile( Log log, File file )
