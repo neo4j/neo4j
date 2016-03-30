@@ -20,9 +20,11 @@
 package org.neo4j.kernel.ha.com.master;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,8 +33,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
@@ -40,7 +42,6 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.function.Factory;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.ha.cluster.ConversationSPI;
 import org.neo4j.kernel.ha.cluster.DefaultConversationSPI;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager;
+import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -60,6 +62,8 @@ import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLog;
+import org.neo4j.test.rules.VerboseTimeout;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -94,7 +98,20 @@ public class MasterImplConversationStopFuzzIT
 
     private static MasterExecutionStatistic executionStatistic = new MasterExecutionStatistic();
 
-    @Test( timeout = 50000 )
+    @Rule
+    public VerboseTimeout timeout = VerboseTimeout.builder()
+            .withTimeout( 50, TimeUnit.SECONDS )
+            .describeOnFailure( locks, MasterImplConversationStopFuzzIT::getLocksDescriptionFunction )
+            .build();
+
+    @After
+    public void cleanup() throws InterruptedException
+    {
+        life.shutdown();
+        executor.shutdownNow();
+    }
+
+    @Test
     public void shouldHandleRandomizedLoad() throws Throwable
     {
         // Given
@@ -123,11 +140,11 @@ public class MasterImplConversationStopFuzzIT
         assertTrue( executionStatistic.isSuccessfulExecution() );
     }
 
-    @After
-    public void cleanup() throws InterruptedException
+    private static String getLocksDescriptionFunction( Locks locks )
     {
-        life.shutdown();
-        executor.shutdownNow();
+        StringWriter stringWriter = new StringWriter();
+        locks.accept( new DumpLocksVisitor( FormattedLog.withUTCTimeZone().toWriter( stringWriter ) ) );
+        return stringWriter.toString();
     }
 
     private List<Callable<Void>> workers( MasterImpl master, int numWorkers )
