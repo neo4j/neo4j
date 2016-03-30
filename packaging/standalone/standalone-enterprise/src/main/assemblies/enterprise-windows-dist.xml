@@ -77,14 +77,6 @@
 
   <dependencySets>
     <dependencySet>
-  		<outputDirectory>/bin</outputDirectory>
-  		<unpack>false</unpack>
-  		<useProjectArtifact>false</useProjectArtifact>
-  		<includes>
-          <include>org.neo4j.app:windows-service-wrapper:*</include>
-  		</includes>
-  	</dependencySet>
-    <dependencySet>
       <outputDirectory>/lib</outputDirectory>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
@@ -124,7 +116,6 @@
         <exclude>io.netty:netty</exclude>
         <exclude>org.scala-lang:*</exclude>
         <exclude>org.parboiled:*</exclude>
-        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
         <exclude>net.sf.opencsv:opencsv</exclude>
         <exclude>org.apache.commons:commons-lang3</exclude>
