@@ -116,7 +116,9 @@ class QueryTaggerTest extends CypherFunSuite {
   }
 
   test(queryTag(LoadCSVTag)) {
-    QueryTagger("LOAD CSV WITH HEADERS FROM \"http://somewhere/file.csv\" AS csvLine\nCREATE (p:Person { id: toInt(csvLine.id), name: csvLine.name })") should contain(LoadCSVTag)
+    val tags = QueryTagger("LOAD CSV WITH HEADERS FROM \"http://somewhere/file.csv\" AS csvLine\nCREATE (p:Person { id: toInt(csvLine.id), name: csvLine.name })")
+    tags should contain(LoadCSVTag)
+    tags should contain(UpdatesTag)
   }
 
   test(queryTag(UpdatesTag)) {
@@ -128,6 +130,93 @@ class QueryTaggerTest extends CypherFunSuite {
     QueryTagger("MATCH n REMOVE n.foo") should contain(UpdatesTag)
     QueryTagger("MATCH n SET n.foo = 12") should contain(UpdatesTag)
     QueryTagger("MATCH n DELETE n") should contain(UpdatesTag)
+  }
+
+  test(queryTag(CreateTag)) {
+    QueryTagger("CREATE ()") should contain(CreateTag)
+    QueryTagger("CREATE ()-[:T]->()") should contain(CreateTag)
+  }
+
+  test(queryTag(DeleteTag)) {
+    QueryTagger("CREATE (n) DELETE n") should contain(DeleteTag)
+    QueryTagger("CREATE ()-[r:T]->() DELETE r") should contain(DeleteTag)
+  }
+
+  test(queryTag(SetTag)) {
+    QueryTagger("CREATE (n) SET n:L") should contain(SetTag)
+    QueryTagger("CREATE (n) SET n.prop = 0") should contain(SetTag)
+  }
+
+  test(queryTag(RemoveTag)) {
+    QueryTagger("CREATE (n) REMOVE n:L") should contain(RemoveTag)
+    QueryTagger("CREATE (n) REMOVE n.prop") should contain(RemoveTag)
+  }
+
+  test(queryTag(MergeTag)) {
+    QueryTagger("MERGE ()") should contain(MergeTag)
+    QueryTagger("MERGE ()-[r:T]->()") should contain(MergeTag)
+  }
+
+  test(queryTag(CreateUniqueTag)) {
+    QueryTagger("CREATE UNIQUE ()") should contain(CreateUniqueTag)
+    QueryTagger("CREATE UNIQUE ()-[r:T]->()") should contain(CreateUniqueTag)
+  }
+
+  test(queryTag(ForeachTag)) {
+    QueryTagger("FOREACH (i IN [1,2,3] | CREATE ())") should contain(ForeachTag)
+  }
+
+  test(queryTag(CaseTag)) {
+    QueryTagger("RETURN CASE 'foo' WHEN 'bar' THEN 1 ELSE 0 END") should contain(CaseTag)
+  }
+
+  test(queryTag(LimitTag)) {
+    QueryTagger("RETURN 1 LIMIT 1") should contain(LimitTag)
+  }
+
+  test(queryTag(SkipTag)) {
+    QueryTagger("RETURN 1 SKIP 0") should contain(SkipTag)
+  }
+
+  test(queryTag(CreateIndexTag)) {
+    QueryTagger("CREATE INDEX ON :Label(prop)") should contain(CreateIndexTag)
+  }
+
+  test(queryTag(DropIndexTag)) {
+    QueryTagger("DROP INDEX ON :Label(prop)") should contain(DropIndexTag)
+  }
+
+  test(queryTag(CreateConstraintTag)) {
+    QueryTagger("CREATE CONSTRAINT ON (p:Person) ASSERT p.name IS UNIQUE") should contain(CreateConstraintTag)
+    QueryTagger("CREATE CONSTRAINT ON (p:Person) ASSERT exists(p.name)") should contain(CreateConstraintTag)
+    QueryTagger("CREATE CONSTRAINT ON ()-[r:T]-() ASSERT exists(r.name)") should contain(CreateConstraintTag)
+  }
+
+  test(queryTag(DropConstraintTag)) {
+    QueryTagger("DROP CONSTRAINT ON (p:Person) ASSERT p.name IS UNIQUE") should contain(DropConstraintTag)
+    QueryTagger("DROP CONSTRAINT ON (p:Person) ASSERT exists(p.name)") should contain(DropConstraintTag)
+    QueryTagger("DROP CONSTRAINT ON ()-[r:T]-() ASSERT exists(r.name)") should contain(DropConstraintTag)
+  }
+
+  test(queryTag(MathFunctionTag)) {
+    QueryTagger("RETURN cos(0)") should contain(MathFunctionTag)
+    QueryTagger("RETURN sin(0)") should contain(MathFunctionTag)
+    QueryTagger("RETURN tan(0)") should contain(MathFunctionTag)
+    QueryTagger("RETURN abs(-1)") should contain(MathFunctionTag)
+    QueryTagger("RETURN round(0.5)") should contain(MathFunctionTag)
+    QueryTagger("RETURN sqrt(25)") should contain(MathFunctionTag)
+  }
+
+  test(queryTag(StringFunctionTag)) {
+    QueryTagger("RETURN toString(0)") should contain(StringFunctionTag)
+    QueryTagger("RETURN ltrim('   s')") should contain(StringFunctionTag)
+    QueryTagger("RETURN lower('ALLCAPS')") should contain(StringFunctionTag)
+    QueryTagger("RETURN substring('string', 'str')") should contain(StringFunctionTag)
+    QueryTagger("RETURN split('orig', 'r')") should contain(StringFunctionTag)
+  }
+
+  test(queryTag(CallProcedureTag)) {
+    QueryTagger("CALL myProc") should contain(CallProcedureTag)
   }
 
   test("Supports combining tags") {
