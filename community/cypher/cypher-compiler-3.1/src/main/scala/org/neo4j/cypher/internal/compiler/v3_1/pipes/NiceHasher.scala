@@ -20,26 +20,42 @@
 package org.neo4j.cypher.internal.compiler.v3_1.pipes
 
 class NiceHasher(val original: Seq[Any]) {
-  override def equals(p1: Any): Boolean = {
-    if(p1 == null || !p1.isInstanceOf[NiceHasher])
-      return false
-
-    val other = p1.asInstanceOf[NiceHasher]
-
-    hash == other.hash && comparableValues.equals(other.comparableValues)
+  override def equals(p1: Any): Boolean = p1 match {
+    case null => false
+    case other: NiceHasher =>
+      hash == other.hash && NiceHasherValue.nullSafeEquals(comparableValues, other.comparableValues)
+    case _ => false
   }
 
-  private lazy val comparableValues = original.map(NiceHasherValue.comparableValuesFun)
+  private lazy val comparableValues = if (original == null) null else original.map(NiceHasherValue.comparableValuesFun)
 
-  override def toString = hashCode() + " : " + original.toString
+  override def toString = hashCode() + " : " + original
 
   private lazy val hash = NiceHasherValue.seqHashFun(original)
 
   override def hashCode() = hash
 }
 
+class NiceHasherValue(val original: Any) {
+  override def equals(p1: Any): Boolean = p1 match {
+    case null => false
+    case other: NiceHasherValue =>
+      hash == other.hash && NiceHasherValue.nullSafeEquals(comparableValue, other.comparableValue)
+    case _ => false
+  }
+
+  private lazy val comparableValue = NiceHasherValue.comparableValuesFun(original)
+
+  override def toString = hashCode() + " : " + original
+
+  private lazy val hash = NiceHasherValue.hashFun(original)
+
+  override def hashCode() = hash
+}
+
 object NiceHasherValue {
-  def seqHashFun(itr: Iterable[Any]): Int = itr.foldLeft(0) ((hashValue, element) => hashFun(element) + hashValue * 31 )
+  def seqHashFun(itr: Iterable[Any]): Int = if (itr == null) 0
+  else itr.foldLeft(0) ((hashValue, element) => hashFun(element) + hashValue * 31 )
 
   def hashFun(y: Any): Int = y match {
     case x: Array[Int] => java.util.Arrays.hashCode(x)
@@ -58,23 +74,11 @@ object NiceHasherValue {
     case x: Map[_, _] => (x.keys ++ x.values).map(comparableValuesFun)
     case x => x
   }
-}
 
-class NiceHasherValue(val original: Any) {
-  override def equals(p1: Any): Boolean = {
-    if(p1 == null || !p1.isInstanceOf[NiceHasherValue])
-      return false
-
-    val other = p1.asInstanceOf[NiceHasherValue]
-
-    hash == other.hash && (comparableValue equals other.comparableValue)
-  }
-
-  private lazy val comparableValue = NiceHasherValue.comparableValuesFun(original)
-
-  override def toString = hashCode() + " : " + original.toString
-
-  private lazy val hash = NiceHasherValue.hashFun(original)
-
-  override def hashCode() = hash
+  def nullSafeEquals(me: Any, other: Any): Boolean =
+    if ( me == null ) {
+      other == null
+    } else {
+      me equals other
+    }
 }
