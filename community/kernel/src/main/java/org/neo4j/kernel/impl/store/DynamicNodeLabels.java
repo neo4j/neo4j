@@ -124,9 +124,10 @@ public class DynamicNodeLabels implements NodeLabels
     public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
         nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( labelField ) );
-        Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
-        long[] existingLabelIds = getDynamicLabelsArray( existingRecords, nodeStore.getDynamicLabelStore() );
+        long[] existingLabelIds = getDynamicLabelsArray( node.getUsedDynamicLabelRecords(),
+                nodeStore.getDynamicLabelStore() );
         long[] newLabelIds = LabelIdArray.concatAndSort( existingLabelIds, labelId );
+        Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         Collection<DynamicRecord> changedDynamicRecords =
                 allocateRecordsForDynamicLabels( node.getId(), newLabelIds, existingRecords.iterator(), allocator );
         node.setLabelField( dynamicPointer( changedDynamicRecords ), changedDynamicRecords );

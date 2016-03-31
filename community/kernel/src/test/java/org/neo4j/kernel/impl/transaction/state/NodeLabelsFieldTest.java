@@ -53,17 +53,21 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.RandomRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeLabelsFieldTest
 {
+    @Rule
+    public RandomRule random = new RandomRule();
     private NeoStores neoStores;
 
     @Test
@@ -425,6 +429,54 @@ public class NodeLabelsFieldTest
         assertTrue( "initial:" + initialRecords + ", reallocated:" + reallocatedRecords ,
                 initialRecords.containsAll( used( reallocatedRecords ) ) );
         assertTrue( used( reallocatedRecords ).size() < initialRecords.size() );
+    }
+
+    /*
+     * There was this issue that DynamicNodeLabels#add would consider even unused dynamic records when
+     * reading existing label ids before making the change. Previously this would create a duplicate
+     * last label id (the one formerly being in the second record).
+     *
+     * This randomized test found this issue every time when it existed and it will potentially find other
+     * unforeseen issues as well.
+     */
+    @Test
+    public void shouldHandleRandomAddsAndRemoves() throws Exception
+    {
+        // GIVEN
+        Set<Integer> key = new HashSet<>();
+        NodeRecord node = new NodeRecord( 0 );
+        node.setInUse( true );
+
+        // WHEN
+        for ( int i = 0; i < 100_000; i++ )
+        {
+            NodeLabels labels = NodeLabelsField.parseLabelsField( node );
+            int labelId = random.nextInt( 200 );
+            if ( random.nextBoolean() )
+            {
+                if ( !key.contains( labelId ) )
+                {
+                    labels.add( labelId, nodeStore, nodeStore.getDynamicLabelStore() );
+                    key.add( labelId );
+                }
+            }
+            else
+            {
+                if ( key.remove( labelId ) )
+                {
+                    labels.remove( labelId, nodeStore );
+                }
+            }
+        }
+
+        // THEN
+        NodeLabels labels = NodeLabelsField.parseLabelsField( node );
+        long[] readLabelIds = labels.get( nodeStore );
+        for ( long labelId : readLabelIds )
+        {
+            assertTrue( "Found an unexpected label " + labelId, key.remove( (int) labelId ) );
+        }
+        assertTrue( key.isEmpty() );
     }
 
     private long dynamicLabelsLongRepresentation( Iterable<DynamicRecord> records )
