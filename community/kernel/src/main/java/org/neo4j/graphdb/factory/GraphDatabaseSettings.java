@@ -494,6 +494,12 @@ public abstract class GraphDatabaseSettings
         @Description( "Address the connector should bind to" )
         public final Setting<HostnamePort> address;
 
+        // Used by config doc generator
+        public BoltConnector()
+        {
+            this("{bolt-connector-key}");
+        }
+
         public BoltConnector(String key)
         {
             super(key, ConnectorType.BOLT.name() );

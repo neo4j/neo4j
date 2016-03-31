@@ -30,10 +30,8 @@ You need to make sure that the shell jar file is on the classpath when you start
 [[shell-enabling-remote]]
 === Enabling the shell server
 
-Shell is enabled from the main configuration of Neo4j, see <<configuration-settings>>.
-Here's the available settings:
-
-include::{importdir}/neo4j-shell-docs-jar/ops/configuration-attributes.asciidoc[]
+Shell is enabled from the main configuration of Neo4j.
+See the <<configuration-settings,configuration reference section>> for detailed documentation on available configuration options.
 
 There are two ways to start the shell, either by connecting to a remote shell server or by pointing it to a Neo4j store path.
 
@@ -426,5 +424,3 @@ include::shell/shell-matrix-example-graph.asciidoc[]
 The following is a sample shell session creating the Matrix graph and querying it.
 
 include::shell/a-matrix-example.asciidoc[]
-
-

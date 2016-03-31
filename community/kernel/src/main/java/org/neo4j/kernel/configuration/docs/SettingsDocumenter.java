@@ -27,6 +27,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.kernel.configuration.docs.SettingsDescription.describe;
@@ -37,10 +38,10 @@ public class SettingsDocumenter
     private static final Predicate<SettingDescription> DEPRECATED_SETTINGS = SettingDescription::isDeprecated;
 
     private static final Pattern CONFIG_SETTING_PATTERN = Pattern.compile( "[a-z0-9]+((\\.|_)[a-z0-9]+)+" );
-    // TODO: This one, and the blacklist below, exist because we try and infer what a config option
-    //       is from prose text. This is fraught with accidental error. We should instead look into
+    // TODO: This one, and the blacklist below, exist because we try and infer what is a config name
+    //       in prose text. This is fraught with accidental error. We should instead look into
     //       adopting a convention for how we mark references to other config options in the @Description
-    //       et cetera, for instance "`my.setting`".
+    //       et cetera, for instance using back-ticks: "`my.setting`".
     private static final Pattern NUMBER_OR_IP = Pattern.compile( "[0-9\\.]+" );
     private static final List<String> CONFIG_NAMES_BLACKLIST = Arrays.asList( "round_robin", "keep_all", "keep_last",
             "keep_none", "metrics.neo4j", "i.e", "e.g", "fixed_ascending", "fixed_descending" );
@@ -50,6 +51,21 @@ public class SettingsDocumenter
     public static final String ENDIF = String.format("endif::nonhtmloutput[]%n%n");
 
     private PrintStream out;
+
+    /**
+     * Document a set of configuration classes together as a combined asciidoc section.
+     * @param settings one or more settings classes.
+     * @return asciidoc content
+     * @throws Exception
+     */
+    public String document( Stream<Class<?>> settings ) throws Exception
+    {
+        SettingsDescription combinedDescription = settings
+                .map( SettingsDescription::describe )
+                .reduce( SettingsDescription::union )
+                .get();
+        return document( combinedDescription );
+    }
 
     public String document( Class<?> settings ) throws Exception
     {
