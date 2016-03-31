@@ -157,6 +157,16 @@ class QueryTaggerTest extends CypherFunSuite {
     QueryTagger("MERGE ()-[r:T]->()") should contain(MergeTag)
   }
 
+  test(queryTag(OnMatchTag)) {
+    QueryTagger("MERGE (n) ON MATCH SET n:Foo") should contain(OnMatchTag)
+    QueryTagger("MERGE ()-[r:T]->() ON MATCH SET r.prop = 0") should contain(OnMatchTag)
+  }
+
+  test(queryTag(OnCreateTag)) {
+    QueryTagger("MERGE (n) ON CREATE SET n:Foo") should contain(OnCreateTag)
+    QueryTagger("MERGE ()-[r:T]->() ON CREATE SET r.prop = 0") should contain(OnCreateTag)
+  }
+
   test(queryTag(CreateUniqueTag)) {
     QueryTagger("CREATE UNIQUE ()") should contain(CreateUniqueTag)
     QueryTagger("CREATE UNIQUE ()-[r:T]->()") should contain(CreateUniqueTag)
