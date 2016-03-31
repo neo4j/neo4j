@@ -43,8 +43,8 @@ public class NodeLabelsField
     {
         long labelField = node.getLabelField();
         return fieldPointsToDynamicRecordOfLabels( labelField )
-                ? new DynamicNodeLabels( labelField, node )
-                : new InlineNodeLabels( labelField, node );
+                ? new DynamicNodeLabels( node )
+                : new InlineNodeLabels( node );
     }
 
     public static long[] get( NodeRecord node, NodeStore nodeStore )

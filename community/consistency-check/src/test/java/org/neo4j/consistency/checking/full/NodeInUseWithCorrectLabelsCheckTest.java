@@ -129,7 +129,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
 
     private NodeRecord withInlineLabels( NodeRecord nodeRecord, long... labelIds )
     {
-        new InlineNodeLabels( nodeRecord.getLabelField(), nodeRecord ).put( labelIds, null, null );
+        new InlineNodeLabels( nodeRecord ).put( labelIds, null, null );
         return nodeRecord;
     }
 
