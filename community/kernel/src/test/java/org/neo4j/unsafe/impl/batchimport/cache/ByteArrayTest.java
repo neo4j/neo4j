@@ -19,18 +19,56 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 
+@RunWith( Parameterized.class )
 public class ByteArrayTest
 {
+    private static final byte[] DEFAULT = new byte[15];
+
+    @Parameters
+    public static Collection<Supplier<ByteArray>> data()
+    {
+        return Arrays.asList(
+                () -> NumberArrayFactory.HEAP.newByteArray( 1_000, DEFAULT ),
+                () -> NumberArrayFactory.HEAP.newDynamicByteArray( 100, DEFAULT ),
+                () -> NumberArrayFactory.OFF_HEAP.newByteArray( 1_000, DEFAULT ),
+                () -> NumberArrayFactory.OFF_HEAP.newDynamicByteArray( 100, DEFAULT ),
+                () -> NumberArrayFactory.AUTO.newByteArray( 1_000, DEFAULT ),
+                () -> NumberArrayFactory.AUTO.newDynamicByteArray( 100, DEFAULT ) );
+    }
+
+    @Parameter
+    public Supplier<ByteArray> factory;
+    private ByteArray array;
+
+    @Before
+    public void before()
+    {
+        array = factory.get();
+    }
+
+    @After
+    public void after()
+    {
+        array.close();
+    }
+
     @Test
     public void shouldSetAndGetBasicTypes() throws Exception
     {
-        // GIVEN
-        ByteArray array = newArray( 100, new byte[15] );
-
         // WHEN
         array.setByte( 0, 0, (byte) 123 );
         array.setShort( 0, 1, (short) 1234 );
@@ -47,20 +85,12 @@ public class ByteArrayTest
     @Test
     public void shouldDetectMinusOne() throws Exception
     {
-        // GIVEN
-        ByteArray array = newArray( 100, new byte[15] );
-
         // WHEN
-        array.set6BLong( 10, 2, -1 );
-        array.set6BLong( 10, 8, -1 );
+        array.set6ByteLong( 10, 2, -1 );
+        array.set6ByteLong( 10, 8, -1 );
 
         // THEN
-        assertEquals( -1L, array.get6BLong( 10, 2 ) );
-        assertEquals( -1L, array.get6BLong( 10, 8 ) );
-    }
-
-    private ByteArray newArray( int length, byte[] defaultValue )
-    {
-        return NumberArrayFactory.HEAP.newByteArray( length, defaultValue );
+        assertEquals( -1L, array.get6ByteLong( 10, 2 ) );
+        assertEquals( -1L, array.get6ByteLong( 10, 8 ) );
     }
 }

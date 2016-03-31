@@ -89,7 +89,7 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     }
 
     @Override
-    public long get6BLong( long index, int offset )
+    public long get6ByteLong( long index, int offset )
     {
         return get6BLongFromByteBuffer( buffer, index( index, offset ) );
     }
@@ -132,7 +132,7 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     }
 
     @Override
-    public void set6BLong( long index, int offset, long value )
+    public void set6ByteLong( long index, int offset, long value )
     {
         int absIndex = index( index, offset );
         buffer.putInt( absIndex, (int) value );

@@ -109,7 +109,7 @@ public class NumberArrayTest
     }
 
     @Rule
-    public RandomRule random = new RandomRule().withSeed( 1459254570461L );
+    public RandomRule random = new RandomRule();
 
     @Parameter( 0 )
     public NumberArray<?> array;

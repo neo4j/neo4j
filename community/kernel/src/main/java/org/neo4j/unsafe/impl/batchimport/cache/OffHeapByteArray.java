@@ -108,7 +108,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     }
 
     @Override
-    public long get6BLong( long index, int offset )
+    public long get6ByteLong( long index, int offset )
     {
         long address = address( index, offset );
         long low4b = (UnsafeUtil.getInt( address )) & 0xFFFFFFFFL;
@@ -151,7 +151,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     }
 
     @Override
-    public void set6BLong( long index, int offset, long value )
+    public void set6ByteLong( long index, int offset, long value )
     {
         long address = address( index, offset );
         UnsafeUtil.putInt( address, (int) value );

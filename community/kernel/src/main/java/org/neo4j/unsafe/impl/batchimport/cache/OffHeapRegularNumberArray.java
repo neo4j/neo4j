@@ -44,15 +44,11 @@ abstract class OffHeapRegularNumberArray<N extends NumberArray<N>> extends OffHe
 
     protected boolean isByteUniform( long value )
     {
-        byte any = 0; // assignment not really needed
-        for ( int i = 0; i < itemSize; i++ )
+        byte any = (byte)value;
+        for ( int i = 1; i < itemSize; i++ )
         {
-            byte test = (byte)(value >>> 8*i);
-            if ( i == 0 )
-            {
-                any = test;
-            }
-            else if ( test != any )
+            byte test = (byte)(value >>> (i << 3));
+            if ( test != any )
             {
                 return false;
             }

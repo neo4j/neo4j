@@ -88,19 +88,16 @@ abstract class DynamicNumberArray<N extends NumberArray<N>> implements NumberArr
         return chunks[chunkIndex];
     }
 
-    private void synchronizedAddChunk( long index )
+    private synchronized void synchronizedAddChunk( long index )
     {
-        synchronized ( this )
+        if ( index >= length() )
         {
-            if ( index >= length() )
+            N[] newChunks = Arrays.copyOf( chunks, chunkIndex( index )+1 );
+            for ( int i = chunks.length; i < newChunks.length; i++ )
             {
-                N[] newChunks = Arrays.copyOf( chunks, chunkIndex( index )+1 );
-                for ( int i = chunks.length; i < newChunks.length; i++ )
-                {
-                    newChunks[i] = addChunk( chunkSize, chunkSize * i );
-                }
-                chunks = newChunks;
+                newChunks[i] = addChunk( chunkSize, chunkSize * i );
             }
+            chunks = newChunks;
         }
     }
 

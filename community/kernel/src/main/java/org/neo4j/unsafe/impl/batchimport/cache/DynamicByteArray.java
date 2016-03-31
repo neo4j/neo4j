@@ -86,10 +86,10 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
     }
 
     @Override
-    public long get6BLong( long index, int offset )
+    public long get6ByteLong( long index, int offset )
     {
         ByteArray chunk = chunkOrNullAt( index );
-        return chunk != null ? chunk.get6BLong( index, offset ) :
+        return chunk != null ? chunk.get6ByteLong( index, offset ) :
             get6BLongFromByteBuffer( defaultValueConvenienceBuffer, offset );
     }
 
@@ -125,9 +125,9 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
     }
 
     @Override
-    public void set6BLong( long index, int offset, long value )
+    public void set6ByteLong( long index, int offset, long value )
     {
-        at( index ).set6BLong( index, offset, value );
+        at( index ).set6ByteLong( index, offset, value );
     }
 
     @Override
