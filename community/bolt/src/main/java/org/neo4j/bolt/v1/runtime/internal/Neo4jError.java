@@ -47,6 +47,11 @@ public class Neo4jError
         this(status, message, null);
     }
 
+    public Neo4jError( Status status, Throwable cause )
+    {
+        this(status, status.code().description(), cause);
+    }
+
     public Status status()
     {
         return status;
@@ -154,20 +159,11 @@ public class Neo4jError
 
             if (cause instanceof OutOfMemoryError)
             {
-                return new Neo4jError( Status.General.OutOfMemoryError,
-                        "There is not enough memory to perform the current task. Please try increasing " +
-                        "'dbms.memory.heap.max_size' in 'conf/neo4j-wrapper.conf' or if you are running an embedded " +
-                        "installation increase the heap by using '-Xmx' command line flag.", cause );
+                return new Neo4jError( Status.General.OutOfMemoryError, cause );
             }
-
             if (cause instanceof StackOverflowError)
             {
-                return new Neo4jError( Status.General.OutOfMemoryError,
-                        "There is not enough stack size to perform the current task. This is generally considered to be a " +
-                        "database error, so please contact Neo4j support. You could try increasing the stack size: " +
-                        "for example to set the stack size to 2M, add `dbms.jvm.additional=-Xss2M' to " +
-                        "'conf/neo4j-wrapper.conf' or if you are running an embedded installation just add -Xss2M as " +
-                        "command line flag.", cause );
+                return new Neo4jError( Status.General.StackOverFlowError, cause );
             }
         }
 
