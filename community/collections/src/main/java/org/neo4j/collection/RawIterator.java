@@ -22,6 +22,8 @@ package org.neo4j.collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import org.neo4j.function.ThrowingSupplier;
+
 /**
  * Just like {@link Iterator}, but with the addition that {@link #hasNext()} and {@link #next()} can
  * be declared to throw a checked exception.
@@ -64,6 +66,22 @@ public interface RawIterator<T,EXCEPTION extends Exception>
                     return values[position++];
                 }
                 throw new NoSuchElementException();
+            }
+        };
+    }
+
+    /**
+     * Create a raw iterator from the provided {@link ThrowingSupplier} - the iterator will end
+     * when the supplier returns null.
+     */
+    static <T, EX extends Exception> RawIterator<T, EX> of( ThrowingSupplier<T, EX> supplier )
+    {
+        return new PrefetchingRawIterator<T,EX>()
+        {
+            @Override
+            protected T fetchNextOrNull() throws EX
+            {
+                return supplier.get();
             }
         };
     }
