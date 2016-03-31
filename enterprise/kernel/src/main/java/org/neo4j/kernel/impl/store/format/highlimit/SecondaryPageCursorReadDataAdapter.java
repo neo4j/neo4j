@@ -52,7 +52,7 @@ class SecondaryPageCursorReadDataAdapter implements DataAdapter<PageCursor>, Sec
     }
 
     @Override
-    public byte get( PageCursor primaryCursor /*same as the one we have*/ )
+    public byte getByte( PageCursor primaryCursor /*same as the one we have*/ )
     {
         if ( primaryCursor.getOffset() == primaryEndOffset )
         {
@@ -72,7 +72,7 @@ class SecondaryPageCursorReadDataAdapter implements DataAdapter<PageCursor>, Sec
     }
 
     @Override
-    public void put( byte oneByte, PageCursor primaryCursor )
+    public void putByte( byte oneByte, PageCursor primaryCursor )
     {
         throw new UnsupportedOperationException();
     }
