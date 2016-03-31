@@ -56,12 +56,12 @@ public class StoreMigratorTestUtil
                         }
                     }
                 } )
-                .withProvider( clusterOfSize( 3 ) )
+                .withCluster( clusterOfSize( 3 ) )
                 .build();
 
         life.add( clusterManager );
         life.start();
 
-        return clusterManager.getDefaultCluster();
+        return clusterManager.getCluster();
     }
 }

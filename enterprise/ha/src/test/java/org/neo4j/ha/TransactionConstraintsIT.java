@@ -87,7 +87,10 @@ public class TransactionConstraintsIT
     @After
     public void afterwards() throws Throwable
     {
-        cluster.repairAll();
+        if ( cluster != null )
+        {
+            cluster.repairAll();
+        }
     }
 
     private static final String PROPERTY_KEY = "name";

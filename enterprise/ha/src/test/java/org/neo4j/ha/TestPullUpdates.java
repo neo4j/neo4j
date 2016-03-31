@@ -86,7 +86,7 @@ public class TestPullUpdates
                 ClusterSettings.heartbeat_interval.name(), "2s",
                 ClusterSettings.heartbeat_timeout.name(), "30s") ).build();
         clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
         cluster.await( allSeesAllAsAvailable() );
 
         cluster.info( "### Creating initial dataset" );
@@ -123,7 +123,7 @@ public class TestPullUpdates
     {
         File root = testDirectory.directory( testName.getMethodName() );
         ClusterManager clusterManager = new ClusterManager.Builder( root )
-                .withProvider( clusterOfSize( 2 ) )
+                .withCluster( clusterOfSize( 2 ) )
                 .withSharedConfig( MapUtil.stringMap(
                     HaSettings.pull_interval.name(), "0",
                     HaSettings.tx_push_factor.name(), "0" ,
@@ -133,7 +133,7 @@ public class TestPullUpdates
                         (IntFunction<String>) oneBasedServerId -> oneBasedServerId >= 1 && oneBasedServerId <= 2 ?
                                 "" + (SHELL_PORT + oneBasedServerId) : null ) ).build();
         clusterManager.start();
-        cluster = clusterManager.getDefaultCluster();
+        cluster = clusterManager.getCluster();
 
         long commonNodeId = createNodeOnMaster();
 

@@ -249,11 +249,11 @@ public class StoreUpgradeIntegrationTest
             File haDir = new File( dir.getParentFile(), "ha-stuff" );
             FileUtils.deleteRecursively( haDir );
             ClusterManager clusterManager = new ClusterManager.Builder( haDir )
-                    .withSeedDir( dir ).withProvider( clusterOfSize( 2 ) ).build();
+                    .withSeedDir( dir ).withCluster( clusterOfSize( 2 ) ).build();
 
             clusterManager.start();
 
-            ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+            ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
             HighlyAvailableGraphDatabase master, slave;
             try
             {

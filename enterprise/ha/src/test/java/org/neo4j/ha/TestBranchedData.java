@@ -102,8 +102,8 @@ public class TestBranchedData
         // GIVEN
         File dir = directory.directory();
         ClusterManager clusterManager = life.add( new ClusterManager.Builder( dir )
-                .withProvider( clusterOfSize( 2 ) ).build() );
-        ManagedCluster cluster = clusterManager.getDefaultCluster();
+                .withCluster( clusterOfSize( 2 ) ).build() );
+        ManagedCluster cluster = clusterManager.getCluster();
         cluster.await( allSeesAllAsAvailable() );
         createNode( cluster.getMaster(), "A" );
         cluster.sync();
@@ -140,7 +140,7 @@ public class TestBranchedData
                 // Effectively disable automatic transaction propagation within the cluster
                 HaSettings.tx_push_factor.name(), "0",
                 HaSettings.pull_interval.name(), "0" ) ).build() );
-        ManagedCluster cluster = clusterManager.getDefaultCluster();
+        ManagedCluster cluster = clusterManager.getCluster();
         cluster.await( allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase thor = cluster.getMaster();
         String indexName = "valhalla";

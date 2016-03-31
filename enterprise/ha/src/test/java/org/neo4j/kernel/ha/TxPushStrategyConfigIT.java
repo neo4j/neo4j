@@ -184,7 +184,7 @@ public class TxPushStrategyConfigIT
     private ManagedCluster startCluster( int memberCount, final int pushFactor, final HaSettings.TxPushStrategy pushStrategy )
             throws Exception
     {
-        ManagedCluster cluster = clusterRule.withProvider( clusterOfSize( memberCount ) )
+        ManagedCluster cluster = clusterRule.withCluster( clusterOfSize( memberCount ) )
                 .withSharedSetting( HaSettings.tx_push_factor, "" + pushFactor )
                 .withSharedSetting( HaSettings.tx_push_strategy, pushStrategy.name() )
                 .startCluster();
