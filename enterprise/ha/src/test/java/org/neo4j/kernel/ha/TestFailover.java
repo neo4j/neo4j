@@ -67,13 +67,13 @@ public class TestFailover
     {
         // given
         ClusterManager clusterManager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "failover" ) ).
-        withProvider( ClusterManager.clusterOfSize( clusterSize ) )
+                withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .withSharedConfig( stringMap(
                     ClusterSettings.heartbeat_interval.name(), "1" ) )
                 .build();
 
         clusterManager.start();
-        ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
+        ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
 
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase oldMaster = cluster.getMaster();

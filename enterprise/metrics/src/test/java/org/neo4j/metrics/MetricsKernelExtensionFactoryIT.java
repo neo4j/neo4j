@@ -84,7 +84,7 @@ public class MetricsKernelExtensionFactoryIT
                 check_point_interval_time.name(), "100ms",
                 graphiteInterval.name(), "1s"
         );
-        db = clusterRule.withSharedConfig( config ).withProvider( clusterOfSize( 1 ) ).startCluster().getMaster();
+        db = clusterRule.withSharedConfig( config ).withCluster( clusterOfSize( 1 ) ).startCluster().getMaster();
         addNodes( 1 ); // to make sure creation of label and property key tokens do not mess up with assertions in tests
     }
 

@@ -53,7 +53,7 @@ public class ClusterTransactionIT
     @Before
     public void setUp() throws Exception
     {
-        cluster = clusterRule.withProvider( clusterOfSize( 3 ) )
+        cluster = clusterRule.withCluster( clusterOfSize( 3 ) )
                              .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
                              .withSharedSetting( HaSettings.tx_push_factor, "2" ).startCluster();
 

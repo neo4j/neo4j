@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
@@ -53,7 +52,7 @@ public class HaLoggingIT
     public void setup() throws Exception
     {
         cluster = clusterRule
-                .withProvider( clusterWithAdditionalClients( 2, 1 ) )
+                .withCluster( clusterWithAdditionalClients( 2, 1 ) )
                 .withAvailabilityChecks( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() )
                 .withSharedSetting( logs_directory, clusterRule.directory( "logs" ).getAbsolutePath() )
                 .startCluster();
