@@ -22,7 +22,7 @@ This means that you can extend the cluster without changing the configuration of
 
 If you are running Neo4j server, specify `dbms.mode=HA` in <<file-locations, _neo4j.conf_>>.
 
-include::{importdir}/neo4j-server-enterprise-docs-jar/ops/configuration-attributes.asciidoc[]
+See the <<configuration-settings,configuration reference section>> for detailed documentation on available configuration options.
 
 == Database configuration ==
 
@@ -30,9 +30,4 @@ HA configuration parameters should be supplied alongside general Neo4j parameter
 There are many configurable parameters. In most cases it isn't necessary to modify the default values.
 The only parameters that need to be specified are `ha.server_id` and `ha.initial_hosts`.
 
-include::{importdir}/neo4j-ha-docs-jar/ops/ha-configuration-attributes.asciidoc[]
-
-include::{importdir}/neo4j-cluster-docs-jar/ops/configuration-attributes.asciidoc[]
-
-
-
+See the <<configuration-settings,configuration reference section>> for detailed documentation on available configuration options.
