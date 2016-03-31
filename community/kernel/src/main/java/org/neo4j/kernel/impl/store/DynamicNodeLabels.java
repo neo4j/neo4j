@@ -41,12 +41,10 @@ import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
 
 public class DynamicNodeLabels implements NodeLabels
 {
-    private final long labelField;
     private final NodeRecord node;
 
-    public DynamicNodeLabels( long labelField, NodeRecord node )
+    public DynamicNodeLabels( NodeRecord node )
     {
-        this.labelField = labelField;
         this.node = node;
     }
 
@@ -123,10 +121,11 @@ public class DynamicNodeLabels implements NodeLabels
     @Override
     public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
-        nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( labelField ) );
-        Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
-        long[] existingLabelIds = getDynamicLabelsArray( existingRecords, nodeStore.getDynamicLabelStore() );
+        nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ) );
+        long[] existingLabelIds = getDynamicLabelsArray( node.getUsedDynamicLabelRecords(),
+                nodeStore.getDynamicLabelStore() );
         long[] newLabelIds = LabelIdArray.concatAndSort( existingLabelIds, labelId );
+        Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         Collection<DynamicRecord> changedDynamicRecords =
                 allocateRecordsForDynamicLabels( node.getId(), newLabelIds, existingRecords.iterator(), allocator );
         node.setLabelField( dynamicPointer( changedDynamicRecords ), changedDynamicRecords );
@@ -136,7 +135,7 @@ public class DynamicNodeLabels implements NodeLabels
     @Override
     public Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore )
     {
-        nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( labelField ) );
+        nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( node.getLabelField() ) );
         long[] existingLabelIds = getDynamicLabelsArray( node.getUsedDynamicLabelRecords(),
                 nodeStore.getDynamicLabelStore() );
         long[] newLabelIds = filter( existingLabelIds, labelId );
@@ -166,7 +165,7 @@ public class DynamicNodeLabels implements NodeLabels
 
     public long getFirstDynamicRecordId()
     {
-        return firstDynamicLabelRecordId( labelField );
+        return firstDynamicLabelRecordId( node.getLabelField() );
     }
 
     public static long dynamicPointer( Collection<DynamicRecord> newRecords )
