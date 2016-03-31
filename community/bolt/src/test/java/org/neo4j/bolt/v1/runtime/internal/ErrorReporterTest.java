@@ -56,4 +56,26 @@ public class ErrorReporterTest
         provider.assertExactly(
                 inLog( "userlog" ).error( CoreMatchers.containsString( error.reference().toString() ) ) );
     }
+
+    @Test
+    public void shouldNotReportOOMErrors()
+    {
+        // Given
+        AssertableLogProvider provider = new AssertableLogProvider();
+        ErrorReporter reporter =
+                new ErrorReporter( provider.getLog( "userlog" ), new UsageData( mock( JobScheduler.class ) ) );
+
+        Throwable cause = new OutOfMemoryError( "memory is fading" );
+        Neo4jError error = Neo4jError.from( cause );
+
+        // When
+        reporter.report( error );
+
+        // Then
+        assertThat( error.status(), CoreMatchers.equalTo( (Status) Status.General.OutOfMemoryError ) );
+        assertThat( error.message(), CoreMatchers.equalTo(   "There is not enough memory to perform the current task. Please try increasing " +
+                                                             "'dbms.memory.heap.max_size' in 'conf/neo4j-wrapper.conf' or if you are running an embedded " +
+                                                             "installation increase the heap by using '-Xmx' command line flag." ));
+        provider.assertNoLoggingOccurred();
+    }
 }

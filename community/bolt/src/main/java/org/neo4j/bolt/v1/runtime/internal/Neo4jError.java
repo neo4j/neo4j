@@ -47,11 +47,6 @@ public class Neo4jError
         this(status, message, null);
     }
 
-    public Neo4jError( Status status )
-    {
-        this(status, status.code().description(), null);
-    }
-
     public Status status()
     {
         return status;
@@ -155,6 +150,14 @@ public class Neo4jError
             if ( cause instanceof Status.HasStatus )
             {
                 return new Neo4jError( ((Status.HasStatus) cause).status(), any.getMessage(), any );
+            }
+
+            if (cause instanceof OutOfMemoryError)
+            {
+                return new Neo4jError( Status.General.OutOfMemoryError,
+                        "There is not enough memory to perform the current task. Please try increasing " +
+                        "'dbms.memory.heap.max_size' in 'conf/neo4j-wrapper.conf' or if you are running an embedded " +
+                        "installation increase the heap by using '-Xmx' command line flag.", cause );
             }
         }
 

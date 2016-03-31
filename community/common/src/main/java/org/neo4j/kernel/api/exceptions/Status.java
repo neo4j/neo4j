@@ -422,6 +422,8 @@ public interface Status
                 "A malformed schema rule was encountered. Please contact your support representative." ),
         UnknownError( DatabaseError,
                 "An unknown error occurred." ),
+        OutOfMemoryError( TransientError,
+                "There is not enough memory to perform the current task." ),
 
         // transient errors
         DatabaseUnavailable( TransientError,
@@ -519,20 +521,8 @@ public interface Status
 
             Code code = (Code) o;
 
-            if ( !category.equals( code.category ) )
-            {
-                return false;
-            }
-            if ( classification != code.classification )
-            {
-                return false;
-            }
-            if ( !title.equals( code.title ) )
-            {
-                return false;
-            }
-
-            return true;
+            return category.equals( code.category ) && classification == code.classification &&
+                   title.equals( code.title );
         }
 
         @Override
