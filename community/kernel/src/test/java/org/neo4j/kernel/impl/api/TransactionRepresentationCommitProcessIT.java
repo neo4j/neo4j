@@ -151,7 +151,7 @@ public class TransactionRepresentationCommitProcessIT
         neoStores.close();
     }
 
-    @Test(timeout = 5000)
+    @Test(timeout = 15000)
     public void commitDuringContinuousCheckpointing() throws Exception
     {
         // prepare
