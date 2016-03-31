@@ -223,4 +223,18 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
     assert(result.toList === List(Map("b" -> null, "r" -> null, "a" -> null)))
   }
+
+  test("optional match and collect should work") {
+    createLabeledNode(Map("property" -> 42), "DOES_EXIST")
+    createLabeledNode(Map("property" -> 43), "DOES_EXIST")
+    createLabeledNode(Map("property" -> 44), "DOES_EXIST")
+
+    val query = """OPTIONAL MATCH (f:DOES_EXIST)
+                  |OPTIONAL MATCH (n:DOES_NOT_EXIST)
+                  |RETURN collect(DISTINCT n.property), collect(DISTINCT f.property)""".stripMargin
+
+    val result = executeWithAllPlanners(query).toList
+
+    result.size should equal(1)
+  }
 }

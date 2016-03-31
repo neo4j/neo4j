@@ -17,28 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.pipes
+package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.scalatest.FunSuite
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class NiceHasherTest extends CypherFunSuite {
-
-  test("compares arrays by their contents rather than object identity") {
-    val hasher1 = new NiceHasher(Seq(Array(1, 2, 3)))
-    val hasher2 = new NiceHasher(Seq(Array(1, 2, 3)))
-    hasher1 should equal(hasher2)
-  }
+class NiceHasherValueTest extends CypherFunSuite {
 
   test("should work when nice hasher wraps null") {
-    new NiceHasher(null) should equal(new NiceHasher(null))
-    new NiceHasher(Seq.empty) should not equal new NiceHasher(null)
-    new NiceHasher(null) should not equal new NiceHasher(Seq.empty)
-  }
-
-  test("should work when nice hasher wraps seq of nulls") {
-    val hasher1 = new NiceHasher(Seq(null, null, null))
-    val hasher2 = new NiceHasher(Seq(null, null, null))
-    hasher1 should equal(hasher2)
+    new NiceHasherValue(null) should equal(new NiceHasherValue(null))
+    new NiceHasherValue(new Object) should not equal new NiceHasherValue(null)
+    new NiceHasherValue(null) should not equal new NiceHasherValue(new Object)
   }
 }
