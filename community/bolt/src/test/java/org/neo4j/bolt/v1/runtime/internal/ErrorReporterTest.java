@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.udc.UsageData;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -48,7 +49,7 @@ public class ErrorReporterTest
         reporter.report( error );
 
         // Then
-        assertThat( error.status(), CoreMatchers.equalTo( (Status) Status.General.UnknownError ) );
+        assertThat( error.status(), equalTo( (Status) Status.General.UnknownError ) );
         provider.assertExactly(
                 inLog( "userlog" )
                         .error( CoreMatchers.both( CoreMatchers.containsString( "START OF REPORT" ) )
@@ -72,10 +73,34 @@ public class ErrorReporterTest
         reporter.report( error );
 
         // Then
-        assertThat( error.status(), CoreMatchers.equalTo( (Status) Status.General.OutOfMemoryError ) );
-        assertThat( error.message(), CoreMatchers.equalTo(   "There is not enough memory to perform the current task. Please try increasing " +
+        assertThat( error.status(), equalTo( (Status) Status.General.OutOfMemoryError ) );
+        assertThat( error.message(), equalTo(   "There is not enough memory to perform the current task. Please try increasing " +
                                                              "'dbms.memory.heap.max_size' in 'conf/neo4j-wrapper.conf' or if you are running an embedded " +
                                                              "installation increase the heap by using '-Xmx' command line flag." ));
+        provider.assertNoLoggingOccurred();
+    }
+
+    @Test
+    public void shouldNotReportStackOverflowErrors()
+    {
+        // Given
+        AssertableLogProvider provider = new AssertableLogProvider();
+        ErrorReporter reporter =
+                new ErrorReporter( provider.getLog( "userlog" ), new UsageData( mock( JobScheduler.class ) ) );
+
+        Throwable cause = new StackOverflowError( "some rewriter is probably not tail recursive" );
+        Neo4jError error = Neo4jError.from( cause );
+
+        // When
+        reporter.report( error );
+
+        // Then
+        assertThat( error.status(), equalTo( (Status) Status.General.OutOfMemoryError ) );
+        assertThat( error.message(), equalTo(  "There is not enough stack size to perform the current task. This is generally considered to be a " +
+                                                            "database error, so please contact Neo4j support. You could try increasing the stack size: " +
+                                                            "for example to set the stack size to 2M, add `dbms.jvm.additional=-Xss2M' to " +
+                                                            "'conf/neo4j-wrapper.conf' or if you are running an embedded installation just add -Xss2M as " +
+                                                            "command line flag." ));
         provider.assertNoLoggingOccurred();
     }
 }

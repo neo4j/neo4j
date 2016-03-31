@@ -159,6 +159,16 @@ public class Neo4jError
                         "'dbms.memory.heap.max_size' in 'conf/neo4j-wrapper.conf' or if you are running an embedded " +
                         "installation increase the heap by using '-Xmx' command line flag.", cause );
             }
+
+            if (cause instanceof StackOverflowError)
+            {
+                return new Neo4jError( Status.General.OutOfMemoryError,
+                        "There is not enough stack size to perform the current task. This is generally considered to be a " +
+                        "database error, so please contact Neo4j support. You could try increasing the stack size: " +
+                        "for example to set the stack size to 2M, add `dbms.jvm.additional=-Xss2M' to " +
+                        "'conf/neo4j-wrapper.conf' or if you are running an embedded installation just add -Xss2M as " +
+                        "command line flag.", cause );
+            }
         }
 
         // In this case, an error has "slipped out", and we don't have a good way to handle it. This indicates
