@@ -116,6 +116,18 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     result.toList should equal (List(Map("count(distinct a.foo)" -> 0)))
   }
 
+  test("should be able to collect distinct nulls") {
+    val query = "unwind [NULL, NULL] AS x RETURN collect(distinct x) as c"
+    val result = executeWithAllPlanners(query)
+    result.toSeq.head shouldBe Map("c" -> List.empty)
+  }
+
+  test("should be able to collect distinct values mixed with nulls") {
+    val query = "unwind [NULL, 1, NULL] AS x RETURN collect(distinct x) as c"
+    val result = executeWithAllPlanners(query)
+    result.toSeq.head shouldBe Map("c" -> List(1))
+  }
+
   test("should aggregate on array values") {
     createNode("color" -> Array("red"))
     createNode("color" -> Array("blue"))
