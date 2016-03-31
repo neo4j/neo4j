@@ -33,7 +33,6 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.SuppressOutput;
@@ -41,9 +40,6 @@ import org.neo4j.test.SuppressOutput;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
@@ -70,9 +66,7 @@ public class TestLifecycleManagedDatabase
     {
         dataDirectory = createTempDir();
 
-        dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
-        when(dbFactory.newGraphDatabase( any( Config.class ), any( GraphDatabaseFacadeFactory.Dependencies.class ) ))
-                .thenReturn( (GraphDatabaseFacade) dbRule.getGraphDatabaseAPI() );
+        dbFactory = createGraphFactory();
         dbConfig = new Config(stringMap( DatabaseManagementSystemSettings.data_directory.name(), dataDirectory.getAbsolutePath() ) );
         theDatabase = newDatabase();
     }
@@ -149,5 +143,10 @@ public class TestLifecycleManagedDatabase
     {
         theDatabase.start();
         assertThat( theDatabase.getLocation(), is( dbConfig.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath() ) );
+    }
+
+    private LifecycleManagingDatabase.GraphFactory createGraphFactory()
+    {
+        return ( config, dependencies ) -> (GraphDatabaseFacade) dbRule.getGraphDatabaseAPI();
     }
 }
