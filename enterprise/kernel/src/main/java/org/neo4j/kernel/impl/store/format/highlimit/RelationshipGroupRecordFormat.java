@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  * V: variable between 3B-8B
  *
  * Record format:
- * 1B   header
+ * 2B   header
  * 2B   relationship type
  * VB   first outgoing relationships
  * VB   first incoming relationships
@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  * VB   owning node
  * VB   next relationship group record
  *
- * => 18B-43B
+ * => 19B-44B
  */
 class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<RelationshipGroupRecord>
 {

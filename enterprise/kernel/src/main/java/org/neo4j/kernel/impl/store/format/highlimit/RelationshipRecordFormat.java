@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
  * V: variable between 3B-8B
  *
  * Record format:
- * 1B   header
+ * 2B   header
  * 2B   relationship type
  * VB   first property
  * VB   start node
@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
  * VB   end node chain previous relationship
  * VB   end node chain next relationship
  *
- * => 24B-59B
+ * => 25B-60B
  */
 class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRecord>
 {

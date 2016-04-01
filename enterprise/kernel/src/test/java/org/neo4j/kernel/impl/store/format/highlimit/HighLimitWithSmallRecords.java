@@ -35,9 +35,14 @@ public class HighLimitWithSmallRecords extends HighLimit
     public static final String NAME = "high_limit_with_small_records";
     public static final RecordFormats RECORD_FORMATS = new HighLimitWithSmallRecords();
 
-    private static final int NODE_RECORD_SIZE = NodeRecordFormat.RECORD_SIZE / 2;
-    private static final int RELATIONSHIP_RECORD_SIZE = RelationshipRecordFormat.RECORD_SIZE / 2;
-    private static final int RELATIONSHIP_GROUP_RECORD_SIZE = RelationshipGroupRecordFormat.RECORD_SIZE / 2;
+    /**
+     * We've added an extra byte to the header {@link BaseHighLimitRecordFormat}
+     * This causes problems with splitting across values in this small records high limits format used in tests.
+     * The +1 to the following 3 record sizes will cause it to not split across a value.
+     */
+    private static final int NODE_RECORD_SIZE = (NodeRecordFormat.RECORD_SIZE / 2) + 1;
+    private static final int RELATIONSHIP_RECORD_SIZE = (RelationshipRecordFormat.RECORD_SIZE / 2) + 1;
+    private static final int RELATIONSHIP_GROUP_RECORD_SIZE  = (RelationshipGroupRecordFormat.RECORD_SIZE / 2) + 1;
 
     private HighLimitWithSmallRecords()
     {
@@ -55,8 +60,8 @@ public class HighLimitWithSmallRecords extends HighLimit
 
     public static boolean isEnabled()
     {
-        String toggleValue = FeatureToggles.getString( InternalRecordFormatSelector.class,
-                InternalRecordFormatSelector.FORMAT_TOGGLE_NAME, "" );
+        String toggleValue = FeatureToggles
+                .getString( InternalRecordFormatSelector.class, InternalRecordFormatSelector.FORMAT_TOGGLE_NAME, "" );
         return NAME.equals( toggleValue );
     }
 

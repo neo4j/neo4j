@@ -48,8 +48,8 @@ public class HighLimit extends BaseRecordFormats
     static final int DEFAULT_MAXIMUM_BITS_PER_ID = 50;
 
     public static final RecordFormats RECORD_FORMATS = new HighLimit();
-    // Enterprise.HighLimit.Zero
-    public static final String STORE_VERSION = "vE.H.0";
+    // Enterprise.HighLimit.One
+    public static final String STORE_VERSION = "vE.H.1";
     public static final String NAME = "high_limit";
 
     public HighLimit()

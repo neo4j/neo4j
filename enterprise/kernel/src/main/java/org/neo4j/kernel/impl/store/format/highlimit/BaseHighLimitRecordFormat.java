@@ -44,30 +44,30 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR
  * 58-bit IDs, which is roughly 280 quadrillion. With that size the ID limits can be considered highlimit,
  * hence the format name. The IDs take up between 3-8B depending on the size of the ID where relative ID
  * references are used as often as possible. See {@link Reference}.
- *
- * For consistency, all formats have a one-byte header specifying:
- *
+ * <p>
+ * For consistency, all formats have a two-byte header specifying:
+ * <p>
  * <ol>
  * <li>0x1: inUse [0=unused, 1=used]</li>
  * <li>0x2: record unit [0=single record, 1=multiple records]</li>
  * <li>0x4: record unit type [1=first, 0=consecutive]
- * <li>0x8 - 0x80 other flags for this record specific to each type</li>
+ * <li>0x8 - 0x8000 other flags for this record specific to each type</li>
  * </ol>
- *
+ * <p>
  * NOTE to the rest of the flags is that a good use of them is to denote whether or not an ID reference is
  * null (-1) as to save 3B (smallest compressed size) by not writing a reference at all.
- *
+ * <p>
  * For records that are the first out of multiple record units, then immediately following the header byte is
  * the reference (3-8B) to the secondary ID. After that the "statically sized" data and in the end the
  * dynamically sized data. The general thinking is that the break-off into the secondary record will happen in
  * the sequence of dynamically sized references and this will allow for crossing the record boundary
  * in between, but even in the middle of, references quite easily since the {@link DataAdapter}
  * works on byte-per-byte data.
- *
+ * <p>
  * Assigning secondary record unit IDs is done outside of this format implementation, it is just assumed
  * that records that gets {@link #write(AbstractBaseRecord, PageCursor, int, PagedFile) written} have already
  * been assigned all required such data.
- *
+ * <p>
  * Usually each records are written and read atomically, so this format requires additional logic to be able to
  * write and read multiple records together atomically. For writing then currently this is guarded by
  * higher level entity write locks and so the {@link PageCursor} can simply move from the first on to the second
@@ -80,7 +80,7 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR
 abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         extends BaseOneByteHeaderRecordFormat<RECORD>
 {
-    private static final int HEADER_BYTE = Byte.BYTES;
+    private static final int HEADER_SIZE = 2 * Byte.BYTES;
 
     static final long NULL = Record.NULL_REFERENCE.intValue();
     static final int HEADER_BIT_RECORD_UNIT = 0b0000_0010;
@@ -95,6 +95,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             throws IOException
     {
         byte headerByte = primaryCursor.getByte();
+        // Future proof: reading the extra and currently unused header byte used for making future migration easier.
+        byte unusedHeaderByte = primaryCursor.getByte();
         boolean inUse = isInUse( headerByte );
         boolean doubleRecordUnit = has( headerByte, HEADER_BIT_RECORD_UNIT );
         if ( doubleRecordUnit )
@@ -117,9 +119,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             long secondaryId = Reference.decode( primaryCursor, PAGE_CURSOR_ADAPTER );
             long pageId = pageIdForRecord( secondaryId, storeFile.pageSize(), recordSize );
             int offset = offsetForId( secondaryId, storeFile.pageSize(), recordSize );
-            try ( SecondaryPageCursorReadDataAdapter readAdapter =
-                    new SecondaryPageCursorReadDataAdapter( primaryCursor, storeFile,
-                            pageId, offset, primaryEndOffset, PagedFile.PF_SHARED_READ_LOCK ) )
+            try ( SecondaryPageCursorReadDataAdapter readAdapter = new SecondaryPageCursorReadDataAdapter(
+                    primaryCursor, storeFile, pageId, offset, primaryEndOffset, PagedFile.PF_SHARED_READ_LOCK ) )
             {
                 do
                 {
@@ -140,15 +141,14 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
 
     private int calculatePrimaryCursorEndOffset( PageCursor primaryCursor, int recordSize )
     {
-        return primaryCursor.getOffset() + recordSize - HEADER_BYTE;
+        return primaryCursor.getOffset() + recordSize - HEADER_SIZE;
     }
 
-    protected abstract void doReadInternal( RECORD record, PageCursor cursor, int recordSize,
-            long inUseByte, boolean inUse, DataAdapter<PageCursor> adapter );
+    protected abstract void doReadInternal( RECORD record, PageCursor cursor, int recordSize, long inUseByte,
+            boolean inUse, DataAdapter<PageCursor> adapter );
 
     @Override
-    public void write( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile )
-            throws IOException
+    public void write( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile ) throws IOException
     {
         if ( record.inUse() )
         {
@@ -160,6 +160,9 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             headerByte = set( headerByte, HEADER_BIT_RECORD_UNIT, record.requiresSecondaryUnit() );
             headerByte = set( headerByte, HEADER_BIT_FIRST_RECORD_UNIT, true );
             primaryCursor.putByte( headerByte );
+            // Future proof: adding an extra and currently unused header byte to make future migration easier
+            byte unusedHeaderByte = 0;
+            primaryCursor.putByte( unusedHeaderByte );
 
             if ( record.requiresSecondaryUnit() )
             {
@@ -172,8 +175,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
 
                 long pageId = pageIdForRecord( secondaryUnitId, storeFile.pageSize(), recordSize );
                 int offset = offsetForId( secondaryUnitId, storeFile.pageSize(), recordSize );
-                SecondaryPageCursorWriteDataAdapter dataAdapter = new SecondaryPageCursorWriteDataAdapter(
-                        pageId, offset, primaryEndOffset );
+                SecondaryPageCursorWriteDataAdapter dataAdapter =
+                        new SecondaryPageCursorWriteDataAdapter( pageId, offset, primaryEndOffset );
 
                 doWriteInternal( record, primaryCursor, dataAdapter );
             }
@@ -220,7 +223,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     {
         if ( record.inUse() )
         {
-            int requiredLength = HEADER_BYTE + requiredDataLength( record );
+            int requiredLength = HEADER_SIZE + requiredDataLength( record );
             boolean requiresSecondaryUnit = requiredLength > recordSize;
             record.setRequiresSecondaryUnit( requiresSecondaryUnit );
             if ( record.requiresSecondaryUnit() && !record.hasSecondaryUnitId() )
@@ -255,8 +258,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         return Reference.decode( cursor, adapter );
     }
 
-    protected static long decode( PageCursor cursor,
-            DataAdapter<PageCursor> adapter, long headerByte, int headerBitMask, long nullValue )
+    protected static long decode( PageCursor cursor, DataAdapter<PageCursor> adapter, long headerByte,
+            int headerBitMask, long nullValue )
     {
         return has( headerByte, headerBitMask ) ? decode( cursor, adapter ) : nullValue;
     }
@@ -267,8 +270,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         Reference.encode( reference, cursor, adapter );
     }
 
-    protected static void encode( PageCursor cursor, DataAdapter<PageCursor> adapter, long reference,
-            long nullValue ) throws IOException
+    protected static void encode( PageCursor cursor, DataAdapter<PageCursor> adapter, long reference, long nullValue )
+            throws IOException
     {
         if ( reference != nullValue )
         {
