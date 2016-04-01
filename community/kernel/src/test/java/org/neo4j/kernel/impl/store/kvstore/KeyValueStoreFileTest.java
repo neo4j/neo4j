@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.io.pagecache.StubPageCursor;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile.maxPage;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileTest.CataloguePage.findPage;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileTest.CataloguePage.page;
@@ -153,6 +154,32 @@ public class KeyValueStoreFileTest
         assertEquals( 4, value[0] & 0xFF );
     }
 
+    @Test( expected = UnderlyingStorageException.class )
+    public void shouldThrowOnOutOfBoundsPageAccess() throws Exception
+    {
+        // given
+        AtomicBoolean goOutOfBounds = new AtomicBoolean();
+        byte[] key = new byte[1], value = new byte[3];
+        DataPage page = new DataPage( 4096, 3, 128, key, value )
+        {
+            @Override
+            void writeDataEntry( int record, WritableBuffer key, WritableBuffer value )
+            {
+                key.putByte( 0, (byte) 0x42 );
+            }
+
+            @Override
+            public boolean checkAndClearBoundsFlag()
+            {
+                return goOutOfBounds.get() | super.checkAndClearBoundsFlag();
+            }
+        };
+
+        page.findOffset( 0 );
+        goOutOfBounds.set( true );
+        page.findOffset( 0 );
+    }
+
     @Test
     public void shouldFindFirstRecordGreaterThanIfNoExactMatch() throws Exception
     {
@@ -177,7 +204,7 @@ public class KeyValueStoreFileTest
         }
     }
 
-    static abstract class DataPage extends StubPageCursor
+    private static abstract class DataPage extends StubPageCursor
     {
         private final int headerRecords;
         private final int dataRecords;
