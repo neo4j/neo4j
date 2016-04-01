@@ -19,21 +19,37 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+
+import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.raft.state.StateMachine;
 
-public class DirectReplicator implements Replicator
+public class DirectReplicator<Command> implements Replicator
 {
-    private final StateMachine stateMachine;
-    private long logIndex = 0;
+    private final StateMachine<Command> stateMachine;
+    private long commandIndex = 0;
 
-    public DirectReplicator( StateMachine stateMachine )
+    public DirectReplicator( StateMachine<Command> stateMachine )
     {
         this.stateMachine = stateMachine;
     }
 
     @Override
-    public void replicate( ReplicatedContent content ) throws ReplicationFailedException
+    public synchronized Future<Object> replicate( ReplicatedContent content, boolean trackResult )
     {
-        stateMachine.applyCommand( content, logIndex++ );
+        Optional<Result> result = stateMachine.applyCommand( (Command) content, commandIndex++ );
+
+        CompletableFuture<Object> futureResult = new CompletableFuture<>();
+        if( trackResult )
+        {
+            assert result.isPresent();
+            return result.get().apply( futureResult );
+        }
+        else
+        {
+            return futureResult;
+        }
     }
 }

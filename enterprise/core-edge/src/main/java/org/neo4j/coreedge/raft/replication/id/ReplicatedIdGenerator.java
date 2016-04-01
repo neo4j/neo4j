@@ -90,7 +90,15 @@ public class ReplicatedIdGenerator implements IdGenerator
         long nextId = nextLocalId();
         if ( nextId == VALUE_REPRESENTING_NULL )
         {
-            IdAllocation allocation = acquirer.acquireIds( idType );
+            IdAllocation allocation;
+            try
+            {
+                allocation = acquirer.acquireIds( idType );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new IdGenerationException( e );
+            }
             log.info( "Received id allocation " + allocation + " for " + idType );
             nextId = storeLocally( allocation );
         }

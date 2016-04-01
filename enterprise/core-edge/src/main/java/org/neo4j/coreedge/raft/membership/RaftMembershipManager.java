@@ -33,8 +33,8 @@ import org.neo4j.coreedge.raft.outcome.AppendLogEntry;
 import org.neo4j.coreedge.raft.outcome.BatchAppendLogEntries;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.TruncateLogCommand;
+import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
@@ -62,7 +62,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
 
     private int uncommittedMemberChanges = 0;
 
-    private final Replicator replicator;
+    private final LeaderOnlyReplicator replicator;
     private final RaftGroup.Builder<MEMBER> memberSetBuilder;
     private final ReadableRaftLog entryLog;
     private final Log log;
@@ -71,7 +71,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
     private final RaftMembershipState<MEMBER> raftMembershipState;
     private long lastApplied = -1;
 
-    public RaftMembershipManager( Replicator replicator, RaftGroup.Builder<MEMBER> memberSetBuilder, RaftLog entryLog,
+    public RaftMembershipManager( LeaderOnlyReplicator replicator, RaftGroup.Builder<MEMBER> memberSetBuilder, RaftLog entryLog,
                                   LogProvider logProvider, int expectedClusterSize, long electionTimeout,
                                   Clock clock, long catchupTimeout,
                                   StateStorage<RaftMembershipState<MEMBER>> stateStorage )
@@ -183,7 +183,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
         if ( lastMembershipEntry != null )
         {
             raftMembershipState.setVotingMembers( lastMembershipEntry.other().getMembers() );
-            raftMembershipState.logIndex( lastMembershipEntry.first().longValue() );
+            raftMembershipState.logIndex( lastMembershipEntry.first() );
             stateStorage.persistStoreData( raftMembershipState );
             uncommittedMemberChanges = lastMembershipEntry.first() <= commitIndex ? 0 : 1;
         }
@@ -267,14 +267,7 @@ public class RaftMembershipManager<MEMBER> implements RaftMembership<MEMBER>, Me
     @Override
     public void doConsensus( Set<MEMBER> newVotingMemberSet )
     {
-        try
-        {
-            replicator.replicate( memberSetBuilder.build( newVotingMemberSet ) );
-        }
-        catch ( Replicator.ReplicationFailedException e )
-        {
-            // TODO: log
-        }
+        replicator.replicate( memberSetBuilder.build( newVotingMemberSet ) );
     }
 
     @Override

@@ -43,38 +43,35 @@ public class ReplicatedIdAllocationStateMachineTest
     public void shouldNotHaveAnyIdsInitially() throws IOException
     {
         // given
-        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
-        new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
+        ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
 
         // then
-        assertEquals( 0, pendingRequests.firstUnallocated( someType ) );
+        assertEquals( 0, stateMachine.firstUnallocated( someType ) );
     }
 
     @Test
     public void shouldUpdateStateOnlyForTypeRequested() throws Exception
     {
         // given
-        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
         ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
 
         // when
         stateMachine.applyCommand( idAllocationRequest, 0 );
 
         // then
-        assertEquals( 1024, pendingRequests.firstUnallocated( someType ) );
-        assertEquals( 0, pendingRequests.firstUnallocated( someOtherType ) );
+        assertEquals( 1024, stateMachine.firstUnallocated( someType ) );
+        assertEquals( 0, stateMachine.firstUnallocated( someOtherType ) );
     }
 
     @Test
     public void severalDistinctRequestsShouldIncrementallyUpdate() throws IOException
     {
         // given
-        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
         long index = 0;
 
         // when
@@ -83,16 +80,15 @@ public class ReplicatedIdAllocationStateMachineTest
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), index );
 
         // then
-        assertEquals( 3072, pendingRequests.firstUnallocated( someType ) );
+        assertEquals( 3072, stateMachine.firstUnallocated( someType ) );
     }
 
     @Test
     public void severalEqualRequestsShouldOnlyUpdateOnce() throws IOException
     {
         // given
-        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
 
         // when
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
@@ -100,7 +96,7 @@ public class ReplicatedIdAllocationStateMachineTest
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
 
         // then
-        assertEquals( 1024, pendingRequests.firstUnallocated( someType ) );
+        assertEquals( 1024, stateMachine.firstUnallocated( someType ) );
     }
 
 
@@ -108,9 +104,8 @@ public class ReplicatedIdAllocationStateMachineTest
     public void outOfOrderRequestShouldBeIgnored() throws IOException
     {
         // given
-        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
 
         // when
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
@@ -118,29 +113,28 @@ public class ReplicatedIdAllocationStateMachineTest
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 2048, 1024 ), 0 );
 
         // then
-        assertEquals( 1024, pendingRequests.firstUnallocated( someType ) );
+        assertEquals( 1024, stateMachine.firstUnallocated( someType ) );
     }
 
     @Test
     public void shouldIgnoreNotContiguousRequestAndAlreadySeenIndex() throws Exception
     {
-        PendingIdAllocationRequests pendingRequests = new PendingIdAllocationRequests();
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), pendingRequests, NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
 
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0L, 10 ), 0L );
-        assertEquals( 10L, pendingRequests.firstUnallocated( someType ) );
+        assertEquals( 10L, stateMachine.firstUnallocated( someType ) );
 
         // apply command that doesn't consume ids because the requested range is non-contiguous
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 20L, 10 ), 1L );
-        assertEquals( 10L, pendingRequests.firstUnallocated( someType ) );
+        assertEquals( 10L, stateMachine.firstUnallocated( someType ) );
 
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 10L, 10 ), 2L );
-        assertEquals( 20L, pendingRequests.firstUnallocated( someType ) );
+        assertEquals( 20L, stateMachine.firstUnallocated( someType ) );
 
         // try applying the same command again. The requested range is now contiguous, but the log index
         // has already been exceeded
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 20L, 10 ), 1L );
-        assertEquals( 20L, pendingRequests.firstUnallocated( someType ) );
+        assertEquals( 20L, stateMachine.firstUnallocated( someType ) );
     }
 }

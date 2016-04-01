@@ -20,72 +20,57 @@
 package org.neo4j.coreedge.raft.replication.id;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.server.core.locks.PendingIdAllocationRequest;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.util.Collections.singletonMap;
-import static java.util.Optional.ofNullable;
-
 /**
  * Keeps track of global id allocations for all members.
- * Notifies local id allocation requests via {@link PendingIdAllocationRequests}.
  */
-public class ReplicatedIdAllocationStateMachine implements StateMachine
+public class ReplicatedIdAllocationStateMachine implements StateMachine<ReplicatedIdAllocationRequest>
 {
     private final StateStorage<IdAllocationState> storage;
-    private final PendingIdAllocationRequests pendingRequests;
     private IdAllocationState idAllocationState;
     private final Log log;
 
-    public ReplicatedIdAllocationStateMachine( StateStorage<IdAllocationState> storage,
-                                               PendingIdAllocationRequests pendingRequests, LogProvider logProvider )
+    public ReplicatedIdAllocationStateMachine( StateStorage<IdAllocationState> storage, LogProvider logProvider )
     {
         this.storage = storage;
-        this.pendingRequests = pendingRequests;
         this.idAllocationState = storage.getInitialState();
         this.log = logProvider.getLog( getClass() );
-        pendingRequests.setUnallocatedIds( idAllocationState );
     }
 
     @Override
-    public synchronized void applyCommand( ReplicatedContent content, long logIndex )
+    public synchronized Optional<Result> applyCommand( ReplicatedIdAllocationRequest request, long commandIndex )
     {
-        if ( content instanceof ReplicatedIdAllocationRequest )
+        if( commandIndex <= idAllocationState.logIndex() )
         {
-            if ( logIndex > idAllocationState.logIndex() )
-            {
-                ReplicatedIdAllocationRequest request = (ReplicatedIdAllocationRequest) content;
-                IdType idType = request.idType();
-
-                Optional<PendingIdAllocationRequest> future = ofNullable( pendingRequests.retrieve( request ) );
-                if ( request.idRangeStart() == idAllocationState.firstUnallocated( idType ) )
-                {
-                    idAllocationState.firstUnallocated( idType, request.idRangeStart() + request.idRangeLength() );
-                    future.ifPresent( PendingIdAllocationRequest::notifyAcquired );
-                }
-                else
-                {
-                    future.ifPresent( PendingIdAllocationRequest::notifyLost );
-                }
-                idAllocationState.logIndex( logIndex );
-                pendingRequests.setUnallocatedIds( idAllocationState );
-            }
-            else
-            {
-                log.info( "Ignoring content at index %d, since already applied up to %d",
-                        logIndex, idAllocationState.logIndex() );
-            }
+            return Optional.empty();
         }
+        idAllocationState.logIndex( commandIndex );
+
+        IdType idType = request.idType();
+
+        if ( request.idRangeStart() == firstUnallocated( idType ) )
+        {
+            idAllocationState.firstUnallocated( idType, request.idRangeStart() + request.idRangeLength() );
+            return Optional.of( Result.of( true ) );
+        }
+        else
+        {
+            return Optional.of( Result.of( false ) );
+        }
+    }
+
+    synchronized long firstUnallocated( IdType idType )
+    {
+        return idAllocationState.firstUnallocated( idType );
     }
 
     @Override
@@ -94,18 +79,13 @@ public class ReplicatedIdAllocationStateMachine implements StateMachine
         storage.persistStoreData( idAllocationState );
     }
 
-    @Override
-    public Map<RaftStateType, Object> snapshot()
+    public synchronized IdAllocationState snapshot()
     {
-        return singletonMap( RaftStateType.ID_ALLOCATION, idAllocationState );
+        return idAllocationState;
     }
 
-    @Override
-    public void installSnapshot( Map<RaftStateType, Object> snapshot )
+    public synchronized void installSnapshot( IdAllocationState snapshot )
     {
-        if ( snapshot.containsKey( RaftStateType.ID_ALLOCATION ) )
-        {
-            idAllocationState = (IdAllocationState) snapshot.get( RaftStateType.ID_ALLOCATION );
-        }
+        idAllocationState = snapshot;
     }
 }

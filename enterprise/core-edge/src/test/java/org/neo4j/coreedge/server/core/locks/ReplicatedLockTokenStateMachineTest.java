@@ -25,11 +25,10 @@ import org.junit.Test;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.state.DurableStateStorage;
-import org.neo4j.coreedge.raft.state.StateMarshal;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
+import org.neo4j.coreedge.raft.state.StateMarshal;
 import org.neo4j.coreedge.raft.state.StateStorage;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
@@ -46,8 +45,8 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldStartWithInvalidTokenId() throws Exception
     {
         // given
-        ReplicatedLockTokenStateMachine<Object> stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        ReplicatedLockTokenStateMachine<RaftTestMember> stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
 
         // when
         int initialTokenId = stateMachine.currentToken().id();
@@ -60,8 +59,8 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldIssueNextLockTokenCandidateId() throws Exception
     {
         // given
-        ReplicatedLockTokenStateMachine<Object> stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        ReplicatedLockTokenStateMachine<RaftTestMember> stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
         int firstCandidateId = LockToken.nextCandidateId( stateMachine.currentToken().id() );
 
         // when
@@ -75,8 +74,8 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldKeepTrackOfCurrentLockTokenId() throws Exception
     {
         // given
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        ReplicatedLockTokenStateMachine<RaftTestMember>stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
         int firstCandidateId = LockToken.nextCandidateId( stateMachine.currentToken().id() );
 
         // when
@@ -96,8 +95,8 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldKeepTrackOfLockTokenOwner() throws Exception
     {
         // given
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        ReplicatedLockTokenStateMachine<RaftTestMember>stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
         int firstCandidateId = LockToken.nextCandidateId( stateMachine.currentToken().id() );
 
         // when
@@ -117,8 +116,8 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldAcceptOnlyFirstRequestWithSameId() throws Exception
     {
         // given
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        ReplicatedLockTokenStateMachine<RaftTestMember>stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
         int firstCandidateId = LockToken.nextCandidateId( stateMachine.currentToken().id() );
 
         // when
@@ -142,8 +141,8 @@ public class ReplicatedLockTokenStateMachineTest
     public void shouldOnlyAcceptNextImmediateId() throws Exception
     {
         // given
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>(
-                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ), new PendingLockTokensRequests<>() );
+        ReplicatedLockTokenStateMachine<RaftTestMember>stateMachine = new ReplicatedLockTokenStateMachine<>(
+                new InMemoryStateStorage<>( new ReplicatedLockTokenState<>() ) );
         int firstCandidateId = LockToken.nextCandidateId( stateMachine.currentToken().id() );
 
         // when
@@ -187,20 +186,15 @@ public class ReplicatedLockTokenStateMachineTest
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
         fsa.mkdir( testDir.directory() );
 
-        StateMarshal<ReplicatedLockTokenState<CoreMember>> marshal = new ReplicatedLockTokenState.Marshal<>( new CoreMember.CoreMemberMarshal() );
+        StateMarshal<ReplicatedLockTokenState<RaftTestMember>> marshal = new ReplicatedLockTokenState.Marshal<>( new RaftTestMember.RaftTestMemberMarshal() );
 
-        DurableStateStorage<ReplicatedLockTokenState<CoreMember>> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+        DurableStateStorage<ReplicatedLockTokenState<RaftTestMember>> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", marshal, 100, health(), NullLogProvider.getInstance() );
 
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( storage, new PendingLockTokensRequests<>() );
+        ReplicatedLockTokenStateMachine<RaftTestMember> stateMachine = new ReplicatedLockTokenStateMachine<>( storage );
 
-        CoreMember memberA = new CoreMember(
-                new AdvertisedSocketAddress( "1" ),
-                new AdvertisedSocketAddress( "2" ) );
-
-        CoreMember memberB = new CoreMember(
-                new AdvertisedSocketAddress( "3" ),
-                new AdvertisedSocketAddress( "4" ) );
+        RaftTestMember memberA = new RaftTestMember( 0 );
+        RaftTestMember memberB = new RaftTestMember( 1 );
 
         // when
         int candidateId;
@@ -214,11 +208,11 @@ public class ReplicatedLockTokenStateMachineTest
         fsa.crash();
 
         // then
-        DurableStateStorage<ReplicatedLockTokenState<CoreMember>> storage2 = new DurableStateStorage<>(
+        DurableStateStorage<ReplicatedLockTokenState<RaftTestMember>> storage2 = new DurableStateStorage<>(
                 fsa, testDir.directory(), "state", marshal, 100,
                 health(), NullLogProvider.getInstance() );
 
-        ReplicatedLockTokenState<CoreMember> initialState = storage2.getInitialState();
+        ReplicatedLockTokenState<RaftTestMember> initialState = storage2.getInitialState();
 
         assertEquals( memberB, initialState.get().owner() );
         assertEquals( candidateId, initialState.get().id() );
@@ -231,20 +225,15 @@ public class ReplicatedLockTokenStateMachineTest
         EphemeralFileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
         fsa.mkdir( testDir.directory() );
 
-        StateMarshal<ReplicatedLockTokenState<CoreMember>> marshal = new ReplicatedLockTokenState.Marshal<>( new CoreMember.CoreMemberMarshal() );
+        StateMarshal<ReplicatedLockTokenState<RaftTestMember>> marshal = new ReplicatedLockTokenState.Marshal<>( new RaftTestMember.RaftTestMemberMarshal() );
 
-        DurableStateStorage<ReplicatedLockTokenState<CoreMember>> storage = new DurableStateStorage<>( fsa, testDir.directory(),
+        DurableStateStorage<ReplicatedLockTokenState<RaftTestMember>> storage = new DurableStateStorage<>( fsa, testDir.directory(),
                 "state", marshal, 100, health(), NullLogProvider.getInstance() );
 
-        ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine<>( storage, new PendingLockTokensRequests<>() );
+        ReplicatedLockTokenStateMachine<RaftTestMember>stateMachine = new ReplicatedLockTokenStateMachine<>( storage );
 
-        CoreMember memberA = new CoreMember(
-                new AdvertisedSocketAddress( "1" ),
-                new AdvertisedSocketAddress( "2" ) );
-
-        CoreMember memberB = new CoreMember(
-                new AdvertisedSocketAddress( "3" ),
-                new AdvertisedSocketAddress( "4" ) );
+        RaftTestMember memberA = new RaftTestMember( 0 );
+        RaftTestMember memberB = new RaftTestMember( 1 );
 
         stateMachine.applyCommand( new ReplicatedLockTokenRequest<>( memberA, 0 ), 3 );
 
@@ -260,20 +249,15 @@ public class ReplicatedLockTokenStateMachineTest
     {
         // Given
         StateStorage<ReplicatedLockTokenState<Object>> storage = mock( StateStorage.class );
-        CoreMember initialHoldingCoreMember = new CoreMember(
-                new AdvertisedSocketAddress( "1" ),
-                new AdvertisedSocketAddress( "2" ) );
-        ReplicatedLockTokenState<Object> initialState = new ReplicatedLockTokenState<>( 123, 3, initialHoldingCoreMember );
-        when ( storage.getInitialState() ).thenReturn( initialState );
-
-
-        PendingLockTokensRequests<Object> lockRequests = new PendingLockTokensRequests<>();
+        RaftTestMember initialHoldingRaftTestMember = new RaftTestMember( 0 );
+        ReplicatedLockTokenState<Object> initialState = new ReplicatedLockTokenState<>( 123, 3, initialHoldingRaftTestMember );
+        when( storage.getInitialState() ).thenReturn( initialState );
 
         // When
-        new ReplicatedLockTokenStateMachine<>( storage, lockRequests );
+        ReplicatedLockTokenStateMachine<Object> stateMachine = new ReplicatedLockTokenStateMachine<>( storage );
 
         // Then
-        LockToken initialToken = lockRequests.currentToken();
+        LockToken initialToken = stateMachine.currentToken();
         assertEquals( initialState.get().owner(), initialToken.owner() );
         assertEquals( initialState.get().id(), initialToken.id() );
     }

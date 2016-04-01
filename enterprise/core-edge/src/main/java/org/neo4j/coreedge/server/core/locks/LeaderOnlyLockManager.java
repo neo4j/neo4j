@@ -19,6 +19,8 @@
  */
 package org.neo4j.coreedge.server.core.locks;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.raft.LeaderLocator;
@@ -52,7 +54,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Meanwhile, {@link ReplicatedTransactionStateMachine} rejects any transactions that get committed under an
  * invalid token.
  */
-// TODO: Fix lock exception hierarchy.
+
+// TODO: Fix lock exception usage when lock exception hierarchy has been fixed.
 public class LeaderOnlyLockManager<MEMBER> implements Locks
 {
     private final MEMBER myself;
@@ -60,19 +63,19 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
     private final Replicator replicator;
     private final LeaderLocator<MEMBER> leaderLocator;
     private final Locks localLocks;
-    private final PendingLockTokensRequests<MEMBER> pendingLockTokensRequests;
     private final long leaderLockTokenTimeout;
+    private final ReplicatedLockTokenStateMachine lockTokenStateMachine;
 
     public LeaderOnlyLockManager(
             MEMBER myself, Replicator replicator, LeaderLocator<MEMBER> leaderLocator,
-            Locks localLocks, PendingLockTokensRequests<MEMBER> pendingLockTokensRequests, long leaderLockTokenTimeout )
+            Locks localLocks, long leaderLockTokenTimeout, ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
         this.myself = myself;
         this.replicator = replicator;
         this.leaderLocator = leaderLocator;
         this.localLocks = localLocks;
-        this.pendingLockTokensRequests = pendingLockTokensRequests;
         this.leaderLockTokenTimeout = leaderLockTokenTimeout;
+        this.lockTokenStateMachine = lockTokenStateMachine;
     }
 
     @Override
@@ -86,7 +89,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
      */
     private synchronized int acquireTokenOrThrow()
     {
-        LockToken currentToken = pendingLockTokensRequests.currentToken();
+        LockToken currentToken = lockTokenStateMachine.currentToken();
         if ( myself.equals( currentToken.owner() ) )
         {
             return currentToken.id();
@@ -99,37 +102,36 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
         ReplicatedLockTokenRequest<MEMBER> lockTokenRequest =
                 new ReplicatedLockTokenRequest<>( myself, LockToken.nextCandidateId( currentToken.id() ) );
 
-        try ( PendingLockTokenRequest pendingLockTokenRequest = pendingLockTokensRequests.register( lockTokenRequest ) )
+        Future<Object> future = null;
+        try
         {
-            try
-            {
-                replicator.replicate( lockTokenRequest );
-            }
-            catch ( Replicator.ReplicationFailedException e )
-            {
-                throw new AcquireLockTimeoutException( e, "Could not acquire lock token." );
-            }
+            future = replicator.replicate( lockTokenRequest, true );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new AcquireLockTimeoutException( e, "Interrupted acquiring token." );
+        }
 
-            try
+        try
+        {
+            boolean success = (boolean) future.get( leaderLockTokenTimeout, MILLISECONDS );
+            if( success )
             {
-                if ( pendingLockTokenRequest.waitUntilAcquired( leaderLockTokenTimeout, MILLISECONDS ) )
-                {
-                    return lockTokenRequest.id();
-                }
-                else
-                {
-                    throw new AcquireLockTimeoutException( "Failed to acquire requested lock token." );
-                }
+                return lockTokenRequest.id();
             }
-            catch ( InterruptedException e )
+            else
             {
-                Thread.currentThread().interrupt();
-                throw new AcquireLockTimeoutException( e, "Interrupted" );
+                throw new AcquireLockTimeoutException( "Failed to acquire lock token. Was taken by another candidate." );
             }
-            catch ( TimeoutException e )
-            {
-                throw new AcquireLockTimeoutException( "Failed to acquire requested lock token." );
-            }
+        }
+        catch ( ExecutionException | TimeoutException e )
+        {
+            throw new AcquireLockTimeoutException( e, "Failed to acquire lock token." );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new AcquireLockTimeoutException( e, "Failed to acquire lock token." );
         }
     }
 
@@ -191,7 +193,7 @@ public class LeaderOnlyLockManager<MEMBER> implements Locks
             {
                 lockTokenId = acquireTokenOrThrow();
             }
-            else if ( lockTokenId != pendingLockTokensRequests.currentToken().id() )
+            else if ( lockTokenId != lockTokenStateMachine.currentToken().id() )
             {
                 throw new AcquireLockTimeoutException( "Local instance lost lock token." );
             }

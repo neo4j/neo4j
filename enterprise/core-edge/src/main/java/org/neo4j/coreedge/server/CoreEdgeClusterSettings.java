@@ -141,8 +141,8 @@ public class CoreEdgeClusterSettings
     public static final Setting<Boolean> disable_middleware_logging =
             setting( "core_edge.disable_middleware_logging", BOOLEAN, TRUE );
 
-    @Description("The maximum file size before the id allocation file is rotated (in unit of entries)")
-    public static final Setting<Integer> last_applied_state_size =
+    @Description("The maximum file size before the storage file is rotated (in unit of entries)")
+    public static final Setting<Integer> last_flushed_state_size =
             setting( "core_edge.last_applied_state_size", INTEGER, "1000" );
 
     @Description("The maximum file size before the id allocation file is rotated (in unit of entries)")

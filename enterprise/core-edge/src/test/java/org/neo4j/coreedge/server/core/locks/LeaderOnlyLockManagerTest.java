@@ -25,7 +25,6 @@ import org.neo4j.coreedge.raft.LeaderLocator;
 import org.neo4j.coreedge.raft.replication.DirectReplicator;
 import org.neo4j.coreedge.raft.state.InMemoryStateStorage;
 import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.coreedge.raft.state.StateMachines;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -33,7 +32,6 @@ import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 
 @SuppressWarnings("unchecked")
@@ -47,12 +45,10 @@ public class LeaderOnlyLockManagerTest
         // given
         RaftTestMember me = member( 0 );
 
-        PendingLockTokensRequests pendingLockTokensRequests = new PendingLockTokensRequests();
         ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine =
-                new ReplicatedLockTokenStateMachine<>( new InMemoryStateStorage( new ReplicatedLockTokenState<>() ),
-                        pendingLockTokensRequests );
-        StateMachines stateMachines = new StateMachines(replicatedLockStateMachine);
-        DirectReplicator replicator = new DirectReplicator( stateMachines );
+                new ReplicatedLockTokenStateMachine<>( new InMemoryStateStorage( new ReplicatedLockTokenState<>() ) );
+
+        DirectReplicator replicator = new DirectReplicator( replicatedLockStateMachine );
 
         LeaderLocator<RaftTestMember> leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( me );
@@ -60,7 +56,7 @@ public class LeaderOnlyLockManagerTest
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         LeaderOnlyLockManager<RaftTestMember> lockManager = new LeaderOnlyLockManager<>( me, replicator, leaderLocator,
-                locks, pendingLockTokensRequests, LEADER_LOCK_TOKEN_TIMEOUT );
+                locks, LEADER_LOCK_TOKEN_TIMEOUT, replicatedLockStateMachine );
 
         // when
         lockManager.newClient().acquireExclusive( ResourceTypes.NODE, 0L );
@@ -76,9 +72,8 @@ public class LeaderOnlyLockManagerTest
         RaftTestMember leader = member( 1 );
 
         ReplicatedLockTokenStateMachine<RaftTestMember> replicatedLockStateMachine =
-                new ReplicatedLockTokenStateMachine<>( new InMemoryStateStorage( new ReplicatedLockTokenState<>() ) , new PendingLockTokensRequests<>());
-        StateMachines stateMachines = new StateMachines(replicatedLockStateMachine);
-        DirectReplicator replicator = new DirectReplicator( stateMachines );
+                new ReplicatedLockTokenStateMachine<>( new InMemoryStateStorage( new ReplicatedLockTokenState<>() ) );
+        DirectReplicator replicator = new DirectReplicator( replicatedLockStateMachine );
 
         LeaderLocator<RaftTestMember> leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( leader );
@@ -86,7 +81,7 @@ public class LeaderOnlyLockManagerTest
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         LeaderOnlyLockManager<RaftTestMember> lockManager = new LeaderOnlyLockManager<>( me, replicator, leaderLocator,
-                locks, new PendingLockTokensRequests<>(), LEADER_LOCK_TOKEN_TIMEOUT );
+                locks, LEADER_LOCK_TOKEN_TIMEOUT, replicatedLockStateMachine );
 
         // when
         Locks.Client lockClient = lockManager.newClient();

@@ -208,7 +208,6 @@ public class Leader implements RaftMessageHandler
             {
                 RaftMessages.NewEntry.Request<MEMBER> req = (RaftMessages.NewEntry.Request<MEMBER>) message;
                 ReplicatedContent content = req.content();
-
                 Appending.appendNewEntry( ctx, outcome, content );
                 break;
             }

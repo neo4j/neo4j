@@ -66,7 +66,7 @@ public class ReplicatedTokenStateMachineTest
 
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry, dependencies,
-                new Token.Factory(), LABEL, NullLogProvider.getInstance(), mock( RecoverTransactionLogState.class ) );
+                new Token.Factory(), NullLogProvider.getInstance(), mock( RecoverTransactionLogState.class ) );
 
         // when
         stateMachine.applyCommand( new ReplicatedTokenRequest( LABEL, "Person",
@@ -85,7 +85,7 @@ public class ReplicatedTokenStateMachineTest
 
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry, dependencies,
-                new Token.Factory(), LABEL, NullLogProvider.getInstance(), mock( RecoverTransactionLogState.class ) );
+                new Token.Factory(), NullLogProvider.getInstance(), mock( RecoverTransactionLogState.class ) );
 
         ReplicatedTokenRequest winningRequest =
                 new ReplicatedTokenRequest( LABEL, "Person", commandBytes( tokenCommands( EXPECTED_TOKEN_ID ) ) );
@@ -111,7 +111,7 @@ public class ReplicatedTokenStateMachineTest
                 commitProcess );
 
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>(
-                new TokenRegistry<>( "Token" ), dependencies, new Token.Factory(), LABEL,
+                new TokenRegistry<>( "Token" ), dependencies, new Token.Factory(),
                 NullLogProvider.getInstance(), mock( RecoverTransactionLogState.class ) );
 
         // when

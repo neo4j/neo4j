@@ -20,10 +20,14 @@
 package org.neo4j.coreedge.raft.replication.token;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
+import org.neo4j.coreedge.raft.state.CoreStateMachines;
+import org.neo4j.coreedge.raft.state.Result;
 
-public class ReplicatedTokenRequest implements ReplicatedContent
+public class ReplicatedTokenRequest implements CoreReplicatedContent
 {
     private final TokenType type;
     private final String tokenName;
@@ -83,5 +87,11 @@ public class ReplicatedTokenRequest implements ReplicatedContent
     {
         return String.format( "ReplicatedTokenRequest{type='%s', name='%s'}",
                 type, tokenName );
+    }
+
+    @Override
+    public Optional<Result> dispatch( CoreStateMachines coreStateMachines, long commandIndex )
+    {
+        return coreStateMachines.dispatch( this, commandIndex );
     }
 }

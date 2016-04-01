@@ -17,24 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.core;
+package org.neo4j.coreedge.raft.replication.tx;
 
-import java.util.concurrent.ExecutorService;
+import java.util.Optional;
 
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.CoreStateMachines;
+import org.neo4j.coreedge.raft.state.Result;
 
-public class ExecutorServiceLifecycleAdapter extends LifecycleAdapter
+public interface CoreReplicatedContent extends ReplicatedContent
 {
-    private final ExecutorService executorService;
-
-    public ExecutorServiceLifecycleAdapter( ExecutorService executorService )
-    {
-        this.executorService = executorService;
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-        executorService.shutdown();
-    }
+    Optional<Result> dispatch( CoreStateMachines coreStateMachines, long commandIndex );
 }

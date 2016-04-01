@@ -19,46 +19,25 @@
  */
 package org.neo4j.coreedge.raft.replication.tx;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
-import org.neo4j.coreedge.catchup.tx.core.TxRetryMonitor;
 import org.neo4j.coreedge.raft.replication.Replicator;
-import org.neo4j.coreedge.raft.replication.Replicator.ReplicationFailedException;
-import org.neo4j.coreedge.raft.replication.session.LocalSessionPool;
-import org.neo4j.coreedge.raft.replication.session.OperationContext;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionFactory.createImmutableReplicatedTransaction;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 
 public class ReplicatedTransactionCommitProcess implements TransactionCommitProcess
 {
     private final Replicator replicator;
-    private final RetryStrategy retryStrategy;
-    private final LocalSessionPool sessionPool;
-    private final Log log;
-    private final CommittingTransactions txFutures;
-    private final TxRetryMonitor txRetryMonitor;
 
-    public ReplicatedTransactionCommitProcess( Replicator replicator, LocalSessionPool sessionPool,
-                                               RetryStrategy retryStrategy, LogService logging,
-                                               CommittingTransactions txFutures, Monitors monitors )
+    public ReplicatedTransactionCommitProcess( Replicator replicator )
     {
-        this.sessionPool = sessionPool;
         this.replicator = replicator;
-        this.retryStrategy = retryStrategy;
-        this.log = logging.getInternalLog( getClass() );
-        this.txFutures = txFutures;
-        txRetryMonitor = monitors.newMonitor( TxRetryMonitor.class );
     }
 
     @Override
@@ -66,75 +45,34 @@ public class ReplicatedTransactionCommitProcess implements TransactionCommitProc
                         final CommitEvent commitEvent,
                         TransactionApplicationMode mode ) throws TransactionFailureException
     {
-        OperationContext operationContext = sessionPool.acquireSession();
-
-        ReplicatedTransaction transaction;
+        ReplicatedTransaction transaction = createImmutableReplicatedTransaction( tx.transactionRepresentation() );
+        Future<Object> futureTxId;
         try
         {
-            transaction = createImmutableReplicatedTransaction( tx.transactionRepresentation(),
-                    operationContext.globalSession(), operationContext.localOperationId() );
+            futureTxId = replicator.replicate( transaction, true );
         }
-        catch ( IOException e )
+        catch ( InterruptedException e )
         {
-            throw new TransactionFailureException( "Could not create immutable transaction for replication", e );
+            throw new TransactionFailureException( "Interrupted replicating transaction.", e );
         }
 
-        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
-        boolean hasNeverReplicated = true;
-        boolean interrupted = false;
-        try ( CommittingTransaction futureTxId = txFutures.register( operationContext.localOperationId() ) )
+        try
         {
-            for ( long numberOfRetries = 1; true; numberOfRetries++ )
+            return (long) futureTxId.get();
+        }
+        catch ( ExecutionException e )
+        {
+            if ( e.getCause() instanceof TransactionFailureException )
             {
-                if ( numberOfRetries > 1 )
-                {
-                    log.info( "Replicating transaction %s, attempt: %d ", operationContext, numberOfRetries );
-                }
-
-                try
-                {
-                    replicator.replicate( transaction );
-                    hasNeverReplicated = false;
-                }
-                catch ( ReplicationFailedException e )
-                {
-                    if ( hasNeverReplicated )
-                    {
-                        throw new TransactionFailureException( TransactionCommitFailed, "Failed to replicate transaction", e );
-                    }
-                    log.warn( "Transaction replication failed, but a previous attempt may have succeeded," +
-                            "so commit process must keep waiting for possible success.", e );
-                    txRetryMonitor.retry();
-                }
-
-                try
-                {
-                    Long txId = futureTxId.waitUntilCommitted( timeout.getMillis(), TimeUnit.MILLISECONDS );
-                    sessionPool.releaseSession( operationContext );
-
-                    return txId;
-                }
-                catch ( InterruptedException e )
-                {
-                    interrupted = true;
-                    log.info( "Replication of %s was interrupted; retrying.", operationContext );
-                    txRetryMonitor.retry();
-                }
-                catch ( TimeoutException e )
-                {
-                    log.info( "Replication of %s timed out after %d %s; retrying.",
-                            operationContext, timeout.getMillis(), TimeUnit.MILLISECONDS );
-                    timeout.increment();
-                    txRetryMonitor.retry();
-                }
+                throw (TransactionFailureException) e.getCause();
             }
+            // TODO: Panic?
+            throw new RuntimeException( e );
         }
-        finally
+        catch ( InterruptedException e )
         {
-            if ( interrupted )
-            {
-                Thread.currentThread().interrupt();
-            }
+            // TODO Wait for the transaction to possibly finish within a user configurable time, before aborting.
+            throw new TransactionFailureException( "Interrupted while waiting for txId", e );
         }
     }
 }

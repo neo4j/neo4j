@@ -481,11 +481,7 @@ public class Cluster
     private boolean isTransientFailure( TransactionFailureException e )
     {
         // TODO: This should really catch all cases of transient failures. Must be able to express that in a clearer manner...
-        if ( e.getCause() instanceof Replicator.ReplicationFailedException )
-        {
-            return true;
-        }
-        else if ( e instanceof IdGenerationException )
+        if ( e instanceof IdGenerationException )
         {
             return true;
         }

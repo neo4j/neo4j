@@ -20,10 +20,11 @@
 package org.neo4j.coreedge.raft.replication.token;
 
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.replication.DirectReplicator;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -108,7 +109,11 @@ public class ReplicatedTokenHolderTest
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         int generatedTokenId = 1;
         ReplicatedTokenHolder<Token> tokenHolder = new ReplicatedLabelTokenHolder( registry,
-                content -> registry.complete(  "name1", generatedTokenId ),
+                ( content, trackResult ) -> {
+                    CompletableFuture<Object> completeFuture = new CompletableFuture<>();
+                    completeFuture.complete( generatedTokenId );
+                    return completeFuture;
+                },
                 idGeneratorFactory, dependencies, TIMEOUT_MILLIS );
 
         // when
@@ -154,8 +159,9 @@ public class ReplicatedTokenHolderTest
     static class DropAllTheThingsReplicator implements Replicator
     {
         @Override
-        public void replicate( final ReplicatedContent content ) throws ReplicationFailedException
+        public Future<Object> replicate( final ReplicatedContent content, boolean trackResult )
         {
+            return new CompletableFuture<>(); // never to be completed
         }
     }
 

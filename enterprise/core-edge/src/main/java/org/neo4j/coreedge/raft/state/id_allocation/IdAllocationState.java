@@ -83,7 +83,8 @@ public class IdAllocationState implements UnallocatedIds
      * @param idType the type of graph object whose ID is under allocation
      * @return the first unallocated entry for idType
      */
-    @Override public long firstUnallocated( IdType idType )
+    @Override
+    public long firstUnallocated( IdType idType )
     {
         return firstUnallocated[idType.ordinal()];
     }

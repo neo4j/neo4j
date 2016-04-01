@@ -23,7 +23,7 @@ import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.net.Outbound;
 
 
-public class LeaderOnlyReplicator<MEMBER,SOCKET> implements Replicator
+public class LeaderOnlyReplicator<MEMBER,SOCKET>
 {
     private final MEMBER source;
     private final SOCKET target;
@@ -36,8 +36,7 @@ public class LeaderOnlyReplicator<MEMBER,SOCKET> implements Replicator
         this.outbound = outbound;
     }
 
-    @Override
-    public void replicate( ReplicatedContent content ) throws ReplicationFailedException
+    public void replicate( ReplicatedContent content )
     {
         outbound.send( target, new RaftMessages.NewEntry.Request<>( source, content ) );
     }

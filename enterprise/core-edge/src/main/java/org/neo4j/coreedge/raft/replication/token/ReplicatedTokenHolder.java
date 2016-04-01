@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.raft.replication.Replicator;
@@ -43,6 +43,8 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder<TOKEN>
 {
@@ -97,18 +99,19 @@ public abstract class ReplicatedTokenHolder<TOKEN extends Token> implements Toke
 
     private int requestToken( String tokenName )
     {
-        try( TokenFutures.CompletableFutureTokenId tokenFuture = tokenRegistry.createFuture( tokenName ) )
+        ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( type, tokenName, createCommands( tokenName ) );
+        try
         {
-            ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( type, tokenName, createCommands( tokenName ) );
-            try
-            {
-                replicator.replicate( tokenRequest );
-                return tokenFuture.get( timeoutMillis, TimeUnit.MILLISECONDS );
-            }
-            catch ( Replicator.ReplicationFailedException | InterruptedException | ExecutionException | TimeoutException e )
-            {
-                throw new org.neo4j.graphdb.TransactionFailureException(  "Could not create token", e  );
-            }
+            Future<Object> future = replicator.replicate( tokenRequest, true );
+            return (int) future.get( timeoutMillis, MILLISECONDS );
+        }
+        catch ( InterruptedException | TimeoutException e )
+        {
+            throw new org.neo4j.graphdb.TransactionFailureException( "Could not create token", e );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new IllegalStateException( e );
         }
     }
 
