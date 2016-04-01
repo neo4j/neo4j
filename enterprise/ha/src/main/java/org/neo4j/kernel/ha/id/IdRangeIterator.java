@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.id;
 
 import java.util.Arrays;
 
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdRange;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -58,16 +59,25 @@ public class IdRangeIterator
             {
                 return defrag[position];
             }
-            else
+
+            long candidate = nextRangeCandidate();
+            if ( candidate == IdGeneratorImpl.INTEGER_MINUS_ONE )
             {
-                int offset = position - defrag.length;
-                return (offset < length) ? (start + offset) : VALUE_REPRESENTING_NULL;
+                position++;
+                candidate = nextRangeCandidate();
             }
+            return candidate;
         }
         finally
         {
             ++position;
         }
+    }
+
+    private long nextRangeCandidate()
+    {
+        int offset = position - defrag.length;
+        return (offset < length) ? (start + offset) : VALUE_REPRESENTING_NULL;
     }
 
     @Override

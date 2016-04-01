@@ -394,6 +394,4 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             return getClass().getSimpleName() + "[" + this.idQueue + "]";
         }
     }
-
-
 }
