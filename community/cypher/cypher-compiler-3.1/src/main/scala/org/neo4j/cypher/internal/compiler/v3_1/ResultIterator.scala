@@ -34,41 +34,38 @@ class EagerResultIterator(result: ResultIterator) extends ResultIterator {
   override val toList = result.toList
   private val inner = toList.iterator
 
-  def toEager: EagerResultIterator = this
+  override def toEager: EagerResultIterator = this
 
-  def wasMaterialized: Boolean = true
+  override def wasMaterialized = true
 
-  def hasNext = inner.hasNext
+  override def hasNext = inner.hasNext
 
-  def next() = inner.next()
+  override def next() = inner.next()
 
-  def close() { result.close() }
+  override def close() = result.close()
 }
 
 class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
                       closer: TaskCloser,
                       exceptionDecorator: CypherException => CypherException) extends ResultIterator {
 
-  lazy val still_has_relationships = "Node record Node\\[(\\d),.*] still has relationships".r
+  override def toEager = new EagerResultIterator(this)
 
-  def toEager = new EagerResultIterator(this)
+  override def wasMaterialized = isEmpty
 
-  def wasMaterialized: Boolean = isEmpty
-
-  def hasNext: Boolean = failIfThrows {
-    if (!closer.isClosed) {
-      val innerHasNext: Boolean = inner.hasNext
+  override def hasNext: Boolean = failIfThrows {
+    if (closer.isClosed) false
+    else {
+      val innerHasNext = inner.hasNext
       if (!innerHasNext) {
         close(success = true)
       }
       innerHasNext
-    } else {
-      false
     }
   }
 
-  def next(): Map[String, Any] = failIfThrows {
-    if (closer.isClosed) return Iterator.empty.next()
+  override def next(): Map[String, Any] = failIfThrows {
+    if (closer.isClosed) Iterator.empty.next()
 
     Eagerly.immutableMapValues(inner.next(), materialize)
   }
@@ -80,11 +77,11 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
     case x => x
   }
 
-  def close() {
+  override def close() {
     close(success = true)
   }
 
-  def close(success: Boolean) = decoratedCypherException({
+  private def close(success: Boolean) = decoratedCypherException({
     closer.close(success)
   })
 
