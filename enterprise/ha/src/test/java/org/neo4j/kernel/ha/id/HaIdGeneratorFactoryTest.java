@@ -35,11 +35,13 @@ import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -47,6 +49,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.ha.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
+
 
 public class HaIdGeneratorFactoryTest
 {
@@ -199,6 +203,39 @@ public class HaIdGeneratorFactoryTest
         when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenThrow( new ComException() );
         IdGenerator generator = switchToSlave();
         generator.nextId();
+    }
+
+    @Test
+    public void shouldNotUseForbiddenMinusOneIdFromIdBatches() throws Exception
+    {
+        // GIVEN
+        long[] defragIds = {3, 5};
+        int size = 10;
+        long low = IdGeneratorImpl.INTEGER_MINUS_ONE - size/2;
+        IdRange idRange = new IdRange( defragIds, low, size );
+
+        // WHEN
+        IdRangeIterator iterartor = new IdRangeIterator( idRange );
+
+        // THEN
+        for ( long id : defragIds )
+        {
+            assertEquals( id, iterartor.next() );
+        }
+
+        int expectedRangeSize = size - 1; // due to the forbidden id
+        for ( long i = 0, expectedId = low; i < expectedRangeSize; i++, expectedId++ )
+        {
+            if ( expectedId == IdGeneratorImpl.INTEGER_MINUS_ONE )
+            {
+                expectedId++;
+            }
+
+            long id = iterartor.next();
+            assertNotEquals( IdGeneratorImpl.INTEGER_MINUS_ONE, id );
+            assertEquals( expectedId, id );
+        }
+        assertEquals( VALUE_REPRESENTING_NULL, iterartor.next() );
     }
 
     private Master master;

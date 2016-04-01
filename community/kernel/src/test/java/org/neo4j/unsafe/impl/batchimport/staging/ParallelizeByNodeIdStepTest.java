@@ -23,10 +23,15 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.Batch;
 import org.neo4j.unsafe.impl.batchimport.ParallelizeByNodeIdStep;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+import org.neo4j.unsafe.impl.batchimport.staging.Configuration;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
+import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -34,11 +39,13 @@ import static org.mockito.Mockito.mock;
 
 public class ParallelizeByNodeIdStepTest
 {
+    private final StageControl control = mock( StageControl.class );
+    private final BatchSender sender = mock( BatchSender.class );
+
     @Test
     public void shouldDetectABA() throws Throwable
     {
         // GIVEN
-        StageControl control = mock( StageControl.class );
         ProcessorStep<Batch<InputRelationship,RelationshipRecord>> step = new ParallelizeByNodeIdStep(
                 control, Configuration.DEFAULT );
         int batchSize = Configuration.DEFAULT.batchSize();
@@ -50,7 +57,6 @@ public class ParallelizeByNodeIdStepTest
         setIds( aa, 0, 2, batchSize*2 );
         Batch<InputRelationship,RelationshipRecord> bb = new Batch<>( new InputRelationship[batchSize] );
         setIds( bb, 1, 2, batchSize*2 );
-        BatchSender sender = mock( BatchSender.class );
 
         // WHEN
         step.process( a, sender );
@@ -64,6 +70,34 @@ public class ParallelizeByNodeIdStepTest
         assertFalse( aa.parallelizableWithPrevious ); // because there's one or more ids in this batch that collides
                                                       // with the first batch
         assertTrue( bb.parallelizableWithPrevious ); // because no id here collides with aa
+    }
+
+    @Test
+    public void shouldSkipReservervedId() throws Throwable
+    {
+        // GIVEN
+        ProcessorStep<Batch<InputRelationship,RelationshipRecord>> step = new ParallelizeByNodeIdStep( control,
+                Configuration.DEFAULT, IdGeneratorImpl.INTEGER_MINUS_ONE - 123_456 );
+        int batchSize = Configuration.DEFAULT.batchSize();
+
+        // WHEN
+        Batch<InputRelationship,RelationshipRecord> batch = new Batch<>( new InputRelationship[batchSize] );
+        batch.ids = new long[] {1L};
+        batch.sortedIds = batch.ids.clone();
+        while ( batch.firstRecordId < IdGeneratorImpl.INTEGER_MINUS_ONE )
+        {
+            step.process( batch, sender );
+            assertFalse( "Batch got first id " + batch.firstRecordId + " which contains the reserved id",
+                    idWithin( IdGeneratorImpl.INTEGER_MINUS_ONE,
+                            batch.firstRecordId, batch.firstRecordId + batchSize ) );
+        }
+
+        assertTrue( batch.firstRecordId > IdGeneratorImpl.INTEGER_MINUS_ONE );
+    }
+
+    private boolean idWithin( long id, long low, long high )
+    {
+        return id >= low && id <= high;
     }
 
     private void setIds( Batch<?,?> batch, long first, long stride, int count )

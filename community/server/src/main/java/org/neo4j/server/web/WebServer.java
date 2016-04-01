@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.web;
 
+import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -45,7 +45,7 @@ public interface WebServer
 
     void setHttpsCertificateInformation( KeyStoreInformation config );
 
-    void setHttpLoggingConfiguration( File logbackConfig, boolean enableContentLogging );
+    void setRequestLog( RequestLog requestLog );
 
     void setMaxThreads( int maxThreads );
 

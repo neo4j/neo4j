@@ -803,9 +803,6 @@ Eclipse Public License, Version 1.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
-  Logback Access Module
-  Logback Classic Module
-  Logback Core Module
 ------------------------------------------------------------------------------
 
 Eclipse Public License - v 1.0
@@ -1397,9 +1394,6 @@ version.
 ------------------------------------------------------------------------------
 GNU Lesser General Public License, Version 2.1
   Java Native Access
-  Logback Access Module
-  Logback Classic Module
-  Logback Core Module
   Yet Another Java Service Wrapper
 ------------------------------------------------------------------------------
 
@@ -2525,18 +2519,6 @@ Jetty :: Webapp Application Support
 Jetty :: XML utilities
   Apache Software License, Version 2.0
   Eclipse Public License, Version 1.0
-
-Logback Access Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
-
-Logback Classic Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
-
-Logback Core Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
 
 MIME streaming extension
   Common Development and Distribution License Version 1.1

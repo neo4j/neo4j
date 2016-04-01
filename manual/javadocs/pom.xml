@@ -138,11 +138,6 @@
       <classifier>sources</classifier>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <scope>provided</scope>
-    </dependency>
   </dependencies>
 
   <licenses>
@@ -264,18 +259,6 @@ the relevant Commercial Agreement.
                   <packages>org.neo4j.index:org.neo4j.index.*</packages>
                 </group>
               </groups>
-              <additionalDependencies>
-                <additionalDependency>
-                  <groupId>ch.qos.logback</groupId>
-                  <artifactId>logback-classic</artifactId>
-                  <version>${logback-classic.version}</version>
-                </additionalDependency>
-                <additionalDependency>
-                  <groupId>ch.qos.logback</groupId>
-                  <artifactId>logback-core</artifactId>
-                  <version>${logback-classic.version}</version>
-                </additionalDependency>
-              </additionalDependencies>
             </configuration>
           </execution>
         </executions>

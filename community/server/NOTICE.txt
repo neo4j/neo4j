@@ -85,9 +85,6 @@ Eclipse Public License, Version 1.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
-  Logback Access Module
-  Logback Classic Module
-  Logback Core Module
 
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
@@ -97,14 +94,6 @@ GNU General Public License, version 2 with the Classpath Exception
   jersey-servlet
   jsr311-api
   MIME streaming extension
-
-GNU Lesser General Public License, Version 2.1
-  Logback Access Module
-  Logback Classic Module
-  Logback Core Module
-
-MIT License
-  SLF4J API Module
 
 Mozilla Public License, Version 2.0
   Mozilla Rhino
@@ -147,18 +136,6 @@ Jetty :: Webapp Application Support
 Jetty :: XML utilities
   Apache Software License, Version 2.0
   Eclipse Public License, Version 1.0
-
-Logback Access Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
-
-Logback Classic Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
-
-Logback Core Module
-  Eclipse Public License, Version 1.0
-  GNU Lesser General Public License, Version 2.1
 
 MIME streaming extension
   Common Development and Distribution License Version 1.1

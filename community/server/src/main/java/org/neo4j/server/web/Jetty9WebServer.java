@@ -19,22 +19,12 @@
  */
 package org.neo4j.server.web;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Consumer;
 import javax.servlet.DispatcherType;
@@ -43,9 +33,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-import ch.qos.logback.access.servlet.TeeFilter;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -83,6 +72,7 @@ public class Jetty9WebServer implements WebServer
     private boolean wadlEnabled;
     private Collection<InjectableProvider<?>> defaultInjectables;
     private Consumer<Server> jettyCreatedCallback;
+    private RequestLog requestLog;
 
     private static class FilterDefinition
     {
@@ -129,7 +119,6 @@ public class Jetty9WebServer implements WebServer
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
-    private File requestLoggingConfiguration;
     private final Log log;
 
     public Jetty9WebServer( LogProvider logProvider, Config config )
@@ -170,6 +159,11 @@ public class Jetty9WebServer implements WebServer
         handlers.addHandler( new MovedContextHandler() );
 
         loadAllMounts();
+
+        if ( requestLog != null )
+        {
+            loadRequestLogging();
+        }
 
         startJetty();
     }
@@ -330,13 +324,9 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void setHttpLoggingConfiguration( File logbackConfigFile, boolean enableContentLogging )
+    public void setRequestLog( RequestLog requestLog )
     {
-        this.requestLoggingConfiguration = logbackConfigFile;
-        if(enableContentLogging)
-        {
-            addFilter( new TeeFilter(), "/*" );
-        }
+        this.requestLog = requestLog;
     }
 
     @Override
@@ -368,13 +358,11 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
-    private void loadAllMounts()
+    private void loadAllMounts() throws IOException
     {
         SessionManager sm = new HashSessionManager();
 
-        final SortedSet<String> mountpoints = new TreeSet<>( ( o1, o2 ) -> {
-            return o2.compareTo( o1 );
-        } );
+        final SortedSet<String> mountpoints = new TreeSet<>( (Comparator<String>) ( o1, o2 ) -> o2.compareTo( o1 ) );
 
         mountpoints.addAll( staticContent.keySet() );
         mountpoints.addAll( jaxRSPackages.keySet() );
@@ -408,11 +396,6 @@ public class Jetty9WebServer implements WebServer
                 throw new RuntimeException( format( "content-key '%s' is not mapped", contentKey ) );
             }
         }
-
-        if ( requestLoggingConfiguration != null )
-        {
-            loadRequestLogging();
-        }
     }
 
     private int countSet( boolean... booleans )
@@ -430,9 +413,6 @@ public class Jetty9WebServer implements WebServer
 
     private void loadRequestLogging()
     {
-        final RequestLogImpl requestLog = new RequestLogImpl();
-        requestLog.setFileName( requestLoggingConfiguration.getAbsolutePath() );
-
         // This makes the request log handler decorate whatever other handlers are already set up
         final RequestLogHandler requestLogHandler = new RequestLogHandler();
         requestLogHandler.setRequestLog( requestLog );
