@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,6 +42,9 @@ import java.util.stream.Collectors;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.DelegatingPageCache;
+import org.neo4j.io.pagecache.DelegatingPageCursor;
+import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -48,6 +52,7 @@ import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.NullLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -72,6 +77,8 @@ public class MetaDataStoreTest
 
     private EphemeralFileSystemAbstraction fs;
     private PageCache pageCache;
+    private boolean fakePageCursorOverflow;
+    private PageCache pageCacheWithFakeOverflow;
 
     @AfterClass
     public static void shutDownExecutor()
@@ -84,12 +91,35 @@ public class MetaDataStoreTest
     {
         fs = fsRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
+        fakePageCursorOverflow = false;
+        pageCacheWithFakeOverflow = new DelegatingPageCache( pageCache )
+        {
+            @Override
+            public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
+            {
+                return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
+                {
+                    @Override
+                    public PageCursor io( long pageId, int pf_flags ) throws IOException
+                    {
+                        return new DelegatingPageCursor( super.io( pageId, pf_flags ) )
+                        {
+                            @Override
+                            public boolean checkAndClearBoundsFlag()
+                            {
+                                return fakePageCursorOverflow | super.checkAndClearBoundsFlag();
+                            }
+                        };
+                    }
+                };
+            }
+        };
     }
 
     private MetaDataStore newMetaDataStore() throws IOException
     {
-        StoreFactory storeFactory = new StoreFactory( fs, STORE_DIR, pageCache, LowLimitV3_0.RECORD_FORMATS,
-                NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( fs, STORE_DIR, pageCacheWithFakeOverflow,
+                LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 
@@ -580,9 +610,7 @@ public class MetaDataStoreTest
     @Test
     public void mustSupportScanningAllRecords() throws Exception
     {
-        File file = new File( STORE_DIR, MetaDataStore.DEFAULT_NAME );
-        fs.mkdir( STORE_DIR );
-        fs.create( file ).close();
+        File file = createMetaDataFile();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
         long storeVersion = versionStringToLong( LowLimitV3_0.RECORD_FORMATS.storeVersion());
         writeCorrectMetaDataRecord( file, positions, storeVersion );
@@ -610,12 +638,18 @@ public class MetaDataStoreTest
         assertThat( actualValues, is( expectedValues ) );
     }
 
-    @Test
-    public void mustSupportScanningAllRecordsWithRecordCursor() throws Exception
+    private File createMetaDataFile() throws IOException
     {
         File file = new File( STORE_DIR, MetaDataStore.DEFAULT_NAME );
         fs.mkdir( STORE_DIR );
         fs.create( file ).close();
+        return file;
+    }
+
+    @Test
+    public void mustSupportScanningAllRecordsWithRecordCursor() throws Exception
+    {
+        File file = createMetaDataFile();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
         long storeVersion = versionStringToLong( LowLimitV3_0.RECORD_FORMATS.storeVersion());
         writeCorrectMetaDataRecord( file, positions, storeVersion );
@@ -666,6 +700,80 @@ public class MetaDataStoreTest
             {
                 MetaDataStore.setRecord( pageCache, file, position, position.ordinal() + 1 );
             }
+        }
+    }
+
+    @Test( expected = UnderlyingStorageException.class )
+    public void staticSetRecordMustThrowOnPageOverflow() throws Exception
+    {
+        fakePageCursorOverflow = true;
+        MetaDataStore.setRecord(
+                pageCacheWithFakeOverflow, createMetaDataFile(), MetaDataStore.Position.FIRST_GRAPH_PROPERTY, 4242 );
+    }
+
+    @Test( expected = UnderlyingStorageException.class )
+    public void staticGetRecordMustThrowOnPageOverflow() throws Exception
+    {
+        File metaDataFile = createMetaDataFile();
+        MetaDataStore.setRecord(
+                pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.FIRST_GRAPH_PROPERTY, 4242 );
+        fakePageCursorOverflow = true;
+        MetaDataStore.getRecord(
+                pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.FIRST_GRAPH_PROPERTY );
+    }
+
+    @Test( expected = UnderlyingStorageException.class )
+    public void incrementVersionMustThrowOnPageOverflow() throws Exception
+    {
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            fakePageCursorOverflow = true;
+            store.incrementAndGetVersion();
+        }
+    }
+
+    @Test( expected = UnderlyingStorageException.class )
+    public void readAllFieldsMustThrowOnPageOverflow() throws Exception
+    {
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            // Apparently this is possible, and will trick MetaDataStore into thinking the field is not initialised.
+            // Thus it will reload all fields from the file, even though this ends up being the actual value in the
+            // file. We do this because creating a proper MetaDataStore automatically initialises all fields.
+            store.setUpgradeTime( MetaDataStore.FIELD_NOT_INITIALIZED );
+            fakePageCursorOverflow = true;
+            store.getUpgradeTime();
+        }
+    }
+
+    @Test( expected = UnderlyingStorageException.class )
+    public void setRecordMustThrowOnPageOverflow() throws Exception
+    {
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            fakePageCursorOverflow = true;
+            store.setUpgradeTransaction( 13, 42 );
+        }
+    }
+
+    @Test( expected = UnderlyingStorageException.class )
+    public void getUpgradeTransactionMustThrowOnPageOverflow() throws Exception
+    {
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            store.setUpgradeTransaction( 13, 42 );
+            fakePageCursorOverflow = true;
+            store.getUpgradeTransaction();
+        }
+    }
+
+    @Test
+    public void logRecordsMustIgnorePageOverflow() throws Exception
+    {
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            fakePageCursorOverflow = true;
+            store.logRecords( NullLogger.getInstance() );
         }
     }
 }
