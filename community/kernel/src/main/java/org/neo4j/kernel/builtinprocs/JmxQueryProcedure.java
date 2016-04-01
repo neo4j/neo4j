@@ -73,7 +73,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
             Iterator<ObjectName> names = jmxServer.queryNames( new ObjectName( query ), null ).iterator();
 
             // Then convert them to a Neo4j type system representation
-            return RawIterator.of( () -> {
+            return RawIterator.from( () -> {
                 if( !names.hasNext() )
                 {
                     return null;

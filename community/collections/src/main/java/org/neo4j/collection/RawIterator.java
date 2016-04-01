@@ -74,7 +74,7 @@ public interface RawIterator<T,EXCEPTION extends Exception>
      * Create a raw iterator from the provided {@link ThrowingSupplier} - the iterator will end
      * when the supplier returns null.
      */
-    static <T, EX extends Exception> RawIterator<T, EX> of( ThrowingSupplier<T, EX> supplier )
+    static <T, EX extends Exception> RawIterator<T, EX> from( ThrowingSupplier<T, EX> supplier )
     {
         return new PrefetchingRawIterator<T,EX>()
         {
