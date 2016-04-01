@@ -222,7 +222,7 @@ public class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
-        new InlineNodeLabels( node.getLabelField(), node ).add( 1, null, null );
+        new InlineNodeLabels( node ).add( 1, null, null );
         LabelTokenRecord labelRecordNotInUse = notInUse( new LabelTokenRecord( 1 ) );
 
         add( labelRecordNotInUse );
@@ -272,7 +272,7 @@ public class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
-        new InlineNodeLabels( node.getLabelField(), node ).put( new long[]{1, 2, 1}, null, null );
+        new InlineNodeLabels( node ).put( new long[]{1, 2, 1}, null, null );
         LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
         LabelTokenRecord label2 = inUse( new LabelTokenRecord( 2 ) );
 
@@ -322,7 +322,7 @@ public class NodeRecordCheckTest
         // given
         final NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
         // We need to do this override so we can put the labels unsorted, since InlineNodeLabels always sorts on insert
-        new InlineNodeLabels( node.getLabelField(), node )
+        new InlineNodeLabels( node )
         {
             @Override
             public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator
@@ -353,7 +353,7 @@ public class NodeRecordCheckTest
         // given
         final NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
         // We need to do this override so we can put the labels unsorted, since InlineNodeLabels always sorts on insert
-        new InlineNodeLabels( node.getLabelField(), node )
+        new InlineNodeLabels( node )
         {
             @Override
             public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator
