@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -162,16 +163,16 @@ public class SequenceLockStressIT
                     }
                     for ( int[] record : data )
                     {
-                        for ( int i = 0; i < record.length; i++ )
+                        for ( int value : record  )
                         {
-                            sumB += record[i];
-                            record[i] = 0;
+                            sumB += value;
                         }
+                        Arrays.fill(record, 0);
                     }
                     lock.unlockExclusive();
                     if ( sumA != sumB )
                     {
-                        throw new AssertionError( "Inconsistent exclusive lock" );
+                        throw new AssertionError( "Inconsistent exclusive lock. 'Sum A' = " + sumA + ", 'Sum B' = " + sumB );
                     }
                 }
             }
