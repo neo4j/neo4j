@@ -64,6 +64,7 @@ public class DumpPhysicalRaftLog
     {
         int logsFound = 0;
         PhysicalRaftLogFiles files = new PhysicalRaftLogFiles( new File( filenameOrDirectory ), fileSystem, marshal, new VersionIndexRanges() );
+        SingleVersionReader reader = new SingleVersionReader( files, fileSystem, marshal );
 
         for ( String fileName : filenamesOf( filenameOrDirectory, logPrefix ) )
         {
@@ -86,11 +87,8 @@ public class DumpPhysicalRaftLog
             out.println( "Logical log format:" + logHeader.logFormatVersion + "version: " + logHeader.logVersion +
                     " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
 
-
-            SingleVersionReader reader = new SingleVersionReader( files, fileSystem, marshal );
-
-            try ( IOCursor<RaftLogAppendRecord> cursor = reader.readEntriesFrom( new LogPosition( 0, LogHeader
-                    .LOG_HEADER_SIZE ) ) )
+            try ( IOCursor<RaftLogAppendRecord> cursor =
+                          reader.readEntriesFrom( new LogPosition( logHeader.logVersion, LogHeader.LOG_HEADER_SIZE ) ) )
             {
                 while ( cursor.next() )
                 {
