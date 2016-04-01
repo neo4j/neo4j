@@ -24,7 +24,7 @@ import java.io.{File, PrintStream}
 import cypher.cucumber.CucumberAdapter
 import cypher.feature.parser.reporting.ChartWriter
 import gherkin.formatter.model.{Match, Result, Step}
-import org.opencypher.tools.tck.TCKStepDefinitions
+import org.opencypher.tools.tck.constants.TCKStepDefinitions
 
 import scala.util.matching.Regex
 

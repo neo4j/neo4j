@@ -24,21 +24,19 @@ import java.nio.file.{Files, Path}
 import java.util
 
 import _root_.cucumber.api.DataTable
-import _root_.cucumber.api.scala.{EN, ScalaDsl}
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
 import cypher.feature.parser.{MatcherMatchingSupport, constructResultMatcher, parseParameters, statisticsParser}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.opencypher.tools.tck.TCKStepDefinitions._
+import org.opencypher.tools.tck.TCKCucumberTemplate
+import org.opencypher.tools.tck.constants.TCKStepDefinitions._
 import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.util.{Failure, Success, Try}
 
-class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN with MatcherMatchingSupport {
-
-  val Background = new Step("Background")
+class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate with MatcherMatchingSupport {
 
   // Stateful
   var graph: GraphDatabaseService = null
@@ -63,13 +61,13 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN wi
     graph = loadConfig(builder).newGraphDatabase()
   }
 
-  Given(ANY) {
+  Given(ANY_GRAPH) {
     // We could do something fancy here, like randomising a state,
     // in order to guarantee that we aren't implicitly relying on an empty db.
     initEmpty()
   }
 
-  Given(EMPTY) {
+  Given(EMPTY_GRAPH) {
     initEmpty()
   }
 
@@ -132,9 +130,13 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with ScalaDsl with EN wi
     statisticsParser(expectations) should accept(successful(result).getQueryStatistics)
   }
 
+  And(NO_SIDE_EFFECTS) {
+    successful(result).getQueryStatistics.containsUpdates() shouldBe false
+  }
+
   private def successful(value: Try[Result]): Result = value match {
     case Success(r) => r
-    case Failure(e) => fail(s"Expected successful result, but got error: $result")
+    case Failure(e) => fail(s"Expected successful result, but got error: $e")
   }
 
   private def initEmpty() =
