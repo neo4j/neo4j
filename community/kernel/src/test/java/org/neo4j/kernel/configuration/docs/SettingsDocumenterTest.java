@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.configuration.docs;
 
-import java.io.File;
-
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
@@ -31,7 +31,6 @@ import org.neo4j.kernel.configuration.Internal;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
@@ -278,6 +277,11 @@ public class SettingsDocumenterTest
     {
         @Description( "Number of spots this giraffe has, in number." )
         public final Setting<Integer> number_of_spots;
+
+        public Giraffe()
+        {
+            this("{giraffeKey}");
+        }
 
         public Giraffe(String key)
         {

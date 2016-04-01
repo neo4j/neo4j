@@ -79,6 +79,12 @@ public interface ServerSettings
 
         @Description("Address the connector should bind to")
         public final Setting<HostnamePort> address;
+
+        public HttpConnector()
+        {
+            this( "{http-connector-key}" );
+        }
+
         public HttpConnector( String key )
         {
             super( key, ConnectorType.HTTP.name() );

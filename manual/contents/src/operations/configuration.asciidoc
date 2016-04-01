@@ -25,6 +25,6 @@ include::{importdir}/neo4j-kernel-docs-jar/ops/property-compression.asciidoc[]
 
 include::{importdir}/neo4j-kernel-docs-jar/ops/io-examples.asciidoc[]
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/configuration.asciidoc[]
+include::configuration-reference.asciidoc[]
 
 

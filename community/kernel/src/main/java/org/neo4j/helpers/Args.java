@@ -212,6 +212,11 @@ public class Args
         return values.get( 0 ).value();
     }
 
+    /**
+     * Get a config option by name.
+     * @param key name of the option, without any `-` or `--` prefix, eg. "o".
+     * @return the string value of the option, or null if the user has not specified it
+     */
     public String get( String key )
     {
         return getSingleOptionOrNull( key );
@@ -320,11 +325,21 @@ public class Args
         throw new IllegalArgumentException( "No enum instance '" + raw + "' in " + enumClass.getName() );
     }
 
+    /**
+     * Orphans are arguments specified without options flags, eg:
+     *
+     * <pre>myprogram -o blah orphan1 orphan2</pre>
+     *
+     * Would yield a list here of {@code "orphan1"} and {@code "orphan2"}.
+     *
+     * @return list of orphan arguments
+     */
     public List<String> orphans()
     {
         return new ArrayList<>( this.orphans );
     }
 
+    /** @see #orphans() **/
     public String[] orphansAsArray()
     {
         return orphans.toArray( new String[orphans.size()] );
