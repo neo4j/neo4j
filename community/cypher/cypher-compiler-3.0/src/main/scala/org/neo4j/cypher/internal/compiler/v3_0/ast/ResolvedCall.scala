@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.ast
 
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureSignature, QualifiedProcedureName}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{ProcedureReadOnlyAccess, ProcedureSignature, QualifiedProcedureName}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
@@ -82,7 +82,7 @@ case class ResolvedCall(signature: ProcedureSignature,
 
   def callResultTypes: Seq[(String, CypherType)] = {
     val outputTypes = callOutputTypes
-    callResults.map(result => result.variable.name -> outputTypes(result.outputName)).toSeq
+    callResults.map(result => result.variable.name -> outputTypes(result.outputName))
   }
 
   override def semanticCheck: SemanticCheck =
@@ -120,4 +120,9 @@ case class ResolvedCall(signature: ProcedureSignature,
 
   private val callOutputTypes: Map[String, CypherType] =
     signature.outputSignature.map { _.map { field => field.name -> field.typ }.toMap }.getOrElse(Map.empty)
+
+  override def containsNoUpdates = signature.accessMode match {
+    case ProcedureReadOnlyAccess => true
+    case _ => false
+  }
 }

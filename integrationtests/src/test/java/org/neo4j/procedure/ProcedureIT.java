@@ -26,7 +26,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,6 +38,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.neo4j.function.Predicates;
@@ -47,6 +51,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.AssertableLogProvider;
@@ -96,7 +101,7 @@ public class ProcedureIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage("Type mismatch: expected Integer but was String (line 1, column 41 (offset: 40))");
+        exception.expectMessage( "Type mismatch: expected Integer but was String (line 1, column 41 (offset: 40))" );
 
         // When
         try ( Transaction ignore = db.beginTx() )
@@ -111,11 +116,12 @@ public class ProcedureIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage("Procedure call does not provide the required number of arguments (1) (line 1, column 1 (offset: 0))");
+        exception.expectMessage(
+                "Procedure call does not provide the required number of arguments (1) (line 1, column 1 (offset: 0))" );
         // When
         try ( Transaction ignore = db.beginTx() )
         {
-            db.execute( "CALL org.neo4j.procedure.simpleArgument()");
+            db.execute( "CALL org.neo4j.procedure.simpleArgument()" );
         }
     }
 
@@ -195,7 +201,7 @@ public class ProcedureIT
 
             // Then
             Node node = (Node) res.next().get( "node" );
-            assertThat(node.getId(), equalTo( nodeId ));
+            assertThat( node.getId(), equalTo( nodeId ) );
             assertFalse( res.hasNext() );
         }
     }
@@ -218,14 +224,15 @@ public class ProcedureIT
     {
         // Given
         // run in tx to avoid having to wait for tx rollback on shutdown
-        try( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             Result result = db.execute( "CALL org.neo4j.procedure.throwsExceptionInStream" );
 
             // Expect
             exception.expect( QueryExecutionException.class );
             exception.expectMessage(
-                    "Failed to call procedure `org.neo4j.procedure.throwsExceptionInStream() :: (someVal :: INTEGER?)`: " +
+                    "Failed to call procedure `org.neo4j.procedure.throwsExceptionInStream() :: (someVal :: INTEGER?)" +
+                    "`: " +
                     "Kaboom" );
 
             // When
@@ -238,12 +245,13 @@ public class ProcedureIT
     {
         // Given
         // run in tx to avoid having to wait for tx rollback on shutdown
-        try( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             // Expect
             exception.expect( QueryExecutionException.class );
             exception.expectMessage(
-                    "Failed to invoke procedure `org.neo4j.procedure.indexOutOfBounds`: Caused by: java.lang.ArrayIndexOutOfBoundsException" );
+                    "Failed to invoke procedure `org.neo4j.procedure.indexOutOfBounds`: Caused by: java.lang" +
+                    ".ArrayIndexOutOfBoundsException" );
             // When
             db.execute( "CALL org.neo4j.procedure.indexOutOfBounds" );
         }
@@ -276,26 +284,27 @@ public class ProcedureIT
 
         db.shutdown();
         db = new TestGraphDatabaseFactory()
-            .setInternalLogProvider( logProvider )
-            .setUserLogProvider( logProvider  )
-            .newImpermanentDatabaseBuilder()
-            .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
-            .newGraphDatabase();
+                .setInternalLogProvider( logProvider )
+                .setUserLogProvider( logProvider )
+                .newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .newGraphDatabase();
 
         // When
         try ( Transaction ignore = db.beginTx() )
         {
             Result res = db.execute( "CALL org.neo4j.procedure.logAround()" );
-            while ( res.hasNext() ) res.next();
+            while ( res.hasNext() )
+            { res.next(); }
         }
 
         // Then
         AssertableLogProvider.LogMatcherBuilder match = inLog( Procedures.class );
         logProvider.assertAtLeastOnce(
-            match.debug( "1" ),
-            match.info( "2" ),
-            match.warn( "3" ),
-            match.error( "4" )
+                match.debug( "1" ),
+                match.info( "2" ),
+                match.warn( "3" ),
+                match.error( "4" )
         );
     }
 
@@ -324,9 +333,9 @@ public class ProcedureIT
         }
 
         // Then
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertEquals(1, db.getAllNodes().stream().count());
+            assertEquals( 1, db.getAllNodes().stream().count() );
             tx.success();
         }
     }
@@ -356,23 +365,25 @@ public class ProcedureIT
         }
 
         // Then
-        try( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx() )
         {
-            assertEquals(1, db.getAllNodes().stream().count());
+            assertEquals( 1, db.getAllNodes().stream().count() );
             tx.success();
         }
     }
 
     @Test
-    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingProcedure() throws Throwable {
+    public void shouldCoerceLongToDoubleAtRuntimeWhenCallingProcedure() throws Throwable
+    {
         // Given
-        try (Transaction ignore = db.beginTx()) {
+        try ( Transaction ignore = db.beginTx() )
+        {
             // When
-            Result res = db.execute("CALL org.neo4j.procedure.squareDouble", map("value", 4L));
+            Result res = db.execute( "CALL org.neo4j.procedure.squareDouble", map( "value", 4L ) );
 
             // Then
-            assertThat(res.next(), equalTo(map("result", 16.0d)));
-            assertFalse(res.hasNext());
+            assertThat( res.next(), equalTo( map( "result", 16.0d ) ) );
+            assertFalse( res.hasNext() );
         }
     }
 
@@ -383,7 +394,8 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "CALL org.neo4j.procedure.avgNumberList({param})", map( "param", Arrays.<Number>asList(1L, 2L, 3L) ) );
+            Result res = db.execute( "CALL org.neo4j.procedure.avgNumberList({param})",
+                    map( "param", Arrays.<Number>asList( 1L, 2L, 3L ) ) );
 
             // Then
             assertThat( res.next(), equalTo( map( "result", 2.0d ) ) );
@@ -398,7 +410,8 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "CALL org.neo4j.procedure.avgDoubleList([{long}, {double}])", map( "long", 1L, "double", 2.0d ) );
+            Result res = db.execute( "CALL org.neo4j.procedure.avgDoubleList([{long}, {double}])",
+                    map( "long", 1L, "double", 2.0d ) );
 
             // Then
             assertThat( res.next(), equalTo( map( "result", 1.5d ) ) );
@@ -447,7 +460,7 @@ public class ProcedureIT
     public void shouldBeAbleToPerformWritesOnNodesReturnedFromReadOnlyProcedure() throws Throwable
     {
         // When
-        try (Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             long nodeId = db.createNode().getId();
             Node node = Iterators.single( db.execute( "CALL org.neo4j.procedure.node", map( "id", nodeId ) ).columnAs(
@@ -462,7 +475,9 @@ public class ProcedureIT
     {
         // Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Failed to invoke procedure `org.neo4j.procedure.shutdown`: Caused by: java.lang.UnsupportedOperationException" );
+        exception.expectMessage(
+                "Failed to invoke procedure `org.neo4j.procedure.shutdown`: Caused by: java.lang" +
+                ".UnsupportedOperationException" );
 
         try ( Transaction ignore = db.beginTx() )
         {
@@ -523,6 +538,77 @@ public class ProcedureIT
         }
     }
 
+    @Test
+    public void shouldBeAbleToUseCallYieldWithPeriodicCommit() throws IOException
+    {
+        // GIVEN
+        String[] lines = IntStream.rangeClosed( 1, 100 )
+                .boxed()
+                .map( i -> Integer.toString( i ) )
+                .toArray( String[]::new );
+        String url = createCsvFile( lines);
+
+        //WHEN
+        Result result = db.execute( "USING PERIODIC COMMIT 1 " +
+                                    "LOAD CSV FROM '" + url + "' AS line " +
+                                    "CALL org.neo4j.procedure.createNode(line[0]) YIELD node as n " +
+                                    "RETURN n.prop" );
+        // THEN
+        for (int i = 1; i <= 100; i++)
+        {
+            assertThat( result.next().get( "n.prop" ), equalTo( Integer.toString( i ) ) );
+        }
+    }
+
+
+    @Test
+    public void shouldFailIfUsingPeriodicCommitWithReadOnlyQuery() throws IOException
+    {
+        // GIVEN
+        String url = createCsvFile( "13" );
+
+        // EXPECT
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Cannot use periodic commit in a non-updating query (line 1, column 1 (offset: 0))" );
+
+        //WHEN
+        db.execute( "USING PERIODIC COMMIT 1 " +
+                    "LOAD CSV FROM '" + url + "' AS line " +
+                    "CALL org.neo4j.procedure.simpleArgument(toInt(line[0])) YIELD someVal as val " +
+                    "RETURN val" );
+    }
+
+    @Test
+    public void shouldBeAbleToUseCallYieldWithLoadCsvAndSet() throws IOException
+    {
+        // GIVEN
+        String url = createCsvFile( "foo" );
+
+        //WHEN
+        Result result = db.execute(
+                                    "LOAD CSV FROM '" + url + "' AS line " +
+                                    "CALL org.neo4j.procedure.createNode(line[0]) YIELD node as n " +
+                                    "SET n.p = 42 " +
+                                    "RETURN n.p" );
+        // THEN
+        assertThat( result.next().get( "n.p" ), equalTo( 42L ) );
+    }
+
+    private String createCsvFile( String... lines ) throws IOException
+    {
+        File file = plugins.newFile();
+
+        try ( PrintWriter writer = FileUtils.newFilePrintWriter( file, StandardCharsets.UTF_8 ) )
+        {
+            for ( String line : lines )
+            {
+                writer.println( line );
+            }
+        }
+
+        return "file://" + file.getAbsolutePath();
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -566,7 +652,7 @@ public class ProcedureIT
         {
         }
 
-        public DoubleOutput( double result)
+        public DoubleOutput( double result )
         {
             this.result = result;
         }
@@ -623,7 +709,7 @@ public class ProcedureIT
         {
             return db.execute( "CALL org.neo4j.procedure.simpleArgument", map( "name", someValue ) )
                     .stream()
-                    .map( (row) -> new Output( (Long) row.get( "someVal" ) ) );
+                    .map( ( row ) -> new Output( (Long) row.get( "someVal" ) ) );
         }
 
         @Procedure
@@ -650,7 +736,7 @@ public class ProcedureIT
         }
 
         @Procedure
-        public Stream<Output> mapArgument( @Name( "map" )Map<String,Object> map )
+        public Stream<Output> mapArgument( @Name( "map" ) Map<String,Object> map )
         {
             return Stream.of( new Output( map.size() ) );
         }
@@ -664,32 +750,33 @@ public class ProcedureIT
         }
 
         @Procedure
-        public Stream<DoubleOutput> squareDouble( @Name("value") double value )
+        public Stream<DoubleOutput> squareDouble( @Name( "value" ) double value )
         {
             DoubleOutput output = new DoubleOutput( value * value );
             return Stream.of( output );
         }
 
         @Procedure
-        public Stream<DoubleOutput> avgNumberList( @Name("list") List<Number> list )
+        public Stream<DoubleOutput> avgNumberList( @Name( "list" ) List<Number> list )
         {
-            double sum = list.stream().reduce( (l, r) -> l.doubleValue() + r.doubleValue()).orElse(0.0d).doubleValue();
+            double sum =
+                    list.stream().reduce( ( l, r ) -> l.doubleValue() + r.doubleValue() ).orElse( 0.0d ).doubleValue();
             int count = list.size();
             DoubleOutput output = new DoubleOutput( sum / count );
             return Stream.of( output );
         }
 
         @Procedure
-        public Stream<DoubleOutput> avgDoubleList( @Name("list") List<Double> list )
+        public Stream<DoubleOutput> avgDoubleList( @Name( "list" ) List<Double> list )
         {
-            double sum = list.stream().reduce( (l, r) -> l + r ).orElse(0.0d);
+            double sum = list.stream().reduce( ( l, r ) -> l + r ).orElse( 0.0d );
             int count = list.size();
             DoubleOutput output = new DoubleOutput( sum / count );
             return Stream.of( output );
         }
 
         @Procedure
-        public Stream<Output> squareLong( @Name("value") long value )
+        public Stream<Output> squareLong( @Name( "value" ) long value )
         {
             Output output = new Output( value * value );
             return Stream.of( output );
@@ -706,7 +793,7 @@ public class ProcedureIT
         {
             int[] ints = {1, 2, 3};
             int foo = ints[4];
-            return Stream.of( new Output(  ));
+            return Stream.of( new Output() );
         }
 
         @Procedure
@@ -742,20 +829,31 @@ public class ProcedureIT
         }
 
         @Procedure
+        @PerformsWrites
+        public Stream<NodeOutput> createNode( @Name( "value" ) String value )
+        {
+            Node node = db.createNode();
+            node.setProperty( "prop", value );
+            NodeOutput out = new NodeOutput();
+            out.setNode( node );
+            return Stream.of( out );
+        }
+
+        @Procedure
         public Stream<Output> readOnlyCallingWriteProcedure()
         {
-            return db.execute("CALL org.neo4j.procedure.writingProcedure")
+            return db.execute( "CALL org.neo4j.procedure.writingProcedure" )
                     .stream()
-                    .map( (row) -> new Output( 0 ) );
+                    .map( ( row ) -> new Output( 0 ) );
         }
 
         @Procedure
         @PerformsWrites
         public Stream<Output> writeProcedureCallingWriteProcedure()
         {
-            return db.execute("CALL org.neo4j.procedure.writingProcedure")
+            return db.execute( "CALL org.neo4j.procedure.writingProcedure" )
                     .stream()
-                    .map( (row) -> new Output( 0 ) );
+                    .map( ( row ) -> new Output( 0 ) );
         }
 
         @Procedure
@@ -766,7 +864,8 @@ public class ProcedureIT
         }
 
         @Procedure
-        public void shutdown() {
+        public void shutdown()
+        {
             db.shutdown();
         }
 
