@@ -71,7 +71,9 @@ public interface ServerSettings
     @Description("Comma-seperated list of custom security rules for Neo4j to use.")
     Setting<List<String>> security_rules = setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
 
-    @Description("Configuration options for HTTP connectors.")
+    @Description("Configuration options for HTTP connectors. " +
+                 "\"(http-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
+                 "\"http-public\" or some other name that describes what the connector is for.")
     class HttpConnector extends GraphDatabaseSettings.Connector
     {
         @Description("Enable TLS for this connector")
@@ -82,7 +84,7 @@ public interface ServerSettings
 
         public HttpConnector()
         {
-            this( "{http-connector-key}" );
+            this( "(http-connector-key)" );
         }
 
         public HttpConnector( String key )

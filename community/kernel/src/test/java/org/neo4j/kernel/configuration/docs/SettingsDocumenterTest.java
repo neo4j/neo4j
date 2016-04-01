@@ -180,23 +180,23 @@ public class SettingsDocumenterTest
                 "[options=\"header\"]%n" +
                 "|===%n" +
                 "|Name|Description%n" +
-                "|<<config_group.key.spot_count,group.\\{key\\}.spot_count>>|Number of spots this giraffe has, in " +
+                "|<<config_group.key.spot_count,group.(key).spot_count>>|Number of spots this giraffe has, in " +
                 "number.%n" +
-                "|<<config_group.key.type,group.\\{key\\}.type>>|Animal type.%n" +
+                "|<<config_group.key.type,group.(key).type>>|Animal type.%n" +
                 "|===%n" +
                 "endif::nonhtmloutput[]%n" +
                 "%n" +
                 "ifdef::nonhtmloutput[]%n" +
                 "%n" +
-                "* <<config_group.key.spot_count,group.\\{key\\}.spot_count>>: Number of spots this giraffe has, in " +
+                "* <<config_group.key.spot_count,group.(key).spot_count>>: Number of spots this giraffe has, in " +
                 "number.%n" +
-                "* <<config_group.key.type,group.\\{key\\}.type>>: Animal type.%n" +
+                "* <<config_group.key.type,group.(key).type>>: Animal type.%n" +
                 "endif::nonhtmloutput[]%n" +
                 "%n" +
                 "%n" +
                 "ifndef::nonhtmloutput[]%n" +
                 "[[config_group.key.spot_count]]%n" +
-                ".group.\\{key\\}.spot_count%n" +
+                ".group.(key).spot_count%n" +
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Number of spots this giraffe has, in number.%n" +
@@ -207,7 +207,7 @@ public class SettingsDocumenterTest
                 "%n" +
                 "ifdef::nonhtmloutput[]%n" +
                 "[[config_group.key.spot_count]]%n" +
-                ".group.\\{key\\}.spot_count%n" +
+                ".group.(key).spot_count%n" +
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Number of spots this giraffe has, in number.%n" +
@@ -218,7 +218,7 @@ public class SettingsDocumenterTest
                 "%n" +
                 "ifndef::nonhtmloutput[]%n" +
                 "[[config_group.key.type]]%n" +
-                ".group.\\{key\\}.type%n" +
+                ".group.(key).type%n" +
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Animal type.%n" +
@@ -229,7 +229,7 @@ public class SettingsDocumenterTest
                 "%n" +
                 "ifdef::nonhtmloutput[]%n" +
                 "[[config_group.key.type]]%n" +
-                ".group.\\{key\\}.type%n" +
+                ".group.(key).type%n" +
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Animal type.%n" +
@@ -280,7 +280,7 @@ public class SettingsDocumenterTest
 
         public Giraffe()
         {
-            this("{giraffeKey}");
+            this("(key)");
         }
 
         public Giraffe(String key)

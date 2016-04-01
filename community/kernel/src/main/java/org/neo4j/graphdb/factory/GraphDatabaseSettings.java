@@ -485,7 +485,9 @@ public abstract class GraphDatabaseSettings
         }
     }
 
-    @Description( "Configuration options for Bolt connectors." )
+    @Description( "Configuration options for Bolt connectors. "+
+                  "\"(bolt-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
+                  "\"bolt-public\" or some other name that describes what the connector is for." )
     public static class BoltConnector extends Connector
     {
         @Description( "Encryption level to require this connector to use" )
@@ -497,7 +499,7 @@ public abstract class GraphDatabaseSettings
         // Used by config doc generator
         public BoltConnector()
         {
-            this("{bolt-connector-key}");
+            this("(bolt-connector-key)");
         }
 
         public BoltConnector(String key)

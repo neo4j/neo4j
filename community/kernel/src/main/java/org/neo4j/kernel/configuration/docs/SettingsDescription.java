@@ -86,7 +86,7 @@ public class SettingsDescription
                 }
 
                 settings.add( new SettingDescription(
-                        "config_" + (name.replace( "{", "").replace( "}", "" ) ),
+                        "config_" + (name.replace( "(", "").replace( ")", "" ) ),
                         name, description,
                         mandatoryMessage,
                         deprecationMessage,
