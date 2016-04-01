@@ -44,6 +44,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.RunCarefully;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -79,6 +80,7 @@ import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.server.web.WebServerProvider;
@@ -91,9 +93,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.util.JobScheduler.Groups.serverTransactionTimeout;
-import static org.neo4j.server.configuration.ServerSettings.httpConnector;
-import static org.neo4j.server.configuration.ServerSettings.http_log_config_file;
-import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
+import static org.neo4j.server.configuration.ServerSettings.*;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
@@ -323,14 +323,18 @@ public abstract class AbstractNeoServer implements NeoServer
         }
     }
 
-    private void setUpHttpLogging()
-    {
-        if ( !httpLoggingProperlyConfigured() )
+    private void setUpHttpLogging() throws IOException {
+        if ( !getConfig().get( http_logging_enabled ) )
         {
             return;
         }
 
-        webServer.setHttpLoggingConfiguration(config.get( http_log_config_file ), config.get( http_logging_enabled ));
+        AsyncRequestLog requestLog = new AsyncRequestLog(
+                new DefaultFileSystemAbstraction(),
+                new File( config.get( GraphDatabaseSettings.logs_directory ), "http.log" ).toString(),
+                config.get( http_logging_rotation_size ),
+                config.get( http_logging_rotation_keep_number ) );
+        webServer.setRequestLog( requestLog );
     }
 
     private void setUpTimeoutFilter()
@@ -350,22 +354,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
         Filter filter = new GuardingRequestFilter( guard, getConfig().get( ServerSettings.webserver_limit_execution_time ) );
         webServer.addFilter( filter, "/*" );
-    }
-
-    private boolean httpLoggingProperlyConfigured()
-    {
-        return loggingEnabled() && configLocated();
-    }
-
-    private boolean configLocated()
-    {
-        final File logFile = getConfig().get( http_log_config_file );
-        return logFile != null && logFile.exists();
-    }
-
-    private boolean loggingEnabled()
-    {
-        return getConfig().get( http_logging_enabled );
     }
 
     public HostnamePort getAddress()

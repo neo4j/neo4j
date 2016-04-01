@@ -37,10 +37,7 @@ public class Netty4LogBridge
     public static void setLogProvider( LogProvider logProvider )
     {
         // TODO: Undo below hack in next minor/major release
-        // Netty 4 will look for and use Slf4j if it's on the classpath. In this release (2.3.x),
-        // it is on the classpath, via `logback-classic`. However, we do not configure logback,
-        // meaning some debug output leaks to stdout before we replace the logging below.
-        // This should be fixed properly in the next release that is not a patch release.
+        // Netty 4 will look for and use Slf4j if it's on the classpath.
         PrintStream originalStdOut = System.out;
         try
         {
