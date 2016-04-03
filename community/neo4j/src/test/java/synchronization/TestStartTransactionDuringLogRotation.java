@@ -34,8 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -46,13 +44,7 @@ public class TestStartTransactionDuringLogRotation
 {
     @Rule
     public DatabaseRule db = new EmbeddedDatabaseRule( getClass() )
-    {
-        @Override
-        protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
-        {
-            return super.newBuilder( factory ).setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" );
-        }
-    };
+                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" );
 
     private ExecutorService executor;
     private CountDownLatch startLogRotationLatch;
@@ -97,19 +89,14 @@ public class TestStartTransactionDuringLogRotation
         monitors.addMonitorListener( rotationListener );
         label = Label.label( "Label" );
 
-        Runnable writerTask = new Runnable()
-        {
-            @Override
-            public void run()
+        Runnable writerTask = () -> {
+            while ( !writerStopped.get() )
             {
-                while ( !writerStopped.get() )
+                try ( Transaction tx = db.beginTx() )
                 {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        Node node = db.createNode( label );
-                        node.setProperty( "a", 1 );
-                        tx.success();
-                    }
+                    Node node = db.createNode( label );
+                    node.setProperty( "a", 1 );
+                    tx.success();
                 }
             }
         };

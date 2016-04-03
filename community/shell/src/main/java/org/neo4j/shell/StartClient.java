@@ -126,7 +126,7 @@ public class StartClient
     // Visible for testing
     StartClient( PrintStream out, PrintStream err )
     {
-        this.factory = loadEditionDatabaseFactory();
+        this.factory = new GraphDatabaseFactory();
         this.out = out;
         this.err = err;
     }
@@ -151,21 +151,6 @@ public class StartClient
             e.dumpMessage( System.out, System.err );
             System.exit( 1 );
         }
-    }
-
-    private static GraphDatabaseFactory loadEditionDatabaseFactory()
-    {
-        GraphDatabaseFactory factory;
-        try
-        {
-            factory = (GraphDatabaseFactory) Class.forName( "org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory" )
-                    .newInstance();
-        }
-        catch ( Exception e )
-        {
-            factory = new GraphDatabaseFactory();
-        }
-        return factory;
     }
 
     // visible for testing

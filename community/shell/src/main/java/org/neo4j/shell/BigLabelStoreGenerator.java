@@ -26,8 +26,8 @@ import java.util.Random;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;

@@ -19,8 +19,8 @@
  */
 package org.neo4j.test;
 
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 
 public class TestGraphDatabaseBuilder extends GraphDatabaseBuilder
 {

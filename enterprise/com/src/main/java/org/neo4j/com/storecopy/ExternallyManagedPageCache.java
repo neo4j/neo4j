@@ -26,15 +26,17 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.enterprise.EnterpriseFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -127,6 +129,14 @@ public class ExternallyManagedPageCache implements PageCache
                     };
                 }
             }.newFacade( storeDir, config, dependencies );
+        }
+
+        @Override
+        protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
+                GraphDatabaseFactoryState state )
+        {
+            return config -> GraphDatabaseFactoryWithPageCacheFactory.this.newDatabase( storeDir, config,
+                    state.databaseDependencies() );
         }
 
         public GraphDatabaseFactoryWithPageCacheFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )

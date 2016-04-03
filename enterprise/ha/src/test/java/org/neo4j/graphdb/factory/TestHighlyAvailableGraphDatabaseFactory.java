@@ -21,6 +21,7 @@ package org.neo4j.graphdb.factory;
 
 import java.util.Collections;
 
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 

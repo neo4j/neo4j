@@ -24,8 +24,8 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.DelegatingIndexReader;

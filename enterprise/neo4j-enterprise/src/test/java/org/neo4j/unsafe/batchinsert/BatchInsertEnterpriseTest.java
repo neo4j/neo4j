@@ -28,15 +28,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -50,7 +47,7 @@ public class BatchInsertEnterpriseTest
     private enum Labels implements Label
     {
         One,
-        Two;
+        Two
     }
 
     @Rule
@@ -80,7 +77,7 @@ public class BatchInsertEnterpriseTest
         }
 
         // THEN
-        GraphDatabaseService db = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( directory.directory() );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.directory() );
         try ( Transaction tx = db.beginTx() )
         {
             Node node1 = db.getNodeById( node1Id );

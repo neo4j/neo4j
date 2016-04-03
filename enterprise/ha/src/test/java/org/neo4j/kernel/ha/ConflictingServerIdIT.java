@@ -26,8 +26,8 @@ import java.io.File;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;

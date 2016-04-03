@@ -17,19 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory;
+package org.neo4j.graphdb.factory.builder;
 
-import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
-import org.neo4j.kernel.configuration.Config;
+import java.util.List;
+import java.util.NoSuchElementException;
 
-public class GraphDatabaseBuilderTestTools
+import org.neo4j.kernel.impl.factory.Edition;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+
+public class EditionFacadeFactorySelector implements GraphDatabaseFacadeFactorySelector
 {
-    /**
-     * Create a copy of the current settings of the given {@link GraphDatabaseBuilder}, and return them as a
-     * {@link Config} object.
-     */
-    public static Config createConfigCopy( GraphDatabaseBuilder builder )
+    private Edition edition;
+
+    public EditionFacadeFactorySelector(Edition edition)
     {
-        return new Config( builder.getRawConfig() );
+        this.edition = edition;
+    }
+
+    @Override
+    public GraphDatabaseFacadeFactory select( List<GraphDatabaseFacadeFactory> factories )
+    {
+       return factories.stream()
+                       .filter( factory -> this.edition == factory.databaseInfo().edition )
+                       .findFirst()
+                       .orElseThrow( () -> new NoSuchElementException("requested edition not found") );
     }
 }

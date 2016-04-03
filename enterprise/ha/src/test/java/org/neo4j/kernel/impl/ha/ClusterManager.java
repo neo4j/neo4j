@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.ha;
 
-import org.neo4j.cluster.client.Cluster;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -54,6 +52,7 @@ import java.util.stream.Collectors;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.client.Cluster;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.com.NetworkReceiver;
@@ -64,14 +63,14 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvid
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;

@@ -30,7 +30,8 @@ import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
 import cypher.feature.parser.{Accepters, constructResultMatcher, parseParameters, statisticsParser}
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder
+import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.{FunSuiteLike, Matchers}
 

@@ -23,9 +23,12 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 
@@ -38,6 +41,7 @@ import org.neo4j.io.fs.FileUtils;
 public class EmbeddedDatabaseRule extends DatabaseRule
 {
     private final TempDirectory temp;
+    private Map<String, String> config = new HashMap<>();
 
     public EmbeddedDatabaseRule()
     {
@@ -126,6 +130,12 @@ public class EmbeddedDatabaseRule extends DatabaseRule
         return (EmbeddedDatabaseRule) super.startLazily();
     }
 
+    public <T> EmbeddedDatabaseRule withSetting(Setting<T> setting, String value)
+    {
+        config.put( setting.name(), value );
+        return this;
+    }
+
     @Override
     public String getStoreDir()
     {
@@ -147,7 +157,7 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return factory.newEmbeddedDatabaseBuilder( temp.root().getAbsoluteFile() );
+        return factory.newEmbeddedDatabaseBuilder( temp.root().getAbsoluteFile() ).setConfig( config );
     }
 
     @Override

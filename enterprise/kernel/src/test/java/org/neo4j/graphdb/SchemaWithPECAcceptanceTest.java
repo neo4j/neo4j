@@ -24,12 +24,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.SchemaHelper;
-import org.neo4j.graphdb.factory.EnterpriseDatabaseRule;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -39,7 +39,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.getConstraints;
 public class SchemaWithPECAcceptanceTest
 {
     @Rule
-    public EnterpriseDatabaseRule dbRule = new EnterpriseDatabaseRule();
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
 
     private GraphDatabaseService db;
     private Label label = Labels.MY_LABEL;

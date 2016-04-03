@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory;
+package org.neo4j.graphdb.factory.builder;
 
 import java.io.File;
 import java.io.InputStream;
@@ -39,13 +39,14 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public class GraphDatabaseBuilder
 {
+
     public interface DatabaseCreator
     {
-        GraphDatabaseService newDatabase( Map<String, String> config );
+        GraphDatabaseService newDatabase( Map<String,String> config );
     }
 
     protected DatabaseCreator creator;
-    protected Map<String, String> config = new HashMap<>();
+    protected Map<String,String> config = new HashMap<>();
 
     public GraphDatabaseBuilder( DatabaseCreator creator )
     {
@@ -68,7 +69,7 @@ public class GraphDatabaseBuilder
         else
         {
             // Test if we can get this setting with an updated config
-            Map<String, String> testValue = stringMap( setting.name(), value );
+            Map<String,String> testValue = stringMap( setting.name(), value );
             setting.apply( key -> testValue.containsKey( key ) ? testValue.get( key ) : config.get( key ) );
 
             // No exception thrown, add it to existing config
@@ -79,11 +80,11 @@ public class GraphDatabaseBuilder
 
     /**
      * Set an unvalidated configuration option.
-     * @deprecated Use setConfig with explicit {@link Setting} instead.
      *
      * @param name Name of the setting
      * @param value New value of the setting
      * @return the builder
+     * @deprecated Use setConfig with explicit {@link Setting} instead.
      */
     @Deprecated
     public GraphDatabaseBuilder setConfig( String name, String value )
@@ -107,10 +108,10 @@ public class GraphDatabaseBuilder
      * @deprecated Use setConfig with explicit {@link Setting} instead
      */
     @Deprecated
-    @SuppressWarnings("deprecation")
-    public GraphDatabaseBuilder setConfig( Map<String, String> config )
+    @SuppressWarnings( "deprecation" )
+    public GraphDatabaseBuilder setConfig( Map<String,String> config )
     {
-        for ( Map.Entry<String, String> stringStringEntry : config.entrySet() )
+        for ( Map.Entry<String,String> stringStringEntry : config.entrySet() )
         {
             setConfig( stringStringEntry.getKey(), stringStringEntry.getValue() );
         }
@@ -139,6 +140,12 @@ public class GraphDatabaseBuilder
         }
     }
 
+    public Map<String, String> getRawConfig()
+    {
+        return config;
+    }
+
+
     /**
      * Load Properties file from a given URL, and add the settings to
      * the builder.
@@ -161,8 +168,8 @@ public class GraphDatabaseBuilder
         {
             throw new IllegalArgumentException( "Unable to load " + url, e );
         }
-        Set<Map.Entry<Object, Object>> entries = props.entrySet();
-        for ( Map.Entry<Object, Object> entry : entries )
+        Set<Map.Entry<Object,Object>> entries = props.entrySet();
+        for ( Map.Entry<Object,Object> entry : entries )
         {
             String key = (String) entry.getKey();
             String value = (String) entry.getValue();
@@ -183,64 +190,4 @@ public class GraphDatabaseBuilder
         return creator.newDatabase( config );
     }
 
-    /**
-     * Used by tests via GraphDatabaseBuilderTestTools.
-     */
-    Map<String, String> getRawConfig()
-    {
-        return config;
-    }
-
-    public static class Delegator extends GraphDatabaseBuilder
-    {
-        private final GraphDatabaseBuilder actual;
-
-        public Delegator( GraphDatabaseBuilder actual )
-        {
-            super( null );
-            this.actual = actual;
-        }
-
-        @Override
-        public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
-        {
-            actual.setConfig( setting, value );
-            return this;
-        }
-
-        @Override
-        @SuppressWarnings("deprecation")
-        public GraphDatabaseBuilder setConfig( String name, String value )
-        {
-            actual.setConfig( name, value );
-            return this;
-        }
-
-        @Override
-        public GraphDatabaseBuilder setConfig( Map<String, String> config )
-        {
-            actual.setConfig( config );
-            return this;
-        }
-
-        @Override
-        public GraphDatabaseBuilder loadPropertiesFromFile( String fileName ) throws IllegalArgumentException
-        {
-            actual.loadPropertiesFromFile( fileName );
-            return this;
-        }
-
-        @Override
-        public GraphDatabaseBuilder loadPropertiesFromURL( URL url ) throws IllegalArgumentException
-        {
-            actual.loadPropertiesFromURL( url );
-            return this;
-        }
-
-        @Override
-        public GraphDatabaseService newGraphDatabase()
-        {
-            return actual.newGraphDatabase();
-        }
-    }
 }

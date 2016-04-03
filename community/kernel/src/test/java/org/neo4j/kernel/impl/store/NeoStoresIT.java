@@ -31,7 +31,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.DatabaseRule;
@@ -39,15 +38,9 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 
 public class NeoStoresIT
 {
-    public final @Rule DatabaseRule db = new EmbeddedDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            super.configure( builder );
-            builder.setConfig(  GraphDatabaseSettings.dense_node_threshold, "1");
-        }
-    };
+    @Rule
+    public final DatabaseRule db = new EmbeddedDatabaseRule()
+                .withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
 
     private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );
 

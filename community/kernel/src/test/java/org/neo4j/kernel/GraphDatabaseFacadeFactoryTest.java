@@ -155,7 +155,7 @@ public class GraphDatabaseFacadeFactoryTest
             }
 
             @Override
-            protected DatabaseInfo databaseInfo()
+            public DatabaseInfo databaseInfo()
             {
                 return DatabaseInfo.UNKNOWN;
             }

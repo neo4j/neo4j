@@ -210,5 +210,10 @@ public abstract class GraphDatabaseFacadeFactory
         } );
     }
 
-    protected abstract DatabaseInfo databaseInfo();
+    public int selectionPriority()
+    {
+        return Integer.MIN_VALUE;
+    }
+
+    public abstract DatabaseInfo databaseInfo();
 }

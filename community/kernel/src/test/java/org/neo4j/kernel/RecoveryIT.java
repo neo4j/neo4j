@@ -150,7 +150,7 @@ public class RecoveryIT
 
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         File storeDir = directory.graphDbDir();
-        GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
+        GraphDatabaseService db = new AdversarialPageCacheGraphDatabaseFactory( fs, adversary )
                 .newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.auth_store, directory.file( "auth" ).getAbsolutePath() )
                 .newGraphDatabase();

@@ -101,8 +101,8 @@ public class RebuildFromLogsTest
         }
         finally
         {
-            txId = prototype.getDependencyResolver()
-                    .resolveDependency( MetaDataStore.class ).getLastCommittedTransactionId();
+            txId = prototype.getDependencyResolver().resolveDependency( MetaDataStore.class )
+                    .getLastCommittedTransactionId();
             prototype.shutdown();
         }
 

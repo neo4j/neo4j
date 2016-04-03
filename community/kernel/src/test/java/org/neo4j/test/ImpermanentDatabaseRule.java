@@ -19,8 +19,8 @@
  */
 package org.neo4j.test;
 
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 import org.neo4j.logging.LogProvider;
 
 /**

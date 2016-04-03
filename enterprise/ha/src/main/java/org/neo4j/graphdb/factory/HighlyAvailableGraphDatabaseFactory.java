@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory;
 import java.io.File;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.Edition;
