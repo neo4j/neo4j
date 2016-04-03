@@ -37,9 +37,9 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.LogTestUtils.CountingLogHook;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
@@ -50,23 +50,8 @@ import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
  */
 public class ReadTransactionLogWritingTest
 {
-    @Test
-    public void shouldNotWriteAnyLogCommandInPureReadTransaction() throws Exception
-    {
-        // WHEN
-        executeTransaction( getRelationships() );
-        executeTransaction( getProperties() );
-        executeTransaction( getById() );
-        executeTransaction( getNodesFromRelationship() );
-
-        // THEN
-        long actualCount = countLogEntries();
-        assertEquals( "There were " + (actualCount-logEntriesWrittenBeforeReadOperations) +
-                " log entries written during one or more pure read transactions",
-                logEntriesWrittenBeforeReadOperations, actualCount );
-    }
-
-    public final @Rule DatabaseRule dbr = new ImpermanentDatabaseRule();
+    @Rule
+    public final DatabaseRule dbr = new ImpermanentDatabaseRule();
 
     private final Label label = label( "Test" );
     private Node node;
@@ -89,6 +74,23 @@ public class ReadTransactionLogWritingTest
         }
         logEntriesWrittenBeforeReadOperations = countLogEntries();
     }
+
+    @Test
+    public void shouldNotWriteAnyLogCommandInPureReadTransaction() throws Exception
+    {
+        // WHEN
+        executeTransaction( getRelationships() );
+        executeTransaction( getProperties() );
+        executeTransaction( getById() );
+        executeTransaction( getNodesFromRelationship() );
+
+        // THEN
+        long actualCount = countLogEntries();
+        assertEquals( "There were " + (actualCount-logEntriesWrittenBeforeReadOperations) +
+                " log entries written during one or more pure read transactions",
+                logEntriesWrittenBeforeReadOperations, actualCount );
+    }
+
 
     private long countLogEntries()
     {

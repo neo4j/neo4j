@@ -29,10 +29,10 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

@@ -42,9 +42,9 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 

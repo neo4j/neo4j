@@ -31,15 +31,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintKernelException;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
+import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 public class ConstraintIndexFailureIT
 {

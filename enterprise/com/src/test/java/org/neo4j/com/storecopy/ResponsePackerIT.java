@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

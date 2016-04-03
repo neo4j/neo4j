@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

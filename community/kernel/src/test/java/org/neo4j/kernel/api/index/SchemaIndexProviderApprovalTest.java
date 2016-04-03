@@ -44,8 +44,8 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 
 /*
  * The purpose of this test class is to make sure all index providers produce the same results.

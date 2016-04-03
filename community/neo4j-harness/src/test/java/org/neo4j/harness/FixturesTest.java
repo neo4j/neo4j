@@ -31,8 +31,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static junit.framework.TestCase.fail;

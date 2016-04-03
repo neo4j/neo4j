@@ -37,7 +37,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class ConfigLoaderTest
 {

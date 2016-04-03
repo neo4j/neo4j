@@ -26,12 +26,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.Neo4jMatchers;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
+import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -41,11 +41,11 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 
 public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
 {

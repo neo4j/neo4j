@@ -29,21 +29,22 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil.findTokenFor;
+import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil
+        .findTokenFor;
 
 public class IndexLookupTest
 {

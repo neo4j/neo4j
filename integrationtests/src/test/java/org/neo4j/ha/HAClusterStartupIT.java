@@ -33,8 +33,8 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;

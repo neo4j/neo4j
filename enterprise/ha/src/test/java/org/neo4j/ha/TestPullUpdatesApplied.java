@@ -45,7 +45,7 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.StreamConsumer;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

@@ -40,14 +40,14 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.test.Assert.assertEventually;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class ConvertNonCoreEdgeStoreIT
 {

@@ -19,15 +19,15 @@
  */
 package examples;
 
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,7 +41,7 @@ import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.graphmatching.PatternRelationship;
 import org.neo4j.graphmatching.ValueMatcher;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

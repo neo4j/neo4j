@@ -25,12 +25,12 @@ import org.junit.Rule;
 
 import java.util.concurrent.Callable;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.test.rule.SuppressOutput;
 
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class SharedServerTestBase
 {

@@ -31,8 +31,8 @@ import java.util.UUID;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.test.DefaultFileSystemRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.filesystem.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
 

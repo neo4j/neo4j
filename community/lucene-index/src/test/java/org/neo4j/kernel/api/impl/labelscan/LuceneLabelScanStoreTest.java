@@ -58,7 +58,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStre
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;

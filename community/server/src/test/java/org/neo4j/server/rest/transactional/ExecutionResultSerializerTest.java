@@ -58,8 +58,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.test.mocking.GraphMock;
-import org.neo4j.test.mocking.Link;
+import org.neo4j.test.mockito.mock.GraphMock;
+import org.neo4j.test.mockito.mock.Link;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -77,11 +77,11 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 import static org.neo4j.test.Property.property;
-import static org.neo4j.test.mocking.GraphMock.link;
-import static org.neo4j.test.mocking.GraphMock.node;
-import static org.neo4j.test.mocking.GraphMock.path;
-import static org.neo4j.test.mocking.GraphMock.relationship;
-import static org.neo4j.test.mocking.Properties.properties;
+import static org.neo4j.test.mockito.mock.GraphMock.link;
+import static org.neo4j.test.mockito.mock.GraphMock.node;
+import static org.neo4j.test.mockito.mock.GraphMock.path;
+import static org.neo4j.test.mockito.mock.GraphMock.relationship;
+import static org.neo4j.test.mockito.mock.Properties.properties;
 
 public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 {

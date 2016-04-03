@@ -41,14 +41,14 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.test.Assert.assertEventually;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 @Ignore("Currently we only support writing on the leader")
 public class ConcurrentLockingIT

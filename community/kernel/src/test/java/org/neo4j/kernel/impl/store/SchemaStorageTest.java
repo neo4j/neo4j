@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
@@ -48,8 +48,8 @@ import org.neo4j.kernel.impl.store.record.NodePropertyConstraintRule;
 import org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule;
 import org.neo4j.kernel.impl.store.record.UniquePropertyConstraintRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
-import org.neo4j.test.EmbeddedDatabaseRule;
-import org.neo4j.test.KernelExceptionUserMessageMatcher;
+import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

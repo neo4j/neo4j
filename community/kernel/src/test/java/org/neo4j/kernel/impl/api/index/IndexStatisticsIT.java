@@ -44,8 +44,8 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;

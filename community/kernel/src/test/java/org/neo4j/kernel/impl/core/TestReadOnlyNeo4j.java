@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.core;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -34,19 +36,16 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import java.io.File;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class TestReadOnlyNeo4j
 {

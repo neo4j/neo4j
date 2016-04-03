@@ -51,9 +51,9 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeRule;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertFalse;

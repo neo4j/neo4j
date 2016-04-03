@@ -30,7 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

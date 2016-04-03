@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,14 +30,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Random;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;

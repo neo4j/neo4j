@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;

@@ -50,7 +50,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -66,7 +66,7 @@ import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_NAME
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
+import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 public class PhysicalLogicalTransactionStoreTest
 {

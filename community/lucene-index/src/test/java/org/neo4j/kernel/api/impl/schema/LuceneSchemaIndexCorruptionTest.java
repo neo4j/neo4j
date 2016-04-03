@@ -33,8 +33,8 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.instanceOf;

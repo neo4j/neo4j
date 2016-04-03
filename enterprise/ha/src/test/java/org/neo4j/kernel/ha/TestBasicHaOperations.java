@@ -29,8 +29,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
-import org.neo4j.test.LoggerRule;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.LoggerRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

@@ -33,12 +33,11 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
-import org.neo4j.test.CleanupRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ServerManagementTest

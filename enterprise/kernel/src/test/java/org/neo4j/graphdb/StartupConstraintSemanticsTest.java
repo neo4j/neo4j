@@ -26,15 +26,17 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.test.TargetDirectory;
+
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
+import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 public class StartupConstraintSemanticsTest
 {

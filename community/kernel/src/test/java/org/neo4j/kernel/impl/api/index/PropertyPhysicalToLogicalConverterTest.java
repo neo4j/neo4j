@@ -43,8 +43,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.asList;

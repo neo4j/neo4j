@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.test.CleanupRule;
+import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
@@ -74,6 +74,8 @@ public class BatchingTransactionAppenderTest
 {
     @Rule
     public final LifeRule life = new LifeRule( true );
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
 
     private final InMemoryVersionableReadableClosablePositionAwareChannel channel = new InMemoryVersionableReadableClosablePositionAwareChannel();
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
@@ -351,8 +353,6 @@ public class BatchingTransactionAppenderTest
         // Then
         verify( databaseHealth, times( 1 ) ).panic( ioex );
     }
-
-    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     private TransactionRepresentation transaction( Collection<StorageCommand> commands, byte[] additionalHeader,
             int masterId, int authorId, long timeStarted, long latestCommittedTxWhenStarted, long timeCommitted )

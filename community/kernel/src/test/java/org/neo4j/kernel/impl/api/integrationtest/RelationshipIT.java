@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.core.AllOf.allOf;

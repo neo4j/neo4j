@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
-import static org.neo4j.graphdb.Neo4jMatchers.hasSamePrimitiveItems;
+import org.junit.Test;
 
 import java.util.Iterator;
 
-import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSamePrimitiveItems;
 
 public class LongDiffSetsTest
 {

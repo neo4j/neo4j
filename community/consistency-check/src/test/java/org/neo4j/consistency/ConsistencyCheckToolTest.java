@@ -38,10 +38,10 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.SystemExitRule;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
+import org.neo4j.test.rule.system.SystemExitRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -56,7 +56,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
+import static org.neo4j.test.rule.filesystem.EphemeralFileSystemRule.shutdownDbAction;
 
 public class ConsistencyCheckToolTest
 {

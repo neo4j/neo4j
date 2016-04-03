@@ -19,16 +19,16 @@
  */
 package org.neo4j.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.configuration.ConfigLoader;
@@ -38,7 +38,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
@@ -46,7 +45,7 @@ import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
 import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
-import static org.neo4j.test.Assert.assertEventually;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
 {

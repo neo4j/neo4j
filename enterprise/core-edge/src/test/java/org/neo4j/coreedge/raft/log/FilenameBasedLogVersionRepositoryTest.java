@@ -19,14 +19,15 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.test.rule.TargetDirectory;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.test.TargetDirectory;
 
 public class FilenameBasedLogVersionRepositoryTest
 {

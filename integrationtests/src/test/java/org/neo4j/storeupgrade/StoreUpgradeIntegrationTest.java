@@ -19,6 +19,12 @@
  */
 package org.neo4j.storeupgrade;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -30,12 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -73,17 +73,16 @@ import org.neo4j.register.Registers;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;

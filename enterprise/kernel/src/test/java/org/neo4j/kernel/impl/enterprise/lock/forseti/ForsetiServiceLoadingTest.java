@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.enterprise.lock.forseti;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;

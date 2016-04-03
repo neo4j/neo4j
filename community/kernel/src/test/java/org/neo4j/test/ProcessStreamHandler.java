@@ -42,7 +42,7 @@ public class ProcessStreamHandler
 
     /**
      * Convenience constructor assuming the local output streams are
-     * {@link System.out} and {@link System.err} for the process's OutputStream
+     * {@link System#out} and {@link System#err} for the process's OutputStream
      * and ErrorStream respectively.
      *
      * Set quiet to true if you just want to consume the output to avoid locking up the process.

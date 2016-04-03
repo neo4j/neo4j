@@ -44,8 +44,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static java.lang.System.getProperty;
 import static org.junit.Assert.assertEquals;

@@ -31,10 +31,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.iterableWithSize;
@@ -44,7 +44,10 @@ import static org.junit.Assert.fail;
 
 public class GraphDatabaseServiceTest
 {
-    @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void givenShutdownDatabaseWhenBeginTxThenExceptionIsThrown() throws Exception
@@ -385,5 +388,4 @@ public class GraphDatabaseServiceTest
         }
     }
 
-    public final @Rule CleanupRule cleanup = new CleanupRule();
 }

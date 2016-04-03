@@ -19,22 +19,22 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.DeadlockDetected;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 

@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -35,9 +34,10 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;

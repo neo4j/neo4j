@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.net.UnknownHostException;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -54,10 +53,10 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.RepeatRule;
-import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;

@@ -56,7 +56,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class PagedTraverserDocIT extends ExclusiveServerTestBase
 {

@@ -41,8 +41,8 @@ import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;

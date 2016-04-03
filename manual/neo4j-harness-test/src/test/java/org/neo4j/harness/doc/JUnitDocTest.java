@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
 import static org.junit.Assert.assertEquals;
@@ -40,7 +40,8 @@ import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 
 public class JUnitDocTest
 {
-    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     // START SNIPPET: useJUnitRule
     @Rule

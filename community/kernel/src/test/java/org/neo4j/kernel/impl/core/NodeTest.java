@@ -36,9 +36,9 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.GraphTransactionRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphTransactionRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

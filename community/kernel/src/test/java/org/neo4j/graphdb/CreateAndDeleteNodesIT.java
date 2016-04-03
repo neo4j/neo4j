@@ -22,7 +22,7 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 public class CreateAndDeleteNodesIT
 {

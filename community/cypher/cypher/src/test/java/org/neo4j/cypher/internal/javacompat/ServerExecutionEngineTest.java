@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

@@ -31,8 +31,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.count;

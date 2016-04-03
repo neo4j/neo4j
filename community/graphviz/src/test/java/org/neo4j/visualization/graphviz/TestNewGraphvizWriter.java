@@ -19,19 +19,19 @@
  */
 package org.neo4j.visualization.graphviz;
 
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.walk.Walker;
 
 public class TestNewGraphvizWriter
@@ -41,7 +41,8 @@ public class TestNewGraphvizWriter
 		KNOWS, WORKS_FOR
 	}
 
-	public final @Rule DatabaseRule dbRule = new ImpermanentDatabaseRule();
+	@Rule
+	public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
 
 	@Test
 	public void testSimpleGraph() throws Exception

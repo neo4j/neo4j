@@ -41,8 +41,9 @@ import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.RecordStorageEngineRule;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertNotNull;

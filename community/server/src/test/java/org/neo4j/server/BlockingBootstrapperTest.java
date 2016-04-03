@@ -19,20 +19,19 @@
  */
 package org.neo4j.server;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Test;
-
 import org.neo4j.helpers.collection.Pair;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-
-import static org.neo4j.test.Assert.assertEventually;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class BlockingBootstrapperTest
 {

@@ -22,7 +22,6 @@ package org.neo4j.coreedge.catchup.storecopy;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,8 +33,8 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import static junit.framework.TestCase.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.function.Suppliers.singleton;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
+import static org.neo4j.function.Suppliers.singleton;
 
 public class LocalDatabaseTest
 {

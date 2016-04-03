@@ -46,10 +46,10 @@ import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;

@@ -19,20 +19,19 @@
  */
 package org.neo4j.server.web;
 
-import java.util.concurrent.CountDownLatch;
-
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class JettyThreadLimitTest
 {

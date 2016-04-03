@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+
+import java.io.File;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
 

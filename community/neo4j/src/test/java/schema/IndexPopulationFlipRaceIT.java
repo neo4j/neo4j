@@ -26,19 +26,17 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.EmbeddedDatabaseRule;
-import org.neo4j.test.RandomRule;
-
-import static org.junit.Assert.assertEquals;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
 public class IndexPopulationFlipRaceIT

@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;

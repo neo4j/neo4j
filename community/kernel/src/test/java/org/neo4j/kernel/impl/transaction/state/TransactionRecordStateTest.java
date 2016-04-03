@@ -82,7 +82,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
-import org.neo4j.test.NeoStoresRule;
+import org.neo4j.test.rule.NeoStoresRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

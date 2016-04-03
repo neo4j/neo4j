@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.test.rule.concurrent.ThreadRepository;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.logging.NullLog;
-import org.neo4j.test.CleanupRule;
+import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
@@ -65,7 +65,10 @@ import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 public class TestMasterCommittingAtSlave
 {
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
     private static final int MasterServerId = 0;
+    private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
 
     private Iterable<Slave> slaves;
     private AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -254,9 +257,6 @@ public class TestMasterCommittingAtSlave
         }
         return slaves;
     }
-
-    private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
-    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     private static class FakeSlave implements Slave
     {

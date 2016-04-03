@@ -70,9 +70,9 @@ import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationPa
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.emptyCollectionOf;

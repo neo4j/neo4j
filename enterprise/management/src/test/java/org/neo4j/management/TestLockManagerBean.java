@@ -19,19 +19,21 @@
  */
 package org.neo4j.management;
 
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.List;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.jmx.impl.JmxKernelExtension;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.info.LockInfo;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestLockManagerBean
 {

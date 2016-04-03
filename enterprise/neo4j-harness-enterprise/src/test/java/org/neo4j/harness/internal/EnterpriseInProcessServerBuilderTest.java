@@ -30,8 +30,8 @@ import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;

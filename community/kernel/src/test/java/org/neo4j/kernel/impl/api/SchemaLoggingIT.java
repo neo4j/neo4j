@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.logging.AssertableLogProvider.inLog;

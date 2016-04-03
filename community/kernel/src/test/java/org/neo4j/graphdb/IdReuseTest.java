@@ -22,7 +22,7 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;

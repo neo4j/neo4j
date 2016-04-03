@@ -28,21 +28,23 @@ import java.util.function.Function;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.OtherThreadRule.isWaiting;
+import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 
 public class UniquenessConstraintValidationConcurrencyIT
 {
-    public final @Rule DatabaseRule database = new ImpermanentDatabaseRule();
-    public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
+    @Rule
+    public final DatabaseRule database = new ImpermanentDatabaseRule();
+    @Rule
+    public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     @Test
     public void shouldAllowConcurrentCreationOfNonConflictingData() throws Exception

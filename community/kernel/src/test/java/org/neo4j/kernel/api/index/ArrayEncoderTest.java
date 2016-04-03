@@ -24,7 +24,8 @@ import org.junit.Test;
 
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

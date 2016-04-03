@@ -43,15 +43,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
-import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 import static org.neo4j.test.GraphDescription.PropType.ARRAY;
 import static org.neo4j.test.GraphDescription.PropType.STRING;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabel;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabels;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class LabelsDocIT extends AbstractRestFunctionalTestBase
 {

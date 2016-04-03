@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 

@@ -24,8 +24,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.fail;
 

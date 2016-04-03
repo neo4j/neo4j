@@ -31,8 +31,8 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationSchemaIndexProvider;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;

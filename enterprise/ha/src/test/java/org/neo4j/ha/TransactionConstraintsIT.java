@@ -26,6 +26,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -47,10 +48,10 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.qa.tooling.DumpProcessInformationRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.dump.DumpProcessInformationRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -62,7 +63,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
-import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
+import static org.neo4j.test.rule.dump.DumpProcessInformationRule.localVm;
 
 public class TransactionConstraintsIT
 {
@@ -73,8 +74,11 @@ public class TransactionConstraintsIT
             .withSharedSetting( HaSettings.pull_interval, "0" )
             .withInstanceSetting( HaSettings.slave_only,  (serverId) -> serverId == SLAVE_ONLY_ID ? "true" : "false" );
 
+    private DumpProcessInformationRule dumpInfo = new DumpProcessInformationRule( 1, MINUTES, localVm( System.out ) );
+    private ExpectedException exception = ExpectedException.none();
+
     @Rule
-    public ExpectedException exception = ExpectedException.none();
+    public RuleChain ruleChain = RuleChain.outerRule( dumpInfo ).around( exception );
 
     protected ClusterManager.ManagedCluster cluster;
 
@@ -512,9 +516,6 @@ public class TransactionConstraintsIT
             return tx.acquireWriteLock( callable.call() );
         }
     }
-
-    @Rule
-    public DumpProcessInformationRule dumpInfo = new DumpProcessInformationRule( 1, MINUTES, localVm( System.out ) );
 
     private void awaitFullyOperational( GraphDatabaseService db ) throws InterruptedException
     {

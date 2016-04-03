@@ -39,8 +39,8 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.SchemaRule;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;

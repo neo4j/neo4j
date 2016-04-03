@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -55,7 +55,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
-import static org.neo4j.test.ThreadingRule.waitingWhileIn;
+import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Parameterized.class )
 public class LuceneIndexAccessorTest

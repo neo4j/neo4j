@@ -34,8 +34,8 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class TestLifecycleManagedDatabase
 {

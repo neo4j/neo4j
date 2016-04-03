@@ -47,20 +47,20 @@ import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
+import static org.neo4j.test.rule.filesystem.EphemeralFileSystemRule.shutdownDbAction;
 
 /**
  * Test for making sure that slow id generator rebuild is exercised

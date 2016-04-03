@@ -19,11 +19,11 @@
  */
 package org.neo4j.harness;
 
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
+
+import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -34,17 +34,16 @@ import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
-import static org.neo4j.test.TargetDirectory.testDirForTest;
+import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JUnitRuleTest

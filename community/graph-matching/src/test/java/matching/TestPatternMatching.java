@@ -50,9 +50,9 @@ import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;

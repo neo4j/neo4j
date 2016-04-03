@@ -31,9 +31,9 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class CypherUpdateMapTest
 {

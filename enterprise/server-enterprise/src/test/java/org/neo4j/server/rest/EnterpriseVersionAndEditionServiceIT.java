@@ -40,7 +40,7 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 /*
 Note that when running this test from within an IDE, the version field will be an empty string. This is because the

@@ -35,22 +35,22 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.Neo4jMatchers.getIndexState;
-import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
-import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
-import static org.neo4j.graphdb.Neo4jMatchers.haveState;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexState;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class IndexRestartIT
 {

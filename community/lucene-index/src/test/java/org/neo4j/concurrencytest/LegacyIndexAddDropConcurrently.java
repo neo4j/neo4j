@@ -19,6 +19,9 @@
  */
 package org.neo4j.concurrencytest;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -28,13 +31,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 public class LegacyIndexAddDropConcurrently
 {

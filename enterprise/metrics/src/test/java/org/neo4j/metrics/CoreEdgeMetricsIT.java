@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.metrics.source.coreedge.CoreMetrics;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -51,7 +51,7 @@ import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
 import static org.neo4j.metrics.source.coreedge.EdgeMetrics.PULL_UPDATES;
 import static org.neo4j.metrics.source.coreedge.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_RECEIVED;
 import static org.neo4j.metrics.source.coreedge.EdgeMetrics.PULL_UPDATE_HIGHEST_TX_ID_REQUESTED;
-import static org.neo4j.test.Assert.assertEventually;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class CoreEdgeMetricsIT
 {

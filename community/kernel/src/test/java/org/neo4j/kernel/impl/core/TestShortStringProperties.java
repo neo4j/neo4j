@@ -32,18 +32,17 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.TestShortString;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.GraphTransactionRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphTransactionRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class TestShortStringProperties extends TestShortString
 {

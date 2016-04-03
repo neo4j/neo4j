@@ -45,9 +45,9 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.TestLabels;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -58,16 +58,19 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.index.DummyIndexExtensionFactory.IDENTIFIER;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class TestTransactionEvents
 {
+    @Rule
+    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
+
     @Test
     public void testRegisterUnregisterHandlers()
     {
@@ -1191,8 +1194,6 @@ public class TestTransactionEvents
         }
     }
 
-    @Rule
-    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     private static class RelationshipData
     {

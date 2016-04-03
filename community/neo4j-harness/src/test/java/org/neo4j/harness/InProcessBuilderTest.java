@@ -19,6 +19,11 @@
  */
 package org.neo4j.harness;
 
+import org.apache.commons.io.FileUtils;
+import org.codehaus.jackson.JsonNode;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -36,11 +41,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -55,9 +55,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -67,7 +67,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.configuration.ServerSettings.httpConnector;

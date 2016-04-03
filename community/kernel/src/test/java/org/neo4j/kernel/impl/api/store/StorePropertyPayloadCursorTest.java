@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.param;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.paramArg;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Params.params;
-import static org.neo4j.test.Assert.assertObjectOrArrayEquals;
+import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 @RunWith( Enclosed.class )
 public class StorePropertyPayloadCursorTest

@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.TransactionTemplate;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 public class DeadlockDocTest
 {

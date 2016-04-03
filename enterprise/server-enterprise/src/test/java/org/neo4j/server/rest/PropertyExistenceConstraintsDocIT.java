@@ -56,7 +56,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToList;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_CONSTRAINT;
 import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_RELATIONSHIP_CONSTRAINT;
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class PropertyExistenceConstraintsDocIT implements GraphHolder
 {
