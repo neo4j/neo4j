@@ -110,10 +110,8 @@ public class ExtensionTestingDocTest
     private TestServerBuilder getServerBuilder( ) throws IOException
     {
         TestServerBuilder serverBuilder = EnterpriseTestServerBuilders.newInProcessBuilder();
-        serverBuilder.withConfig( ServerSettings.tls_key_file.name(),
-                ServerTestUtils.getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) );
-        serverBuilder.withConfig( ServerSettings.tls_certificate_file.name(),
-                ServerTestUtils.getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) );
+        serverBuilder.withConfig( ServerSettings.certificates_directory.name(),
+                ServerTestUtils.getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) );
         return serverBuilder;
     }
 }

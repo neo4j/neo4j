@@ -55,10 +55,8 @@ public class BoltQueryLoggingIT
         queriesLog.deleteOnExit();
         this.neo4j = new Neo4jRule()
             .withConfig( ServerSettings.http_logging_enabled, "true" )
-            .withConfig( ServerSettings.tls_key_file.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) )
-            .withConfig( ServerSettings.tls_certificate_file.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) )
+            .withConfig( ServerSettings.certificates_directory.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" )
             .withConfig( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() )
             .withConfig( GraphDatabaseSettings.log_queries, "true")

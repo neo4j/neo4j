@@ -51,15 +51,15 @@ The Neo4j server includes built in support for SSL encrypted communication over 
 The first time the server starts, it automatically generates a self-signed SSL certificate and a private key.
 Because the certificate is self signed, it is not safe to rely on for production use, instead, you should provide your own key and certificate for the server to use.
 
-To provide your own key and certificate, replace the generated key and certificate, or change _neo4j.conf_ to set the location of your certificate and key:
+To provide your own key and certificate put them in the <<file-locations, _certificates_>> directory.
+The files must be named _neo4j.key_ and _neo4j.cert_.
+The location of the directory can be configured by setting _dbms.directories.certificates_ in <<file-locations, _neo4j.conf_>>.
 
 [source,properties]
 ----
-# Certificate location (auto generated if the file does not exist)
-dbms.security.tls_certificate_file=certificates/snakeoil.cert
+# Certificates location (auto generated if the file does not exist)
+dbms.directories.certificates=certificates
 
-# Private key location (auto generated if the file does not exist)
-dbms.security.tls_key_file=certificates/snakeoil.key
 ----
 
 Note that the key should be unencrypted.

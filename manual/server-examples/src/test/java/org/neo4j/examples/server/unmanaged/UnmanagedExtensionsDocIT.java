@@ -46,10 +46,8 @@ public class UnmanagedExtensionsDocIT
                     "MERGE (m:Movie  {name: 'The Matrix'}) " +
                     "MERGE (p:Person {name: actor}) " +
                     "MERGE (p)-[:ACTED_IN]->(m) " )
-            .withConfig( ServerSettings.tls_key_file.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) )
-            .withConfig( ServerSettings.tls_certificate_file.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) )
+            .withConfig( ServerSettings.certificates_directory.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
             .withExtension( "/path/to/my/extension1", ColleaguesCypherExecutionResource.class )
             .withExtension( "/path/to/my/extension2", ColleaguesResource.class );
 
