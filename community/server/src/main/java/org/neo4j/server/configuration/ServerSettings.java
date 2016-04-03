@@ -164,9 +164,14 @@ public interface ServerSettings
             },
             EMPTY );
 
+    @Description( "Directory for storing certificates to be used by Neo4j for TLS connections" )
+    Setting<File> certificates_directory = BoltKernelExtension.Settings.certificates_directory;
+
+    @Internal
     @Description("Path to the X.509 public certificate to be used by Neo4j for TLS connections")
     Setting<File> tls_certificate_file = BoltKernelExtension.Settings.tls_certificate_file;
 
+    @Internal
     @Description("Path to the X.509 private key to be used by Neo4j for TLS connections")
     Setting<File> tls_key_file = BoltKernelExtension.Settings.tls_key_file;
 

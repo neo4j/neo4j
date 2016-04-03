@@ -66,10 +66,8 @@ public class EnterpriseInProcessServerBuilderTest
     private TestServerBuilder getTestServerBuilder( File workDir )
     {
         TestServerBuilder serverBuilder = EnterpriseTestServerBuilders.newInProcessBuilder( workDir );
-        serverBuilder.withConfig( ServerSettings.tls_key_file.name(),
-                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) );
-        serverBuilder.withConfig( ServerSettings.tls_certificate_file.name(),
-                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) );
+        serverBuilder.withConfig( ServerSettings.certificates_directory.name(),
+                ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.certificates_directory ) );
         return serverBuilder;
     }
 }

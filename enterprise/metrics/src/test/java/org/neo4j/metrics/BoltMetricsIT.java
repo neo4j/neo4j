@@ -63,10 +63,8 @@ public class BoltMetricsIT
                 .newImpermanentDatabaseBuilder()
                 .setConfig( boltConnector( "0" ).enabled, "true" )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "false" )
-                .setConfig( BoltKernelExtension.Settings.tls_certificate_file,
-                        tmpDir.getRoot().toPath().resolve( BoltKernelExtension.Settings.tls_certificate_file.getDefaultValue() ).toString())
-                .setConfig( BoltKernelExtension.Settings.tls_key_file,
-                        tmpDir.getRoot().toPath().resolve( BoltKernelExtension.Settings.tls_key_file.getDefaultValue() ).toString())
+                .setConfig( BoltKernelExtension.Settings.certificates_directory,
+                        BoltKernelExtension.Settings.certificates_directory.getDefaultValue().toString())
                 .setConfig( MetricsSettings.boltMessagesEnabled, "true" )
                 .setConfig( MetricsSettings.csvEnabled, "true" )
                 .setConfig( MetricsSettings.csvPath, metricsFolder.getAbsolutePath() )

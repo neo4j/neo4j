@@ -87,8 +87,7 @@ public class ServerTestUtils
     public static void addDefaultRelativeProperties( Map<String,String> properties, File temporaryFolder )
     {
         addRelativeProperty( temporaryFolder, properties, DatabaseManagementSystemSettings.data_directory );
-        addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_certificate_file );
-        addRelativeProperty( temporaryFolder, properties, ServerSettings.tls_key_file );
+        addRelativeProperty( temporaryFolder, properties, ServerSettings.certificates_directory );
     }
 
     private static void addRelativeProperty( File temporaryFolder, Map<String,String> properties,

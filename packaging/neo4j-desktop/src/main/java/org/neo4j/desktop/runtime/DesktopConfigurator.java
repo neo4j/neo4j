@@ -34,9 +34,8 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
+import static org.neo4j.server.configuration.ServerSettings.certificates_directory;
 import static org.neo4j.helpers.collection.Pair.pair;
-import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
-import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
 
 public class DesktopConfigurator
 {
@@ -60,9 +59,7 @@ public class DesktopConfigurator
 
                 /** Desktop-specific config overrides */
                 pair( data_directory.name(), new File( dbDir, "./data" ).getAbsolutePath() ),
-                pair( tls_certificate_file.name(), new File( dbDir, "./certificates/snakeoil.cert" ).getAbsolutePath() ),
-                pair( tls_key_file.name(), new File( dbDir, "./certificates/snakeoil.key" ).getAbsolutePath() ),
-
+                pair( certificates_directory.name(), new File( dbDir, "./certificates" ).getAbsolutePath() ),
                 pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) );
     }
 

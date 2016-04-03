@@ -100,11 +100,7 @@ public class InProcessBuilderTest
 
     private TestServerBuilder getTestServerBuilder( File workDir )
     {
-        return newInProcessBuilder( workDir )
-                .withConfig( ServerSettings.tls_key_file.name(),
-                    ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_key_file ) )
-                .withConfig( ServerSettings.tls_certificate_file.name(),
-                    ServerTestUtils.getRelativePath( testDir.directory(), ServerSettings.tls_certificate_file ) );
+        return newInProcessBuilder( workDir );
     }
 
     @Test
@@ -121,8 +117,7 @@ public class InProcessBuilderTest
                 .withConfig( httpConnector( "1" ).enabled, "true" )
                 .withConfig( httpConnector( "1" ).encryption, "TLS" )
                 .withConfig( httpConnector( "1" ).address, "localhost:7473" )
-                .withConfig( ServerSettings.tls_certificate_file.name(), testDir.file( "cert" ).getAbsolutePath() )
-                .withConfig( ServerSettings.tls_key_file.name(), testDir.file( "key" ).getAbsolutePath() )
+                .withConfig( ServerSettings.certificates_directory.name(), testDir.directory( "certificates" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 .newServer() )
         {

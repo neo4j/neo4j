@@ -53,10 +53,8 @@ public class JUnitDocTest
     @Rule
     public Neo4jRule neo4j = new EnterpriseNeo4jRule()
             .withFixture( "CREATE (admin:Admin)" )
-            .withConfig( ServerSettings.tls_key_file.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file ) )
-            .withConfig( ServerSettings.tls_certificate_file.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) )
+            .withConfig( ServerSettings.certificates_directory.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
             .withFixture( new Function<GraphDatabaseService,Void>()
             {
                 @Override

@@ -56,10 +56,8 @@ public class JUnitRuleTest
     @Rule
     public Neo4jRule neo4j = new Neo4jRule()
             .withFixture( "CREATE (u:User)" )
-            .withConfig( ServerSettings.tls_key_file.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_key_file) )
-            .withConfig( ServerSettings.tls_certificate_file.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.tls_certificate_file ) )
+            .withConfig( ServerSettings.certificates_directory.name(),
+                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
             .withFixture( graphDatabaseService -> {
                 try ( Transaction tx = graphDatabaseService.beginTx() )
                 {
