@@ -63,6 +63,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     private final Map<Key,ControlledStat> stats = new HashMap<>();
     private final int maxProcessors;
     private volatile int numberOfProcessors = 1;
+    private boolean completed;
 
     public ControlledStep( String name, int maxProcessors )
     {
@@ -142,7 +143,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     @Override
     public boolean isCompleted()
     {
-        return false;
+        return completed;
     }
 
     @Override
@@ -175,6 +176,11 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     public Key[] keys()
     {
         return stats.keySet().toArray( new Key[stats.size()] );
+    }
+
+    public void complete()
+    {
+        completed = true;
     }
 
     private static class ControlledStat implements Stat
