@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
 
 /**
  * Step that generally sits first in a {@link Stage} and produces batches that will flow downstream
@@ -70,13 +70,13 @@ public abstract class ProducerStep extends AbstractStep<Void>
     protected void process()
     {
         Object batch = null;
-        long startTime = currentTimeMillis();
+        long startTime = nanoTime();
         while ( (batch = nextBatchOrNull( doneBatches.get(), batchSize )) != null )
         {
-            totalProcessingTime.add( currentTimeMillis()-startTime );
+            totalProcessingTime.add( nanoTime()-startTime );
             downstreamIdleTime.addAndGet( downstream.receive( doneBatches.getAndIncrement(), batch ) );
             assertHealthy();
-            startTime = currentTimeMillis();
+            startTime = nanoTime();
         }
     }
 

@@ -34,6 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
 
 /**
@@ -176,7 +177,7 @@ public abstract class AbstractStep<T> implements Step<T>
             return 0;
         }
 
-        long startTime = currentTimeMillis();
+        long startTime = nanoTime();
         for ( int i = 0; i < 1_000_000 && !predicate.test( value ); i++ )
         {   // Busy loop a while
         }
@@ -195,7 +196,7 @@ public abstract class AbstractStep<T> implements Step<T>
 
             assertHealthy();
         }
-        return currentTimeMillis()-startTime;
+        return nanoTime()-startTime;
     }
 
     protected void assertHealthy()
