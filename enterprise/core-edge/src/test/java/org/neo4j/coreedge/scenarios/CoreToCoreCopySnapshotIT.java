@@ -137,7 +137,11 @@ public class CoreToCoreCopySnapshotIT
                 } );
 
         // when
-        cluster.coreServers().forEach( CoreGraphDatabase::compact );
+        for ( CoreGraphDatabase coreDb : cluster.coreServers() )
+        {
+            coreDb.compact();
+        }
+
         int newDbId = 3;
         cluster.addCoreServerWithServerId( newDbId, 4 );
         CoreGraphDatabase newDb = cluster.getCoreServerById( 3 );

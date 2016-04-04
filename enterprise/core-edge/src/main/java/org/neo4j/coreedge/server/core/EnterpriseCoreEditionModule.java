@@ -25,8 +25,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.CatchupServer;
@@ -34,6 +32,7 @@ import org.neo4j.coreedge.catchup.CheckpointerSupplier;
 import org.neo4j.coreedge.catchup.DataSourceSupplier;
 import org.neo4j.coreedge.catchup.StoreIdSupplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
+import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyClient;
@@ -66,6 +65,7 @@ import org.neo4j.coreedge.raft.net.Outbound;
 import org.neo4j.coreedge.raft.net.RaftChannelInitializer;
 import org.neo4j.coreedge.raft.net.RaftOutbound;
 import org.neo4j.coreedge.raft.replication.LeaderOnlyReplicator;
+import org.neo4j.coreedge.raft.replication.ProgressTrackerImpl;
 import org.neo4j.coreedge.raft.replication.RaftReplicator;
 import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
@@ -85,9 +85,9 @@ import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionCommitProcess
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.CoreState;
+import org.neo4j.coreedge.raft.state.CoreStateDownloader;
 import org.neo4j.coreedge.raft.state.CoreStateMachines;
 import org.neo4j.coreedge.raft.state.DurableStateStorage;
-import org.neo4j.coreedge.raft.replication.ProgressTrackerImpl;
 import org.neo4j.coreedge.raft.state.LongIndexMarshal;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
@@ -163,7 +163,7 @@ public class EnterpriseCoreEditionModule
     private static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
 
     private final RaftInstance<CoreMember> raft;
-    private final CoreStateMachine coreStateMachine;
+    private final CoreState coreState;
     private final CoreMember myself;
 
     @Override
@@ -179,15 +179,15 @@ public class EnterpriseCoreEditionModule
     }
 
     @Override
-    public void downloadSnapshot( AdvertisedSocketAddress source )
+    public void downloadSnapshot( AdvertisedSocketAddress source ) throws InterruptedException, StoreCopyFailedException
     {
-        coreStateMachine.downloadSnapshot( source );
+        coreState.downloadSnapshot( source );
     }
 
     @Override
-    public void compact()
+    public void compact() throws IOException
     {
-        coreStateMachine.compact();
+        coreState.compact();
     }
 
     public enum RaftLogImplementation
@@ -272,8 +272,6 @@ public class EnterpriseCoreEditionModule
 
         MonitoredRaftLog raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
 
-        CoreState coreState;
-
         LocalDatabase localDatabase = new LocalDatabase( platformModule.storeDir,
                 new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(),
                         platformModule.pageCache ),
@@ -326,22 +324,18 @@ public class EnterpriseCoreEditionModule
                 throw new RuntimeException( e );
             }
 
-            ExecutorService applyExecutor = Executors.newSingleThreadExecutor();
+            CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher, stateFetcher, logProvider );
 
             coreState = new CoreState(
-                    raftLog, applyExecutor, config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
+                    raftLog, config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                     databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage, lastApplyingStorage,
-                    sessionTrackerStorage );
-
-            coreStateMachine = new CoreStateMachine( coreState, localDatabase,
-                    new NotMyselfSelectionStrategy( discoveryService, myself ), storeFetcher, stateFetcher,
-                    logProvider, raftLog );
+                    sessionTrackerStorage, new NotMyselfSelectionStrategy( discoveryService, myself ), downloader );
 
             raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
-                    coreStateMachine, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
+                    coreState, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
                     raftTimeoutService, databaseHealthSupplier, platformModule.monitors );
 
-            life.add( coreStateMachine );
+            life.add( coreState );
         }
         catch ( IOException e )
         {

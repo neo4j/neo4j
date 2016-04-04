@@ -33,8 +33,8 @@ public interface RaftStateMachine
     /**
      * Download and install a snapshot of state from another member of the cluster.
      * <p/>
-     * Called when the consensus system no longer has the log entries required to further update the state machine,
-     * because they have been deleted through pruning.
+     * Called when the consensus system no longer has the log entries required to
+     * further update the state machine, because they have been deleted through pruning.
      */
-    default void downloadSnapshot() {}
+    default void notifyNeedFreshSnapshot() {}
 }

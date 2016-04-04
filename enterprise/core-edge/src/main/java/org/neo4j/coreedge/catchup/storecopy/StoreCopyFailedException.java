@@ -25,4 +25,9 @@ public class StoreCopyFailedException extends Exception
     {
         super( cause );
     }
+
+    public StoreCopyFailedException( String message )
+    {
+        super( message );
+    }
 }
