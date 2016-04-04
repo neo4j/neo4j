@@ -71,129 +71,73 @@ public interface PageCursor extends AutoCloseable
 
     /**
      * Get the signed byte at the current page offset, and then increment the offset by one.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset is not within the page bounds.
      */
     byte getByte();
 
     /**
      * Get the signed byte at the given offset into the page.
      * Leaves the current page offset unchanged.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the given offset is not within the page bounds.
      */
     byte getByte( int offset );
 
     /**
      * Set the signed byte at the current offset into the page, and then increment the offset by one.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset is not within the page bounds.
      */
     void putByte( byte value );
 
     /**
      * Set the signed byte at the given offset into the page.
      * Leaves the current page offset unchanged.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the given offset is not within the page bounds.
      */
     void putByte( int offset, byte value );
 
     /**
      * Get the signed long at the current page offset, and then increment the offset by one.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset is not within the page bounds.
      */
     long getLong();
 
     /**
      * Get the signed long at the given offset into the page.
      * Leaves the current page offset unchanged.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the given offset is not within the page bounds.
      */
     long getLong( int offset );
 
     /**
      * Set the signed long at the current offset into the page, and then increment the offset by one.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset is not within the page bounds.
      */
     void putLong( long value );
 
     /**
      * Set the signed long at the given offset into the page.
      * Leaves the current page offset unchanged.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the given offset is not within the page bounds.
      */
     void putLong( int offset, long value );
 
     /**
      * Get the signed int at the current page offset, and then increment the offset by one.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset is not within the page bounds.
      */
     int getInt();
 
     /**
      * Get the signed int at the given offset into the page.
      * Leaves the current page offset unchanged.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the given offset is not within the page bounds.
      */
     int getInt( int offset );
 
     /**
      * Set the signed int at the current offset into the page, and then increment the offset by one.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset is not within the page bounds.
      */
     void putInt( int value );
 
     /**
      * Set the signed int at the given offset into the page.
      * Leaves the current page offset unchanged.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the given offset is not within the page bounds.
      */
     void putInt( int offset, int value );
 
     /**
-     * Get the unsigned int at the current page offset, and then increment the offset by one.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset is not within the page bounds.
-     */
-    long getUnsignedInt();
-
-    /**
-     * Get the unsigned int at the given offset into the page.
-     * Leaves the current page offset unchanged.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the given offset is not within the page bounds.
-     */
-    long getUnsignedInt( int offset );
-
-    /**
      * Fill the given array with bytes from the page, beginning at the current offset into the page,
      * and then increment the current offset by the length of the array.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset plus the length of the array reaches beyond the end of the page.
      */
     void getBytes( byte[] data );
 
@@ -318,7 +262,7 @@ public interface PageCursor extends AutoCloseable
 
     /**
      * Relinquishes all resources associated with this cursor, including the
-     * cursor itself. The cursor cannot be used after this call.
+     * cursor itself, and any linked cursors opened through it. The cursor cannot be used after this call.
      * @see AutoCloseable#close()
      */
     void close();
@@ -353,7 +297,25 @@ public interface PageCursor extends AutoCloseable
      * Discern whether an out-of-bounds access has occurred since the last call to {@link #next()} or
      * {@link #next(long)}, or since the last call to {@link #shouldRetry()} that returned {@code true}, or since the
      * last call to this method.
-     * @return {@code true} if an access was out of bounds.
+     * @return {@code true} if an access was out of bounds, or the {@link #raiseOutOfBounds()} method has been called.
      */
     boolean checkAndClearBoundsFlag();
+
+    /**
+     * Explicitly raise the out-of-bounds flag.
+     * @see #checkAndClearBoundsFlag()
+     */
+    void raiseOutOfBounds();
+
+    /**
+     * Open a new page cursor with the same pf_flags as this cursor, as if calling the {@link PagedFile#io(long, int)}
+     * on the relevant paged file. This cursor will then also delegate to the linked cursor when checking
+     * {@link #shouldRetry()} and {@link #checkAndClearBoundsFlag()}.
+     *
+     * Opening a linked cursor on a cursor that already has a linked cursor, will close the older linked cursor.
+     * Closing a cursor also closes any linked cursor.
+     * @param pageId The page id that the linked cursor will be placed at after its first call to {@link #next()}.
+     * @return A cursor that is linked with this cursor.
+     */
+    PageCursor openLinkedCursor( long pageId );
 }

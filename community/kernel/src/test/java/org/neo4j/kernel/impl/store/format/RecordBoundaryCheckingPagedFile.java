@@ -216,20 +216,6 @@ public class RecordBoundaryCheckingPagedFile implements PagedFile
         }
 
         @Override
-        public long getUnsignedInt()
-        {
-            checkRelativeBoundary( Integer.BYTES );
-            return actual.getUnsignedInt();
-        }
-
-        @Override
-        public long getUnsignedInt( int offset )
-        {
-            checkAbsoluteBoundary( Integer.BYTES );
-            return actual.getUnsignedInt( offset );
-        }
-
-        @Override
         public void getBytes( byte[] data )
         {
             checkRelativeBoundary( data.length );
@@ -294,7 +280,19 @@ public class RecordBoundaryCheckingPagedFile implements PagedFile
         @Override
         public boolean checkAndClearBoundsFlag()
         {
-            return false;
+            return actual.checkAndClearBoundsFlag();
+        }
+
+        @Override
+        public void raiseOutOfBounds()
+        {
+            actual.raiseOutOfBounds();
+        }
+
+        @Override
+        public PageCursor openLinkedCursor( long pageId )
+        {
+            return new RecordBoundaryCheckingPageCursor( actual.openLinkedCursor( pageId ) );
         }
 
         @Override

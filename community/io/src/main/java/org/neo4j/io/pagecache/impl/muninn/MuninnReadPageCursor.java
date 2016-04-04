@@ -102,7 +102,8 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         {
             startRetry();
         }
-        return needsRetry;
+        boolean linkedNeedsRetry = linkedCursor != null && linkedCursor.shouldRetry();
+        return needsRetry || linkedNeedsRetry;
     }
 
     private void startRetry() throws IOException

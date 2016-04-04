@@ -1031,35 +1031,41 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public RECORD getRecord( long id, RECORD record, RecordLoad mode )
     {
+        // Mark the record with this id regardless of whether or not we load the contents of it.
+        // This is done in this method since there are multiple call sites and they all want the id
+        // on that record, so it's to ensure it isn't forgotten.
+        record.setId( id );
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
         try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            // Mark the record with this id regardless of whether or not we load the contents of it.
-            // This is done in this method since there are multiple call sites and they all want the id
-            // on that record, so it's to ensure it isn't forgotten.
-            record.setId( id );
-            if ( cursor.next( pageId ) )
-            {
-                // There is a page in the store that covers this record, go read it
-                do
-                {
-                    prepareForReading( cursor, offset, record );
-                    recordFormat.read( record, cursor, mode, recordSize, storeFile );
-                }
-                while ( cursor.shouldRetry() );
-                checkForOutOfBounds( cursor, id );
-                verifyAfterReading( record, mode );
-            }
-            else
-            {
-                verifyAfterNotRead( record, mode );;
-            }
+            readIntoRecord( id, record, mode, pageId, offset, cursor );
             return record;
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
+        }
+    }
+
+    private void readIntoRecord( long id, RECORD record, RecordLoad mode, long pageId, int offset, PageCursor cursor )
+            throws IOException
+    {
+        if ( cursor.next( pageId ) )
+        {
+            // There is a page in the store that covers this record, go read it
+            do
+            {
+                prepareForReading( cursor, offset, record );
+                recordFormat.read( record, cursor, mode, recordSize, storeFile );
+            }
+            while ( cursor.shouldRetry() );
+            checkForOutOfBounds( cursor, id );
+            verifyAfterReading( record, mode );
+        }
+        else
+        {
+            verifyAfterNotRead( record, mode );
         }
     }
 
@@ -1168,21 +1174,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                         record.setId( currentId );
                         long pageId = pageIdForRecord( currentId );
                         int offset = offsetForId( currentId );
-                        if ( pageCursor.next( pageId ) )
-                        {
-                            do
-                            {
-                                prepareForReading( pageCursor, offset, record );
-                                recordFormat.read( record, pageCursor, mode, recordSize, storeFile );
-                            }
-                            while ( pageCursor.shouldRetry() );
-                            checkForOutOfBounds( pageCursor, currentId );
-                            verifyAfterReading( record, mode );
-                        }
-                        else
-                        {
-                            verifyAfterNotRead( record, mode );
-                        }
+                        readIntoRecord( currentId, record, mode, pageId, offset, pageCursor );
                         return record.inUse();
                     }
                     finally

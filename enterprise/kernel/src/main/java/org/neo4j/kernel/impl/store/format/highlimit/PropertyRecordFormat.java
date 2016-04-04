@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
-import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
 
@@ -74,8 +73,8 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
             int blockCount = headerByte >>> 4;
             long recordId = record.getId();
             record.initialize( inUse,
-                    toAbsolute( Reference.decode( cursor, PAGE_CURSOR_ADAPTER ), recordId ),
-                    toAbsolute( Reference.decode( cursor, PAGE_CURSOR_ADAPTER ), recordId ) );
+                    toAbsolute( Reference.decode( cursor ), recordId ),
+                    toAbsolute( Reference.decode( cursor ), recordId ) );
             while ( blockCount-- > 0 )
             {
                 record.addLoadedBlock( cursor.getLong() );
@@ -91,8 +90,8 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
         {
             cursor.putByte( (byte) ((record.inUse() ? IN_USE_BIT : 0) | numberOfBlocks( record ) << 4) );
             long recordId = record.getId();
-            Reference.encode( toRelative( record.getPrevProp(), recordId), cursor, PAGE_CURSOR_ADAPTER );
-            Reference.encode( toRelative( record.getNextProp(), recordId), cursor, PAGE_CURSOR_ADAPTER );
+            Reference.encode( toRelative( record.getPrevProp(), recordId), cursor );
+            Reference.encode( toRelative( record.getNextProp(), recordId), cursor );
             for ( PropertyBlock block : record )
             {
                 for ( long propertyBlock : block.getValueBlocks() )

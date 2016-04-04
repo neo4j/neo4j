@@ -17,11 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache;
+package org.neo4j.io.pagecache.impl;
 
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.PageCursor;
+
+/**
+ * A {@link PageCursor} implementation that delegates all calls to a given delegate PageCursor.
+ */
 public class DelegatingPageCursor implements PageCursor
 {
     private final PageCursor delegate;
@@ -69,11 +74,6 @@ public class DelegatingPageCursor implements PageCursor
     public void putShort( short value )
     {
         delegate.putShort( value );
-    }
-
-    public long getUnsignedInt()
-    {
-        return delegate.getUnsignedInt();
     }
 
     public short getShort( int offset )
@@ -131,14 +131,21 @@ public class DelegatingPageCursor implements PageCursor
         delegate.putByte( value );
     }
 
-    public long getUnsignedInt( int offset )
-    {
-        return delegate.getUnsignedInt( offset );
-    }
-
     public boolean checkAndClearBoundsFlag()
     {
         return delegate.checkAndClearBoundsFlag();
+    }
+
+    @Override
+    public void raiseOutOfBounds()
+    {
+        delegate.raiseOutOfBounds();
+    }
+
+    @Override
+    public PageCursor openLinkedCursor( long pageId )
+    {
+        return delegate.openLinkedCursor( pageId );
     }
 
     public long getCurrentPageId()

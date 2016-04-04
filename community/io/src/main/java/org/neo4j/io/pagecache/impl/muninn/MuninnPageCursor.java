@@ -53,6 +53,7 @@ abstract class MuninnPageCursor implements PageCursor
     protected int pf_flags;
     protected long currentPageId;
     protected long nextPageId;
+    protected PageCursor linkedCursor;
     private long pointer;
     private int pageSize;
     private int filePageSize;
@@ -92,7 +93,6 @@ abstract class MuninnPageCursor implements PageCursor
         this.offset = 0;
         this.pointer = page.address();
         this.pageSize = filePageSize;
-        checkAndClearBoundsFlag();
         if ( tracePinnedCachePageId )
         {
             pinEvent.setCachePageId( page.getCachePageId() );
@@ -111,9 +111,27 @@ abstract class MuninnPageCursor implements PageCursor
     {
         unpinCurrentPage();
         releaseCursor();
+        closeLinkedCursorIfAny();
         // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
         // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
         pagedFile = null;
+    }
+
+    private void closeLinkedCursorIfAny()
+    {
+        if ( linkedCursor != null )
+        {
+            linkedCursor.close();
+            linkedCursor = null;
+        }
+    }
+
+    @Override
+    public PageCursor openLinkedCursor( long pageId )
+    {
+        closeLinkedCursorIfAny();
+        linkedCursor =  pagedFile.io( pageId, pf_flags );
+        return linkedCursor;
     }
 
     /**
@@ -335,7 +353,7 @@ abstract class MuninnPageCursor implements PageCursor
      * Compute a pointer that guarantees (assuming {@code size} is less than or equal to {@link #pageSize}) that the
      * page access will be within the bounds of the page.
      * This might mean that the pointer won't point to where one might naively expect, but will instead be
-     * truncated to point within the page. In this case, an overflow has happened anf the {@link #outOfBounds}
+     * truncated to point within the page. In this case, an overflow has happened and the {@link #outOfBounds}
      * flag will be raised.
      */
     private long getBoundedPointer( int offset, int size )
@@ -512,18 +530,6 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     @Override
-    public long getUnsignedInt()
-    {
-        return getInt() & 0xFFFFFFFFL;
-    }
-
-    @Override
-    public long getUnsignedInt( int offset )
-    {
-        return getInt( offset ) & 0xFFFFFFFFL;
-    }
-
-    @Override
     public void getBytes( byte[] data )
     {
         getBytes( data, 0, data.length );
@@ -647,7 +653,6 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void setOffset( int offset )
     {
-        getBoundedPointer( offset, 0 );
         this.offset = offset;
     }
 
@@ -662,6 +667,12 @@ abstract class MuninnPageCursor implements PageCursor
     {
         boolean b = outOfBounds;
         outOfBounds = false;
-        return b;
+        return b | (linkedCursor != null && linkedCursor.checkAndClearBoundsFlag());
+    }
+
+    @Override
+    public void raiseOutOfBounds()
+    {
+        outOfBounds = true;
     }
 }

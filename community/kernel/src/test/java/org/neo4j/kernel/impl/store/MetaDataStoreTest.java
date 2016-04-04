@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
-import org.neo4j.io.pagecache.DelegatingPageCursor;
+import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;

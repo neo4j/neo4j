@@ -61,8 +61,8 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
         byte modifiers = cursor.getByte();
         long prevMod = (modifiers & 0xF0L) << 28;
         long nextMod = (modifiers & 0x0FL) << 32;
-        long prevProp = cursor.getUnsignedInt();
-        long nextProp = cursor.getUnsignedInt();
+        long prevProp = cursor.getInt() & 0xFFFFFFFFL;
+        long nextProp = cursor.getInt() & 0xFFFFFFFFL;
         record.initialize( false,
                 BaseRecordFormat.longFromIntAndMod( prevProp, prevMod ),
                 BaseRecordFormat.longFromIntAndMod( nextProp, nextMod ) );

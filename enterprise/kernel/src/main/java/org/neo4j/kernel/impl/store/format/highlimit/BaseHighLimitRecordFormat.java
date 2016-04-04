@@ -24,10 +24,10 @@ import java.util.function.Function;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.CompositePageCursor;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
-import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.offsetForId;
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
-import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;
 
 /**
  * Base class for record format which utilizes dynamically sized references to other record IDs and with ability
@@ -61,8 +60,8 @@ import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR
  * the reference (3-8B) to the secondary ID. After that the "statically sized" data and in the end the
  * dynamically sized data. The general thinking is that the break-off into the secondary record will happen in
  * the sequence of dynamically sized references and this will allow for crossing the record boundary
- * in between, but even in the middle of, references quite easily since the {@link DataAdapter}
- * works on byte-per-byte data.
+ * in between, but even in the middle of, references quite easily since the {@link CompositePageCursor}
+ * handles the transition seamlessly.
  *
  * Assigning secondary record unit IDs is done outside of this format implementation, it is just assumed
  * that records that gets {@link #write(AbstractBaseRecord, PageCursor, int, PagedFile) written} have already
@@ -94,6 +93,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
     public void read( RECORD record, PageCursor primaryCursor, RecordLoad mode, int recordSize, PagedFile storeFile )
             throws IOException
     {
+        int primaryStartOffset = primaryCursor.getOffset();
         byte headerByte = primaryCursor.getByte();
         boolean inUse = isInUse( headerByte );
         boolean doubleRecordUnit = has( headerByte, HEADER_BIT_RECORD_UNIT );
@@ -109,42 +109,40 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                 return;
             }
 
-            int primaryEndOffset = calculatePrimaryCursorEndOffset( primaryCursor, recordSize );
-
             // This is a record that is split into multiple record units. We need a bit more clever
             // data structures here. For the time being this means instantiating one object,
             // but the trade-off is a great reduction in complexity.
-            long secondaryId = Reference.decode( primaryCursor, PAGE_CURSOR_ADAPTER );
+            long secondaryId = Reference.decode( primaryCursor );
             long pageId = pageIdForRecord( secondaryId, storeFile.pageSize(), recordSize );
             int offset = offsetForId( secondaryId, storeFile.pageSize(), recordSize );
-            try ( SecondaryPageCursorReadDataAdapter readAdapter =
-                    new SecondaryPageCursorReadDataAdapter( primaryCursor, storeFile,
-                            pageId, offset, primaryEndOffset, PagedFile.PF_SHARED_READ_LOCK ) )
+            PageCursor secondaryCursor = primaryCursor.openLinkedCursor( pageId );
+            if ( !secondaryCursor.next() )
             {
-                do
-                {
-                    // (re)sets offsets for both cursors
-                    readAdapter.reposition();
-                    doReadInternal( record, primaryCursor, recordSize, headerByte, inUse, readAdapter );
-                }
-                while ( readAdapter.shouldRetry() );
-
-                record.setSecondaryUnitId( secondaryId );
+                // We must have made an inconsistent read of the secondary record unit reference.
+                // No point in trying to read this.
+                record.clear();
+                return;
             }
+            secondaryCursor.setOffset( offset + HEADER_BYTE);
+            int primarySize = recordSize - (primaryCursor.getOffset() - primaryStartOffset);
+            // We *could* sanity check the secondary record header byte here, but we won't. If it is wrong, then we most
+            // likely did an inconsistent read, in which case we'll just retry. Otherwise, if the header byte is wrong,
+            // then there is little we can do about it here, since we are not allowed to throw exceptions.
+
+            int secondarySize = recordSize - HEADER_BYTE;
+            PageCursor composite = CompositePageCursor.compose(
+                    primaryCursor, primarySize, secondaryCursor, secondarySize );
+            doReadInternal( record, composite, recordSize, headerByte, inUse );
+            record.setSecondaryUnitId( secondaryId );
         }
         else
         {
-            doReadInternal( record, primaryCursor, recordSize, headerByte, inUse, PAGE_CURSOR_ADAPTER );
+            doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
         }
     }
 
-    private int calculatePrimaryCursorEndOffset( PageCursor primaryCursor, int recordSize )
-    {
-        return primaryCursor.getOffset() + recordSize - HEADER_BYTE;
-    }
-
-    protected abstract void doReadInternal( RECORD record, PageCursor cursor, int recordSize,
-            long inUseByte, boolean inUse, DataAdapter<PageCursor> adapter );
+    protected abstract void doReadInternal(
+            RECORD record, PageCursor cursor, int recordSize, long inUseByte, boolean inUse );
 
     @Override
     public void write( RECORD record, PageCursor primaryCursor, int recordSize, PagedFile storeFile )
@@ -163,23 +161,30 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
 
             if ( record.requiresSecondaryUnit() )
             {
-                int primaryEndOffset = calculatePrimaryCursorEndOffset( primaryCursor, recordSize );
-
                 // Write using the normal adapter since the first reference we write cannot really overflow
                 // into the secondary record
                 long secondaryUnitId = record.getSecondaryUnitId();
-                Reference.encode( secondaryUnitId, primaryCursor, PAGE_CURSOR_ADAPTER );
-
                 long pageId = pageIdForRecord( secondaryUnitId, storeFile.pageSize(), recordSize );
                 int offset = offsetForId( secondaryUnitId, storeFile.pageSize(), recordSize );
-                SecondaryPageCursorWriteDataAdapter dataAdapter = new SecondaryPageCursorWriteDataAdapter(
-                        pageId, offset, primaryEndOffset );
+                PageCursor secondaryCursor = primaryCursor.openLinkedCursor( pageId );
+                if ( !secondaryCursor.next() )
+                {
+                    // We are not allowed to write this much data to the file, apparently.
+                    record.clear();
+                    return;
+                }
+                secondaryCursor.setOffset( offset );
+                secondaryCursor.putByte( (byte) (IN_USE_BIT | HEADER_BIT_RECORD_UNIT) );
+                int recordSizeWithoutHeader = recordSize - HEADER_BYTE;
+                PageCursor composite = CompositePageCursor.compose(
+                        primaryCursor, recordSizeWithoutHeader, secondaryCursor, recordSizeWithoutHeader );
 
-                doWriteInternal( record, primaryCursor, dataAdapter );
+                Reference.encode( secondaryUnitId, composite );
+                doWriteInternal( record, composite );
             }
             else
             {
-                doWriteInternal( record, primaryCursor, PAGE_CURSOR_ADAPTER );
+                doWriteInternal( record, primaryCursor );
             }
         }
         else
@@ -210,8 +215,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         }
     }
 
-    protected abstract void doWriteInternal( RECORD record, PageCursor cursor, DataAdapter<PageCursor> adapter )
-            throws IOException;
+    protected abstract void doWriteInternal( RECORD record, PageCursor cursor ) throws IOException;
 
     protected abstract byte headerBits( RECORD record );
 
@@ -250,29 +254,26 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         return reference == nullValue ? 0 : length( reference );
     }
 
-    protected static long decode( PageCursor cursor, DataAdapter<PageCursor> adapter )
+    protected static long decode( PageCursor cursor )
     {
-        return Reference.decode( cursor, adapter );
+        return Reference.decode( cursor );
     }
 
-    protected static long decode( PageCursor cursor,
-            DataAdapter<PageCursor> adapter, long headerByte, int headerBitMask, long nullValue )
+    protected static long decode( PageCursor cursor, long headerByte, int headerBitMask, long nullValue )
     {
-        return has( headerByte, headerBitMask ) ? decode( cursor, adapter ) : nullValue;
+        return has( headerByte, headerBitMask ) ? decode( cursor ) : nullValue;
     }
 
-    protected static void encode( PageCursor cursor, DataAdapter<PageCursor> adapter, long reference )
-            throws IOException
+    protected static void encode( PageCursor cursor, long reference ) throws IOException
     {
-        Reference.encode( reference, cursor, adapter );
+        Reference.encode( reference, cursor );
     }
 
-    protected static void encode( PageCursor cursor, DataAdapter<PageCursor> adapter, long reference,
-            long nullValue ) throws IOException
+    protected static void encode( PageCursor cursor, long reference, long nullValue ) throws IOException
     {
         if ( reference != nullValue )
         {
-            Reference.encode( reference, cursor, adapter );
+            Reference.encode( reference, cursor );
         }
     }
 

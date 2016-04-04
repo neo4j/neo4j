@@ -42,6 +42,7 @@ class AdversarialWritePageCursor implements PageCursor
 {
     private final PageCursor delegate;
     private final Adversary adversary;
+    private AdversarialWritePageCursor linkedCursor;
 
     AdversarialWritePageCursor( PageCursor delegate, Adversary adversary )
     {
@@ -131,20 +132,6 @@ class AdversarialWritePageCursor implements PageCursor
     {
         adversary.injectFailure( IndexOutOfBoundsException.class );
         delegate.putInt( offset, value );
-    }
-
-    @Override
-    public long getUnsignedInt()
-    {
-        adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.getUnsignedInt();
-    }
-
-    @Override
-    public long getUnsignedInt( int offset )
-    {
-        adversary.injectFailure( IndexOutOfBoundsException.class );
-        return delegate.getUnsignedInt( offset );
     }
 
     @Override
@@ -260,6 +247,7 @@ class AdversarialWritePageCursor implements PageCursor
     public void close()
     {
         delegate.close();
+        linkedCursor = null;
     }
 
     @Override
@@ -267,7 +255,8 @@ class AdversarialWritePageCursor implements PageCursor
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
                 IllegalStateException.class );
-        return delegate.shouldRetry();
+        boolean retry = delegate.shouldRetry();
+        return retry || (linkedCursor != null && linkedCursor.shouldRetry());
     }
 
     @Override
@@ -280,6 +269,18 @@ class AdversarialWritePageCursor implements PageCursor
     @Override
     public boolean checkAndClearBoundsFlag()
     {
-        return delegate.checkAndClearBoundsFlag();
+        return delegate.checkAndClearBoundsFlag() || (linkedCursor != null && linkedCursor.checkAndClearBoundsFlag());
+    }
+
+    @Override
+    public void raiseOutOfBounds()
+    {
+        delegate.raiseOutOfBounds();
+    }
+
+    @Override
+    public PageCursor openLinkedCursor( long pageId )
+    {
+        return linkedCursor = new AdversarialWritePageCursor( delegate.openLinkedCursor( pageId ), adversary );
     }
 }

@@ -46,6 +46,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @Ignore( "Not a test, a base class for testing formats" )
@@ -171,10 +172,6 @@ public abstract class RecordFormatTest
 
                     if ( written.inUse() )
                     {
-                        assertEquals( recordsUsedForWriting, storeFile.ioCalls() );
-                        assertEquals( recordsUsedForWriting, storeFile.nextCalls() );
-                        assertEquals( unusedBytes, storeFile.unusedBytes() );
-
                         // unused access don't really count for "wasted space"
                         if ( recordsUsedForWriting == 1 )
                         {
@@ -236,6 +233,7 @@ public abstract class RecordFormatTest
                 format.read( read, cursor, NORMAL, recordSize, storeFile );
             }
             while ( cursor.shouldRetry() );
+            assertFalse( "Out-of-bounds when reading record " + written, cursor.checkAndClearBoundsFlag() );
 
             // THEN
             if ( written.inUse() )
@@ -266,6 +264,7 @@ public abstract class RecordFormatTest
             int offset = Math.toIntExact( record.getId() * recordSize );
             cursor.setOffset( offset );
             format.write( record, cursor, recordSize, storeFile );
+            assertFalse( "Out-of-bounds when writing record " + record, cursor.checkAndClearBoundsFlag() );
         }
     }
 
