@@ -26,6 +26,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;

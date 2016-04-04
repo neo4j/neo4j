@@ -28,9 +28,9 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -176,7 +176,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         {
             @Override
             @SuppressWarnings( "deprecation" )
-            public GraphDatabaseService newDatabase( Map<String,String> config )
+            public GraphDatabaseService newDatabase( Map<String,String> config  )
             {
                 return new CommunityFacadeFactory()
                 {

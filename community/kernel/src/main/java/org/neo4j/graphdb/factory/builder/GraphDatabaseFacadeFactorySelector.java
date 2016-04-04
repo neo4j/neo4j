@@ -17,19 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory;
+package org.neo4j.graphdb.factory.builder;
 
-import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
-import org.neo4j.kernel.configuration.Config;
+import java.util.List;
 
-public class GraphDatabaseBuilderTestTools
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+
+@FunctionalInterface
+public interface GraphDatabaseFacadeFactorySelector
 {
-    /**
-     * Create a copy of the current settings of the given {@link GraphDatabaseBuilder}, and return them as a
-     * {@link Config} object.
-     */
-    public static Config createConfigCopy( GraphDatabaseBuilder builder )
-    {
-        return new Config( builder.getRawConfig() );
-    }
+    GraphDatabaseFacadeFactory select(List<GraphDatabaseFacadeFactory> factories);
 }

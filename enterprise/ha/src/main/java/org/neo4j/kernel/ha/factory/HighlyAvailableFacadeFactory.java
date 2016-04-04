@@ -19,13 +19,10 @@
  */
 package org.neo4j.kernel.ha.factory;
 
-import java.io.File;
-import java.util.Map;
-
+import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.EditionModule;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -33,15 +30,9 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 /**
  * This facade creates instances of the Enterprise edition of Neo4j.
  */
+@Service.Implementation( GraphDatabaseFacadeFactory.class )
 public class HighlyAvailableFacadeFactory extends GraphDatabaseFacadeFactory
 {
-    @Override
-    public GraphDatabaseFacade newFacade( File storeDir, Map<String, String> params, Dependencies dependencies,
-            GraphDatabaseFacade graphDatabaseFacade )
-    {
-        return super.newFacade( storeDir, params, dependencies, graphDatabaseFacade );
-    }
-
     @Override
     protected EditionModule createEdition( PlatformModule platformModule )
     {
@@ -49,7 +40,13 @@ public class HighlyAvailableFacadeFactory extends GraphDatabaseFacadeFactory
     }
 
     @Override
-    protected DatabaseInfo databaseInfo()
+    public int selectionPriority()
+    {
+        return 1;
+    }
+
+    @Override
+    public DatabaseInfo databaseInfo()
     {
         return new DatabaseInfo( Edition.enterprise, OperationalMode.ha );
     }

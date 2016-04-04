@@ -43,9 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -55,6 +53,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -85,17 +84,9 @@ public class IndexStatisticsTest
 
     @Rule
     public DatabaseRule dbRule = new EmbeddedDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            super.configure( builder );
-            // make sure we don't sample in these tests
-            builder.setConfig( GraphDatabaseSettings.index_background_sampling_enabled, "false" );
-            builder.setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled,
-                    multiThreadedPopulationEnabled + "" );
-        }
-    };
+        .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, "false" )
+        .withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled,
+                multiThreadedPopulationEnabled + "" );
 
     private GraphDatabaseService db;
     private ThreadToStatementContextBridge bridge;

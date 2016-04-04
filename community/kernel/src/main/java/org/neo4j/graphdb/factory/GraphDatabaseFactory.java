@@ -20,11 +20,16 @@
 package org.neo4j.graphdb.factory;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.builder.GraphDatabaseFacadeFactorySelector;
+import org.neo4j.graphdb.factory.builder.PriorityFacadeFactorySelector;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -65,14 +70,22 @@ public class GraphDatabaseFactory
         return newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
     }
 
-
-    public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File storeDir )
+    public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File storeDir, Edition edition )
     {
         final GraphDatabaseFactoryState state = getStateCopy();
+        if (edition != null)
+        {
+            state.setEdition( edition );
+        }
         GraphDatabaseBuilder.DatabaseCreator creator = createDatabaseCreator( storeDir, state );
         GraphDatabaseBuilder builder = createGraphDatabaseBuilder( creator );
         configure( builder );
         return builder;
+    }
+
+    public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File storeDir )
+    {
+        return newEmbeddedDatabaseBuilder( storeDir, null );
     }
 
     protected GraphDatabaseBuilder createGraphDatabaseBuilder( GraphDatabaseBuilder.DatabaseCreator creator )
@@ -80,14 +93,23 @@ public class GraphDatabaseFactory
         return new GraphDatabaseBuilder( creator );
     }
 
-    protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator(
-            final File storeDir, final GraphDatabaseFactoryState state )
+    protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( final File storeDir,
+            final GraphDatabaseFactoryState state )
     {
-        return config -> {
-            config.put( "unsupported.dbms.ephemeral", "false" );
-            GraphDatabaseFacadeFactory.Dependencies dependencies = state.databaseDependencies();
-            return GraphDatabaseFactory.this.newDatabase( storeDir, config, dependencies );
-        };
+        return this.createDatabaseCreator( storeDir, state, selectDatabaseFacadeFactory( state.getFactorySelector() ) );
+    }
+
+    protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( final File storeDir,
+            final GraphDatabaseFactoryState state, GraphDatabaseFacadeFactory facadeFactory )
+    {
+        return new DefaultDatabaseCreator( storeDir, facadeFactory );
+    }
+
+    private GraphDatabaseFacadeFactory selectDatabaseFacadeFactory(GraphDatabaseFacadeFactorySelector selector)
+    {
+        Iterable<GraphDatabaseFacadeFactory> databaseFacadeFactories = Service.load( GraphDatabaseFacadeFactory.class );
+        List<GraphDatabaseFacadeFactory> facadeFactories = Iterables.asList( databaseFacadeFactories );
+        return selector.select( facadeFactories );
     }
 
     protected void configure( GraphDatabaseBuilder builder )
@@ -97,7 +119,7 @@ public class GraphDatabaseFactory
 
     protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> config, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        return new CommunityFacadeFactory().newFacade( storeDir, config, dependencies );
+        return selectDatabaseFacadeFactory( new PriorityFacadeFactorySelector() ).newFacade( storeDir, config, dependencies );
     }
 
     public GraphDatabaseFactory addURLAccessRule( String protocol, URLAccessRule rule )
@@ -118,8 +140,29 @@ public class GraphDatabaseFactory
         return this;
     }
 
+    // TODO: more effective way should be introduced
     public String getEdition()
     {
-        return Edition.community.toString();
+        return selectDatabaseFacadeFactory( new PriorityFacadeFactorySelector() ).databaseInfo().edition.toString();
+    }
+
+    public class DefaultDatabaseCreator implements GraphDatabaseBuilder.DatabaseCreator
+    {
+        private File storeDirectory;
+        private GraphDatabaseFacadeFactory facadeFactory;
+
+        public DefaultDatabaseCreator( File storeDirectory, GraphDatabaseFacadeFactory facadeFactory )
+        {
+            this.storeDirectory = storeDirectory;
+            this.facadeFactory = facadeFactory;
+        }
+
+        @Override
+        public GraphDatabaseService newDatabase( Map<String,String> config )
+        {
+            config.put( "unsupported.dbms.ephemeral", "false" );
+            GraphDatabaseFacadeFactory.Dependencies dependencies = state.databaseDependencies();
+            return facadeFactory.newFacade( storeDirectory, config, dependencies );
+        }
     }
 }

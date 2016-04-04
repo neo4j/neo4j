@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Service;
 
 import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.helpers.collection.Iterables.asList;
@@ -31,6 +32,7 @@ import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 /**
  * This facade creates instances of the Community edition of Neo4j.
  */
+@Service.Implementation( GraphDatabaseFacadeFactory.class )
 public class CommunityFacadeFactory extends GraphDatabaseFacadeFactory
 {
     @Override
@@ -48,7 +50,7 @@ public class CommunityFacadeFactory extends GraphDatabaseFacadeFactory
     }
 
     @Override
-    protected DatabaseInfo databaseInfo()
+    public DatabaseInfo databaseInfo()
     {
         return new DatabaseInfo( Edition.community, OperationalMode.single );
     }
