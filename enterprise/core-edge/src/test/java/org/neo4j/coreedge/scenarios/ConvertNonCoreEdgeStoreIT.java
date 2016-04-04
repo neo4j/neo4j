@@ -38,6 +38,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -113,7 +115,10 @@ public class ConvertNonCoreEdgeStoreIT
     private File createClassicNeo4jStore( File base, int nodesToCreate )
     {
         File existingDbDir = new File( base, "existing" );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( existingDbDir );
+        GraphDatabaseService db = new GraphDatabaseFactory()
+                            .newEmbeddedDatabaseBuilder( existingDbDir )
+                            .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                            .newGraphDatabase();
 
         for ( int i = 0; i < (nodesToCreate / 2); i++ )
         {
