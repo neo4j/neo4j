@@ -64,12 +64,12 @@ public class DirectRecordStoreMigrator
         progressMonitor.start( storesToOpen.length );
 
         try (
-            NeoStores fromStores = new StoreFactory( fromStoreDir, config, new DefaultIdGeneratorFactory( fs ),
-                    pageCache, fs, NullLogProvider.getInstance(), fromFormat ).openNeoStores( true, storesToOpen );
-            NeoStores toStores = new StoreFactory( toStoreDir,
+                NeoStores fromStores = new StoreFactory( fromStoreDir, config, new DefaultIdGeneratorFactory( fs ),
+                    pageCache, fs, fromFormat, NullLogProvider.getInstance() ).openNeoStores( true, storesToOpen );
+                NeoStores toStores = new StoreFactory( toStoreDir,
                     withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
                     new DefaultIdGeneratorFactory( fs ),
-                    pageCache, fs, NullLogProvider.getInstance(), toFormat ).openNeoStores( true, storesToOpen ) )
+                    pageCache, fs, toFormat, NullLogProvider.getInstance() ).openNeoStores( true, storesToOpen ) )
         {
             for ( StoreType type : types )
             {

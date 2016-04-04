@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.io.File;
+import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -35,7 +36,11 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
@@ -92,7 +97,7 @@ public class IncrementalBackupTests
         backup.full( backupPath.getPath() );
 
         // END SNIPPET: onlineBackup
-        assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
+        assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = addMoreData2( serverPath );
@@ -100,10 +105,9 @@ public class IncrementalBackupTests
         // START SNIPPET: onlineBackup
         backup.incremental( backupPath.getPath() );
         // END SNIPPET: onlineBackup
-        assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
+        assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
     }
-
 
     @Test
     public void shouldNotServeTransactionsWithInvalidHighIds() throws Exception
@@ -136,7 +140,7 @@ public class IncrementalBackupTests
         backup.full( backupPath.getPath() );
 
         // END SNIPPET: onlineBackup
-        assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
+        assertEquals( initialDataSetRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = createTransactiongWithWeirdRelationshipGroupRecord( serverPath );
@@ -144,7 +148,7 @@ public class IncrementalBackupTests
         // START SNIPPET: onlineBackup
         backup.incremental( backupPath.getPath() );
         // END SNIPPET: onlineBackup
-        assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
+        assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
     }
 
@@ -226,6 +230,7 @@ public class IncrementalBackupTests
                 newEmbeddedDatabaseBuilder( path ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                 setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
+                setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME ).
                 newGraphDatabase();
     }
 
@@ -240,5 +245,16 @@ public class IncrementalBackupTests
     {
         server.shutdown();
         Thread.sleep( 1000 );
+    }
+
+    private DbRepresentation getBackupDbRepresentation()
+    {
+        return DbRepresentation.of( backupPath, getHighLimitConfig() );
+    }
+
+    private Config getHighLimitConfig()
+    {
+        return new Config(
+                MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(), HighLimit.NAME ) );
     }
 }

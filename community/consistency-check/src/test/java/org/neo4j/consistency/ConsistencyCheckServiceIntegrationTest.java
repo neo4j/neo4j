@@ -19,8 +19,10 @@
  */
 package org.neo4j.consistency;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +45,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
@@ -58,6 +61,27 @@ import static org.neo4j.test.Property.set;
 
 public class ConsistencyCheckServiceIntegrationTest
 {
+
+    private final GraphStoreFixture fixture = new GraphStoreFixture( getRecordFormatName() )
+    {
+        @Override
+        protected void generateInitialData( GraphDatabaseService graphDb )
+        {
+            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+            {
+                Node node1 = set( graphDb.createNode() );
+                Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
+                node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
+                tx.success();
+            }
+        }
+    };
+
+    private final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
+    @Rule
+    public final RuleChain chain = RuleChain.outerRule( testDirectory ).around( fixture );
+
     @Test
     public void shouldSucceedIfStoreIsConsistent() throws Exception
     {
@@ -120,7 +144,9 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
+                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, getRecordFormatName() )
+                .newGraphDatabase();
 
         String propertyKey = "itemId";
         Label label = Label.label( "Item" );
@@ -159,7 +185,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = new Config(
-                stringMap( ConsistencyCheckSettings.consistency_check_graph.name(), Settings.FALSE ),
+                settings( ConsistencyCheckSettings.consistency_check_graph.name(), Settings.FALSE ),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
@@ -182,6 +208,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         Map<String, String> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        defaults.put( GraphDatabaseFacadeFactory.Configuration.record_format.name(), getRecordFormatName() );
         defaults.put( GraphDatabaseSettings.auth_store.name(), testDirectory.file( "auth" ).getAbsolutePath() );
         return stringMap( defaults, strings );
     }
@@ -206,22 +233,8 @@ public class ConsistencyCheckServiceIntegrationTest
                 configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
     }
 
-    @Rule
-    public final GraphStoreFixture fixture = new GraphStoreFixture()
+    protected String getRecordFormatName()
     {
-        @Override
-        protected void generateInitialData( GraphDatabaseService graphDb )
-        {
-            try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
-            {
-                Node node1 = set( graphDb.createNode() );
-                Node node2 = set( graphDb.createNode(), property( "key", "value" ) );
-                node1.createRelationshipTo( node2, RelationshipType.withName( "C" ) );
-                tx.success();
-            }
-        }
-    };
-
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+        return StringUtils.EMPTY;
+    }
 }

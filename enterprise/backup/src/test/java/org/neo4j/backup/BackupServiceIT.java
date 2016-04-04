@@ -46,6 +46,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -53,11 +54,13 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -134,7 +137,9 @@ public class BackupServiceIT
     public int backupPort = 8200;
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() )
+            .startLazily().withConfig( getConfig() );
+
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
@@ -254,7 +259,7 @@ public class BackupServiceIT
             assertThat( files, hasFile( storeFile.storeFileName() ) );
         }
 
-        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
 
     /*
@@ -324,7 +329,9 @@ public class BackupServiceIT
         // it should be possible to at this point to start db based on our backup and create couple of properties
         // their ids should not clash with already existing
         GraphDatabaseService backupBasedDatabase =
-                new GraphDatabaseFactory().newEmbeddedDatabase( backupDir.getAbsoluteFile() );
+                new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( backupDir.getAbsoluteFile() )
+                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                        .newGraphDatabase();
         try
         {
             try ( Transaction transaction = backupBasedDatabase.beginTx() )
@@ -399,7 +406,7 @@ public class BackupServiceIT
         // then
         assertEquals( lastCommittedTxBefore, lastCommittedTxAfter );
         assertTrue( outcome.isConsistent() );
-        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
 
     @Test
@@ -418,7 +425,7 @@ public class BackupServiceIT
         db.shutdown();
 
         // then
-        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
 
         assertEquals( 0, getLastTxChecksum( pageCacheRule.getPageCache( fileSystem ) ) );
     }
@@ -438,7 +445,7 @@ public class BackupServiceIT
         db.shutdown();
 
         // then
-        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
         assertNotEquals( 0, getLastTxChecksum( pageCacheRule.getPageCache( fileSystem ) ) );
     }
 
@@ -483,7 +490,7 @@ public class BackupServiceIT
         db.shutdown();
 
         // then
-        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
         assertNotEquals( 0, getLastTxChecksum( pageCacheRule.getPageCache( fileSystem ) ) );
     }
 
@@ -561,7 +568,7 @@ public class BackupServiceIT
 
         // Then
         db.shutdown();
-        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
 
     private void rotateAndCheckPoint( GraphDatabaseAPI db ) throws IOException
@@ -603,7 +610,7 @@ public class BackupServiceIT
 
         // Then
         db.shutdown();
-        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
 
     private GraphDatabaseAPI deleteLogFilesAndRestart()
@@ -637,7 +644,7 @@ public class BackupServiceIT
 
         // then
         db.shutdown();
-        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
 
     @Test
@@ -696,7 +703,7 @@ public class BackupServiceIT
         long txIdFromOrigin = MetaDataStore
                 .getRecord( resolver.resolveDependency( PageCache.class ), neoStore, Position.LAST_TRANSACTION_ID );
         checkLastCommittedTxIdInLogAndNeoStore( expectedLastTxId+1, txIdFromOrigin );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupDir ) );
+        assertEquals( DbRepresentation.of( db ), getBackupDbRepresentation() );
         assertTrue( backupOutcome.isConsistent() );
     }
 
@@ -858,4 +865,21 @@ public class BackupServiceIT
             return nodes.next();
         }
     }
+
+    private Config getConfig()
+    {
+        return new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
+                HighLimit.NAME ) );
+    }
+
+    private DbRepresentation getBackupDbRepresentation()
+    {
+        return DbRepresentation.of( backupDir, getConfig() );
+    }
+
+    private DbRepresentation getDbRepresentation()
+    {
+        return DbRepresentation.of( storeDir, getConfig() );
+    }
+
 }

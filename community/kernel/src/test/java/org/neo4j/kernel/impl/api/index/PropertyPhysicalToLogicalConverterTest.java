@@ -37,6 +37,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -219,7 +220,8 @@ public class PropertyPhysicalToLogicalConverterTest
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
         StoreFactory storeFactory = new StoreFactory( storeDir, Config.empty(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), LowLimitV3_0.RECORD_FORMATS, NullLogProvider
+                .getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );

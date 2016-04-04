@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
@@ -66,8 +66,8 @@ public class LegacyIndexMigrator extends AbstractStoreMigrationParticipant
         IndexImplementation indexImplementation = indexProviders.get( LUCENE_LEGACY_INDEX_PROVIDER_NAME );
         if ( indexImplementation != null )
         {
-            RecordFormats from = InternalRecordFormatSelector.fromVersion( versionToMigrateFrom );
-            RecordFormats to = InternalRecordFormatSelector.fromVersion( versionToMigrateTo );
+            RecordFormats from = RecordFormatSelector.selectForVersion( versionToMigrateFrom );
+            RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
             if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
             {
                 originalLegacyIndexesRoot = indexImplementation.getIndexImplementationDirectory( storeDir );

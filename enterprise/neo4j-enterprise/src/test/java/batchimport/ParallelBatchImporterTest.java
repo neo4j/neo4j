@@ -19,6 +19,7 @@
  */
 package batchimport;
 
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -32,5 +33,11 @@ public class ParallelBatchImporterTest extends org.neo4j.unsafe.impl.batchimport
             boolean multiPassIterators )
     {
         super( inputIdGenerator, idMapper, idGenerator, multiPassIterators );
+    }
+
+    @Override
+    public String getFormatName()
+    {
+        return HighLimit.NAME;
     }
 }

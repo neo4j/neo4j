@@ -26,6 +26,8 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -57,7 +59,10 @@ public class StartupConstraintSemanticsTest
         // when
         try
         {
-            graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
+            graphDb = new GraphDatabaseFactory()
+                    .newEmbeddedDatabaseBuilder( dir.graphDbDir() )
+                    .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                    .newGraphDatabase();
             fail( "should have failed to start!" );
         }
         // then

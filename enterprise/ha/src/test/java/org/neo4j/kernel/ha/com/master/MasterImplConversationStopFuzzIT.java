@@ -68,9 +68,9 @@ import org.neo4j.test.rules.VerboseTimeout;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.cluster.ClusterSettings.server_id;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.lock_read_timeout;
-import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 /**
  *  Current test will try to emulate client master conversation lifecycle

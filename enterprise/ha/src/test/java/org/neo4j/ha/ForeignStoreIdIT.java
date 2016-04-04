@@ -28,9 +28,9 @@ import java.io.File;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -42,6 +42,23 @@ import static org.neo4j.kernel.ha.HaSettings.state_switch_timeout;
 
 public class ForeignStoreIdIT
 {
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    private GraphDatabaseService firstInstance, foreignInstance;
+
+    @After
+    public void after() throws Exception
+    {
+        if ( foreignInstance != null )
+        {
+            foreignInstance.shutdown();
+        }
+        if ( firstInstance != null )
+        {
+            firstInstance.shutdown();
+        }
+    }
+
     @Test
     public void emptyForeignDbShouldJoinAfterHavingItsEmptyDbDeleted() throws Exception
     {
@@ -114,19 +131,6 @@ public class ForeignStoreIdIT
         }
     }
 
-    @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
-    private GraphDatabaseService firstInstance, foreignInstance;
-
-    @After
-    public void after() throws Exception
-    {
-        if ( foreignInstance != null )
-            foreignInstance.shutdown();
-        if ( firstInstance != null )
-            firstInstance.shutdown();
-    }
-
     private long findNode( GraphDatabaseService db, String name )
     {
         try ( Transaction transaction = db.beginTx() )
@@ -141,7 +145,7 @@ public class ForeignStoreIdIT
 
     private File createAnotherStore( File directory, int transactions )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
+        GraphDatabaseService db = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( directory );
         createNodes( db, transactions, "node" );
         db.shutdown();
         return directory;

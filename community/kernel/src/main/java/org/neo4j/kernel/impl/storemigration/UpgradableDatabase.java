@@ -25,7 +25,7 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.Capability;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.DatabaseNotCleanlyShutDownException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException;
@@ -87,7 +87,7 @@ public class UpgradableDatabase
         RecordFormats fromFormat;
         try
         {
-            fromFormat = InternalRecordFormatSelector.fromVersion( result.actualVersion );
+            fromFormat = RecordFormatSelector.selectForVersion( result.actualVersion );
             if ( fromFormat.generation() > format.generation() )
             {
                 // Tried to downgrade, that isn't supported

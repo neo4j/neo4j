@@ -42,6 +42,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
@@ -122,7 +123,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
         Config config = new Config( params, GraphDatabaseSettings.class );
         factory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs ), fs, LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
     }
 
     @After

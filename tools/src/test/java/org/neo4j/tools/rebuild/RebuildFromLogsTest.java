@@ -38,7 +38,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.SuppressOutput;
@@ -46,6 +48,8 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.record_format;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.TargetDirectory.testDirForTest;
 
@@ -82,7 +86,12 @@ public class RebuildFromLogsTest
         new RebuildFromLogs( fs ).rebuild( prototypePath, rebuildPath, BASE_TX_ID );
 
         // then
-        assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
+        assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );
+    }
+
+    private DbRepresentation getDbRepresentation( File path )
+    {
+        return DbRepresentation.of( path, getConfig() );
     }
 
     @Test
@@ -101,8 +110,7 @@ public class RebuildFromLogsTest
         }
         finally
         {
-            txId = prototype.getDependencyResolver()
-                    .resolveDependency( MetaDataStore.class ).getLastCommittedTransactionId();
+            txId = prototype.getDependencyResolver().resolveDependency( MetaDataStore.class ).getLastCommittedTransactionId();
             prototype.shutdown();
         }
 
@@ -124,12 +132,21 @@ public class RebuildFromLogsTest
         new RebuildFromLogs( fs ).rebuild( copy, rebuildPath, txId );
 
         // then
-        assertEquals( DbRepresentation.of( prototypePath ), DbRepresentation.of( rebuildPath ) );
+        assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );
+    }
+
+    private Config getConfig()
+    {
+        return new Config( stringMap( record_format.name(), HighLimit.NAME ) );
     }
 
     private GraphDatabaseAPI db( File rebuiltPath )
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( rebuiltPath );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( rebuiltPath )
+                .setConfig( record_format, HighLimit.NAME )
+                .newGraphDatabase();
+
     }
 
     enum Transaction

@@ -74,7 +74,7 @@ public class PropertyDeduplicator
     public void deduplicateProperties() throws IOException
     {
         final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, workingDir, pageCache, NullLogProvider.getInstance(), recordFormats );
+                new StoreFactory( fileSystem, workingDir, pageCache, recordFormats, NullLogProvider.getInstance() );
         try ( NeoStores neoStores = storeFactory.openNeoStores( StoreType.PROPERTY, StoreType
                 .NODE, StoreType.SCHEMA) )
         {

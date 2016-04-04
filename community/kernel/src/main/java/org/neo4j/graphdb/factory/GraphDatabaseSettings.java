@@ -36,7 +36,7 @@ import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.logging.Level;
 
 import static java.lang.String.valueOf;
@@ -532,6 +532,6 @@ public abstract class GraphDatabaseSettings
      */
     private static int dynamicRecordDataSizeForAligningWith( int recordSize )
     {
-        return recordSize - InternalRecordFormatSelector.select().dynamic().getRecordHeaderSize();
+        return recordSize - DynamicRecordFormat.RECORD_HEADER_SIZE;
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -40,11 +41,13 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -59,9 +62,9 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class DetectAllRelationshipInconsistenciesIT
 {
-    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    public final RandomRule random = new RandomRule();
-    public final DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    private final RandomRule random = new RandomRule();
+    private final DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
     @Rule
     public final RuleChain rules = RuleChain.outerRule( random ).around( directory );
@@ -70,8 +73,7 @@ public class DetectAllRelationshipInconsistenciesIT
     public void shouldDetectSabotagedRelationshipWhereEverItIs() throws Exception
     {
         // GIVEN a database which lots of relationships
-        GraphDatabaseAPI db = (GraphDatabaseAPI)
-                new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseAPI db = getGraphDatabaseAPI();
         Sabotage sabotage;
         try
         {
@@ -94,8 +96,8 @@ public class DetectAllRelationshipInconsistenciesIT
             // WHEN sabotaging a random relationship
             DependencyResolver resolver = db.getDependencyResolver();
             PageCache pageCache = resolver.resolveDependency( PageCache.class );
-            StoreFactory storeFactory = new StoreFactory(
-                    fileSystem, directory.directory(), pageCache, NullLogProvider.getInstance() );
+            StoreFactory storeFactory = new StoreFactory( fileSystem, directory.directory(), pageCache,
+                    RecordFormatSelector.autoSelectFormat(), NullLogProvider.getInstance() );
 
             try ( NeoStores neoStores = storeFactory.openNeoStores( false, StoreType.RELATIONSHIP ) )
             {
@@ -110,13 +112,13 @@ public class DetectAllRelationshipInconsistenciesIT
         }
 
         // THEN the checker should find it, where ever it is in the store
-        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        db = getGraphDatabaseAPI();
         try
         {
             DependencyResolver resolver = db.getDependencyResolver();
             PageCache pageCache = resolver.resolveDependency( PageCache.class );
-            StoreFactory storeFactory = new StoreFactory(
-                    fileSystem, directory.directory(), pageCache, NullLogProvider.getInstance() );
+            StoreFactory storeFactory = new StoreFactory( fileSystem, directory.directory(), pageCache,
+                    RecordFormatSelector.autoSelectFormat(), NullLogProvider.getInstance() );
 
             try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
             {
@@ -126,10 +128,8 @@ public class DetectAllRelationshipInconsistenciesIT
                         db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class ) );
 
                 int threads = random.intBetween( 2, 10 );
-                FullCheck checker =
-                        new FullCheck( new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
-                                ProgressMonitorFactory.NONE, Statistics.NONE,
-                                threads );
+                FullCheck checker = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE,
+                        Statistics.NONE, threads );
                 AssertableLogProvider logProvider = new AssertableLogProvider( true );
                 ConsistencySummaryStatistics summary = checker.execute( directStoreAccess,
                         logProvider.getLog( FullCheck.class ) );
@@ -144,6 +144,24 @@ public class DetectAllRelationshipInconsistenciesIT
         {
             db.shutdown();
         }
+    }
+
+    private Config getTuningConfiguration()
+    {
+        return new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
+                          GraphDatabaseFacadeFactory.Configuration.record_format.name(), getRecordFormatName() ) );
+    }
+
+    private GraphDatabaseAPI getGraphDatabaseAPI()
+    {
+        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.absolutePath() )
+                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, getRecordFormatName() )
+                .newGraphDatabase();
+    }
+
+    protected String getRecordFormatName()
+    {
+        return StringUtils.EMPTY;
     }
 
     private static class Sabotage

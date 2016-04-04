@@ -21,7 +21,7 @@ package org.neo4j.com;
 
 import org.neo4j.test.subprocess.SubProcess;
 
-import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData> implements ServerInterface
 {

@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableI
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 
 /**
@@ -37,6 +38,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         super( platformModule );
         platformModule.dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
+        formats = HighLimit.RECORD_FORMATS;
     }
 
     @Override

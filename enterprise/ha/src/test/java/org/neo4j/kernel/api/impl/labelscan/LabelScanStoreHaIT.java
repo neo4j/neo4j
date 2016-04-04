@@ -32,8 +32,10 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -105,18 +107,20 @@ public class LabelScanStoreHaIT
     private final TestMonitor monitor = new TestMonitor();
 
     @Before
-    public void setup()
+    public void setUp()
     {
         KernelExtensionFactory<?> testExtension = new LuceneLabelScanStoreExtension( 100, monitor );
         TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
-        factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( testExtension ) );
+        factory.addKernelExtensions( Arrays.asList( testExtension ) );
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
                 .withDbFactory( factory )
                 .withStoreDirInitializer( ( serverId, storeDir ) -> {
                     if ( serverId == 1 )
                     {
-                        GraphDatabaseService db =
-                                new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsoluteFile() );
+                        GraphDatabaseService db = new TestGraphDatabaseFactory()
+                                .newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() )
+                                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                                .newGraphDatabase();
                         try
                         {
                             createSomeLabeledNodes( db,
@@ -138,7 +142,7 @@ public class LabelScanStoreHaIT
     }
 
     @After
-    public void teardown()
+    public void tearDown()
     {
         life.shutdown();
     }

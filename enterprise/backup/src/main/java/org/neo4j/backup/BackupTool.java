@@ -36,8 +36,8 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
@@ -150,7 +150,7 @@ public class BackupTool
 
         long timeout = args.getDuration( TIMEOUT, BackupClient.BIG_READ_TIMEOUT );
 
-        URI backupURI = resolveBackupUri( from, args, tuningConfiguration );
+        URI backupURI = resolveBackupUri( from, args );
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
@@ -279,7 +279,7 @@ public class BackupTool
         return new Config( specifiedConfig, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
-    private static URI resolveBackupUri( String from, Args arguments, Config config ) throws ToolFailureException
+    private static URI resolveBackupUri( String from, Args arguments ) throws ToolFailureException
     {
         if ( from.contains( "," ) )
         {
@@ -288,7 +288,7 @@ public class BackupTool
                 checkNoSchemaIsPresent( from );
                 from = "ha://" + from;
             }
-            return resolveUriWithProvider( "ha", from, arguments, config );
+            return resolveUriWithProvider( "ha", from, arguments );
         }
         if ( !from.startsWith( "single://" ) )
         {
@@ -319,7 +319,7 @@ public class BackupTool
         }
     }
 
-    private static URI resolveUriWithProvider( String providerName, String from, Args args, Config config )
+    private static URI resolveUriWithProvider( String providerName, String from, Args args )
             throws ToolFailureException
     {
         BackupExtensionService service;

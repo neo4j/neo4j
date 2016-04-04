@@ -31,12 +31,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandVisitor;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -60,7 +60,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
 
 public class WriteTransactionCommandOrderingTest
 {
@@ -207,7 +206,7 @@ public class WriteTransactionCommandOrderingTest
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, null, null,
-                    select( Config.empty(), NullLogService.getInstance() ) );
+                    LowLimitV3_0.RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -234,8 +233,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null,
-                    select( Config.empty(), NullLogService.getInstance() ) );
+            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, LowLimitV3_0.RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -270,8 +268,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, Config.empty(), null, null, NullLogProvider.getInstance(),
-                    select( Config.empty(), NullLogService.getInstance() ) );
+            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), LowLimitV3_0.RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
