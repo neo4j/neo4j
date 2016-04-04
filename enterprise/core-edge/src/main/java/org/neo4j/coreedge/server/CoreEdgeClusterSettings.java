@@ -181,7 +181,7 @@ public class CoreEdgeClusterSettings
 
     @Description( "RAFT log implementation" )
     public static final Setting<String> raft_log_implementation =
-            setting( "core_edge.raft_log_implementation", STRING, "PHYSICAL" );
+            setting( "core_edge.raft_log_implementation", STRING, "NAIVE" );
 
     @Description( "RAFT log rotation size" )
     public static final Setting<Long> raft_log_rotation_size =
