@@ -21,8 +21,6 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.function.ToIntFunction;
-
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -159,14 +157,12 @@ public class ParallelBatchImporter implements BatchImporter
                 // the node and calc dense node stages in parallel.
                 executeStages( nodeStage, calculateDenseNodesStage );
             }
-            nodeRelationshipCache.fixateNodes();
 
             // Stage 3 -- relationships, properties
             final RelationshipStage relationshipStage = new RelationshipStage( config, writeMonitor,
                     relationships.supportsMultiplePasses() ? relationships : inputCache.relationships(),
                     idMapper, neoStore, nodeRelationshipCache, input.specificRelationshipIds(), storeUpdateMonitor );
             executeStages( relationshipStage );
-            nodeRelationshipCache.fixateGroups();
 
             // Stage 4 -- set node nextRel fields
             executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),

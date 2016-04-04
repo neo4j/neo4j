@@ -25,12 +25,9 @@ package org.neo4j.unsafe.impl.batchimport.cache;
  *
  * @see NumberArrayFactory
  */
-public interface IntArray extends NumberArray
+public interface IntArray extends NumberArray<IntArray>
 {
     int get( long index );
 
     void set( long index, int value );
-
-    @Override
-    IntArray fixate();
 }

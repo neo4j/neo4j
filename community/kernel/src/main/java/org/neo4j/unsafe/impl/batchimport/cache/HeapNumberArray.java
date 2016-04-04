@@ -19,16 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
+
 /**
  * Base class for common functionality for any {@link NumberArray} where the data lives inside heap.
  */
-abstract class HeapNumberArray implements NumberArray
+abstract class HeapNumberArray<N extends NumberArray<N>> extends BaseNumberArray<N>
 {
-    private final int itemSize;
-
-    protected HeapNumberArray( int itemSize )
+    protected HeapNumberArray( int itemSize, long base )
     {
-        this.itemSize = itemSize;
+        super( itemSize, base );
     }
 
     @Override
@@ -40,5 +40,10 @@ abstract class HeapNumberArray implements NumberArray
     @Override
     public void close()
     {   // Nothing to close
+    }
+
+    protected int index( long index )
+    {
+        return safeCastLongToInt( rebase( index ) );
     }
 }

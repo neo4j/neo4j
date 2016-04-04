@@ -56,7 +56,7 @@ public class NumberArrayFactoryTest
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
-        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newLongArray( anyLong(), anyLong() );
+        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newLongArray( anyLong(), anyLong(), anyLong() );
         NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
@@ -64,7 +64,7 @@ public class NumberArrayFactoryTest
         array.set( 1*KILO-10, 12345 );
 
         // THEN
-        verify( lowMemoryFactory, times( 1 ) ).newLongArray( 1*KILO, -1 );
+        verify( lowMemoryFactory, times( 1 ) ).newLongArray( 1*KILO, -1, 0 );
         assertTrue( array instanceof HeapLongArray );
         assertEquals( 12345, array.get( 1*KILO-10 ) );
     }
@@ -74,7 +74,7 @@ public class NumberArrayFactoryTest
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
-        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newLongArray( anyLong(), anyLong() );
+        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newLongArray( anyLong(), anyLong(), anyLong() );
         NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory );
 
         // WHEN
@@ -109,7 +109,7 @@ public class NumberArrayFactoryTest
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
-        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newIntArray( anyLong(), anyInt() );
+        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newIntArray( anyLong(), anyInt(), anyInt() );
         NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
@@ -117,7 +117,7 @@ public class NumberArrayFactoryTest
         array.set( 1*KILO-10, 12345 );
 
         // THEN
-        verify( lowMemoryFactory, times( 1 ) ).newIntArray( 1*KILO, -1 );
+        verify( lowMemoryFactory, times( 1 ) ).newIntArray( 1*KILO, -1, 0 );
         assertTrue( array instanceof HeapIntArray );
         assertEquals( 12345, array.get( 1*KILO-10 ) );
     }
