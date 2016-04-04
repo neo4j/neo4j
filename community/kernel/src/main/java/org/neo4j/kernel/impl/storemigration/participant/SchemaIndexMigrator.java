@@ -26,7 +26,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 
@@ -58,8 +58,8 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
-        RecordFormats from = InternalRecordFormatSelector.fromVersion( versionToMigrateFrom );
-        RecordFormats to = InternalRecordFormatSelector.fromVersion( versionToMigrateTo );
+        RecordFormats from = RecordFormatSelector.selectForVersion( versionToMigrateFrom );
+        RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
         if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
         {
             schemaIndexDirectory = schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir );

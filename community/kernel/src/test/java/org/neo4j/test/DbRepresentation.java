@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 public class DbRepresentation
@@ -69,12 +70,23 @@ public class DbRepresentation
 
     public static DbRepresentation of( File storeDir )
     {
-        return of( storeDir, true );
+        return of( storeDir, true, Config.empty() );
     }
 
-    public static DbRepresentation of( File storeDir, boolean includeIndexes )
+    public static DbRepresentation of( File storeDir, Config config )
+    {
+        return of( storeDir, true, config );
+    }
+
+    public static DbRepresentation of( File storeDir, boolean includeIndexes, Config config )
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
+        Map<String,String> params = config.getParams();
+        for ( Map.Entry<String,String> entry : params.entrySet() )
+        {
+            builder.setConfig( entry.getKey(), entry.getValue() );
+        }
+
         GraphDatabaseService db = builder.newGraphDatabase();
         try
         {

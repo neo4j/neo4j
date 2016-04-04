@@ -95,7 +95,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.Capability.VERSION_TRAILERS;
-import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.fromVersion;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -151,8 +151,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         writeLastTxChecksum( migrationDir, lastTxChecksum );
         writeLastTxLogPosition( migrationDir, lastTxLogPosition );
 
-        RecordFormats oldFormat = fromVersion( versionToMigrateFrom );
-        RecordFormats newFormat = fromVersion( versionToMigrateTo );
+        RecordFormats oldFormat = selectForVersion( versionToMigrateFrom );
+        RecordFormats newFormat = selectForVersion( versionToMigrateTo );
         if ( !oldFormat.equals( newFormat ) )
         {
             // Some form of migration is required (a fallback/catch-all option)
@@ -312,7 +312,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
         final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance(), recordFormats );
+                new StoreFactory( fileSystem, storeDir, pageCache, recordFormats, NullLogProvider.getInstance() );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
@@ -403,14 +403,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private NeoStores instantiateLegacyStore( RecordFormats format, File storeDir )
     {
         return new StoreFactory( storeDir, config, new ReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
-                NullLogProvider.getInstance(), format ).openAllNeoStores( true );
+                format, NullLogProvider.getInstance() ).openAllNeoStores( true );
     }
 
     private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
             RecordFormats newFormat )
             throws IOException
     {
-        BatchingNeoStores.createStore( fileSystem, migrationDir.getPath(), config );
+        BatchingNeoStores.createStore( fileSystem, migrationDir.getPath(), config, newFormat );
 
         // We use the batch importer for migrating the data, and we use it in a special way where we only
         // rewrite the stores that have actually changed format. We know that to be node and relationship
@@ -568,8 +568,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
                 StoreFileType.values() );
 
-        RecordFormats oldFormat = fromVersion( versionToUpgradeFrom );
-        RecordFormats newFormat = fromVersion( versionToUpgradeTo );
+        RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
+        RecordFormats newFormat = selectForVersion( versionToUpgradeTo );
         boolean movingAwayFromVersionTrailers =
                 oldFormat.hasCapability( VERSION_TRAILERS ) && !newFormat.hasCapability( VERSION_TRAILERS );
 
@@ -610,7 +610,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     countsStoreFiles, true, null, StoreFileType.STORE );
             File neoStore = new File( storeDir, DEFAULT_NAME );
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-            rebuildCountsFromScratch( storeDir, lastTxId, pageCache, fromVersion( versionToMigrateTo ) );
+            rebuildCountsFromScratch( storeDir, lastTxId, pageCache, selectForVersion( versionToMigrateTo ) );
             break;
         default:
             // OK, don't rebuild for other versions

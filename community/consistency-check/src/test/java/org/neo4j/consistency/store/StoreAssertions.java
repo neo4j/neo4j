@@ -21,6 +21,7 @@ package org.neo4j.consistency.store;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -41,8 +42,15 @@ public class StoreAssertions
 
     public static void assertConsistentStore( File dir ) throws ConsistencyCheckIncompleteException, IOException
     {
-        final Config configuration = new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ),
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        assertConsistentStore( dir, Config.empty() );
+    }
+
+    public static void assertConsistentStore( File dir, Config config ) throws ConsistencyCheckIncompleteException,
+            IOException
+    {
+        Map<String,String> params = config.getParams();
+        params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        final Config configuration = new Config( params, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         final ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
                 dir, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );

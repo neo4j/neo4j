@@ -85,7 +85,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
@@ -258,6 +258,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final Log msgLog;
     private final LogService logService;
     private final AutoIndexing autoIndexing;
+    private final RecordFormats formats;
     private final LogProvider logProvider;
     private final DependencyResolver dependencyResolver;
     private final TokenNameLookup tokenNameLookup;
@@ -333,7 +334,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             Monitors monitors,
             Tracers tracers,
             Procedures procedures,
-            IOLimiter ioLimiter )
+            IOLimiter ioLimiter,
+            RecordFormats formats )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -362,6 +364,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.tracers = tracers;
         this.procedures = procedures;
         this.ioLimiter = ioLimiter;
+        this.formats = RecordFormatSelector.select( config, formats, logService );
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -424,8 +427,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         life.add( new Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
         // Upgrade the store before we begin
-        RecordFormats format = InternalRecordFormatSelector.select( config, logService );
-        upgradeStore( format );
+        upgradeStore( formats );
 
         // Build all modules and their services
         StorageEngine storageEngine = null;
@@ -438,7 +440,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
-                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering, format );
+                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering, formats );
 
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                     new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory() );

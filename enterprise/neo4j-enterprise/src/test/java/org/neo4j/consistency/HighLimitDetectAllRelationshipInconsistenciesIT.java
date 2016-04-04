@@ -17,26 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.highlimit;
+package org.neo4j.consistency;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.consistency.checking.full.DetectAllRelationshipInconsistenciesIT;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimitWithSmallRecords;
 
-@Service.Implementation( RecordFormats.Factory.class )
-public class HighLimitWithSmallRecordsFactory extends RecordFormats.Factory
+public class HighLimitDetectAllRelationshipInconsistenciesIT extends DetectAllRelationshipInconsistenciesIT
 {
-    public HighLimitWithSmallRecordsFactory()
+    @Override
+    protected String getRecordFormatName()
     {
-        super( HighLimitWithSmallRecords.NAME );
+        return HighLimitWithSmallRecords.NAME;
     }
 
-    @Override
-    public RecordFormats newInstance()
-    {
-        if ( HighLimitWithSmallRecords.isEnabled() )
-        {
-            return HighLimitWithSmallRecords.RECORD_FORMATS;
-        }
-        return HighLimit.RECORD_FORMATS;
-    }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,9 +51,11 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.RandomRule;
@@ -89,9 +92,12 @@ public class ParallelBatchImporterTest
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
+    @Rule
+    public final RandomRule random = new RandomRule();
+
     private static final int NODE_COUNT = 10_000;
     private static final int RELATIONSHIP_COUNT = NODE_COUNT * 5;
-    private final Configuration config = new Configuration.Default()
+    protected final Configuration config = new Configuration.Default()
     {
         @Override
         public int batchSize()
@@ -151,7 +157,8 @@ public class ParallelBatchImporterTest
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         final BatchImporter inserter = new ParallelBatchImporter( directory.graphDbDir(),
                 new DefaultFileSystemAbstraction(), config, NullLogService.getInstance(),
-                processorAssigner, EMPTY, Config.empty() );
+                processorAssigner, EMPTY, new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory
+                .Configuration.record_format.name(), getFormatName() ) ) );
 
         boolean successful = false;
         IdGroupDistribution groups = new IdGroupDistribution( NODE_COUNT, 5, random.random() );
@@ -167,7 +174,10 @@ public class ParallelBatchImporterTest
                     silentBadCollector( RELATIONSHIP_COUNT ) ) );
 
             // THEN
-            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
+            GraphDatabaseService db = new TestGraphDatabaseFactory()
+                    .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
+                    .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, getFormatName() )
+                    .newGraphDatabase();
             try ( Transaction tx = db.beginTx() )
             {
                 inputIdGenerator.reset();
@@ -214,11 +224,17 @@ public class ParallelBatchImporterTest
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
         Result result = consistencyChecker.runFullConsistencyCheck( storeDir,
-                new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
+                new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
+                        GraphDatabaseFacadeFactory.Configuration.record_format.name(), getFormatName()) ),
                 ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false );
         assertTrue( "Database contains inconsistencies, there should be a report in " + storeDir,
                 result.isSuccessful() );
+    }
+
+    protected String getFormatName()
+    {
+        return StringUtils.EMPTY;
     }
 
     public static abstract class InputIdGenerator
@@ -581,6 +597,4 @@ public class ParallelBatchImporterTest
         properties[properties.length-1] = id;
         return properties;
     }
-
-    public final @Rule RandomRule random = new RandomRule();
 }

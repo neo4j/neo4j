@@ -112,7 +112,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -246,11 +246,11 @@ public class BatchInserterImpl implements BatchInserter
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
-        recordFormats = InternalRecordFormatSelector.select( config, logService );
+        recordFormats = RecordFormatSelector.autoSelectFormat( config, logService );
         maxNodeId = recordFormats.node().getMaxId();
 
         StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,
-                logService.getInternalLogProvider(), recordFormats );
+                recordFormats, logService.getInternalLogProvider() );
 
         if ( dump )
         {

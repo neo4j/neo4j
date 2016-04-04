@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.GraphStoreFixture.IdGenerator;
@@ -54,6 +56,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.ReadOperations;
@@ -78,6 +81,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PreAllocatedRecords;
@@ -115,13 +119,13 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
-import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
 import static org.neo4j.consistency.checking.full.FullCheckIntegrationTest.ConsistencySummaryVerifier.on;
 import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.asIterable;
 import static org.neo4j.helpers.collection.Iterators.iterator;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
@@ -131,13 +135,15 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
-import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule
+        .nodePropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule
+        .relPropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -195,7 +201,7 @@ public class FullCheckIntegrationTest
     }
 
 
-    private final GraphStoreFixture fixture = new GraphStoreFixture()
+    private final GraphStoreFixture fixture = new GraphStoreFixture( getRecordFormatName() )
     {
         @Override
         protected void generateInitialData( GraphDatabaseService db )
@@ -240,8 +246,8 @@ public class FullCheckIntegrationTest
             }
         }
     };
-
     private final FailureOutput failureOutput = new FailureOutput();
+
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( failureOutput ).around( fixture );
 
@@ -1987,6 +1993,15 @@ public class FullCheckIntegrationTest
                 } );
     }
 
+    private Config config()
+    {
+        Map<String,String> params = stringMap(
+                // Enable property owners check by default in tests:
+                ConsistencyCheckSettings.consistency_check_property_owners.name(), "true",
+                GraphDatabaseFacadeFactory.Configuration.record_format.name(), getRecordFormatName());
+        return new Config( params, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+    }
+
     protected static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,
             long in, long loop )
     {
@@ -2035,6 +2050,11 @@ public class FullCheckIntegrationTest
     {
         record.setOwningNode( owner );
         return record;
+    }
+
+    protected String getRecordFormatName()
+    {
+        return StringUtils.EMPTY;
     }
 
     private int createLabel() throws Exception

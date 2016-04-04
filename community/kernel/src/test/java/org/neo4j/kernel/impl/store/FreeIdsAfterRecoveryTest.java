@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -56,7 +57,7 @@ public class FreeIdsAfterRecoveryTest
     {
         // GIVEN
         StoreFactory storeFactory = new StoreFactory( fs, directory.directory(), pageCacheRule.getPageCache( fs ),
-                NullLogProvider.getInstance() );
+                LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         long highId;
         try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
         {

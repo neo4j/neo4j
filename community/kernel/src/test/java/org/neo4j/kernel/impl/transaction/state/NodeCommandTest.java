@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -199,7 +200,8 @@ public class NodeCommandTest
         fs.get().mkdirs( dir );
         @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory( dir, Config.empty(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), LowLimitV3_0.RECORD_FORMATS,
+                NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }

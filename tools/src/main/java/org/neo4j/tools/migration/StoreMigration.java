@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
@@ -84,7 +84,7 @@ public class StoreMigration
 
     private static Config getMigrationConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE ) );
+        return new Config( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
     }
 
     public void run( final FileSystemAbstraction fs, final File storeDirectory, Config config,
@@ -130,7 +130,7 @@ public class StoreMigration
                     schemaIndexProvider,
                     labelScanStoreProvider,
                     legacyIndexProvider.getIndexProviders(),
-                    pageCache, InternalRecordFormatSelector.select() ).migrate( storeDirectory );
+                    pageCache, RecordFormatSelector.autoSelectFormat(config, logService) ).migrate( storeDirectory );
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }

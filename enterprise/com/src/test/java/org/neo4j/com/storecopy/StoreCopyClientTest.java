@@ -40,9 +40,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -246,7 +248,10 @@ public class StoreCopyClientTest
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        return new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                .newGraphDatabase();
     }
 
     private StoreCopyClient.StoreCopyRequester storeCopyRequest( final File originalDir,

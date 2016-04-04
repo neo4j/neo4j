@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
-
-import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -38,8 +38,7 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.autoSelectFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -75,7 +74,7 @@ public class LabelTokenStoreTest
         public UnusedLabelTokenStore() throws IOException
         {
             super( file, config, generatorFactory, cache, logProvider, dynamicStringStore,
-                    select( config, NullLogService.getInstance() ) );
+                    autoSelectFormat( config, NullLogService.getInstance() ) );
             storeFile = mock( PagedFile.class );
 
             when( storeFile.io( any( Long.class ), any( Integer.class ) ) ).thenReturn( pageCursor );

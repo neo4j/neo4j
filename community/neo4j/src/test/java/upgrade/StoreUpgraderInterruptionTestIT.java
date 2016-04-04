@@ -43,11 +43,12 @@ import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -107,7 +108,7 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), InternalRecordFormatSelector.select() );
+                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), LowLimitV3_0.RECORD_FORMATS );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = Config.empty();
@@ -167,7 +168,7 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), InternalRecordFormatSelector.select() );
+                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), LowLimitV3_0.RECORD_FORMATS );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = Config.empty();

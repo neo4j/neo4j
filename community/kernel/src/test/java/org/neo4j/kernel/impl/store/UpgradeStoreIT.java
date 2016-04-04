@@ -65,7 +65,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-import static org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector.select;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.select;
 
 @Ignore
 public class UpgradeStoreIT

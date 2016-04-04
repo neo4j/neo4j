@@ -35,8 +35,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.proc.ProcessUtil;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.ProcessStreamHandler;
@@ -53,7 +57,8 @@ public class BackupEmbeddedIT
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     @Rule
-    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
+    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) )
+            .startLazily().withConfig( getConfig() );
 
     private static final String ip = "127.0.0.1";
     private final File backupPath = testDirectory.directory( "backup-db" );
@@ -88,13 +93,13 @@ public class BackupEmbeddedIT
                 runBackupToolFromOtherJvmToGetExitCode( "-from",
                         BackupTool.DEFAULT_SCHEME + "://" + ip, "-to",
                         backupPath.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://"+ ip,
                         "-to", backupPath.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
 
     @Test
@@ -113,14 +118,14 @@ public class BackupEmbeddedIT
                 runBackupToolFromOtherJvmToGetExitCode( "-from",
                         BackupTool.DEFAULT_SCHEME + "://" + ip + ":" + port,
                         "-to", backupPath.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-from", BackupTool.DEFAULT_SCHEME + "://"+ ip +":"
                                  + port, "-to",
                         backupPath.getPath() ) );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation() );
     }
 
     private void startDb( String backupPort )
@@ -143,5 +148,21 @@ public class BackupEmbeddedIT
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ));
         return new ProcessStreamHandler( process, false ).waitForResult();
+    }
+
+    private Config getConfig()
+    {
+        return new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
+                HighLimit.NAME ) );
+    }
+
+    private DbRepresentation getDbRepresentation()
+    {
+        return DbRepresentation.of( db );
+    }
+
+    private DbRepresentation getBackupDbRepresentation()
+    {
+        return DbRepresentation.of( backupPath, getConfig() );
     }
 }

@@ -29,7 +29,7 @@ import org.neo4j.com.Response;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.store.StoreIdTestFactory;
+import org.neo4j.com.StoreIdTestFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;

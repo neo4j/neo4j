@@ -86,6 +86,7 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -317,7 +318,8 @@ public class BatchInsertTest
         inserter.shutdown();
         File dir = new File( inserter.getStoreDir() );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, LowLimitV3_0.RECORD_FORMATS,
+                NullLogProvider.getInstance() );
         return storeFactory.openAllNeoStores();
     }
 

@@ -58,9 +58,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
-import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 public class TestMasterCommittingAtSlave

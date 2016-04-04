@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.InternalRecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.logging.NullLog;
@@ -41,7 +41,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
  * Rule for opening a {@link NeoStores}, either via {@link #open(String...)}, which just uses an in-memory
- * file system, or via {@link #open(FileSystemAbstraction, PageCache, String...)} which is suitable in an
+ * file system, or via {@link #open(FileSystemAbstraction, PageCache, RecordFormats, String...)} which is suitable in an
  * environment where you already have an fs and page cache available.
  */
 public class NeoStoresRule extends ExternalResource
@@ -63,7 +63,8 @@ public class NeoStoresRule extends ExternalResource
     public NeoStores open( String... config )
     {
         Config conf = new Config( stringMap( config ) );
-        return open( InternalRecordFormatSelector.select( conf, NullLogService.getInstance() ), config );
+        return open( RecordFormatSelector.select( conf, RecordFormatSelector.autoSelectFormat(),
+                NullLogService.getInstance() ), config );
     }
 
     public NeoStores open( RecordFormats format, String... config )
@@ -83,7 +84,7 @@ public class NeoStoresRule extends ExternalResource
         File storeDir = targetDirectory.makeGraphDbDir();
         Config configuration = new Config( stringMap( config ) );
         storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance(), format );
+                pageCache, fs, format, NullLogProvider.getInstance() );
         return neoStores = stores.length == 0
                 ? storeFactory.openAllNeoStores( true )
                 : storeFactory.openNeoStores( true, stores );
