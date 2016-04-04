@@ -119,7 +119,7 @@ public class EncodingIdMapper implements IdMapper
     private final TrackerFactory trackerFactory;
     // Encoded values added in #put, in the order in which they are put. Indexes in the array are the actual node ids,
     // values are the encoded versions of the input ids.
-    private LongArray dataCache;
+    private final LongArray dataCache;
     private long highestSetIndex = -1;
 
     // Ordering information about values in dataCache; the ordering of values in dataCache remains unchanged.
@@ -266,7 +266,6 @@ public class EncodingIdMapper implements IdMapper
     public void prepare( InputIterable<Object> ids, Collector collector, ProgressListener progress )
     {
         endPreviousGroup();
-        dataCache = dataCache.fixate();
         trackerCache = trackerFactory.create( cacheFactory, highestSetIndex+1 );
 
         try
