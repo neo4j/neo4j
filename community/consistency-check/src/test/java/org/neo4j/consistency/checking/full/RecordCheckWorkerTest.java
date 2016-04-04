@@ -22,14 +22,16 @@ package org.neo4j.consistency.checking.full;
 import org.junit.Test;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.test.Race;
 
 import static org.junit.Assert.assertEquals;
 
 import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 public class RecordCheckWorkerTest
 {
@@ -67,12 +69,21 @@ public class RecordCheckWorkerTest
             @Override
             public void run()
             {
-                long end = currentTimeMillis() + SECONDS.toMillis( 10 );
-                while ( currentTimeMillis() < end && expected.get() < threads );
-                assertEquals( threads, expected.get() );
-                for ( RecordCheckWorker<Integer> worker : workers )
+                try
                 {
-                    worker.done();
+                    long end = currentTimeMillis() + SECONDS.toMillis( 100 );
+                    while ( currentTimeMillis() < end && expected.get() < threads )
+                    {
+                        parkNanos( MILLISECONDS.toNanos( 10 ) );
+                    }
+                    assertEquals( threads, expected.get() );
+                }
+                finally
+                {
+                    for ( RecordCheckWorker<Integer> worker : workers )
+                    {
+                        worker.done();
+                    }
                 }
             }
         } );
