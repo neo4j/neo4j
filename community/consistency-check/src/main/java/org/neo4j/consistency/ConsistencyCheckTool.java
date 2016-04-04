@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Strings;
@@ -47,17 +46,13 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConsistencyCheckTool
 {
-    private static final String RECOVERY = "recovery";
     private static final String CONFIG = "config";
     private static final String PROP_OWNER = "propowner";
     private static final String VERBOSE = "v";
 
-    // Use the ExitHandle from consistency-check-legacy so that ConsistencyCheckToolTest can properly
-    // test everything with -experimental and w/o it.
-
     public static void main( String[] args ) throws IOException
     {
-        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(), new GraphDatabaseFactory(),
+        ConsistencyCheckTool tool = new ConsistencyCheckTool( new ConsistencyCheckService(),
                 new DefaultFileSystemAbstraction(), System.err );
         try
         {
@@ -70,28 +65,26 @@ public class ConsistencyCheckTool
     }
 
     private final ConsistencyCheckService consistencyCheckService;
-    private final GraphDatabaseFactory dbFactory;
     private final PrintStream systemError;
     private final FileSystemAbstraction fs;
 
-    ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService,
-            GraphDatabaseFactory dbFactory, FileSystemAbstraction fs, PrintStream systemError )
+    ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, FileSystemAbstraction fs,
+            PrintStream systemError )
     {
         this.consistencyCheckService = consistencyCheckService;
-        this.dbFactory = dbFactory;
         this.fs = fs;
         this.systemError = systemError;
     }
 
     void run( String... args ) throws ToolFailureException, IOException
     {
-        Args arguments = Args.withFlags( RECOVERY, PROP_OWNER, VERBOSE ).parse( args );
+        Args arguments = Args.withFlags( PROP_OWNER, VERBOSE ).parse( args );
 
         File storeDir = determineStoreDirectory( arguments );
         Config tuningConfiguration = readConfiguration( arguments );
         boolean verbose = isVerbose( arguments );
 
-        attemptRecoveryOrCheckStateOfLogicalLogs( arguments, storeDir, tuningConfiguration );
+        checkDbState( storeDir, tuningConfiguration );
 
         LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
         try
@@ -110,31 +103,23 @@ public class ConsistencyCheckTool
         return arguments.getBoolean( VERBOSE, false, true );
     }
 
-    private void attemptRecoveryOrCheckStateOfLogicalLogs( Args arguments, File storeDir, Config tuningConfiguration )
+    private void checkDbState( File storeDir, Config tuningConfiguration )
     {
-        if ( arguments.getBoolean( RECOVERY, false, true ) )
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
         {
-            dbFactory.newEmbeddedDatabase( storeDir ).shutdown();
-        }
-        else
-        {
-            try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
+            if ( new RecoveryRequiredChecker( fs, pageCache ).isRecoveryRequiredAt( storeDir ) )
             {
-                if ( new RecoveryRequiredChecker( fs, pageCache ).isRecoveryRequiredAt( storeDir ) )
-                {
-                    systemError.print( Strings.joinAsLines(
-                            "Active logical log detected, this might be a source of inconsistencies.",
-                            "Consider allowing the database to recover before running the consistency check.",
-                            "Consistency checking will continue, abort if you wish to perform recovery first.",
-                            "To perform recovery before checking consistency, use the '--recovery' flag." ) );
+                systemError.print( Strings.joinAsLines(
+                        "Active logical log detected, this might be a source of inconsistencies.",
+                        "Please recover database before running the consistency check.",
+                        "To perform recovery please start database and perform clean shutdown." ) );
 
-                    exit();
-                }
+                exit();
             }
-            catch ( IOException e )
-            {
-                systemError.printf( "Failure when checking for recovery state: '%s', continuing as normal.%n", e );
-            }
+        }
+        catch ( IOException e )
+        {
+            systemError.printf( "Failure when checking for recovery state: '%s', continuing as normal.%n", e );
         }
     }
 
@@ -178,9 +163,8 @@ public class ConsistencyCheckTool
     private String usage()
     {
         return joinAsLines(
-                jarUsage( getClass(), "[-propowner] [-recovery] [-config <neo4j.conf>] [-v] <storedir>" ),
+                jarUsage( getClass(), "[-propowner] [-config <neo4j.conf>] [-v] <storedir>" ),
                 "WHERE:   -propowner          also check property owner consistency (more time consuming)",
-                "         -recovery           to perform recovery on the store before checking",
                 "         -config <filename>  is the location of an optional properties file",
                 "                             containing tuning parameters for the consistency check",
                 "         -v                  produce execution output",
