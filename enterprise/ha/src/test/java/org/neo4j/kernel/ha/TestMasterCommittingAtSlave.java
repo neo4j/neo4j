@@ -36,8 +36,6 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
@@ -68,7 +66,6 @@ public class TestMasterCommittingAtSlave
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
     private static final int MasterServerId = 0;
-    private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
 
     private Iterable<Slave> slaves;
     private AssertableLogProvider logProvider = new AssertableLogProvider();

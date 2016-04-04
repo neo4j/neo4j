@@ -39,7 +39,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;

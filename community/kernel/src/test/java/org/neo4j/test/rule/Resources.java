@@ -37,7 +37,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.neo4j.test.rule.ResourceRule.existingDirectory;
 import static org.neo4j.test.rule.ResourceRule.fileInExistingDirectory;

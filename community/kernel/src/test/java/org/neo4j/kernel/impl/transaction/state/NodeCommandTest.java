@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;

@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule.filesystem;
+package org.neo4j.test.rule.fs;
 
 import org.junit.rules.ExternalResource;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 
 public class DefaultFileSystemRule extends ExternalResource
@@ -56,10 +55,5 @@ public class DefaultFileSystemRule extends ExternalResource
     public void clear()
     {
         fs = new DefaultFileSystemAbstraction();
-    }
-
-    public static Runnable shutdownDb( final GraphDatabaseService db )
-    {
-        return () -> db.shutdown();
     }
 }

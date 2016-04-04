@@ -40,7 +40,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TargetDirectory;
-import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.test.rule.system.SystemExitRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -56,7 +56,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.rule.filesystem.EphemeralFileSystemRule.shutdownDbAction;
+import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 
 public class ConsistencyCheckToolTest
 {

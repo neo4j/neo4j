@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
 
 import static java.lang.Math.pow;

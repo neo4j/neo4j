@@ -26,7 +26,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
-import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;

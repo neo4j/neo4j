@@ -50,7 +50,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.rule.TargetDirectory.TestDirectory;
-import org.neo4j.test.rule.filesystem.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -60,7 +60,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
-import static org.neo4j.test.rule.filesystem.EphemeralFileSystemRule.shutdownDbAction;
+import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 
 /**
  * Test for making sure that slow id generator rebuild is exercised
