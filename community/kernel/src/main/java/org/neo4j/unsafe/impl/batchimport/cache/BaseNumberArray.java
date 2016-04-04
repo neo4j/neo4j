@@ -20,26 +20,37 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 /**
- * Base class for common functionality for any {@link NumberArray} where the data is dynamically growing,
- * where parts can live inside and parts off-heap.
- *
- * @see NumberArrayFactory#newDynamicLongArray(long, long)
- * @see NumberArrayFactory#newDynamicIntArray(long, int)
+ * Contains basic functionality of fixed size number arrays.
  */
-abstract class FixedNumberArray<N extends NumberArray> extends ChunkedNumberArray<N>
+abstract class BaseNumberArray<N extends NumberArray<N>> implements NumberArray<N>
 {
-    private final long length;
+    protected final int itemSize;
+    private final long base;
 
-    FixedNumberArray( NumberArray[] chunks, long chunkSize )
+    /**
+     * @param itemSize byte size of each item in this array.
+     * @param base base index to rebase all indexes in accessor methods off of. See {@link #at(long)}.
+     */
+    protected BaseNumberArray( int itemSize, long base )
     {
-        super( chunkSize );
-        this.chunks = chunks;
-        this.length = chunkSize*chunks.length;
+        this.itemSize = itemSize;
+        this.base = base;
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
-    public long length()
+    public N at( long index )
     {
-        return length;
+        return (N)this;
+    }
+
+    /**
+     * Utility for rebasing an external index to internal index.
+     * @param index external index.
+     * @return index into internal data structure.
+     */
+    protected long rebase( long index )
+    {
+        return index - base;
     }
 }
