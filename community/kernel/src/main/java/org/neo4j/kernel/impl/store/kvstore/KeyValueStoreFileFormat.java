@@ -196,7 +196,7 @@ public abstract class KeyValueStoreFileFormat
             value.clear();
 
             // trailer
-            value.putIntegerAtEnd( dataEntries );
+            value.putIntegerAtEnd( dataEntries == 0 ? -1 : dataEntries );
             if ( !writer.writeHeader( key, value ) )
             {
                 throw new IllegalStateException( "The trailing size header should be valid" );
