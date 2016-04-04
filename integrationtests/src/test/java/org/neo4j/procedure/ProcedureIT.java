@@ -558,6 +558,11 @@ public class ProcedureIT
         {
             assertThat( result.next().get( "n.prop" ), equalTo( Integer.toString( i ) ) );
         }
+
+        //Make sure all the lines has been properly commited to the database.
+        String[] dbContents = db.execute( "MATCH (n) return n.prop" ).stream().map( m -> (String) m.get( "n.prop" ) )
+                .toArray( String[]::new );
+        assertThat(dbContents, equalTo(lines));
     }
 
 
