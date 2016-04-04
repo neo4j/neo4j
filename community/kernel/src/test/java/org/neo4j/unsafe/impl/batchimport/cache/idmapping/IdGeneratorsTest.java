@@ -17,52 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.store;
+package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.id.IdSequence;
 
-/**
- * {@link IdSequence} w/o any synchronization, purely a long incrementing.
- */
-public class BatchingIdSequence implements IdSequence
+public class IdGeneratorsTest
 {
-    private long nextId = 0;
-
-    public BatchingIdSequence()
+    @Test
+    public void shouldNotUseReservedMinusOneId() throws Exception
     {
-        this( 0 );
-    }
+        // GIVEN
+        int idsBefore = 100;
+        IdGenerator generator = IdGenerators.startingFrom( IdGeneratorImpl.INTEGER_MINUS_ONE - idsBefore );
 
-    public BatchingIdSequence( long startingId )
-    {
-        nextId = startingId;
-    }
-
-    @Override
-    public long nextId()
-    {
-        long result = peek();
-        nextId++;
-        return result;
-    }
-
-    public void reset()
-    {
-        nextId = 0;
-    }
-
-    public void set( long nextId )
-    {
-        this.nextId = nextId;
-    }
-
-    public long peek()
-    {
-        if ( nextId == IdGeneratorImpl.INTEGER_MINUS_ONE )
+        // WHEN/THEN
+        long previous = 0;
+        for ( int i = 0; i < idsBefore; i++ )
         {
-            nextId++;
+            long current = generator.generate( null ); // This generator doesn't care about the input argument anyway.
+            assertTrue( previous < current );
+            assertNotEquals( current, IdGeneratorImpl.INTEGER_MINUS_ONE );
+            previous = current;
         }
-        return nextId;
     }
 }
