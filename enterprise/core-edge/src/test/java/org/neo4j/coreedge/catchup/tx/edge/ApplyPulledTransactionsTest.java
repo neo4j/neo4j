@@ -39,7 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.function.Suppliers.singleton;
-import static org.neo4j.kernel.impl.store.StoreIdTestFactory.newStoreIdForCurrentVersion;
+import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 
 public class ApplyPulledTransactionsTest
 {
