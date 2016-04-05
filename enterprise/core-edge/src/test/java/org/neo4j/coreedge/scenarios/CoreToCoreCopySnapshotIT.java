@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.scenarios;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,7 +40,6 @@ import org.neo4j.test.TargetDirectory;
 import static junit.framework.TestCase.assertEquals;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-@Ignore
 public class CoreToCoreCopySnapshotIT
 {
     @Rule
