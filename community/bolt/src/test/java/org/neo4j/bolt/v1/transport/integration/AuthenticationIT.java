@@ -202,6 +202,31 @@ public class AuthenticationIT
     }
 
     @Test
+    public void shouldFailWhenReusingTheSamePassword() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1",
+                                map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
+
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
+
+        // When
+        client.send( TransportTestUtil.chunk(
+                run( "CALL sys.changePassword", Collections.singletonMap( "password", "neo4j" ) ),
+                pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( msgFailure(Status.Request.Invalid,
+                "Old password and new password cannot be the same.") ) );
+    }
+
+    @Test
     public void shouldNotBeAbleToReadWhenPasswordChangeRequired() throws Throwable
     {
         // When

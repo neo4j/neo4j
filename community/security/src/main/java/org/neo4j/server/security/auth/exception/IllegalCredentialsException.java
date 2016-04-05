@@ -21,11 +21,11 @@ package org.neo4j.server.security.auth.exception;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class IllegalUsernameException extends Exception implements Status.HasStatus
+public class IllegalCredentialsException extends Exception implements Status.HasStatus
 {
     private final Status status;
 
-    public IllegalUsernameException( String message )
+    public IllegalCredentialsException( String message )
     {
         super(message);
         this.status = Status.Request.Invalid;

@@ -22,7 +22,7 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.server.security.auth.exception.IllegalUsernameException;
+import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 
 /**
  * A component that can store and retrieve users. Implementations must be thread safe.
@@ -34,9 +34,9 @@ public interface UserRepository
     /**
      * Create a user, given that the users token is unique.
      * @param user the new user object
-     * @throws IllegalUsernameException if the username is not valid
+     * @throws IllegalCredentialsException if the username is not valid
      */
-    void create( User user ) throws IllegalUsernameException, IOException;
+    void create( User user ) throws IllegalCredentialsException, IOException;
 
     /**
      * Update a user, given that the users token is unique.

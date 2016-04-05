@@ -31,7 +31,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.server.security.auth.exception.IllegalUsernameException;
+import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -75,11 +75,11 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     }
 
     @Override
-    public void create( User user ) throws IllegalUsernameException, IOException
+    public void create( User user ) throws IllegalCredentialsException, IOException
     {
         if ( !isValidName( user.name() ) )
         {
-            throw new IllegalUsernameException( "'" + user.name() + "' is not a valid user name." );
+            throw new IllegalCredentialsException( "'" + user.name() + "' is not a valid user name." );
         }
 
         synchronized (this)
@@ -89,7 +89,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
             {
                 if ( other.name().equals( user.name() ) )
                 {
-                    throw new IllegalUsernameException( "The specified user already exists" );
+                    throw new IllegalCredentialsException( "The specified user already exists" );
                 }
             }
 
