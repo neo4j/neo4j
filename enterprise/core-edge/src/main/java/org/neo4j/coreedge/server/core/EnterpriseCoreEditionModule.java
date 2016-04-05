@@ -628,8 +628,6 @@ public class EnterpriseCoreEditionModule
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         long heartbeatInterval = electionTimeout / 3;
 
-        long leaderWaitTimeout = config.get( CoreEdgeClusterSettings.leader_wait_timeout );
-
         Integer expectedClusterSize = config.get( CoreEdgeClusterSettings.expected_core_cluster_size );
 
         CoreMemberSetBuilder memberSetBuilder = new CoreMemberSetBuilder();
@@ -649,7 +647,7 @@ public class EnterpriseCoreEditionModule
         RaftInstance<CoreMember> raftInstance = new RaftInstance<>(
                 myself, termState, voteState, raftLog, raftStateMachine, electionTimeout, heartbeatInterval,
                 raftTimeoutService, loggingRaftInbound,
-                new RaftOutbound( outbound ), leaderWaitTimeout, logProvider,
+                new RaftOutbound( outbound ), logProvider,
                 raftMembershipManager, logShipping, databaseHealthSupplier, monitors );
 
         life.add( new RaftDiscoveryServiceConnector( discoveryService, raftInstance ) );

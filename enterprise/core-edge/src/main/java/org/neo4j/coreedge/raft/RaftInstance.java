@@ -96,7 +96,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
     private final RaftStateMachine raftStateMachine;
     private final long electionTimeout;
-    private final long leaderWaitTimeout;
 
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final VolatileFuture<MEMBER> volatileLeader = new VolatileFuture<>( null );
@@ -111,7 +110,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
                          StateStorage<VoteState<MEMBER>> voteStorage, RaftLog entryLog,
                          RaftStateMachine raftStateMachine, long electionTimeout, long heartbeatInterval,
                          RenewableTimeoutService renewableTimeoutService,
-                         final Inbound inbound, final Outbound<MEMBER> outbound, long leaderWaitTimeout,
+                         final Inbound inbound, final Outbound<MEMBER> outbound,
                          LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
                          RaftLogShippingManager<MEMBER> logShipping,
                          Supplier<DatabaseHealth> databaseHealthSupplier,
@@ -125,7 +124,6 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
 
         this.renewableTimeoutService = renewableTimeoutService;
 
-        this.leaderWaitTimeout = leaderWaitTimeout;
         this.outbound = outbound;
         this.logShipping = logShipping;
         this.databaseHealthSupplier = databaseHealthSupplier;
@@ -203,10 +201,10 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
     @Override
     public MEMBER getLeader() throws NoLeaderFoundException
     {
-        return getLeader( leaderWaitTimeout, member -> member != null );
+        return waitForLeader( 0, member -> member != null );
     }
 
-    public MEMBER getLeader( long timeoutMillis, Predicate<MEMBER> predicate ) throws NoLeaderFoundException
+    public MEMBER waitForLeader( long timeoutMillis, Predicate<MEMBER> predicate ) throws NoLeaderFoundException
     {
         try
         {
