@@ -422,6 +422,20 @@ public interface Status
                 "A malformed schema rule was encountered. Please contact your support representative." ),
         UnknownError( DatabaseError,
                 "An unknown error occurred." ),
+        OutOfMemoryError( TransientError,
+                "There is not enough memory to perform the current task. Please try increasing " +
+                "'dbms.memory.heap.max_size' in the process wrapper configuration (normally in 'conf/neo4j-wrapper" +
+                ".conf' or, if you are using Neo4j Desktop, found through the user interface) or if you are running an embedded " +
+                "installation increase the heap by using '-Xmx' command line flag, and then restart the database." ),
+        StackOverFlowError( TransientError,
+                "There is not enough stack size to perform the current task. This is generally considered to be a " +
+                "database error, so please contact Neo4j support. You could try increasing the stack size: " +
+                "for example to set the stack size to 2M, add `dbms.jvm.additional=-Xss2M' to " +
+                "in the process wrapper configuration (normally in 'conf/neo4j-wrapper.conf' or, if you are using " +
+                "Neo4j Desktop, found through the user interface) or if you are running an embedded installation " +
+                "just add -Xss2M as command line flag." ),
+
+
 
         // transient errors
         DatabaseUnavailable( TransientError,
@@ -521,7 +535,6 @@ public interface Status
 
             return category.equals( code.category ) && classification == code.classification &&
                    title.equals( code.title );
-
         }
 
         @Override

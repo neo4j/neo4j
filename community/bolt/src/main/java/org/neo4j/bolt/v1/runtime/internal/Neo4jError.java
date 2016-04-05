@@ -47,9 +47,9 @@ public class Neo4jError
         this(status, message, null);
     }
 
-    public Neo4jError( Status status )
+    public Neo4jError( Status status, Throwable cause )
     {
-        this(status, status.code().description(), null);
+        this(status, status.code().description(), cause);
     }
 
     public Status status()
@@ -155,6 +155,15 @@ public class Neo4jError
             if ( cause instanceof Status.HasStatus )
             {
                 return new Neo4jError( ((Status.HasStatus) cause).status(), any.getMessage(), any );
+            }
+
+            if (cause instanceof OutOfMemoryError)
+            {
+                return new Neo4jError( Status.General.OutOfMemoryError, cause );
+            }
+            if (cause instanceof StackOverflowError)
+            {
+                return new Neo4jError( Status.General.StackOverFlowError, cause );
             }
         }
 

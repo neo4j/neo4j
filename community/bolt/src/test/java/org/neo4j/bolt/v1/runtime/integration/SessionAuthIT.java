@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.failedWith;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
+import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.successButRequiresPasswordChange;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -52,8 +53,29 @@ public class SessionAuthIT
         session.run( "CREATE ()", map(), null, recorder );
 
         // then
-        assertThat(  recorder, recorded(
-            successButRequiresPasswordChange(),
-            failedWith( Status.Security.CredentialsExpired )));
+        assertThat( recorder, recorded(
+                successButRequiresPasswordChange(),
+                failedWith( Status.Security.CredentialsExpired ) ) );
+    }
+
+    @Test
+    public void shouldBeAbleToActOnSessionWhenUpdatingCredentials() throws Throwable
+    {
+        // given it is important for client applications to programmatically
+        // identify expired credentials as the cause of not being authenticated
+        Session session = env.newSession( "test" );
+        RecordingCallback recorder = new RecordingCallback();
+
+        // when
+        session.init( "TestClient/1.0.0", map(
+                "scheme", "basic",
+                "principal", "neo4j",
+                "credentials", "neo4j",
+                "new_credentials", "secret"
+                ), null, recorder );
+        session.run( "CREATE ()", map(), null, recorder );
+
+        // then
+        assertThat( recorder, recorded( success(), success() ));
     }
 }
