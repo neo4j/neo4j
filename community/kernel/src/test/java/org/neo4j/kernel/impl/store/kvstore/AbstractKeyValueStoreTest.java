@@ -44,6 +44,7 @@ import org.neo4j.test.ThreadingRule;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
@@ -213,6 +214,73 @@ public class AbstractKeyValueStoreTest
             life.add( store );
 
             assertEquals( 64l, store.headers().get( TX_ID ).longValue() );
+        }
+    }
+
+    @Test
+    public void shouldPickTheUncorruptedStoreWhenTruncatingAfterTheHeader() throws IOException
+    {
+        /*
+         * The problem was that if we were succesfull in writing the header but failing immediately after, we would
+         *  read 0 as counter for entry data and pick the corrupted store thinking that it was simply empty.
+         */
+
+        Store store = createTestStore();
+
+        Pair<File,KeyValueStoreFile> file = store.rotationStrategy.create( EMPTY_DATA_PROVIDER, 1 );
+        Pair<File,KeyValueStoreFile> next = store.rotationStrategy
+                .next( file.first(), Headers.headersBuilder().put( TX_ID, (long) 42 ).headers(), data( new Entry()
+                {
+                    @Override
+                    public void write( WritableBuffer key, WritableBuffer value )
+                    {
+                        key.putByte( 0, (byte) 'f' );
+                        key.putByte( 1, (byte) 'o' );
+                        key.putByte( 2, (byte) 'o' );
+                        value.putInt( 0, 42 );
+                    }
+                } ) );
+        file.other().close();
+        File correct = next.first();
+
+        Pair<File,KeyValueStoreFile> nextNext = store.rotationStrategy
+                .next( correct, Headers.headersBuilder().put( TX_ID, (long) 43 ).headers(), data( new Entry()
+                {
+                    @Override
+                    public void write( WritableBuffer key, WritableBuffer value )
+                    {
+                        key.putByte( 0, (byte) 'f' );
+                        key.putByte( 1, (byte) 'o' );
+                        key.putByte( 2, (byte) 'o' );
+                        value.putInt( 0, 42 );
+                    }
+                }, new Entry()
+                {
+                    @Override
+                    public void write( WritableBuffer key, WritableBuffer value )
+                    {
+                        key.putByte( 0, (byte) 'b' );
+                        key.putByte( 1, (byte) 'a' );
+                        key.putByte( 2, (byte) 'r' );
+                        value.putInt( 0, 4242 );
+                    }
+                }) );
+        next.other().close();
+        File corrupted = nextNext.first();
+        nextNext.other().close();
+
+        try ( StoreChannel channel = resourceManager.fileSystem().open( corrupted, "rw" ) )
+        {
+            channel.truncate( 16*4 );
+        }
+
+        // then
+        try ( Lifespan life = new Lifespan() )
+        {
+            life.add( store );
+
+            assertNotNull( store.get( "foo" ) );
+            assertEquals( 42L, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -435,8 +503,7 @@ public class AbstractKeyValueStoreTest
         private Store( long rotationTimeout, HeaderField<?>... headerFields )
         {
             super( resourceManager.fileSystem(), resourceManager.pageCache(), resourceManager.testPath(), null,
-                    new RotationTimerFactory( Clock.SYSTEM_CLOCK,
-                            rotationTimeout ), 16, 16, headerFields );
+                    new RotationTimerFactory( Clock.SYSTEM_CLOCK, rotationTimeout ), 16, 16, headerFields );
             this.headerFields = headerFields;
             setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<String>>()
             {

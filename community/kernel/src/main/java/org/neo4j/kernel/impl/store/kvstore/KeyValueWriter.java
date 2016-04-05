@@ -53,7 +53,7 @@ class KeyValueWriter implements Closeable
 
     public boolean writeHeader( BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value ) throws IOException
     {
-        boolean result = state.header( this, value.allZeroes() );
+        boolean result = state.header( this, value.allZeroes() || value.minusOneAtTheEnd() );
         doWrite( key, value, State.done );
         return result;
     }
@@ -119,9 +119,9 @@ class KeyValueWriter implements Closeable
         expecting_format_specifier
         {
             @Override
-            boolean header( KeyValueWriter writer, boolean zeroValue )
+            boolean header( KeyValueWriter writer, boolean zeroValueOrMinusOne )
             {
-                if ( zeroValue )
+                if ( zeroValueOrMinusOne )
                 {
                     writer.state = in_error;
                     return false;
@@ -136,18 +136,18 @@ class KeyValueWriter implements Closeable
         expecting_header
         {
             @Override
-            boolean header( KeyValueWriter writer, boolean zeroValue )
+            boolean header( KeyValueWriter writer, boolean zeroValueOrMinusOne )
             {
-                writer.state = zeroValue ? expecting_data : writing_header;
+                writer.state = zeroValueOrMinusOne ? expecting_data : writing_header;
                 return true;
             }
         },
         writing_header
         {
             @Override
-            boolean header( KeyValueWriter writer, boolean zeroValue )
+            boolean header( KeyValueWriter writer, boolean zeroValueOrMinusOne )
             {
-                if ( zeroValue )
+                if ( zeroValueOrMinusOne )
                 {
                     writer.state = done;
                 }
@@ -163,9 +163,9 @@ class KeyValueWriter implements Closeable
         expecting_data
         {
             @Override
-            boolean header( KeyValueWriter writer, boolean zeroValue )
+            boolean header( KeyValueWriter writer, boolean zeroValueOrMinusOne )
             {
-                if ( zeroValue )
+                if ( zeroValueOrMinusOne )
                 {
                     writer.state = done;
                     return true;
@@ -186,9 +186,9 @@ class KeyValueWriter implements Closeable
         writing_data
         {
             @Override
-            boolean header( KeyValueWriter writer, boolean zeroValue )
+            boolean header( KeyValueWriter writer, boolean zeroValueOrMinusOne )
             {
-                if ( zeroValue )
+                if ( zeroValueOrMinusOne )
                 {
                     writer.state = in_error;
                     return false;
@@ -217,7 +217,7 @@ class KeyValueWriter implements Closeable
         in_error;
         // </pre>
 
-        boolean header( KeyValueWriter writer, boolean zeroValue )
+        boolean header( KeyValueWriter writer, boolean zeroValueOrMinusOne )
         {
             throw illegalState( writer, "write header" );
         }
@@ -225,11 +225,6 @@ class KeyValueWriter implements Closeable
         void data( KeyValueWriter writer )
         {
             throw illegalState( writer, "write data" );
-        }
-
-        boolean trailer( KeyValueWriter writer, boolean zeroValue )
-        {
-            throw illegalState( writer, "write trailer" );
         }
 
         void open( KeyValueWriter writer )
