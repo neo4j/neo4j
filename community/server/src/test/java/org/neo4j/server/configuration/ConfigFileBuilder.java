@@ -21,7 +21,6 @@ package org.neo4j.server.configuration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 
@@ -32,8 +31,8 @@ import org.neo4j.server.ServerTestUtils;
 
 public class ConfigFileBuilder
 {
-    private final ArrayList<Tuple> nameValuePairs = new ArrayList<>();
     private final File directory;
+    private final Map<String,String> config;
 
     private static class Tuple
     {
@@ -55,30 +54,37 @@ public class ConfigFileBuilder
     private ConfigFileBuilder( File directory )
     {
         this.directory = directory;
+
+        //initialize config with defaults that doesn't pollute
+        //workspace with generated data
+        this.config = MapUtil.stringMap(
+                DatabaseManagementSystemSettings.data_directory.name(), directory.getAbsolutePath() + "/data",
+                ServerSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
+                ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
     }
 
     public Optional<File> build() throws IOException
     {
         File file = new File( directory, "config" );
-        Map<String, String> config = MapUtil.stringMap(
-                DatabaseManagementSystemSettings.data_directory.name(), directory.getAbsolutePath()+"/data",
-                ServerSettings.management_api_path.name(), "http://localhost:7474/db/manage/",
-                ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
-        for ( Tuple t : nameValuePairs )
-            config.put( t.name, t.value );
         ServerTestUtils.writeConfigToFile( config, file );
         return Optional.of( file );
     }
 
     public ConfigFileBuilder withNameValue( String name, String value )
     {
-        nameValuePairs.add( new Tuple( name, value ) );
+        config.put( name, value );
         return this;
     }
 
     public ConfigFileBuilder withSetting( Setting setting, String value )
     {
-        nameValuePairs.add( new Tuple( setting.name(), value ) );
+        config.put( setting.name(), value );
+        return this;
+    }
+
+    public ConfigFileBuilder withoutSetting( Setting setting )
+    {
+        config.remove( setting.name() );
         return this;
     }
 }
