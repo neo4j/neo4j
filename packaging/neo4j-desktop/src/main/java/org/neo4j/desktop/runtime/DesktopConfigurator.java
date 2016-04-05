@@ -34,9 +34,7 @@ import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.helpers.collection.Pair.pair;
-import static org.neo4j.server.configuration.ServerSettings.certificates_directory;
 
 public class DesktopConfigurator
 {
@@ -58,8 +56,6 @@ public class DesktopConfigurator
                 Optional.of( installation.getConfigurationsFile() ),
                 FormattedLog.toOutputStream( System.out ),
                 (settings) -> settings.put( GraphDatabaseSettings.neo4j_home.name(), dbDir.getAbsolutePath() ),
-                pair( data_directory.name(), new File( dbDir, "./data" ).getAbsolutePath() ),
-                pair( certificates_directory.name(), new File( dbDir, "./certificates" ).getAbsolutePath() ),
                 pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) );
     }
 

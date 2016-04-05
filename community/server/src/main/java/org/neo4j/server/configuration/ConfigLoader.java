@@ -103,10 +103,9 @@ public class ConfigLoader
      * TODO: This means docs will say defaults are something other than what they are in the server. Better
      * make embedded the special case and set the defaults to be what the server will have.
      */
-    private static void overrideEmbeddedDefaults( HashMap<String, String> config )
+    private static void overrideEmbeddedDefaults( Map<String, String> config )
     {
         config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
-        config.putIfAbsent( GraphDatabaseSettings.logs_directory.name(), "logs" );
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
 
         String dataDirectory = config.getOrDefault( data_directory.name(), data_directory.getDefaultValue() );
