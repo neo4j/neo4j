@@ -3,7 +3,8 @@
 # (see http://people.debian.org/~seanius/policy/dbapp-policy.html/)
 var/lib/neo4j
 var/lib/neo4j/data/databases
-var/lib/neo4j/run
+var/lib/neo4j/import
+var/run/neo4j
 
 # Store neo4j log file in it's own directory, since log rotation is in place, so there will be
 # many of them.

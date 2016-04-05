@@ -13,7 +13,7 @@
 
 # Author: Julian Simpson <julian.simpson@neotechnology.com>
 #
-# Copyright (c) 2002-2015 "Neo Technology,"
+# Copyright (c) 2002-2016 "Neo Technology,"
 
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
@@ -34,8 +34,8 @@
 
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 NAME=neo4j
-DAEMON=/var/lib/$NAME/bin/$NAME
-PIDFILE=/var/lib/${NAME}/run/neo4j.pid
+DAEMON=/usr/bin/$NAME
+PIDFILE=/var/run/${NAME}/neo4j.pid
 SCRIPTNAME=/etc/init.d/$NAME-service
 
 [ -x "$DAEMON" ] || exit 0
@@ -46,12 +46,12 @@ SCRIPTNAME=/etc/init.d/$NAME-service
 
 do_start()
 {
-  start-stop-daemon --chuid ${NEO_USER} --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- start
+  NEO4J_BIN=/usr/bin NEO4J_CONF=${NEO4J_CONF:-} start-stop-daemon --chuid ${NEO_USER} --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- start
 }
 
 do_stop()
 {
-  $DAEMON stop
+  NEO4J_BIN=/usr/bin NEO4J_CONF=${NEO4J_CONF:-} $DAEMON stop
 }
 
 case "$1" in
