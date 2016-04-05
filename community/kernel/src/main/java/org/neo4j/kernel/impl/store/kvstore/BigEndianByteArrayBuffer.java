@@ -120,6 +120,26 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
         return true;
     }
 
+    public boolean minusOneAtTheEnd()
+    {
+        for ( int i = 0; i < buffer.length / 2; i++ )
+        {
+            if ( buffer[i] != 0 )
+            {
+                return false;
+            }
+        }
+
+        for ( int i = buffer.length / 2; i < buffer.length; i++)
+        {
+            if ( buffer[i] != -1 )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void dataFrom( ByteBuffer buffer )
     {
         buffer.get( this.buffer );
@@ -240,11 +260,11 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
         return this;
     }
 
-    public void putIntegerAtEnd( long value ) throws IOException
+    void putIntegerAtEnd( long value ) throws IOException
     {
-        if ( value < 0 )
+        if ( value < -1 )
         {
-            throw new IllegalArgumentException( "Negative values not supported." );
+            throw new IllegalArgumentException( "Negative values different form -1 are not supported." );
         }
         if ( this.size() < 8 )
         {
@@ -261,7 +281,7 @@ public final class BigEndianByteArrayBuffer implements ReadableBuffer, WritableB
         }
     }
 
-    public long getIntegerFromEnd()
+    long getIntegerFromEnd()
     {
         long value = 0;
         for ( int i = Math.max( 0, buffer.length - 8 ); i < buffer.length; i++ )
