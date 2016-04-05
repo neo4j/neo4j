@@ -160,10 +160,11 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)"} ),
                 equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)"}),
                 equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)"} ),
+                equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)"}),
                 equalTo( new Object[]{"sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
                 equalTo( new Object[]{"sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?)"} ),
-                equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)"}),
-                equalTo( new Object[]{"sys.changePassword", "sys.changePassword(password :: STRING?) :: ()"})
+                equalTo( new Object[]{"sys.changePassword", "sys.changePassword(password :: STRING?) :: ()"}),
+                equalTo( new Object[]{"sys.queryJmx", "sys.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)"})
         ));
     }
 

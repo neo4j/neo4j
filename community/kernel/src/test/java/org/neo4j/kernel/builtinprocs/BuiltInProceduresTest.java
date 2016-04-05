@@ -165,7 +165,8 @@ public class BuiltInProceduresTest
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)" ),
             record( "sys.changePassword", "sys.changePassword(password :: STRING?) :: ()" ),
             record( "sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?)" ),
-            record( "sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)" )
+            record( "sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)" ),
+            record( "sys.queryJmx", "sys.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)")
         ) );
     }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.lang.management.ManagementFactory;
+
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -52,6 +54,7 @@ public class BuiltInProcedures implements ThrowingConsumer<Procedures, Procedure
         // functionality - eg. things that apply across databases.
         procs.register( new ListProceduresProcedure( procedureName( "sys", "procedures" ) ) );
         procs.register( new ListComponentsProcedure( procedureName( "sys", "components" ), neo4jVersion ) );
+        procs.register( new JmxQueryProcedure( procedureName( "sys", "queryJmx" ), ManagementFactory.getPlatformMBeanServer() ) );
 
         // These are 'sys.auth'-namespaced procedures; these deal with authentication and authorization-oriented operations
         procs.register( new AlterUserPasswordProcedure( procedureName( "sys", "changePassword" ) ) );
