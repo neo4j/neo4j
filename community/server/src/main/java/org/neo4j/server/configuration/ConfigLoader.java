@@ -96,8 +96,10 @@ public class ConfigLoader
         config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
         config.putIfAbsent( GraphDatabaseSettings.logs_directory.name(), "logs" );
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
+
+        String dataDirectory = config.getOrDefault( data_directory.name(), data_directory.getDefaultValue() );
         config.putIfAbsent( GraphDatabaseSettings.auth_store.name(),
-                new File( config.get( data_directory.name() ), "dbms/auth" ).toString() );
+                new File( dataDirectory, "dbms/auth" ).toString() );
     }
 
     private static Map<String, String> loadFromFile( Log log, File file )

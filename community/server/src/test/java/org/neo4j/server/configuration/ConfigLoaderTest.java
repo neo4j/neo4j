@@ -138,7 +138,7 @@ public class ConfigLoaderTest
         Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( ServerSettings.third_party_packages.name(),
                         "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
-                                "org.neo4j.extension.extension3=/extension3" )
+                        "org.neo4j.extension.extension3=/extension3" )
                 .build();
 
         // when
@@ -165,6 +165,19 @@ public class ConfigLoaderTest
 
         // Then
         assertNotNull( config );
+    }
+
+    @Test
+    public void shouldDefaultToCorrectValueForAuthStoreLocation() throws IOException
+    {
+        Optional<File> configFile = ConfigFileBuilder
+                .builder( folder.getRoot() )
+                .withoutSetting( DatabaseManagementSystemSettings.data_directory )
+                .build();
+        Config config = configLoader.loadConfig( configFile, log );
+
+        assertThat( config.get( GraphDatabaseSettings.auth_store ),
+                is( new File( "data/dbms/auth" ).getAbsoluteFile() ) );
     }
 
     @Test
