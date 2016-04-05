@@ -204,6 +204,7 @@ public class Cluster
         params.putAll( extraParams );
 
         final File storeDir = coreServerStoreDirectory( parentDir, serverId );
+        params.put( GraphDatabaseSettings.logs_directory.name(), storeDir.getAbsolutePath() );
         return new CoreGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
                 discoveryServiceFactory );
     }
@@ -222,6 +223,7 @@ public class Cluster
         params.put( HaSettings.pull_interval.name(), String.valueOf( 5 ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         params.put( GraphDatabaseSettings.auth_store.name(), new File(parentDir, "auth").getAbsolutePath() );
+        params.put( GraphDatabaseSettings.logs_directory.name(), storeDir.getAbsolutePath() );
         return new EdgeGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
                 discoveryServiceFactory );
     }
