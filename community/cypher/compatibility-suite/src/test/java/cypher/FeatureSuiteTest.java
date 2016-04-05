@@ -36,7 +36,8 @@ public class FeatureSuiteTest
                     "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/rule.json"
             },
             glue = { "classpath:cypher/feature/steps" },
-            features = { "target/features" }
+            features = { "target/features" },
+            strict = true
     )
     public static class RuleInterpreted
     {
@@ -52,7 +53,8 @@ public class FeatureSuiteTest
                     "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-interpreted.json",
             },
             glue = { "classpath:cypher/feature/steps" },
-            features = { "target/features" }
+            features = { "target/features" },
+            strict = true
     )
     public static class CostInterpreted
     {

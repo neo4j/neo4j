@@ -50,6 +50,20 @@
     <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>neo4j-releases-repository</id>
+      <name>Neo4j Maven 2 releases repository</name>
+      <url>http://m2.neo4j.org/content/repositories/releases/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
   <build>
     <plugins>
       <plugin>
@@ -75,20 +89,7 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>tck</artifactId>
-      <version>1.0-SNAPSHOT</version>
-    </dependency>
-
-    <!-- cucumber -->
-
-    <dependency>
-      <groupId>info.cukes</groupId>
-      <artifactId>cucumber-scala_2.11</artifactId>
-      <version>1.2.4</version>
-    </dependency>
-    <dependency>
-      <groupId>info.cukes</groupId>
-      <artifactId>cucumber-junit</artifactId>
-      <version>1.2.4</version>
+      <version>1.2016-04-05</version>
     </dependency>
 
     <!-- JSON -->
@@ -188,9 +189,8 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
-      <version>${project.version}</version>
       <type>test-jar</type>
-      <scope>compile</scope>
+      <scope>test</scope>
     </dependency>
 
     <dependency>

@@ -31,6 +31,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.tools.tck.TCKCucumberTemplate
+import org.opencypher.tools.tck.constants.TCKErrorPhases
 import org.opencypher.tools.tck.constants.TCKStepDefinitions._
 import org.scalatest.{FunSuiteLike, Matchers}
 
@@ -41,6 +42,7 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   // Stateful
   var graph: GraphDatabaseService = null
   var result: Try[Result] = null
+  var tx: Transaction = null
   var params: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
 
   Before() { _ =>
@@ -48,6 +50,7 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   After() { _ =>
+    if (tx != null) tx.close()
     // TODO: postpone this till the last scenario
     graph.shutdown()
   }
@@ -76,12 +79,27 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     graph.execute(query)
   }
 
+  And(INIT_LONG_QUERY) { (query: String) =>
+    // side effects are necessary for setting up graph state
+    graph.execute(query)
+  }
+
   And(PARAMETERS) { (values: DataTable) =>
     params = parseParameters(values)
   }
 
   When(EXECUTING_QUERY) { (query: String) =>
-    result = Try { graph.execute(query, params) }
+    result = Try {
+      tx = graph.beginTx()
+      graph.execute(query, params)
+    }
+  }
+
+  When(EXECUTING_LONG_QUERY) { (query: String) =>
+    result = Try {
+      tx = graph.beginTx()
+      graph.execute(query, params)
+    }
   }
 
   Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
@@ -90,29 +108,50 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     matcher should accept(successful(result))
   }
 
-  Then(EXPECT_ERROR) { (status: String, time: String, detail: String) =>
-    if (time == "runtime") {
+  Then(EXPECT_ERROR) { (status: String, phase: String, detail: String) =>
+    if (phase == TCKErrorPhases.RUNTIME) {
       result match {
         case Success(triedResult) =>
-          val consumptionResult = Try { while (triedResult.hasNext) triedResult.next() }
-          consumptionResult match {
-            case Failure(e: QueryExecutionException) =>
-              s"Neo.ClientError.Statement.$status" should equal(e.getStatusCode)
-
-              if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+")) detail should equal("MapElementAccessByNonString")
-              else if (e.getMessage.matches("Expected .+ to be a java.lang.Number, but it was a .+")) detail should equal("ListElementAccessByNonInteger")
-              else if (e.getMessage.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+")) detail should equal("InvalidElementAccess")
-              else fail(s"Unknown runtime error: $e")
-
-            case Failure(e) =>
-              fail(s"Unknown runtime error: $e")
-
-            case _: Success[_] =>
-              fail("No runtime error was raised")
+          val consumedResult = Try {
+            while (triedResult.hasNext) {
+              triedResult.next()
+            }
+            triedResult
           }
-        case Failure(e) =>
-          fail(s"An unexpected compile time error was raised: $e")
+          checkError(consumedResult, status, phase, detail)
+        case x => checkError(x, status, phase, detail)
       }
+    } else if (phase == TCKErrorPhases.COMPILE_TIME) {
+      fail("No errors implemented for this phase yet.")
+    } else {
+      fail(s"Unknown phase $phase specified. Supported values are 'runtime' and 'compile time'.")
+    }
+  }
+
+  private def checkError(result: Try[Result], status: String, phase: String, detail: String): Unit = {
+    result match {
+      case Failure(e: QueryExecutionException) =>
+        s"Neo.ClientError.Statement.$status" should equal(e.getStatusCode)
+
+        if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+")) {
+          detail should equal("MapElementAccessByNonString")
+        }
+        else if (e.getMessage.matches("Expected .+ to be a java.lang.Number, but it was a .+")) {
+          detail should equal("ListElementAccessByNonInteger")
+        }
+        else if (e.getMessage.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+")) {
+          detail should equal("InvalidElementAccess")
+        }
+        else if (e.getMessage.matches(".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*")) {
+          detail should equal("CreateBlockedByConstraint")
+        }
+        else fail(s"Unknown runtime error: $e")
+
+      case Failure(e) =>
+        fail(s"Unknown runtime error: $e")
+
+      case _: Success[_] =>
+        fail("No runtime error was raised")
     }
   }
 
@@ -123,7 +162,9 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   Then(EXPECT_EMPTY_RESULT) {
-    successful(result).hasNext shouldBe false
+    withClue("Expected empty result") {
+      successful(result).hasNext shouldBe false
+    }
   }
 
   And(SIDE_EFFECTS) { (expectations: DataTable) =>
@@ -131,7 +172,9 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   And(NO_SIDE_EFFECTS) {
-    successful(result).getQueryStatistics.containsUpdates() shouldBe false
+    withClue("Expected no side effects") {
+      successful(result).getQueryStatistics.containsUpdates() shouldBe false
+    }
   }
 
   private def successful(value: Try[Result]): Result = value match {
