@@ -20,8 +20,10 @@
 package org.neo4j.coreedge.server.core;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.roles.Role;
@@ -60,12 +62,12 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
         return coreEditionSPI.currentRole();
     }
 
-    public void downloadSnapshot( AdvertisedSocketAddress source )
+    public void downloadSnapshot( AdvertisedSocketAddress source ) throws InterruptedException, StoreCopyFailedException
     {
         coreEditionSPI.downloadSnapshot( source );
     }
 
-    public void compact()
+    public void compact() throws IOException
     {
         coreEditionSPI.compact();
     }

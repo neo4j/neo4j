@@ -21,13 +21,8 @@ package org.neo4j.coreedge.raft.state;
 
 import org.junit.Test;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -40,6 +35,7 @@ import org.neo4j.coreedge.raft.replication.session.LocalOperationId;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
@@ -66,8 +62,9 @@ public class CoreStateTest
 
     private final GlobalSession<CoreMember> globalSession = new GlobalSession<>( UUID.randomUUID(), null );
     private final int flushEvery = 10;
-    private final CoreState coreState = new CoreState( raftLog, new DirectExecutorService(), flushEvery, () -> dbHealth, NullLogProvider.getInstance(),
-            new ProgressTrackerImpl( globalSession ), lastFlushedStorage, lastApplyingStorage, sessionStorage );
+    private final CoreState coreState = new CoreState( raftLog, flushEvery, () -> dbHealth, NullLogProvider.getInstance(),
+            new ProgressTrackerImpl( globalSession ), lastFlushedStorage, lastApplyingStorage, sessionStorage,
+            mock( CoreServerSelectionStrategy.class ), mock( CoreStateDownloader.class ) );
 
     private ReplicatedTransaction nullTx = new ReplicatedTransaction( null );
 
@@ -105,6 +102,7 @@ public class CoreStateTest
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         coreState.notifyCommitted( 2 );
+        coreState.syncExecutor( false, false );
 
         // then
         verify( txStateMachine ).dispatch( nullTx, 0 );
@@ -123,6 +121,7 @@ public class CoreStateTest
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         coreState.notifyCommitted( -1 );
+        coreState.syncExecutor( false, false );
 
         // then
         verify( txStateMachine, times( 0 ) ).dispatch( any( ReplicatedTransaction.class ), anyInt() );
@@ -145,6 +144,7 @@ public class CoreStateTest
 
         // when
         coreState.notifyCommitted( flushEvery*TIMES );
+        coreState.syncExecutor( false, false );
 
         // then
         verify( txStateMachine, times( TIMES ) ).flush();
@@ -163,46 +163,9 @@ public class CoreStateTest
         // when
         assertEquals( true, dbHealth.isHealthy() );
         coreState.notifyCommitted( 0 );
+        coreState.syncExecutor( false, false );
 
         // then
         assertEquals( false, dbHealth.isHealthy() );
-    }
-
-    private class DirectExecutorService extends AbstractExecutorService
-    {
-        @Override
-        public void shutdown()
-        {
-        }
-
-        @Override
-        public List<Runnable> shutdownNow()
-        {
-            return null;
-        }
-
-        @Override
-        public boolean isShutdown()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isTerminated()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean awaitTermination( long timeout, TimeUnit unit ) throws InterruptedException
-        {
-            return false;
-        }
-
-        @Override
-        public void execute( Runnable command )
-        {
-            command.run();
-        }
     }
 }

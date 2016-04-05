@@ -246,16 +246,11 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         return state;
     }
 
-    public void downloadSnapshot()
-    {
-        raftStateMachine.downloadSnapshot();
-    }
-
     private void checkForSnapshotNeed( Outcome<MEMBER> outcome )
     {
         if( outcome.needsFreshSnapshot() )
         {
-            downloadSnapshot();
+            raftStateMachine.notifyNeedFreshSnapshot();
         }
     }
 

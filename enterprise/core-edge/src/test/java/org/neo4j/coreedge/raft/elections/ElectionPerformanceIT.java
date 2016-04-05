@@ -68,7 +68,7 @@ public class ElectionPerformanceIT
         }
 
         @Override
-        public void downloadSnapshot()
+        public void notifyNeedFreshSnapshot()
         {
         }
 
