@@ -84,7 +84,7 @@ public class ConfigLoader
         config.ifPresent( ( c ) -> settings.putAll( loadFromFile( log, c ) ) );
         settings.putAll( toMap( configOverrides ) );
         overrideEmbeddedDefaults( settings );
-        settings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
+        addInternalServerSpecificSettings( settings );
         customizer.accept( settings );
         return settings;
     }
@@ -107,10 +107,13 @@ public class ConfigLoader
     {
         config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
+    }
 
-        String dataDirectory = config.getOrDefault( data_directory.name(), data_directory.getDefaultValue() );
-        config.putIfAbsent( GraphDatabaseSettings.auth_store.name(),
-                new File( dataDirectory, "dbms/auth" ).toString() );
+    private static void addInternalServerSpecificSettings( Map<String, String> settings )
+    {
+        settings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
+        String dataDirectory = settings.getOrDefault( data_directory.name(), data_directory.getDefaultValue() );
+        settings.put( GraphDatabaseSettings.auth_store.name(), new File( dataDirectory, "dbms/auth" ).toString() );
     }
 
     private static Map<String, String> loadFromFile( Log log, File file )
