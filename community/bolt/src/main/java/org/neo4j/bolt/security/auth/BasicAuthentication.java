@@ -100,6 +100,8 @@ public class BasicAuthentication implements Authentication
             try
             {
                 authSubject.setPassword( newPassword );
+                //re-authenticate user
+                authSubject = authManager.login( user, newPassword );
             }
             catch ( AuthorizationViolationException e )
             {
