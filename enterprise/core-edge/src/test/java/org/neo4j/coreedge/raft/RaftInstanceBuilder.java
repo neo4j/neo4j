@@ -90,7 +90,7 @@ public class RaftInstanceBuilder<MEMBER>
                 clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
 
         return new RaftInstance<>( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
-                heartbeatInterval, renewableTimeoutService, inbound, outbound, leaderWaitTimeout, logProvider,
+                heartbeatInterval, renewableTimeoutService, inbound, outbound, logProvider,
                 membershipManager, logShipping, databaseHealthSupplier, monitors );
     }
 

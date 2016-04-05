@@ -81,10 +81,6 @@ public class CoreEdgeClusterSettings
     public static final Setting<Long> leader_election_timeout =
             setting( "core_edge.leader_election_timeout", DURATION, "500ms" );
 
-    @Description("Leader wait timeout")
-    public static final Setting<Long> leader_wait_timeout =
-            setting( "core_edge.leader_wait_timeout", DURATION, "30s" );
-
     @Description("The maximum batch size when catching up (in unit of entries)")
     public static final Setting<Integer> catchup_batch_size =
             setting( "core_edge.catchup_batch_size", INTEGER, "64" );
