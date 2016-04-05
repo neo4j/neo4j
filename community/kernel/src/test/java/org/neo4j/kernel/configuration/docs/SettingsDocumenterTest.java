@@ -34,7 +34,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -150,7 +149,7 @@ public class SettingsDocumenterTest
             "[cols=\"<1h,<4\"]%n" +
             "|===%n" +
             "|Description a|Public nodefault.%n" +
-            "|Valid values a|public.nodefault is a path%n" +
+            "|Valid values a|public.nodefault is a string%n" +
             "|===%n" +
             "endif::nonhtmloutput[]%n" +
             "%n" +
@@ -160,7 +159,7 @@ public class SettingsDocumenterTest
             "[cols=\"<1h,<4\"]%n" +
             "|===%n" +
             "|Description a|Public nodefault.%n" +
-            "|Valid values a|public.nodefault is a path%n" +
+            "|Valid values a|public.nodefault is a string%n" +
             "|===%n" +
             "endif::nonhtmloutput[]%n%n" ) ));
     }
@@ -243,7 +242,7 @@ public class SettingsDocumenterTest
     public interface SimpleSettings
     {
         @Description("Public nodefault")
-        Setting<File> public_nodefault = setting("public.nodefault", PATH, NO_DEFAULT);
+        Setting<String> public_nodefault = setting( "public.nodefault", STRING, NO_DEFAULT );
 
         @Description("Public with default")
         Setting<Integer> public_with_default = setting("public.default", INTEGER, "1");

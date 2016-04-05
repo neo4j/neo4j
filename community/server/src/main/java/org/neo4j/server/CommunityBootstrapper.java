@@ -19,8 +19,8 @@
  */
 package org.neo4j.server;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -44,7 +44,7 @@ public class CommunityBootstrapper extends ServerBootstrapper
     }
 
     @Override
-    protected Iterable<Class<?>> settingsClasses( HashMap<String, String> settings )
+    protected Iterable<Class<?>> settingsClasses( Map<String, String> settings )
     {
         return settingsClasses;
     }

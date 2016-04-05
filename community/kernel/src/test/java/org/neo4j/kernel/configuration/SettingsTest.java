@@ -23,32 +23,55 @@ import java.io.File;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.config.Setting;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
-public class SettingsTest {
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.pathSetting;
+
+public class SettingsTest
+{
     @Test
-    public void makePathsAbsolute()
-    {
-        File thePath = Settings.PATH.apply( "foobar" );
-
-        assertTrue( thePath.isAbsolute() );
-    }
-
-    @Test
-    public void makePathInCurrentWorkingDirectory()
-    {
-        File thePath = Settings.PATH.apply( "foobar" );
-
-        assertEquals( System.getProperty("user.dir"), thePath.getParent() );
-    }
-
-    @Test
-    public void doNotModifyAbsolutePaths()
+    public void parsesAbsolutePaths()
     {
         File absolutePath = new File( "some/path" ).getAbsoluteFile();
         File thePath = Settings.PATH.apply( absolutePath.toString() );
 
         assertEquals( absolutePath, thePath );
+    }
+
+    @Test
+    public void doesntAllowRelativePaths()
+    {
+        File relativePath = new File( "some/path" );
+        try
+        {
+            Settings.PATH.apply( relativePath.toString() );
+            fail( "Expected an exception" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+        }
+    }
+
+    @Test
+    public void pathSettingsProvideDefaultValues()
+    {
+        File theDefault = new File( "/some/path" ).getAbsoluteFile();
+        Setting<File> setting = pathSetting( "some.setting", theDefault.getAbsolutePath() );
+        assertThat( setting.from( Config.empty() ), is( theDefault ) );
+    }
+
+    @Test
+    public void pathSettingsAreNullIfThereIsNoValueAndNoDefault()
+    {
+        Setting<File> setting = pathSetting( "some.setting", NO_DEFAULT );
+        assertThat( setting.from( Config.empty() ), is( nullValue() ) );
     }
 }

@@ -46,13 +46,13 @@ import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description("Settings used by the server configuration")
@@ -212,11 +212,11 @@ public interface ServerSettings
 
     @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Path of the run directory")
-    Setting<File> run_directory = setting("dbms.directories.run", PATH, "run");
+    Setting<File> run_directory = pathSetting( "dbms.directories.run", "run" );
 
     @SuppressWarnings("unused") // used only in the startup scripts
     @Description("Path of the lib directory")
-    Setting<File> lib_directory = setting("dbms.directories.lib", PATH, "lib");
+    Setting<File> lib_directory = pathSetting( "dbms.directories.lib", "lib" );
 
     @Description("Timeout for idle transactions.")
     Setting<Long> transaction_timeout = setting( "dbms.transaction_timeout", DURATION, "60s" );

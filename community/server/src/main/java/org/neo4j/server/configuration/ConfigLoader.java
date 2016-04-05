@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -54,26 +55,37 @@ public class ConfigLoader
 
     public Config loadConfig( Optional<File> configFile, Log log, Pair<String, String>... configOverrides )
     {
+        return loadConfig( configFile, log, settings -> {}, configOverrides );
+    }
+
+    public Config loadConfig( Optional<File> configFile,
+                              Log log,
+                              Consumer<Map<String, String>> customizer,
+                              Pair<String, String>... configOverrides )
+    {
         if ( log == null )
         {
-            throw new IllegalArgumentException( "log cannot be null " );
+            throw new IllegalArgumentException( "log cannot be null" );
         }
 
-        HashMap<String, String> settings = calculateSettings( configFile, log, configOverrides );
+        Map<String, String> settings = calculateSettings( configFile, log, configOverrides, customizer );
         Config config = new Config( settings, settingsClasses.calculate( settings ) );
         config.setLogger( log );
         return config;
     }
 
 
-    private HashMap<String, String> calculateSettings( Optional<File> config, Log log,
-                                                       Pair<String, String>[] configOverrides )
+    private Map<String, String> calculateSettings( Optional<File> config, Log log,
+                                                   Pair<String, String>[] configOverrides,
+                                                   Consumer<Map<String, String>> customizer )
     {
         HashMap<String, String> settings = new HashMap<>();
 
         config.ifPresent( ( c ) -> settings.putAll( loadFromFile( log, c ) ) );
         settings.putAll( toMap( configOverrides ) );
         overrideEmbeddedDefaults( settings );
+        settings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
+        customizer.accept( settings );
         return settings;
     }
 
@@ -123,6 +135,6 @@ public class ConfigLoader
 
     public interface SettingsClasses
     {
-        Iterable<Class<?>> calculate( HashMap<String, String> settings );
+        Iterable<Class<?>> calculate( Map<String, String> settings );
     }
 }

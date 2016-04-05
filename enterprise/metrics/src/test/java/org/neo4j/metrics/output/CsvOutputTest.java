@@ -19,14 +19,15 @@
  */
 package org.neo4j.metrics.output;
 
+import java.io.File;
+import java.nio.file.Files;
+
 import com.codahale.metrics.MetricRegistry;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.nio.file.Files;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -40,7 +41,9 @@ import org.neo4j.test.TargetDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CsvOutputTest
@@ -50,50 +53,33 @@ public class CsvOutputTest
     @Rule
     public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
-    private File storeDir;
     private KernelContext kernelContext;
 
     @Before
     public void setup()
     {
-        storeDir = directory.directory();
+        File storeDir = directory.directory();
         kernelContext = new SimpleKernelContext( new DefaultFileSystemAbstraction(), storeDir,
                 DatabaseInfo.UNKNOWN, new Dependencies() );
     }
 
     @Test
-    public void shouldHaveMetricsCsvPathEndUpRelativeToWorkingDirectoryIfRelativePathSpecified() throws Exception
+    public void shouldHaveRelativeMetricsCsvPathBeRelativeToNeo4jHome() throws Exception
     {
         // GIVEN
-        String name = "metrics.csv";
+        File home = directory.absolutePath();
         Config config = config(
                 MetricsSettings.csvEnabled.name(), "true",
                 MetricsSettings.csvInterval.name(), "10ms",
-                MetricsSettings.csvPath.name(), name );
+                MetricsSettings.csvPath.name(), "the-metrics-dir",
+                GraphDatabaseSettings.neo4j_home.name(), home.getAbsolutePath() );
         life.add( new CsvOutput( config, new MetricRegistry(), NullLog.getInstance(), kernelContext ) );
 
         // WHEN
         life.start();
 
         // THEN
-        waitForFileToAppear( new File( System.getProperty( "user.dir" ), name ) );
-    }
-
-    @Test
-    public void shouldHaveRelativeMetricsCsvPathBeRelativeToWorkingDirectory() throws Exception
-    {
-        // GIVEN
-        Config config = config(
-                MetricsSettings.csvEnabled.name(), "true",
-                MetricsSettings.csvInterval.name(), "10ms",
-                MetricsSettings.csvPath.name(), "test.csv" );
-        life.add( new CsvOutput( config, new MetricRegistry(), NullLog.getInstance(), kernelContext ) );
-
-        // WHEN
-        life.start();
-
-        // THEN
-        waitForFileToAppear( new File( System.getProperty( "user.dir" ), "test.csv" ) );
+        waitForFileToAppear( new File( home, "the-metrics-dir" ) );
     }
 
     @Test
