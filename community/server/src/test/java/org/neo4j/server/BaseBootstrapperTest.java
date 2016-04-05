@@ -40,7 +40,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -82,7 +81,6 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
         // When
         int resultCode = ServerBootstrapper.start( bootstrapper,
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
-                "-c", configOption( auth_store, tempDir.newFile().getAbsolutePath() ),
                 "-c", configOption( tls_certificate_file,
                         new File( tempDir.getRoot(), "cert.cert" ).getAbsolutePath() ),
                 "-c", configOption( tls_key_file, new File( tempDir.getRoot(), "key.key" ).getAbsolutePath() ),

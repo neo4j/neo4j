@@ -73,7 +73,6 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         final Config config = dependencies.config();
         boolean queryLogEnabled = config.get( GraphDatabaseSettings.log_queries );
         final File queryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
-        final File logsDirectory = config.get( GraphDatabaseSettings.logs_directory );
         final FileSystemAbstraction fileSystem = dependencies.fileSystem();
         final JobScheduler jobScheduler = dependencies.jobScheduler();
         final Monitors monitoring = dependencies.monitoring();

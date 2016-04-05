@@ -19,21 +19,20 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
@@ -53,8 +52,10 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Collections.singletonList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -112,9 +113,7 @@ public class NonUniqueIndexTests
                     }
                 };
             }
-        }.newFacade( directory.graphDbDir(), stringMap( GraphDatabaseSettings.auth_store.name(),
-                directory.file( "auth" ).getAbsolutePath()),
-                graphDatabaseFactoryState.databaseDependencies() );
+        }.newFacade( directory.graphDbDir(), stringMap(), graphDatabaseFactoryState.databaseDependencies() );
     }
 
     private static Neo4jJobScheduler newSlowJobScheduler()

@@ -40,11 +40,9 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -57,6 +55,7 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
@@ -202,7 +201,6 @@ public class CountsRotationTest
 
         GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
                 .newEmbeddedDatabaseBuilder( dir )
-                .setConfig( GraphDatabaseSettings.auth_store, new File( dir, "auth" ).getAbsolutePath() )
                 .newGraphDatabase();
 
         CountDownLatch txStartLatch = new CountDownLatch( 1 );

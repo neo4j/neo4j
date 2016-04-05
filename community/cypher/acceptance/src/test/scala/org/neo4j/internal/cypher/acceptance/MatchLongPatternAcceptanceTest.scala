@@ -43,7 +43,6 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
   override def databaseConfig() = super.databaseConfig() ++ Map(
     GraphDatabaseSettings.cypher_min_replan_interval -> "0",
     GraphDatabaseSettings.cypher_compiler_tracing -> "true",
-    GraphDatabaseSettings.auth_store -> Files.createTempFile("auth", "").toString,
     GraphDatabaseSettings.pagecache_memory -> "8M"
   )
 

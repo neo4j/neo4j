@@ -19,16 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -41,7 +38,7 @@ public class ProduceUncleanStore
         boolean setGraphProperty = args.length > 1 ? Boolean.parseBoolean( args[1] ) : false;
         GraphDatabaseService db = new EmbeddedGraphDatabase(
                 storeDir,
-                stringMap( GraphDatabaseSettings.auth_store.name(), new File(storeDir, "auth").getAbsolutePath()),
+                stringMap(),
                 GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ) );
         try ( Transaction tx = db.beginTx() )
         {

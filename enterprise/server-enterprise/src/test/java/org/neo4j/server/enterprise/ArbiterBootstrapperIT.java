@@ -24,9 +24,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.AccessibleObject;
 import java.net.URI;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -46,7 +44,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterListener.Adapter;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -187,9 +184,7 @@ public class ArbiterBootstrapperIT
 
     private void startAndAssertJoined( Integer expectedAssignedPort, Map<String, String> config ) throws Exception
     {
-        Map<String, String> localCopy = new HashMap<>( config );
-        localCopy.put( GraphDatabaseSettings.auth_store.name(), Files.createTempFile( "auth", "" ).toString() );
-        File configDir = writeConfig( localCopy );
+        File configDir = writeConfig( config );
         CountDownLatch latch = new CountDownLatch( 1 );
         AtomicInteger port = new AtomicInteger();
         clients[0].addClusterListener( joinAwaitingListener( latch, port ) );

@@ -19,16 +19,16 @@
  */
 package org.neo4j.consistency;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -54,6 +54,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.consistency.ConsistencyCheckService.defaultLogFileName;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
@@ -61,7 +62,6 @@ import static org.neo4j.test.Property.set;
 
 public class ConsistencyCheckServiceIntegrationTest
 {
-
     private final GraphStoreFixture fixture = new GraphStoreFixture( getRecordFormatName() )
     {
         @Override
@@ -209,7 +209,6 @@ public class ConsistencyCheckServiceIntegrationTest
         Map<String, String> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         defaults.put( GraphDatabaseFacadeFactory.Configuration.record_format.name(), getRecordFormatName() );
-        defaults.put( GraphDatabaseSettings.auth_store.name(), testDirectory.file( "auth" ).getAbsolutePath() );
         return stringMap( defaults, strings );
     }
 
