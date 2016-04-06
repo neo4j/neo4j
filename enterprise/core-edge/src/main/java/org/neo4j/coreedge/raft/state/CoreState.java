@@ -101,6 +101,23 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
     {
         this.coreStateMachines = coreStateMachines;
         this.lastApplied = this.lastFlushed = lastApplied;
+
+        doRecovery();
+    }
+
+    private void doRecovery()
+    {
+        try
+        {
+            syncExecutor( false, true );
+            applyUpTo( lastApplyingStorage.getInitialState() );
+        }
+        catch ( InterruptedException | RaftLogCompactedException | IOException e )
+        {
+            dbHealth.get().panic( e );
+            log.error( "Could not recover core state", e );
+            applier.shutdownNow();
+        }
     }
 
     @Override
@@ -231,7 +248,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
     }
 
     /**
-     * Used for synchronizing with the internal executor.
+     * Used for synchronizing with the internal executor, and also to start/stop it.
      *
      * @param cancelTasks     Tries to cancel pending tasks.
      * @param willContinue    The executor should continue to accept tasks.
@@ -276,9 +293,6 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
     {
         lastFlushed = lastApplied = lastFlushedStorage.getInitialState();
         sessionState = sessionStorage.getInitialState();
-
-        syncExecutor( false, true );
-        applyUpTo( lastApplyingStorage.getInitialState() );
     }
 
     @Override
