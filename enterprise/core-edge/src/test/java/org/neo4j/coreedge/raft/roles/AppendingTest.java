@@ -20,9 +20,11 @@
 package org.neo4j.coreedge.raft.roles;
 
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -140,6 +142,42 @@ public class AppendingTest
         {
             // fine
         }
+    }
+
+    @Test
+    public void shouldNotAttemptToTruncateAtIndexBeforeTheLogPrevIndex() throws Exception
+    {
+        // given
+        // a log with prevIndex and prevTerm set
+        ReadableRaftLog logMock = mock( ReadableRaftLog.class );
+        long prevIndex = 5;
+        long prevTerm = 5;
+        when( logMock.prevIndex() ).thenReturn( prevIndex );
+        when( logMock.readEntryTerm( prevIndex ) ).thenReturn( prevTerm );
+        // and which also properly returns -1 as the term for an unknown entry, in this case prevIndex - 2
+        when( logMock.readEntryTerm( prevIndex - 2 ) ).thenReturn( -1L );
+
+        // also, a state with a given commitIndex, obviously ahead of prevIndex
+        long commitIndex = 10;
+        ReadableRaftState state = mock( ReadableRaftState.class );
+        when( state.entryLog() ).thenReturn( logMock );
+        when( state.commitIndex() ).thenReturn( commitIndex );
+        // which is also the append index
+        when( logMock.appendIndex() ).thenReturn( commitIndex );
+
+        // when
+        // an appendEntriesRequest arrives for appending entries before the prevIndex (for whatever reason)
+        Outcome outcome = mock( Outcome.class );
+        Appending.handleAppendEntriesRequest( state, outcome,
+                new RaftMessages.AppendEntries.Request<>( aMember, prevTerm, prevIndex - 2,
+                        prevTerm,
+                        new RaftLogEntry[]{
+                                new RaftLogEntry( prevTerm, ReplicatedInteger.valueOf( 2 ) )},
+                        commitIndex + 3 ) );
+
+        // then
+        // there should be no truncate commands. Actually, the whole thing should be a no op
+        verify( outcome, times( 0 ) ).addLogCommand( any() );
     }
 
     private static class LogCommandMatcher extends TypeSafeMatcher<LogCommand>
