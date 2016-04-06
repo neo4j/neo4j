@@ -58,7 +58,7 @@ class JsonProducer(tagger: QueryTagger[String]) extends OutputProducer {
         }
     }
     val withZeros = QueryTags.all.foldLeft(tagCounts) {
-      case (map, tag) => if (map.contains(tag.name)) map else map + ((tag.name, 0))
+      case (map, tag) => if (map.contains(tag.toString)) map else map + ((tag.toString, 0))
     }
 
     sortByValue(withZeros).asJava

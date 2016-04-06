@@ -161,6 +161,8 @@ case object DeleteTag extends QueryTag("delete")
 case object SetTag extends QueryTag("set")
 case object RemoveTag extends QueryTag("remove")
 case object MergeTag extends QueryTag("merge")
+case object OnMatchTag extends QueryTag("on-match")
+case object OnCreateTag extends QueryTag("on-create")
 case object CreateUniqueTag extends QueryTag("create-unique")
 case object ForeachTag extends QueryTag("foreach")
 
@@ -231,7 +233,10 @@ object QueryTagger extends QueryTagger[String] {
           case u: Delete => Set(DeleteTag)
           case u: SetClause => Set(SetTag)
           case u: Remove => Set(RemoveTag)
-          case u: Merge => Set(MergeTag)
+          case u: Merge => Set(MergeTag) ++ u.actions.map {
+            case _: OnCreate => OnCreateTag
+            case _: OnMatch => OnMatchTag
+          }
           case u: CreateUnique => Set(CreateUniqueTag)
           case u: Foreach => Set(ForeachTag)
           case _ => Set.empty[QueryTag]
