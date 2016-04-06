@@ -44,6 +44,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.cluster.ClusterListener.Adapter;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -177,6 +178,7 @@ public class ArbiterBootstrapperIT
 
     private File writeConfig( Map<String, String> config ) throws IOException
     {
+        config.put( GraphDatabaseSettings.logs_directory.name(), directory.getPath() );
         File configFile = new File( directory, ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
         store( config, configFile );
         return directory;

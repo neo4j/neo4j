@@ -106,7 +106,9 @@ public class ConsistencyCheckServiceIntegrationTest
         breakNodeStore();
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Config configuration = new Config(
+                settings( GraphDatabaseSettings.logs_directory.name(), testDirectory.directory().getPath() ),
+                GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
@@ -117,25 +119,6 @@ public class ConsistencyCheckServiceIntegrationTest
                 configuration.get( GraphDatabaseSettings.logs_directory ),
                 defaultLogFileName( timestamp ) );
         assertTrue( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
-    }
-
-    @Test
-    public void shouldWriteInconsistenciesToLogFileAtSpecifiedLocation() throws Exception
-    {
-        // given
-        breakNodeStore();
-        ConsistencyCheckService service = new ConsistencyCheckService();
-        File specificLogFile = new File( testDirectory.directory(), "specific_logfile.txt" );
-        Config configuration = new Config(
-                settings( GraphDatabaseSettings.logs_directory.name(), specificLogFile.getPath() ),
-                GraphDatabaseSettings.class, ConsistencyCheckSettings.class
-        );
-
-        // when
-        runFullConsistencyCheck( service, configuration );
-
-        // then
-        assertTrue( "Inconsistency report file " + specificLogFile + " not generated", specificLogFile.exists() );
     }
 
     @Test
