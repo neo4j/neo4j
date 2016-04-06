@@ -79,9 +79,8 @@ public class DelayedRenewableTimeoutServiceTest
 
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
 
-        timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, timeout -> timeoutCount.incrementAndGet() );
-
         long startTime = System.currentTimeMillis();
+        timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, timeout -> timeoutCount.incrementAndGet() );
         life.add( timeoutService );
 
         Predicates.await( timeoutCount::get, count -> count == 1, LONG_TIME_MS, MILLISECONDS, 1, MILLISECONDS );
@@ -98,10 +97,10 @@ public class DelayedRenewableTimeoutServiceTest
 
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
 
+        long startTime = System.currentTimeMillis();
         RenewableTimeoutService.RenewableTimeout timeout =
                 timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, timeout1 -> timeoutCount.incrementAndGet() );
 
-        long startTime = System.currentTimeMillis();
         life.add( timeoutService );
 
         // when
