@@ -28,6 +28,8 @@ import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
+
 import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
 
 /**
@@ -92,7 +94,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
                 try ( Resource precondition = permit( batch ) )
                 {
                     begunBatches.incrementAndGet();
-                    long startTime1 = currentTimeMillis();
+                    long startTime1 = nanoTime();
                     process( batch, sender );
                     if ( downstream == null )
                     {
@@ -100,7 +102,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
                         // We can see that we're the last step so increment here instead
                         doneBatches.incrementAndGet();
                     }
-                    totalProcessingTime.add( currentTimeMillis() - startTime1 - sender.sendTime );
+                    totalProcessingTime.add( nanoTime() - startTime1 - sender.sendTime );
                 }
 
                 decrementQueue();
@@ -219,14 +221,14 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         @Override
         public void send( Object batch )
         {
-            long time = currentTimeMillis();
+            long time = nanoTime();
             try
             {
                 sendDownstream( ticket, batch );
             }
             finally
             {
-                sendTime += (currentTimeMillis()-time);
+                sendTime += (nanoTime() - time);
             }
         }
 

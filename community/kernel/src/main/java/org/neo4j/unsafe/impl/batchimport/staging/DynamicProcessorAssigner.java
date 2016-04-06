@@ -143,9 +143,9 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
         return false;
     }
 
-    private int avg( Step<?> step )
+    private long avg( Step<?> step )
     {
-        return (int) step.stats().stat( Keys.avg_processing_time ).asLong();
+        return step.stats().stat( Keys.avg_processing_time ).asLong();
     }
 
     private long batches( Step<?> step )
