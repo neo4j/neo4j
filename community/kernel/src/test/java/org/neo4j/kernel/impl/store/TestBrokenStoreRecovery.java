@@ -29,8 +29,8 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.ProcessTestUtil.startSubProcess;

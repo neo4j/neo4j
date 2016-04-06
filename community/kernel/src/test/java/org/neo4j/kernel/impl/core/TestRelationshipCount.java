@@ -44,8 +44,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
@@ -67,7 +67,8 @@ public class TestRelationshipCount
         return data;
     }
 
-    public final @Rule DatabaseRule dbRule;
+    @Rule
+    public final DatabaseRule dbRule;
     private Transaction tx;
 
     public TestRelationshipCount( final int denseNodeThreshold )

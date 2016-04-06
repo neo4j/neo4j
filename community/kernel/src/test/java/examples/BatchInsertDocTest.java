@@ -44,7 +44,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.DefaultFileSystemRule;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
@@ -53,6 +53,18 @@ import static org.junit.Assert.assertThat;
 
 public class BatchInsertDocTest
 {
+    @Rule
+    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private DefaultFileSystemAbstraction fileSystem;
+
+    @Before
+    public void before() throws Exception
+    {
+        fileSystem = fileSystemRule.get();
+        fileSystem.mkdirs( new File( "target" ) );
+        fileSystem.mkdirs( new File( "target/docs" ) );
+    }
+
     @Test
     public void insert() throws Exception
     {
@@ -150,15 +162,4 @@ public class BatchInsertDocTest
         // END SNIPPET: configFileInsert
     }
 
-    @Rule
-    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private DefaultFileSystemAbstraction fileSystem;
-
-    @Before
-    public void before() throws Exception
-    {
-        fileSystem = fileSystemRule.get();
-        fileSystem.mkdirs( new File( "target" ) );
-        fileSystem.mkdirs( new File( "target/docs" ) );
-    }
 }

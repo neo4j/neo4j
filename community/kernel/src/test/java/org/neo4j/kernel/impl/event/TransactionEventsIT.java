@@ -33,17 +33,19 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
-import org.neo4j.test.RandomRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.RandomRule;
 
 /**
  * Test for randomly creating data and verifying transaction data seen in transaction event handlers.
  */
 public class TransactionEventsIT
 {
-    public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
-    public final @Rule RandomRule random = new RandomRule();
+    @Rule
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final RandomRule random = new RandomRule();
 
     @Test
     public void shouldSeeExpectedTransactionData() throws Exception

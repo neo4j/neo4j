@@ -44,11 +44,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.test.Property.property;
-import static org.neo4j.test.mocking.GraphMock.node;
-import static org.neo4j.test.mocking.GraphMock.path;
-import static org.neo4j.test.mocking.GraphMock.relationship;
-import static org.neo4j.test.mocking.Link.link;
-import static org.neo4j.test.mocking.Properties.properties;
+import static org.neo4j.test.mockito.mock.GraphMock.node;
+import static org.neo4j.test.mockito.mock.GraphMock.path;
+import static org.neo4j.test.mockito.mock.GraphMock.relationship;
+import static org.neo4j.test.mockito.mock.Link.link;
+import static org.neo4j.test.mockito.mock.Properties.properties;
 
 public class GraphExtractionWriterTest
 {

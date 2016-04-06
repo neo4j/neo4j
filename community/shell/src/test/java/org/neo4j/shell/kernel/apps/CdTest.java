@@ -19,31 +19,53 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.SilentLocalOutput;
 import org.neo4j.shell.Variables;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertTrue;
 
 public class CdTest
 {
+    @Rule
+    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
+
+    private final Output silence = new SilentLocalOutput();
+    private final Session session = new Session( "test" );
+    private GraphDatabaseAPI db;
+    private GraphDatabaseShellServer server;
+
+    @Before
+    public void setup() throws Exception
+    {
+        db = dbRule.getGraphDatabaseAPI();
+        server = new GraphDatabaseShellServer( db );
+        session.set( Variables.TITLE_KEYS_KEY, "name" );
+    }
+
+    @After
+    public void shutdown() throws Exception
+    {
+        server.shutdown();
+    }
+
     @Test
     public void shouldProvideTabCompletions() throws Exception
     {
@@ -90,25 +112,5 @@ public class CdTest
             tx.success();
             return root;
         }
-    }
-
-    private final Output silence = new SilentLocalOutput();
-    private final Session session = new Session( "test" );
-    public final @Rule DatabaseRule dbRule = new ImpermanentDatabaseRule();
-    private GraphDatabaseAPI db;
-    private GraphDatabaseShellServer server;
-
-    @Before
-    public void setup() throws Exception
-    {
-        db = dbRule.getGraphDatabaseAPI();
-        server = new GraphDatabaseShellServer( db );
-        session.set( Variables.TITLE_KEYS_KEY, "name" );
-    }
-
-    @After
-    public void shutdown() throws Exception
-    {
-        server.shutdown();
     }
 }

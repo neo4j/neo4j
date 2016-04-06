@@ -19,19 +19,22 @@
  */
 package org.neo4j.server.modules;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.List;
 
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DBMSModuleTest
 {

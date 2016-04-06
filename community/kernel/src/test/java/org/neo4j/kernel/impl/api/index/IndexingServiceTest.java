@@ -129,7 +129,7 @@ import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.test.AwaitAnswer.afterAwaiting;
+import static org.neo4j.test.mockito.answer.AwaitAnswer.afterAwaiting;
 
 public class IndexingServiceTest
 {

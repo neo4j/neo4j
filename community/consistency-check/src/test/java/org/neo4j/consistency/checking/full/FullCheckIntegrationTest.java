@@ -109,7 +109,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
-import org.neo4j.test.FailureOutput;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -246,10 +246,11 @@ public class FullCheckIntegrationTest
             }
         }
     };
-    private final FailureOutput failureOutput = new FailureOutput();
+
+    private final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.out );
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( failureOutput ).around( fixture );
+    public RuleChain ruleChain = RuleChain.outerRule( suppressOutput ).around( fixture );
 
     @Test
     public void shouldCheckConsistencyOfAConsistentStore() throws Exception
@@ -1980,7 +1981,7 @@ public class FullCheckIntegrationTest
         Config config = config();
         FullCheck checker = new FullCheck( config, ProgressMonitorFactory.NONE, fixture.getAccessStatistics(),
                 defaultConsistencyCheckThreadsNumber() );
-        return checker.execute( stores, FormattedLog.toOutputStream( failureOutput.stream() ),
+        return checker.execute( stores, FormattedLog.toOutputStream( System.out ),
                 new ConsistencyReporter.Monitor()
                 {
                     @Override

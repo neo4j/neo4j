@@ -39,15 +39,16 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.test.ThreadingRule;
+import org.neo4j.test.rule.Resources;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
-import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
-import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
+import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
+import static org.neo4j.test.rule.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
 
 public class AbstractKeyValueStoreTest
 {

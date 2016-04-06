@@ -53,8 +53,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.RandomRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;

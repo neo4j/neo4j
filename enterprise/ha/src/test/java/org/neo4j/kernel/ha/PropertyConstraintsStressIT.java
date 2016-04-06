@@ -46,10 +46,10 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.RepeatRule;
-import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;

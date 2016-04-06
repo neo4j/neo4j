@@ -63,7 +63,7 @@ import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLog;
-import org.neo4j.test.rules.VerboseTimeout;
+import org.neo4j.test.rule.VerboseTimeout;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;

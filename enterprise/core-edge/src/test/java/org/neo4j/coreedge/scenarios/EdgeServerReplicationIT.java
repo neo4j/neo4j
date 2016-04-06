@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
-import java.util.Set;
-import java.util.concurrent.TimeoutException;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
@@ -37,20 +37,18 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.io.File.pathSeparator;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.test.Assert.assertEventually;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class EdgeServerReplicationIT
 {

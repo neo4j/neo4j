@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPageCursor;
-import org.neo4j.test.RandomRule;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyInt;

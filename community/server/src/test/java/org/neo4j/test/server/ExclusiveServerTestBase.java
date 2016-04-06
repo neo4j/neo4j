@@ -25,10 +25,10 @@ import org.junit.rules.TestName;
 
 import java.util.concurrent.Callable;
 
-import org.neo4j.test.SuppressOutput;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TargetDirectory;
 
-import static org.neo4j.test.SuppressOutput.suppressAll;
+import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
 public class ExclusiveServerTestBase
 {

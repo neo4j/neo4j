@@ -27,16 +27,18 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
-import org.neo4j.test.CleanupRule;
+import org.neo4j.test.rule.CleanupRule;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 public class MultiExecutionMonitorTest
 {
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+
     @Test
     public void shouldCheckMultipleMonitors() throws Exception
     {
@@ -69,8 +71,6 @@ public class MultiExecutionMonitorTest
             }
         }
     }
-
-    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     private static class TestableMonitor extends ExecutionMonitor.Adapter
     {

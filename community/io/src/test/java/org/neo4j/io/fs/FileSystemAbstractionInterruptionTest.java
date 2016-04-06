@@ -35,7 +35,7 @@ import java.util.Arrays;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

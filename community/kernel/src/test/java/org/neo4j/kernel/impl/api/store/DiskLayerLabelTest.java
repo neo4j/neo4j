@@ -37,10 +37,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
-import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 
 /**
  * Test read access to committed label data.

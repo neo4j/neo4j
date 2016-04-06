@@ -24,12 +24,15 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertNotNull;
 
 public class StartWithConfigurationDocTest
 {
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+
     @Test
     public void loadFromFile()
     {
@@ -58,7 +61,4 @@ public class StartWithConfigurationDocTest
         assertNotNull( graphDb );
         graphDb.shutdown();
     }
-
-    @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 }

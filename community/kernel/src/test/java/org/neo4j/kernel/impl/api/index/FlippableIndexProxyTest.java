@@ -30,8 +30,8 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.rule.CleanupRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
@@ -45,6 +45,8 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexPro
 public class FlippableIndexProxyTest
 {
 
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
@@ -148,8 +150,6 @@ public class FlippableIndexProxyTest
         // But it should have gotten to drop the new index context, after the flip happened.
         verify( contextAfterFlip ).drop();
     }
-
-    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     private OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexProxy flippable )
     {

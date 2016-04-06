@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.cache.CacheAccess;
@@ -29,7 +30,7 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.test.NeoStoresRule;
+import org.neo4j.test.rule.NeoStoresRule;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;

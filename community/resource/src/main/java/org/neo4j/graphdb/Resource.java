@@ -31,11 +31,6 @@ public interface Resource extends AutoCloseable
     /**
      * Empty resource that doesn't {@link #close() close} anything.
      */
-    Resource EMPTY = new Resource()
-    {
-        @Override
-        public void close()
-        {   // Nothing to close
-        }
+    Resource EMPTY = () -> {   // Nothing to close
     };
 }

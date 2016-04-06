@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.StubPageCursor;
-import org.neo4j.test.RandomRule;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;

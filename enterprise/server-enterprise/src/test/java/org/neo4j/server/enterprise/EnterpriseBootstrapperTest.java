@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.server.BaseBootstrapperTest;
@@ -31,13 +31,12 @@ import org.neo4j.server.ServerBootstrapper;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.configuration.ServerSettings.certificates_directory;
 import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
 import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
-import static org.neo4j.test.Assert.assertEventually;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
 {

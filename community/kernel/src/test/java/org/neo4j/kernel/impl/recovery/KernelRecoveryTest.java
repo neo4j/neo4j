@@ -32,16 +32,16 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.kernel.impl.transaction.LogMatchers.checkPoint;
-import static org.neo4j.kernel.impl.transaction.LogMatchers.commandEntry;
-import static org.neo4j.kernel.impl.transaction.LogMatchers.commitEntry;
-import static org.neo4j.kernel.impl.transaction.LogMatchers.containsExactly;
-import static org.neo4j.kernel.impl.transaction.LogMatchers.logEntries;
-import static org.neo4j.kernel.impl.transaction.LogMatchers.startEntry;
+import static org.neo4j.test.mockito.matcher.LogMatchers.checkPoint;
+import static org.neo4j.test.mockito.matcher.LogMatchers.commandEntry;
+import static org.neo4j.test.mockito.matcher.LogMatchers.commitEntry;
+import static org.neo4j.test.mockito.matcher.LogMatchers.containsExactly;
+import static org.neo4j.test.mockito.matcher.LogMatchers.logEntries;
+import static org.neo4j.test.mockito.matcher.LogMatchers.startEntry;
 
 public class KernelRecoveryTest
 {

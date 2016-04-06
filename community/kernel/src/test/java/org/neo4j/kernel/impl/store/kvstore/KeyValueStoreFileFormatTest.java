@@ -37,9 +37,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.ResourceRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.ResourceRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -47,7 +47,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileFormatTest.Data.data;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFileFormatTest.DataEntry.entry;
-import static org.neo4j.test.ResourceRule.testPath;
+import static org.neo4j.test.rule.ResourceRule.testPath;
 
 public class KeyValueStoreFileFormatTest
 {

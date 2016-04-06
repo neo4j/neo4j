@@ -30,17 +30,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.kernel.api.index.ParameterizedSuiteRunner;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.OtherThreadRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.test.OtherThreadRule.isWaiting;
+import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 
 /** Base for locking tests. */
 @RunWith(ParameterizedSuiteRunner.class)

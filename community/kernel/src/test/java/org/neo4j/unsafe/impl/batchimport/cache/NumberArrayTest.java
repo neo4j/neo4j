@@ -33,10 +33,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.test.RandomRule;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;

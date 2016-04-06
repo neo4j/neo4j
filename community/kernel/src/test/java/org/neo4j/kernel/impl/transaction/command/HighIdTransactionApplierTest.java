@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.test.NeoStoresRule;
+import org.neo4j.test.rule.NeoStoresRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;

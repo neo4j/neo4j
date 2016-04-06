@@ -37,9 +37,9 @@ import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordGenerators.Generator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.RandomRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 
 import static java.lang.System.currentTimeMillis;

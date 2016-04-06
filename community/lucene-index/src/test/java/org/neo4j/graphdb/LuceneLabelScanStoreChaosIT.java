@@ -34,9 +34,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanIndexBuilder;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.DatabaseRule.RestartAction;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
@@ -80,7 +79,7 @@ public class LuceneLabelScanStoreChaosIT
         assertEquals( asSet( node ), getAllNodesWithLabel( Labels.First ) );
     }
 
-    private RestartAction corruptTheLabelScanStoreIndex()
+    private DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()
     {
         return ( fs, storeDirectory ) -> {
             try
@@ -104,7 +103,7 @@ public class LuceneLabelScanStoreChaosIT
         };
     }
 
-    private RestartAction deleteTheLabelScanStoreIndex()
+    private DatabaseRule.RestartAction deleteTheLabelScanStoreIndex()
     {
         return ( fs, storeDirectory ) -> {
             try

@@ -31,7 +31,7 @@ import java.util.Properties;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.getProperty;

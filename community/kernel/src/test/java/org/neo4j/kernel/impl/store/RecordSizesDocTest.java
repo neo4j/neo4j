@@ -27,21 +27,21 @@ import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
-import org.neo4j.test.docs.DocsIncludeFile;
+import org.neo4j.test.rule.docs.DocsIncludeFile;
 
 import static java.util.Arrays.asList;
-
+import static org.neo4j.kernel.impl.store.StoreFactory.Configuration.array_block_size;
+import static org.neo4j.kernel.impl.store.StoreFactory.Configuration.string_block_size;
 import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_ARRAYS_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STRINGS_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.Configuration.array_block_size;
-import static org.neo4j.kernel.impl.store.StoreFactory.Configuration.string_block_size;
 
 public class RecordSizesDocTest
 {
-    public final @Rule DocsIncludeFile writer = DocsIncludeFile.inSection( "ops" );
+    @Rule
+    public final DocsIncludeFile writer = DocsIncludeFile.inSection( "ops" );
 
     @Test
     public void record_sizes_table() throws Exception

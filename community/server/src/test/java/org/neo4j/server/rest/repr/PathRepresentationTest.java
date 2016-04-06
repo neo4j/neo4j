@@ -20,12 +20,13 @@
 package org.neo4j.server.rest.repr;
 
 import org.junit.Test;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
 
 import java.util.List;
 import java.util.Map;
+
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.Relationship;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -34,11 +35,11 @@ import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
-import static org.neo4j.test.mocking.GraphMock.node;
-import static org.neo4j.test.mocking.GraphMock.path;
-import static org.neo4j.test.mocking.GraphMock.relationship;
-import static org.neo4j.test.mocking.Link.link;
-import static org.neo4j.test.mocking.Properties.properties;
+import static org.neo4j.test.mockito.mock.GraphMock.node;
+import static org.neo4j.test.mockito.mock.GraphMock.path;
+import static org.neo4j.test.mockito.mock.GraphMock.relationship;
+import static org.neo4j.test.mockito.mock.Link.link;
+import static org.neo4j.test.mockito.mock.Properties.properties;
 
 public class PathRepresentationTest
 {

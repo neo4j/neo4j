@@ -50,8 +50,8 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 
 import static org.junit.Assert.assertEquals;
@@ -60,6 +60,26 @@ import static org.junit.Assert.assertTrue;
 
 public class RelationshipCreatorTest
 {
+
+    private static final int DENSE_NODE_THRESHOLD = 5;
+    @Rule
+    public final DatabaseRule dbRule = new ImpermanentDatabaseRule()
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( DENSE_NODE_THRESHOLD ) );
+        }
+    };
+    private IdGeneratorFactory idGeneratorFactory;
+
+    @Before
+    public void before()
+    {
+        idGeneratorFactory = dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency(
+                IdGeneratorFactory.class );
+    }
+
     @Test
     public void shouldOnlyChangeLockedRecordsWhenUpgradingToDenseNode() throws Exception
     {
@@ -194,23 +214,5 @@ public class RelationshipCreatorTest
         {
             return delegate.changeSize();
         }
-    }
-
-    private static final int DENSE_NODE_THRESHOLD = 5;
-    public final @Rule DatabaseRule dbRule = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( GraphDatabaseSettings.dense_node_threshold, String.valueOf( DENSE_NODE_THRESHOLD ) );
-        }
-    };
-    private IdGeneratorFactory idGeneratorFactory;
-
-    @Before
-    public void before()
-    {
-        idGeneratorFactory = dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency(
-                IdGeneratorFactory.class );
     }
 }

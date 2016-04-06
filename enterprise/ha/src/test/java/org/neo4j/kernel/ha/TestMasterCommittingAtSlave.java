@@ -36,8 +36,6 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
@@ -49,7 +47,7 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.logging.NullLog;
-import org.neo4j.test.CleanupRule;
+import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
@@ -65,6 +63,8 @@ import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 public class TestMasterCommittingAtSlave
 {
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
     private static final int MasterServerId = 0;
 
     private Iterable<Slave> slaves;
@@ -254,9 +254,6 @@ public class TestMasterCommittingAtSlave
         }
         return slaves;
     }
-
-    private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
-    public final @Rule CleanupRule cleanup = new CleanupRule();
 
     private static class FakeSlave implements Slave
     {

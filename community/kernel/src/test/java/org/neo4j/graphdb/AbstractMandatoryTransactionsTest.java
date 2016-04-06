@@ -23,7 +23,7 @@ import org.junit.Rule;
 
 import java.util.function.Consumer;
 
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.fail;
 

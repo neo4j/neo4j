@@ -33,7 +33,7 @@ import java.util.Map;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

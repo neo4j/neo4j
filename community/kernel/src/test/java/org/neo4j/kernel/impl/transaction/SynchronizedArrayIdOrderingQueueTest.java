@@ -19,22 +19,25 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.concurrent.Future;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.Future;
+
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.rule.CleanupRule;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SynchronizedArrayIdOrderingQueueTest
 {
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+
     @Test
     public void shouldOfferQueueABunchOfIds() throws Exception
     {
@@ -143,6 +146,4 @@ public class SynchronizedArrayIdOrderingQueueTest
             }
         };
     }
-
-    public final @Rule CleanupRule cleanup = new CleanupRule();
 }

@@ -167,7 +167,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         }
     }
 
-    void awaitStartExecuting() throws InterruptedException
+    public void awaitStartExecuting() throws InterruptedException
     {
         while ( executionState == ExecutionState.REQUESTED_EXECUTION )
         {
@@ -364,7 +364,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         }
     }
 
-    void printStackTrace( PrintStream out )
+    public void printStackTrace( PrintStream out )
     {
         Thread thread = getThread();
         out.println( thread );

@@ -19,13 +19,13 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.StringReader;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharSeeker;
@@ -33,8 +33,8 @@ import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataException;

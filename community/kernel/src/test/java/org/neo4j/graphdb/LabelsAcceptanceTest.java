@@ -54,11 +54,11 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.LabelItem;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
@@ -67,15 +67,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
-import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
-import static org.neo4j.graphdb.Neo4jMatchers.hasNoLabels;
-import static org.neo4j.graphdb.Neo4jMatchers.hasNoNodes;
-import static org.neo4j.graphdb.Neo4jMatchers.hasNodes;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabel;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabels;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNoLabels;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNoNodes;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasNodes;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
 public class LabelsAcceptanceTest
 {

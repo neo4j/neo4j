@@ -42,7 +42,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -58,6 +57,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -70,11 +70,11 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.CleanupRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -103,6 +103,45 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class IndexPopulationJobTest
 {
+    @Rule
+    public final CleanupRule cleanup = new CleanupRule();
+
+    private GraphDatabaseAPI db;
+
+    private final Label FIRST = Label.label( "FIRST" );
+    private final Label SECOND = Label.label( "SECOND" );
+    private final String name = "name";
+    private final String age = "age";
+
+    private KernelAPI kernel;
+    private IndexStoreView indexStoreView;
+    private KernelSchemaStateStore stateHolder;
+
+    private int labelId;
+
+    @Before
+    public void before() throws Exception
+    {
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+        stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );
+        indexStoreView = indexStoreView();
+
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
+              Statement statement = tx.acquireStatement() )
+        {
+            labelId = statement.schemaWriteOperations().labelGetOrCreateForName( FIRST.name() );
+            statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
+            tx.success();
+        }
+    }
+
+    @After
+    public void after() throws Exception
+    {
+        db.shutdown();
+    }
+
     @Test
     public void shouldPopulateIndexWithOneNode() throws Exception
     {
@@ -584,43 +623,6 @@ public class IndexPopulationJobTest
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
         IndexDescriptor descriptor = indexDescriptor( FIRST, name );
         return new InMemoryIndexProvider().getPopulator( 21, descriptor, indexConfig, samplingConfig );
-    }
-
-    private GraphDatabaseAPI db;
-
-    private final Label FIRST = Label.label( "FIRST" );
-    private final Label SECOND = Label.label( "SECOND" );
-    private final String name = "name";
-    private final String age = "age";
-
-    private KernelAPI kernel;
-    private IndexStoreView indexStoreView;
-    private KernelSchemaStateStore stateHolder;
-
-    private int labelId;
-    public final @Rule CleanupRule cleanup = new CleanupRule();
-
-    @Before
-    public void before() throws Exception
-    {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
-        stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );
-        indexStoreView = indexStoreView();
-
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL );
-              Statement statement = tx.acquireStatement() )
-        {
-            labelId = statement.schemaWriteOperations().labelGetOrCreateForName( FIRST.name() );
-            statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
-            tx.success();
-        }
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        db.shutdown();
     }
 
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey, IndexPopulator populator,

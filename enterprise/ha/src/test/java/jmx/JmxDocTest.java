@@ -52,10 +52,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.configuration.docs.SettingDescription;
 import org.neo4j.kernel.configuration.docs.AsciiDocListGenerator;
+import org.neo4j.kernel.configuration.docs.SettingDescription;
 import org.neo4j.test.AsciiDocGenerator;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 

@@ -34,12 +34,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 public class NeoStoresIT
 {
-    public final @Rule DatabaseRule db = new EmbeddedDatabaseRule()
+    @Rule
+    public final DatabaseRule db = new EmbeddedDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )

@@ -26,13 +26,13 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
-import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.test.ReflectionUtil;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 

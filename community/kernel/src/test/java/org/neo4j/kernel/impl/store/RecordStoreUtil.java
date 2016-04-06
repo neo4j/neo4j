@@ -57,13 +57,4 @@ public class RecordStoreUtil
             return record;
         }
     }
-
-    public static class NewNodeRecordAnswer implements Answer<NodeRecord>
-    {
-        @Override
-        public NodeRecord answer( InvocationOnMock invocation ) throws Throwable
-        {
-            return new NodeRecord( -1 );
-        }
-    }
 }

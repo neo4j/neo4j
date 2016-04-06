@@ -19,6 +19,9 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.Serializable;
@@ -26,9 +29,6 @@ import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
-
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.cypher.NodeStillHasRelationshipsException;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -52,17 +52,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasLabels;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
+import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
 public class TestApps extends AbstractShellTest
 {

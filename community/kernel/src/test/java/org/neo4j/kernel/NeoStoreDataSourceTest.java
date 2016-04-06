@@ -36,10 +36,10 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.NeoStoreDataSourceRule;
-import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.NeoStoreDataSourceRule;
+import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;

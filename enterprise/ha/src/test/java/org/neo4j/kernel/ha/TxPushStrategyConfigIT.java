@@ -30,11 +30,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.TransactionTemplate;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.test.SuppressOutput;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;

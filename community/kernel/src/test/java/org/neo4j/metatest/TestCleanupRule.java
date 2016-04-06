@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.junit.runners.model.Statement;
 import org.mockito.InOrder;
 
-import org.neo4j.test.CleanupRule;
+import org.neo4j.test.rule.CleanupRule;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.inOrder;

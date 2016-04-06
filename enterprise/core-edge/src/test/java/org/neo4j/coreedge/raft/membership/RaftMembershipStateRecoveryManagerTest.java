@@ -22,7 +22,7 @@ package org.neo4j.coreedge.raft.membership;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 public class RaftMembershipStateRecoveryManagerTest
 {

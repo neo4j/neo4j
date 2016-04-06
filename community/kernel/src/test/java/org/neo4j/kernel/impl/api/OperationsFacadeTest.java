@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.schema.IndexSchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
-import org.neo4j.test.KernelExceptionUserMessageMatcher;
+import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
 
 @RunWith( MockitoJUnitRunner.class )
 public class OperationsFacadeTest
