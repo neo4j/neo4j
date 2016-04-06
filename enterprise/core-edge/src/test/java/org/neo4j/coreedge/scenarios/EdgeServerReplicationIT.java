@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
@@ -71,7 +72,7 @@ public class EdgeServerReplicationIT
     public void shouldNotBeAbleToWriteToEdge() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 1 );
+        cluster = Cluster.start( dir.directory(), 3, 1, new TestOnlyDiscoveryServiceFactory() );
 
         GraphDatabaseService edgeDB = cluster.findAnEdgeServer();
 
@@ -97,7 +98,7 @@ public class EdgeServerReplicationIT
     public void allServersBecomeAvailable() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 1);
+        cluster = Cluster.start( dir.directory(), 3, 1, new TestOnlyDiscoveryServiceFactory() );
 
         // then
         for ( final EdgeGraphDatabase edgeGraphDatabase : cluster.edgeServers() )
@@ -111,7 +112,8 @@ public class EdgeServerReplicationIT
     public void shouldEventuallyPullTransactionDownToAllEdgeServers() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 0 );
+        final TestOnlyDiscoveryServiceFactory discoveryServiceFactory = new TestOnlyDiscoveryServiceFactory();
+        cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
         int nodesBeforeEdgeServerStarts = 1;
 
         // when
@@ -128,7 +130,7 @@ public class EdgeServerReplicationIT
         Set<EdgeGraphDatabase> edgeGraphDatabases = cluster.edgeServers();
 
         cluster.shutdownCoreServers();
-        cluster = Cluster.start( dir.directory(), 3, 0 );
+        cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
 
         // when
         executeOnLeaderWithRetry( db -> {
@@ -137,14 +139,14 @@ public class EdgeServerReplicationIT
         } );
 
         // then
-        assertEquals(1, edgeGraphDatabases.size());
+        assertEquals( 1, edgeGraphDatabases.size() );
 
         for ( final GraphDatabaseService edgeDB : edgeGraphDatabases )
         {
             try ( Transaction tx = edgeDB.beginTx() )
             {
                 ThrowingSupplier<Long, Exception> nodeCount = () -> count( edgeDB.getAllNodes() );
-                assertEventually( "node to appear on edge server", nodeCount, is( nodesBeforeEdgeServerStarts + 1l ),
+                assertEventually( "node to appear on edge server", nodeCount, is( nodesBeforeEdgeServerStarts + 1L ),
                         1, MINUTES );
 
                 for ( Node node : edgeDB.getAllNodes() )
@@ -163,7 +165,7 @@ public class EdgeServerReplicationIT
         File edgeDatabaseStoreFileLocation = createExistingEdgeStore( dir.directory().getAbsolutePath() +
                 pathSeparator + "edgeStore" );
 
-        cluster = Cluster.start( dir.directory(), 3, 0);
+        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         GraphDatabaseService coreDB = executeOnLeaderWithRetry( db -> {
             for ( int i = 0; i < 10; i++ )
@@ -171,7 +173,7 @@ public class EdgeServerReplicationIT
                 Node node = db.createNode();
                 node.setProperty( "foobar", "baz_bat" );
             }
-        });
+        } );
 
         try
         {

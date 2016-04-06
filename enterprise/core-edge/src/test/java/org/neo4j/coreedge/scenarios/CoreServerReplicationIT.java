@@ -19,16 +19,17 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Node;
@@ -37,6 +38,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 
@@ -64,7 +66,7 @@ public class CoreServerReplicationIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         cluster.coreTx( ( db, tx ) -> {
@@ -87,7 +89,7 @@ public class CoreServerReplicationIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         cluster.addCoreServerWithServerId( 3, 4 );
 
@@ -115,7 +117,7 @@ public class CoreServerReplicationIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         cluster.coreTx( ( db, tx ) -> {
             Node node = db.createNode();
@@ -141,7 +143,7 @@ public class CoreServerReplicationIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         CoreGraphDatabase last = null;
@@ -173,12 +175,14 @@ public class CoreServerReplicationIT
         return count;
     }
 
-    private void dataMatchesEventually( CoreGraphDatabase sourceDB, Set<CoreGraphDatabase> targetDBs ) throws TimeoutException, InterruptedException
+    private void dataMatchesEventually( CoreGraphDatabase sourceDB, Set<CoreGraphDatabase> targetDBs ) throws
+            TimeoutException, InterruptedException
     {
         DbRepresentation sourceRepresentation = DbRepresentation.of( sourceDB );
         for ( CoreGraphDatabase targetDB : targetDBs )
         {
-            Predicates.await( () -> sourceRepresentation.equals( DbRepresentation.of( targetDB ) ), DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+            Predicates.await( () -> sourceRepresentation.equals( DbRepresentation.of( targetDB ) ),
+                    DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
         }
     }
 }

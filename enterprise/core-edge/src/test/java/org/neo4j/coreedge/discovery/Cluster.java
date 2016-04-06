@@ -31,14 +31,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.coreedge.raft.replication.Replicator;
 import org.neo4j.coreedge.raft.replication.id.IdGenerationException;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
@@ -56,6 +54,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
+
 import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -72,7 +71,8 @@ public class Cluster
     private Set<CoreGraphDatabase> coreServers = new HashSet<>();
     private Set<EdgeGraphDatabase> edgeServers = new HashSet<>();
 
-    Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers, DiscoveryServiceFactory discoveryServiceFactory, Map<String,String> coreParams )
+    Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers, DiscoveryServiceFactory discoveryServiceFactory,
+             Map<String,String> coreParams )
             throws ExecutionException, InterruptedException
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
@@ -108,6 +108,13 @@ public class Cluster
             throws ExecutionException, InterruptedException
     {
         return new Cluster( parentDir, noOfCoreServers, noOfEdgeServers, new HazelcastDiscoveryServiceFactory(), coreParams );
+    }
+
+    public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
+                                 Map<String,String> coreParams, DiscoveryServiceFactory discoveryServiceFactory )
+            throws ExecutionException, InterruptedException
+    {
+        return new Cluster( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, coreParams );
     }
 
     private static File coreServerStoreDirectory( File parentDir, int serverId )

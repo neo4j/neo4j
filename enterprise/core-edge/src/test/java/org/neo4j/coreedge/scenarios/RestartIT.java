@@ -19,17 +19,18 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,6 +43,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.Label.label;
 
 public class RestartIT
@@ -65,7 +67,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         cluster.removeCoreServerWithServerId( 0 );
@@ -80,7 +82,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         cluster.removeCoreServerWithServerId( 1 );
@@ -95,7 +97,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         final GraphDatabaseService coreDB = cluster.getCoreServerById( 0 );
@@ -131,7 +133,7 @@ public class RestartIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 2, 1 );
+        cluster = Cluster.start( dbDir, 2, 1, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         final GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );

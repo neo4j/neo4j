@@ -19,14 +19,15 @@
  */
 package org.neo4j.coreedge.scenarios;
 
+import java.io.File;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.util.Map;
-
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
@@ -38,6 +39,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 
 import static junit.framework.TestCase.assertEquals;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreToCoreCopySnapshotIT
@@ -63,7 +65,7 @@ public class CoreToCoreCopySnapshotIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         CoreGraphDatabase leader = cluster.awaitLeader( TIMEOUT_MS );
 
@@ -80,7 +82,7 @@ public class CoreToCoreCopySnapshotIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         CoreGraphDatabase source =
                 cluster.coreTx( ( db, tx ) -> {
@@ -102,7 +104,7 @@ public class CoreToCoreCopySnapshotIT
     {
         // given
         File dbDir = dir.directory();
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         CoreGraphDatabase source =
                 cluster.coreTx( ( db, tx ) -> {
@@ -128,7 +130,7 @@ public class CoreToCoreCopySnapshotIT
                 CoreEdgeClusterSettings.raft_log_pruning.name(), "3 entries",
                 CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K" );
 
-        cluster = Cluster.start( dbDir, 3, 0, params );
+        cluster = Cluster.start( dbDir, 3, 0, params, new TestOnlyDiscoveryServiceFactory() );
 
         CoreGraphDatabase source =
                 cluster.coreTx( ( db, tx ) -> {

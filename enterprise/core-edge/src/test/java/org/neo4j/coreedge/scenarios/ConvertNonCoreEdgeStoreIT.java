@@ -19,15 +19,15 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import junit.framework.Assert;
+import java.io.File;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,7 +43,10 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -81,7 +84,7 @@ public class ConvertNonCoreEdgeStoreIT
             new ConvertClassicStoreCommand( destination ).execute();
         }
 
-        cluster = Cluster.start( dbDir, 3, 0 );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );
@@ -105,7 +108,7 @@ public class ConvertNonCoreEdgeStoreIT
                 assertEventually( "node to appear on core server " + config.get( raft_advertised_address ), nodeCount,
                         greaterThan( 0L ), 15, SECONDS );
 
-                Assert.assertEquals( 2001, count( db.getAllNodes() ) );
+                assertEquals( 2001, count( db.getAllNodes() ) );
 
                 tx.success();
             }

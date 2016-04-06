@@ -19,11 +19,6 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +30,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
@@ -44,9 +44,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.Assert.assertEventually;
 

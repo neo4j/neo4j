@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.coreedge.discovery.Cluster;
+import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.graphdb.Transaction;
@@ -54,7 +55,7 @@ public class ClusterFormationIT
     public void shouldBeAbleToAddAndRemoveCoreServers() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 0 );
+        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         // when
         cluster.removeCoreServerWithServerId( 0 );
@@ -80,7 +81,7 @@ public class ClusterFormationIT
     public void shouldBeAbleToAddAndRemoveCoreServersUnderModestLoad() throws Exception
     {
         // given
-        cluster = Cluster.start( dir.directory(), 3, 0 );
+        cluster = Cluster.start( dir.directory(), 3, 0, new TestOnlyDiscoveryServiceFactory() );
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit( (Runnable) () -> {
@@ -118,14 +119,15 @@ public class ClusterFormationIT
     public void shouldBeAbleToRestartTheCluster() throws Exception
     {
         // when
-        cluster = Cluster.start( dir.directory(), 3, 0 );
+        final TestOnlyDiscoveryServiceFactory discoveryServiceFactory = new TestOnlyDiscoveryServiceFactory();
+        cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
 
         // then
         assertEquals( 3, cluster.numberOfCoreServers() );
 
         // when
         cluster.shutdown();
-        cluster = Cluster.start( dir.directory(), 3, 0 );
+        cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
 
         // then
         assertEquals( 3, cluster.numberOfCoreServers() );
@@ -134,7 +136,7 @@ public class ClusterFormationIT
         cluster.removeCoreServerWithServerId( 1 );
         cluster.addCoreServerWithServerId( 3, 3 );
         cluster.shutdown();
-        cluster = Cluster.start( dir.directory(), 3, 0 );
+        cluster = Cluster.start( dir.directory(), 3, 0, discoveryServiceFactory );
 
         assertEquals( 3, cluster.numberOfCoreServers() );
     }
