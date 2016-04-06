@@ -196,7 +196,7 @@ public abstract class AbstractStep<T> implements Step<T>
 
             assertHealthy();
         }
-        return nanoTime()-startTime;
+        return nanoTime() - startTime;
     }
 
     protected void assertHealthy()
