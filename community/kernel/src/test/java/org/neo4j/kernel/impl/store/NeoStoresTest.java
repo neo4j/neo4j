@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -102,15 +103,13 @@ public class NeoStoresTest
 
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final ExpectedException exception = ExpectedException.none();
+    private EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTestWithEphemeralFS( fs.get(), getClass() );
+    private NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
 
     @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTestWithEphemeralFS( fs.get(), getClass() );
-    @Rule
-    public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( exception ).around( pageCacheRule );
+    public RuleChain ruleChain = RuleChain.outerRule( exception ).around( pageCacheRule )
+            .around( fs ).around( dir ).around( dsRule );
 
     private PageCache pageCache;
     private File storeDir;
@@ -148,6 +147,22 @@ public class NeoStoresTest
         exception.expect( IllegalStateException.class );
         exception.expectMessage( "Specified store was already closed.");
         neoStores.getMetaDataStore();
+    }
+
+    @Test
+    public void notAllowCreateDynamicStoreWithNegativeBlockSize()
+    {
+        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
+        StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
+                fs.get(), LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Block size of dynamic array store should be positive integer." );
+
+        try (NeoStores neoStores = sf.openNeoStores( true ))
+        {
+            neoStores.createDynamicArrayStore( "someStore", IdType.ARRAY_BLOCK, -2 );
+        }
     }
 
     @Test

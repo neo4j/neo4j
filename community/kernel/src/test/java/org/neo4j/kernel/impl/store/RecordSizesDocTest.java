@@ -30,14 +30,13 @@ import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
 import org.neo4j.test.docs.DocsIncludeFile;
 
 import static java.util.Arrays.asList;
-
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.array_block_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
 import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_ARRAYS_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STRINGS_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_STORE_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.Configuration.array_block_size;
-import static org.neo4j.kernel.impl.store.StoreFactory.Configuration.string_block_size;
 
 public class RecordSizesDocTest
 {

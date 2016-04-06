@@ -65,7 +65,6 @@ import org.neo4j.logging.LogProvider;
 public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRecord,IntStoreHeader>
         implements DynamicRecordAllocator
 {
-    public static final byte[] NO_DATA = new byte[0];
 
     public AbstractDynamicStore(
             File fileName,
@@ -234,10 +233,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
         @Override
         public void writeHeader( PageCursor cursor )
         {
-            if ( defaultValue < 1 || defaultValue > 0xFFFF )
+            if ( header < 1 || header > 0xFFFF )
             {
                 throw new IllegalArgumentException(
-                        "Illegal block size[" + defaultValue + "], limit is 65535" );
+                        "Illegal block size[" + header + "], limit is 65535" );
             }
             super.writeHeader( cursor );
         }

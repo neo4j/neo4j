@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.logging.Level;
 
-import static java.lang.String.valueOf;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -70,6 +69,13 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  */
 public abstract class GraphDatabaseSettings
 {
+    /**
+     * Data block sizes for dynamic array stores.
+     */
+    public static final int DEFAULT_BLOCK_SIZE = 128;
+    public static final int DEFAULT_LABEL_BLOCK_SIZE = 64;
+    public static final int MINIMAL_BLOCK_SIZE = 16;
+
     @SuppressWarnings("unused") // accessed by reflection
     @Migrator
     private static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
@@ -376,7 +382,7 @@ public abstract class GraphDatabaseSettings
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> string_block_size = setting("unsupported.dbms.block_size.strings", INTEGER,
-            valueOf( dynamicRecordDataSizeForAligningWith( 128 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
+            "0", min( 0 ) );
 
     @Description("Specifies the block size for storing arrays. This parameter is only honored when the store is " +
             "created, otherwise it is ignored. " +
@@ -384,7 +390,7 @@ public abstract class GraphDatabaseSettings
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> array_block_size = setting("unsupported.dbms.block_size.array_properties", INTEGER,
-            valueOf( dynamicRecordDataSizeForAligningWith( 128 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
+            "0", min( 0 ) );
 
     @Description("Specifies the block size for storing labels exceeding in-lined space in node record. " +
     		"This parameter is only honored when the store is created, otherwise it is ignored. " +
@@ -392,7 +398,7 @@ public abstract class GraphDatabaseSettings
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> label_block_size = setting("unsupported.dbms.block_size.labels", INTEGER,
-            valueOf( dynamicRecordDataSizeForAligningWith( 64 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
+            "0", min( 0 ) );
 
     @Description("An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
