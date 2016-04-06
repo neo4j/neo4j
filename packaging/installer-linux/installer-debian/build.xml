@@ -25,12 +25,6 @@
                 </fileset>
             </copy>
 
-            <copy toFile="${project.build.outputDirectory}/@{name}/server/default/neo4j">
-                <fileset dir="${project.build.sourceDirectory}/../resources/common">
-                    <include name="default-neo4j"/>
-                </fileset>
-            </copy>
-
             <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j-wrapper.conf"
                      token="unsupported.dbms.udc.source=tarball"
                      value="unsupported.dbms.udc.source=debian"/>

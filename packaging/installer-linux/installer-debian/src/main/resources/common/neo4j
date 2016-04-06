@@ -38,6 +38,8 @@ DAEMON=/usr/bin/$NAME
 PIDFILE=/var/run/${NAME}/neo4j.pid
 SCRIPTNAME=/etc/init.d/$NAME-service
 
+CONF=/etc/neo4j
+
 [ -x "$DAEMON" ] || exit 0
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 [ -n "${NEO_USER}" ] || NEO_USER=$NAME
@@ -46,12 +48,12 @@ SCRIPTNAME=/etc/init.d/$NAME-service
 
 do_start()
 {
-  NEO4J_BIN=/usr/bin NEO4J_CONF=${NEO4J_CONF:-} start-stop-daemon --chuid ${NEO_USER} --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- start
+  NEO4J_CONF=${CONF} start-stop-daemon --chuid ${NEO_USER} --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- start
 }
 
 do_stop()
 {
-  NEO4J_BIN=/usr/bin NEO4J_CONF=${NEO4J_CONF:-} $DAEMON stop
+  NEO4J_CONF=${CONF} $DAEMON stop
 }
 
 case "$1" in
