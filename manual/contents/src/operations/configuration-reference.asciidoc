@@ -1,7 +1,7 @@
 [[configuration-settings]]
 = Configuration Settings Reference
 
-On this page you'll find the main configuration settings you can use with Neo4j.
+This page documents Neo4j's configuration settings.
 They can be set in <<file-locations, _neo4j.conf_>>.
 
 include::{importdir}/neo4j-config-docs-docs-jar/ops/configuration-attributes.asciidoc[]
@@ -9,11 +9,8 @@ include::{importdir}/neo4j-config-docs-docs-jar/ops/configuration-attributes.asc
 == Configuring Bolt Connectors
 
 Bolt Connectors are ports that accept connections via the Bolt Database Protocol, which is the protocol used by official Neo4j Driver Libraries.
-You can configure Neo4j with one or more Bolt connectors.
-This allows you, for instance, to have separate connectors for remote and local connections, with different encryption requirements.
-
-If you are using Neo4j Embedded, you need to include the Bolt extension on your class path to enable Bolt.
-See <<tutorials-java-embedded-bolt>> for details on how to open a Bolt connector from Neo4j Embedded.
+Neo4j can be configured with one or more Bolt connectors.
+This allows separate connectors to be configured for remote and local connections, with different encryption requirements.
 
 Each connector has a unique key to identify it, denoted `(bolt-connector-key)` in the listing below.
 
@@ -22,10 +19,9 @@ include::{importdir}/neo4j-config-docs-docs-jar/ops/configuration-bolt-connector
 
 == Configuring HTTP Connectors
 
-HTTP Connectors expose the Neo4j REST API and related HTTP resources.
-At this time, you can configure at most one HTTP connector and one HTTPS connector.
-
+HTTP Connectors expose Neo4j's HTTP endpoints.
 HTTPS connectors are configured by setting a connector to require encryption.
+There must be exactly one HTTP connector and zero or one HTTPS connectors configured.
 
 Each connector has a unique key to identify it, denoted `(http-connector-key)` in the listing below.
 
