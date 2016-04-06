@@ -2,7 +2,7 @@
 = Configuration Settings Reference
 
 On this page you'll find the main configuration settings you can use with Neo4j.
-They can be set in <<file-locations, _neo4j.conf_>> (for configuring the embedded database see <<tutorials-java-embedded-setup-config>>).
+They can be set in <<file-locations, _neo4j.conf_>>.
 
 include::{importdir}/neo4j-config-docs-docs-jar/ops/configuration-attributes.asciidoc[]
 
