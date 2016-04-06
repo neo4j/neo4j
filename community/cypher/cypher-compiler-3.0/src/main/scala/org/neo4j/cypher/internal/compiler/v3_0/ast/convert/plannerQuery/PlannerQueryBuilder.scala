@@ -57,7 +57,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     val previousPatternNodes = if (allPlannerQueries.length > 1) {
       val current = allPlannerQueries(allPlannerQueries.length - 2)
       val projectedNodes = current.horizon.exposedSymbols(current.queryGraph).collect {
-        case id@IdName(n) if semanticTable.contains(n) && semanticTable.isNode(n) => id
+        case id@IdName(n) if semanticTable.containsNode(n) => id
       }
       projectedNodes ++ current.queryGraph.allPatternNodes
     } else Set.empty

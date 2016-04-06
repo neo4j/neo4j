@@ -27,5 +27,5 @@ case class Apply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols ++ right.availableSymbols
+  lazy val availableSymbols = left.availableSymbols ++ right.availableSymbols
 }
