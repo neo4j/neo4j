@@ -46,7 +46,6 @@ import static org.junit.Assert.assertEquals;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TransactionRepresentationCommitProcessIT
@@ -64,7 +63,7 @@ public class TransactionRepresentationCommitProcessIT
         }
     };
 
-    @Test( timeout = 5000 )
+    @Test( timeout = 15000 )
     public void commitDuringContinuousCheckpointing() throws Exception
     {
         final Index<Node> index;
