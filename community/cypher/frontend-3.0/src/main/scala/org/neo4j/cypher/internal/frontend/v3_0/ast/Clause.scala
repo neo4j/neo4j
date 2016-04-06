@@ -297,6 +297,7 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
 abstract class CallClause extends Clause {
   override def name = "CALL"
   def returnColumns: List[String]
+  def containsNoUpdates: Boolean
 }
 
 case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
@@ -316,6 +317,10 @@ case class UnresolvedCall(procedureNamespace: ProcedureNamespace,
 
     argumentCheck chain resultsCheck
   }
+
+  //At this stage we are not sure whether or not the procedure
+  // contains updates, so let's err on the side of caution
+  override def containsNoUpdates = false
 }
 
 sealed trait HorizonClause extends Clause with SemanticChecking {

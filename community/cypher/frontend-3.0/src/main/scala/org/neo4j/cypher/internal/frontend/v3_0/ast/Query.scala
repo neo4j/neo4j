@@ -44,6 +44,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   override def containsUpdates =
     clauses.exists {
+      case call: CallClause => !call.containsNoUpdates
       case _: UpdateClause => true
       case _               => false
     }
