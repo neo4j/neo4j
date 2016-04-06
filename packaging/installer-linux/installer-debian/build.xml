@@ -35,11 +35,6 @@
                      token="unsupported.dbms.udc.source=tarball"
                      value="unsupported.dbms.udc.source=debian"/>
 
-            <!-- Remove the files that are unnecessary, or don't make sense on Debian. -->
-            <delete file="${project.build.outputDirectory}/@{name}/server/bin/.keep"/>
-            <delete file="${project.build.outputDirectory}/@{name}/server/plugins/.keep"/>
-            <delete dir="${project.build.outputDirectory}/@{name}/server/bin/tools"/>
-
             <!-- Set the directories to match the FHS. -->
             <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j.conf"
                      token="#dbms.directories.data=data"
@@ -62,9 +57,6 @@ dbms.directories.run=/var/run/neo4j
 dbms.directories.lib=/usr/share/neo4j/lib
 dbms.directories.certificates=/var/lib/neo4j/certificates
             </concat>
-
-            <!-- Remove the .keep directories. -->
-
 
             <chmod perm="700">
                 <fileset dir="${project.build.outputDirectory}/@{name}">

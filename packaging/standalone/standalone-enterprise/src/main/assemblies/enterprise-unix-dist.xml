@@ -35,6 +35,7 @@
       <filtered>true</filtered>
       <excludes>
         <exclude>conf/jmx.*</exclude>
+        <exclude>**/.keep</exclude>
       </excludes>
       <directoryMode>0755</directoryMode>
       <fileMode>0644</fileMode>
@@ -72,6 +73,7 @@
         <exclude>**/*.ps1</exclude>
         <exclude>**/Neo4j-Management</exclude>
         <exclude>**/*.exe</exclude>
+        <exclude>**/tools</exclude>
       </excludes>
       <filtered>true</filtered>
     </fileSet>

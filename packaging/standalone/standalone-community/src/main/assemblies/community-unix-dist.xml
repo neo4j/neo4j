@@ -36,6 +36,9 @@
       <filtered>true</filtered>
       <directoryMode>0755</directoryMode>
       <fileMode>0644</fileMode>
+      <excludes>
+        <exclude>**/.keep</exclude>
+      </excludes>
     </fileSet>
     <!-- non-maven jars -->
     <fileSet>
@@ -59,6 +62,7 @@
         <exclude>**/*.ps1</exclude>
         <exclude>**/Neo4j-Management</exclude>
         <exclude>**/*.exe</exclude>
+        <exclude>**/tools</exclude>
       </excludes>
       <filtered>true</filtered>
     </fileSet>
