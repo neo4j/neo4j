@@ -74,6 +74,14 @@ public class RecordFormatSelectorTest
     }
 
     @Test
+    public void autoselectCommunityFormat()
+    {
+        Config config = new Config( MapUtil.stringMap( record_format.name(), LowLimitV3_0.NAME ) );
+        RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat( config, NullLogService.getInstance() );
+        assertEquals( "autoselect should select specified format.", recordFormats, LowLimitV3_0.RECORD_FORMATS );
+    }
+
+    @Test
     public void overrideWithNonExistingFormatFailure()
     {
         Config config = new Config( MapUtil.stringMap( record_format.name(), "notAValidRecordFormat" ) );
