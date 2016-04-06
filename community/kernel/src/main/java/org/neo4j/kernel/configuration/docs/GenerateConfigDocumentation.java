@@ -20,7 +20,10 @@
 package org.neo4j.kernel.configuration.docs;
 
 import java.io.File;
+import java.util.List;
+import java.util.function.Function;
 
+import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileUtils;
 
 /**
@@ -28,34 +31,40 @@ import org.neo4j.io.fs.FileUtils;
  */
 public class GenerateConfigDocumentation
 {
-    public static void main( String[] args ) throws Exception
+    public static void main( String[] argv ) throws Exception
     {
-    	File output = null;
-    	String bundleName = null;
-        if(args.length > 0)
+        Args arguments = Args.parse( argv );
+
+        File output = arguments.has( "o" ) ? new File(arguments.get("o")) : null;
+    	List<String> settingsClasses = arguments.orphans();
+        if(settingsClasses.size() == 0)
         {
-        	bundleName = args[0];
-        	
-        	if(args.length > 1) 
-        	{
-        		output = new File(args[1]).getAbsoluteFile();
-        	}
-        	
-        } else 
-        {
-        	System.out.println("Usage: GenerateConfigDocumentation CONFIG_BUNDLE_CLASS [output file]");
+        	System.out.println("Usage: GenerateConfigDocumentation [-o output file] SETTINGS_CLASS..");
         	System.exit(0);
         }
 
-        String doc = new SettingsDocumenter().document( Class.forName( bundleName ) );
+        String doc = new SettingsDocumenter()
+                .document( settingsClasses.stream().map( classFromString ) );
         
         if(output != null)
         {
-        	System.out.println("Saving docs for '"+bundleName+"' in '" + output.getAbsolutePath() + "'.");
+        	System.out.println("Saving docs in '" + output.getAbsolutePath() + "'.");
         	FileUtils.writeToFile(output, doc, false);
         } else 
         {
         	System.out.println(doc);
         }
     }
+
+    private static Function<String,Class<?>> classFromString = (Function<String,Class<?>>) ( className ) -> {
+        try
+        {
+            return Class.forName( className );
+        }
+        catch ( ClassNotFoundException e )
+        {
+            throw new RuntimeException( e );
+        }
+    };
+
 }
