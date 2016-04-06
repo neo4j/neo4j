@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
-import static java.lang.System.currentTimeMillis;
+import static java.lang.System.nanoTime;
 
 /**
  * {@link Step} that doesn't receive batches, doesn't send batches downstream; just processes data.
@@ -52,7 +52,7 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
                 {
                     try
                     {
-                        lastProcessingTimestamp = currentTimeMillis();
+                        lastProcessingTimestamp = nanoTime();
                         process();
                     }
                     catch ( Throwable e )
@@ -102,7 +102,7 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
             int batches = batch / batchSize;
             batch %= batchSize;
             doneBatches.addAndGet( batches );
-            long time = currentTimeMillis();
+            long time = nanoTime();
             totalProcessingTime.add( time - lastProcessingTimestamp );
             lastProcessingTimestamp = time;
         }
