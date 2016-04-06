@@ -336,8 +336,6 @@ public class EnterpriseCoreEditionModule
             raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
                     coreState, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
                     raftTimeoutService, databaseHealthSupplier, platformModule.monitors );
-
-            life.add( coreState );
         }
         catch ( IOException e )
         {
