@@ -61,20 +61,27 @@ public final class Assert
 
     public static <T, E extends Exception> void assertEventually(
             String reason, ThrowingSupplier<T, E> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit
-    ) throws E
+    ) throws E, InterruptedException
     {
-        long waitUntil = System.currentTimeMillis() + timeUnit.toMillis( timeout );
+        long endTimeMillis = System.currentTimeMillis() + timeUnit.toMillis( timeout );
+
+        T last;
         boolean matched;
-        while ( !( matched = matcher.matches( actual.get() ) ) && System.currentTimeMillis() <= waitUntil )
+
+        do
         {
-            try
+            long sampleTime = System.currentTimeMillis();
+
+            last = actual.get();
+            matched = matcher.matches( last );
+
+            if ( matched || sampleTime > endTimeMillis )
             {
-                Thread.sleep( 250 );
-            } catch ( InterruptedException e )
-            {
-                // ignored
+                break;
             }
-        }
+
+            Thread.sleep( 100 );
+        } while ( true );
 
         if ( !matched )
         {
@@ -83,7 +90,7 @@ public final class Assert
                     .appendText( "\nExpected: " )
                     .appendDescriptionOf( matcher )
                     .appendText( "\n     but: " );
-            matcher.describeMismatch( actual, description );
+            matcher.describeMismatch( last, description );
 
             throw new AssertionError( "Timeout hit (" + timeout + " " + timeUnit.toString().toLowerCase() +
                     ") while waiting for condition to match: " + description.toString() );

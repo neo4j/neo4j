@@ -87,7 +87,7 @@ public class ServerMetricsIT
         }
     }
 
-    private void assertMetricsExists( File metricsPath, String meticsName ) throws IOException
+    private void assertMetricsExists( File metricsPath, String meticsName ) throws IOException, InterruptedException
     {
         File file = metricsCsv( metricsPath, meticsName );
         long threadCount = readLongValue( file );

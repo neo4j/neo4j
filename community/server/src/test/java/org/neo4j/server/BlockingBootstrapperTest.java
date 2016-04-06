@@ -36,7 +36,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class BlockingBootstrapperTest
 {
     @Test
-    public void shouldBlockUntilStoppedIfTheWrappedStartIsSuccessful()
+    public void shouldBlockUntilStoppedIfTheWrappedStartIsSuccessful() throws Throwable
     {
         AtomicInteger status = new AtomicInteger();
         AtomicBoolean exited = new AtomicBoolean( false );
@@ -76,7 +76,7 @@ public class BlockingBootstrapperTest
     }
 
     @Test
-    public void shouldNotBlockIfTheWrappedStartIsUnsuccessful()
+    public void shouldNotBlockIfTheWrappedStartIsUnsuccessful() throws Throwable
     {
         AtomicInteger status = new AtomicInteger();
         AtomicBoolean exited = new AtomicBoolean( false );
