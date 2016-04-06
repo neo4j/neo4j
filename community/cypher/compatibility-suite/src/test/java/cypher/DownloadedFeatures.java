@@ -39,7 +39,7 @@ import java.util.Map;
 public class DownloadedFeatures extends Enclosed
 {
     private static final String GITHUB_URL_TO_FEATURE_FILES =
-            "https://api.github.com/repos/openCypher/openCypher/contents/tck/features";
+            "https://api.github.com/repos/openCypher/openCypher/contents/tck/features?ref=ff996e388074a10b7fb4235d049eaf67af7d23f4";
 
     public DownloadedFeatures( Class<?> klass, RunnerBuilder builder ) throws Throwable
     {
