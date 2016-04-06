@@ -180,6 +180,10 @@ public class RecordFormatSelector
     {
         if ( StringUtils.isNotEmpty( recordFormat ) )
         {
+            if ( LowLimitV3_0.NAME.equals( recordFormat ) )
+            {
+                return LowLimitV3_0.RECORD_FORMATS;
+            }
             RecordFormats.Factory formatFactory = Service.loadSilently( RecordFormats.Factory.class, recordFormat );
             if ( formatFactory != null )
             {
