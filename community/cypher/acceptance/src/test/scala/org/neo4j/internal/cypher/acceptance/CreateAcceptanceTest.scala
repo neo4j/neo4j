@@ -19,10 +19,12 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher.internal.compiler.v3_0.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport, SyntaxException}
 import org.neo4j.graphdb.{Direction, Relationship, RelationshipType}
 
-class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport
+  with CreateTempFileTestSupport {
 
   test("create a single node") {
     val result = updateWithBothPlannersAndCompatibilityMode("create ()")
@@ -1563,5 +1565,63 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     val result = updateWithBothPlannersAndCompatibilityMode(query)
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2)
     result.toList should equal(List(Map("x" -> 0)))
+  }
+
+  test("should have bound node recognized after projection with WITH + WITH") {
+    val query = "CREATE (a) WITH a WITH * CREATE (b) CREATE (a)<-[:T]-(b)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("should have bound node recognized after projection with WITH + UNWIND") {
+    val query = "CREATE (a) WITH a UNWIND [0] AS i CREATE (b) CREATE (a)<-[:T]-(b)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("should have bound node recognized after projection with WITH + LOAD CSV") {
+    val url = createCSVTempFileURL( writer => writer.println("Foo") )
+
+    val query = s"CREATE (a) WITH a LOAD CSV FROM '$url' AS line CREATE (b) CREATE (a)<-[:T]-(b)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("should have bound node recognized after projection with WITH + CALL") {
+    val query = "CREATE (a:L) WITH a CALL db.labels() YIELD label CREATE (b) CREATE (a)<-[:T]-(b)"
+
+    val result = executeWithCostPlannerOnly(query)
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1, labelsAdded = 1)
+  }
+
+  test("should have bound node recognized after projection with WITH + FOREACH") {
+    val query = "CREATE (a) WITH a FOREACH (i in [] | SET a.prop = 1) CREATE (b) CREATE (a)<-[:T]-(b)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("should have bound node recognized after projection with WITH + MERGE node") {
+    val query = "CREATE (a) WITH a MERGE (c) CREATE (b) CREATE (a)<-[:T]-(b)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("should have bound node recognized after projection with WITH + MERGE pattern") {
+    val query = "CREATE (a) WITH a MERGE (c)-[:T]->() CREATE (b) CREATE (a)<-[:T]-(b)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 4, relationshipsCreated = 2)
   }
 }

@@ -36,7 +36,11 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
 
   def withTail(newTail: PlannerQuery): PlannerQueryBuilder = {
-    copy(q = q.updateTailOrSelf(_.withTail(newTail)))
+    copy(q = q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toSeq)))))
+  }
+
+  private def currentlyExposedSymbols: Set[IdName] = {
+    q.lastQueryHorizon.exposedSymbols(q.lastQueryGraph)
   }
 
   def currentlyAvailableVariables: Set[IdName] = {
