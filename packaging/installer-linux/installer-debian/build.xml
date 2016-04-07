@@ -25,6 +25,29 @@
                 </fileset>
             </copy>
 
+            <!-- Make the Neo4j wrapper scripts available to debuild -->
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j"/>
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-admin"/>
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-backup"/>
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-import"/>
+            <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
+                  toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-shell"/>
+            <chmod perm="700">
+                <fileset dir="${project.build.outputDirectory}/@{name}">
+                    <include name="**/server/scripts/neo4j"/>
+                    <include name="**/server/scripts/neo4j-shell"/>
+                    <include name="**/server/scripts/neo4j-import"/>
+                    <include name="**/server/scripts/neo4j-backup"/>
+                    <include name="**/server/scripts/neo4j-admin"/>
+                </fileset>
+            </chmod>
+
+
+
             <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j-wrapper.conf"
                      token="unsupported.dbms.udc.source=tarball"
                      value="unsupported.dbms.udc.source=debian"/>
@@ -58,6 +81,13 @@ dbms.directories.certificates=/var/lib/neo4j/certificates
                     <include name="**/server/bin/neo4j-shell"/>
                     <include name="**/server/bin/neo4j-import"/>
                     <include name="**/server/bin/neo4j-backup"/>
+                    <include name="**/server/bin/neo4j-admin"/>
+
+                    <include name="**/server/scripts/neo4j"/>
+                    <include name="**/server/scripts/neo4j-shell"/>
+                    <include name="**/server/scripts/neo4j-import"/>
+                    <include name="**/server/scripts/neo4j-backup"/>
+                    <include name="**/server/scripts/neo4j-admin"/>
                 </fileset>
             </chmod>
 
