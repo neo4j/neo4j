@@ -22,7 +22,7 @@ package org.neo4j.server.security.auth;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.server.security.auth.exception.IllegalUsernameException;
+import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 
 /** A user repository implementation that just stores users in memory */
 public class InMemoryUserRepository implements UserRepository
@@ -36,7 +36,7 @@ public class InMemoryUserRepository implements UserRepository
     }
 
     @Override
-    public void create( User user ) throws IllegalUsernameException
+    public void create( User user ) throws IllegalCredentialsException
     {
         synchronized (this)
         {
@@ -45,7 +45,7 @@ public class InMemoryUserRepository implements UserRepository
             {
                 if ( other.name().equals( user.name() ) )
                 {
-                    throw new IllegalUsernameException( "The specified user already exists" );
+                    throw new IllegalCredentialsException( "The specified user already exists" );
                 }
             }
 
