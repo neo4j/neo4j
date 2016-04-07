@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.ProcedureSignature.ProcedureName;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.server.security.auth.AuthSubject;
+import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.helpers.collection.Iterators.map;
@@ -70,6 +71,10 @@ public class AlterUserPasswordProcedure extends CallableProcedure.BasicProcedure
         {
             throw new ProcedureException( Status.Security.Forbidden, e,
                     "Failed to change the password for the provided username" );
+        }
+        catch ( IllegalCredentialsException e )
+        {
+           throw new ProcedureException( e.status(), e, e.getMessage() );
         }
     }
 }

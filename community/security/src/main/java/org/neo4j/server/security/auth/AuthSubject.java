@@ -22,6 +22,7 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 
 public interface AuthSubject extends AccessMode
 {
@@ -29,5 +30,11 @@ public interface AuthSubject extends AccessMode
 
     AuthenticationResult getAuthenticationResult();
 
-    void setPassword( String password ) throws IOException;
+    /**
+     * Set the password for the AuthSubject
+     * @param password The new password
+     * @throws IOException If the new credentials cannot be serialized to disk.
+     * @throws IllegalCredentialsException If the new password is invalid.
+     */
+    void setPassword( String password ) throws IOException, IllegalCredentialsException;
 }

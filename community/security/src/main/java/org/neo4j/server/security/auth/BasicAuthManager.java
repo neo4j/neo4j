@@ -25,7 +25,7 @@ import java.time.Clock;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.server.security.auth.exception.IllegalUsernameException;
+import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 
 /**
  * Manages server authentication and authorization.
@@ -90,7 +90,8 @@ public class BasicAuthManager extends LifecycleAdapter implements AuthManager
     }
 
     @Override
-    public User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException, IllegalUsernameException
+    public User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
+            IllegalCredentialsException
     {
         assertAuthEnabled();
         assertValidName( username );

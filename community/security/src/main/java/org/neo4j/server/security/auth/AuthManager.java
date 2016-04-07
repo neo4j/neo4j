@@ -21,7 +21,7 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 
-import org.neo4j.server.security.auth.exception.IllegalUsernameException;
+import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 
 /**
  * An AuthManager is used to do basic authentication and user management.
@@ -51,10 +51,10 @@ public interface AuthManager
      * @param requirePasswordChange Does the user need to change the initial password.
      * @return A new user with the provided credentials.
      * @throws IOException If user can't be serialized to disk.
-     * @throws IllegalUsernameException If the username is invalid.
+     * @throws IllegalCredentialsException If the username is invalid.
      */
     User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
-            IllegalUsernameException;
+            IllegalCredentialsException;
 
     /**
      * Delete the given user
@@ -108,7 +108,7 @@ public interface AuthManager
                 }
 
                 @Override
-                public void setPassword( String password ) throws IOException
+                public void setPassword( String password ) throws IOException, IllegalCredentialsException
                 {
                 }
 
@@ -140,7 +140,7 @@ public interface AuthManager
 
         @Override
         public User newUser( String username, String initialPassword, boolean requirePasswordChange )
-                throws IOException, IllegalUsernameException
+                throws IOException, IllegalCredentialsException
         {
             return new User.Builder(  )
                     .withName( username )

@@ -29,6 +29,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.auth.AuthSubject;
 import org.neo4j.server.security.auth.BasicAuthManager;
+import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 
 /**
  * Performs basic authentication with user name and password.
@@ -110,6 +111,10 @@ public class BasicAuthentication implements Authentication
             catch ( IOException e )
             {
                 throw new AuthenticationException( Status.Security.Unauthorized, identifier.get(), e.getMessage(), e );
+            }
+            catch ( IllegalCredentialsException e )
+            {
+                throw new AuthenticationException(e.status(), identifier.get(), e.getMessage(), e );
             }
             break;
         default:
