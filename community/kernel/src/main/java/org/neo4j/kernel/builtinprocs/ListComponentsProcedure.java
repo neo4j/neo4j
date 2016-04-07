@@ -48,16 +48,19 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
 {
     private final String neo4jVersion;
+    private final String neo4jEdition;
 
-    public ListComponentsProcedure( ProcedureSignature.ProcedureName name, String neo4jVersion )
+    public ListComponentsProcedure( ProcedureSignature.ProcedureName name, String neo4jVersion, String neo4jEdition )
     {
         super( procedureSignature( name )
                 .out( "name", NTString )
                 // Since Bolt, Cypher and other components support multiple versions
                 // at the same time, list of versions rather than single version.
                 .out( "versions", NTList( NTString ) )
+                .out( "edition", NTString )
                 .build() );
         this.neo4jVersion = neo4jVersion;
+        this.neo4jEdition = neo4jEdition;
     }
 
     @Override
@@ -65,6 +68,6 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
             throws ProcedureException
     {
         return asRawIterator( singletonList(
-                new Object[]{"Neo4j Kernel", asList( neo4jVersion )}).iterator() );
+                new Object[]{"Neo4j Kernel", asList( neo4jVersion ), neo4jEdition}).iterator() );
     }
 }

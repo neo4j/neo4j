@@ -33,10 +33,12 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 public class BuiltInProcedures implements ThrowingConsumer<Procedures, ProcedureException>
 {
     private final String neo4jVersion;
+    private final String neo4jEdition;
 
-    public BuiltInProcedures( String neo4jVersion )
+    public BuiltInProcedures( String neo4jVersion, String neo4jEdition )
     {
         this.neo4jVersion = neo4jVersion;
+        this.neo4jEdition = neo4jEdition;
     }
 
     @Override
@@ -53,7 +55,7 @@ public class BuiltInProcedures implements ThrowingConsumer<Procedures, Procedure
         // These are 'sys'-namespaced procedures, they deal with DBMS-level
         // functionality - eg. things that apply across databases.
         procs.register( new ListProceduresProcedure( procedureName( "sys", "procedures" ) ) );
-        procs.register( new ListComponentsProcedure( procedureName( "sys", "components" ), neo4jVersion ) );
+        procs.register( new ListComponentsProcedure( procedureName( "sys", "components" ), neo4jVersion, neo4jEdition ) );
         procs.register( new JmxQueryProcedure( procedureName( "sys", "queryJmx" ), ManagementFactory.getPlatformMBeanServer() ) );
 
         // These are 'sys.auth'-namespaced procedures; these deal with authentication and authorization-oriented operations

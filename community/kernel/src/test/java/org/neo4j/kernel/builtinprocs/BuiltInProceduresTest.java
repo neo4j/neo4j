@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.Token;
 
@@ -164,7 +165,7 @@ public class BuiltInProceduresTest
             record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)" ),
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)" ),
             record( "sys.changePassword", "sys.changePassword(password :: STRING?) :: ()" ),
-            record( "sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?)" ),
+            record( "sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)" ),
             record( "sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)" ),
             record( "sys.queryJmx", "sys.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)")
         ) );
@@ -175,7 +176,7 @@ public class BuiltInProceduresTest
     {
         // When/Then
         assertThat( call( "sys.components" ), contains(
-            record( "Neo4j Kernel", singletonList( "1.3.37" ) )
+            record( "Neo4j Kernel", singletonList( "1.3.37" ), "enterprise" )
         ) );
     }
 
@@ -256,7 +257,7 @@ public class BuiltInProceduresTest
     @Before
     public void setup() throws Exception
     {
-        new BuiltInProcedures("1.3.37").accept( procs );
+        new BuiltInProcedures("1.3.37", Edition.enterprise.toString() ).accept( procs );
 
         when(tx.acquireStatement()).thenReturn( statement );
         when(statement.readOperations()).thenReturn( read );
