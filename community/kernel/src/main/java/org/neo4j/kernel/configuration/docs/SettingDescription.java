@@ -38,29 +38,8 @@ public final class SettingDescription
     private final boolean isMandatory;
     private final boolean hasDefault;
 
-    public SettingDescription( String name, String description, String mandatoryDescription, String deprecationDescription,
-            String validationDescription, String defaultValue,
-            boolean isDeprecated, boolean isMandatory, boolean hasDefault )
-    {
-
-        this(
-            // {key} is used for documenting group config, and this is not
-            // allowed in asciidoc references. Strip out the curlies.
-            "config_" + (name.replace( "{", "").replace( "}", "" ) ),
-            // And similarly, curlies need to be escaped when used in prose text
-            name.replace( "{", "\\{" ).replace( "}", "\\}" ),
-            
-            description, mandatoryDescription, deprecationDescription,
-            validationDescription, defaultValue, isDeprecated, isMandatory, hasDefault );
-    }
-
-    public SettingDescription( String id, String name, String description )
-    {
-        this( id, name, description, null, null, null, null, false, false, false );
-    }
-
-    private SettingDescription( String id, String name, String description,
-            String mandatoryDescription, String deprecationDescription,
+    public SettingDescription( String id, String name, String description, String mandatoryDescription, String
+            deprecationDescription,
             String validationDescription, String defaultValue,
             boolean isDeprecated, boolean isMandatory, boolean hasDefault )
     {
@@ -70,10 +49,15 @@ public final class SettingDescription
         this.validationDescription = validationDescription;
         this.defaultValue = defaultValue;
         this.isDeprecated = isDeprecated;
-        this.name = name;
+        this.name = name.replace( "{", "\\{" ).replace( "}", "\\}" );
         this.description = description;
         this.isMandatory = isMandatory;
         this.hasDefault = hasDefault;
+    }
+
+    public SettingDescription( String id, String name, String description )
+    {
+        this( id, name, description, null, null, null, null, false, false, false );
     }
 
     public String id()

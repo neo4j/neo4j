@@ -16,6 +16,7 @@
   <packaging>pom</packaging>
 
   <modules>
+    <module>config-docs</module>
     <module>contents</module>
     <module>javadocs</module>
     <module>refcard</module>

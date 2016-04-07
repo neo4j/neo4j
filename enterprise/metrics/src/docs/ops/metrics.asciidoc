@@ -64,7 +64,7 @@ NOTE: The CSV exporter does not automatically rotate the output files, so it is 
 [[metrics-config-reference]]
 == Configuration Settings Reference for Metrics
 
-include::configuration-attributes.asciidoc[]
+See the <<configuration-settings,configuration reference section>> for detailed documentation on available configuration options.
 
 [[available-metrics]]
 == Available Metrics

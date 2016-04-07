@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.configuration.docs;
 
-import org.junit.Test;
-
 import java.io.File;
+
+import org.junit.Test;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
@@ -31,6 +31,7 @@ import org.neo4j.kernel.configuration.Internal;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
@@ -179,23 +180,23 @@ public class SettingsDocumenterTest
                 "[options=\"header\"]%n" +
                 "|===%n" +
                 "|Name|Description%n" +
-                "|<<config_group.key.spot_count,group.\\{key\\}.spot_count>>|Number of spots this giraffe has, in " +
+                "|<<config_group.key.spot_count,group.(key).spot_count>>|Number of spots this giraffe has, in " +
                 "number.%n" +
-                "|<<config_group.key.type,group.\\{key\\}.type>>|Animal type.%n" +
+                "|<<config_group.key.type,group.(key).type>>|Animal type.%n" +
                 "|===%n" +
                 "endif::nonhtmloutput[]%n" +
                 "%n" +
                 "ifdef::nonhtmloutput[]%n" +
                 "%n" +
-                "* <<config_group.key.spot_count,group.\\{key\\}.spot_count>>: Number of spots this giraffe has, in " +
+                "* <<config_group.key.spot_count,group.(key).spot_count>>: Number of spots this giraffe has, in " +
                 "number.%n" +
-                "* <<config_group.key.type,group.\\{key\\}.type>>: Animal type.%n" +
+                "* <<config_group.key.type,group.(key).type>>: Animal type.%n" +
                 "endif::nonhtmloutput[]%n" +
                 "%n" +
                 "%n" +
                 "ifndef::nonhtmloutput[]%n" +
                 "[[config_group.key.spot_count]]%n" +
-                ".group.\\{key\\}.spot_count%n" +
+                ".group.(key).spot_count%n" +
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Number of spots this giraffe has, in number.%n" +
@@ -206,7 +207,7 @@ public class SettingsDocumenterTest
                 "%n" +
                 "ifdef::nonhtmloutput[]%n" +
                 "[[config_group.key.spot_count]]%n" +
-                ".group.\\{key\\}.spot_count%n" +
+                ".group.(key).spot_count%n" +
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Number of spots this giraffe has, in number.%n" +
@@ -217,7 +218,7 @@ public class SettingsDocumenterTest
                 "%n" +
                 "ifndef::nonhtmloutput[]%n" +
                 "[[config_group.key.type]]%n" +
-                ".group.\\{key\\}.type%n" +
+                ".group.(key).type%n" +
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Animal type.%n" +
@@ -228,7 +229,7 @@ public class SettingsDocumenterTest
                 "%n" +
                 "ifdef::nonhtmloutput[]%n" +
                 "[[config_group.key.type]]%n" +
-                ".group.\\{key\\}.type%n" +
+                ".group.(key).type%n" +
                 "[cols=\"<1h,<4\"]%n" +
                 "|===%n" +
                 "|Description a|Animal type.%n" +
@@ -276,6 +277,11 @@ public class SettingsDocumenterTest
     {
         @Description( "Number of spots this giraffe has, in number." )
         public final Setting<Integer> number_of_spots;
+
+        public Giraffe()
+        {
+            this("(key)");
+        }
 
         public Giraffe(String key)
         {

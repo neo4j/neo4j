@@ -20,10 +20,10 @@
 package org.neo4j.kernel.configuration.docs;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.config.Setting;
@@ -40,20 +40,19 @@ public class SettingsDescription
     /**
      * Create a description of a given class.
      */
-    public static SettingsDescription describe( Class<?> settingClass ) throws Exception
+    public static SettingsDescription describe( Class<?> settingClass )
     {
         String classDescription = settingClass.isAnnotationPresent( Description.class )
               ? settingClass.getAnnotation( Description.class ).value()
               : "List of configuration settings";
+        String settingsName = settingClass.getName().replace( "$", "-" );
         Object instance = null;
 
         for(Class<?> cls = settingClass; cls != null; cls = cls.getSuperclass() )
         {
             if( cls.isAnnotationPresent( Group.class ) )
             {
-                // Group classes are special, we need to instantiate them to read their
-                // configuration, this is how the group config DSL works
-                instance = settingClass.getConstructor( String.class ).newInstance( "{key}" );
+                instance = groupInstance( settingClass );
                 break;
             }
         }
@@ -87,6 +86,7 @@ public class SettingsDescription
                 }
 
                 settings.add( new SettingDescription(
+                        "config_" + (name.replace( "(", "").replace( ")", "" ) ),
                         name, description,
                         mandatoryMessage,
                         deprecationMessage,
@@ -101,9 +101,23 @@ public class SettingsDescription
 
         return new SettingsDescription(
                 // Nested classes have `$` in the name, which is an asciidoc keyword
-                settingClass.getName().replace( "$", "-" ),
+                settingsName,
                 classDescription,
                 settings );
+    }
+
+    private static Object groupInstance( Class<?> settingClass )
+    {
+        try
+        {
+            // Group classes are special, we need to instantiate them to read their
+            // configuration, this is how the group config DSL works
+            return settingClass.newInstance();
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     private static Optional<Setting<?>> fieldAsSetting( Class<?> settingClass, Object instance, Field field )
@@ -161,5 +175,23 @@ public class SettingsDescription
     public String name()
     {
         return name;
+    }
+
+    /**
+     * Combine this description with another one. This is an immutable operation,
+     * meaning it returns a new description that is the combination of this and the
+     * one passed in.
+     *
+     * The name and description is taken from this description, name and setting
+     * from the provided one are discarded.
+     *
+     * @param other another setting description
+     * @return the union of this and the provided settings description
+     */
+    public SettingsDescription union( SettingsDescription other )
+    {
+        ArrayList<SettingDescription> union = new ArrayList<>( this.settings );
+        union.addAll( other.settings );
+        return new SettingsDescription( name, description, union );
     }
 }
