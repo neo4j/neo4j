@@ -122,7 +122,7 @@ class InvalidSemanticsException(message: String, cause: Throwable) extends Cyphe
 }
 
 class MergeConstraintConflictException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  val status = Status.Statement.ConstraintVerificationFailed
+  val status = Status.Schema.ConstraintValidationFailed
   def this(message: String) = this(message, null)
 }
 

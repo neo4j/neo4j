@@ -129,22 +129,21 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   private def checkError(result: Try[Result], status: String, phase: String, detail: String): Unit = {
+    val statusType = if (status == "ConstraintValidationFailed") "Schema" else "Statement"
     result match {
       case Failure(e: QueryExecutionException) =>
-        s"Neo.ClientError.Statement.$status" should equal(e.getStatusCode)
+        s"Neo.ClientError.$statusType.$status" should equal(e.getStatusCode)
 
-        if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+")) {
+        if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+"))
           detail should equal("MapElementAccessByNonString")
-        }
-        else if (e.getMessage.matches("Expected .+ to be a java.lang.Number, but it was a .+")) {
+        else if (e.getMessage.matches("Expected .+ to be a java.lang.Number, but it was a .+"))
           detail should equal("ListElementAccessByNonInteger")
-        }
-        else if (e.getMessage.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+")) {
+        else if (e.getMessage.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+"))
           detail should equal("InvalidElementAccess")
-        }
-        else if (e.getMessage.matches(".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*")) {
+        else if (e.getMessage.matches(".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*"))
           detail should equal("CreateBlockedByConstraint")
-        }
+        else if (e.getMessage.matches("Node [0-9]+ already exists with label .+ and property \".+\"=\\[.+\\]"))
+          detail should equal("CreateBlockedByConstraint")
         else fail(s"Unknown runtime error: $e")
 
       case Failure(e) =>
