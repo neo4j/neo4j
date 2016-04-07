@@ -22,7 +22,6 @@ package org.neo4j.coreedge.raft.state;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
@@ -39,15 +38,10 @@ import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-
-import static java.lang.String.format;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.HOURS;
 
 public class CoreState extends LifecycleAdapter implements RaftStateMachine
 {
@@ -67,12 +61,10 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
 
     private long lastSeenCommitIndex = NOTHING;
     private long lastFlushed = NOTHING;
-    private boolean isShuttingDown;
 
+    private final CoreStateApplier applier;
     private final CoreServerSelectionStrategy selectionStrategy;
     private final CoreStateDownloader downloader;
-
-    private ExecutorService applier;
 
     public CoreState(
             RaftLog raftLog,
@@ -84,6 +76,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
             StateStorage<Long> lastApplyingStorage,
             StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
             CoreServerSelectionStrategy selectionStrategy,
+            CoreStateApplier applier,
             CoreStateDownloader downloader )
     {
         this.raftLog = raftLog;
@@ -92,6 +85,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
         this.progressTracker = progressTracker;
         this.lastApplyingStorage = lastApplyingStorage;
         this.sessionStorage = sessionStorage;
+        this.applier = applier;
         this.downloader = downloader;
         this.selectionStrategy = selectionStrategy;
         this.log = logProvider.getLog( getClass() );
@@ -110,22 +104,44 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
         if ( this.lastSeenCommitIndex != commitIndex )
         {
             this.lastSeenCommitIndex = commitIndex;
-            applier.submit( () -> {
-                try
-                {
-                    applyUpTo( commitIndex );
-                }
-                catch( InterruptedException e )
-                {
-                    log.warn( "Interrupted while applying", e );
-                }
-                catch ( Throwable e )
-                {
-                    log.error( "Failed to apply up to index " + commitIndex, e );
-                    dbHealth.get().panic( e );
-                }
-            } );
+            submitApplyJob( commitIndex );
         }
+    }
+
+    private void submitApplyJob( long lastToApply )
+    {
+        applier.submit( ( status ) -> () -> {
+            try ( RaftLogCursor cursor = raftLog.getEntryCursor( lastApplied + 1 ) )
+            {
+                lastApplyingStorage.persistStoreData( lastToApply );
+
+                while ( cursor.next() && cursor.index() <= lastToApply )
+                {
+                    if ( cursor.get().content() instanceof DistributedOperation )
+                    {
+                        DistributedOperation distributedOperation = (DistributedOperation) cursor.get().content();
+
+                        progressTracker.trackReplication( distributedOperation );
+                        handleOperation( cursor.index(), distributedOperation );
+
+                        maybeFlush();
+                    }
+
+                    assert cursor.index() == (lastApplied + 1);
+                    lastApplied = cursor.index();
+
+                    if ( status.isCancelled() )
+                    {
+                        return;
+                    }
+                }
+            }
+            catch ( Throwable e )
+            {
+                log.error( "Failed to apply up to index " + lastToApply, e );
+                dbHealth.get().panic( e );
+            }
+        } );
     }
 
     @Override
@@ -165,7 +181,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
      */
     public synchronized void downloadSnapshot( AdvertisedSocketAddress source ) throws InterruptedException, StoreCopyFailedException
     {
-        if( !syncExecutor( false, true ) )
+        if ( !applier.sync( true ) )
         {
             throw new StoreCopyFailedException( "Failed to synchronize with executor" );
         }
@@ -173,44 +189,9 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
         downloader.downloadSnapshot( source, this );
     }
 
-    private void applyUpTo( long lastToApply ) throws IOException, RaftLogCompactedException, InterruptedException
-    {
-        try ( RaftLogCursor cursor = raftLog.getEntryCursor( lastApplied + 1 ) )
-        {
-            lastApplyingStorage.persistStoreData( lastToApply );
-
-            while ( cursor.next() && cursor.index() <= lastToApply )
-            {
-                if( cursor.get().content() instanceof DistributedOperation )
-                {
-                    DistributedOperation distributedOperation = (DistributedOperation) cursor.get().content();
-
-                    progressTracker.trackReplication( distributedOperation );
-                    handleOperation( cursor.index(), distributedOperation );
-
-                    maybeFlush();
-                }
-
-                assert cursor.index() == (lastApplied + 1);
-                lastApplied = cursor.index();
-
-                if( Thread.interrupted() )
-                {
-                    throw new InterruptedException(
-                            format( "Interrupted while applying at lastApplied=%d with lastToApply=%d", lastApplied, lastToApply ) );
-                }
-
-                if( isShuttingDown )
-                {
-                    return;
-                }
-            }
-        }
-    }
-
     private void handleOperation( long commandIndex, DistributedOperation operation ) throws IOException
     {
-        if( !sessionState.validateOperation( operation.globalSession(), operation.operationId() ) )
+        if ( !sessionState.validateOperation( operation.globalSession(), operation.operationId() ) )
         {
             return;
         }
@@ -238,62 +219,20 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
         lastFlushed = lastApplied;
     }
 
-    /**
-     * Used for synchronizing with the internal executor.
-     *
-     * @param cancelTasks     Tries to cancel pending tasks.
-     * @param willContinue    The executor should continue to accept tasks.
-     *
-     * @return Returns true if the executor managed to synchronize with the executor, meaning
-     *         it successfully finished pending tasks and is now idle. Otherwise false.
-     *
-     * @throws InterruptedException
-     */
-    boolean syncExecutor( boolean cancelTasks, boolean willContinue ) throws InterruptedException
-    {
-        boolean isSuccess = true;
-
-        if( applier != null )
-        {
-            if( cancelTasks )
-            {
-                applier.shutdownNow();
-            }
-            else
-            {
-                applier.shutdown();
-            }
-
-            if( !applier.awaitTermination( 1, HOURS ) )
-            {
-                log.error( "Applier did not terminate in 1 hour." );
-                isSuccess = false;
-            }
-        }
-
-        if( willContinue )
-        {
-            applier = newSingleThreadExecutor( new NamedThreadFactory( "core-state-applier" ) );
-        }
-
-        return isSuccess;
-    }
-
     @Override
     public synchronized void start() throws IOException, RaftLogCompactedException, InterruptedException
     {
         lastFlushed = lastApplied = lastFlushedStorage.getInitialState();
         sessionState = sessionStorage.getInitialState();
 
-        syncExecutor( false, true );
-        applyUpTo( lastApplyingStorage.getInitialState() );
+        submitApplyJob( lastApplyingStorage.getInitialState() );
+        applier.sync( false );
     }
 
     @Override
     public synchronized void stop() throws Throwable
     {
-        isShuttingDown = true;
-        if( syncExecutor( false, false ) )
+        if ( applier.sync( true ) )
         {
             flush();
         }
