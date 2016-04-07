@@ -31,7 +31,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
   implicit val monitor = mock[PipeMonitor]
 
   test("should return a count for relationships without a type or any labels") {
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes.empty, None, bothDirections = false)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes.empty, None)()
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, WILDCARD, WILDCARD)).thenReturn(42L).getMock[QueryContext]
@@ -43,7 +43,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     implicit val table = new SemanticTable()
     table.resolvedRelTypeNames.put("X", RelTypeId(22))
 
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Seq(RelTypeName("X")(pos))), None, bothDirections = false)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Seq(RelTypeName("X")(pos))), None)()
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
@@ -56,7 +56,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     table.resolvedRelTypeNames.put("X", RelTypeId(22))
     table.resolvedLabelIds.put("A", LabelId(12))
 
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Seq(RelTypeName("X")(pos))), None, bothDirections = false)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Seq(RelTypeName("X")(pos))), None)()
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
@@ -64,25 +64,10 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(42L))
   }
 
-  test("should return a count for relationships with a type and start label and un-directed relationship") {
-    implicit val table = new SemanticTable()
-    table.resolvedRelTypeNames.put("X", RelTypeId(22))
-    table.resolvedLabelIds.put("A", LabelId(12))
-
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Seq(RelTypeName("X")(pos))), None, bothDirections = true)()
-
-    val mockedContext: QueryContext = mock[QueryContext]
-    when(mockedContext.relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L)
-    when(mockedContext.relationshipCountByCountStore(WILDCARD, 22, 12)).thenReturn(38L)
-    val queryState = QueryStateHelper.emptyWith(query = mockedContext)
-
-    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(80L))
-  }
-
   test("should return zero if rel-type is missing") {
     implicit val table = new SemanticTable()
 
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Seq("X")), Some(LazyLabel(LabelName("A") _)), bothDirections = false)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Seq("X")), Some(LazyLabel(LabelName("A") _)))()
 
     val mockedContext: QueryContext = mock[QueryContext]
     // try to guarantee that the mock won't be the reason for the exception

@@ -65,12 +65,11 @@ object PlanDescriptionArgumentSerializer {
       case CountNodesExpression(ident, label) =>
         val node = label.map(l => ":" + l.name).mkString
         s"count( ($node) )" + (if (ident.startsWith(" ")) "" else s" AS $ident")
-      case CountRelationshipsExpression(ident, startLabel, LazyTypes(typeNames), endLabel, bothDirections) =>
+      case CountRelationshipsExpression(ident, startLabel, LazyTypes(typeNames), endLabel) =>
         val start = startLabel.map(l => ":" + l.name).mkString
         val end = endLabel.map(l => ":" + l.name).mkString
         val types = typeNames.mkString(":", "|:", "")
-        val dirArrow = if (bothDirections) "" else ">"
-        s"count( ($start)-[$types]-$dirArrow($end) )" + (if (ident.unnamed) "" else s" AS $ident")
+        s"count( ($start)-[$types]->($end) )" + (if (ident.unnamed) "" else s" AS $ident")
       case Signature(procedureName, args, results) =>
         val argString = args.mkString(", ")
         val resultString = results.map { case (name, typ) => s"$name :: $typ" }.mkString(", ")

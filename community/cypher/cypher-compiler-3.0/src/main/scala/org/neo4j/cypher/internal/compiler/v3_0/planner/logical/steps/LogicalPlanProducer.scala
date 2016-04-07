@@ -397,11 +397,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   }
 
   def planCountStoreRelationshipAggregation(query: PlannerQuery, idName: IdName, startLabel: Option[LabelName],
-                                            typeNames: LazyTypes, endLabel: Option[LabelName], bothDirections: Boolean,
-                                            argumentIds: Set[IdName])
+                                            typeNames: LazyTypes, endLabel: Option[LabelName], argumentIds: Set[IdName])
                                            (implicit context: LogicalPlanningContext) = {
     val solved: PlannerQuery = RegularPlannerQuery(query.queryGraph, query.horizon)
-    RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, bothDirections, argumentIds)(solved)
+    RelationshipCountFromCountStore(idName, startLabel, typeNames, endLabel, argumentIds)(solved)
   }
 
   def planSkip(inner: LogicalPlan, count: Expression)(implicit context: LogicalPlanningContext) = {
