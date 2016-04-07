@@ -19,102 +19,59 @@
  */
 package org.neo4j.bolt.v1.runtime.internal;
 
-import java.nio.charset.StandardCharsets;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
-
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
-import org.neo4j.udc.UsageData;
-import org.neo4j.udc.UsageDataKeys;
 
-import static javax.xml.bind.DatatypeConverter.printBase64Binary;
+import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Convert the mixed exceptions the underlying engine can throw to a cohesive set of known failures. This is an
- * intermediary mechanism.
+ * Report received exceptions into the appropriate log (console or debug) and format exception stack traces in debug.log
+ * humanely.
  */
-public class ErrorReporter
+class ErrorReporter
 {
-    private static final String NO_ERROR_DATA_AVAILABLE = "(No error data available)";
+    private static final String EMPTY_STRING = "";
 
     private final Log userLog;
-    private final UsageData usageData;
+    private final Log debugLog;
 
-    public ErrorReporter( LogService logging, UsageData usageData )
+    ErrorReporter( LogService logging )
     {
-        this(logging.getUserLog( ErrorReporter.class ), usageData );
+        this.userLog = logging.getUserLog( ErrorReporter.class );
+        this.debugLog = logging.getInternalLog( ErrorReporter.class );
     }
 
-    public ErrorReporter( Log userLog, UsageData usageData )
+    ErrorReporter( Log userLog, Log debugLog )
     {
         this.userLog = userLog;
-        this.usageData = usageData;
+        this.debugLog = debugLog;
     }
 
     public void report( Neo4jError error )
     {
         if ( !error.status().code().classification().publishable() )
         {
-            // Log unknown errors.
-            userLog.error( String.format(
-                    "Client triggered unexpected error. Help us fix this error by emailing the " +
-                            "following report to issues@neotechnology.com: %n%s",
-                    generateReport( error ) ) );
+            userLog.error( format( "Client triggered an unexpected error: %s. See debug.log for more details.",
+                    error.cause().getMessage() ) );
         }
-    }
 
-    /**
-     * For unrecognized errors, we generate a report and urge users to send it to us for debugging. The report just contains some basic system info
-     * and a base64-encoded stack trace.
-     */
-    private String generateReport( Neo4jError error )
-    {
-        // To avoid having users send us just the exception message or just part of the stack traces, encode the whole
-        // stack trace into a Base64 string, and wrap the report explicitly in start/end markers to show users where
-        // to cut and paste.
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
-        dateFormat.setTimeZone( TimeZone.getTimeZone( "UTC" ) );
-        return String.format( "---- START OF REPORT ----%n" +
-                              "Date             : %s%n" +
-                              "Neo4j Version    : %s %s%n" +
-                              "Operational mode : %s%n" +
-                              "Java Version     : %s%n" +
-                              "OS               : %s%n" +
-                              "Reference        : %s%n" + // This will help us correlate emailed reports with user logs
-                              "Status code      : %s&n" +
-                              "Message          : %s&n" +
-                              "Error data       : %n" +
-                              "%s%n" +
-                              "---- END OF REPORT ----%n",
-                dateFormat.format( new Date() ),
-                usageData.get( UsageDataKeys.edition ).name(),
-                usageData.get( UsageDataKeys.version ),
-                usageData.get( UsageDataKeys.operationalMode ).name(),
-                System.getProperty("java.version"),
-                System.getProperty("os.name"),
-                error.reference(),
-                error.status(),
-                error.message(),
-                errorData( error.cause() ) );
-    }
-
-    public String errorData( Throwable cause )
-    {
-        if ( cause == null )
+        if(somethingToLog(error))
         {
-            return NO_ERROR_DATA_AVAILABLE;
-        }
-        else
-        {
-            return printBase64Binary(
-                    Exceptions.stringify( cause ).getBytes( StandardCharsets.UTF_8 ) )
-                    // Below replaceAll call inserts a line break every 100 characters
-                    .replaceAll( "(.{100})", "$1" + System.lineSeparator() );
+            debugLog.error( formatFixedWidth( error.cause() ) );
         }
     }
 
+    private boolean somethingToLog( Neo4jError error )
+    {
+        return error != null && error.cause() != null;
+    }
+
+    private String formatFixedWidth( Throwable cause )
+    {
+        // replaceAll call inserts a line break every 100 characters
+        return new String( Exceptions.stringify( cause ).getBytes( UTF_8 ) )
+                .replaceAll( "(.{100})", "$1" + System.lineSeparator() );
+    }
 }
