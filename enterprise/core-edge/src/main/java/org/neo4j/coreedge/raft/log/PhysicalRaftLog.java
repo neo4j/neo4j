@@ -31,6 +31,7 @@ import org.neo4j.coreedge.raft.log.physical.SingleVersionReader;
 import org.neo4j.coreedge.raft.log.physical.VersionIndexRanges;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.cursor.CursorValue;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Reference;
 import org.neo4j.helpers.collection.LruCache;
@@ -56,7 +57,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-
 import static org.neo4j.coreedge.raft.log.physical.RaftLogPruneStrategyFactory.fromConfigValue;
 
 // TODO: Handle recovery better; e.g add missing continuation records
@@ -211,7 +211,8 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         final IOCursor<RaftLogAppendRecord> inner = entryStore.getEntriesFrom( fromIndex );
         return new RaftLogCursor()
         {
-            private RaftLogEntry current = null;
+            private CursorValue<RaftLogEntry> current = new CursorValue<>();
+            private long index = fromIndex - 1;
 
             @Override
             public boolean next() throws IOException
@@ -219,11 +220,12 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
                 boolean hasNext = inner.next();
                 if ( hasNext )
                 {
-                    current = inner.get().logEntry();
+                    current.set( inner.get().logEntry() );
+                    index++;
                 }
                 else
                 {
-                    current = null;
+                    current.invalidate();
                 }
                 return hasNext;
             }
@@ -235,9 +237,15 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
             }
 
             @Override
+            public long index()
+            {
+                return index;
+            }
+
+            @Override
             public RaftLogEntry get()
             {
-                return current;
+                return current.get();
             }
         };
     }

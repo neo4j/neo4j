@@ -358,6 +358,12 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
             }
 
             @Override
+            public long index()
+            {
+                return currentIndex;
+            }
+
+            @Override
             public RaftLogEntry get()
             {
                 return current.get();

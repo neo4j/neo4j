@@ -31,6 +31,8 @@ public interface RaftLogCursor extends RawCursor<RaftLogEntry,Exception>
     @Override
     void close() throws IOException;
 
+    long index();
+
     static RaftLogCursor empty()
     {
         return new RaftLogCursor()
@@ -44,6 +46,12 @@ public interface RaftLogCursor extends RawCursor<RaftLogEntry,Exception>
             @Override
             public void close() throws IOException
             {
+            }
+
+            @Override
+            public long index()
+            {
+                return -1;
             }
 
             @Override

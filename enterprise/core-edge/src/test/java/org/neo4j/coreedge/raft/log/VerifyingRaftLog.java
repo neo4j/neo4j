@@ -153,6 +153,7 @@ class VerifyingRaftLog implements RaftLog
                     if( expectedNext )
                     {
                         assertEquals( expectedCursor.get(), otherCursor.get() );
+                        assertEquals( expectedCursor.index(), otherCursor.index() );
                     }
                 } while( expectedNext );
             }
