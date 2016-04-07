@@ -611,7 +611,7 @@ public class ProcedureIT
             }
         }
 
-        return "file://" + file.getAbsolutePath();
+        return file.toURI().toURL().toString();
     }
 
     @Before
