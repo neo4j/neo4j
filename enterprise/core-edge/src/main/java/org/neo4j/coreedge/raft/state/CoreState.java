@@ -67,6 +67,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
 
     private long lastSeenCommitIndex = NOTHING;
     private long lastFlushed = NOTHING;
+    private boolean isShuttingDown;
 
     private final CoreServerSelectionStrategy selectionStrategy;
     private final CoreStateDownloader downloader;
@@ -164,7 +165,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
      */
     public synchronized void downloadSnapshot( AdvertisedSocketAddress source ) throws InterruptedException, StoreCopyFailedException
     {
-        if( !syncExecutor( true, true ) )
+        if( !syncExecutor( false, true ) )
         {
             throw new StoreCopyFailedException( "Failed to synchronize with executor" );
         }
@@ -197,6 +198,11 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
                 {
                     throw new InterruptedException(
                             format( "Interrupted while applying at lastApplied=%d with lastToApply=%d", lastApplied, lastToApply ) );
+                }
+
+                if( isShuttingDown )
+                {
+                    return;
                 }
             }
         }
@@ -286,7 +292,8 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
     @Override
     public synchronized void stop() throws Throwable
     {
-        if( syncExecutor( true, false ) )
+        isShuttingDown = true;
+        if( syncExecutor( false, false ) )
         {
             flush();
         }
