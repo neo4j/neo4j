@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.replication.DistributedOperation;
@@ -125,6 +126,23 @@ public class CoreStateTest
 
         // then
         verify( txStateMachine, times( 0 ) ).dispatch( any( ReplicatedTransaction.class ), anyInt() );
+    }
+
+    @Test
+    public void entriesThatAreNotStateMachineCommandsShouldStillIncreaseCommandIndex() throws Exception
+    {
+        // given
+        coreState.setStateMachine( txStateMachine, -1 );
+        coreState.start();
+
+        // when
+        raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
+        raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
+        coreState.notifyCommitted( 1 );
+        coreState.syncExecutor( false, false );
+
+        // then
+        verify( txStateMachine ).dispatch( nullTx, 1L );
     }
 
     // TODO: Test recovery, see CoreState#start().
