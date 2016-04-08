@@ -29,7 +29,7 @@ Examples of use cases for procedures are:
 To call a stored procedure, use a Cypher `CALL` clause.
 The procedure name must be fully qualified, so a procedure named `findDenseNodes` defined in the package `org.neo4j.examples` could be called using:
 
-[snippet, cypher]
+[source, cypher]
 ----
 CALL org.neo4j.examples.findDenseNodes(1000)
 ----
