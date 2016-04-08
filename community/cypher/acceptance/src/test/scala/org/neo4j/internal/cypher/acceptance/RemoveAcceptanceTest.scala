@@ -22,6 +22,8 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 
 class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+
+  // TCK'd
   test("should ignore nulls") {
     val n = createNode("apa" -> 42)
 
@@ -29,6 +31,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("n" -> n)))
   }
 
+  // TCK'd
   test("remove a single label") {
     // GIVEN
     createLabeledNode(Map("prop" -> 42), "L")
@@ -41,6 +44,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("n.prop" -> 42)))
   }
 
+  // TCK'd
   test("remove multiple labels") {
     // GIVEN
     createLabeledNode(Map("prop" -> 42), "L1", "L2", "L3")
@@ -53,6 +57,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("labels(n)" -> List("L2"))))
   }
 
+  // TCK'd
   test("remove a single node property") {
     // GIVEN
     createLabeledNode(Map("prop" -> 42), "L")
@@ -65,6 +70,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("still_there" -> false)))
   }
 
+  // TCK'd
   test("remove multiple node properties") {
     // GIVEN
     createLabeledNode(Map("prop" -> 42, "a" -> "a", "b" -> "B"), "L")
@@ -77,6 +83,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("props" -> 1)))
   }
 
+  // TCK'd
   test("remove a single relationship property") {
     // GIVEN
     relate(createNode(), createNode(), "X", Map("prop" -> 42))
@@ -89,6 +96,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("still_there" -> false)))
   }
 
+  // TCK'd
   test("remove multiple relationship properties") {
     // GIVEN
     relate(createNode(), createNode(), "X", Map("prop" -> 42, "a" -> "a", "b" -> "B"))
@@ -101,6 +109,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("props" -> 1)))
   }
 
+  // TCK'd
   test("removing an missing property is a valid operation") {
     // GIVEN
     createNode()
