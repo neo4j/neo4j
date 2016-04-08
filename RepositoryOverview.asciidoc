@@ -197,9 +197,7 @@ and `src/main/scala` for Scala code.
 Tests are located in the `src/test/java` and `src/test/scala` directories.
 More information about the maven conventions can be found http://maven.apache.org/guides/introduction/introduction-to-the-standard-directory-layout.html[here].
 
-Finally, each module can have documentation.
-This documentation is located in the `src/docs` folder,
-which is organized as described http://neo4j.com/docs/milestone/community-docs.html#_file_structure_in_emphasis_docs_jar_emphasis[here].
+Finally, each module may have documentation, which is located in the `src/docs` folder.
 These documentation files can be incorporated into http://neo4j.com/docs/milestone/index.html[the manual]
 by including them in the neo4j-manual component.
 
