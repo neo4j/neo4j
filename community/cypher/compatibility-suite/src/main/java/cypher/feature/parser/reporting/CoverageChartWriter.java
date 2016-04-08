@@ -43,12 +43,12 @@ import javax.imageio.ImageIO;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-public class ChartWriter
+public class CoverageChartWriter
 {
     private final File outDirectory;
     private final String filename;
 
-    public ChartWriter( File outDirectory, String filename )
+    public CoverageChartWriter( File outDirectory, String filename )
     {
         this.outDirectory = outDirectory;
         this.filename = filename;

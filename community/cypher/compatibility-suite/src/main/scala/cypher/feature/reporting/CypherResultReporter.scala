@@ -22,7 +22,7 @@ package cypher.feature.reporting
 import java.io.{File, PrintStream}
 
 import cypher.cucumber.CucumberAdapter
-import cypher.feature.parser.reporting.ChartWriter
+import cypher.feature.parser.reporting.{CombinationChartWriter, CoverageChartWriter}
 import gherkin.formatter.model.{Match, Result, Step}
 import org.opencypher.tools.tck.constants.TCKStepDefinitions
 
@@ -36,13 +36,15 @@ object CypherResultReporter {
   }
 }
 
-class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, chartWriter: ChartWriter)
+class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, chartWriter: CoverageChartWriter,
+                           combinationChartWriter: CombinationChartWriter)
   extends CucumberAdapter {
 
   def this(reportDir: File) = {
     this(producer = JsonProducer,
          jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json"),
-         chartWriter = new ChartWriter(reportDir, "tags"))
+         chartWriter = new CoverageChartWriter(reportDir, "tags"),
+         combinationChartWriter = new CombinationChartWriter(reportDir, "tagCombinations"))
   }
 
   private var query: String = null
@@ -52,8 +54,10 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, ch
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())
-    chartWriter.dumpSVG(producer.dumpTagStats())
-    chartWriter.dumpPNG(producer.dumpTagStats())
+    chartWriter.dumpSVG(producer.dumpTagStats)
+    chartWriter.dumpPNG(producer.dumpTagStats)
+    val stats = producer.dumpTagCombinationStats
+    combinationChartWriter.dumpHTML(stats._1, stats._2)
   }
 
   override def close(): Unit = {

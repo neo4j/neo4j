@@ -48,6 +48,7 @@
     <version-package>cypher.internal</version-package>
     <scala.version>2.11.8</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
+    <opencypher.version>1.2016-04-15</opencypher.version>
   </properties>
 
   <repositories>
@@ -89,7 +90,13 @@
     <dependency>
       <groupId>org.opencypher</groupId>
       <artifactId>tck</artifactId>
-      <version>1.2016-04-11</version>
+      <version>${opencypher.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opencypher</groupId>
+      <artifactId>grammar</artifactId>
+      <version>${opencypher.version}</version>
     </dependency>
 
     <!-- JSON -->
