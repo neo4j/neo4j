@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.{CastSupport, CollectionSupport, IsCollection, IsMap}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
@@ -37,7 +37,19 @@ with CollectionSupport {
         m(state.query).getOrElse(idx, null)
 
       case IsCollection(collection) =>
-        var idx = CastSupport.castOrFail[Number](index(ctx)).intValue()
+        val number = CastSupport.castOrFail[Number](index(ctx))
+
+        val longValue = number match {
+          case _ : java.lang.Double | _: java.lang.Float =>
+            throw new CypherTypeException(s"Cannot index an array with an non-integer number, got $number")
+          case _ => number.longValue()
+        }
+
+        if (longValue > Int.MaxValue || longValue < Int.MinValue)
+          throw new InvalidArgumentException(s"Cannot index an array using a value bigger than ${Int.MaxValue} or smaller than ${Int.MinValue}, got $number")
+
+        var idx = longValue.toInt
+
         val collectionValue = collection.toVector
 
         if (idx < 0)
