@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 
@@ -65,17 +64,17 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     }
 
     @Override
-    protected void doReadInternal( NodeRecord record, PageCursor cursor, int recordSize, long headerByte, boolean inUse,
-            DataAdapter<PageCursor> adapter )
+    protected void doReadInternal( NodeRecord record, PageCursor cursor, int recordSize, long headerByte,
+                                   boolean inUse )
     {
         // Interpret the header byte
         boolean dense = has( headerByte, DENSE_NODE_BIT );
 
         // Now read the rest of the data. The adapter will take care of moving the cursor over to the
         // other unit when we've exhausted the first one.
-        long nextRel = decode( cursor, adapter, headerByte, HAS_RELATIONSHIP_BIT, NULL );
-        long nextProp = decode( cursor, adapter, headerByte, HAS_PROPERTY_BIT, NULL );
-        long labelField = decode( cursor, adapter, headerByte, HAS_LABELS_BIT, NULL_LABELS );
+        long nextRel = decode( cursor, headerByte, HAS_RELATIONSHIP_BIT, NULL );
+        long nextProp = decode( cursor, headerByte, HAS_PROPERTY_BIT, NULL );
+        long labelField = decode( cursor, headerByte, HAS_LABELS_BIT, NULL_LABELS );
         record.initialize( inUse, nextProp, dense, nextRel, labelField );
     }
 
@@ -99,11 +98,11 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
     }
 
     @Override
-    protected void doWriteInternal( NodeRecord record, PageCursor cursor, DataAdapter<PageCursor> adapter )
+    protected void doWriteInternal( NodeRecord record, PageCursor cursor )
             throws IOException
     {
-        encode( cursor, adapter, record.getNextRel(), NULL );
-        encode( cursor, adapter, record.getNextProp(), NULL );
-        encode( cursor, adapter, record.getLabelField(), NULL_LABELS );
+        encode( cursor, record.getNextRel(), NULL );
+        encode( cursor, record.getNextProp(), NULL );
+        encode( cursor, record.getLabelField(), NULL_LABELS );
     }
 }

@@ -51,10 +51,10 @@ class RelationshipRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<Relatio
             // [    ,   x] in use flag
             // [    ,xxx ] first node high order bits
             // [xxxx,    ] next prop high order bits
-            long firstNode = cursor.getUnsignedInt();
+            long firstNode = cursor.getInt() & 0xFFFFFFFFL;
             long firstNodeMod = (headerByte & 0xEL) << 31;
 
-            long secondNode = cursor.getUnsignedInt();
+            long secondNode = cursor.getInt() & 0xFFFFFFFFL;
 
             // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
             // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
@@ -66,19 +66,19 @@ class RelationshipRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<Relatio
             long secondNodeMod = (typeInt & 0x70000000L) << 4;
             int type = (int)(typeInt & 0xFFFF);
 
-            long firstPrevRel = cursor.getUnsignedInt();
+            long firstPrevRel = cursor.getInt() & 0xFFFFFFFFL;
             long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
 
-            long firstNextRel = cursor.getUnsignedInt();
+            long firstNextRel = cursor.getInt() & 0xFFFFFFFFL;
             long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
 
-            long secondPrevRel = cursor.getUnsignedInt();
+            long secondPrevRel = cursor.getInt() & 0xFFFFFFFFL;
             long secondPrevRelMod = (typeInt & 0x380000L) << 13;
 
-            long secondNextRel = cursor.getUnsignedInt();
+            long secondNextRel = cursor.getInt() & 0xFFFFFFFFL;
             long secondNextRelMod = (typeInt & 0x70000L) << 16;
 
-            long nextProp = cursor.getUnsignedInt();
+            long nextProp = cursor.getInt() & 0xFFFFFFFFL;
             long nextPropMod = (headerByte & 0xF0L) << 28;
 
             record.initialize( inUse,

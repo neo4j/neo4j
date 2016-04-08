@@ -225,77 +225,69 @@ final class MuninnPagedFile implements PagedFile
     void flushAndForceInternal( FlushEventOpportunity flushOpportunity, boolean forClosing, IOLimiter limiter )
             throws IOException
     {
-        pageCache.pauseBackgroundFlushTask();
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
         Flushable flushable = swapper::force;
         MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         long limiterStamp = IOLimiter.INITIAL_STAMP;
-        try
+        for ( Object[] chunk : translationTable )
         {
-            for ( Object[] chunk : translationTable )
+            // TODO Look into if we can tolerate flushing a few clean pages if it means we can use larger vectors.
+            // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
+            // TODO garbage to the file.
+            int pagesGrabbed = 0;
+            chunkLoop:for ( int i = 0; i < chunk.length; i++ )
             {
-                // TODO Look into if we can tolerate flushing a few clean pages if it means we can use larger vectors.
-                // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
-                // TODO garbage to the file.
-                int pagesGrabbed = 0;
-                chunkLoop:for ( int i = 0; i < chunk.length; i++ )
-                {
-                    filePageId++;
+                filePageId++;
 
-                    long offset = computeChunkOffset( filePageId );
-                    // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
-                    // in getting a lock on all available pages.
-                    for (;;)
+                long offset = computeChunkOffset( filePageId );
+                // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
+                // in getting a lock on all available pages.
+                for (;;)
+                {
+                    Object element = UnsafeUtil.getObjectVolatile( chunk, offset );
+                    if ( element instanceof MuninnPage )
                     {
-                        Object element = UnsafeUtil.getObjectVolatile( chunk, offset );
-                        if ( element instanceof MuninnPage )
+                        MuninnPage page = (MuninnPage) element;
+                        if ( !(forClosing? page.tryExclusiveLock() : page.tryFlushLock()) )
                         {
-                            MuninnPage page = (MuninnPage) element;
-                            if ( !(forClosing? page.tryExclusiveLock() : page.tryFlushLock()) )
-                            {
-                                continue;
-                            }
-                            if ( page.isBoundTo( swapper, filePageId ) && page.isDirty() )
-                            {
-                                // The page is still bound to the expected file and file page id after we locked it,
-                                // so we didn't race with eviction and faulting, and the page is dirty.
-                                // So we add it to our IO vector.
-                                pages[pagesGrabbed] = page;
-                                pagesGrabbed++;
-                                continue chunkLoop;
-                            }
-                            else if ( forClosing )
-                            {
-                                page.unlockExclusive();
-                            }
-                            else
-                            {
-                                page.unlockFlush();
-                            }
+                            continue;
                         }
-                        break;
+                        if ( page.isBoundTo( swapper, filePageId ) && page.isDirty() )
+                        {
+                            // The page is still bound to the expected file and file page id after we locked it,
+                            // so we didn't race with eviction and faulting, and the page is dirty.
+                            // So we add it to our IO vector.
+                            pages[pagesGrabbed] = page;
+                            pagesGrabbed++;
+                            continue chunkLoop;
+                        }
+                        else if ( forClosing )
+                        {
+                            page.unlockExclusive();
+                        }
+                        else
+                        {
+                            page.unlockFlush();
+                        }
                     }
-                    if ( pagesGrabbed > 0 )
-                    {
-                        vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
-                        limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, flushable );
-                        pagesGrabbed = 0;
-                    }
+                    break;
                 }
                 if ( pagesGrabbed > 0 )
                 {
                     vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
                     limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, flushable );
+                    pagesGrabbed = 0;
                 }
             }
+            if ( pagesGrabbed > 0 )
+            {
+                vectoredFlush( pages, pagesGrabbed, flushOpportunity, forClosing );
+                limiterStamp = limiter.maybeLimitIO( limiterStamp, pagesGrabbed, flushable );
+            }
+        }
 
-            swapper.force();
-        }
-        finally
-        {
-            pageCache.unpauseBackgroundFlushTask();
-        }
+        swapper.force();
     }
 
     private void vectoredFlush(

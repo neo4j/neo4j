@@ -26,12 +26,12 @@ import org.neo4j.io.pagecache.PageSwapper;
 final class MuninnReadPageCursor extends MuninnPageCursor
 {
     private final CursorPool.CursorSets cursorSets;
-    protected long lockStamp;
+    private long lockStamp;
     MuninnReadPageCursor nextCursor;
 
-    public MuninnReadPageCursor( CursorPool.CursorSets cursorSets, int cachePageSize )
+    MuninnReadPageCursor( CursorPool.CursorSets cursorSets, long victimPage )
     {
-        super( cachePageSize );
+        super( victimPage );
         this.cursorSets = cursorSets;
     }
 
@@ -102,12 +102,14 @@ final class MuninnReadPageCursor extends MuninnPageCursor
         {
             startRetry();
         }
-        return needsRetry;
+        boolean linkedNeedsRetry = linkedCursor != null && linkedCursor.shouldRetry();
+        return needsRetry || linkedNeedsRetry;
     }
 
     private void startRetry() throws IOException
     {
         setOffset( 0 );
+        checkAndClearBoundsFlag();
         lockStamp = page.tryOptimisticReadLock();
         // The page might have been evicted while we held the optimistic
         // read lock, so we need to check with page.pin that this is still

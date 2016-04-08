@@ -50,13 +50,13 @@ class NodeRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<NodeRecord>
             // [    ,   x] in use bit
             // [    ,xxx ] higher bits for rel id
             // [xxxx,    ] higher bits for prop id
-            long nextRel = cursor.getUnsignedInt();
-            long nextProp = cursor.getUnsignedInt();
+            long nextRel = cursor.getInt() & 0xFFFFFFFFL;
+            long nextProp = cursor.getInt() & 0xFFFFFFFFL;
 
             long relModifier = (headerByte & 0xEL) << 31;
             long propModifier = (headerByte & 0xF0L) << 28;
 
-            long lsbLabels = cursor.getUnsignedInt();
+            long lsbLabels = cursor.getInt() & 0xFFFFFFFFL;
             long hsbLabels = cursor.getByte() & 0xFF; // so that a negative bye won't fill the "extended" bits with ones.
             long labels = lsbLabels | (hsbLabels << 32);
 
