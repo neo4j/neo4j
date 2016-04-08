@@ -85,7 +85,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("should plan a count for rel count with no direction") {
     val plannerQuery = producePlannerQuery("MATCH ()-[r]-()", "r")
 
-    countStorePlanner(plannerQuery) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery) should notBeCountPlan
   }
 
   test("should plan a count for rel count with no type") {
@@ -115,7 +115,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("should not plan a count for rel count with type but no direction") {
     val plannerQuery = producePlannerQuery("MATCH ()-[r:X]-()", "r")
 
-    countStorePlanner(plannerQuery) should beCountPlanFor("r")
+    countStorePlanner(plannerQuery) should notBeCountPlan
   }
 
   test("should plan a count for rel count with rel type") {
@@ -160,7 +160,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
           plan match {
             case Some(NodeCountFromCountStore(IdName(countId), _, _)) if countId == s"count($variable)" =>
               true
-            case Some(RelationshipCountFromCountStore(IdName(countId), _, _, _, _, _)) if countId == s"count($variable)" =>
+            case Some(RelationshipCountFromCountStore(IdName(countId), _, _, _, _)) if countId == s"count($variable)" =>
               true
             case _ =>
               false

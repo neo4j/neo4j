@@ -103,14 +103,12 @@ case object countStorePlanner {
       case PatternRelationship(relId, (startNodeId, endNodeId), direction, types, SimplePatternLength)
         if variableName.forall(_ == relId.name) && noWrongPredicates(Set(startNodeId, endNodeId), selections) =>
 
-        def planRelAggr(fromLabel: Option[LabelName], toLabel: Option[LabelName], bothDirections: Boolean = false) =
-          Some(context.logicalPlanProducer.planCountStoreRelationshipAggregation(query, IdName(columnName), fromLabel, LazyTypes(types.map(_.name)), toLabel, bothDirections, argumentIds)(context))
+        def planRelAggr(fromLabel: Option[LabelName], toLabel: Option[LabelName]) =
+          Some(context.logicalPlanProducer.planCountStoreRelationshipAggregation(query, IdName(columnName), fromLabel, LazyTypes(types.map(_.name)), toLabel, argumentIds)(context))
 
         (findLabel(startNodeId, selections), direction, findLabel(endNodeId, selections)) match {
-          case (None,       BOTH,     None) => planRelAggr(None, None, bothDirections = true)
-          case (None,       BOTH,     endLabel) => planRelAggr(endLabel, None, bothDirections = true)
-          case (startLabel, BOTH,     None) => planRelAggr(None, startLabel, bothDirections = true)
-          case (None,       _,        None) => planRelAggr(None, None)
+          case (None,       OUTGOING, None) => planRelAggr(None, None)
+          case (None,       INCOMING, None) => planRelAggr(None, None)
           case (None,       OUTGOING, endLabel) => planRelAggr(None, endLabel)
           case (startLabel, OUTGOING, None) => planRelAggr(startLabel, None)
           case (None,       INCOMING, endLabel) => planRelAggr(endLabel, None)

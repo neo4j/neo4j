@@ -178,8 +178,8 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     case NodeCountFromCountStore(IdName(id), label, _) =>
       NodeCountFromCountStorePipe(id, label.map(LazyLabel.apply))()
 
-    case RelationshipCountFromCountStore(IdName(id), startLabel, typeNames, endLabel, bothDirections, _) =>
-      RelationshipCountFromCountStorePipe(id, startLabel.map(LazyLabel.apply), typeNames, endLabel.map(LazyLabel.apply), bothDirections)()
+    case RelationshipCountFromCountStore(IdName(id), startLabel, typeNames, endLabel, _) =>
+      RelationshipCountFromCountStorePipe(id, startLabel.map(LazyLabel.apply), typeNames, endLabel.map(LazyLabel.apply))()
 
     case NodeByLabelScan(IdName(id), label, _) =>
       NodeByLabelScanPipe(id, LazyLabel(label))()

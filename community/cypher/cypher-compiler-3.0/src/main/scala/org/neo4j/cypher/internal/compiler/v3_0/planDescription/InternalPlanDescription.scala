@@ -115,8 +115,7 @@ object InternalPlanDescription {
                                 direction: SemanticDirection, varLength: Boolean = false) extends Argument
     case class CountNodesExpression(ident: String, label: Option[LazyLabel]) extends Argument
     case class CountRelationshipsExpression(ident: String, startLabel: Option[LazyLabel],
-                                            typeNames: LazyTypes, endLabel: Option[LazyLabel],
-                                            bothDirections: Boolean) extends Argument
+                                            typeNames: LazyTypes, endLabel: Option[LazyLabel]) extends Argument
     case class SourceCode(className: String, sourceCode: String) extends Argument {
       override def name = className
     }

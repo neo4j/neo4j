@@ -28,8 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.NameId
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
 case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option[LazyLabel],
-                                                 typeNames: LazyTypes, endLabel: Option[LazyLabel],
-                                                 bothDirections: Boolean)
+                                                 typeNames: LazyTypes, endLabel: Option[LazyLabel])
                                                 (val estimatedCardinality: Option[Double] = None)
                                                 (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
 
@@ -37,13 +36,9 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
     val maybeStartLabelId = getLabelId(startLabel, state)
     val maybeEndLabelId = getLabelId(endLabel, state)
 
-    val count = (maybeStartLabelId, bothDirections, maybeEndLabelId) match {
-      case (Some(startLabelId), false, Some(endLabelId)) =>
+    val count = (maybeStartLabelId, maybeEndLabelId) match {
+      case (Some(startLabelId), Some(endLabelId)) =>
         countOneDirection(state, typeNames, startLabelId, endLabelId)
-
-      case (Some(startLabelId), true, Some(endLabelId)) =>
-        countOneDirection(state, typeNames, startLabelId, endLabelId) +
-          countOneDirection(state, typeNames, endLabelId, startLabelId)
 
       // If any of the specified labels does not exist the count is zero
       case _ =>
@@ -71,7 +66,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
 
   def planDescriptionWithoutCardinality = PlanDescriptionImpl(
     this.id, "RelationshipCountFromCountStore", NoChildren,
-    Seq(CountRelationshipsExpression(ident, startLabel, typeNames, endLabel, bothDirections)), variables)
+    Seq(CountRelationshipsExpression(ident, startLabel, typeNames, endLabel)), variables)
 
   def symbols = new SymbolTable(Map(ident -> CTInteger))
 

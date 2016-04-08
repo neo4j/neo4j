@@ -276,4 +276,15 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     executeWithAllPlanners("unwind range(1000000,2000000) as i with i limit 3000 return sum(i)").toList should equal(
       List(Map("sum(i)" -> 3004498500L)))
   }
+
+  test("should count correctly in case of loops") {
+    val node = createNode()
+    relate(node, node)
+
+    val list = executeWithAllPlanners("MATCH ()-[r]-() RETURN id(r) as r").columnAs[Long]("r").toList
+    val result = executeWithAllPlanners("MATCH ()-[r]-() RETURN count(r) as c").columnAs[Long]("c").next()
+
+    list should equal(Seq(0))
+    result should equal(1)
+  }
 }
