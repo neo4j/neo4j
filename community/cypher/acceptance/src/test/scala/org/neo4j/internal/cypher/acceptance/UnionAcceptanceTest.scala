@@ -22,14 +22,20 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class UnionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+
+  // TCK'd
   test("should be able to create text output from union queries") {
+    val a = createLabeledNode("A")
+    val b = createLabeledNode("B")
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A) RETURN a AS a UNION MATCH (b:B) RETURN b AS a")
 
     // Then
     result.columns should not be empty
+    result.toList should equal(List(Map("a" -> a), Map("a" -> b)))
   }
 
+  // TCK'd
   test("two elements, both unique, not distinct") {
     // When
     val result = executeWithAllPlannersAndCompatibilityMode("return 1 as x union all return 2 as x")
@@ -39,6 +45,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.toList should equal(List(Map("x" -> 1), Map("x" -> 2)))
   }
 
+  // TCK'd
   test("two elements, both unique, distinct") {
     // When
     val result = executeWithAllPlannersAndCompatibilityMode("return 1 as x union return 2 as x")
@@ -51,6 +58,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
   }
 
+  // TCK'd
   test("three elements, two unique, distinct") {
     // When
     val result = executeWithAllPlannersAndCompatibilityMode(
@@ -67,6 +75,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     cachedResult should have size 2
   }
 
+  // TCK'd
   test("three elements, two unique, not distinct") {
     // When
     val result = executeWithAllPlannersAndCompatibilityMode(
