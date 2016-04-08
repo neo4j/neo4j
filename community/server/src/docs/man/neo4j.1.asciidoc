@@ -16,7 +16,8 @@ Neo4j is a graph database, perfect for working with highly connected data.
 The `neo4j` command is used to control the Neo4j Server.
 
 The preferred way to install Neo4j on Linux systems is by using prebuilt installation packages.
-For information regarding Windows, see http://neo4j.com/docs/stable/powershell.html.
+
+For information regarding Windows, see http://neo4j.com/docs/stable/server-installation.html#windows-install.
 
 [[neo4j-manpage-commands]]
 == COMMANDS
@@ -35,6 +36,14 @@ For information regarding Windows, see http://neo4j.com/docs/stable/powershell.h
 
 *status*::
   Current running state of the server.
+
+.Windows-specific commands
+
+*install-service*::
+  Installs the server as Windows service
+
+*uninstall-service*::
+  Uninstalls the Windows service
 
 [[neo4j-manpage-files]]
 == FILES

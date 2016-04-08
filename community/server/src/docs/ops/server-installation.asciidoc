@@ -60,8 +60,9 @@ If you see this error simply install Neo4j into a different location.
 1. Download the latest release from http://neo4j.com/download/.
    * Select the appropriate Zip distribution.
 2. Right-click the downloaded file, click Extract All.
-   * Refer to the top-level extracted directory as: +NEO4J_HOME+
-3. Consult <<powershell>> for how to start or install Neo4j.
+3. Change directory to top-level extracted directory.
+   * Run `bin/neo4j console`
+4. Stop the server by typing Ctrl-C in the console.
 
 [NOTE]
 Some users have reported problems on Windows when using the ZoneAlarm firewall.
