@@ -63,9 +63,11 @@ public class CoreStateTest
 
     private final GlobalSession<CoreMember> globalSession = new GlobalSession<>( UUID.randomUUID(), null );
     private final int flushEvery = 10;
+
+    private final CoreStateApplier applier = new CoreStateApplier( NullLogProvider.getInstance() );
     private final CoreState coreState = new CoreState( raftLog, flushEvery, () -> dbHealth, NullLogProvider.getInstance(),
             new ProgressTrackerImpl( globalSession ), lastFlushedStorage, lastApplyingStorage, sessionStorage,
-            mock( CoreServerSelectionStrategy.class ), mock( CoreStateDownloader.class ) );
+            mock( CoreServerSelectionStrategy.class ), applier, mock( CoreStateDownloader.class ) );
 
     private ReplicatedTransaction nullTx = new ReplicatedTransaction( null );
 
@@ -103,7 +105,7 @@ public class CoreStateTest
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         coreState.notifyCommitted( 2 );
-        coreState.syncExecutor( false, false );
+        applier.sync( false );
 
         // then
         verify( txStateMachine ).dispatch( nullTx, 0 );
@@ -122,7 +124,7 @@ public class CoreStateTest
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         coreState.notifyCommitted( -1 );
-        coreState.syncExecutor( false, false );
+        applier.sync( false );
 
         // then
         verify( txStateMachine, times( 0 ) ).dispatch( any( ReplicatedTransaction.class ), anyInt() );
@@ -139,7 +141,7 @@ public class CoreStateTest
         raftLog.append( new RaftLogEntry( 0, new NewLeaderBarrier() ) );
         raftLog.append( new RaftLogEntry( 0, operation( nullTx ) ) );
         coreState.notifyCommitted( 1 );
-        coreState.syncExecutor( false, false );
+        applier.sync( false );
 
         // then
         verify( txStateMachine ).dispatch( nullTx, 1L );
@@ -162,7 +164,7 @@ public class CoreStateTest
 
         // when
         coreState.notifyCommitted( flushEvery*TIMES );
-        coreState.syncExecutor( false, false );
+        applier.sync( false );
 
         // then
         verify( txStateMachine, times( TIMES ) ).flush();
@@ -181,7 +183,7 @@ public class CoreStateTest
         // when
         assertEquals( true, dbHealth.isHealthy() );
         coreState.notifyCommitted( 0 );
-        coreState.syncExecutor( false, false );
+        applier.sync( false );
 
         // then
         assertEquals( false, dbHealth.isHealthy() );

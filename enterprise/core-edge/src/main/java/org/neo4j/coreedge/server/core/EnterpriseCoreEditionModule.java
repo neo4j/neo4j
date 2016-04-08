@@ -85,6 +85,7 @@ import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionCommitProcess
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.CoreState;
+import org.neo4j.coreedge.raft.state.CoreStateApplier;
 import org.neo4j.coreedge.raft.state.CoreStateDownloader;
 import org.neo4j.coreedge.raft.state.CoreStateMachines;
 import org.neo4j.coreedge.raft.state.DurableStateStorage;
@@ -326,12 +327,13 @@ public class EnterpriseCoreEditionModule
                 throw new RuntimeException( e );
             }
 
+            CoreStateApplier applier = new CoreStateApplier( logProvider );
             CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher, stateFetcher, logProvider );
 
             coreState = new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                     databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage, lastApplyingStorage,
-                    sessionTrackerStorage, new NotMyselfSelectionStrategy( discoveryService, myself ), downloader );
+                    sessionTrackerStorage, new NotMyselfSelectionStrategy( discoveryService, myself ), applier, downloader );
 
             raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
                     coreState, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
