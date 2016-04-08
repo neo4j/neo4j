@@ -34,9 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.server.configuration.ServerSettings;
 
 public class TxBench
 {
@@ -60,12 +58,7 @@ public class TxBench
         {
             FileUtils.deleteRecursively( path );
         }
-        db = new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( path )
-                .setConfig( GraphDatabaseSettings.auth_store, new File(path, "auth").getAbsolutePath() )
-                .setConfig( ServerSettings.tls_certificate_file, new File(path, "cert.pem").getAbsolutePath() )
-                .setConfig( ServerSettings.tls_key_file, new File(path, "key.pem").getAbsolutePath() )
-                .newGraphDatabase();
+        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
         try( Transaction tx = db.beginTx() )
         {
             db.execute( "CREATE INDEX ON :User(name)" );

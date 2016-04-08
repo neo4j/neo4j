@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.helpers.collection.Iterables;
@@ -44,7 +44,7 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
     }
 
     @Override
-    protected Iterable<Class<?>> settingsClasses( HashMap<String, String> settings )
+    protected Iterable<Class<?>> settingsClasses( Map<String, String> settings )
     {
         if ( isHAMode( settings ) )
         {
@@ -58,7 +58,7 @@ public class EnterpriseBootstrapper extends CommunityBootstrapper
         }
     }
 
-    private boolean isHAMode( HashMap<String, String> settings )
+    private boolean isHAMode( Map<String, String> settings )
     {
         return new Config( settings, EnterpriseServerSettings.class ).get( mode ).equals( "HA" );
     }

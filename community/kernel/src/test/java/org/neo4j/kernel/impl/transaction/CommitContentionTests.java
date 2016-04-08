@@ -19,28 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.test.rule.TargetDirectory;
 
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CommitContentionTests
 {
@@ -184,9 +183,7 @@ public class CommitContentionTests
                     }
                 };
             }
-        }.newFacade( storeLocation.graphDbDir(),
-                stringMap( GraphDatabaseSettings.auth_store.name(), storeLocation.file( "auth" ).getAbsolutePath() ),
-                state.databaseDependencies() );
+        }.newFacade( storeLocation.graphDbDir(), emptyMap(), state.databaseDependencies() );
     }
 
     private void waitForFirstTransactionToStartPushing() throws InterruptedException

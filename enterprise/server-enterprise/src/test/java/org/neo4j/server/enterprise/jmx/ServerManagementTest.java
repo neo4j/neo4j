@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLog;
@@ -39,6 +40,7 @@ import org.neo4j.test.rule.TargetDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.helpers.collection.Pair.pair;
 
 public class ServerManagementTest
 {
@@ -62,7 +64,9 @@ public class ServerManagementTest
                         .server()
                         .withDefaultDatabaseTuning()
                         .usingDataDir( dataDirectory1 )
-                        .createConfigFiles(), NullLog.getInstance() );
+                        .createConfigFiles(), NullLog.getInstance(),
+                pair( GraphDatabaseSettings.logs_directory.name(), baseDir.directory( "logs" ).getPath() )
+                );
 
         // When
         NeoServer server = cleanup.add( new EnterpriseNeoServer( config, graphDbDependencies(), NullLogProvider

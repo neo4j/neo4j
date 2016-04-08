@@ -31,9 +31,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.AccessibleObject;
 import java.net.URI;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -178,6 +176,7 @@ public class ArbiterBootstrapperIT
 
     private File writeConfig( Map<String, String> config ) throws IOException
     {
+        config.put( GraphDatabaseSettings.logs_directory.name(), directory.getPath() );
         File configFile = new File( directory, ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
         store( config, configFile );
         return directory;
@@ -185,9 +184,7 @@ public class ArbiterBootstrapperIT
 
     private void startAndAssertJoined( Integer expectedAssignedPort, Map<String, String> config ) throws Exception
     {
-        Map<String, String> localCopy = new HashMap<>( config );
-        localCopy.put( GraphDatabaseSettings.auth_store.name(), Files.createTempFile( "auth", "" ).toString() );
-        File configDir = writeConfig( localCopy );
+        File configDir = writeConfig( config );
         CountDownLatch latch = new CountDownLatch( 1 );
         AtomicInteger port = new AtomicInteger();
         clients[0].addClusterListener( joinAwaitingListener( latch, port ) );

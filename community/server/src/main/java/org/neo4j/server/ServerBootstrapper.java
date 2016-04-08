@@ -21,7 +21,7 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -138,7 +138,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     protected abstract NeoServer createNeoServer( Config config, GraphDatabaseDependencies dependencies,
                                                   LogProvider userLogProvider );
 
-    protected abstract Iterable<Class<?>> settingsClasses( HashMap<String, String> settings );
+    protected abstract Iterable<Class<?>> settingsClasses( Map<String, String> settings );
 
     private static LogProvider setupLogging()
     {

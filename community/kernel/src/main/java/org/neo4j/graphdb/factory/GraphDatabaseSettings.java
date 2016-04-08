@@ -63,6 +63,7 @@ import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -73,6 +74,12 @@ public abstract class GraphDatabaseSettings
     @SuppressWarnings("unused") // accessed by reflection
     @Migrator
     private static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
+
+    @Internal
+    @Description("Root relative to which directory settings are resolved. This is set in code and should never be " +
+            "configured explicitly.")
+    public static final Setting<File> neo4j_home =
+            setting( "unsupported.dbms.directories.neo4j_home", PATH, NO_DEFAULT );
 
     @Title("Read only database")
     @Description("Only allow read operations from this Neo4j instance. " +
@@ -164,7 +171,7 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Sets the root directory for file URLs used with the Cypher `LOAD CSV` clause. This must be set to a single "
                   + "directory, restricting access to only those files within that directory and its subdirectories." )
-    public static Setting<File> load_csv_file_url_root = setting( "dbms.directories.import", PATH, NO_DEFAULT );
+    public static Setting<File> load_csv_file_url_root = pathSetting( "dbms.directories.import", NO_DEFAULT );
 
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )
@@ -180,7 +187,7 @@ public abstract class GraphDatabaseSettings
 
     @Description("Location of the database plugin directory. Compiled Java JAR files that contain database " +
                  "procedures will be loaded if they are placed in this directory.")
-    public static final Setting<File> plugin_dir = setting("dbms.directories.plugins", PATH, "plugins" );
+    public static final Setting<File> plugin_dir = pathSetting( "dbms.directories.plugins", "plugins" );
 
     @Description( "Threshold for rotation of the debug log." )
     public static final Setting<Long> store_internal_log_rotation_threshold = setting("dbms.logs.debug.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
@@ -420,7 +427,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> log_queries = setting("dbms.logs.query.enabled", BOOLEAN, FALSE );
 
     @Description("Path of the logs directory")
-    public static final Setting<File> logs_directory = setting("dbms.directories.logs", PATH, "logs");
+    public static final Setting<File> logs_directory = pathSetting( "dbms.directories.logs", "logs" );
 
     @Internal
     public static final Setting<File> log_queries_filename = derivedSetting("dbms.querylog.filename",
@@ -451,7 +458,8 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, "false" );
 
     @Internal
-    public static final Setting<File> auth_store = setting("unsupported.dbms.security.auth_store.location", PATH, NO_DEFAULT);
+    public static final Setting<File> auth_store =
+            pathSetting( "unsupported.dbms.security.auth_store.location", NO_DEFAULT );
 
     // Bolt Settings
 

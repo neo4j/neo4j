@@ -113,20 +113,6 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-consistency-check</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cluster</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-backup</artifactId>
       <version>${neo4j.version}</version>
       <classifier>test-sources</classifier>
@@ -240,13 +226,6 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-bolt</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-dbms</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
       <scope>provided</scope>

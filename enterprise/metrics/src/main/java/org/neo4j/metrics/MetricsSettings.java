@@ -26,6 +26,7 @@ import org.neo4j.graphdb.factory.Description;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Settings;
 
+import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -101,7 +102,7 @@ public class MetricsSettings
     public static Setting<Boolean> csvEnabled = setting( "metrics.csv.enabled", Settings.BOOLEAN, Settings.FALSE );
     @Description( "The target location of the CSV files: a path to a directory wherein a CSV file per reported " +
                   "field  will be written." )
-    public static Setting<File> csvPath = setting( "dbms.directories.metrics", Settings.PATH, "metrics" );
+    public static Setting<File> csvPath = pathSetting( "dbms.directories.metrics", "metrics" );
 
     @Description( "The reporting interval for the CSV files. That is, how often new rows with numbers are appended to " +
                   "the CSV files." )

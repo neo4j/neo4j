@@ -19,35 +19,59 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Test;
-
 import java.io.File;
 
+import org.junit.Test;
+
+import org.neo4j.graphdb.config.Setting;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
-public class SettingsTest {
+import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.configuration.Settings.pathSetting;
+
+public class SettingsTest
+{
     @Test
-    public void makePathsAbsolute()
+    public void parsesAbsolutePaths()
     {
-        File thePath = Settings.PATH.apply( "foobar" );
+        File absolutePath = new File( "some/path" ).getAbsoluteFile();
+        File thePath = Settings.PATH.apply( absolutePath.toString() );
 
-        assertTrue( thePath.isAbsolute() );
+        assertEquals( absolutePath, thePath );
     }
 
     @Test
-    public void makePathInCurrentWorkingDirectory()
+    public void doesntAllowRelativePaths()
     {
-        File thePath = Settings.PATH.apply( "foobar" );
-
-        assertEquals( System.getProperty("user.dir"), thePath.getParent() );
+        File relativePath = new File( "some/path" );
+        try
+        {
+            Settings.PATH.apply( relativePath.toString() );
+            fail( "Expected an exception" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // expected
+        }
     }
 
     @Test
-    public void doNotModifyAbsolutePaths()
+    public void pathSettingsProvideDefaultValues()
     {
-        File thePath = Settings.PATH.apply( "/some/absolute/path" );
+        File theDefault = new File( "/some/path" ).getAbsoluteFile();
+        Setting<File> setting = pathSetting( "some.setting", theDefault.getAbsolutePath() );
+        assertThat( setting.from( Config.empty() ), is( theDefault ) );
+    }
 
-        assertEquals( new File( "/some/absolute/path" ), thePath );
+    @Test
+    public void pathSettingsAreNullIfThereIsNoValueAndNoDefault()
+    {
+        Setting<File> setting = pathSetting( "some.setting", NO_DEFAULT );
+        assertThat( setting.from( Config.empty() ), is( nullValue() ) );
     }
 }

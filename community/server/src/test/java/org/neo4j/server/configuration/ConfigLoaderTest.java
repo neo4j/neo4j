@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.configuration;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -43,6 +43,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -193,7 +194,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldNotOverwriteAuthStoreLocationIfProvided() throws IOException
+    public void shouldOverwriteAuthStoreLocationIfErroneouslyProvided() throws IOException
     {
         Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withSetting( DatabaseManagementSystemSettings.data_directory, "the-data-dir" )
@@ -202,7 +203,7 @@ public class ConfigLoaderTest
         Config config = configLoader.loadConfig( configFile, log );
 
         assertThat( config.get( GraphDatabaseSettings.auth_store ),
-                is( new File( "foo/bar/auth" ).getAbsoluteFile() ) );
+                is( new File( "the-data-dir/dbms/auth" ).getAbsoluteFile() ) );
     }
 
 

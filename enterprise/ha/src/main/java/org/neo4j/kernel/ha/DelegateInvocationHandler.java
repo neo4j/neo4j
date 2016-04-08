@@ -94,7 +94,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
                     "This transaction made assumptions about the instance it is executing " +
                     "on that no longer hold true. This normally happens when a transaction " +
                     "expects the instance it is executing on to be in some specific cluster role" +
-                    "(such as 'core', 'edge', 'master' or 'slave') and the instance " +
+                    "(such as 'master' or 'slave') and the instance " +
                     "changing state while the transaction is executing. Simply retry your " +
                     "transaction and you should see a successful outcome." );
         }

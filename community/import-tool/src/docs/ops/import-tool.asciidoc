@@ -91,7 +91,9 @@ Under Unix/Linux/OSX, the command is named `neo4j-import`. Depending on the inst
 
 === Windows
 
-For help with running the import tool using Windows PowerShell, see <<powershell>>.
+Under Windows, used by executing `bin\neo4j-import` from inside the installation directory.
+
+For help with running the import tool under Windows, see the reference in <<powershell-windows,Windows>>.
 
 [[import-tool-options]]
 === Options

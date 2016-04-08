@@ -19,16 +19,16 @@
  */
 package org.neo4j.index;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.File;
 import java.text.DecimalFormat;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -38,6 +38,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static java.lang.String.format;
+
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
@@ -61,7 +62,6 @@ public class ReadIndexWritesUnderConcurrentLoadStressIT
         GraphDatabaseService db = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( dbDir )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, "2000M" )
-                .setConfig( GraphDatabaseSettings.auth_store, temporaryFolder.newFile().getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "500M" )
                 .newGraphDatabase();
 

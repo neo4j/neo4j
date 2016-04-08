@@ -28,7 +28,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -37,10 +36,10 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_store;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
@@ -181,10 +180,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         if ( !result.containsKey( pagecache_memory.name() ) )
         {
             result.put( pagecache_memory.name(), "8M" );
-        }
-        if ( !result.containsKey( auth_store.name() ) )
-        {
-            result.put( auth_store.name(), new File(PATH, "auth").getAbsolutePath() );
         }
         return result;
     }

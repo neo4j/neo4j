@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
@@ -36,7 +36,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -58,6 +57,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class RecoveryIT
@@ -152,7 +152,6 @@ public class RecoveryIT
         File storeDir = directory.graphDbDir();
         GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fs, adversary )
                 .newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.auth_store, directory.file( "auth" ).getAbsolutePath() )
                 .newGraphDatabase();
         try
         {

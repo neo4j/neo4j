@@ -86,9 +86,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     public static class Settings
     {
         @Description( "Directory for storing certificates to be used by Neo4j for TLS connections" )
-        public static Setting<File> certificates_directory = setting(
-                "dbms.directories.certificates", PATH, "certificates"
-        );
+        public static Setting<File> certificates_directory =
+                pathSetting( "dbms.directories.certificates", "certificates" );
 
         @Internal
         @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
