@@ -33,12 +33,14 @@ import java.util.regex.Pattern;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.FileUtils;
 
 import static java.lang.Character.isDigit;
+
+import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
 
 /**
  * Create settings for configurations in Neo4j. See {@link org.neo4j.graphdb.factory.GraphDatabaseSettings} for example.
@@ -230,6 +232,56 @@ public class Settings
                     return overrideConverter.apply( override );
                 }
                 return derivation.apply( in1.apply( config ) );
+            }
+        };
+    }
+
+    public static Setting<File> pathSetting( String name, String defaultValue )
+    {
+        return new Setting<File>()
+        {
+            @Override
+            public String name()
+            {
+                return name;
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return defaultValue;
+            }
+
+            @Override
+            public File from( Configuration config )
+            {
+                return config.get( this );
+            }
+
+            @Override
+            public File apply( Function<String, String> config )
+            {
+                String value = config.apply( name );
+                if ( value == null )
+                {
+                    value = defaultValue;
+                }
+                if (value == null)
+                {
+                    return null;
+                }
+
+                String setting = fixSeparatorsInPath( value );
+                File settingFile = new File( setting );
+
+                if ( settingFile.isAbsolute() )
+                {
+                    return settingFile;
+                }
+                else
+                {
+                    return new File( GraphDatabaseSettings.neo4j_home.apply( config ), setting );
+                }
             }
         };
     }
@@ -545,12 +597,12 @@ public class Settings
         @Override
         public File apply( String setting )
         {
-            setting = FileUtils.fixSeparatorsInPath( setting );
-
-            File settingFile = new File( setting );
-            return settingFile.isAbsolute() ?
-                    settingFile :
-                    new File( System.getProperty( "user.dir" ), setting );
+            File file = new File( fixSeparatorsInPath( setting ) );
+            if ( !file.isAbsolute() )
+            {
+                throw new IllegalArgumentException( "Paths must be absolute. Got " + file );
+            }
+            return file;
         }
 
         @Override

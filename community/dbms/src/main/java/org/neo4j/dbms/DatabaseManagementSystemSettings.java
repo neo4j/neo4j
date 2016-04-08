@@ -24,20 +24,25 @@ import java.io.File;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
 import org.neo4j.kernel.configuration.Internal;
-import org.neo4j.kernel.configuration.Settings;
+
+import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.derivedSetting;
+import static org.neo4j.kernel.configuration.Settings.pathSetting;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 public interface DatabaseManagementSystemSettings
 {
     @Description("Name of the database to load")
-    Setting<String> active_database = Settings.setting( "dbms.active_database", Settings.STRING, "graph.db" );
+    Setting<String> active_database = setting( "dbms.active_database", STRING, "graph.db" );
 
     @Description("Path of the data directory. You must not configure more than one Neo4j installation to use the " +
             "same data directory.")
-    Setting<File> data_directory = Settings.setting( "dbms.directories.data", Settings.PATH, "data" );
+    Setting<File> data_directory = pathSetting( "dbms.directories.data", "data" );
 
     @Internal
-    Setting<File> database_path = Settings.derivedSetting( "unsupported.dbms.directories.database",
+    Setting<File> database_path = derivedSetting( "unsupported.dbms.directories.database",
             data_directory, active_database,
             ( data, current ) -> new File( new File( data, "databases" ), current ),
-            Settings.PATH );
+            PATH );
 }

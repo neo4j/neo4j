@@ -176,6 +176,7 @@ public class StoreUpgradeIntegrationTest
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
+            builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -203,6 +204,7 @@ public class StoreUpgradeIntegrationTest
             Properties props = new Properties();
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
             props.setProperty( DatabaseManagementSystemSettings.data_directory.name(), rootDir.getAbsolutePath() );
+            props.setProperty( GraphDatabaseSettings.logs_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             props.setProperty( GraphDatabaseFacadeFactory.Configuration.record_format.name(), HighLimit.NAME );
@@ -238,6 +240,7 @@ public class StoreUpgradeIntegrationTest
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
+            builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {

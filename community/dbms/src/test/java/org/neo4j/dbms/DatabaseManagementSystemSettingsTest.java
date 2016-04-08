@@ -32,12 +32,11 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class DatabaseManagementSystemSettingsTest
 {
-
     @Test
     public void shouldPutDatabaseDirectoriesIntoDataDatabases()
     {
         Config config = new Config( stringMap( DatabaseManagementSystemSettings.data_directory.name(), "the-data-directory" ) );
         assertThat( config.get( DatabaseManagementSystemSettings.database_path ),
-                equalTo( new File( System.getProperty("user.dir") + "/the-data-directory/databases/graph.db" ) ) );
+                equalTo( new File( "the-data-directory/databases/graph.db" ) ) );
     }
 }

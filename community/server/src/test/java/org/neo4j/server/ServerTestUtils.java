@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -36,6 +35,7 @@ import java.util.Random;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.configuration.ServerSettings;
 
 public class ServerTestUtils
@@ -87,6 +87,7 @@ public class ServerTestUtils
     public static void addDefaultRelativeProperties( Map<String,String> properties, File temporaryFolder )
     {
         addRelativeProperty( temporaryFolder, properties, DatabaseManagementSystemSettings.data_directory );
+        addRelativeProperty( temporaryFolder, properties, GraphDatabaseSettings.logs_directory );
         addRelativeProperty( temporaryFolder, properties, ServerSettings.certificates_directory );
     }
 

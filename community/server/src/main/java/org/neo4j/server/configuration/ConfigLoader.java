@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -54,26 +55,37 @@ public class ConfigLoader
 
     public Config loadConfig( Optional<File> configFile, Log log, Pair<String, String>... configOverrides )
     {
+        return loadConfig( configFile, log, settings -> {}, configOverrides );
+    }
+
+    public Config loadConfig( Optional<File> configFile,
+                              Log log,
+                              Consumer<Map<String, String>> customizer,
+                              Pair<String, String>... configOverrides )
+    {
         if ( log == null )
         {
-            throw new IllegalArgumentException( "log cannot be null " );
+            throw new IllegalArgumentException( "log cannot be null" );
         }
 
-        HashMap<String, String> settings = calculateSettings( configFile, log, configOverrides );
+        Map<String, String> settings = calculateSettings( configFile, log, configOverrides, customizer );
         Config config = new Config( settings, settingsClasses.calculate( settings ) );
         config.setLogger( log );
         return config;
     }
 
 
-    private HashMap<String, String> calculateSettings( Optional<File> config, Log log,
-                                                       Pair<String, String>[] configOverrides )
+    private Map<String, String> calculateSettings( Optional<File> config, Log log,
+                                                   Pair<String, String>[] configOverrides,
+                                                   Consumer<Map<String, String>> customizer )
     {
         HashMap<String, String> settings = new HashMap<>();
 
         config.ifPresent( ( c ) -> settings.putAll( loadFromFile( log, c ) ) );
         settings.putAll( toMap( configOverrides ) );
         overrideEmbeddedDefaults( settings );
+        addInternalServerSpecificSettings( settings );
+        customizer.accept( settings );
         return settings;
     }
 
@@ -91,15 +103,17 @@ public class ConfigLoader
      * TODO: This means docs will say defaults are something other than what they are in the server. Better
      * make embedded the special case and set the defaults to be what the server will have.
      */
-    private static void overrideEmbeddedDefaults( HashMap<String, String> config )
+    private static void overrideEmbeddedDefaults( Map<String, String> config )
     {
         config.putIfAbsent( ShellSettings.remote_shell_enabled.name(), TRUE );
-        config.putIfAbsent( GraphDatabaseSettings.logs_directory.name(), "logs" );
         config.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), "true" );
+    }
 
-        String dataDirectory = config.getOrDefault( data_directory.name(), data_directory.getDefaultValue() );
-        config.putIfAbsent( GraphDatabaseSettings.auth_store.name(),
-                new File( dataDirectory, "dbms/auth" ).toString() );
+    private static void addInternalServerSpecificSettings( Map<String, String> settings )
+    {
+        settings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
+        String dataDirectory = settings.getOrDefault( data_directory.name(), data_directory.getDefaultValue() );
+        settings.put( GraphDatabaseSettings.auth_store.name(), new File( dataDirectory, "dbms/auth" ).toString() );
     }
 
     private static Map<String, String> loadFromFile( Log log, File file )
@@ -123,6 +137,6 @@ public class ConfigLoader
 
     public interface SettingsClasses
     {
-        Iterable<Class<?>> calculate( HashMap<String, String> settings );
+        Iterable<Class<?>> calculate( Map<String, String> settings );
     }
 }

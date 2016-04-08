@@ -21,13 +21,11 @@ package org.neo4j.index.impl.lucene.legacy;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 
 public class Inserter
@@ -37,7 +35,6 @@ public class Inserter
         File path = new File( args[0] );
         final GraphDatabaseService db = new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( path )
-                .setConfig( GraphDatabaseSettings.auth_store, Files.createTempFile("auth", "").toString() )
                 .newGraphDatabase();
         final Index<Node> index = getIndex( db );
         final String[] keys = new String[]{"apoc", "zion", "morpheus"};

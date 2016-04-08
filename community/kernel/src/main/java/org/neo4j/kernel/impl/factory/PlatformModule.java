@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -119,6 +120,12 @@ public class PlatformModule
         } );
         life = dependencies.satisfyDependency( createLife() );
         this.graphDatabaseFacade = dependencies.satisfyDependency( graphDatabaseFacade );
+
+        if ( !params.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
+        {
+            params = new HashMap<>( params );
+            params.put( GraphDatabaseSettings.neo4j_home.name(), providedStoreDir.getAbsolutePath() );
+        }
 
         // SPI - provided services
         config = dependencies.satisfyDependency( new Config( params, getSettingsClasses(

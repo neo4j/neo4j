@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Configuration;
 
 /**
  * Control panel for a Neo4j test instance.
@@ -47,4 +48,7 @@ public interface ServerControls extends AutoCloseable
 
     /** Access the {@link org.neo4j.graphdb.GraphDatabaseService} used by the server */
     GraphDatabaseService graph();
+
+    /** Returns the server's configuration */
+    Configuration config();
 }

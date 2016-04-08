@@ -19,16 +19,16 @@
  */
 package org.neo4j.server;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.junit.Neo4jRule;
@@ -38,29 +38,23 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.ServerTestUtils.getRelativePath;
-import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
+
+import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 public class BoltQueryLoggingIT
 {
     @Rule
     public final Neo4jRule neo4j;
 
-    private final File queriesLog;
-
     public BoltQueryLoggingIT() throws IOException
     {
-        File logDir = getSharedTestTemporaryFolder();
-        this.queriesLog = File.createTempFile( "queries", ".log", logDir );
-        queriesLog.deleteOnExit();
+        String tmpDir = createTempDir().getAbsolutePath();
         this.neo4j = new Neo4jRule()
             .withConfig( ServerSettings.http_logging_enabled, "true" )
-            .withConfig( ServerSettings.certificates_directory.name(),
-                    getRelativePath( getSharedTestTemporaryFolder(), ServerSettings.certificates_directory ) )
+            .withConfig( ServerSettings.certificates_directory.name(), tmpDir )
             .withConfig( GraphDatabaseSettings.auth_enabled, "false" )
-            .withConfig( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() )
+            .withConfig( GraphDatabaseSettings.logs_directory, tmpDir )
             .withConfig( GraphDatabaseSettings.log_queries, "true")
-            .withConfig( GraphDatabaseSettings.log_queries_filename, queriesLog.getAbsolutePath() )
             .withConfig( GraphDatabaseSettings.boltConnector( "0" ).enabled, "true" )
             .withConfig( GraphDatabaseSettings.boltConnector( "0" ).address, "localhost:8776" )
             .withConfig( GraphDatabaseSettings.boltConnector( "0" ).encryption_level, "DISABLED" );
@@ -110,7 +104,8 @@ public class BoltQueryLoggingIT
 
         // *** THEN ***
 
-        List<String> lines = Files.readAllLines( queriesLog.toPath() );
+        Path queriesLog = neo4j.getConfig().get( GraphDatabaseSettings.log_queries_filename ).toPath();
+        List<String> lines = Files.readAllLines( queriesLog );
         assertThat( lines, hasSize( 5 ) );
         for ( String line : lines )
         {

@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLog;
@@ -33,8 +34,6 @@ import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ServerSettings.HttpConnector;
 
-import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
-import static org.neo4j.server.configuration.ServerSettings.certificates_directory;
 import static org.neo4j.helpers.collection.Pair.pair;
 
 public class DesktopConfigurator
@@ -56,10 +55,7 @@ public class DesktopConfigurator
         config = new ConfigLoader( CommunityBootstrapper.settingsClasses).loadConfig(
                 Optional.of( installation.getConfigurationsFile() ),
                 FormattedLog.toOutputStream( System.out ),
-
-                /** Desktop-specific config overrides */
-                pair( data_directory.name(), new File( dbDir, "./data" ).getAbsolutePath() ),
-                pair( certificates_directory.name(), new File( dbDir, "./certificates" ).getAbsolutePath() ),
+                (settings) -> settings.put( GraphDatabaseSettings.neo4j_home.name(), dbDir.getAbsolutePath() ),
                 pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) );
     }
 

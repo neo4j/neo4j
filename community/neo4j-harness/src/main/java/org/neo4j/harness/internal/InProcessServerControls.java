@@ -26,6 +26,7 @@ import java.net.URI;
 import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
@@ -107,5 +108,11 @@ public class InProcessServerControls implements ServerControls
     public GraphDatabaseService graph()
     {
         return server.getDatabase().getGraph();
+    }
+
+    @Override
+    public Configuration config()
+    {
+        return server.getConfig();
     }
 }

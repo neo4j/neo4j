@@ -33,10 +33,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.configuration.ServerSettings.certificates_directory;
-import static org.neo4j.server.configuration.ServerSettings.tls_certificate_file;
-import static org.neo4j.server.configuration.ServerSettings.tls_key_file;
 import static org.neo4j.test.Assert.assertEventually;
 
 public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
@@ -69,6 +68,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         int resultCode = ServerBootstrapper.start( bootstrapper,
                 "-c", configOption( EnterpriseServerSettings.mode, "SINGLE" ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
+                "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
                 "-c", "dbms.connector.1.type=HTTP",
                 "-c", "dbms.connector.1.enabled=true" );
@@ -87,6 +87,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
                 "-c", configOption( ClusterSettings.server_id, "1" ),
                 "-c", configOption( ClusterSettings.initial_hosts, "127.0.0.1:5001" ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
+                "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
                 "-c", "dbms.connector.1.type=HTTP",
                 "-c", "dbms.connector.1.enabled=true" );
