@@ -99,7 +99,7 @@ public class ErrorReporterTest
     }
 
     @Test
-    public void shouldNotReportStackOverflowErrorsInUserLogButShouldInInternalLog()
+    public void shouldReportStackOverflowErrorsInInternalLog()
     {
         // Given
         AssertableLogProvider provider = new AssertableLogProvider();
