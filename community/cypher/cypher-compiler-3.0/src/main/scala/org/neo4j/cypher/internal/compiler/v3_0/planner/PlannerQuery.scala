@@ -46,16 +46,6 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     RegularPlannerQuery(queryGraph, horizon, tail)
 }
 
-case class MergePlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
-                             horizon: QueryHorizon = QueryProjection.empty,
-                             tail: Option[PlannerQuery] = None) extends PlannerQuery {
-  // This is here to stop usage of copy from the outside
-  override protected def copy(queryGraph: QueryGraph = queryGraph,
-                              horizon: QueryHorizon = horizon,
-                              tail: Option[PlannerQuery] = tail) =
-    MergePlannerQuery(queryGraph, horizon, tail)
-}
-
 sealed trait PlannerQuery {
   val queryGraph: QueryGraph
   val horizon: QueryHorizon
@@ -198,13 +188,6 @@ object PlannerQuery {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
   }
-
-  def asMergePlannerQuery(plannerQuery: PlannerQuery) = plannerQuery match {
-    case RegularPlannerQuery(queryGraph, horizon, tail) =>
-      MergePlannerQuery(queryGraph, horizon, tail)
-    case _: MergePlannerQuery =>
-      plannerQuery
-  }
 }
 
 trait CardinalityEstimation {
@@ -218,11 +201,6 @@ object CardinalityEstimation {
   def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) = plannerQuery match {
     case _: RegularPlannerQuery =>
       new RegularPlannerQuery(plannerQuery.queryGraph, plannerQuery.horizon, plannerQuery.tail)
-        with CardinalityEstimation {
-        val estimatedCardinality = cardinality
-      }
-    case _: MergePlannerQuery =>
-      new MergePlannerQuery(plannerQuery.queryGraph, plannerQuery.horizon, plannerQuery.tail)
         with CardinalityEstimation {
         val estimatedCardinality = cardinality
       }
