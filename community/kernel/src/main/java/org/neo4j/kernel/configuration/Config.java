@@ -201,7 +201,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private synchronized void replaceSettings( Map<String, String> newSettings )
     {
         Map<String,String> migratedSettings = migrator.apply( newSettings, log );
-        validator.validate( migratedSettings );
+        validator.validate( migratedSettings, log );
         params.clear();
         params.putAll( migratedSettings );
         settingsFunction = new ConfigValues( params );

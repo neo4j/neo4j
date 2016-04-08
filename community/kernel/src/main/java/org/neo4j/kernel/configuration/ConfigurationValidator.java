@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.logging.Log;
 
 /**
  * Given a set of annotated config classes,
@@ -42,11 +43,25 @@ public class ConfigurationValidator
         this.settings = getSettingsFrom( settingsClasses );
     }
 
-    public void validate( Map<String, String> rawConfig )
+    public void validate( Map<String,String> rawConfig, Log log )
     {
         for ( Setting<?> setting : settings.values() )
         {
             setting.apply( rawConfig::get );
+        }
+
+        // Warn if any of the given setting names does not exist
+        validateSettingNames( rawConfig, log );
+    }
+
+    private void validateSettingNames( Map<String,String> rawConfig, Log log )
+    {
+        for ( String settingName : rawConfig.keySet() )
+        {
+            if ( !settings.containsKey( settingName ) )
+            {
+                log.warn( "The setting '" + settingName + "' is not recognized and will not have any effect." );
+            }
         }
     }
 
