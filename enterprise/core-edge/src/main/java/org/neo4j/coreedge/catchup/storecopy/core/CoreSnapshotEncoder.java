@@ -17,37 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy.edge;
+package org.neo4j.coreedge.catchup.storecopy.core;
 
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageEncoder;
 
-import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+import org.neo4j.coreedge.raft.state.CoreSnapshot;
 
-public class GetRaftStateRequestDecoder extends MessageToMessageDecoder<ByteBuf>
+public class CoreSnapshotEncoder extends MessageToMessageEncoder<CoreSnapshot>
 {
-    private final CatchupServerProtocol protocol;
-
-    public GetRaftStateRequestDecoder( CatchupServerProtocol protocol )
-    {
-        this.protocol = protocol;
-    }
-
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, CoreSnapshot coreSnapshot, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupServerProtocol.NextMessage.GET_RAFT_STATE ) )
-        {
-            out.add( new GetRaftStateRequest() );
-        }
-        else
-        {
-            out.add( Unpooled.copiedBuffer( msg ) );
-        }
-
+        ByteBuf encoded = ctx.alloc().buffer();
+        new CoreSnapshot.Marshal().marshal( coreSnapshot, encoded );
+        out.add( encoded );
     }
 }

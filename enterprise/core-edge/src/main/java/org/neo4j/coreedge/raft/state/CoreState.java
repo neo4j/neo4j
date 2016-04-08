@@ -20,12 +20,10 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
+import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.RaftLog;
@@ -45,8 +43,8 @@ import org.neo4j.logging.LogProvider;
 
 public class CoreState extends LifecycleAdapter implements RaftStateMachine
 {
-    private static final long NOTHING = -1;
 
+    private static final long NOTHING = -1;
     private CoreStateMachines coreStateMachines;
     private final RaftLog raftLog;
     private final StateStorage<Long> lastFlushedStorage;
@@ -57,13 +55,14 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
     private final StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage;
     private final Supplier<DatabaseHealth> dbHealth;
     private final Log log;
+
     private long lastApplied = NOTHING;
-
     private long lastSeenCommitIndex = NOTHING;
-    private long lastFlushed = NOTHING;
 
+    private long lastFlushed = NOTHING;
     private final CoreStateApplier applier;
     private final CoreServerSelectionStrategy selectionStrategy;
+
     private final CoreStateDownloader downloader;
 
     public CoreState(
@@ -238,16 +237,21 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
         }
     }
 
-    public synchronized Map<RaftStateType,Object> snapshot()
+    public synchronized CoreSnapshot snapshot() throws IOException, RaftLogCompactedException
     {
-        Map<RaftStateType,Object> snapshots = coreStateMachines.snapshots();
-        snapshots.put( RaftStateType.SESSION_TRACKER, sessionState );
-        return snapshots;
+        long prevIndex = lastApplied;
+        long prevTerm = raftLog.readEntryTerm( prevIndex );
+        CoreSnapshot coreSnapshot = new CoreSnapshot( prevIndex, prevTerm );
+
+        coreStateMachines.addSnapshots( coreSnapshot );
+        coreSnapshot.add( CoreStateType.SESSION_TRACKER, sessionState.newInstance() );
+
+        return coreSnapshot;
     }
 
-    public synchronized void installSnapshots( HashMap<RaftStateType,Object> snapshots )
+    public synchronized void installSnapshot( CoreSnapshot coreSnapshot )
     {
-        coreStateMachines.installSnapshots( snapshots );
-        sessionState = (GlobalSessionTrackerState<CoreMember>) snapshots.get( RaftStateType.SESSION_TRACKER );
+        coreStateMachines.installSnapshots( coreSnapshot );
+        sessionState = coreSnapshot.get( CoreStateType.SESSION_TRACKER );
     }
 }

@@ -34,10 +34,10 @@ import org.neo4j.coreedge.catchup.StoreIdSupplier;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
+import org.neo4j.coreedge.catchup.storecopy.core.CoreToCoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
-import org.neo4j.coreedge.catchup.storecopy.edge.state.StateFetcher;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.CoreDiscoveryService;
@@ -294,8 +294,6 @@ public class EnterpriseCoreEditionModule
                 new StoreCopyClient( coreToCoreClient ), new TxPullClient( coreToCoreClient ),
                 new TransactionLogCatchUpFactory() );
 
-        StateFetcher stateFetcher = new StateFetcher( coreToCoreClient );
-
         GlobalSession<CoreMember> myGlobalSession = new GlobalSession<>( UUID.randomUUID(), myself );
         LocalSessionPool<CoreMember> sessionPool = new LocalSessionPool<>( myGlobalSession );
         ProgressTrackerImpl progressTracker = new ProgressTrackerImpl( myGlobalSession );
@@ -328,7 +326,7 @@ public class EnterpriseCoreEditionModule
             }
 
             CoreStateApplier applier = new CoreStateApplier( logProvider );
-            CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher, stateFetcher, logProvider );
+            CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher, coreToCoreClient, logProvider );
 
             coreState = new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
@@ -379,7 +377,7 @@ public class EnterpriseCoreEditionModule
         }
 
         ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine(
-                idAllocationState, logProvider );
+                idAllocationState );
 
         int allocationChunk = 1024; // TODO: AllocationChunk should be configurable and per type.
         ReplicatedIdRangeAcquirer idRangeAcquirer = new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine, allocationChunk, myself, logProvider );
@@ -411,54 +409,38 @@ public class EnterpriseCoreEditionModule
         ReplicatedLockTokenStateMachine<CoreMember> replicatedLockTokenStateMachine =
                 new ReplicatedLockTokenStateMachine<>( lockTokenState );
 
-        commitProcessFactory = ( appender, applier, aConfig ) ->
+        RecoverTransactionLogState txLogState = new RecoverTransactionLogState( dependencies, logProvider );
+
+        ReplicatedTokenStateMachine<Token>
+                labelTokenStateMachine = new ReplicatedTokenStateMachine<>(
+                labelTokenRegistry, new Token.Factory(),
+                logProvider );
+
+        ReplicatedTokenStateMachine<Token>
+                propertyKeyTokenStateMachine = new ReplicatedTokenStateMachine<>(
+                propertyKeyTokenRegistry, new Token.Factory(),
+                logProvider );
+
+        ReplicatedTokenStateMachine<RelationshipTypeToken>
+                relationshipTypeTokenStateMachine = new ReplicatedTokenStateMachine<>(
+                relationshipTypeTokenRegistry, new RelationshipTypeToken.Factory(),
+                logProvider );
+
+        ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine =
+                new ReplicatedTransactionStateMachine<>( replicatedLockTokenStateMachine,
+                        logging.getInternalLogProvider() );
+
+        dependencies.satisfyDependencies( replicatedTxStateMachine );
+
+        CoreStateMachines coreStateMachines = new CoreStateMachines(
+                replicatedTxStateMachine, labelTokenStateMachine, relationshipTypeTokenStateMachine,
+                propertyKeyTokenStateMachine, replicatedLockTokenStateMachine, idAllocationStateMachine,
+                coreState, txLogState, raftLog );
+
+        commitProcessFactory = ( appender, applier, ignored ) ->
         {
-            TransactionRepresentationCommitProcess localCommit =
-                    new TransactionRepresentationCommitProcess( appender, applier );
-            dependencies.satisfyDependencies( localCommit );
-
-            RecoverTransactionLogState txLogState = new RecoverTransactionLogState( dependencies, logProvider );
-
-            ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine =
-                    new ReplicatedTransactionStateMachine<>( localCommit, replicatedLockTokenStateMachine,
-                            logging.getInternalLogProvider(), txLogState );
-            dependencies.satisfyDependencies( replicatedTxStateMachine );
-
-            ReplicatedTokenStateMachine<Token>
-                    labelTokenStateMachine = new ReplicatedTokenStateMachine<>(
-                    labelTokenRegistry, dependencies, new Token.Factory(),
-                    logProvider, txLogState );
-
-            ReplicatedTokenStateMachine<Token>
-                    propertyKeyTokenStateMachine = new ReplicatedTokenStateMachine<>(
-                    propertyKeyTokenRegistry, dependencies, new Token.Factory(),
-                    logProvider, txLogState );
-
-            ReplicatedTokenStateMachine<RelationshipTypeToken>
-                    relationshipTypeTokenStateMachine = new ReplicatedTokenStateMachine<>(
-                    relationshipTypeTokenRegistry, dependencies, new RelationshipTypeToken.Factory(),
-                    logProvider, txLogState );
-
-            CoreStateMachines coreStateMachines = new CoreStateMachines(
-                    replicatedTxStateMachine, labelTokenStateMachine, relationshipTypeTokenStateMachine,
-                    propertyKeyTokenStateMachine, replicatedLockTokenStateMachine, idAllocationStateMachine );
-
-            // TODO Below will not work robustly, in the context of core-to-core copy. The span of the recovery needs to be redesigned properly.
-
-            long lastAppliedIndex = txLogState.findLastAppliedIndex();
-            coreState.setStateMachine( coreStateMachines, lastAppliedIndex );
-            try
-            {
-                if( lastAppliedIndex > 1)
-                {
-                    raftLog.skip( lastAppliedIndex, raft.term() );
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-
+            TransactionRepresentationCommitProcess localCommit = new TransactionRepresentationCommitProcess( appender, applier );
+            coreStateMachines.refresh( localCommit ); // This gets called when a core-to-core download is performed.
             return new ReplicatedTransactionCommitProcess( replicator );
         };
 

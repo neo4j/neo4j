@@ -17,11 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.tx.edge;
+package org.neo4j.coreedge.catchup.storecopy.core;
 
-import org.neo4j.coreedge.catchup.storecopy.core.RaftStateSnapshot;
+import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
+import org.neo4j.coreedge.raft.state.StateMarshal;
+import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
+import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
 
-public interface RaftStateSnapshotListener
+public enum CoreStateType
 {
-    void onSnapshotReceived( RaftStateSnapshot snapshot );
+    LOCK_TOKEN( new ReplicatedLockTokenState.Marshal<>( new CoreMember.CoreMemberMarshal() ) ),
+    SESSION_TRACKER( new GlobalSessionTrackerState.Marshal<>( new CoreMember.CoreMemberMarshal() ) ),
+    ID_ALLOCATION( new IdAllocationState.Marshal() );
+
+    public final StateMarshal marshal;
+
+    CoreStateType( StateMarshal marshal )
+    {
+        this.marshal = marshal;
+    }
 }

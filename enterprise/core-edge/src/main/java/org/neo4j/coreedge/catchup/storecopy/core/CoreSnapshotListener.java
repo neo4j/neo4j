@@ -17,21 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy.edge;
+package org.neo4j.coreedge.catchup.storecopy.core;
 
-import java.util.List;
+import org.neo4j.coreedge.raft.state.CoreSnapshot;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
-
-public class GetRaftStateRequestEncoder extends MessageToMessageEncoder<GetRaftStateRequest>
+public interface CoreSnapshotListener
 {
-    @Override
-    protected void encode( ChannelHandlerContext ctx, GetRaftStateRequest msg, List<Object> out ) throws Exception
-    {
-        ByteBuf buffer = ctx.alloc().buffer();
-        buffer.writeByte( 0 );
-        out.add( buffer );
-    }
+    void onSnapshotReceived( CoreSnapshot snapshot );
 }

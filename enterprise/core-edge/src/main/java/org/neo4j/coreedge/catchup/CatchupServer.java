@@ -35,12 +35,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderEncoder;
-import org.neo4j.coreedge.catchup.storecopy.core.GetRaftStateRequestHandler;
+import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.core.GetStoreRequestHandler;
 import org.neo4j.coreedge.catchup.storecopy.core.StoreCopyFinishedResponseEncoder;
-import org.neo4j.coreedge.catchup.storecopy.edge.GetRaftStateRequestDecoder;
+import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotRequestDecoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestDecoder;
-import org.neo4j.coreedge.catchup.tx.core.RaftStateSnapshotEncoder;
+import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotEncoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestDecoder;
 import org.neo4j.coreedge.catchup.tx.core.TxPullRequestHandler;
 import org.neo4j.coreedge.catchup.tx.core.TxPullResponseEncoder;
@@ -127,7 +127,7 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new ResponseMessageTypeEncoder() );
                         pipeline.addLast( new RequestMessageTypeEncoder() );
                         pipeline.addLast( new TxPullResponseEncoder() );
-                        pipeline.addLast( new RaftStateSnapshotEncoder() );
+                        pipeline.addLast( new CoreSnapshotEncoder() );
                         pipeline.addLast( new StoreCopyFinishedResponseEncoder() );
                         pipeline.addLast( new TxStreamFinishedResponseEncoder() );
                         pipeline.addLast( new FileHeaderEncoder() );
@@ -144,8 +144,8 @@ public class CatchupServer extends LifecycleAdapter
                         pipeline.addLast( new GetStoreRequestHandler( protocol, dataSourceSupplier,
                                 checkPointerSupplier ) );
 
-                        pipeline.addLast( new GetRaftStateRequestDecoder( protocol ) );
-                        pipeline.addLast( new GetRaftStateRequestHandler( protocol, coreState ) );
+                        pipeline.addLast( new CoreSnapshotRequestDecoder( protocol ) );
+                        pipeline.addLast( new CoreSnapshotRequestHandler( protocol, coreState ) );
 
                         pipeline.addLast( new ExceptionLoggingHandler( log ) );
                     }

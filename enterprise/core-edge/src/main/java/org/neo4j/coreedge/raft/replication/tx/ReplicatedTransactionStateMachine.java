@@ -24,7 +24,6 @@ import java.util.Optional;
 
 import org.neo4j.coreedge.raft.state.Result;
 import org.neo4j.coreedge.raft.state.StateMachine;
-import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -42,20 +41,22 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpi
 public class ReplicatedTransactionStateMachine<MEMBER> implements StateMachine<ReplicatedTransaction>
 {
     private final ReplicatedLockTokenStateMachine<MEMBER> lockTokenStateMachine;
-    private final TransactionCommitProcess commitProcess;
+    private TransactionCommitProcess commitProcess;
     private final Log log;
 
     private long lastCommittedIndex = -1;
 
-    public ReplicatedTransactionStateMachine( TransactionCommitProcess commitProcess,
-                                              ReplicatedLockTokenStateMachine<MEMBER> lockStateMachine,
-                                              LogProvider logProvider,
-                                              RecoverTransactionLogState recoverTransactionLogState )
+    public ReplicatedTransactionStateMachine( ReplicatedLockTokenStateMachine<MEMBER> lockStateMachine,
+                                              LogProvider logProvider )
     {
-        this.commitProcess = commitProcess;
         this.lockTokenStateMachine = lockStateMachine;
         this.log = logProvider.getLog( getClass() );
-        this.lastCommittedIndex = recoverTransactionLogState.findLastAppliedIndex();
+    }
+
+    public synchronized void installCommitProcess( TransactionCommitProcess commitProcess, long lastCommittedIndex )
+    {
+        this.commitProcess = commitProcess;
+        this.lastCommittedIndex = lastCommittedIndex;
     }
 
     @Override

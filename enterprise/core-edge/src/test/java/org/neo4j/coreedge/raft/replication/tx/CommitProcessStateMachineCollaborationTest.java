@@ -48,12 +48,10 @@ public class CommitProcessStateMachineCollaborationTest
         TransactionToApply transactionToApply = new TransactionToApply( physicalTx( initialLockSessionId ) );
 
         int finalLockSessionId = 24;
-        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when( recoverTransactionLogState.findLastAppliedIndex() ).thenReturn( -1L );
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
         ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = new ReplicatedTransactionStateMachine<>(
-                localCommitProcess, lockState( finalLockSessionId ), NullLogProvider.getInstance(),
-                recoverTransactionLogState );
+                lockState( finalLockSessionId ), NullLogProvider.getInstance() );
+        stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         DirectReplicator<ReplicatedTransaction> replicator = new DirectReplicator<>( stateMachine );
         ReplicatedTransactionCommitProcess commitProcess = new ReplicatedTransactionCommitProcess( replicator );

@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -55,18 +56,14 @@ public class ReplicatedTokenStateMachineTest
     final int EXPECTED_TOKEN_ID = 1;
     final int UNEXPECTED_TOKEN_ID = 1024;
 
-    private Dependencies dependencies = mock( Dependencies.class );
-
     @Test
     public void shouldCreateTokenId() throws Exception
     {
         // given
-        when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) )
-                .thenReturn( mock( TransactionRepresentationCommitProcess.class ) );
-
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
-        ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry, dependencies,
-                new Token.Factory(), NullLogProvider.getInstance(), mock( RecoverTransactionLogState.class ) );
+        ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry,
+                new Token.Factory(), NullLogProvider.getInstance() );
+        stateMachine.installCommitProcess( mock( TransactionCommitProcess.class ), -1 );
 
         // when
         stateMachine.applyCommand( new ReplicatedTokenRequest( LABEL, "Person",
@@ -80,12 +77,11 @@ public class ReplicatedTokenStateMachineTest
     public void shouldAllocateTokenIdToFirstReplicateRequest() throws Exception
     {
         // given
-        when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) )
-                .thenReturn( mock( TransactionRepresentationCommitProcess.class ) );
-
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
-        ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry, dependencies,
-                new Token.Factory(), NullLogProvider.getInstance(), mock( RecoverTransactionLogState.class ) );
+        ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry,
+                new Token.Factory(), NullLogProvider.getInstance() );
+
+        stateMachine.installCommitProcess( mock( TransactionCommitProcess.class ), -1 );
 
         ReplicatedTokenRequest winningRequest =
                 new ReplicatedTokenRequest( LABEL, "Person", commandBytes( tokenCommands( EXPECTED_TOKEN_ID ) ) );
@@ -107,12 +103,10 @@ public class ReplicatedTokenStateMachineTest
         int logIndex = 1;
 
         StubTransactionCommitProcess commitProcess = new StubTransactionCommitProcess( null, null );
-        when( dependencies.resolveDependency( TransactionRepresentationCommitProcess.class ) ).thenReturn(
-                commitProcess );
-
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>(
-                new TokenRegistry<>( "Token" ), dependencies, new Token.Factory(),
-                NullLogProvider.getInstance(), mock( RecoverTransactionLogState.class ) );
+                new TokenRegistry<>( "Token" ), new Token.Factory(),
+                NullLogProvider.getInstance() );
+        stateMachine.installCommitProcess( commitProcess, -1 );
 
         // when
         ReplicatedTokenRequest tokenRequest = new ReplicatedTokenRequest( LABEL, "Person",

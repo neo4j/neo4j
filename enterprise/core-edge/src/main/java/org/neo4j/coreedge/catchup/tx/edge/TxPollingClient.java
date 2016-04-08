@@ -21,7 +21,7 @@ package org.neo4j.coreedge.catchup.tx.edge;
 
 import java.util.function.Supplier;
 
-import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
+import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;

@@ -34,14 +34,14 @@ public class ReplicatedLockTokenState<MEMBER>
     private ReplicatedLockTokenRequest<MEMBER> currentToken = INVALID_REPLICATED_LOCK_TOKEN_REQUEST;
     private long ordinal = -1L;
 
-    public ReplicatedLockTokenState()
+    ReplicatedLockTokenState()
     {
     }
 
-    public ReplicatedLockTokenState( long ordinal, int candidateId, MEMBER member )
+    ReplicatedLockTokenState( long ordinal, ReplicatedLockTokenRequest<MEMBER> currentToken )
     {
         this.ordinal = ordinal;
-        this.currentToken = new ReplicatedLockTokenRequest<>( member, candidateId );
+        this.currentToken = currentToken;
     }
 
     public void set( ReplicatedLockTokenRequest<MEMBER> currentToken, long ordinal )
@@ -67,6 +67,11 @@ public class ReplicatedLockTokenState<MEMBER>
                 "currentToken=" + currentToken +
                 ", ordinal=" + ordinal +
                 '}';
+    }
+
+    ReplicatedLockTokenState<MEMBER> newInstance()
+    {
+        return new ReplicatedLockTokenState<>( ordinal, currentToken );
     }
 
     public static class Marshal<MEMBER> implements
@@ -98,7 +103,7 @@ public class ReplicatedLockTokenState<MEMBER>
 
                 final MEMBER member = memberMarshal.unmarshal( source );
 
-                return new ReplicatedLockTokenState<>( logIndex, candidateId, member );
+                return new ReplicatedLockTokenState<>( logIndex, new ReplicatedLockTokenRequest<>( member, candidateId ) );
             }
             catch ( ReadPastEndException ex )
             {

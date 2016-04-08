@@ -27,7 +27,7 @@ public enum ResponseMessageType
     STORE_ID( (byte) 2 ),
     FILE( (byte) 3 ),
     STORE_COPY_FINISHED( (byte) 4 ),
-    RAFT_STATE_SNAPSHOT( (byte) 5 ),
+    CORE_SNAPSHOT( (byte) 5 ),
     TX_STREAM_FINISHED( (byte) 6 ),
     UNKNOWN( (byte) 200 ),;
 

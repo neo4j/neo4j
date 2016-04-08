@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.server.core;
+package org.neo4j.coreedge.catchup.storecopy.core;
 
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -31,13 +31,10 @@ import org.neo4j.coreedge.catchup.ResponseMessageTypeEncoder;
 import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
-import org.neo4j.coreedge.catchup.storecopy.edge.CoreClient;
-import org.neo4j.coreedge.catchup.storecopy.edge.GetRaftStateRequestEncoder;
+import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestEncoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseHandler;
-import org.neo4j.coreedge.catchup.tx.edge.RaftStateSnapshotDecoder;
-import org.neo4j.coreedge.catchup.tx.edge.RaftStateSnapshotHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequestEncoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseHandler;
@@ -83,7 +80,7 @@ public class CoreToCoreClient extends CoreClient
 
             pipeline.addLast( new TxPullRequestEncoder() );
             pipeline.addLast( new GetStoreRequestEncoder() );
-            pipeline.addLast( new GetRaftStateRequestEncoder() );
+            pipeline.addLast( new CoreSnapshotRequestEncoder() );
             pipeline.addLast( new ResponseMessageTypeEncoder() );
             pipeline.addLast( new RequestMessageTypeEncoder() );
 
@@ -92,8 +89,8 @@ public class CoreToCoreClient extends CoreClient
             pipeline.addLast( new TxPullResponseDecoder( protocol ) );
             pipeline.addLast( new TxPullResponseHandler( protocol, owner ) );
 
-            pipeline.addLast( new RaftStateSnapshotDecoder( protocol ) );
-            pipeline.addLast( new RaftStateSnapshotHandler( protocol, owner ) );
+            pipeline.addLast( new CoreSnapshotDecoder( protocol ) );
+            pipeline.addLast( new CoreSnapshotResponseHandler( protocol, owner ) );
 
             pipeline.addLast( new StoreCopyFinishedResponseDecoder( protocol ) );
             pipeline.addLast( new StoreCopyFinishedResponseHandler( protocol, owner ) );
