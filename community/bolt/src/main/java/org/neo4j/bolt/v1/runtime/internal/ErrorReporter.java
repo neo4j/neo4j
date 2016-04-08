@@ -24,11 +24,9 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * Report received exceptions into the appropriate log (console or debug) and format exception stack traces in debug.log
- * humanely.
+ * Report received exceptions into the appropriate log (console or debug) and delivery stacktraces to debug.log.
  */
 class ErrorReporter
 {
@@ -57,21 +55,14 @@ class ErrorReporter
                     error.cause().getMessage() ) );
         }
 
-        if(somethingToLog(error))
+        if ( somethingToLog( error ) )
         {
-            debugLog.error( formatFixedWidth( error.cause() ) );
+            debugLog.error( Exceptions.stringify( error.cause() ) );
         }
     }
 
     private boolean somethingToLog( Neo4jError error )
     {
         return error != null && error.cause() != null;
-    }
-
-    private String formatFixedWidth( Throwable cause )
-    {
-        // replaceAll call inserts a line break every 100 characters
-        return new String( Exceptions.stringify( cause ).getBytes( UTF_8 ) )
-                .replaceAll( "(.{100})", "$1" + System.lineSeparator() );
     }
 }
