@@ -32,8 +32,8 @@ case "$1" in
         fi
       
         # directories needed for neo4j
-        chown -R $NEO_USER:adm /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j
-        chmod u+rwx /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j
+        chown -R $NEO_USER:adm /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j /var/run/neo4j
+        chmod u+rwx /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j /var/run/neo4j
 
         update-rc.d neo4j defaults
         

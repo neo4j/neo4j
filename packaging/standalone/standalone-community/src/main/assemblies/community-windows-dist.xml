@@ -33,6 +33,9 @@
       <outputDirectory></outputDirectory>
       <lineEnding>dos</lineEnding>
       <filtered>true</filtered>
+      <excludes>
+        <exclude>**/.keep</exclude>
+      </excludes>
     </fileSet>
     <!-- non-maven jars -->
     <fileSet>
