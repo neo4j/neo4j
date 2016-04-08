@@ -706,7 +706,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     result.toList should equal(List(Map("labels" -> List("L", "B"))))
   }
 
-  // TODO half done - discussing in dragons channel
+  // TCK'd
   test("merge with uniqueness constraints must properly handle multiple labels") {
     graph.createConstraint("L", "prop")
     val node = createLabeledNode(Map("prop" -> 42), "L", "A")
