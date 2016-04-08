@@ -46,15 +46,16 @@ These are listed in the table below:
 
 [options="header", cols="m,d"]
 |===
-| Procedure name        | Command to invoke procedure  | What it does
-| ListLabels            | CALL db.labels()             | List all labels in the database.
-| ListRelationshipTypes | CALL db.relationshipTypes()  | List all relationship types in the database.
-| ListPropertyKeys      | CALL db.propertyKeys()       | List all property keys in the database.
-| ListIndexes           | CALL db.indexes()            | List all indexes in the database.
-| ListConstraints       | CALL db.constraints()        | List all constraints in the database.
-| ListProcedures        | CALL dbms.procedures()       | List all procedures in the DBMS.
-| ListComponents        | CALL dbms.components()       | List DBMS components and their versions.
-| QueryJmx              | CALL dbms.queryJmx(query)    | Query JMX management data by domain and name. For instance, "org.neo4j:*".
+| Procedure name        | Command to invoke procedure    | What it does
+| ListLabels            | CALL db.labels()               | List all labels in the database.
+| ListRelationshipTypes | CALL db.relationshipTypes()    | List all relationship types in the database.
+| ListPropertyKeys      | CALL db.propertyKeys()         | List all property keys in the database.
+| ListIndexes           | CALL db.indexes()              | List all indexes in the database.
+| ListConstraints       | CALL db.constraints()          | List all constraints in the database.
+| ListProcedures        | CALL dbms.procedures()          | List all procedures in the DBMS.
+| ListComponents        | CALL dbms.components()          | List DBMS components and their versions.
+| QueryJmx              | CALL dbms.queryJmx(query)       | Query JMX management data by domain and name. For instance, "org.neo4j:*".
+| AlterUserPassword     | CALL dbms.changePassword(query) | Change the user password.
 |===
 
 
