@@ -24,9 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, P
 import org.neo4j.cypher.internal.frontend.v3_1.ast.LabelName
 
 case class RelationshipCountFromCountStore(idName: IdName, startLabel: Option[LabelName],
-                                           typeNames: LazyTypes, endLabel: Option[LabelName], bothDirections: Boolean,
-                                           argumentIds: Set[IdName])
-                                            (val solved: PlannerQuery with CardinalityEstimation)
+                                           typeNames: LazyTypes, endLabel: Option[LabelName], argumentIds: Set[IdName])
+                                          (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
   def availableSymbols = Set(idName)

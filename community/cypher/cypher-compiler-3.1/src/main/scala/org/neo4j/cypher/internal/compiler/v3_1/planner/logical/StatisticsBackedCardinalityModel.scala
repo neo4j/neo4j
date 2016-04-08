@@ -37,9 +37,6 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
         val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality, horizon)
         QueryGraphSolverInput(newLabels, horizonCardinality, lazyness)
-
-      case (input, MergePlannerQuery(graph, horizon, _)) =>
-        throw new IllegalStateException("MergePlannerQuery should not exist")
     }
     output.inboundCardinality
   }

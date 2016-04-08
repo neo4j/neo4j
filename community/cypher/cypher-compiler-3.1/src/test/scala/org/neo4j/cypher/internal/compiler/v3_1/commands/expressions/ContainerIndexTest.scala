@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{Operations, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.{FakeExpression, SymbolTable}
+import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
@@ -122,9 +123,22 @@ class ContainerIndexTest extends CypherFunSuite {
     result should equal(CTAny)
   }
 
-  private def idx(value: Int)(implicit collection: Expression) =
-    ContainerIndex(collection, Literal(value))(ctx)(state)
+  test("should fail when not integer values are passed") {
+    implicit val collection = Literal(Seq(1, 2, 3, 4))
 
-  private def idx(value: String)(implicit collection: Expression) =
+    a[CypherTypeException] should be thrownBy idx(1.0f)
+    a[CypherTypeException] should be thrownBy idx(1.0d)
+    a[CypherTypeException] should be thrownBy idx("bad value")
+  }
+
+  test("should fail when too big values are used to access the array") {
+    implicit val collection = Literal(Seq(1, 2, 3, 4))
+
+    val index = Int.MaxValue + 1L
+
+    an[InvalidArgumentException] should be thrownBy idx(index)
+  }
+
+  private def idx(value: Any)(implicit collection: Expression) =
     ContainerIndex(collection, Literal(value))(ctx)(state)
 }

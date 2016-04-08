@@ -52,8 +52,8 @@ class SemanticTable(
       throw new InternalException(s"Did not find any type information for variable $s", e)
   }
 
-  def contains(expr: String): Boolean = types.exists {
-    case (Variable(name), _) => name == expr
+  def containsNode(expr: String): Boolean = types.exists {
+    case (v@Variable(name), _) => name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better
     case _ => false
   }
 

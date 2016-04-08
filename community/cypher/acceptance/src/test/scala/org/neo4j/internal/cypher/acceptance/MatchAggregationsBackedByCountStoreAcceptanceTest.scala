@@ -262,7 +262,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
   test("counts relationships with type, any direction and labeled source node without using count store") {
     // Given
-    withRelationshipsModel(
+    withRelationshipsModel(expectedLogicalPlan = "AllNodesScan",
 
       // When
       query = "MATCH (:User)-[r:KNOWS]-() RETURN count(r)", f = { result =>
@@ -275,7 +275,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
   test("counts relationships with type, any direction and labeled destination node without using count store") {
     // Given
-    withRelationshipsModel(
+    withRelationshipsModel(expectedLogicalPlan = "NodeByLabelScan",
 
       // When
       query = "MATCH ()-[r:KNOWS]-(:User) RETURN count(r)", f = { result =>
@@ -288,7 +288,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
 
   test("counts relationships with type, any direction and no labeled nodes without using count store") {
     // Given
-    withRelationshipsModel(
+    withRelationshipsModel(expectedLogicalPlan = "AllNodesScan",
 
       // When
       query = "MATCH ()-[r:KNOWS]-() RETURN count(r)", f = { result =>
@@ -701,5 +701,4 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest extends ExecutionEngineF
     private def matchResultMsg(negated: Boolean, result: InternalPlanDescription) =
       s"$operationName ${if (negated) "" else "not"} found in plan description\n $result"
   }
-
 }
