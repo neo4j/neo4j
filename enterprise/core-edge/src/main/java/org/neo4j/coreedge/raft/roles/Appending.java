@@ -72,12 +72,21 @@ public class Appending
 
             if( baseIndex + offset > state.entryLog().appendIndex() )
             {
-                /* entry doesn't exist */
+                // entry doesn't exist because it's beyond the current log end, so we can go ahead and append
                 break;
+            }
+            else if ( baseIndex + offset < state.entryLog().prevIndex() )
+            {
+                // entry doesn't exist because it's before the earliest known entry, so continue with the next one
+                continue;
             }
             else if ( logTerm != request.entries()[offset].term() )
             {
-                if ( baseIndex + offset <= state.commitIndex() )
+                /*
+                 * the entry's index falls within our current range and the term doesn't match what we know. We must
+                 * truncate.
+                 */
+                if ( baseIndex + offset <= state.commitIndex() ) // first, assert that we haven't committed what we are about to truncate
                 {
                     throw new IllegalStateException( "Cannot truncate at index " + (baseIndex + offset) + " when commit index is at " + state.commitIndex() );
                 }
