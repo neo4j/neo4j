@@ -28,7 +28,6 @@ import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.store.format.highlimit.Reference.PAGE_CURSOR_ADAPTER;
 
 public class ReferenceTest
 {
@@ -96,10 +95,10 @@ public class ReferenceTest
     private void assertDecodedMatchesEncoded( long reference ) throws IOException
     {
         cursor.setOffset( 0 );
-        Reference.encode( reference, cursor, PAGE_CURSOR_ADAPTER );
+        Reference.encode( reference, cursor );
 
         cursor.setOffset( 0 );
-        long read = Reference.decode( cursor, PAGE_CURSOR_ADAPTER );
+        long read = Reference.decode( cursor );
         assertEquals( reference, read );
     }
 }

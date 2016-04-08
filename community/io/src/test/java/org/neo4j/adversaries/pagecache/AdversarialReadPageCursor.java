@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.PageCursor;
@@ -45,6 +46,7 @@ class AdversarialReadPageCursor implements PageCursor
 {
     private final PageCursor delegate;
     private final Adversary adversary;
+    private PageCursor linkedCursor;
 
     private boolean currentReadIsInconsistent;
 
@@ -131,32 +133,26 @@ class AdversarialReadPageCursor implements PageCursor
     }
 
     @Override
-    public long getUnsignedInt()
-    {
-        return currentReadIsInconsistent ? 0 : delegate.getUnsignedInt();
-    }
-
-    @Override
-    public long getUnsignedInt( int offset )
-    {
-        return currentReadIsInconsistent ? 0 : delegate.getUnsignedInt( offset );
-    }
-
-    @Override
     public void getBytes( byte[] data )
     {
-        if ( !currentReadIsInconsistent )
+        delegate.getBytes( data );
+        if ( currentReadIsInconsistent )
         {
-            delegate.getBytes( data );
+            ThreadLocalRandom.current().nextBytes( data );
         }
     }
 
     @Override
     public void getBytes( byte[] data, int arrayOffset, int length )
     {
-        if ( !currentReadIsInconsistent )
+        delegate.getBytes( data, arrayOffset, length );
+        if ( currentReadIsInconsistent )
         {
-            delegate.getBytes( data, arrayOffset, length );
+            ThreadLocalRandom rng = ThreadLocalRandom.current();
+            for ( int i = arrayOffset; i < length; i++ )
+            {
+                data[i] = (byte) rng.nextInt();
+            }
         }
     }
 
@@ -253,6 +249,7 @@ class AdversarialReadPageCursor implements PageCursor
     public void close()
     {
         delegate.close();
+        linkedCursor = null;
     }
 
     @Override
@@ -267,7 +264,8 @@ class AdversarialReadPageCursor implements PageCursor
             delegate.setOffset( 0 );
             return true;
         }
-        return delegate.shouldRetry();
+        boolean retry = delegate.shouldRetry();
+        return retry || (linkedCursor != null && linkedCursor.shouldRetry());
     }
 
     @Override
@@ -279,5 +277,23 @@ class AdversarialReadPageCursor implements PageCursor
             delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
         }
         return lengthInBytes;
+    }
+
+    @Override
+    public boolean checkAndClearBoundsFlag()
+    {
+        return delegate.checkAndClearBoundsFlag() || (linkedCursor != null && linkedCursor.checkAndClearBoundsFlag());
+    }
+
+    @Override
+    public void raiseOutOfBounds()
+    {
+        delegate.raiseOutOfBounds();
+    }
+
+    @Override
+    public PageCursor openLinkedCursor( long pageId )
+    {
+        return linkedCursor = new AdversarialReadPageCursor( delegate.openLinkedCursor( pageId ), adversary );
     }
 }

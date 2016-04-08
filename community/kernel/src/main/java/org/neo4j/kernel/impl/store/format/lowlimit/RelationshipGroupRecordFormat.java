@@ -62,11 +62,11 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
             long highByte = cursor.getByte();
 
             int type = cursor.getShort() & 0xFFFF;
-            long nextLowBits = cursor.getUnsignedInt();
-            long nextOutLowBits = cursor.getUnsignedInt();
-            long nextInLowBits = cursor.getUnsignedInt();
-            long nextLoopLowBits = cursor.getUnsignedInt();
-            long owningNode = cursor.getUnsignedInt() | (((long)cursor.getByte()) << 32);
+            long nextLowBits = cursor.getInt() & 0xFFFFFFFFL;
+            long nextOutLowBits = cursor.getInt() & 0xFFFFFFFFL;
+            long nextInLowBits = cursor.getInt() & 0xFFFFFFFFL;
+            long nextLoopLowBits = cursor.getInt() & 0xFFFFFFFFL;
+            long owningNode = (cursor.getInt() & 0xFFFFFFFFL) | (((long)cursor.getByte()) << 32);
 
             long nextMod = (headerByte & 0xE) << 31;
             long nextOutMod = (headerByte & 0x70) << 28;

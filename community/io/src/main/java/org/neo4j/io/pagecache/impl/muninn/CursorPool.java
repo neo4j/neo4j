@@ -22,12 +22,12 @@ package org.neo4j.io.pagecache.impl.muninn;
 final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 {
     private final MuninnPagedFile pagedFile;
-    private final int cachePageSize;
+    private final long victimPage;
 
-    public CursorPool( MuninnPagedFile pagedFile )
+    CursorPool( MuninnPagedFile pagedFile )
     {
         this.pagedFile = pagedFile;
-        this.cachePageSize = pagedFile.pageCache.pageSize();
+        this.victimPage = pagedFile.pageCache.victimPage;
     }
 
     @Override
@@ -36,7 +36,7 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
         return new CursorSets();
     }
 
-    public MuninnReadPageCursor takeReadCursor( long pageId, int pf_flags )
+    MuninnReadPageCursor takeReadCursor( long pageId, int pf_flags )
     {
         CursorSets cursorSets = get();
         MuninnReadPageCursor cursor = cursorSets.readCursors;
@@ -54,12 +54,12 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 
     private MuninnReadPageCursor createReadCursor( CursorSets cursorSets )
     {
-        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, cachePageSize );
+        MuninnReadPageCursor cursor = new MuninnReadPageCursor( cursorSets, victimPage );
         cursor.initialiseFile( pagedFile );
         return cursor;
     }
 
-    public MuninnWritePageCursor takeWriteCursor( long pageId, int pf_flags )
+    MuninnWritePageCursor takeWriteCursor( long pageId, int pf_flags )
     {
         CursorSets cursorSets = get();
         MuninnWritePageCursor cursor = cursorSets.writeCursors;
@@ -77,7 +77,7 @@ final class CursorPool extends ThreadLocal<CursorPool.CursorSets>
 
     private MuninnWritePageCursor createWriteCursor( CursorSets cursorSets )
     {
-        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, cachePageSize );
+        MuninnWritePageCursor cursor = new MuninnWritePageCursor( cursorSets, victimPage );
         cursor.initialiseFile( pagedFile );
         return cursor;
     }

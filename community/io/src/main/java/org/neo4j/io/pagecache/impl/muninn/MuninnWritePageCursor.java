@@ -29,9 +29,9 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     private final CursorPool.CursorSets cursorSets;
     MuninnWritePageCursor nextCursor;
 
-    public MuninnWritePageCursor( CursorPool.CursorSets cursorSets, int cachePageSize )
+    MuninnWritePageCursor( CursorPool.CursorSets cursorSets, long victimPage )
     {
-        super( cachePageSize );
+        super( victimPage );
         this.cursorSets = cursorSets;
     }
 

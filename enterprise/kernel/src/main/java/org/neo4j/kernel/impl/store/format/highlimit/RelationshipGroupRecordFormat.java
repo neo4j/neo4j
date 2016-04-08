@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.store.format.highlimit.Reference.DataAdapter;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 /**
@@ -67,15 +66,15 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
 
     @Override
     protected void doReadInternal( RelationshipGroupRecord record, PageCursor cursor, int recordSize, long headerByte,
-            boolean inUse, DataAdapter<PageCursor> adapter )
+                                   boolean inUse )
     {
         record.initialize( inUse,
                 cursor.getShort() & 0xFFFF,
-                decode( cursor, adapter, headerByte, HAS_OUTGOING_BIT, NULL ),
-                decode( cursor, adapter, headerByte, HAS_INCOMING_BIT, NULL ),
-                decode( cursor, adapter, headerByte, HAS_LOOP_BIT, NULL ),
-                decode( cursor, adapter ),
-                decode( cursor, adapter, headerByte, HAS_NEXT_BIT, NULL ) );
+                decode( cursor, headerByte, HAS_OUTGOING_BIT, NULL ),
+                decode( cursor, headerByte, HAS_INCOMING_BIT, NULL ),
+                decode( cursor, headerByte, HAS_LOOP_BIT, NULL ),
+                decode( cursor ),
+                decode( cursor, headerByte, HAS_NEXT_BIT, NULL ) );
     }
 
     @Override
@@ -101,14 +100,14 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     }
 
     @Override
-    protected void doWriteInternal( RelationshipGroupRecord record, PageCursor cursor, DataAdapter<PageCursor> adapter )
+    protected void doWriteInternal( RelationshipGroupRecord record, PageCursor cursor )
             throws IOException
     {
         cursor.putShort( (short) record.getType() );
-        encode( cursor, adapter, record.getFirstOut(), NULL );
-        encode( cursor, adapter, record.getFirstIn(), NULL );
-        encode( cursor, adapter, record.getFirstLoop(), NULL );
-        encode( cursor, adapter, record.getOwningNode() );
-        encode( cursor, adapter, record.getNext(), NULL );
+        encode( cursor, record.getFirstOut(), NULL );
+        encode( cursor, record.getFirstIn(), NULL );
+        encode( cursor, record.getFirstLoop(), NULL );
+        encode( cursor, record.getOwningNode() );
+        encode( cursor, record.getNext(), NULL );
     }
 }

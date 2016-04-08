@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.io.pagecache.impl.ByteBufferPage;
 
@@ -36,12 +37,16 @@ public class StubPageCursor implements PageCursor
     private int pageSize;
     protected ByteBufferPage page;
     private int currentOffset;
+    private boolean observedOverflow;
+    private boolean closed;
+    private boolean needsRetry;
+    private StubPageCursor linkedCursor;
 
     public StubPageCursor( long initialPageId, int pageSize )
     {
         this.pageId = initialPageId;
         this.pageSize = pageSize;
-        this.page = new ByteBufferPage( ByteBuffer.allocateDirect(pageSize) );
+        this.page = new ByteBufferPage( ByteBuffer.allocateDirect( pageSize ) );
     }
 
     public StubPageCursor( long initialPageId, ByteBuffer buffer )
@@ -78,31 +83,70 @@ public class StubPageCursor implements PageCursor
     @Override
     public boolean next() throws IOException
     {
-        return false;
+        return true;
     }
 
     @Override
     public boolean next( long pageId ) throws IOException
     {
-        return false;
+        return true;
     }
 
     @Override
     public void close()
     {
+        closed = true;
+        if ( linkedCursor != null )
+        {
+            linkedCursor.close();
+            linkedCursor = null;
+        }
+    }
 
+    public boolean isClosed()
+    {
+        return closed;
     }
 
     @Override
     public boolean shouldRetry() throws IOException
     {
-        return false;
+        if ( needsRetry )
+        {
+            checkAndClearBoundsFlag();
+        }
+        return needsRetry || (linkedCursor != null && linkedCursor.shouldRetry());
+    }
+
+    public void setNeedsRetry( boolean needsRetry )
+    {
+        this.needsRetry = needsRetry;
     }
 
     @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
         return 0;
+    }
+
+    @Override
+    public boolean checkAndClearBoundsFlag()
+    {
+        boolean overflow = observedOverflow;
+        observedOverflow = false;
+        return overflow || (linkedCursor != null && linkedCursor.checkAndClearBoundsFlag());
+    }
+
+    @Override
+    public void raiseOutOfBounds()
+    {
+        observedOverflow = true;
+    }
+
+    @Override
+    public PageCursor openLinkedCursor( long pageId )
+    {
+        return linkedCursor = new StubPageCursor( pageId, pageSize );
     }
 
     @Override
@@ -114,15 +158,22 @@ public class StubPageCursor implements PageCursor
     }
 
     @Override
-    public byte getByte(int offset)
+    public byte getByte( int offset )
     {
         try
         {
             return page.getByte( offset );
-        } catch( BufferOverflowException | BufferUnderflowException e )
-        {
-            throw outOfBoundsException( e );
         }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            return handleOverflow();
+        }
+    }
+
+    private byte handleOverflow()
+    {
+        observedOverflow = true;
+        return (byte) ThreadLocalRandom.current().nextInt();
     }
 
     @Override
@@ -138,9 +189,10 @@ public class StubPageCursor implements PageCursor
         try
         {
             page.putByte( value, offset );
-        } catch( BufferOverflowException | BufferUnderflowException e )
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
-            throw outOfBoundsException( e );
+            handleOverflow();
         }
     }
 
@@ -158,9 +210,10 @@ public class StubPageCursor implements PageCursor
         try
         {
             return page.getLong( offset );
-        } catch( BufferOverflowException | BufferUnderflowException e )
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
-            throw outOfBoundsException( e );
+            return handleOverflow();
         }
     }
 
@@ -177,9 +230,10 @@ public class StubPageCursor implements PageCursor
         try
         {
             page.putLong( value, offset );
-        } catch( BufferOverflowException | BufferUnderflowException e )
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
-            throw outOfBoundsException( e );
+            handleOverflow();
         }
     }
 
@@ -192,27 +246,16 @@ public class StubPageCursor implements PageCursor
     }
 
     @Override
-    public int getInt(int offset)
+    public int getInt( int offset )
     {
         try
         {
             return page.getInt( offset );
-        } catch( BufferOverflowException | BufferUnderflowException e )
-        {
-            throw outOfBoundsException( e );
         }
-    }
-
-    @Override
-    public long getUnsignedInt()
-    {
-        return getInt() & 0xFFFFFFFFL;
-    }
-
-    @Override
-    public long getUnsignedInt(int offset)
-    {
-        return getInt(offset) & 0xFFFFFFFFL;
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            return handleOverflow();
+        }
     }
 
     @Override
@@ -228,9 +271,10 @@ public class StubPageCursor implements PageCursor
         try
         {
             page.putInt( value, offset );
-        } catch( BufferOverflowException | BufferUnderflowException e )
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
-            throw outOfBoundsException( e );
+            handleOverflow();
         }
     }
 
@@ -247,9 +291,10 @@ public class StubPageCursor implements PageCursor
         {
             page.getBytes( data, currentOffset, arrayOffset, length );
             currentOffset += length;
-        } catch( BufferOverflowException | BufferUnderflowException e )
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
-            throw outOfBoundsException( e );
+            handleOverflow();
         }
     }
 
@@ -266,9 +311,10 @@ public class StubPageCursor implements PageCursor
         {
             page.putBytes( data, currentOffset, arrayOffset, length );
             currentOffset += length;
-        } catch( BufferOverflowException | BufferUnderflowException e )
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
-            throw outOfBoundsException( e );
+            handleOverflow();
         }
     }
 
@@ -281,14 +327,15 @@ public class StubPageCursor implements PageCursor
     }
 
     @Override
-    public short getShort(int offset)
+    public short getShort( int offset )
     {
         try
         {
             return page.getShort( offset );
-        } catch( BufferOverflowException | BufferUnderflowException e )
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
-            throw outOfBoundsException( e );
+            return handleOverflow();
         }
     }
 
@@ -305,9 +352,10 @@ public class StubPageCursor implements PageCursor
         try
         {
             page.putShort( value, offset );
-        } catch( BufferOverflowException | BufferUnderflowException e )
+        }
+        catch ( IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
         {
-            throw outOfBoundsException( e );
+            handleOverflow();
         }
     }
 
@@ -336,13 +384,8 @@ public class StubPageCursor implements PageCursor
     public String toString()
     {
         return "PageCursor{" +
-                "currentOffset=" + currentOffset +
-                ", page=" + page +
-                '}';
-    }
-
-    private RuntimeException outOfBoundsException( RuntimeException e )
-    {
-        return new RuntimeException( "Failed to read or write to page: " + toString(), e );
+               "currentOffset=" + currentOffset +
+               ", page=" + page +
+               '}';
     }
 }

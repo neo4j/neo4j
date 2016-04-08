@@ -43,7 +43,7 @@ abstract class MuninnPageCursor implements PageCursor
     private static final int SIZE_OF_INT = Integer.BYTES;
     private static final int SIZE_OF_LONG = Long.BYTES;
 
-    private final int cachePageSize;
+    private final long victimPage;
     protected MuninnPagedFile pagedFile;
     protected PageSwapper swapper;
     protected PageCacheTracer tracer;
@@ -53,26 +53,31 @@ abstract class MuninnPageCursor implements PageCursor
     protected int pf_flags;
     protected long currentPageId;
     protected long nextPageId;
+    protected PageCursor linkedCursor;
     private long pointer;
-    private int size;
+    private int pageSize;
+    private int filePageSize;
     private int offset;
+    private boolean outOfBounds;
 
-    public MuninnPageCursor( int cachePageSize )
+    MuninnPageCursor( long victimPage )
     {
-        this.cachePageSize = cachePageSize;
+        this.victimPage = victimPage;
+        pointer = victimPage;
     }
 
-    public final void initialiseFile( MuninnPagedFile pagedFile )
+    final void initialiseFile( MuninnPagedFile pagedFile )
     {
         this.swapper = pagedFile.swapper;
         this.tracer = pagedFile.tracer;
     }
 
-    public final void initialiseFlags( MuninnPagedFile pagedFile, long pageId, int pf_flags )
+    final void initialiseFlags( MuninnPagedFile pagedFile, long pageId, int pf_flags )
     {
         this.pagedFile = pagedFile;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
+        this.filePageSize = pagedFile.filePageSize;
     }
 
     @Override
@@ -87,7 +92,7 @@ abstract class MuninnPageCursor implements PageCursor
         this.page = page;
         this.offset = 0;
         this.pointer = page.address();
-        this.size = cachePageSize;
+        this.pageSize = filePageSize;
         if ( tracePinnedCachePageId )
         {
             pinEvent.setCachePageId( page.getCachePageId() );
@@ -106,17 +111,36 @@ abstract class MuninnPageCursor implements PageCursor
     {
         unpinCurrentPage();
         releaseCursor();
+        closeLinkedCursorIfAny();
         // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
         // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
         pagedFile = null;
     }
 
+    private void closeLinkedCursorIfAny()
+    {
+        if ( linkedCursor != null )
+        {
+            linkedCursor.close();
+            linkedCursor = null;
+        }
+    }
+
+    @Override
+    public PageCursor openLinkedCursor( long pageId )
+    {
+        closeLinkedCursorIfAny();
+        linkedCursor =  pagedFile.io( pageId, pf_flags );
+        return linkedCursor;
+    }
+
     /**
      * Must be called by {@link #unpinCurrentPage()}.
      */
-    protected void clearPageState()
+    void clearPageState()
     {
-        size = 0; // make all future bound checks fail
+        pointer = victimPage; // make all future page access go to the victim page
+        pageSize = 0; // make all future bound checks fail
         page = null; // make all future page navigation fail
     }
 
@@ -306,7 +330,7 @@ abstract class MuninnPageCursor implements PageCursor
         pinEvent.done();
     }
 
-    protected long assertPagedFileStillMappedAndGetIdOfLastPage()
+    long assertPagedFileStillMappedAndGetIdOfLastPage()
     {
         return pagedFile.getLastPageId();
     }
@@ -325,33 +349,28 @@ abstract class MuninnPageCursor implements PageCursor
 
     // --- IO methods:
 
-    private void checkBounds( int position )
+    /**
+     * Compute a pointer that guarantees (assuming {@code size} is less than or equal to {@link #pageSize}) that the
+     * page access will be within the bounds of the page.
+     * This might mean that the pointer won't point to where one might naively expect, but will instead be
+     * truncated to point within the page. In this case, an overflow has happened and the {@link #outOfBounds}
+     * flag will be raised.
+     */
+    private long getBoundedPointer( int offset, int size )
     {
-        if ( position > size )
-        {
-            throw new IndexOutOfBoundsException( getOutOfBoundsMessage( position ) );
-        }
-    }
-
-    private String getOutOfBoundsMessage( int position )
-    {
-        if ( size > 0 )
-        {
-            return "Position " + position + " is greater than the upper " +
-                   "page size bound of " + size;
-        }
-        else
-        {
-            return "The PageCursor is not bound to a page. " +
-                   "Maybe next() returned false or was not called, or the cursor has been closed.";
-        }
+        long can = pointer + offset;
+        long lim = pointer + pageSize - size;
+        long ref = Math.min( can, lim );
+        ref = Math.max( ref, pointer );
+        outOfBounds |= ref != can | lim < pointer;
+        return ref;
     }
 
     @Override
     public final byte getByte()
     {
-        checkBounds( offset + SIZE_OF_BYTE );
-        byte b = UnsafeUtil.getByte( pointer + offset );
+        long p = getBoundedPointer( offset, SIZE_OF_BYTE );
+        byte b = UnsafeUtil.getByte( p );
         offset++;
         return b;
     }
@@ -359,23 +378,23 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public byte getByte( int offset )
     {
-        checkBounds( offset + SIZE_OF_BYTE );
-        return UnsafeUtil.getByte( pointer + offset );
+        long p = getBoundedPointer( offset, SIZE_OF_BYTE );
+        return UnsafeUtil.getByte( p );
     }
 
     @Override
     public void putByte( byte value )
     {
-        checkBounds( offset + SIZE_OF_BYTE );
-        UnsafeUtil.putByte( pointer + offset, value );
+        long p = getBoundedPointer( offset, SIZE_OF_BYTE );
+        UnsafeUtil.putByte( p, value );
         offset++;
     }
 
     @Override
     public void putByte( int offset, byte value )
     {
-        checkBounds( offset + SIZE_OF_BYTE );
-        UnsafeUtil.putByte( pointer + offset, value );
+        long p = getBoundedPointer( offset, SIZE_OF_BYTE );
+        UnsafeUtil.putByte( p, value );
     }
 
     @Override
@@ -389,11 +408,11 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public long getLong( int offset )
     {
-        checkBounds( offset + SIZE_OF_LONG );
+        long p = getBoundedPointer( offset, SIZE_OF_LONG );
         long value;
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            value = UnsafeUtil.getLong( pointer + offset );
+            value = UnsafeUtil.getLong( p );
             if ( !UnsafeUtil.storeByteOrderIsNative )
             {
                 value = Long.reverseBytes( value );
@@ -401,14 +420,13 @@ abstract class MuninnPageCursor implements PageCursor
         }
         else
         {
-            value = getLongBigEndian( offset );
+            value = getLongBigEndian( p );
         }
         return value;
     }
 
-    private long getLongBigEndian( int offset )
+    private long getLongBigEndian( long p )
     {
-        long p = pointer + offset;
         long a = UnsafeUtil.getByte( p     ) & 0xFF;
         long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
         long c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
@@ -430,21 +448,19 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void putLong( int offset, long value )
     {
-        checkBounds( offset + SIZE_OF_LONG );
+        long p = getBoundedPointer( offset, SIZE_OF_LONG );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            long p = pointer + offset;
             UnsafeUtil.putLong( p, UnsafeUtil.storeByteOrderIsNative ? value : Long.reverseBytes( value ) );
         }
         else
         {
-            putLongBigEndian( value, offset );
+            putLongBigEndian( value, p );
         }
     }
 
-    private void putLongBigEndian( long value, int offset )
+    private void putLongBigEndian( long value, long p )
     {
-        long p = pointer + offset;
         UnsafeUtil.putByte( p    , (byte)( value >> 56 ) );
         UnsafeUtil.putByte( p + 1, (byte)( value >> 48 ) );
         UnsafeUtil.putByte( p + 2, (byte)( value >> 40 ) );
@@ -466,18 +482,17 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public int getInt( int offset )
     {
-        checkBounds( offset + SIZE_OF_INT );
+        long p = getBoundedPointer( offset, SIZE_OF_INT );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            int x = UnsafeUtil.getInt( pointer + offset );
+            int x = UnsafeUtil.getInt( p );
             return UnsafeUtil.storeByteOrderIsNative ? x : Integer.reverseBytes( x );
         }
-        return getIntBigEndian( offset );
+        return getIntBigEndian( p );
     }
 
-    private int getIntBigEndian( int offset )
+    private int getIntBigEndian( long p )
     {
-        long p = pointer + offset;
         int a = UnsafeUtil.getByte( p     ) & 0xFF;
         int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
         int c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
@@ -495,37 +510,23 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void putInt( int offset, int value )
     {
-        checkBounds( offset + SIZE_OF_INT );
+        long p = getBoundedPointer( offset, SIZE_OF_INT );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            long p = pointer + offset;
             UnsafeUtil.putInt( p, UnsafeUtil.storeByteOrderIsNative ? value : Integer.reverseBytes( value ) );
         }
         else
         {
-            putIntBigEndian( value, offset );
+            putIntBigEndian( value, p );
         }
     }
 
-    private void putIntBigEndian( int value, int offset )
+    private void putIntBigEndian( int value, long p )
     {
-        long p = pointer + offset;
         UnsafeUtil.putByte( p    , (byte)( value >> 24 ) );
         UnsafeUtil.putByte( p + 1, (byte)( value >> 16 ) );
         UnsafeUtil.putByte( p + 2, (byte)( value >> 8  ) );
         UnsafeUtil.putByte( p + 3, (byte)( value       ) );
-    }
-
-    @Override
-    public long getUnsignedInt()
-    {
-        return getInt() & 0xFFFFFFFFL;
-    }
-
-    @Override
-    public long getUnsignedInt( int offset )
-    {
-        return getInt( offset ) & 0xFFFFFFFFL;
     }
 
     @Override
@@ -537,11 +538,13 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void getBytes( byte[] data, int arrayOffset, int length )
     {
-        checkBounds( offset + length );
-        long address = pointer + offset;
-        for ( int i = 0; i < length; i++ )
+        long p = getBoundedPointer( offset, length );
+        if ( !outOfBounds )
         {
-            data[arrayOffset + i] = UnsafeUtil.getByte( address + i );
+            for ( int i = 0; i < length; i++ )
+            {
+                data[arrayOffset + i] = UnsafeUtil.getByte( p + i );
+            }
         }
         offset += length;
     }
@@ -555,12 +558,14 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void putBytes( byte[] data, int arrayOffset, int length )
     {
-        checkBounds( offset + length );
-        long address = pointer + offset;
-        for ( int i = 0; i < length; i++ )
+        long p = getBoundedPointer( offset, length );
+        if ( !outOfBounds )
         {
-            byte b = data[arrayOffset + i];
-            UnsafeUtil.putByte( address + i, b );
+            for ( int i = 0; i < length; i++ )
+            {
+                byte b = data[arrayOffset + i];
+                UnsafeUtil.putByte( p + i, b );
+            }
         }
         offset += length;
     }
@@ -576,18 +581,17 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public short getShort( int offset )
     {
-        checkBounds( offset + SIZE_OF_SHORT );
+        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            short x = UnsafeUtil.getShort( pointer + offset );
+            short x = UnsafeUtil.getShort( p );
             return UnsafeUtil.storeByteOrderIsNative ? x : Short.reverseBytes( x );
         }
-        return getShortBigEndian( offset );
+        return getShortBigEndian( p );
     }
 
-    private short getShortBigEndian( int offset )
+    private short getShortBigEndian( long p )
     {
-        long p = pointer + offset;
         short a = (short) (UnsafeUtil.getByte( p     ) & 0xFF);
         short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
         return (short) ((a << 8) | b);
@@ -603,21 +607,19 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public void putShort( int offset, short value )
     {
-        checkBounds( offset + SIZE_OF_SHORT );
+        long p = getBoundedPointer( offset, SIZE_OF_SHORT );
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            long p = pointer + offset;
             UnsafeUtil.putShort( p, UnsafeUtil.storeByteOrderIsNative ? value : Short.reverseBytes( value ) );
         }
         else
         {
-            putShortBigEndian( value, offset );
+            putShortBigEndian( value, p );
         }
     }
 
-    private void putShortBigEndian( short value, int offset )
+    private void putShortBigEndian( short value, long p )
     {
-        long p = pointer + offset;
         UnsafeUtil.putByte( p    , (byte)( value >> 8 ) );
         UnsafeUtil.putByte( p + 1, (byte)( value      ) );
     }
@@ -627,10 +629,15 @@ abstract class MuninnPageCursor implements PageCursor
     {
         int sourcePageSize = getCurrentPageSize();
         int targetPageSize = targetCursor.getCurrentPageSize();
-        if ( targetCursor.getClass() == MuninnWritePageCursor.class
-                & sourceOffset >= 0 & targetOffset >= 0
-                & sourceOffset < sourcePageSize & targetOffset < targetPageSize
-                & lengthInBytes > 0 )
+        if ( targetCursor.getClass() != MuninnWritePageCursor.class )
+        {
+            throw new IllegalArgumentException( "Target cursor must be writable" );
+        }
+        if ( sourceOffset >= 0
+             & targetOffset >= 0
+             & sourceOffset < sourcePageSize
+             & targetOffset < targetPageSize
+             & lengthInBytes > 0 )
         {
             MuninnPageCursor cursor = (MuninnPageCursor) targetCursor;
             int remainingSource = sourcePageSize - sourceOffset;
@@ -639,42 +646,13 @@ abstract class MuninnPageCursor implements PageCursor
             UnsafeUtil.copyMemory( pointer + sourceOffset, cursor.pointer + targetOffset, bytes );
             return bytes;
         }
-        return illegalCopyToArgs( sourceOffset, sourcePageSize, targetOffset, targetPageSize, lengthInBytes );
-    }
-
-    private int illegalCopyToArgs(
-            int sourceOffset, int sourcePageSize, int targetOffset, int targetPageSize, int lengthInBytes )
-    {
-        if ( sourceOffset < 0 )
-        {
-            throw new IndexOutOfBoundsException( "Negative source offset: " + sourceOffset );
-        }
-        if ( targetOffset < 0 )
-        {
-            throw new IndexOutOfBoundsException( "Negative target offset: " + targetOffset );
-        }
-        if ( sourceOffset >= sourcePageSize )
-        {
-            throw new IndexOutOfBoundsException( "Source offset beyond page bounds: " + sourceOffset );
-        }
-        if ( targetOffset >= targetPageSize )
-        {
-            throw new IndexOutOfBoundsException( "Target offset beyond page bounds: " + sourceOffset );
-        }
-        if ( lengthInBytes < 0 )
-        {
-            throw new IllegalArgumentException( "Cannot copy a negative number of bytes: " + lengthInBytes );
-        }
-        throw new IllegalArgumentException( "Target cursor must be writable" );
+        outOfBounds = true;
+        return 0;
     }
 
     @Override
     public void setOffset( int offset )
     {
-        if ( offset < 0 )
-        {
-            throw new IndexOutOfBoundsException();
-        }
         this.offset = offset;
     }
 
@@ -682,5 +660,19 @@ abstract class MuninnPageCursor implements PageCursor
     public final int getOffset()
     {
         return offset;
+    }
+
+    @Override
+    public boolean checkAndClearBoundsFlag()
+    {
+        boolean b = outOfBounds;
+        outOfBounds = false;
+        return b | (linkedCursor != null && linkedCursor.checkAndClearBoundsFlag());
+    }
+
+    @Override
+    public void raiseOutOfBounds()
+    {
+        outOfBounds = true;
     }
 }

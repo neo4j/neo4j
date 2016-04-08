@@ -25,6 +25,7 @@ import java.util.Arrays;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.buffer;
@@ -218,6 +219,20 @@ public class KeyValueStoreFile implements Closeable
             value.getFrom( cursor );
         }
         while ( cursor.shouldRetry() );
+        if ( cursor.checkAndClearBoundsFlag() )
+        {
+            throwOutOfBounds( cursor, offset );
+        }
+    }
+
+    private static void throwOutOfBounds( PageCursor cursor, int offset )
+    {
+        long pageId = cursor.getCurrentPageId();
+        int pageSize = cursor.getCurrentPageSize();
+        String file = cursor.getCurrentFile().getAbsolutePath();
+        throw new UnderlyingStorageException(
+                "Out of page bounds when reading key-value pair from offset " + offset + " into page " +
+                pageId + " (with a size of " + pageSize + " bytes) of file " + file );
     }
 
     /**

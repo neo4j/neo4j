@@ -26,7 +26,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import static java.lang.String.format;
 
 /**
- * {@link #encode(long, Object, DataAdapter) Encoding} and {@link #decode(Object, DataAdapter) decoding} of {@code long}
+ * {@link #encode(long, PageCursor) Encoding} and {@link #decode(PageCursor) decoding} of {@code long}
  * references, max 58-bit, into an as compact format as possible. Format is close to how utf-8 does similar encoding.
  *
  * Basically one or more header bits are used to note the number of bytes required to represent a
@@ -59,28 +59,6 @@ enum Reference
 
     // 8-byte, 59-bit addr space: 1111 1sxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
     BYTE_8( 8, (byte) 0b1111_1, 5 );
-
-    public interface DataAdapter<SOURCE>
-    {
-        byte getByte( SOURCE source );
-
-        void putByte( byte oneByte, SOURCE source ) throws IOException;
-    }
-
-    public static final DataAdapter<PageCursor> PAGE_CURSOR_ADAPTER = new DataAdapter<PageCursor>()
-    {
-        @Override
-        public byte getByte( PageCursor source )
-        {
-            return source.getByte();
-        }
-
-        @Override
-        public void putByte( byte oneByte, PageCursor source )
-        {
-            source.putByte( oneByte );
-        }
-    };
 
     // Take one copy here since Enum#values() does an unnecessary defensive copy every time.
     private static final Reference[] ENCODINGS = Reference.values();
@@ -116,20 +94,19 @@ enum Reference
         return (absoluteReference & valueOverflowMask) == 0;
     }
 
-    private <SOURCE> void encode( long absoluteReference, boolean positive, SOURCE source,
-            DataAdapter<SOURCE> adapter ) throws IOException
+    private void encode( long absoluteReference, boolean positive, PageCursor source ) throws IOException
     {
         // use big-endianness, most significant byte written first, since it contains encoding information
         int shift = (numberOfBytes-1) << 3;
         byte signBit = (byte) ((positive ? 0 : 1) << (headerShift - 1));
 
         // first (most significant) byte
-        adapter.putByte( (byte) (highHeader | signBit | (byte) (absoluteReference >>> shift)), source );
+        source.putByte( (byte) (highHeader | signBit | (byte) (absoluteReference >>> shift)) );
 
         do // rest of the bytes
         {
             shift -= 8;
-            adapter.putByte( (byte) (absoluteReference >>> shift), source );
+            source.putByte( (byte) (absoluteReference >>> shift) );
         }
         while ( shift > 0 );
     }
@@ -139,7 +116,7 @@ enum Reference
         return Long.SIZE - Long.numberOfLeadingZeros( ~valueOverflowMask );
     }
 
-    public static <TARGET> void encode( long reference, TARGET target, DataAdapter<TARGET> adapter ) throws IOException
+    public static void encode( long reference, PageCursor target ) throws IOException
     {
         // checking with < 0 seems to be the fastest way of telling
         boolean positive = reference >= 0;
@@ -149,7 +126,7 @@ enum Reference
         {
             if ( encoding.canEncode( absoluteReference ) )
             {
-                encoding.encode( absoluteReference, positive, target, adapter );
+                encoding.encode( absoluteReference, positive, target );
                 return;
             }
         }
@@ -187,7 +164,7 @@ enum Reference
         return max;
     }
 
-    public static <SOURCE> long decode( SOURCE source, DataAdapter<SOURCE> adapter )
+    public static long decode( PageCursor source )
     {
         // Dear future maintainers, this code is a little complicated so I'm going to take some time and explain it to
         // you. Make sure you have some coffee ready.
@@ -256,17 +233,17 @@ enum Reference
         // <8>
         // Finally XOR the register with the sign component and we have our final value.
 
-        int header = adapter.getByte( source ) & 0xFF; // <1>
+        int header = source.getByte() & 0xFF; // <1>
         int sizeMarks = Integer.numberOfLeadingZeros( (~(header & 0xF8)) & 0xFF ) - 24; // <2>
         int signShift = 8 - sizeMarks - (sizeMarks == 5 ? 1 : 2); // <3>
         long signComponent = ~((header >>> signShift) & 1) + 1; // <4>
         long register = (header & ((1 << signShift) - 1)) << 16; // <5>
-        register += ((adapter.getByte( source ) & 0xFF) << 8) + (adapter.getByte( source ) & 0xFF); // <6>
+        register += ((source.getByte() & 0xFF) << 8) + (source.getByte() & 0xFF); // <6>
 
         while ( sizeMarks > 0 ) // <7>
         {
             register <<= 8;
-            register += adapter.getByte( source ) & 0xFF;
+            register += source.getByte() & 0xFF;
             sizeMarks--;
         }
 

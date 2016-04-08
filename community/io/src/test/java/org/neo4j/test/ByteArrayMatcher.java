@@ -25,9 +25,19 @@ import org.hamcrest.TypeSafeDiagnosingMatcher;
 // TODO: move to common test module
 public class ByteArrayMatcher extends TypeSafeDiagnosingMatcher<byte[]>
 {
-    public static ByteArrayMatcher byteArray( byte[] expected )
+    public static ByteArrayMatcher byteArray( byte... expected )
     {
         return new ByteArrayMatcher( expected );
+    }
+
+    public static ByteArrayMatcher byteArray( int... expected )
+    {
+        byte[] bytes = new byte[expected.length];
+        for ( int i = 0; i < expected.length; i++ )
+        {
+            bytes[i] = (byte) expected[i];
+        }
+        return byteArray( bytes );
     }
 
     private final byte[] expected;

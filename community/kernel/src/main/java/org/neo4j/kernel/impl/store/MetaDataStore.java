@@ -207,21 +207,22 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public static long setRecord( PageCache pageCache, File neoStore, Position position, long value ) throws IOException
     {
         long previousValue = FIELD_NOT_INITIALIZED;
-        try ( PagedFile pagedFile = pageCache.map( neoStore, getPageSize( pageCache ) ) )
+        int pageSize = getPageSize( pageCache );
+        try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize ) )
         {
-            int recordOffset = RECORD_SIZE * position.id;
-            try ( PageCursor pageCursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            int offset = offset( position );
+            try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
             {
-                if ( pageCursor.next() )
+                if ( cursor.next() )
                 {
                     // We're overwriting a record, get the previous value
                     long record;
                     byte inUse;
                     do
                     {
-                        pageCursor.setOffset( recordOffset );
-                        inUse = pageCursor.getByte();
-                        record = pageCursor.getLong();
+                        cursor.setOffset( offset );
+                        inUse = cursor.getByte();
+                        record = cursor.getLong();
 
                         if ( inUse == Record.IN_USE.byteValue() )
                         {
@@ -229,15 +230,27 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                         }
 
                         // Write the value
-                        pageCursor.setOffset( recordOffset );
-                        pageCursor.putByte( Record.IN_USE.byteValue() );
-                        pageCursor.putLong( value );
+                        cursor.setOffset( offset );
+                        cursor.putByte( Record.IN_USE.byteValue() );
+                        cursor.putLong( value );
                     }
-                    while ( pageCursor.shouldRetry() );
+                    while ( cursor.shouldRetry() );
+                    if ( cursor.checkAndClearBoundsFlag() )
+                    {
+                        MetaDataRecord neoStoreRecord = new MetaDataRecord();
+                        neoStoreRecord.setId( position.id );
+                        throw new UnderlyingStorageException( buildOutOfBoundsExceptionMessage(
+                                neoStoreRecord, 0, offset, RECORD_SIZE, pageSize, neoStore.getAbsolutePath() ) );
+                    }
                 }
             }
         }
         return previousValue;
+    }
+
+    private static int offset( Position position )
+    {
+        return RECORD_SIZE * position.id;
     }
 
     /**
@@ -245,13 +258,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      *
      * @param pageCache {@link PageCache} the {@code neostore} file lives in.
      * @param neoStore {@link File} pointing to the neostore.
-     * @param recordPosition record {@link Position}.
+     * @param position record {@link Position}.
      * @return the read record value specified by {@link Position}.
      */
-    public static long getRecord( PageCache pageCache, File neoStore, Position recordPosition ) throws IOException
+    public static long getRecord( PageCache pageCache, File neoStore, Position position ) throws IOException
     {
         MetaDataRecordFormat format = new MetaDataRecordFormat();
-        try ( PagedFile pagedFile = pageCache.map( neoStore, getPageSize( pageCache ) ) )
+        int pageSize = getPageSize( pageCache );
+        long value = MetaDataRecordFormat.FIELD_NOT_PRESENT;
+        try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize ) )
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {
@@ -260,21 +275,27 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                     if ( cursor.next() )
                     {
                         MetaDataRecord record = new MetaDataRecord();
-                        record.setId( recordPosition.id );
+                        record.setId( position.id );
                         do
                         {
                             format.read( record, cursor, RecordLoad.CHECK, RECORD_SIZE, pagedFile );
                             if ( record.inUse() )
                             {
-                                return record.getValue();
+                                value = record.getValue();
                             }
                         }
                         while ( cursor.shouldRetry() );
+                        if ( cursor.checkAndClearBoundsFlag() )
+                        {
+                            int offset = offset( position );
+                            throw new UnderlyingStorageException( buildOutOfBoundsExceptionMessage(
+                                    record, 0, offset, RECORD_SIZE, pageSize, neoStore.getAbsolutePath() ) );
+                        }
                     }
                 }
             }
         }
-        return MetaDataRecordFormat.FIELD_NOT_PRESENT;
+        return value;
     }
 
     static int getPageSize( PageCache pageCache )
@@ -412,6 +433,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             cursor.putLong( offset, value );
         }
         while ( cursor.shouldRetry() );
+        checkForOutOfBounds( cursor, Position.LOG_VERSION.id );
         versionField = value;
     }
 
@@ -485,6 +507,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                     getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ) );
         }
         while ( cursor.shouldRetry() );
+        if ( cursor.checkAndClearBoundsFlag() )
+        {
+            throw new UnderlyingStorageException(
+                    "Out of page bounds when reading all meta-data fields. The page in question is page " +
+                    cursor.getCurrentPageId() + " of file " + storageFileName.getAbsolutePath() + ", which is " +
+                    cursor.getCurrentPageSize() + " bytes in size" );
+        }
     }
 
     long getRecordValue( PageCursor cursor, Position position )
@@ -552,6 +581,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             cursor.putLong( value );
         }
         while ( cursor.shouldRetry() );
+        checkForOutOfBounds( cursor, position.id );
     }
 
     public NeoStoreRecord graphPropertyRecord()
@@ -701,6 +731,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
             }
             while ( cursor.shouldRetry() );
+            checkForOutOfBounds( cursor, Position.UPGRADE_TRANSACTION_ID.id );
         }
         catch ( IOException e )
         {
@@ -779,16 +810,18 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     public void logRecords( final Logger msgLog )
     {
-        scanAllFields( PF_SHARED_READ_LOCK, element -> {
+        scanAllFields( PF_SHARED_READ_LOCK, cursor -> {
             for ( Position position : Position.values() )
             {
                 long value;
                 do
                 {
-                    value = getRecordValue( element, position );
+                    value = getRecordValue( cursor, position );
                 }
-                while ( element.shouldRetry() );
-                msgLog.log( position.name() + " (" + position.description() + "): " + value );
+                while ( cursor.shouldRetry() );
+                boolean bounds = cursor.checkAndClearBoundsFlag();
+                msgLog.log( position.name() + " (" + position.description() + "): " + value +
+                            (bounds ? " (out-of-bounds detected; value cannot be trusted)" : ""));
             }
             return false;
         } );
