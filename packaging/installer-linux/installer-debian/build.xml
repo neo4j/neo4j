@@ -36,17 +36,6 @@
                   toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-import"/>
             <copy file="${project.build.sourceDirectory}/../resources/common/neo4j-script"
                   toFile="${project.build.outputDirectory}/@{name}/server/scripts/neo4j-shell"/>
-            <chmod perm="700">
-                <fileset dir="${project.build.outputDirectory}/@{name}">
-                    <include name="**/server/scripts/neo4j"/>
-                    <include name="**/server/scripts/neo4j-shell"/>
-                    <include name="**/server/scripts/neo4j-import"/>
-                    <include name="**/server/scripts/neo4j-backup"/>
-                    <include name="**/server/scripts/neo4j-admin"/>
-                </fileset>
-            </chmod>
-
-
 
             <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j-wrapper.conf"
                      token="unsupported.dbms.udc.source=tarball"
