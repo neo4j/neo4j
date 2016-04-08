@@ -59,7 +59,7 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
         this.statementRunner = statementRunner;
         this.txBridge = txBridge;
         this.featureUsage = usageData.get( UsageDataKeys.features );
-        this.errorReporter = new ErrorReporter( logging, this.usageData );
+        this.errorReporter = new ErrorReporter( logging );
         this.log = logging.getInternalLog( SessionStateMachine.class );
         this.authentication = authentication;
     }
