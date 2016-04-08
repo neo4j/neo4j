@@ -20,6 +20,9 @@ test_expect_success "should refuse to run with Java 6" "
 test_expect_success "should run happily with Oracle JVM" "
   ! (FAKE_JAVA_JVM='Java HotSpot(TM)' run_console | grep 'unsupported Java runtime')
 "
+test_expect_success "should run happily with IBM JVM" "
+  ! (FAKE_JAVA_JVM='IBM J9 VM' run_console | grep 'unsupported Java runtime')
+"
 
 test_expect_success "should run happily with OpenJDK" "
   ! (FAKE_JAVA_JVM='OpenJDK' run_console | grep 'unsupported Java runtime')

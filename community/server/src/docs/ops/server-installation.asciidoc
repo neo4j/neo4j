@@ -18,7 +18,9 @@ For information on High Availability, please refer to <<ha>>.
 == Prerequisites ==
 
 With the exception of our Windows and Mac Installers, you'll need a Java Virtual Machine installed on your computer.
-We recommend that you install http://openjdk.java.net/[OpenJDK 8] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 8].
+We recommend that you install http://openjdk.java.net/[OpenJDK 8],
+http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 8] or
+http://www.ibm.com/developerworks/java/jdk/[IBM Java 8] (POWER8 only).
 
 [[server-permissions]]
 == Setting Proper File Permissions ==
