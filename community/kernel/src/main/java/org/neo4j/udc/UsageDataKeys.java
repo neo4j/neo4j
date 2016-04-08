@@ -26,6 +26,7 @@ import org.neo4j.concurrent.DecayingFlags.Key;
 import org.neo4j.concurrent.RecentK;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.factory.Protocol;
 
 import static org.neo4j.udc.UsageDataKey.key;
 
@@ -51,6 +52,9 @@ public class UsageDataKeys
     /** Self-reported names of clients connecting to us. */
     public static final UsageDataKey<RecentK<String>> clientNames = key( "neo4j.clientNames",
             (Supplier<RecentK<String>>) () -> new RecentK<>( 10 ) );
+
+    /** Client-server protocol used to connect to Neo4j */
+    public static final UsageDataKey<Protocol> protocol = key( "neo4j.protocol", Protocol.unknown );
 
     /** Cluster server ID */
     public static final UsageDataKey<String> serverId = key( "neo4j.serverId" );

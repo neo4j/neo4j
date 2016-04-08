@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.factory.Protocol;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -209,7 +210,7 @@ public class ResetFuzzTest
         }
 
         @Override
-        public void udcRegisterClient( String clientName )
+        public void udcRegisterClient( String clientName, Protocol protocol )
         {
 
         }
