@@ -24,6 +24,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxE
 
 class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
 
+  //TCK'd
   test("should support ORDER BY") {
     createNode("prop" -> 1)
     createNode("prop" -> 3)
@@ -36,6 +37,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     ))
   }
 
+  //TCK'd
   test("should support ORDER BY DESC") {
     createNode("prop" -> 1)
     createNode("prop" -> 3)
@@ -48,11 +50,13 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     ))
   }
 
+  //TCK'd
   test("ORDER BY of an column introduced in RETURN should work well") {
     executeWithAllPlannersAndCompatibilityMode("WITH [0, 1] AS prows, [[2], [3, 4]] AS qrows UNWIND prows AS p UNWIND qrows[p] AS q WITH p, count(q) AS rng RETURN p ORDER BY rng").toList should
       equal(List(Map("p" -> 0), Map("p" -> 1)))
   }
 
+  //TCK'd
   test("renaming columns before ORDER BY is not confusing") {
     createNode("prop" -> 1)
     createNode("prop" -> 3)
@@ -66,6 +70,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
       ))
   }
 
+  //TCK'd
   test("Properly handle projections and ORDER BY (GH#4937)") {
     val crew1 = createLabeledNode(Map("name" -> "Neo", "rank" -> 1), "Crew")
     val crew2 = createLabeledNode(Map("name" -> "Neo", "rank" -> 2), "Crew")
@@ -86,6 +91,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     ))
   }
 
+  //TCK'd
   test("Order by with limit zero or negative should not generate errors") {
     createLabeledNode(Map("name" -> "Steven"), "Person")
     createLabeledNode(Map("name" -> "Craig"), "Person")
@@ -95,6 +101,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     a [SyntaxException] should be thrownBy executeWithAllPlannersAndCompatibilityMode("MATCH (p:Person) RETURN p ORDER BY p.name LIMIT -1")
   }
 
+  //TCK'd
   test("should be able to order booleans") {
     val query = "UNWIND [true, false] AS bools RETURN bools ORDER BY bools"
 
@@ -103,6 +110,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     executeWithAllPlannersAndCompatibilityMode(s"$query DESC").toList should equal(expected.reverse)
   }
 
+  //TCK'd
   test("should be able to order strings") {
     val query = "UNWIND ['.*', '', ' ', 'one'] AS strings RETURN strings ORDER BY strings"
 
@@ -111,6 +119,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     executeWithAllPlannersAndCompatibilityMode(s"$query DESC").toList should equal(expected.reverse)
   }
 
+  //TCK'd
   test("should be able to order ints") {
     val query = "UNWIND [1,3,2] as ints return ints order by ints"
 
@@ -119,6 +128,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     executeWithAllPlannersAndCompatibilityMode(s"$query DESC").toList should equal(expected.reverse)
   }
 
+  //TCK'd
   test("should be able to order floats") {
     val query = "UNWIND [1.5,1.3,999.99] as floats return floats order by floats"
 
