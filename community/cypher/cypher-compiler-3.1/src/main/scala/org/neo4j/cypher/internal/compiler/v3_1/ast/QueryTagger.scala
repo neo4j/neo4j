@@ -61,6 +61,8 @@ object QueryTags {
     SetTag,
     RemoveTag,
     MergeTag,
+    OnMatchTag,
+    OnCreateTag,
     CreateUniqueTag,
     ForeachTag,
 
