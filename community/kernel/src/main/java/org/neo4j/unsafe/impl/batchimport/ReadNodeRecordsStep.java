@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -28,7 +29,7 @@ import static java.lang.Math.min;
 
 /**
  * Reads from {@link NodeStore} and produces batches of {@link NodeRecord} for others to process.
- *
+ * <p>
  * Future: Would be quite efficient just get a page cursor and read inUse+labelField and store
  * all labelField values of a batch in one long[] or similar, instead of passing on a NodeRecord[].
  */
@@ -46,13 +47,20 @@ public class ReadNodeRecordsStep extends ReadRecordsStep<NodeRecord>
     {
         int size = (int) min( batchSize, highId - id );
         NodeRecord[] batch = new NodeRecord[size];
+        boolean seenReservedId = false;
+
         for ( int i = 0; i < size; i++ )
         {
             // We don't want null in batch[i], a record, whether used or unused is what we want
             cursor.next( id++ );
-            batch[i] = record.clone();
+            NodeRecord newRecord = record.clone();
+            batch[i] = newRecord;
+            seenReservedId |= IdValidator.isReservedId( newRecord.getId() );
         }
-        return size > 0 ? batch : null;
+
+        batch = removeRecordWithReservedId( batch, seenReservedId );
+
+        return batch.length > 0 ? batch : null;
     }
 
     @Override

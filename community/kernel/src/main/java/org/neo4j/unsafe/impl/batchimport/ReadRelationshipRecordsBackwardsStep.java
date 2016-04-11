@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -46,12 +47,19 @@ public class ReadRelationshipRecordsBackwardsStep extends ReadRecordsStep<Relati
     {
         int size = (int) min( batchSize, id );
         RelationshipRecord[] batch = new RelationshipRecord[size];
+        boolean seenReservedId = false;
+
         for ( int i = 0; i < size; i++ )
         {
             cursor.next( --id );
-            batch[i] = record.clone();
+            RelationshipRecord newRecord = record.clone();
+            batch[i] = newRecord;
+            seenReservedId |= IdValidator.isReservedId( newRecord.getId() );
         }
-        return size > 0 ? batch : null;
+
+        batch = removeRecordWithReservedId( batch, seenReservedId );
+
+        return batch.length > 0 ? batch : null;
     }
 
     @Override

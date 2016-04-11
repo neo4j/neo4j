@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
@@ -32,8 +33,8 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
- * Updates a batch of records to a store. Can be given a {@link Predicate} that can choose to not
- * {@link Predicate#accept(Object) accept} a record, which will have that record be written as unused instead.
+ * Updates a batch of records to a store. Can have {@link #accept(AbstractBaseRecord)} overwritten to not not accept
+ * a record, which will have that record be written as unused instead.
  */
 public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
         extends ProcessorStep<RECORD[]>
@@ -56,12 +57,15 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     {
         for ( RECORD record : batch )
         {
-            if ( record.inUse() && !accept( record ) )
+            if ( !IdValidator.isReservedId( record.getId() ) )
             {
-                record = (RECORD) record.clone();
-                record.setInUse( false );
+                if ( record.inUse() && !accept( record ) )
+                {
+                    record = (RECORD) record.clone();
+                    record.setInUse( false );
+                }
+                update( record );
             }
-            update( record );
         }
         recordsUpdated += batch.length;
     }

@@ -23,7 +23,9 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -33,6 +35,8 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class UpdateRecordsStepTest
@@ -58,5 +62,27 @@ public class UpdateRecordsStepTest
         Stat stat = step.stat( Keys.io_throughput );
 
         assertThat( stat.asLong(), greaterThan( 0L ) );
+    }
+
+    @Test
+    public void recordWithReservedIdIsSkipped() throws Throwable
+    {
+        RecordStore<NodeRecord> store = mock( NodeStore.class );
+        StageControl stageControl = mock( StageControl.class );
+        UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, Configuration.DEFAULT, store );
+
+        NodeRecord node1 = new NodeRecord( 1 );
+        NodeRecord node2 = new NodeRecord( 2 );
+        NodeRecord nodeWithReservedId = new NodeRecord( IdGeneratorImpl.INTEGER_MINUS_ONE );
+        NodeRecord[] batch = {node1, node2, nodeWithReservedId};
+
+        step.process( batch, mock( BatchSender.class ) );
+
+        verify( store ).prepareForCommit( node1 );
+        verify( store ).updateRecord( node1 );
+        verify( store ).prepareForCommit( node2 );
+        verify( store ).updateRecord( node2 );
+        verify( store, never() ).prepareForCommit( nodeWithReservedId );
+        verify( store, never() ).updateRecord( nodeWithReservedId );
     }
 }
