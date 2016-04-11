@@ -94,17 +94,17 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
   test("MATCH n WITH 60/60/count(*) AS x RETURN x AS x") {
     assertRewrite(
       "MATCH n WITH 60/60/count(*) AS x RETURN x AS x",
-      "MATCH n WITH 60/60 AS `  AGGREGATION15`, count(*) AS `  AGGREGATION19` WITH `  AGGREGATION15`/`  AGGREGATION19` AS x RETURN x AS x")
+      "MATCH n WITH count(*) AS `  AGGREGATION19` WITH 60/60/`  AGGREGATION19` AS x RETURN x AS x")
   }
 
   test("MATCH (a:Start)<-[:R]-(b) RETURN { foo:a.prop=42, bar:collect(b.prop2) } AS result") {
     assertRewrite(
       "MATCH (a:Start)<-[:R]-(b) " +
-      "RETURN { foo:a.prop=42, bar:collect(b.prop2) } AS result",
+        "RETURN { foo:a.prop=42, bar:collect(b.prop2) } AS result",
 
       "MATCH (a:Start)<-[:R]-(b) " +
-      "WITH a.prop=42 AS `  AGGREGATION45`, collect(b.prop2) AS `  AGGREGATION54` " +
-      "RETURN { foo:`  AGGREGATION45`, bar:`  AGGREGATION54`} AS result")
+        "WITH a.prop=42 AS `  AGGREGATION45`, collect(b.prop2) AS `  AGGREGATION54` " +
+        "RETURN { foo:`  AGGREGATION45`, bar:`  AGGREGATION54`} AS result")
   }
 
   test("MATCH n RETURN count(*) + max(id(n)) AS r") {
@@ -148,6 +148,18 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
         |RETURN `  AGGREGATION22` AS `coalesce(a.prop, b.prop)`,
         |       `  AGGREGATION50` AS `b.prop`,
         |       { x: `  AGGREGATION61` } AS `{ x: count(b) }`""".stripMargin)
+  }
+
+  test("should not axtract expressions that do not contain on variables as implicit grouping key") {
+    assertRewrite(
+      """MATCH (user:User {userId: 11})-[friendship:FRIEND]-()
+        |WITH user AS user, collect(friendship)[toInt(rand() * count(friendship))] AS selectedFriendship
+        |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin,
+      """MATCH (user:User {userId: 11})-[friendship:FRIEND]-()
+        |WITH user AS user, collect(friendship) AS `  AGGREGATION73`, count(friendship) AS `  AGGREGATION108`
+        |WITH user AS user, `  AGGREGATION73`[toInt(rand() * `  AGGREGATION108`)] AS selectedFriendship
+        |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
+    )
   }
 
   override protected def parseForRewriting(queryText: String) = {
