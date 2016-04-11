@@ -30,11 +30,11 @@ Apache Software License, Version 2.0
   Ganglia Integration for Metrics
   Graphite Integration for Metrics
   Lucene Core
+  Netty
   Metrics Core
   opencsv
   parboiled-core
   parboiled-scala
-  The Netty Project
 
 BSD - Scala License
   Scala Library
