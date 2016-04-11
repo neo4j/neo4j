@@ -65,6 +65,7 @@ public class StoreUpgrader
     public static final String MIGRATION_DIRECTORY = "upgrade";
     public static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
     private static final String MIGRATION_STATUS_FILE = "_status";
+    public static final String CUSTOM_IO_EXCEPTION_MESSAGE = "Store upgrade not allowed with custom IO integrations";
 
     private final UpgradableDatabase upgradableDatabase;
     private final MigrationProgressMonitor progressMonitor;
@@ -113,6 +114,11 @@ public class StoreUpgrader
             throw new UpgradeNotAllowedByConfigurationException();
         }
 
+        if( customIOConfigurationUsed( config ) )
+        {
+            throw new IllegalArgumentException( CUSTOM_IO_EXCEPTION_MESSAGE );
+        }
+
         // One or more participants would like to do migration
         progressMonitor.started();
 
@@ -149,6 +155,11 @@ public class StoreUpgrader
         cleanup( participants, migrationDirectory );
 
         progressMonitor.completed();
+    }
+
+    private boolean customIOConfigurationUsed( Config config )
+    {
+        return config.get( GraphDatabaseSettings.pagecache_swapper ) != null;
     }
 
     private boolean isUpgradeAllowed()

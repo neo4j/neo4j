@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.factory;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -26,10 +27,7 @@ import java.io.File;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.ha.factory.HighlyAvailableEditionModule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -40,23 +38,34 @@ public class PlatformConstraintGraphDatabaseFactoryTest
     @Rule
     public TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
 
-    @Test
-    public void shouldFailToStartIfConfiguredForCAPIDeviceTest()
+    private File workingDir;
+
+    @Before
+    public void setup()
     {
-        GraphDatabaseBuilder graphDatabaseBuilder = new HighlyAvailableGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( storeDir.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                .setConfig( ClusterSettings.server_id, "1" );
+        workingDir = storeDir.directory( "working" );
+    }
+
+    @Test
+    public void shouldFailToStartWithCustomIOConfigurationTest()
+    {
         try
         {
-            graphDatabaseBuilder.newGraphDatabase();
+            createGraphDatabaseService();
             fail( "Should not have created database with custom IO configuration and HA mode." );
         }
         catch ( RuntimeException ex )
         {
-            // good
-            assertEquals( "HA mode not allowed with custom IO integrations", ex.getMessage() );
+            assertEquals( HighlyAvailableEditionModule.CUSTOM_IO_EXCEPTION_MESSAGE, ex.getMessage() );
         }
     }
+
+    private GraphDatabaseService createGraphDatabaseService()
+    {
+        return new TestHighlyAvailableGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDir )
+                .setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
+                .setConfig( ClusterSettings.server_id, "1" ).newGraphDatabase();
+    }
+
 }

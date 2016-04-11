@@ -19,15 +19,17 @@
  */
 package org.neo4j.backup;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import java.io.File;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -37,22 +39,33 @@ public class PlatformConstraintBackupTest
     @Rule
     public TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
 
-    @Test
-    public void shouldFailToStartIfConfiguredForCAPIDeviceTest()
+    private File workingDir;
+
+    @Before
+    public void setup()
     {
-        GraphDatabaseFactory graphDatabaseFactory = new GraphDatabaseFactory();
-        GraphDatabaseBuilder gdBuilder = graphDatabaseFactory.newEmbeddedDatabaseBuilder( storeDir.graphDbDir() );
-        gdBuilder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" );
+        workingDir = storeDir.directory( "working" );
+    }
+
+    @Test
+    public void shouldFailToStartWithCustomIOConfigurationTest()
+    {
         try
         {
-            gdBuilder.newGraphDatabase();
-            fail( "Should not have created database with custom IO configuration and Online Backup." );
+            createGraphDatabaseService();
+            fail( "Should not have created database with custom IO configuration and online backup." );
         }
         catch ( RuntimeException ex )
         {
-            // good
-            assertEquals( "Online Backup not allowed with custom IO integration", ex.getMessage() );
+            assertEquals( OnlineBackupExtensionFactory.CUSTOM_IO_EXCEPTION_MESSAGE,
+                    ex.getCause().getCause().getMessage() );
         }
+    }
+
+    private GraphDatabaseService createGraphDatabaseService()
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDir )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" ).newGraphDatabase();
     }
 }

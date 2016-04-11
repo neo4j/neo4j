@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.spi;
 
 import java.io.File;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 
@@ -63,5 +65,11 @@ public class SimpleKernelContext implements KernelContext
     public DependencySatisfier dependencySatisfier()
     {
         return satisfier;
+    }
+
+    @Override
+    public boolean customIOConfigurationUsed( Config config )
+    {
+        return config.get( GraphDatabaseSettings.pagecache_swapper ) != null;
     }
 }

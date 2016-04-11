@@ -19,40 +19,62 @@
  */
 package upgrade;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 
 public class PlatformConstraintStoreUpgradeTest
 {
     @Rule
     public TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
 
-    @Test
-    public void shouldFailToStartIfConfiguredForCAPIDeviceTest()
+    private FileSystemAbstraction fileSystem;
+    private File prepareDir;
+    private File workingDir;
+
+    @Before
+    public void setup()
     {
-        GraphDatabaseBuilder gdBuilder =
-                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.graphDbDir() );
-        gdBuilder.setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" );
+        fileSystem = new DefaultFileSystemAbstraction();
+        prepareDir = storeDir.directory( "prepare" );
+        workingDir = storeDir.directory( "working" );
+    }
+
+    @Test
+    public void shouldFailToStartWithCustomIOConfigurationTest() throws IOException
+    {
+        prepareSampleLegacyDatabase( LowLimitV2_2.STORE_VERSION, fileSystem, workingDir, prepareDir );
         try
         {
-            gdBuilder.newGraphDatabase();
+            createGraphDatabaseService();
             fail( "Should not have created database with custom IO configuration and Store Upgrade." );
         }
         catch ( RuntimeException ex )
         {
-            // good
-            assertEquals( "Store upgrade not allowed with custom IO integrations", ex.getMessage() );
+            assertEquals( StoreUpgrader.CUSTOM_IO_EXCEPTION_MESSAGE, ex.getCause().getCause().getMessage() );
         }
+    }
+
+    private GraphDatabaseService createGraphDatabaseService()
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDir )
+                .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
+                .setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" ).newGraphDatabase();
     }
 }
