@@ -55,16 +55,16 @@ Apache Software License, Version 2.0
   Jetty Utilities
   JTA 1.1
   Lucene Core
+  Netty
   RRD4J
   Servlet Specification API
   StAX API
-  The Netty Project
   zookeeper
 
 BSD - Scala License
   Scala Library
 
-BSD - seedrandom.js
+BSD - seedrandom.js License
   seedrandom.js
 
 BSD License

@@ -30,7 +30,7 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   JTA 1.1
   Lucene Core
-  The Netty Project
+  Netty
   zookeeper
 
 BSD - Scala License
