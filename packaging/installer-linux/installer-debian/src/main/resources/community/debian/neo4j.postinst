@@ -36,9 +36,14 @@ case "$1" in
         chmod u+rwx /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j /var/run/neo4j
 
         update-rc.d neo4j defaults
-        
-        # Start neo4j
-        invoke-rc.d neo4j start
+
+        if [ -f /tmp/neo4j-upgraded-from-2.x ]; then
+            echo "important message here"
+            rm /tmp/neo4j-upgraded-from-2.x
+        else
+            # Start neo4j
+            invoke-rc.d neo4j start
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
