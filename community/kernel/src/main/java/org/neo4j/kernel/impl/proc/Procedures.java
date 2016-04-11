@@ -50,7 +50,7 @@ public class Procedures extends LifecycleAdapter
 
     public Procedures()
     {
-        this( new BuiltInProcedures( "N/A" ), null, NullLog.getInstance() );
+        this( new BuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance() );
     }
 
     public Procedures( ThrowingConsumer<Procedures, ProcedureException> builtin, File pluginDir, Log log )
