@@ -167,7 +167,7 @@ class ClusterContextImpl
     @Override
     public void created( String name )
     {
-        commonState.setConfiguration( new  ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ),
+        commonState.setConfiguration( new ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ),
                 Collections.singleton( commonState.boundAt() ) ) );
         joined();
     }

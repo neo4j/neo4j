@@ -57,6 +57,7 @@ public class MultiPaxosContext
     private final PaxosInstanceStore paxosInstances;
 
     public MultiPaxosContext( InstanceId me,
+                              int maxAcceptors,
                               Iterable<ElectionRole> roles,
                               ClusterConfiguration configuration,
                               Executor executor,
@@ -67,14 +68,14 @@ public class MultiPaxosContext
                               Timeouts timeouts,
                               ElectionCredentialsProvider electionCredentialsProvider )
     {
-        commonState = new CommonContextState(configuration);
+        commonState = new CommonContextState( configuration, maxAcceptors );
         paxosInstances = new PaxosInstanceStore();
 
         heartbeatContext = new HeartbeatContextImpl(me, commonState, logging, timeouts, executor );
         learnerContext = new LearnerContextImpl(me, commonState, logging, timeouts, paxosInstances, instanceStore, objectInputStreamFactory, objectOutputStreamFactory, heartbeatContext );
         clusterContext = new ClusterContextImpl(me, commonState, logging, timeouts, executor, objectOutputStreamFactory, objectInputStreamFactory, learnerContext, heartbeatContext );
         electionContext = new ElectionContextImpl( me, commonState, logging, timeouts, roles, clusterContext, heartbeatContext, electionCredentialsProvider );
-        proposerContext = new ProposerContextImpl(me, commonState, logging, timeouts, paxosInstances );
+        proposerContext = new ProposerContextImpl(me, commonState, logging, timeouts, paxosInstances, heartbeatContext );
         acceptorContext = new AcceptorContextImpl(me, commonState, logging, timeouts, instanceStore);
         atomicBroadcastContext = new AtomicBroadcastContextImpl(me, commonState, logging, timeouts, executor, heartbeatContext );
 
@@ -156,7 +157,7 @@ public class MultiPaxosContext
                 electionContext.snapshot( commonStateSnapshot, logging, timeouts, snapshotClusterContext,
                         snapshotHeartbeatContext, electionCredentialsProvider );
         ProposerContextImpl snapshotProposerContext =
-                proposerContext.snapshot( commonStateSnapshot, logging, timeouts, paxosInstancesSnapshot );
+                proposerContext.snapshot( commonStateSnapshot, logging, timeouts, paxosInstancesSnapshot, heartbeatContext );
         AcceptorContextImpl snapshotAcceptorContext =
                 acceptorContext.snapshot( commonStateSnapshot, logging, timeouts, instanceStore );
         AtomicBroadcastContextImpl snapshotAtomicBroadcastContext =

@@ -94,7 +94,7 @@ public class HeartbeatContextTest
         Logging logging = Mockito.mock( Logging.class );
         when( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class) );
 
-        MultiPaxosContext context = new MultiPaxosContext( instanceIds[0], Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( instanceIds[0], 10, Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), config,
                         Mockito.mock( Executor.class ), logging,
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),

@@ -66,7 +66,7 @@ public class HeartbeatStateTest
         Logging logging = mock( Logging.class );
         when( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
-        MultiPaxosContext context = new MultiPaxosContext( instanceId, Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( instanceId, 10, Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), configuration,
                         Mockito.mock( Executor.class ), logging,
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
@@ -100,7 +100,7 @@ public class HeartbeatStateTest
         Logging logging = mock( Logging.class );
         when( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
-        MultiPaxosContext context = new MultiPaxosContext( myId, Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( myId, 10, Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), configuration,
                         Mockito.mock( Executor.class ), logging,
                         Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
@@ -135,7 +135,7 @@ public class HeartbeatStateTest
         Logging logging = mock( Logging.class );
         when( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
-        MultiPaxosContext context = new MultiPaxosContext( instanceId, Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( instanceId, 10, Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( "coordinator" ) ), configuration,
                 Mockito.mock( Executor.class ), logging,
                 Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),

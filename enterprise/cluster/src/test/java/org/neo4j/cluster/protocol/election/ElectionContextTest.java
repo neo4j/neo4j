@@ -99,7 +99,7 @@ public class ElectionContextTest
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId( 1 ),
-                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
+                10, Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
                 clusterConfiguration, mock( Executor.class ), new DevNullLoggingService(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
@@ -131,7 +131,7 @@ public class ElectionContextTest
         ClusterContext clusterContext = mock( ClusterContext.class );
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
-        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), 10, Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( "coordinator" ) ), clusterConfiguration,
                 mock( Executor.class ), new DevNullLoggingService(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
@@ -166,7 +166,7 @@ public class ElectionContextTest
         ClusterContext clusterContext = mock( ClusterContext.class );
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
-        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), 10, Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( "coordinator" ) ), clusterConfiguration,
                 mock( Executor.class ), new DevNullLoggingService(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
@@ -202,7 +202,7 @@ public class ElectionContextTest
         Logging logging = mock( Logging.class );
         when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
-        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), 10, Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( coordinatorRole ) ), clusterConfiguration,
                         mock( Executor.class ), logging,
                         mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
@@ -233,7 +233,7 @@ public class ElectionContextTest
         Logging logging = mock( Logging.class );
         when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
-        ElectionContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
+        ElectionContext context = new MultiPaxosContext( new InstanceId(1), 10, Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( coordinatorRole ) ),  mock( ClusterConfiguration.class ),
                 mock( Executor.class ), logging,
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
@@ -256,7 +256,7 @@ public class ElectionContextTest
         Logging logging = mock( Logging.class );
         when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
-        ElectionContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
+        ElectionContext context = new MultiPaxosContext( new InstanceId(1), 10, Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( coordinatorRole ) ),  mock( ClusterConfiguration.class ),
                 mock( Executor.class ), logging,
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
@@ -290,7 +290,7 @@ public class ElectionContextTest
         clusterMemberIds.add( me );
         when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
 
-        MultiPaxosContext context = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( me, 10, Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( role1 ), new ElectionRole( role2 ) ), clusterConfiguration,
                 new Executor()
                 {
@@ -340,7 +340,7 @@ public class ElectionContextTest
         clusterMemberIds.add( forQuorum );
         when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
 
-        MultiPaxosContext context = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( me, 10, Iterables.<ElectionRole, ElectionRole>iterable(
                 new ElectionRole( role1 ) ), clusterConfiguration,
                 new Executor()
                 {
@@ -398,7 +398,7 @@ public class ElectionContextTest
         when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
 
         MultiPaxosContext context = new MultiPaxosContext( me,
-                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( role1 ) ), clusterConfiguration,
+                10, Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( role1 ) ), clusterConfiguration,
                 new Executor()
                 {
                     @Override
@@ -445,7 +445,7 @@ public class ElectionContextTest
         ClusterContext clusterContext = mock( ClusterContext.class );
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
-        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), 10, Iterables.<ElectionRole, ElectionRole>iterable(
                         new ElectionRole( "coordinator" ) ), clusterConfiguration,
                         mock( Executor.class ), new DevNullLoggingService(),
                         mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),

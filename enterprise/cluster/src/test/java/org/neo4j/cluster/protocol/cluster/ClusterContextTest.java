@@ -55,7 +55,7 @@ public class ClusterContextTest
         Logging logging = mock( Logging.class );
         when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
-        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
+        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, 10, Iterables.<ElectionRole, ElectionRole
                 >iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
                 new Executor()
@@ -105,7 +105,7 @@ public class ClusterContextTest
         Logging logging = mock( Logging.class );
         when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
-        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
+        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, 10, Iterables.<ElectionRole, ElectionRole
                 >iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
                 new Executor()
@@ -148,7 +148,7 @@ public class ClusterContextTest
         Logging logging = mock( Logging.class );
         when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
-        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
+        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, 10, Iterables.<ElectionRole, ElectionRole
                 >iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
                 new Executor()
@@ -198,7 +198,7 @@ public class ClusterContextTest
         Logging logging = mock( Logging.class );
         when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
 
-        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
+        MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, 10, Iterables.<ElectionRole, ElectionRole
                 >iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
                 new Executor()
