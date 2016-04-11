@@ -27,7 +27,7 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   JTA 1.1
-  The Netty Project
+  Netty
 
 Eclipse Public License, Version 1.0
   Logback Classic Module

@@ -52,11 +52,11 @@ Apache Software License, Version 2.0
   Jetty :: XML utilities
   JTA 1.1
   Lucene Core
+  Netty
   opencsv
   parboiled-core
   parboiled-scala
   RRD4J
-  The Netty Project
 
 BSD - Scala License
   Scala Library

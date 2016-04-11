@@ -49,124 +49,150 @@ import java.util.Collection;
 import java.util.Date;
 import javax.crypto.NoSuchPaddingException;
 
-public class SslCertificateFactory {
-
+public class SslCertificateFactory
+{
     private static final String CERTIFICATE_TYPE = "X.509";
     private static final String KEY_ENCRYPTION = "RSA";
 
     {
-        Security.addProvider(new BouncyCastleProvider());
+        Security.addProvider( new BouncyCastleProvider() );
     }
 
-    public void createSelfSignedCertificate(File certificatePath,
-            File privateKeyPath, String hostName)
+    public void createSelfSignedCertificate( File certificatePath,
+                                             File privateKeyPath, String hostName )
     {
         FileOutputStream fos = null;
-        try {
+        try
+        {
 
             KeyPairGenerator keyPairGenerator = KeyPairGenerator
-                    .getInstance(KEY_ENCRYPTION);
-            keyPairGenerator.initialize(1024);
+                    .getInstance( KEY_ENCRYPTION );
+            keyPairGenerator.initialize( 2048 );
             KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
             X509V3CertificateGenerator certGenertor = new X509V3CertificateGenerator();
 
-            certGenertor.setSerialNumber(BigInteger.valueOf(
-                    new SecureRandom().nextInt()).abs());
-            certGenertor.setIssuerDN(new X509Principal("CN=" + hostName
-                    + ", OU=None, O=None L=None, C=None"));
-            certGenertor.setNotBefore(new Date(System.currentTimeMillis()
-                    - 1000L * 60 * 60 * 24 * 30));
-            certGenertor.setNotAfter(new Date(System.currentTimeMillis()
-                    + (1000L * 60 * 60 * 24 * 365 * 10)));
-            certGenertor.setSubjectDN(new X509Principal("CN=" + hostName
-                    + ", OU=None, O=None L=None, C=None"));
+            certGenertor.setSerialNumber( BigInteger.valueOf(
+                    new SecureRandom().nextInt() ).abs() );
+            certGenertor.setIssuerDN( new X509Principal( "CN=" + hostName
+                    + ", OU=None, O=None L=None, C=None" ) );
+            certGenertor.setNotBefore( new Date( System.currentTimeMillis()
+                    - 1000L * 60 * 60 * 24 * 30 ) );
+            certGenertor.setNotAfter( new Date( System.currentTimeMillis()
+                    + (1000L * 60 * 60 * 24 * 365 * 10) ) );
+            certGenertor.setSubjectDN( new X509Principal( "CN=" + hostName
+                    + ", OU=None, O=None L=None, C=None" ) );
 
-            certGenertor.setPublicKey(keyPair.getPublic());
-            certGenertor.setSignatureAlgorithm("SHA512WithRSAEncryption");
+            certGenertor.setPublicKey( keyPair.getPublic() );
+//            certGenertor.setSignatureAlgorithm( "MD5WithRSAEncryption" );
+            certGenertor.setSignatureAlgorithm( "RIPEMD256withRSA" );
 
             Certificate certificate = certGenertor.generate(
-                    keyPair.getPrivate(), "BC");
+                    keyPair.getPrivate(), "BC" );
 
-            ensureFolderExists(certificatePath.getParentFile());
-            ensureFolderExists(privateKeyPath.getParentFile());
+            ensureFolderExists( certificatePath.getParentFile() );
+            ensureFolderExists( privateKeyPath.getParentFile() );
 
-            fos = new FileOutputStream(certificatePath);
-            fos.write(certificate.getEncoded());
+            fos = new FileOutputStream( certificatePath );
+            fos.write( certificate.getEncoded() );
             fos.close();
 
-            fos = new FileOutputStream(privateKeyPath);
-            fos.write(keyPair.getPrivate().getEncoded());
+            fos = new FileOutputStream( privateKeyPath );
+            fos.write( keyPair.getPrivate().getEncoded() );
             fos.close();
 
-        } catch (Exception e)
+        }
+        catch ( Exception e )
         {
-            throw new RuntimeException("Unable to create self signed SSL certificate, please see nested exception.", e);
-        } finally {
-            if (fos != null) {
-                try {
+            throw new RuntimeException( "Unable to create self signed SSL certificate, please see nested exception.",
+                    e );
+        }
+        finally
+        {
+            if ( fos != null )
+            {
+                try
+                {
                     fos.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
                 }
             }
         }
     }
 
-    public Certificate[] loadCertificates(File certFile)
-            throws CertificateException, FileNotFoundException {
+    public Certificate[] loadCertificates( File certFile )
+            throws CertificateException, FileNotFoundException
+    {
         FileInputStream fis = null;
-        try {
-            fis = new FileInputStream(certFile);
-            Collection<? extends Certificate> certificates = CertificateFactory.getInstance(CERTIFICATE_TYPE).generateCertificates(
-                    fis);
-            return certificates.toArray(new Certificate[]{});
-        } finally {
-            if (fis != null) {
-                try {
+        try
+        {
+            fis = new FileInputStream( certFile );
+            Collection<? extends Certificate> certificates = CertificateFactory.getInstance( CERTIFICATE_TYPE )
+                    .generateCertificates(
+                    fis );
+            return certificates.toArray( new Certificate[]{} );
+        }
+        finally
+        {
+            if ( fis != null )
+            {
+                try
+                {
                     fis.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
                 }
             }
         }
     }
 
-    public PrivateKey loadPrivateKey(File privateKeyFile)
+    public PrivateKey loadPrivateKey( File privateKeyFile )
             throws IOException, NoSuchAlgorithmException,
             InvalidKeySpecException, NoSuchPaddingException,
             InvalidKeyException, InvalidAlgorithmParameterException
-            {
+
+    {
         DataInputStream dis = null;
         try
         {
-            FileInputStream fis = new FileInputStream(privateKeyFile);
-            dis = new DataInputStream(fis);
+            FileInputStream fis = new FileInputStream( privateKeyFile );
+            dis = new DataInputStream( fis );
             byte[] keyBytes = new byte[(int) privateKeyFile.length()];
-            dis.readFully(keyBytes);
+            dis.readFully( keyBytes );
 
-            KeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
-
-            return KeyFactory.getInstance(KEY_ENCRYPTION).generatePrivate(keySpec);
-        } catch (FileNotFoundException e )
+            KeySpec keySpec = new PKCS8EncodedKeySpec( keyBytes );
+            return KeyFactory.getInstance( KEY_ENCRYPTION ).generatePrivate( keySpec );
+        }
+        catch ( FileNotFoundException e )
         {
-            throw new IOException("Could not find private key file to use for SSL support, see nested exception.", e);
-        } finally
+            throw new IOException( "Could not find private key file to use for SSL support, see nested exception.", e );
+        }
+        finally
         {
-            if (dis != null) {
-                try {
+            if ( dis != null )
+            {
+                try
+                {
                     dis.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
                 }
             }
         }
     }
 
-    private void ensureFolderExists(File path) {
-        if(!path.exists()) {
+    private void ensureFolderExists( File path )
+    {
+        if ( !path.exists() )
+        {
             path.mkdirs();
         }
     }
-
 }
