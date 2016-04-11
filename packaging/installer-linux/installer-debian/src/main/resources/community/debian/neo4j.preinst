@@ -10,7 +10,6 @@ OLD_PLUGINS_DIR=/usr/share/neo4j/plugins
 OLD_IMPORT_DIR=/var/lib/data/import
 OLD_CERTIFICATES_DIR=/etc/neo4j/ssl
 
-NEW_DATABASES_DIR=/var/lib/neo4j/data/databases
 NEW_CERTIFICATES_DIR=/var/lib/neo4j/certificates
 NEW_PLUGINS_DIR=/var/lib/neo4j/plugins
 NEW_IMPORT_DIR=/var/lib/neo4j/import
@@ -38,22 +37,15 @@ case "$1" in
         fi
 
         if [ -d "${NEO4J_PLUGINS_DIR}" ]; then
-            mkdir -p "${NEW_PLUGINS_DIR}" && chown neo4j.nogroup "${NEW_PLUGINS_DIR}" && chmod 0755 "${NEW_PLUGINS_DIR}"
+            mkdir -p "${NEW_PLUGINS_DIR}" && chown neo4j:nogroup "${NEW_PLUGINS_DIR}" && chmod 0755 "${NEW_PLUGINS_DIR}"
             mv "${OLD_PLUGINS_DIR}"/* "${NEW_PLUGINS_DIR}"
         fi
 
         if [ -d "${NEO4J_IMPORT_DIR}" ]; then
-            mkdir -p "${NEW_IMPORT_DIR}" && chown neo4j.nogroup "${NEW_IMPORT_DIR}" && chmod 0755 "${NEW_IMPORT_DIR}"
+            mkdir -p "${NEW_IMPORT_DIR}" && chown neo4j:nogroup "${NEW_IMPORT_DIR}" && chmod 0755 "${NEW_IMPORT_DIR}"
             mv "${OLD_IMPORT_DIR}"/* "${NEW_IMPORT_DIR}"
         fi
 
-        mkdir -p "${NEW_DATABASES_DIR}" && chown neo4j.nogroup "${NEW_DATABASES_DIR}" && chmod 0755 "${NEW_DATABASES_DIR}"
-        mv "${NEO4J_DATA_DIR}"/*.db "${NEW_DATABASES_DIR}"
-
         touch /tmp/neo4j-upgraded-from-2.x
-    ;;
-    *)
-        echo "Unknown argument: $1"
-        exit 1
     ;;
 esac
