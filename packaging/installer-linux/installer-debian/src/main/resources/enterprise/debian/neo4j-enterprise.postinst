@@ -17,7 +17,6 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
-
 case "$1" in
     configure)
 
@@ -36,9 +35,21 @@ case "$1" in
         chmod u+rwx /var/lib/neo4j /var/log/neo4j /etc/neo4j /usr/share/neo4j /var/run/neo4j
 
         update-rc.d neo4j defaults
-        
-        # Start neo4j
-        invoke-rc.d neo4j start
+
+        if [ -f /tmp/neo4j-upgraded-from-2.x ]; then
+            echo "-----------------------------------------------------------------------------"
+            echo "You are upgrading from Neo4j 2.x. Please be aware that the configuration file"
+            echo "is now /etc/neo4j/neo4j.conf and may need manual upgrades if you had custom"
+            echo "configuration in your 2.x installation."
+            echo
+            echo "Please see: /usr/share/doc/neo4j/UPGRADE.txt or"
+            echo "            http://neo4j.com/guides/upgrade/ for more information."
+            echo "-----------------------------------------------------------------------------"
+            rm /tmp/neo4j-upgraded-from-2.x
+        else
+            # Start neo4j
+            invoke-rc.d neo4j start
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
