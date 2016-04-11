@@ -29,8 +29,25 @@ setup_environment
 check_java
 build_classpath
 
+ARGS=""
+while [[ $# > 0 ]]
+do
+    option="$1"
+    case $option in
+        --file)
+            filename="$(pwd)/${2}"
+            ARGS="${ARGS} --file ${filename}"
+            shift
+            ;;
+        *)
+            ARGS="${ARGS} ${option}"
+            ;;
+    esac
+    shift
+done
+
 exec "$JAVA_CMD" ${JAVA_OPTS:-} \
   -classpath "$CLASSPATH" \
   -Dfile.encoding=UTF-8 \
   org.neo4j.shell.StartClient \
-  "$@"
+  "$ARGS"
