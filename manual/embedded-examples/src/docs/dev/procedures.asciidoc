@@ -44,7 +44,7 @@ For full details, see the Cypher documentation on <<query-call, the `CALL` claus
 Neo4j comes bundled with a number of built-in procedures.
 These are listed in the table below:
 
-[options="header", cols="m,d"]
+[options="header", cols="m,m,d"]
 |===
 | Procedure name        | Command to invoke procedure    | What it does
 | ListLabels            | CALL db.labels()               | List all labels in the database.
@@ -230,7 +230,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class LegacyFullTextIndexTest
+public class ManualFullTextIndexTest
 {
     // This rule starts a Neo4j instance for us
     @Rule
@@ -343,7 +343,7 @@ public class FullTextIndex
 
     /**
      * This declares the first of two procedures in this class - a
-     * procedure that performs queries in a legacy index.
+     * procedure that performs queries in a manual index.
      *
      * It returns a Stream of Records, where records are
      * specified per procedure. This particular procedure returns
