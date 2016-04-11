@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileUtils;
@@ -45,15 +44,16 @@ public class StoreUtil
             return new File[0];
         }
 
-        return storeDir.listFiles( new FileFilter()
-        {
-            @Override
-            public boolean accept( File file )
+        return storeDir.listFiles(file -> {
+            for ( String directory : new String[] {"metrics", "logs", "certificates"} )
             {
-                return !file.getName().startsWith( "metrics" ) && !file.getName().startsWith( "debug." ) &&
-                       !isBranchedDataRootDirectory( file );
+                if ( file.getName().startsWith( directory ) )
+                {
+                    return false;
+                }
             }
-        } );
+            return !isBranchedDataRootDirectory( file );
+        });
     }
 
     public static File newBranchedDataDir( File storeDir )
