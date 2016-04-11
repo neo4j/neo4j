@@ -6,7 +6,7 @@ test_description="Test config parsing"
 fake_install
 
 test_expect_success "should default port and address if none are provided" "
-  test_expect_stdout_matching 'Started at http://localhost:7474' run_daemon
+  test_expect_stdout_matching 'By default, it is available at http://localhost:7474/' run_daemon
 "
 
 #test_expect_success "should read port and address from config" "

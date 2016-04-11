@@ -63,13 +63,19 @@ If you see this error simply install Neo4j into a different location.
    * Select the appropriate Zip distribution.
 2. Right-click the downloaded file, click Extract All.
 3. Change directory to top-level extracted directory.
-   * Run `bin/neo4j console`
+   * Run `bin\neo4j console`
 4. Stop the server by typing Ctrl-C in the console.
 
 [NOTE]
 Some users have reported problems on Windows when using the ZoneAlarm firewall.
 If you are having problems getting large responses from the server, or if the web interface does not work, try disabling ZoneAlarm.
 Contact ZoneAlarm support to get information on how to resolve this.
+
+=== Windows service ===
+
+Neo4j can also be run as a Windows service.
+Install the service with `bin\neo4j install-service` and start it with `bin\neo4j start`.
+Other commands available are `stop`, `restart`, `status` and `uninstall-service`.
 
 [[linux-install]]
 == Linux ==
