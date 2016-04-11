@@ -27,10 +27,10 @@ Third-party licenses
 Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Lucene Core
+  Netty
   opencsv
   parboiled-core
   parboiled-scala
-  The Netty Project
 
 BSD - Scala License
   Scala Library

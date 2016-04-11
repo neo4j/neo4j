@@ -6,10 +6,10 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   Jackson
   Lucene Core
+  Netty
   opencsv
   parboiled-core
   parboiled-scala
-  The Netty Project
 ------------------------------------------------------------------------------
 
                                  Apache License

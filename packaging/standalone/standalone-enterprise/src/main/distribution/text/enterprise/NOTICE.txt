@@ -48,16 +48,16 @@ Apache Software License, Version 2.0
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
   Lucene Core
+  Netty
   opencsv
   parboiled-core
   parboiled-scala
   RRD4J
-  The Netty Project
 
 BSD - Scala License
   Scala Library
 
-BSD - seedrandom.js
+BSD - seedrandom.js License
   seedrandom.js
 
 BSD License

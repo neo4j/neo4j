@@ -25,7 +25,7 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  The Netty Project
+  Netty
 
 MIT License
   SLF4J API Module
