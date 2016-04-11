@@ -55,7 +55,7 @@ setup_arbiter_options() {
       port="${org_neo4j_server_webserver_port:-7474}"
       NEO4J_SERVER_ADDRESS="${org_neo4j_server_webserver_address:-localhost}"
 
-      echo "Started at http://${NEO4J_SERVER_ADDRESS}:${port} (pid ${NEO4J_PID})."
+      echo "Started neo4j (pid ${NEO4J_PID}). By default, it is available at http://${NEO4J_SERVER_ADDRESS}:${port}/"
 
       if [[ "$(echo "${dbms_mode:-}" | tr [:lower:] [:upper:])" == "HA" ]]; then
         echo "This HA instance will be operational once it has joined the cluster."
