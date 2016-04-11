@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -36,7 +37,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 public class CalculateDenseNodesStage extends Stage
 {
     public CalculateDenseNodesStage( Configuration config, InputIterable<InputRelationship> relationships,
-            NodeRelationshipCache cache, IdMapper idMapper,
+            RelationshipStore relationshipStore, NodeRelationshipCache cache, IdMapper idMapper,
             Collector badCollector, InputCache inputCache ) throws IOException
     {
         super( "Calculate dense nodes", config );
@@ -47,6 +48,7 @@ public class CalculateDenseNodesStage extends Stage
             add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships() ) );
         }
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
+        add( new CalculateRelationshipsStep( control(), config, relationshipStore ) );
         add( new CalculateDenseNodePrepareStep( control(), config, badCollector ) );
         add( new CalculateDenseNodesStep( control(), config, cache ) );
     }

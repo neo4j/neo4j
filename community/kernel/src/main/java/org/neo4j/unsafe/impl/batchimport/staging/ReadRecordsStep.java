@@ -19,8 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.lang.reflect.Array;
+import java.util.stream.Stream;
+
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -59,5 +63,22 @@ public abstract class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends
     {
         super.close();
         cursor.close();
+    }
+
+    protected RECORD[] removeRecordWithReservedId( RECORD[] records, boolean seenReservedId )
+    {
+        if ( !seenReservedId )
+        {
+            return records;
+        }
+        return Stream.of( records )
+                .filter( record -> !IdValidator.isReservedId( record.getId() ) )
+                .toArray( length -> newArray( length, records.getClass().getComponentType() ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private RECORD[] newArray( int length, Class<?> componentType )
+    {
+        return (RECORD[]) Array.newInstance( componentType, length );
     }
 }
