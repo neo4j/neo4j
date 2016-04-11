@@ -338,7 +338,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             RecordFormats formats )
     {
         this.storeDir = storeDir;
-        this.config = config;
+        this.config = validateSettingsForPageSwapper( config );
         this.tokenNameLookup = tokenNameLookup;
         this.dependencyResolver = dependencyResolver;
         this.scheduler = scheduler;
@@ -396,6 +396,36 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         this.commitProcessFactory = commitProcessFactory;
         this.pageCache = pageCache;
+    }
+
+    /**
+     * Custom IO integrations are partially supported, but the features below are not functional yet.
+     * When those features are available, this check can be removed entirely.
+     * This will allow us to ship the custom IO integration for experimental use, and protect users from
+     * using it with the currently unsupported features. i.e using custom IO integration in HA mode.
+     */
+    private Config validateSettingsForPageSwapper( Config config )
+    {
+        if ( config.get( GraphDatabaseSettings.pagecache_swapper ) != null )
+        {
+            if ( config.get( GraphDatabaseSettings.allow_store_upgrade ) )
+            {
+                throw new IllegalArgumentException( "Store upgrade not allowed with custom IO integrations" );
+            }
+            String onlineBackup = config.getParams().get( "dbms.backup.enabled" );
+            if ( onlineBackup != null && !onlineBackup.equals( "false" ) )
+            {
+                throw new IllegalArgumentException( "Online Backup not allowed with custom IO integration" );
+            }
+            for ( String configKey : config.getParams().keySet() )
+            {
+                if ( configKey.contains( "ha." ) )
+                {
+                    throw new IllegalArgumentException( "HA mode not allowed with custom IO integrations" );
+                }
+            }
+        }
+        return config;
     }
 
     @Override
