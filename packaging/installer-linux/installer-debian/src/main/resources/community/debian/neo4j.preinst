@@ -1,12 +1,11 @@
 #!/bin/sh
 
 set -e
-set -x
 
-NEO4J_CONF_DIR=/etc/neo4j
 NEO4J_LIB_DIR=/var/lib/neo4j
 NEO4J_DATA_DIR=/var/lib/neo4j/data
 
+OLD_PLUGINS_LINK=/var/lib/neo4j/plugins
 OLD_PLUGINS_DIR=/usr/share/neo4j/plugins
 OLD_IMPORT_DIR=/var/lib/data/import
 OLD_CERTIFICATES_DIR=/etc/neo4j/ssl
@@ -18,6 +17,12 @@ NEW_IMPORT_DIR=/var/lib/neo4j/import
 
 case "$1" in
     upgrade)
+        dpkg-maintscript-helper rm_conffile "/etc/init.d/neo4j-service" -- "$@"
+        dpkg-maintscript-helper rm_conffile "/etc/neo4j/README.txt" -- "$@"
+        dpkg-maintscript-helper rm_conffile "/etc/neo4j/neo4j-http-logging.xml" -- "$@"
+        dpkg-maintscript-helper rm_conffile "/etc/neo4j/neo4j-server.properties" -- "$@"
+        dpkg-maintscript-helper rm_conffile "/etc/neo4j/neo4j.properties" -- "$@"
+
         if [ -d "${OLD_CERTIFICATES_DIR}" ]; then
             mkdir -p "${NEW_CERTIFICATES_DIR}" && chown neo4j.nogroup "${NEW_CERTIFICATES_DIR}" && chmod 0755 "${NEW_CERTIFICATES_DIR}"
             mv "${OLD_CERTIFICATES_DIR}"/snakeoil.cert "${NEW_CERTIFICATES_DIR}"/neo4j.cert
@@ -28,11 +33,9 @@ case "$1" in
             rmdir "${OLD_CERTIFICATES_DIR}"
         fi
 
-#        for old_config_file in ${NEO4J_CONF_DIR}/*
-#        do
-#            dpkg-maintscript-helper rm_conffile "${NEO4J_CONF_DIR}"/neo4j.conf -- "$@"
-#            dpkg-maintscript-helper rm_conffile "${NEO4J_CONF_DIR}"/neo4j-wrapper.conf -- "$@"
-#        done
+        if [ -L "${OLD_PLUGINS_LINK}" ]; then
+            rm "${OLD_PLUGINS_LINK}"
+        fi
 
         if [ -d "${NEO4J_PLUGINS_DIR}" ]; then
             mkdir -p "${NEW_PLUGINS_DIR}" && chown neo4j.nogroup "${NEW_PLUGINS_DIR}" && chmod 0755 "${NEW_PLUGINS_DIR}"
@@ -46,6 +49,8 @@ case "$1" in
 
         mkdir -p "${NEW_DATABASES_DIR}" && chown neo4j.nogroup "${NEW_DATABASES_DIR}" && chmod 0755 "${NEW_DATABASES_DIR}"
         mv "${NEO4J_DATA_DIR}"/*.db "${NEW_DATABASES_DIR}"
+
+        touch /tmp/neo4j-upgraded-from-2.x
     ;;
     *)
         echo "Unknown argument: $1"
