@@ -24,9 +24,9 @@ import org.neo4j.logging.Log;
 public class JvmChecker
 {
     public static final String INCOMPATIBLE_JVM_WARNING = "You are using an unsupported Java runtime. Please" +
-            " use Oracle(R) Java(TM) Runtime Environment 8 or OpenJDK(TM) 8.";
+            " use Oracle(R) Java(TM) Runtime Environment 8, OpenJDK(TM) 8 or IBM J9.";
     public static final String INCOMPATIBLE_JVM_VERSION_WARNING = "You are using an unsupported version of " +
-            "the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 8 or OpenJDK(TM) 8.";
+            "the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 8, OpenJDK(TM) 8 or IBM J9.";
 
     private final Log log;
     private final JvmMetadataRepository jvmMetadataRepository;
@@ -42,7 +42,7 @@ public class JvmChecker
         String javaVmName = jvmMetadataRepository.getJavaVmName();
         String javaVersion = jvmMetadataRepository.getJavaVersion();
 
-        if ( !javaVmName.matches( "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM" ) )
+        if ( !javaVmName.matches( "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM" ) )
         {
             log.warn( INCOMPATIBLE_JVM_WARNING );
         }

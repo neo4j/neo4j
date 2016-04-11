@@ -65,7 +65,7 @@ check_java() {
     exit 1
   fi
 
-  if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"); then
+  if ! ("${version_command[@]}" 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK|IBM) (64-Bit Server|Server|Client|J9) VM"); then
     echo "WARNING! You are using an unsupported Java runtime. "
     _show_java_help
   fi
@@ -106,7 +106,7 @@ _find_java_home() {
 }
 
 _show_java_help() {
-  echo "* Please use Oracle(R) Java(TM) 8 or OpenJDK(TM) to run Neo4j Server."
+  echo "* Please use Oracle(R) Java(TM) 8, OpenJDK(TM) or IBM J9 to run Neo4j Server."
   echo "* Please see http://docs.neo4j.org/ for Neo4j Server installation instructions."
 }
 
