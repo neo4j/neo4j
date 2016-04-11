@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.builtinprocs.ListIndexesProcedure;
 import org.neo4j.server.security.auth.AuthSubject;
 
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -162,7 +163,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)"} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)"}),
                 equalTo( new Object[]{"sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
-                equalTo( new Object[]{"sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?)"} ),
+                equalTo( new Object[]{"sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)"} ),
                 equalTo( new Object[]{"sys.changePassword", "sys.changePassword(password :: STRING?) :: ()"}),
                 equalTo( new Object[]{"sys.queryJmx", "sys.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)"})
         ));
@@ -271,5 +272,18 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
             // Then
             assertThat( e.getClass(), equalTo( ProcedureException.class ) );
         }
+    }
+
+    @Test
+    public void listAllComponents() throws Throwable
+    {
+        // Given a running database
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                readOperationsInNewTransaction().procedureCallRead( procedureName( "sys", "components" ), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel", singletonList("dev"), "community"} ) ) );
     }
 }

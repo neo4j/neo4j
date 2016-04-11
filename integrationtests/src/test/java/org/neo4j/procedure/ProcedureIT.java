@@ -565,7 +565,6 @@ public class ProcedureIT
         assertThat(dbContents, equalTo(lines));
     }
 
-
     @Test
     public void shouldFailIfUsingPeriodicCommitWithReadOnlyQuery() throws IOException
     {
