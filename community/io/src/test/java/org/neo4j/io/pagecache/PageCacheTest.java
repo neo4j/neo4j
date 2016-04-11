@@ -688,6 +688,41 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         cache.map( file( "a" ), Long.BYTES - 1 ); // this must throw
     }
 
+    @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalArgumentException.class )
+    public void mappingFileWithPageSizeSmallerThanLongSizeBytesMustThrowEvenWithAnyPageSizeOpenOptionAndNoExistingMapping()
+            throws IOException
+    {
+        // Because otherwise we cannot ensure that our branch-free bounds checking always lands within a page boundary.
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        cache.map( file( "a" ), Long.BYTES - 1, PageCacheOpenOptions.ANY_PAGE_SIZE ); // this must throw
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = IllegalArgumentException.class )
+    public void mappingFileWithPageZeroPageSizeMustThrowEvenWithExistingMapping() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        File file = file( "a" );
+        //noinspection unused
+        try ( PagedFile oldMapping = pageCache.map( file, filePageSize ) )
+        {
+            pageCache.map( file, Long.BYTES - 1 ); // this must throw
+        }
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void mappingFileWithPageZeroPageSizeAndAnyPageSizeOpenOptionMustNotThrowGivenExistingMapping()
+            throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        File file = file( "a" );
+        //noinspection unused,EmptyTryBlock
+        try ( PagedFile oldMapping = pageCache.map( file, filePageSize );
+              PagedFile newMapping = pageCache.map( file, 0, PageCacheOpenOptions.ANY_PAGE_SIZE ) )
+        {
+            // All good
+        }
+    }
+
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void mappingFileWithPageSizeEqualToCachePageSizeMustNotThrow() throws IOException
     {

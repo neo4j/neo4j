@@ -280,12 +280,6 @@ public class MuninnPageCache implements PageCache
                     "Cannot map files with a filePageSize (" + filePageSize + ") that is greater than the " +
                     "cachePageSize (" + cachePageSize + ")" );
         }
-        if ( filePageSize < Long.BYTES )
-        {
-            throw new IllegalArgumentException(
-                    "Cannot map files with a filePageSize (" + filePageSize + ") that is less than " +
-                    Long.BYTES + " bytes" );
-        }
         boolean createIfNotExists = false;
         boolean truncateExisting = false;
         boolean deleteOnClose = false;
@@ -358,6 +352,13 @@ public class MuninnPageCache implements PageCache
                 return pagedFile;
             }
             current = current.next;
+        }
+
+        if ( filePageSize < Long.BYTES )
+        {
+            throw new IllegalArgumentException(
+                    "Cannot map files with a filePageSize (" + filePageSize + ") that is less than " +
+                    Long.BYTES + " bytes" );
         }
 
         // there was no existing mapping
