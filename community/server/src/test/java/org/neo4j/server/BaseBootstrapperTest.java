@@ -76,7 +76,7 @@ public abstract class BaseBootstrapperTest extends ExclusiveServerTestBase
     protected abstract void stop( String[] args );
 
     @Test
-    public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws IOException
+    public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws Throwable
     {
         // When
         int resultCode = ServerBootstrapper.start( bootstrapper,
