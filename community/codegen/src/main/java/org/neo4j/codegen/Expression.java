@@ -118,14 +118,38 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression sub( final Expression lhs, final Expression rhs )
+    public static Expression subtractInts( final Expression lhs, final Expression rhs )
     {
         return new Expression()
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.sub( lhs, rhs );
+                visitor.subtractInts( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression subtractLongs( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.subtractLongs( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression subtractDoubles( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.subtractDoubles( lhs, rhs );
             }
         };
     }

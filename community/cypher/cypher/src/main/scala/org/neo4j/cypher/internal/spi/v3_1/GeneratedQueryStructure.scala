@@ -329,7 +329,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def decreaseCounterAndCheckForZero(name: String): Expression = {
     val local = locals(name)
-    generator.assign(local, Expression.sub(local, Expression.constant(1)))
+    generator.assign(local, Expression.subtractInts(local, Expression.constant(1)))
     Expression.eq(Expression.constant(0), local)
   }
 
@@ -473,7 +473,11 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def add(lhs: Expression, rhs: Expression) = math(Methods.mathAdd, lhs, rhs)
 
-  override def sub(lhs: Expression, rhs: Expression) = math(Methods.mathSub, lhs, rhs)
+  override def subtractIntegers(lhs: Expression, rhs: Expression) = Expression.subtractLongs(lhs, rhs)
+
+  override def subtractFloats(lhs: Expression, rhs: Expression) = Expression.subtractDoubles(lhs, rhs)
+
+  override def subtract(lhs: Expression, rhs: Expression) = math(Methods.mathSub, lhs, rhs)
 
   override def mul(lhs: Expression, rhs: Expression) = math(Methods.mathMul, lhs, rhs)
 
@@ -587,7 +591,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
         .invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
       using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
         block(copy(generator=body))
-        body.assign(times, Expression.sub(times, Expression.constant(1)))
+        body.assign(times, Expression.subtractInts(times, Expression.constant(1)))
       }
     case LongsToCountTable =>
       val times = generator.declare(typeRef[Int], context.namer.newVarName())
@@ -602,7 +606,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
       using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
         block(copy(generator=body))
-        body.assign(times, Expression.sub(times, Expression.constant(1)))
+        body.assign(times, Expression.subtractInts(times, Expression.constant(1)))
       }
 
     case tableType@LongToListTable(structure,localVars) =>

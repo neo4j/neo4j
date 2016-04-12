@@ -189,7 +189,24 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void sub( Expression lhs, Expression rhs )
+    public void subtractInts( Expression lhs, Expression rhs )
+    {
+        sub( lhs, rhs);
+    }
+
+    @Override
+    public void subtractLongs( Expression lhs, Expression rhs )
+    {
+        sub( lhs, rhs);
+    }
+
+    @Override
+    public void subtractDoubles( Expression lhs, Expression rhs )
+    {
+        sub( lhs, rhs);
+    }
+
+    private void sub( Expression lhs, Expression rhs )
     {
         result.append( "sub(" );
         lhs.accept( this );

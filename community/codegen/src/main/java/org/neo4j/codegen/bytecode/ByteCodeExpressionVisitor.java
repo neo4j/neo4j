@@ -352,39 +352,27 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     }
 
     @Override
-    public void sub( Expression lhs, Expression rhs )
+    public void subtractInts( Expression lhs, Expression rhs )
     {
-        TypeReference lhsType = findType( lhs );
-        TypeReference rhsType = findType( rhs );
-
-        if ( !lhsType.equals( rhsType ) )
-        {
-            throw new IllegalStateException( "Cannot compare values of different types" );
-        }
-
         lhs.accept( this );
         rhs.accept( this );
-        switch ( lhsType.simpleName() )
-        {
-        case "int":
-        case "byte":
-        case "short":
-        case "char":
-        case "boolean":
-            methodVisitor.visitInsn( ISUB );
-            break;
-        case "long":
-            methodVisitor.visitInsn( LSUB );
-            break;
-        case "float":
-            methodVisitor.visitInsn( FSUB );
-            break;
-        case "double":
-            methodVisitor.visitInsn( DSUB );
-            break;
-        default:
-            throw new IllegalStateException( "Subtraction is only supported for primitive number types" );
-        }
+        methodVisitor.visitInsn( ISUB );
+    }
+
+    @Override
+    public void subtractLongs( Expression lhs, Expression rhs )
+    {
+        lhs.accept( this );
+        rhs.accept( this );
+        methodVisitor.visitInsn( LSUB );
+    }
+
+    @Override
+    public void subtractDoubles( Expression lhs, Expression rhs )
+    {
+        lhs.accept( this );
+        rhs.accept( this );
+        methodVisitor.visitInsn( DSUB );
     }
 
     @Override

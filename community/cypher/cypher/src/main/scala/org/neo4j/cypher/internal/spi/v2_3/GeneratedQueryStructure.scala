@@ -313,7 +313,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def decreaseCounterAndCheckForZero(name: String): Expression = {
     val local = locals(name)
-    generator.assign(local, Expression.sub(local, Expression.constant(1)))
+    generator.assign(local, Expression.subtractInts(local, Expression.constant(1)))
     Expression.eq(Expression.constant(0), local)
   }
 
@@ -542,7 +542,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       generator.assign(times, Expression.invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
       using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
         block(copy(generator=body))
-        body.assign(times, Expression.sub(times, Expression.constant(1)))
+        body.assign(times, Expression.subtractInts(times, Expression.constant(1)))
       }
     case LongsToCountTable =>
       val times = generator.declare(typeRef[Int], context.namer.newVarName())
@@ -557,7 +557,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
       using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
         block(copy(generator=body))
-        body.assign(times, Expression.sub(times, Expression.constant(1)))
+        body.assign(times, Expression.subtractInts(times, Expression.constant(1)))
       }
 
     case tableType@LongToListTable(structure,localVars) =>

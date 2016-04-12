@@ -121,7 +121,19 @@ public abstract class BaseExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void sub( Expression lhs, Expression rhs )
+    public void subtractInts( Expression lhs, Expression rhs )
+    {
+
+    }
+
+    @Override
+    public void subtractLongs( Expression lhs, Expression rhs )
+    {
+
+    }
+
+    @Override
+    public void subtractDoubles( Expression lhs, Expression rhs )
     {
 
     }

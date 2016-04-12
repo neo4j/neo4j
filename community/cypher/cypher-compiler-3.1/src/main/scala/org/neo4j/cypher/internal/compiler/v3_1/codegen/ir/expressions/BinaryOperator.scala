@@ -49,7 +49,7 @@ trait NumericalOpType {
   override def cypherType(implicit context: CodeGenContext) =
     (lhs.cypherType, rhs.cypherType) match {
       case (CTInteger, CTInteger) => CTInteger
-      case (_: NumberType, _: NumberType) => CTFloat
+      case (Number(_), Number(_)) => CTFloat
       // Runtime we'll figure it out - can't store it in a primitive field unless we are 100% of the type
       case _ => CTAny
     }

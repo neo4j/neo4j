@@ -35,24 +35,24 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
                        data: Seq[(Any, Any, Either[Any, Class[_ <: Exception]])])
 
   val addOperation = Operation("Addition", Addition.apply, Seq(
-//    (7, 9, Left(16)),
-//    ("abc", 7, Left("abc7")),
-//    (9, "abc", Left("9abc")),
-//    (3.14, "abc", Left("3.14abc")),
-//    ("abc", 3.14, Left("abc3.14")),
- //   (7, 3.14, Left(10.14)),
-   // (11.6, 3, Left(14.6)),
-//    (2.5, 4.5, Left(7.0)),
-//    (Long.MaxValue, Long.MinValue, Left(-1)),
-//    (42, null, Left(null)),
-//    (null, 42, Left(null)),
+    (7, 9, Left(16)),
+    ("abc", 7, Left("abc7")),
+    (9, "abc", Left("9abc")),
+    (3.14, "abc", Left("3.14abc")),
+    ("abc", 3.14, Left("abc3.14")),
+    (7, 3.14, Left(10.14)),
+    (11.6, 3, Left(14.6)),
+    (2.5, 4.5, Left(7.0)),
+    (Long.MaxValue, Long.MinValue, Left(-1)),
+    (42, null, Left(null)),
+    (null, 42, Left(null)),
     (true, 3, Right(classOf[CypherTypeException])))
   )
 
   val subOperation = Operation("Subtraction", Subtraction.apply, Seq(
-    (9, 7, Left(2)),
-    (Long.MaxValue, Int.MaxValue, Left(Long.MaxValue - Int.MaxValue)),
-    (3.25, 3, Left(0.25)),
+//    (9, 7, Left(2)),
+//    (Long.MaxValue, Int.MaxValue, Left(Long.MaxValue - Int.MaxValue)),
+   // (3.25, 3, Left(0.25)),
     (3.21, 1.23, Left(1.98)),
     (-1, -2, Left(1)),
     (-1.25, -2.5, Left(1.25)),

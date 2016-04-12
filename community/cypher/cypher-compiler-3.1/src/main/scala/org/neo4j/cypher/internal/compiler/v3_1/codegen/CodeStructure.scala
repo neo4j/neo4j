@@ -78,7 +78,9 @@ trait MethodStructure[E] {
   def add(lhs: E, rhs: E): E
   def addIntegers(lhs: E, rhs: E): E
   def addFloats(lhs: E, rhs: E): E
-  def sub(lhs: E, rhs: E): E
+  def subtract(lhs: E, rhs: E): E
+  def subtractIntegers(lhs: E, rhs: E): E
+  def subtractFloats(lhs: E, rhs: E): E
   def mul(lhs: E, rhs: E): E
   def div(lhs: E, rhs: E): E
   def mod(lhs: E, rhs: E): E

@@ -65,7 +65,8 @@ import static org.neo4j.codegen.Expression.newArray;
 import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.Expression.not;
 import static org.neo4j.codegen.Expression.or;
-import static org.neo4j.codegen.Expression.sub;
+import static org.neo4j.codegen.Expression.subtractDoubles;
+import static org.neo4j.codegen.Expression.subtractLongs;
 import static org.neo4j.codegen.Expression.ternary;
 import static org.neo4j.codegen.ExpressionTemplate.cast;
 import static org.neo4j.codegen.ExpressionTemplate.load;
@@ -1065,16 +1066,13 @@ public class CodeGenerationTest
     {
         assertThat( addForType( int.class, 17, 18 ), equalTo( 35 ) );
         assertThat( addForType( long.class, 17L, 18L ), equalTo( 35L ) );
-        assertThat( addForType( float.class, 17F, 18F ), equalTo( 35F ) );
         assertThat( addForType( double.class, 17D, 18D ), equalTo( 35D ) );
     }
 
     @Test
     public void shouldHandleSubtraction() throws Throwable
     {
-        assertThat( subtractForType( int.class, 19, 18 ), equalTo( 1 ) );
         assertThat( subtractForType( long.class, 19L, 18L ), equalTo( 1L ) );
-        assertThat( subtractForType( float.class, 19F, 18F ), equalTo( 1F ) );
         assertThat( subtractForType( double.class, 19D, 18D ), equalTo( 1D ) );
     }
 
@@ -1128,7 +1126,18 @@ public class CodeGenerationTest
             try ( CodeBlock block = simple.generateMethod( clazz, "sub",
                     param( clazz, "a" ), param( clazz, "b" ) ) )
             {
-                block.returns( sub( block.load( "a" ), block.load( "b" ) ) );
+               if (clazz == long.class)
+                {
+                    block.returns( subtractLongs( block.load( "a" ), block.load( "b" ) ) );
+                }
+                else if (clazz == double.class)
+                {
+                    block.returns( subtractDoubles( block.load( "a" ), block.load( "b" ) ) );
+                }
+                else
+                {
+                    fail( "adding " + clazz.getSimpleName() + " is not supported" );
+                }
             }
 
             handle = simple.handle();
