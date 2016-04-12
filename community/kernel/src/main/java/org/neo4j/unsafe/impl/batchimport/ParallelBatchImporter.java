@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.File;
 import java.io.IOException;
+
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -159,6 +161,11 @@ public class ParallelBatchImporter implements BatchImporter
                 executeStages( nodeStage );
                 executeStages( new IdMapperPreparationStage( config, idMapper, cachedNodes,
                         badCollector, memoryUsageStats ) );
+                PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
+                if ( duplicateNodeIds.hasNext() )
+                {
+                    executeStages( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore ) );
+                }
                 executeStages( calculateDenseNodesStage );
             }
             else
@@ -257,8 +264,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 4a -- set node nextRel fields for dense nodes
             executeStages( new NodeFirstRelationshipStage( topic, config, neoStore.getNodeStore(),
-                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache, badCollector,
-                    neoStore.getLabelScanStore(), true/*dense*/, currentTypeId ) );
+                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache, true/*dense*/, currentTypeId ) );
 
             // Stage 5a -- link relationship chains together for dense nodes
             nodeRelationshipCache.setForwardScan( false );
@@ -272,8 +278,7 @@ public class ParallelBatchImporter implements BatchImporter
         nodeRelationshipCache.setForwardScan( true );
         // Stage 4b -- set node nextRel fields for sparse nodes
         executeStages( new NodeFirstRelationshipStage( topic, config, neoStore.getNodeStore(),
-                neoStore.getRelationshipGroupStore(), nodeRelationshipCache, badCollector,
-                neoStore.getLabelScanStore(), false/*sparse*/, -1 ) );
+                neoStore.getRelationshipGroupStore(), nodeRelationshipCache, false/*sparse*/, -1 ) );
 
         // Stage 5b -- link relationship chains together for sparse nodes
         nodeRelationshipCache.setForwardScan( false );
