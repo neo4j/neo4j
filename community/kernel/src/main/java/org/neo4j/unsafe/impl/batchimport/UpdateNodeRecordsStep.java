@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -38,15 +39,19 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG
 public class UpdateNodeRecordsStep extends UpdateRecordsStep<NodeRecord>
 {
     private final PrimitiveLongIterator ids;
+    private final boolean pruneDeletedNodesFromLabelScanStore;
+
     private long current;
     private boolean end;
     private final LabelScanWriter labelScanWriter;
 
     public UpdateNodeRecordsStep( StageControl control, Configuration config, RecordStore<NodeRecord> store,
-            Collector collector, LabelScanStore labelScanStore )
+            Collector collector, LabelScanStore labelScanStore, boolean pruneDeletedNodesFromLabelScanStore )
     {
         super( control, config, store );
-        this.ids = collector.leftOverDuplicateNodesIds();
+        this.pruneDeletedNodesFromLabelScanStore = pruneDeletedNodesFromLabelScanStore;
+        this.ids = pruneDeletedNodesFromLabelScanStore ?
+                collector.leftOverDuplicateNodesIds() : PrimitiveLongCollections.emptyIterator();
         goToNextId();
         this.labelScanWriter = end ? LabelScanWriter.EMPTY : labelScanStore.newWriter();
     }
@@ -75,7 +80,7 @@ public class UpdateNodeRecordsStep extends UpdateRecordsStep<NodeRecord>
     protected void update( NodeRecord node ) throws Throwable
     {
         super.update( node );
-        if ( !node.inUse() )
+        if ( !node.inUse() && pruneDeletedNodesFromLabelScanStore )
         {
             // Only the "labelsAfter" is considered
             labelScanWriter.write( NodeLabelUpdate.labelChanges( current, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY ) );

@@ -33,14 +33,16 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
  */
 public class NodeFirstRelationshipStage extends Stage
 {
-    public NodeFirstRelationshipStage( Configuration config, NodeStore nodeStore,
-            RecordStore<RelationshipGroupRecord> relationshipGroupStore, NodeRelationshipCache cache, final Collector collector,
-            LabelScanStore labelScanStore )
+    public NodeFirstRelationshipStage( String topic, Configuration config, NodeStore nodeStore,
+            RecordStore<RelationshipGroupRecord> relationshipGroupStore, NodeRelationshipCache cache,
+            final Collector collector, LabelScanStore labelScanStore, boolean denseNodes, int relationshipType )
     {
-        super( "Node --> Relationship", config );
-        add( new ReadNodeRecordsStep( control(), config, nodeStore ) );
+        super( "Node --> Relationship" + topic, config );
+        add( new ReadNodeRecordsByCacheStep( control(), config, nodeStore, cache, denseNodes ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
-                new NodeFirstRelationshipProcessor( relationshipGroupStore, cache ), false ) );
-        add( new UpdateNodeRecordsStep( control(), config, nodeStore, collector, labelScanStore ) );
+                new NodeFirstRelationshipProcessor( relationshipGroupStore, cache, relationshipType ), false ) );
+        boolean shouldAlsoPruneBadNodes = !denseNodes;
+        add( new UpdateNodeRecordsStep( control(), config, nodeStore, collector, labelScanStore,
+                shouldAlsoPruneBadNodes ) );
     }
 }

@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.IOException;
-
 import org.neo4j.io.fs.StoreChannel;
 
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;

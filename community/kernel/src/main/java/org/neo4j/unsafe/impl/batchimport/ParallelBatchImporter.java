@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -40,6 +39,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.PerTypeRelationshipSplitter;
 import org.neo4j.unsafe.impl.batchimport.staging.DynamicProcessorAssigner;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
@@ -48,8 +48,11 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
+import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
@@ -133,6 +136,9 @@ public class ParallelBatchImporter implements BatchImporter
             StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper );
             InputIterable<InputNode> nodes = input.nodes();
             InputIterable<InputRelationship> relationships = input.relationships();
+            InputIterable<InputNode> cachedNodes = cachedForSure( nodes, inputCache.nodes( MAIN, true ) );
+            InputIterable<InputRelationship> cachedRelationships =
+                    cachedForSure( relationships, inputCache.relationships( MAIN, true ) );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
 
@@ -142,8 +148,8 @@ public class ParallelBatchImporter implements BatchImporter
                     storeUpdateMonitor, memoryUsageStats );
 
             // Stage 2 -- calculate dense node threshold
-            CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config, relationships,
-                    relationshipStore, nodeRelationshipCache, idMapper, badCollector, inputCache );
+            CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config,
+                    relationships, nodeRelationshipCache, idMapper, badCollector, inputCache, neoStore );
 
             // Execute stages 1 and 2 in parallel or sequentially?
             if ( idMapper.needsPreparation() )
@@ -151,7 +157,7 @@ public class ParallelBatchImporter implements BatchImporter
                 // So we need to execute the node stage first as it fills the id mapper and prepares it in the end,
                 // before executing any stage that needs ids from the id mapper, for example calc dense node stage.
                 executeStages( nodeStage );
-                executeStages( new IdMapperPreparationStage( config, idMapper, nodes, inputCache,
+                executeStages( new IdMapperPreparationStage( config, idMapper, cachedNodes,
                         badCollector, memoryUsageStats ) );
                 executeStages( calculateDenseNodesStage );
             }
@@ -161,20 +167,9 @@ public class ParallelBatchImporter implements BatchImporter
                 executeStages( nodeStage, calculateDenseNodesStage );
             }
 
-            // Stage 3 -- relationships, properties
-            final RelationshipStage relationshipStage = new RelationshipStage( config, writeMonitor,
-                    relationships.supportsMultiplePasses() ? relationships : inputCache.relationships(),
-                    idMapper, neoStore, nodeRelationshipCache, input.specificRelationshipIds(), storeUpdateMonitor );
-            executeStages( relationshipStage );
-
-            // Stage 4 -- set node nextRel fields
-            executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),
-                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache, badCollector,
-                    neoStore.getLabelScanStore() ) );
-            // Stage 5 -- link relationship chains together
-            nodeRelationshipCache.clearRelationships();
-            executeStages( new RelationshipLinkbackStage( config, relationshipStore,
-                    nodeRelationshipCache ) );
+            importRelationships( input, nodeRelationshipCache, storeUpdateMonitor, neoStore, badCollector, writeMonitor,
+                    idMapper, cachedRelationships,
+                    inputCache, calculateDenseNodesStage.getRelationshipTypes( 100 ) );
 
             // Release this potentially really big piece of cached data
             nodeRelationshipCache.close();
@@ -221,6 +216,69 @@ public class ParallelBatchImporter implements BatchImporter
                 fileSystem.deleteFile( badFile );
             }
         }
+    }
+
+    private void importRelationships( Input input, NodeRelationshipCache nodeRelationshipCache,
+            CountingStoreUpdateMonitor storeUpdateMonitor, BatchingNeoStores neoStore, Collector badCollector,
+            IoMonitor writeMonitor, IdMapper idMapper, InputIterable<InputRelationship> relationships,
+            InputCache inputCache, Object[] allRelationshipTypes )
+    {
+        // Imports the relationships from the Input. This isn't a straight forward as importing nodes,
+        // since keeping track of and updating heads of relationship chains in scenarios where most nodes
+        // are dense and there are many relationship types scales poorly w/ regards to cache memory usage
+        // also as a side-effect time required to update this cache.
+        //
+        // The approach is instead to do multiple iterations where each iteration imports relationships
+        // of a single type. For each iteration Node --> Relationship and Relationship --> Relationship
+        // stages _for dense nodes only_ are run so that the cache can be reused to hold relationship chain heads
+        // of the next type in the next iteration. All relationships will be imported this way and then
+        // finally there will be one Node --> Relationship and Relationship --> Relationship stage linking
+        // all sparse relationship chains together.
+
+        PerTypeRelationshipSplitter perTypeIterator =
+                new PerTypeRelationshipSplitter( relationships.iterator(), allRelationshipTypes,
+                        type -> neoStore.getRelationshipTypeRepository().getOrCreateId( type ), inputCache );
+
+        long nextRelationshipId = 0;
+        for ( int i = 0; perTypeIterator.hasNext(); i++ )
+        {
+            // Stage 3a -- relationships, properties
+            nodeRelationshipCache.setForwardScan( true );
+            Object currentType = perTypeIterator.currentType();
+            int currentTypeId = neoStore.getRelationshipTypeRepository().getOrCreateId( currentType );
+            InputIterator<InputRelationship> perType = perTypeIterator.next();
+            String topic = " [:" + currentType + "] (" +
+                    (i+1) + "/" + allRelationshipTypes.length + ")";
+            final RelationshipStage relationshipStage = new RelationshipStage( topic, config, writeMonitor,
+                    perType, idMapper,
+                    neoStore, nodeRelationshipCache, input.specificRelationshipIds(), storeUpdateMonitor,
+                    nextRelationshipId );
+            executeStages( relationshipStage );
+
+            // Stage 4a -- set node nextRel fields for dense nodes
+            executeStages( new NodeFirstRelationshipStage( topic, config, neoStore.getNodeStore(),
+                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache, badCollector,
+                    neoStore.getLabelScanStore(), true/*dense*/, currentTypeId ) );
+
+            // Stage 5a -- link relationship chains together for dense nodes
+            nodeRelationshipCache.setForwardScan( false );
+            executeStages( new RelationshipLinkbackStage( topic, config, neoStore.getRelationshipStore(),
+                    nodeRelationshipCache, nextRelationshipId, true/*dense*/ ) );
+            nextRelationshipId = relationshipStage.getNextRelationshipId();
+            nodeRelationshipCache.clearChangedChunks( true/*dense*/ ); // cheap higher level clearing
+        }
+
+        String topic = " Sparse/final";
+        nodeRelationshipCache.setForwardScan( true );
+        // Stage 4b -- set node nextRel fields for sparse nodes
+        executeStages( new NodeFirstRelationshipStage( topic, config, neoStore.getNodeStore(),
+                neoStore.getRelationshipGroupStore(), nodeRelationshipCache, badCollector,
+                neoStore.getLabelScanStore(), false/*sparse*/, -1 ) );
+
+        // Stage 5b -- link relationship chains together for sparse nodes
+        nodeRelationshipCache.setForwardScan( false );
+        executeStages( new RelationshipLinkbackStage( topic, config, neoStore.getRelationshipStore(),
+                nodeRelationshipCache, 0, false/*sparse*/ ) );
     }
 
     private void executeStages( Stage... stages )

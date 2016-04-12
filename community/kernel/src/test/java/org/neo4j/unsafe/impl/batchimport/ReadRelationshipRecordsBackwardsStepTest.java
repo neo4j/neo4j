@@ -46,7 +46,7 @@ public class ReadRelationshipRecordsBackwardsStepTest
         when( store.getHighId() ).thenReturn( highId );
 
         ReadRelationshipRecordsBackwardsStep step = new ReadRelationshipRecordsBackwardsStep(
-                mock( StageControl.class ), Configuration.DEFAULT, store );
+                mock( StageControl.class ), Configuration.DEFAULT, store, 0 );
 
         Object batch = step.nextBatchOrNull( 0, batchSize );
 

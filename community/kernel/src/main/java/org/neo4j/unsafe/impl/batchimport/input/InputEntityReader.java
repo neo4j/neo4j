@@ -51,8 +51,10 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
     private int lineNumber;
     private final Group[] previousGroups;
     private final PrimitiveIntObjectMap<String> tokens = Primitive.intObjectMap();
+    private final Runnable closeAction;
 
-    InputEntityReader( StoreChannel channel, StoreChannel header, int bufferSize, int groupSlots ) throws IOException
+    InputEntityReader( StoreChannel channel, StoreChannel header, int bufferSize, int groupSlots,
+            Runnable closeAction ) throws IOException
     {
         this.previousGroups = new Group[groupSlots];
         for ( int i = 0; i < groupSlots; i++ )
@@ -60,6 +62,7 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
             previousGroups[i] = Group.GLOBAL;
         }
         this.channel = reader( channel, bufferSize );
+        this.closeAction = closeAction;
         readHeader( header );
     }
 
@@ -181,6 +184,7 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
         try
         {
             channel.close();
+            closeAction.run();
         }
         catch ( IOException e )
         {

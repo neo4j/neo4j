@@ -71,8 +71,8 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
-
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -96,7 +96,8 @@ public class ParallelBatchImporterTest
     public final RandomRule random = new RandomRule();
 
     private static final int NODE_COUNT = 10_000;
-    private static final int RELATIONSHIP_COUNT = NODE_COUNT * 5;
+    private static final int RELATIONSHIPS_PER_NODE = 5;
+    private static final int RELATIONSHIP_COUNT = NODE_COUNT * RELATIONSHIPS_PER_NODE;
     protected final Configuration config = new Configuration.Default()
     {
         @Override
@@ -109,7 +110,8 @@ public class ParallelBatchImporterTest
         @Override
         public int denseNodeThreshold()
         {
-            return 30;
+            // This will have statistically half the nodes be considered dense
+            return RELATIONSHIPS_PER_NODE * 2;
         }
 
         @Override
@@ -375,10 +377,11 @@ public class ParallelBatchImporterTest
                 if ( !inputIdGenerator.isMiss( input.startNode() ) &&
                      !inputIdGenerator.isMiss( input.endNode() ) )
                 {
-                    // A relationship refering to missing nodes. The InputIdGenerator is expected to generate
+                    // A relationship referring to missing nodes. The InputIdGenerator is expected to generate
                     // some (very few) of those. Skip it.
                     String name = (String) propertyOf( input, "id" );
                     Relationship relationship = relationshipByName.get( name );
+                    assertNotNull( "Expected there to be a relationship with name '" + name + "'", relationship );
                     assertEquals( nodeByInputId.get( uniqueId( input.startNodeGroup(), input.startNode() ) ),
                             relationship.getStartNode() );
                     assertEquals( nodeByInputId.get( uniqueId( input.endNodeGroup(), input.endNode() ) ),
@@ -506,11 +509,18 @@ public class ParallelBatchImporterTest
                                 startNode = idGenerator.miss( random, startNode, 0.001f );
                                 endNode = idGenerator.miss( random, endNode, 0.001f );
 
+                                String type = idGenerator.randomType( random );
+                                if ( random.nextFloat() < 0.00005 )
+                                {
+                                    // Let there be a small chance of introducing a one-off relationship
+                                    // with a type that no, or at least very few, other relationships have.
+                                    type += "_odd";
+                                }
                                 return new InputRelationship(
                                         sourceDescription, itemNumber, itemNumber,
                                         properties, null,
                                         startNodeGroup, startNode, endNodeGroup, endNode,
-                                        idGenerator.randomType( random ), null );
+                                        type, null );
                             }
                             finally
                             {

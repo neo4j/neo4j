@@ -21,14 +21,13 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
- * Reads all records from {@link RelationshipStore} and process the counts in them. Uses a {@link NodeLabelsCache}
- * previously populated by f.ex {@link ProcessNodeCountsDataStep}.
+ * Reads all records from {@link NodeStore} and process the counts in them, populating {@link NodeLabelsCache}
+ * for later use of {@link RelationshipCountsStage}.
  */
 public class NodeCountsStage extends Stage
 {

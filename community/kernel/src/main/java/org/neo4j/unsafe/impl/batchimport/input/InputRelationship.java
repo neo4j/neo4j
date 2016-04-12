@@ -137,4 +137,9 @@ public class InputRelationship extends InputEntity
             fields.add( Pair.of( "type", type ) );
         }
     }
+
+    public Object typeAsObject()
+    {
+        return hasTypeId() ? typeId() : type();
+    }
 }

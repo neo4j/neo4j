@@ -57,7 +57,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     {
         for ( RECORD record : batch )
         {
-            if ( !IdValidator.isReservedId( record.getId() ) )
+            if ( record != null && !IdValidator.isReservedId( record.getId() ) )
             {
                 if ( record.inUse() && !accept( record ) )
                 {

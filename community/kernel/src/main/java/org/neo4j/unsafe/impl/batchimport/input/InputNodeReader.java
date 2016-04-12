@@ -36,11 +36,12 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
  */
 public class InputNodeReader extends InputEntityReader<InputNode>
 {
-    private String[] previousLabels = InputNode.NO_LABELS;
+    private String[] previousLabels = InputEntity.NO_LABELS;
 
-    public InputNodeReader( StoreChannel channel, StoreChannel header, int bufferSize ) throws IOException
+    public InputNodeReader( StoreChannel channel, StoreChannel header, int bufferSize, Runnable closeAction )
+            throws IOException
     {
-        super( channel, header, bufferSize, 1 );
+        super( channel, header, bufferSize, 1, closeAction );
     }
 
     @Override
