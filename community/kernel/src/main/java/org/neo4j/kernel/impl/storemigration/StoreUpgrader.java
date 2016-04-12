@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor.Section;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -114,10 +115,7 @@ public class StoreUpgrader
             throw new UpgradeNotAllowedByConfigurationException();
         }
 
-        if( customIOConfigurationUsed( config ) )
-        {
-            throw new IllegalArgumentException( CUSTOM_IO_EXCEPTION_MESSAGE );
-        }
+        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
 
         // One or more participants would like to do migration
         progressMonitor.started();
@@ -155,11 +153,6 @@ public class StoreUpgrader
         cleanup( participants, migrationDirectory );
 
         progressMonitor.completed();
-    }
-
-    private boolean customIOConfigurationUsed( Config config )
-    {
-        return config.get( GraphDatabaseSettings.pagecache_swapper ) != null;
     }
 
     private boolean isUpgradeAllowed()

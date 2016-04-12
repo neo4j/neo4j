@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -79,10 +80,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        if ( context.customIOConfigurationUsed( dependencies.getConfig() ) )
-        {
-            throw new IllegalArgumentException( CUSTOM_IO_EXCEPTION_MESSAGE );
-        }
+        CustomIOConfigValidator.assertCustomIOConfigNotUsed( dependencies.getConfig(), CUSTOM_IO_EXCEPTION_MESSAGE );
 
         return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
                 dependencies.logService().getInternalLogProvider(), dependencies.monitors(),

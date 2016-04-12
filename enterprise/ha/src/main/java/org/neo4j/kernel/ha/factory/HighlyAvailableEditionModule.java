@@ -144,6 +144,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -191,10 +192,7 @@ public class HighlyAvailableEditionModule
         final Monitors monitors = platformModule.monitors;
 
         //Temporary check for custom IO
-        if ( customIOConfigurationUsed( platformModule.config ) )
-        {
-            throw new IllegalArgumentException( CUSTOM_IO_EXCEPTION_MESSAGE );
-        }
+        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
 
         // Set Netty logger
         InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging.getInternalLogProvider() ) );
@@ -519,12 +517,6 @@ public class HighlyAvailableEditionModule
         life.add( clusteringLife );
         life.add( paxosLife );
     }
-
-    private boolean customIOConfigurationUsed( Config config )
-    {
-        return config.get( GraphDatabaseSettings.pagecache_swapper ) != null;
-    }
-
 
     private void publishServerId( Config config, UsageData sysInfo )
     {

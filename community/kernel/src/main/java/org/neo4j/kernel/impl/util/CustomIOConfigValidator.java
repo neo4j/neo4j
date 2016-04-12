@@ -17,21 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.spi;
+package org.neo4j.kernel.impl.util;
 
-import java.io.File;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.util.DependencySatisfier;
-
-public interface KernelContext
+public class CustomIOConfigValidator
 {
-    FileSystemAbstraction fileSystem();
+    public static void assertCustomIOConfigNotUsed( Config config, String message )
+    {
+        if ( customIOConfigUsed( config ) )
+        {
+            throw new CustomIOConfigNotSupportedException( message );
+        }
+    }
 
-    File storeDir();
+    private static boolean customIOConfigUsed( Config config )
+    {
+        return config.get( GraphDatabaseSettings.pagecache_swapper ) != null;
+    }
 
-    DatabaseInfo databaseInfo();
-
-    DependencySatisfier dependencySatisfier();
+    private static class CustomIOConfigNotSupportedException extends RuntimeException
+    {
+        CustomIOConfigNotSupportedException( String message )
+        {
+            super( message );
+        }
+    }
 }
