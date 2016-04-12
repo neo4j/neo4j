@@ -8,7 +8,8 @@ Homepage: http://neo4j.org/
 
 Package: neo4j
 Architecture: all
-Depends: ${misc:Depends}, daemon, adduser, psmisc, lsb-base, java8-runtime | j2re1.8
+Pre-Depends: dpkg (>= 1.17.14)
+Depends: ${misc:Depends}, bash, daemon, adduser, psmisc, lsb-base, java8-runtime | j2re1.8
 Conflicts: 
 Replaces: neo4j-enterprise, neo4j-advanced
 Description: graph database server
