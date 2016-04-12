@@ -48,8 +48,8 @@ Apache Software License, Version 2.0
   Jetty :: XML utilities
   Lucene Core
   Metrics Core
-  Netty/All-in-One
   Netty
+  Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala

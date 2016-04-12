@@ -30,8 +30,8 @@ Apache Software License, Version 2.0
   Ganglia Integration for Metrics
   Graphite Integration for Metrics
   Lucene Core
-  Netty
   Metrics Core
+  Netty
   opencsv
   parboiled-core
   parboiled-scala
