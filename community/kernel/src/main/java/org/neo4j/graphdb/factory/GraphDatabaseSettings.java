@@ -374,6 +374,12 @@ public abstract class GraphDatabaseSettings
     public static final Setting<String> pagecache_swapper =
             setting( "dbms.memory.pagecache.swapper", STRING, (String) null );
 
+    /**
+     * Block size properties values depends from selected record format.
+     * We can't figured out record format until it will be selected by corresponding edition.
+     * As soon as we will figure it out properties will be re-evaluated and overwritten, except cases of user
+     * defined value.
+     */
     @Description("Specifies the block size for storing strings. This parameter is only honored when the store is " +
             "created, otherwise it is ignored. " +
             "Note that each character in a string occupies two bytes, meaning that e.g a block size of 120 will hold " +
@@ -525,19 +531,5 @@ public abstract class GraphDatabaseSettings
     public static BoltConnector boltConnector( String key )
     {
         return new BoltConnector( key );
-    }
-
-    /**
-     * Uses the default selected record format to figure out the correct dynamic record data size to create
-     * a store with.
-     *
-     * @param recordSize the desired record size, which optimally is a power-of-two, e.g. 64 or 128.
-     * The dynamic record header size from the selected record format will then be subtracted from this value
-     * to get to the data size, which is the value that the configuration will end up having.
-     * @return the dynamic record data size based on the desired record size and with the header size in mind.
-     */
-    private static int dynamicRecordDataSizeForAligningWith( int recordSize )
-    {
-        return recordSize - DynamicRecordFormat.RECORD_HEADER_SIZE;
     }
 }
