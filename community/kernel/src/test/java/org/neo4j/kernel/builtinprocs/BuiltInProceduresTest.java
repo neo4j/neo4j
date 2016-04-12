@@ -143,16 +143,16 @@ public class BuiltInProceduresTest
     public void shouldListCorrectBuiltinProcedures() throws Throwable
     {
         // When/Then
-        assertThat( call( "sys.procedures" ), contains(
+        assertThat( call( "dbms.procedures" ), contains(
             record( "db.constraints", "db.constraints() :: (description :: STRING?)" ),
             record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?)" ),
             record( "db.labels", "db.labels() :: (label :: STRING?)" ),
             record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)" ),
             record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)" ),
-            record( "sys.changePassword", "sys.changePassword(password :: STRING?) :: ()" ),
-            record( "sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)" ),
-            record( "sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)" ),
-            record( "sys.queryJmx", "sys.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)")
+            record( "dbms.changePassword", "dbms.changePassword(password :: STRING?) :: ()" ),
+            record( "dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)" ),
+            record( "dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?)" ),
+            record( "dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)")
         ) );
     }
 
@@ -160,7 +160,7 @@ public class BuiltInProceduresTest
     public void shouldListSystemComponents() throws Throwable
     {
         // When/Then
-        assertThat( call( "sys.components" ), contains(
+        assertThat( call( "dbms.components" ), contains(
             record( "Neo4j Kernel", singletonList( "1.3.37" ), "enterprise" )
         ) );
     }

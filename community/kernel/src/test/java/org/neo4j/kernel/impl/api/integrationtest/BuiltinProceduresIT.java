@@ -150,7 +150,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
     {
         // When
         RawIterator<Object[],ProcedureException> stream =
-                readOperationsInNewTransaction().procedureCallRead( procedureName( "sys", "procedures" ), new Object[0] );
+                readOperationsInNewTransaction().procedureCallRead( procedureName( "dbms", "procedures" ), new Object[0] );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
@@ -159,10 +159,10 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)"}),
                 equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)"} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)"}),
-                equalTo( new Object[]{"sys.procedures", "sys.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
-                equalTo( new Object[]{"sys.components", "sys.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)"} ),
-                equalTo( new Object[]{"sys.changePassword", "sys.changePassword(password :: STRING?) :: ()"}),
-                equalTo( new Object[]{"sys.queryJmx", "sys.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)"})
+                equalTo( new Object[]{"dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: STRING?)"} ),
+                equalTo( new Object[]{"dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF STRING?, edition :: STRING?)"} ),
+                equalTo( new Object[]{"dbms.changePassword", "dbms.changePassword(password :: STRING?) :: ()"}),
+                equalTo( new Object[]{"dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, description :: STRING?, attributes :: MAP?)"})
         ));
     }
 
@@ -195,7 +195,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator < Object[],ProcedureException> stream = dbmsOperations()
-                .procedureCallDbms( procedureName( "sys", "changePassword" ), inputArray, authSubject );
+                .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray, authSubject );
 
         // Then
         verify( authSubject ).setPassword( (String) inputArray[0] );
@@ -213,7 +213,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
 
             // When
             RawIterator<Object[],ProcedureException> stream = dbmsOperations()
-                    .procedureCallDbms( procedureName( "sys", "changePassword" ), inputArray,
+                    .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray,
                             AccessMode.Static.NONE );
             fail( "Should have failed." );
         }
@@ -231,7 +231,7 @@ public class BuiltinProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                readOperationsInNewTransaction().procedureCallRead( procedureName( "sys", "components" ), new Object[0] );
+                readOperationsInNewTransaction().procedureCallRead( procedureName( "dbms", "components" ), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel", singletonList("dev"), "community"} ) ) );
