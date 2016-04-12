@@ -35,7 +35,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
-//@RunWith( Theories.class )
 public class CompositePageCursorTest
 {
     private static final int PAGE_SIZE = 16;
