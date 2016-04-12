@@ -30,12 +30,13 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
  */
 public class RelationshipLinkbackStage extends Stage
 {
-    public RelationshipLinkbackStage( Configuration config, RelationshipStore store, NodeRelationshipCache cache )
+    public RelationshipLinkbackStage( String topic, Configuration config, RelationshipStore store, NodeRelationshipCache cache,
+            long firstRelationshipId, boolean denseNodes )
     {
-        super( "Relationship --> Relationship", config );
-        add( new ReadRelationshipRecordsBackwardsStep( control(), config, store ) );
+        super( "Relationship --> Relationship" + topic, config );
+        add( new ReadRelationshipRecordsBackwardsStep( control(), config, store, firstRelationshipId ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
-                new RelationshipLinkbackProcessor( cache ), false ) );
+                new RelationshipLinkbackProcessor( cache, denseNodes ), false ) );
         add( new UpdateRecordsStep<>( control(), config, store ) );
     }
 }

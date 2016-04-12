@@ -107,7 +107,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
             // Set first/second next rel
             boolean loop = startNodeId == endNodeId;
             long firstNextRel = cache.getAndPutRelationship(
-                    startNodeId, typeId, loop ? BOTH : OUTGOING, relationshipId, true );
+                    startNodeId, loop ? BOTH : OUTGOING, relationshipId, true );
             relationshipRecord.setFirstNextRel( firstNextRel );
             if ( loop )
             {
@@ -116,7 +116,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
             else
             {
                 relationshipRecord.setSecondNextRel( cache.getAndPutRelationship(
-                        endNodeId, typeId, INCOMING, relationshipId, true ) );
+                        endNodeId, INCOMING, relationshipId, true ) );
             }
 
             // Most rels will not be first in chain

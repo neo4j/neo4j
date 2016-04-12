@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
