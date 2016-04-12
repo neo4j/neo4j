@@ -55,7 +55,7 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
     }
 
   protected def registerVoidProcedure() =
-    registerProcedure("sys.do_nothing") { builder =>
+    registerProcedure("dbms.do_nothing") { builder =>
       builder.out(ProcedureSignature.VOID)
 
       new BasicProcedure(builder.build) {
@@ -65,7 +65,7 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
     }
 
   protected def registerProcedureReturningNoRowsOrColumns() =
-    registerProcedure("sys.return_nothing") { builder =>
+    registerProcedure("dbms.return_nothing") { builder =>
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.empty()

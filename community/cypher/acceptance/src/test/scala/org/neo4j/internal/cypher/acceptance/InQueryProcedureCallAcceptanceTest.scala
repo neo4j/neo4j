@@ -85,7 +85,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     registerProcedureReturningNoRowsOrColumns()
 
     //When
-    val result = execute("CALL sys.return_nothing() RETURN 1")
+    val result = execute("CALL dbms.return_nothing() RETURN 1")
 
     // Then
     result.toList shouldBe empty
@@ -96,7 +96,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     registerVoidProcedure()
 
     //When
-    val result = execute("MATCH (n) CALL sys.do_nothing() RETURN n")
+    val result = execute("MATCH (n) CALL dbms.do_nothing() RETURN n")
 
     // Then
     result.toList shouldBe empty
@@ -111,7 +111,7 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     createLabeledNode("C")
 
     //When
-    val result = execute("MATCH (n) CALL sys.do_nothing() RETURN n")
+    val result = execute("MATCH (n) CALL dbms.do_nothing() RETURN n")
 
     // Then
     result.toList.size shouldBe 3

@@ -46,7 +46,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
     registerVoidProcedure()
 
     //When
-    val result = execute("CALL sys.do_nothing()")
+    val result = execute("CALL dbms.do_nothing()")
 
     // Then
     result.toList shouldBe empty
@@ -57,7 +57,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
     registerVoidProcedure()
 
     //When
-    val result = execute("CALL sys.do_nothing")
+    val result = execute("CALL dbms.do_nothing")
 
     // Then
     result.toList shouldBe empty
@@ -68,7 +68,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
     registerProcedureReturningNoRowsOrColumns()
 
     //When
-    val result = execute("CALL sys.return_nothing()")
+    val result = execute("CALL dbms.return_nothing()")
 
     // Then
     result.toList shouldBe empty
@@ -79,7 +79,7 @@ class StandaloneProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest 
     registerProcedureReturningNoRowsOrColumns()
 
     //When
-    val result = execute("CALL sys.return_nothing")
+    val result = execute("CALL dbms.return_nothing")
 
     // Then
     result.toList shouldBe empty
