@@ -48,4 +48,19 @@ class ListMatcherTest extends ParsingTestSupport {
     new ListMatcher(asList(new IntegerMatcher(-1L))) shouldNot accept(asList(1L))
   }
 
+  test("should match arrays (persisted lists)") {
+    new ListMatcher(asList(new StringMatcher("string"))) should accept(Array("string"))
+    new ListMatcher(emptyList()) should accept(Array())
+  }
+
+  test("should not match arrays of different size") {
+    new ListMatcher(emptyList()) shouldNot accept(Array(""))
+    new ListMatcher(asList(new StringMatcher(""))) shouldNot accept(Array())
+    new ListMatcher(asList(new StringMatcher(""), new ListMatcher(emptyList()))) shouldNot accept(Array("", Array(), 0))
+  }
+
+  test("should not match different arrays") {
+    new ListMatcher(asList(new IntegerMatcher(-1L))) shouldNot accept(Array(1L))
+  }
+
 }
