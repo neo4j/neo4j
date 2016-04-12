@@ -27,7 +27,7 @@ public abstract class BaseExpressionVisitor implements ExpressionVisitor
     @Override
     public void invoke( Expression target, MethodReference method, Expression[] arguments )
     {
-
+        target.accept( this );
     }
 
     @Override
@@ -97,7 +97,19 @@ public abstract class BaseExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void add( Expression lhs, Expression rhs )
+    public void addInts( Expression lhs, Expression rhs )
+    {
+
+    }
+
+    @Override
+    public void addLongs( Expression lhs, Expression rhs )
+    {
+
+    }
+
+    @Override
+    public void addDoubles( Expression lhs, Expression rhs )
     {
 
     }
@@ -122,6 +134,12 @@ public abstract class BaseExpressionVisitor implements ExpressionVisitor
 
     @Override
     public void newArray( TypeReference type, Expression... constants )
+    {
+
+    }
+
+    @Override
+    public void longToDouble( Expression expression )
     {
 
     }

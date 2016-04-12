@@ -56,7 +56,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.neo4j.codegen.Expression.add;
+import static org.neo4j.codegen.Expression.addDoubles;
+import static org.neo4j.codegen.Expression.addInts;
+import static org.neo4j.codegen.Expression.addLongs;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.invoke;
 import static org.neo4j.codegen.Expression.newArray;
@@ -1087,7 +1089,21 @@ public class CodeGenerationTest
             try ( CodeBlock block = simple.generateMethod( clazz, "add",
                     param( clazz, "a" ), param( clazz, "b" ) ) )
             {
-                block.returns( add( block.load( "a" ), block.load( "b" ) ) );
+                if (clazz == int.class) {
+                    block.returns( addInts( block.load( "a" ), block.load( "b" ) ) );
+                }
+                else if (clazz == long.class)
+                {
+                    block.returns( addLongs( block.load( "a" ), block.load( "b" ) ) );
+                }
+                else if (clazz == double.class)
+                {
+                    block.returns( addDoubles( block.load( "a" ), block.load( "b" ) ) );
+                }
+                else
+                {
+                    fail( "adding " + clazz.getSimpleName() + " is not supported" );
+                }
             }
 
             handle = simple.handle();

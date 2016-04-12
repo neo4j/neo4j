@@ -54,3 +54,7 @@ trait NumericalOpType {
       case _ => CTAny
     }
 }
+
+object Number {
+  def unapply(x: CypherType): Option[CypherType] = if (CTNumber.isAssignableFrom(x)) Some(x) else None
+}

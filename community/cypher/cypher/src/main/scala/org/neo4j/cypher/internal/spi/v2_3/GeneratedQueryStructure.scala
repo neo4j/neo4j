@@ -521,7 +521,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
                                                Expression.eq(generator.load(countName), Expression
                                                  .get(GeneratedQueryStructure.staticField[LongKeyIntValueTable, Int]("NULL"))),
                                                Expression.constant(1),
-                                               Expression.add(generator.load(countName), Expression.constant(1)))))
+                                               Expression.addInts(generator.load(countName), Expression.constant(1)))))
     case LongsToCountTable =>
       val countName = context.namer.newVarName()
       val keyName = context.namer.newVarName()
@@ -531,7 +531,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
                                              generator.load(keyName), Expression.ternary(
           Expression.eq(generator.load(countName), Expression.constant(null)),
           Expression.constant(1),
-          Expression.add(generator.load(countName), Expression.constant(1)))))
+          Expression.addInts(generator.load(countName), Expression.constant(1)))))
   }
 
   override def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])(block: MethodStructure[Expression] => Unit) = tableType match {

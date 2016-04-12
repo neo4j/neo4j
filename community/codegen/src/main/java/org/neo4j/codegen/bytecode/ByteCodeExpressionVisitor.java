@@ -130,20 +130,20 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         else if ( value instanceof Integer )
         {
             pushInteger( (Integer) value );
-           // methodVisitor
-             //       .visitMethodInsn( INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false );
+            // methodVisitor
+            //       .visitMethodInsn( INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false );
         }
         else if ( value instanceof Byte )
         {
             pushInteger( (Byte) value );
-       //     methodVisitor
-         //           .visitMethodInsn( INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;", false );
+            //     methodVisitor
+            //           .visitMethodInsn( INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;", false );
         }
         else if ( value instanceof Short )
         {
             pushInteger( (Short) value );
             //methodVisitor
-              //      .visitMethodInsn( INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;", false );
+            //      .visitMethodInsn( INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;", false );
         }
         else if ( value instanceof Long )
         {
@@ -153,19 +153,21 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         else if ( value instanceof Double )
         {
             methodVisitor.visitLdcInsn( value );
-         //   methodVisitor
-           //         .visitMethodInsn( INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false );
+            //   methodVisitor
+            //         .visitMethodInsn( INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false );
         }
         else if ( value instanceof Float )
         {
             methodVisitor.visitLdcInsn( value );
-           // methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false );
+            // methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;",
+            // false );
         }
         else if ( value instanceof Boolean )
         {
             boolean b = (boolean) value;
             methodVisitor.visitInsn( b ? ICONST_1 : ICONST_0 );
-         //   methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false );
+            //   methodVisitor.visitMethodInsn( INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;
+            // ", false );
         }
         else
         {
@@ -224,8 +226,8 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void eq( Expression lhs, Expression rhs )
     {
-        TypeReference lhsType = findLoadType( lhs );
-        TypeReference rhsType = findLoadType( rhs );
+        TypeReference lhsType = findType( lhs );
+        TypeReference rhsType = findType( rhs );
 
         if ( !lhsType.equals( rhsType ) )
         {
@@ -291,48 +293,35 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     }
 
     @Override
-    public void add( Expression lhs, Expression rhs )
+    public void addInts( Expression lhs, Expression rhs )
     {
-        TypeReference lhsType = findLoadType( lhs );
-        TypeReference rhsType = findLoadType( rhs );
-
-        if ( !lhsType.equals( rhsType ) )
-        {
-            throw new IllegalStateException( "Cannot compare values of different types" );
-        }
-
         lhs.accept( this );
         rhs.accept( this );
-        switch ( lhsType.simpleName() )
-        {
-        case "int":
-        case "byte":
-        case "short":
-        case "char":
-        case "boolean":
-            methodVisitor.visitInsn( IADD );
-            break;
-        case "long":
-            methodVisitor.visitInsn( LADD );
-            break;
-        case "float":
-            methodVisitor.visitInsn( FADD );
-            break;
-        case "double":
-            methodVisitor.visitInsn( DADD );
-            break;
-        default:
-            throw new IllegalStateException( "Addition is only supported for primitive number types" );
-        }
+        methodVisitor.visitInsn( IADD );
+    }
 
+    @Override
+    public void addLongs( Expression lhs, Expression rhs )
+    {
+        lhs.accept( this );
+        rhs.accept( this );
+        methodVisitor.visitInsn( LADD );
+    }
+
+    @Override
+    public void addDoubles( Expression lhs, Expression rhs )
+    {
+        lhs.accept( this );
+        rhs.accept( this );
+        methodVisitor.visitInsn( DADD );
     }
 
     @Override
     public void gt( Expression lhs, Expression rhs )
     {
 
-        TypeReference lhsType = findLoadType( lhs );
-        TypeReference rhsType = findLoadType( rhs );
+        TypeReference lhsType = findType( lhs );
+        TypeReference rhsType = findType( rhs );
 
         if ( !lhsType.equals( rhsType ) )
         {
@@ -365,8 +354,8 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void sub( Expression lhs, Expression rhs )
     {
-        TypeReference lhsType = findLoadType( lhs );
-        TypeReference rhsType = findLoadType( rhs );
+        TypeReference lhsType = findType( lhs );
+        TypeReference rhsType = findType( rhs );
 
         if ( !lhsType.equals( rhsType ) )
         {
@@ -419,6 +408,13 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         }
     }
 
+    @Override
+    public void longToDouble( Expression expression )
+    {
+        expression.accept( this );
+        methodVisitor.visitInsn( L2D );
+    }
+
     private void compareIntOrReferenceType( Expression lhs, Expression rhs, int opcode )
     {
         lhs.accept( this );
@@ -450,7 +446,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         methodVisitor.visitLabel( l1 );
     }
 
-    private TypeReference findLoadType( Expression expression )
+    private TypeReference findType( Expression expression )
     {
         TypeReference[] typeReference = new TypeReference[]{null};
         expression.accept( new BaseExpressionVisitor()
@@ -459,6 +455,49 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
             public void load( LocalVariable variable )
             {
                 typeReference[0] = variable.type();
+            }
+
+            @Override
+            public void constant( Object value )
+            {
+                //We are representing using unboxed expression whenever possible
+                if ( value == null )
+                {
+                    throw new IllegalStateException( "The type of null is none of your business" );
+                }
+                else if ( value instanceof Integer )
+                {
+                    typeReference[0] = TypeReference.typeReference( int.class );
+                }
+                else if ( value instanceof Byte )
+                {
+                    typeReference[0] = TypeReference.typeReference( byte.class );
+                }
+                else if ( value instanceof Short )
+                {
+                    typeReference[0] = TypeReference.typeReference( short.class );
+                }
+                else if ( value instanceof Long )
+                {
+                    typeReference[0] = TypeReference.typeReference( long.class );
+                }
+                else if ( value instanceof Double )
+                {
+                    typeReference[0] = TypeReference.typeReference( double.class );
+                }
+                else if ( value instanceof Float )
+                {
+                    typeReference[0] = TypeReference.typeReference( float.class );
+                }
+                else if ( value instanceof Boolean )
+                {
+                    typeReference[0] = TypeReference.typeReference( boolean.class );
+                }
+                else
+                {
+                    typeReference[0] = TypeReference.typeReference( value.getClass() );
+                }
+
             }
         } );
 
@@ -554,6 +593,26 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         default:
             methodVisitor.visitInsn( AASTORE );
 
+        }
+    }
+
+    private int findAdder( TypeReference type )
+    {
+        switch ( type.simpleName() )
+        {
+        case "int":
+        case "byte":
+        case "short":
+        case "char":
+            return IADD;
+        case "long":
+            return LADD;
+        case "float":
+            return FADD;
+        case "double":
+            return DADD;
+        default:
+            throw new IllegalStateException( "Addition is only supported for primitive number types" );
         }
     }
 }

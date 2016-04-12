@@ -76,6 +76,8 @@ trait MethodStructure[E] {
 
   // arithmetic
   def add(lhs: E, rhs: E): E
+  def addIntegers(lhs: E, rhs: E): E
+  def addFloats(lhs: E, rhs: E): E
   def sub(lhs: E, rhs: E): E
   def mul(lhs: E, rhs: E): E
   def div(lhs: E, rhs: E): E
@@ -89,10 +91,12 @@ trait MethodStructure[E] {
   def or(lhs: E, rhs: E): E
   def threeValuedOr(lhs: E, rhs: E): E
 
-  // null handling
+  // object handling
   def markAsNull(varName: String, cypherType: CypherType): Unit
   def nullable(varName: String, cypherType: CypherType, onSuccess: E): E
   def notNull(name: String, cypherType: CypherType): E
+  def box(expression:E, cypherType: CypherType): E
+  def toFloat(expression:E): E
 
   // parameters
   def expectParameter(key: String, variableName: String): Unit

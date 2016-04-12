@@ -151,9 +151,25 @@ class ExpressionToString implements ExpressionVisitor
         rhs.accept( this );
         result.append( ")" );
     }
+    @Override
+    public void addInts( Expression lhs, Expression rhs )
+    {
+        add(lhs, rhs);
+    }
 
     @Override
-    public void add( Expression lhs, Expression rhs )
+    public void addLongs( Expression lhs, Expression rhs )
+    {
+        add(lhs, rhs);
+    }
+
+    @Override
+    public void addDoubles( Expression lhs, Expression rhs )
+    {
+        add(lhs, rhs);
+    }
+
+    private void add( Expression lhs, Expression rhs )
     {
         result.append( "add(" );
         lhs.accept( this );
@@ -206,5 +222,12 @@ class ExpressionToString implements ExpressionVisitor
             sep = ", ";
         }
         result.append( "}" );
+    }
+
+    @Override
+    public void longToDouble( Expression expression )
+    {
+        result.append( "(double)" );
+        expression.accept( this );
     }
 }

@@ -220,7 +220,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
             List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables, Resource... resources )
     {
         //try
-        beginTry(resources);
+        beginTry( resources );
         body.forEach( e -> e.accept( this ) );
         endBlock();
         //catch
@@ -311,7 +311,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void load( LocalVariable variable)
+    public void load( LocalVariable variable )
     {
         append( variable.name() );
     }
@@ -411,7 +411,24 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void add( Expression lhs, Expression rhs )
+    public void addInts( Expression lhs, Expression rhs )
+    {
+        add( lhs, rhs );
+    }
+
+    @Override
+    public void addLongs( Expression lhs, Expression rhs )
+    {
+        add( lhs, rhs );
+    }
+
+    @Override
+    public void addDoubles( Expression lhs, Expression rhs )
+    {
+        add( lhs, rhs );
+    }
+
+    private void add( Expression lhs, Expression rhs )
     {
         lhs.accept( this );
         append( " + " );
@@ -438,7 +455,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     public void cast( TypeReference type, Expression expression )
     {
         append( "(" );
-        append( "(").append( type.name() ).append( ") " );
+        append( "(" ).append( type.name() ).append( ") " );
         expression.accept( this );
         append( ")" );
     }
@@ -446,7 +463,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void newArray( TypeReference type, Expression... constants )
     {
-        append("new ").append( type.name() ).append( "[]{" );
+        append( "new " ).append( type.name() ).append( "[]{" );
         String sep = "";
         for ( Expression constant : constants )
         {
@@ -455,5 +472,11 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
             sep = ", ";
         }
         append( "}" );
+    }
+
+    @Override
+    public void longToDouble( Expression expression )
+    {
+        cast( TypeReference.typeReference( double.class ), expression );
     }
 }

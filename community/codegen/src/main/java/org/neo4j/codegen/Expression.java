@@ -82,14 +82,38 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression add( final Expression lhs, final Expression rhs )
+    public static Expression addInts( final Expression lhs, final Expression rhs )
     {
         return new Expression()
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.add( lhs, rhs );
+                visitor.addInts( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression addLongs( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.addLongs( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression addDoubles( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.addDoubles( lhs, rhs );
             }
         };
     }
@@ -244,6 +268,18 @@ public abstract class Expression extends ExpressionTemplate
             public void accept( ExpressionVisitor visitor )
             {
                 visitor.not( expression );
+            }
+        };
+    }
+
+    public static Expression toDouble( final Expression expression )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.longToDouble( expression );
             }
         };
     }

@@ -74,7 +74,7 @@ object LogicalPlanConverter {
                                                (e: ast.Expression) => ExpressionConverter.createProjection(e)(context))
       val vars = columns.map {
         case (name, expr) =>
-          val variable = Variable(context.namer.newVarName(), expr.cypherType(context), expr.nullable(context))
+          val variable = Variable(context.namer.newVarName(), symbols.CTAny, expr.nullable(context))
           context.addVariable(name, variable)
           variable -> expr
       }
