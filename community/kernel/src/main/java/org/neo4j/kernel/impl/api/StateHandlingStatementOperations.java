@@ -336,6 +336,13 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public int nodeDetachDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    {
+        nodeDelete( state, nodeId );
+        return 0;
+    }
+
+    @Override
     public long relationshipCreate( KernelStatement state,
             int relationshipTypeId,
             long startNodeId,

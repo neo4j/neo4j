@@ -162,6 +162,9 @@ class ExceptionTranslatingQueryContextFor2_3(inner: QueryContext) extends Delega
     override def delete(obj: T) =
       translateException(super.delete(obj))
 
+    override def detachDelete(obj: T) =
+      translateException(super.detachDelete(obj))
+
     override def setProperty(id: Long, propertyKey: Int, value: Any) =
       translateException(super.setProperty(id, propertyKey, value))
 
