@@ -118,17 +118,27 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
             }
             triedResult
           }
-          checkError(consumedResult, status, phase, detail)
-        case x => checkError(x, status, phase, detail)
+          checkruntimeError(consumedResult, status, phase, detail)
+        case x => checkruntimeError(x, status, phase, detail)
       }
     } else if (phase == TCKErrorPhases.COMPILE_TIME) {
-      fail("No errors implemented for this phase yet.")
+      result match {
+        case Success(triedResult) =>
+          val consumedResult = Try {
+            while (triedResult.hasNext) {
+              triedResult.next()
+            }
+            triedResult
+          }
+          checkcompiletimeError(consumedResult, status, phase, detail)
+        case x => checkcompiletimeError(x, status, phase, detail)
+      }
     } else {
       fail(s"Unknown phase $phase specified. Supported values are 'runtime' and 'compile time'.")
     }
   }
 
-  private def checkError(result: Try[Result], status: String, phase: String, detail: String): Unit = {
+  private def checkruntimeError(result: Try[Result], status: String, phase: String, detail: String): Unit = {
     val statusType = if (status == "ConstraintValidationFailed") "Schema" else "Statement"
     result match {
       case Failure(e: QueryExecutionException) =>
@@ -151,6 +161,23 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
       case _: Success[_] =>
         fail("No runtime error was raised")
+    }
+  }
+
+  private def checkcompiletimeError(result: Try[Result], status: String, phase: String, detail: String): Unit = {
+    result match {
+      case Failure(e: QueryExecutionException) =>
+        s"Neo.ClientError.Statement.$status" should equal(e.getStatusCode)
+
+        if (e.getMessage.matches("Invalid input .+ is not a valid value, must be a positive integer[\\s.\\S]+"))
+          detail should equal("LiteralMustBePositiveInteger")
+        else fail(s"Unknown compile time error: $e")
+
+      case Failure(e) =>
+        fail(s"Unknown compile time error: $e")
+
+      case _: Success[_] =>
+        fail("No compile time error was raised")
     }
   }
 
