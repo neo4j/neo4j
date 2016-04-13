@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import java.io.{PrintWriter, StringWriter}
+import scala.language.reflectiveCalls
 
 class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
@@ -37,7 +38,6 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     threads.foreach(_.start())
     threads.foreach(_.join())
 
-    import scala.language.reflectiveCalls
     val errors = threads.collect {
       case t if t.exception != null => t.exception
     }
@@ -61,7 +61,33 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     threads.foreach(_.start())
     threads.foreach(_.join())
 
-    import scala.language.reflectiveCalls
+    val errors = threads.collect {
+      case t if t.exception != null => t.exception
+    }
+
+    withClue(prettyPrintErrors(errors)) {
+      errors shouldBe empty
+    }
+  }
+
+  test("relationship delete deadlock") {
+    graph.inTx {
+      execute("CREATE (p1:person) CREATE (p2:person) CREATE (p1)<-[:T]-(p2)")
+    }
+
+    val threads: List[MyThread] = (0 until 30).map { ignored =>
+      new MyThread(() => {
+        execute(s"MATCH ()-[r]->() WITH r DELETE r").toList
+      })
+    }.toList ++ (0 until 30).map { ignored =>
+      new MyThread(() => {
+        execute(s"MATCH (p1), (p2) WHERE id(p1) < id(p2) CREATE (p2)-[:T]->(p1)").toList
+      })
+    }.toList
+
+    threads.foreach(_.start())
+    threads.foreach(_.join())
+
     val errors = threads.collect {
       case t if t.exception != null => t.exception
     }
