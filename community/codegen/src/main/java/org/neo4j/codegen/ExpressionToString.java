@@ -179,7 +179,7 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void gt( Expression lhs, Expression rhs )
+    public void gt( Expression lhs, Expression rhs, TypeReference ignored )
     {
         result.append( "gt(" );
         lhs.accept( this );

@@ -540,7 +540,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       val keyVar = keyVars.head
       val times = generator.declare(typeRef[Int], context.namer.newVarName())
       generator.assign(times, Expression.invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
-      using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
+      using(generator.whileLoop(Expression.gt(times, Expression.constant(0), typeRef[Int]))) { body =>
         block(copy(generator=body))
         body.assign(times, Expression.subtractInts(times, Expression.constant(1)))
       }
@@ -555,7 +555,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
           Expression.eq(generator.load(intermediate.name()), Expression.constant(null)),
           Expression.constant(-1), generator.load(intermediate.name())))
 
-      using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
+      using(generator.whileLoop(Expression.gt(times, Expression.constant(0), typeRef[Int]))) { body =>
         block(copy(generator=body))
         body.assign(times, Expression.subtractInts(times, Expression.constant(1)))
       }

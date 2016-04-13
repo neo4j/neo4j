@@ -115,7 +115,7 @@ public abstract class BaseExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void gt( Expression lhs, Expression rhs )
+    public void gt( Expression lhs, Expression rhs, TypeReference type )
     {
 
     }

@@ -436,7 +436,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void gt( Expression lhs, Expression rhs )
+    public void gt( Expression lhs, Expression rhs, TypeReference ignored )
     {
         lhs.accept( this );
         append( " > " );

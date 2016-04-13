@@ -34,14 +34,14 @@ public abstract class Expression extends ExpressionTemplate
 
     public abstract void accept( ExpressionVisitor visitor );
 
-    public static Expression gt( final Expression lhs, final Expression rhs )
+    public static Expression gt( final Expression lhs, final Expression rhs, TypeReference type )
     {
         return new Expression()
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.gt( lhs, rhs );
+                visitor.gt( lhs, rhs, type );
             }
         };
     }

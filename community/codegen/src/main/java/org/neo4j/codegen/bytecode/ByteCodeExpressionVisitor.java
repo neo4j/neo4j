@@ -226,7 +226,6 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void eq( Expression lhs, Expression rhs, TypeReference type )
     {
-
         switch ( type.simpleName() )
         {
         case "int":
@@ -310,18 +309,10 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     }
 
     @Override
-    public void gt( Expression lhs, Expression rhs )
+    public void gt( Expression lhs, Expression rhs, TypeReference type )
     {
 
-        TypeReference lhsType = findType( lhs );
-        TypeReference rhsType = findType( rhs );
-
-        if ( !lhsType.equals( rhsType ) )
-        {
-            throw new IllegalStateException( "Cannot compare values of different types" );
-        }
-
-        switch ( lhsType.simpleName() )
+        switch ( type.simpleName() )
         {
         case "int":
         case "byte":

@@ -51,7 +51,7 @@ public interface ExpressionVisitor
 
     void addDoubles( Expression lhs, Expression rhs );
 
-    void gt( Expression lhs, Expression rhs );
+    void gt( Expression lhs, Expression rhs, TypeReference type );
 
     void subtractInts( Expression lhs, Expression rhs );
 
