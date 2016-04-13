@@ -84,7 +84,7 @@ trait MethodStructure[E] {
   def threeValuedNot(value: E): E
   def not(value: E): E
   def threeValuedEquals(lhs: E, rhs: E): E
-  def eq(lhs: E, rhs: E): E
+  def eq(lhs: E, rhs: E, cypherType: CypherType): E
   def or(lhs: E, rhs: E): E
   def threeValuedOr(lhs: E, rhs: E): E
 

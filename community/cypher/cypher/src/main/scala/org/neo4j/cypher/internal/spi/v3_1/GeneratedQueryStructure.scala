@@ -261,7 +261,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     generator.assign(typeRef[Long], toNodeVar, DirectionConverter.toGraphDb(direction) match {
       case Direction.INCOMING => startNode
       case Direction.OUTGOING => endNode
-      case Direction.BOTH => Expression.ternary(Expression.eq(startNode, generator.load(fromNodeVar)), endNode, startNode)
+      case Direction.BOTH => Expression.ternary(Expression.eq(startNode, generator.load(fromNodeVar), typeRef[Long]), endNode, startNode)
     })
     generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load(extractor), Methods.relationship))
   }
@@ -330,12 +330,12 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   override def decreaseCounterAndCheckForZero(name: String): Expression = {
     val local = locals(name)
     generator.assign(local, Expression.subtractInts(local, Expression.constant(1)))
-    Expression.eq(Expression.constant(0), local)
+    Expression.eq(Expression.constant(0), local, typeRef[Int])
   }
 
   override def counterEqualsZero(name: String): Expression = {
     val local = locals(name)
-    Expression.eq(Expression.constant(0), local)
+    Expression.eq(Expression.constant(0), local, typeRef[Int])
   }
 
   override def setInRow(column: String, value: Expression) =
@@ -360,7 +360,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = {
     Expression.ternary(
-      Expression.eq(nullValue(cypherType), generator.load(varName)),
+      Expression.eq(nullValue(cypherType), generator.load(varName), lowerType(cypherType)),
       Expression.constant(null),
       onSuccess)
   }
@@ -411,7 +411,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def threeValuedEquals(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.ternaryEquals, lhs, rhs)
 
-  override def eq(lhs: Expression, rhs: Expression) = Expression.eq(lhs, rhs)
+  override def eq(lhs: Expression, rhs: Expression, cypherType: CypherType) = Expression.eq(lhs, rhs, lowerType(cypherType))
 
   override def or(lhs: Expression, rhs: Expression) = Expression.or(lhs, rhs)
 
@@ -421,7 +421,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     generator.assign(lowerType(cypherType), varName, nullValue(cypherType))
 
   override def notNull(varName: String, cypherType: CypherType) =
-    Expression.not(Expression.eq(nullValue(cypherType), generator.load(varName)))
+    Expression.not(Expression.eq(nullValue(cypherType), generator.load(varName), lowerType(cypherType)))
 
   override def box(expression: Expression, cType: CypherType) = cType match {
     case symbols.CTBoolean => Expression.invoke(Methods.boxBoolean, expression)
@@ -558,7 +558,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       generator.expression(Expression.invoke(generator.load(tableVar), Methods.countingTablePut, generator.load(keyVar),
                                              Expression.ternary(
                                                Expression.eq(generator.load(countName), Expression
-                                                 .get(staticField[LongKeyIntValueTable, Int]("NULL"))),
+                                                 .get(staticField[LongKeyIntValueTable, Int]("NULL")), typeRef[Int]),
                                                Expression.constant(1),
                                                Expression.addInts(generator.load(countName), Expression.constant(1)))))
     case LongsToCountTable =>
@@ -569,7 +569,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
         .invoke(generator.load(tableVar), Methods.countingTableCompositeKeyGet, generator.load(keyName)))
       generator.expression(Expression.invoke(generator.load(tableVar), Methods.countingTableCompositeKeyPut,
                                              generator.load(keyName), Expression.ternary(
-          Expression.eq(generator.load(countName), Expression.constant(null)),
+          Expression.eq(generator.load(countName), Expression.constant(null), typeRef[Object]),
           Expression.constant(1),
           Expression.addInts(generator.load(countName), Expression.constant(1)))))
   }
@@ -593,7 +593,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
                                                        Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*)))
       generator.assign(times,
                        Expression.ternary(
-                         Expression.eq(generator.load(intermediate.name()), Expression.constant(null)),
+                         Expression.eq(generator.load(intermediate.name()), Expression.constant(null), typeRef[Object]),
                          Expression.constant(-1), generator.load(intermediate.name())))
 
       using(generator.whileLoop(Expression.gt(times, Expression.constant(0), typeRef[Int]))) { body =>
@@ -610,7 +610,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
       generator.assign(list, Expression.invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar)))
-      using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null))))) { onTrue =>
+      using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null), typeRef[Object])))) { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (local, field) =>
@@ -628,7 +628,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
       generator.assign(list, Expression
         .invoke(generator.load(tableVar), hashTable.get, Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*)))
-      using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null))))) { onTrue =>
+      using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null), typeRef[Object])))) { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (local, field) =>
@@ -654,7 +654,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       val listName = context.namer.newVarName()
       val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
       generator.assign(list, Expression.invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar))) // list = tableVar.get(keyVar);
-      using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName))))
+      using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName), typeRef[Object])))
       { onTrue => // if (null == list)
         onTrue.assign(list, Templates.newInstance(hashTable.listType)) // list = new ListType();
         onTrue.expression(Expression.invoke(generator.load(tableVar), hashTable.put, generator.load(keyVar),
@@ -671,7 +671,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       generator
         .assign(typeRef[CompositeKey], keyName, Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*))
       generator.assign(list, Expression.invoke(generator.load(tableVar), hashTable.get, generator.load(keyName))) // list = tableVar.get(keyVar);
-      using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName))))
+      using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName), typeRef[Object])))
       { onTrue => // if (null == list)
         onTrue.assign(list, Templates.newInstance(hashTable.listType)) // list = new ListType();
         onTrue.expression(Expression.invoke(generator.load(tableVar), hashTable.put, generator.load(keyName),
