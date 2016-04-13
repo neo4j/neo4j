@@ -136,10 +136,6 @@ public class InputCacheTest
 
     private void assertRelationshipsEquals( InputRelationship expectedRelationship, InputRelationship relationship )
     {
-        if ( expectedRelationship.hasSpecificId() )
-        {
-            assertEquals( expectedRelationship.specificId(), relationship.specificId() );
-        }
         assertProperties( expectedRelationship, relationship );
         assertEquals( expectedRelationship.startNode(), relationship.startNode() );
         assertEquals( expectedRelationship.startNodeGroup(), relationship.startNodeGroup() );

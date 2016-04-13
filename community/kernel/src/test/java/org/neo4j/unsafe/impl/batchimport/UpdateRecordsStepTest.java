@@ -72,7 +72,9 @@ public class UpdateRecordsStepTest
         UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>( stageControl, Configuration.DEFAULT, store );
 
         NodeRecord node1 = new NodeRecord( 1 );
+        node1.setInUse( true );
         NodeRecord node2 = new NodeRecord( 2 );
+        node2.setInUse( true );
         NodeRecord nodeWithReservedId = new NodeRecord( IdGeneratorImpl.INTEGER_MINUS_ONE );
         NodeRecord[] batch = {node1, node2, nodeWithReservedId};
 

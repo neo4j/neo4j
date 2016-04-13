@@ -33,8 +33,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
- * Updates a batch of records to a store. Can have {@link #accept(AbstractBaseRecord)} overwritten to not not accept
- * a record, which will have that record be written as unused instead.
+ * Updates a batch of records to a store.
  */
 public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
         extends ProcessorStep<RECORD[]>
@@ -51,19 +50,13 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
         this.recordSize = store.getRecordSize();
     }
 
-    @SuppressWarnings( "unchecked" )
     @Override
     protected void process( RECORD[] batch, BatchSender sender ) throws Throwable
     {
         for ( RECORD record : batch )
         {
-            if ( record != null && !IdValidator.isReservedId( record.getId() ) )
+            if ( record != null && record.inUse() && !IdValidator.isReservedId( record.getId() ) )
             {
-                if ( record.inUse() && !accept( record ) )
-                {
-                    record = (RECORD) record.clone();
-                    record.setInUse( false );
-                }
                 update( record );
             }
         }
@@ -74,11 +67,6 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     {
         store.prepareForCommit( record );
         store.updateRecord( record );
-    }
-
-    protected boolean accept( @SuppressWarnings( "unused" ) RECORD record )
-    {
-        return true;
     }
 
     @Override

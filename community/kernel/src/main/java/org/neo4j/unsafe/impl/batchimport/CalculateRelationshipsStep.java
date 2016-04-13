@@ -41,17 +41,7 @@ public class CalculateRelationshipsStep extends ProcessorStep<Batch<InputRelatio
     @Override
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
-        int batchSize = batch.input.length;
-        InputRelationship inputRelationship = batch.input[batchSize - 1];
-
-        if ( inputRelationship.hasSpecificId() )
-        {
-            maxSpecific = Math.max( inputRelationship.specificId(), maxSpecific );
-        }
-        else
-        {
-            numberOfRelationships += batchSize;
-        }
+        numberOfRelationships += batch.input.length;
         sender.send( batch );
     }
 

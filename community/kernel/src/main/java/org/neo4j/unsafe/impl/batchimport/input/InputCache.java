@@ -110,8 +110,6 @@ public class InputCache implements Closeable
     static final byte LABEL_REMOVAL = 1;
     static final byte LABEL_ADDITION = 2;
     static final byte END_OF_LABEL_CHANGES = 0;
-    static final byte SPECIFIC_ID = 1;
-    static final byte UNSPECIFIED_ID = 0;
     static final byte HAS_TYPE_ID = 2;
     static final byte SAME_TYPE = 0;
     static final byte NEW_TYPE = 1;

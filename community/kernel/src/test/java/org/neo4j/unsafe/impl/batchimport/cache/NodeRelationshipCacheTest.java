@@ -266,7 +266,6 @@ public class NodeRelationshipCacheTest
             if ( random.nextBoolean() )
             {
                 cache.incrementCount( nodeId );
-                System.out.println( nodeId + " is dense" );
             }
         }
         cache.setHighNodeId( nodes );
@@ -278,7 +277,6 @@ public class NodeRelationshipCacheTest
             cache.getAndPutRelationship( nodeId, Direction.OUTGOING, random.nextLong( 1_000_000 ), false );
             boolean dense = cache.isDense( nodeId );
             (dense ? keyDenseChanged : keySparseChanged).add( nodeId );
-            System.out.println( nodeId + " changed" );
         }
 
         {

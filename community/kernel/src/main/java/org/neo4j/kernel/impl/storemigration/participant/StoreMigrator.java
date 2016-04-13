@@ -155,6 +155,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         RecordFormats newFormat = selectForVersion( versionToMigrateTo );
         if ( !oldFormat.equals( newFormat ) )
         {
+            // TODO if this store has relationship indexes then warn user about that they will be incorrect
+            // after migration, because now we're rewriting the relationship ids.
+
             // Some form of migration is required (a fallback/catch-all option)
             migrateWithBatchImporter( storeDir, migrationDir,
                     lastTxId, lastTxChecksum, lastTxLogPosition.getLogVersion(), lastTxLogPosition.getByteOffset(),
@@ -357,7 +360,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             InputIterable<InputRelationship> relationships =
                     legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration );
             importer.doImport(
-                    Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true,
+                    Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(),
                             Collectors.badCollector( badOutput, 0 ) ) );
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
@@ -507,7 +510,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                         InputEntity.NO_PROPERTIES, record.getNextProp(),
                         record.getFirstNode(), record.getSecondNode(), null, record.getType() );
                 propertyDecorator.accept( result, record );
-                result.setSpecificId( record.getId() );
                 return result;
             }
         };

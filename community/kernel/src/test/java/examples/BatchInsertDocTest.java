@@ -41,7 +41,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -55,8 +54,7 @@ public class BatchInsertDocTest
     public void insert() throws Exception
     {
         // Make sure our scratch directory is clean
-        File tempStoreDir = new File( "target/batchinserter-example" ).getAbsoluteFile();
-        FileUtils.deleteRecursively( tempStoreDir );
+        File tempStoreDir = clean( "target/batchinserter-example" ).getAbsoluteFile();
 
         // START SNIPPET: insert
         BatchInserter inserter = null;
@@ -116,6 +114,8 @@ public class BatchInsertDocTest
     @Test
     public void insertWithConfig() throws IOException
     {
+        clean( "target/batchinserter-example-config" );
+
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<>();
         config.put( "dbms.memory.pagecache.size", "512m" );
@@ -129,6 +129,7 @@ public class BatchInsertDocTest
     @Test
     public void insertWithConfigFile() throws IOException
     {
+        clean( "target/docs/batchinserter-example-config" );
         try ( Writer fw = fileSystem.openAsWriter( new File( "target/docs/batchinsert-config" ).getAbsoluteFile(),
                 StandardCharsets.UTF_8, false ) )
         {
@@ -145,6 +146,13 @@ public class BatchInsertDocTest
             inserter.shutdown();
         }
         // END SNIPPET: configFileInsert
+    }
+
+    private File clean( String fileName ) throws IOException
+    {
+        File directory = new File( fileName );
+        fileSystem.deleteRecursively( directory );
+        return directory;
     }
 
     @Rule

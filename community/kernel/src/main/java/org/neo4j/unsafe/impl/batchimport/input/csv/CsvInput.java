@@ -187,12 +187,6 @@ public class CsvInput implements Input
     }
 
     @Override
-    public boolean specificRelationshipIds()
-    {
-        return false;
-    }
-
-    @Override
     public Collector badCollector()
     {
         return badCollector;

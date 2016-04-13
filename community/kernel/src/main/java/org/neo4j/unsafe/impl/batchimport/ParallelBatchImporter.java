@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
@@ -174,7 +173,7 @@ public class ParallelBatchImporter implements BatchImporter
                 executeStages( nodeStage, calculateDenseNodesStage );
             }
 
-            importRelationships( input, nodeRelationshipCache, storeUpdateMonitor, neoStore, badCollector, writeMonitor,
+            importRelationships( nodeRelationshipCache, storeUpdateMonitor, neoStore, writeMonitor,
                     idMapper, cachedRelationships,
                     inputCache, calculateDenseNodesStage.getRelationshipTypes( 100 ) );
 
@@ -225,8 +224,8 @@ public class ParallelBatchImporter implements BatchImporter
         }
     }
 
-    private void importRelationships( Input input, NodeRelationshipCache nodeRelationshipCache,
-            CountingStoreUpdateMonitor storeUpdateMonitor, BatchingNeoStores neoStore, Collector badCollector,
+    private void importRelationships( NodeRelationshipCache nodeRelationshipCache,
+            CountingStoreUpdateMonitor storeUpdateMonitor, BatchingNeoStores neoStore,
             IoMonitor writeMonitor, IdMapper idMapper, InputIterable<InputRelationship> relationships,
             InputCache inputCache, Object[] allRelationshipTypes )
     {
@@ -245,6 +244,7 @@ public class ParallelBatchImporter implements BatchImporter
         PerTypeRelationshipSplitter perTypeIterator =
                 new PerTypeRelationshipSplitter( relationships.iterator(), allRelationshipTypes,
                         type -> neoStore.getRelationshipTypeRepository().getOrCreateId( type ), inputCache );
+        RelationshipStore relationshipStore = neoStore.getRelationshipStore();
 
         long nextRelationshipId = 0;
         for ( int i = 0; perTypeIterator.hasNext(); i++ )
@@ -253,13 +253,14 @@ public class ParallelBatchImporter implements BatchImporter
             nodeRelationshipCache.setForwardScan( true );
             Object currentType = perTypeIterator.currentType();
             int currentTypeId = neoStore.getRelationshipTypeRepository().getOrCreateId( currentType );
+
+            System.out.println( "------------- " + currentType + "(" + currentTypeId + ")" );
+
             InputIterator<InputRelationship> perType = perTypeIterator.next();
             String topic = " [:" + currentType + "] (" +
                     (i+1) + "/" + allRelationshipTypes.length + ")";
             final RelationshipStage relationshipStage = new RelationshipStage( topic, config, writeMonitor,
-                    perType, idMapper,
-                    neoStore, nodeRelationshipCache, input.specificRelationshipIds(), storeUpdateMonitor,
-                    nextRelationshipId );
+                    perType, idMapper, neoStore, nodeRelationshipCache, storeUpdateMonitor, nextRelationshipId );
             executeStages( relationshipStage );
 
             // Stage 4a -- set node nextRel fields for dense nodes

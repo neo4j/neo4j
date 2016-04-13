@@ -169,7 +169,7 @@ public class ParallelBatchImporterTest
             inserter.doImport( Inputs.input(
                     nodes( nodeRandomSeed, NODE_COUNT, inputIdGenerator, groups ),
                     relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, inputIdGenerator, groups ),
-                    idMapper, idGenerator, false,
+                    idMapper, idGenerator,
                     /*insanely high bad tolerance, but it will actually never  be that many*/
                     silentBadCollector( RELATIONSHIP_COUNT ) ) );
 

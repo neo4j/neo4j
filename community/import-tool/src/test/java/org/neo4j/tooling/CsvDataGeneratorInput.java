@@ -106,12 +106,6 @@ public class CsvDataGeneratorInput extends CsvDataGenerator<InputNode,InputRelat
     }
 
     @Override
-    public boolean specificRelationshipIds()
-    {
-        return false;
-    }
-
-    @Override
     public Collector badCollector()
     {
         return badCollector;

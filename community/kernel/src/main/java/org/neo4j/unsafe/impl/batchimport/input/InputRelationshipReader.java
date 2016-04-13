@@ -26,7 +26,6 @@ import org.neo4j.io.fs.StoreChannel;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SPECIFIC_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_TYPE_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
@@ -46,9 +45,6 @@ public class InputRelationshipReader extends InputEntityReader<InputRelationship
     @Override
     protected InputRelationship readNextOrNull( Object properties ) throws IOException
     {
-        // id
-        long specificId = channel.get() == SPECIFIC_ID ? channel.getLong() : -1;
-
         // groups
         Group startNodeGroup = readGroup( 0 );
         Group endNodeGroup = readGroup( 1 );
@@ -68,13 +64,12 @@ public class InputRelationshipReader extends InputEntityReader<InputRelationship
         default: throw new IllegalArgumentException( "Unrecognized type mode " + typeMode );
         }
 
-        InputRelationship relationship = new InputRelationship( sourceDescription(), lineNumber(), position(),
+        return new InputRelationship( sourceDescription(), lineNumber(), position(),
                 properties.getClass().isArray() ? (Object[]) properties : NO_PROPERTIES,
                 properties.getClass().isArray() ? null : (Long) properties,
                 startNodeGroup, startNodeId,
                 endNodeGroup, endNodeId,
                 type instanceof String ? (String) type : null,
                 type instanceof String ? null : (Integer) type );
-        return specificId != -1 ? relationship.setSpecificId( specificId ) : relationship;
     }
 }
