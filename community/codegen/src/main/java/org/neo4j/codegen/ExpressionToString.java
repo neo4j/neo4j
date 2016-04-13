@@ -133,7 +133,7 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void eq( Expression lhs, Expression rhs )
+    public void eq( Expression lhs, Expression rhs, TypeReference ignored )
     {
         result.append( "eq(" );
         lhs.accept( this );

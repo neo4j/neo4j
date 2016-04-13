@@ -79,7 +79,7 @@ import static org.neo4j.codegen.TypeReference.parameterizedType;
 import static org.neo4j.codegen.TypeReference.typeParameter;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
-@RunWith(Parameterized.class)
+@RunWith( Parameterized.class )
 public class CodeGenerationTest
 {
     public static final MethodReference RUN = createMethod( Runnable.class, void.class, "run" );
@@ -87,7 +87,7 @@ public class CodeGenerationTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> generators()
     {
-        return Arrays.asList(new Object[] {SourceCode.SOURCECODE}, new Object[] {SourceCode.BYTECODE});
+        return Arrays.asList( new Object[]{SourceCode.SOURCECODE}, new Object[]{SourceCode.BYTECODE} );
     }
 
     @Parameterized.Parameter( 0 )
@@ -98,7 +98,7 @@ public class CodeGenerationTest
     {
         try
         {
-            generator = CodeGenerator.generateCode( strategy, SourceCode.PRINT_SOURCE);
+            generator = CodeGenerator.generateCode( strategy, SourceCode.PRINT_SOURCE );
         }
         catch ( CodeGenerationNotSupportedException e )
         {
@@ -156,13 +156,13 @@ public class CodeGenerationTest
     {
         // given
         ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( NamedBase.class, "SimpleClass"  ) )
+        try ( ClassGenerator simple = generateClass( NamedBase.class, "SimpleClass" ) )
         {
             handle = simple.handle();
         }
 
         // when
-        Object instance = constructor( handle.loadClass()).invoke( );
+        Object instance = constructor( handle.loadClass() ).invoke();
         Object constructorCalled = instanceMethod( instance, "defaultConstructorCalled" ).invoke();
 
         // then
@@ -200,7 +200,8 @@ public class CodeGenerationTest
         {
             simple.field( String.class, "foo" );
             simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( String.class, "foo" ) )
-                    .invokeSuper( new ExpressionTemplate[]{load( "name" )}, new TypeReference[]{typeReference(String.class)} )
+                    .invokeSuper( new ExpressionTemplate[]{load( "name" )},
+                            new TypeReference[]{typeReference( String.class )} )
                     .build() );
             handle = simple.handle();
         }
@@ -301,7 +302,7 @@ public class CodeGenerationTest
                     .returns(
                             Expression.invoke(
                                     methodReference( Arrays.class, stringList, "asList", Object[].class ),
-                                    newArray( typeReference( String.class ), constant( "a" ), constant( "b" )) ) )
+                                    newArray( typeReference( String.class ), constant( "a" ), constant( "b" ) ) ) )
                     .build() );
             handle = simple.handle();
         }
@@ -503,8 +504,8 @@ public class CodeGenerationTest
                 {
                     loop.expression( invoke(
                             Expression.cast( Runnable.class,
-                            invoke( callEach.load( "targets" ),
-                                    methodReference( Iterator.class, Object.class, "next" ) )),
+                                    invoke( callEach.load( "targets" ),
+                                            methodReference( Iterator.class, Object.class, "next" ) ) ),
                             methodReference( Runnable.class, void.class, "run" ) ) );
                 }
             }
@@ -582,10 +583,11 @@ public class CodeGenerationTest
             try ( CodeBlock callEach = simple.generateMethod( void.class, "callEach",
                     param( TypeReference.parameterizedType( Iterable.class, Runnable.class ), "targets" ) ) )
             {
-                try ( CodeBlock loop = callEach.forEach( param(Runnable.class, "runner"), callEach.load( "targets" )) )
+                try ( CodeBlock loop = callEach
+                        .forEach( param( Runnable.class, "runner" ), callEach.load( "targets" ) ) )
                 {
                     loop.expression(
-                            invoke(loop.load("runner"),
+                            invoke( loop.load( "runner" ),
                                     methodReference( Runnable.class, void.class, "run" ) ) );
                 }
             }
@@ -651,7 +653,7 @@ public class CodeGenerationTest
             try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
                     param( boolean.class, "test" ), param( Runnable.class, "runner" ) ) )
             {
-                try ( CodeBlock doStuff = conditional.ifStatement( not(conditional.load( "test" )) ) )
+                try ( CodeBlock doStuff = conditional.ifStatement( not( conditional.load( "test" ) ) ) )
                 {
                     doStuff.expression(
                             invoke( doStuff.load( "runner" ), RUN ) );
@@ -706,7 +708,8 @@ public class CodeGenerationTest
 
                     }
 
-                    try (CodeBlock finallyBlock = tryBlock.finallyBlock()) {
+                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
+                    {
                         finallyBlock.expression(
                                 invoke( finallyBlock.load( "runner" ), RUN ) );
                     }
@@ -729,8 +732,8 @@ public class CodeGenerationTest
         callEach.invoke( Arrays.asList( a, b, c ).iterator(), true, runner2 );
 
         // then
-        verify( runner1, times(4) ).run();
-        verify( runner2, times(1) ).run();
+        verify( runner1, times( 4 ) ).run();
+        verify( runner2, times( 1 ) ).run();
     }
 
     @Test
@@ -833,7 +836,7 @@ public class CodeGenerationTest
         callEach.invoke( Arrays.asList( a, b, c ).iterator(), true, runner2 );
 
         // then
-        verify( runner1, times(3) ).run();
+        verify( runner1, times( 3 ) ).run();
         verify( runner2, never() ).run();
 
     }
@@ -847,7 +850,8 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
-                    param( boolean.class, "test1" ), param( boolean.class, "test2" ), param( Runnable.class, "runner" ) ) )
+                    param( boolean.class, "test1" ), param( boolean.class, "test2" ),
+                    param( Runnable.class, "runner" ) ) )
             {
                 try ( CodeBlock doStuff = conditional.ifStatement( Expression.or( conditional.load( "test1" ),
                         conditional.load( "test2" ) ) ) )
@@ -866,7 +870,8 @@ public class CodeGenerationTest
         Runnable runner4 = mock( Runnable.class );
 
         // when
-        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", boolean.class,  boolean.class, Runnable.class );
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, Runnable.class );
         conditional.invoke( true, true, runner1 );
         conditional.invoke( true, false, runner2 );
         conditional.invoke( false, true, runner3 );
@@ -887,7 +892,7 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             try ( CodeBlock conditional = simple.generateMethod( boolean.class, "conditional",
-                    param( boolean.class, "test1" ), param( boolean.class, "test2" )) )
+                    param( boolean.class, "test1" ), param( boolean.class, "test2" ) ) )
             {
                 conditional.returns( or( conditional.load( "test1" ), conditional.load( "test2" ) ) );
             }
@@ -897,13 +902,13 @@ public class CodeGenerationTest
 
         // when
         MethodHandle conditional =
-                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class);
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class );
 
         // then
-        assertThat(conditional.invoke( true, true), equalTo(true));
-        assertThat(conditional.invoke( true, false), equalTo(true));
-        assertThat(conditional.invoke( false, true), equalTo(true));
-        assertThat(conditional.invoke( false, false), equalTo(false));
+        assertThat( conditional.invoke( true, true ), equalTo( true ) );
+        assertThat( conditional.invoke( true, false ), equalTo( true ) );
+        assertThat( conditional.invoke( false, true ), equalTo( true ) );
+        assertThat( conditional.invoke( false, false ), equalTo( false ) );
     }
 
     @Test
@@ -914,7 +919,7 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             try ( CodeBlock conditional = simple.generateMethod( boolean.class, "conditional",
-                    param( boolean.class, "test" )) )
+                    param( boolean.class, "test" ) ) )
             {
                 conditional.returns( not( conditional.load( "test" ) ) );
             }
@@ -924,11 +929,11 @@ public class CodeGenerationTest
 
         // when
         MethodHandle conditional =
-                instanceMethod( handle.newInstance(), "conditional", boolean.class);
+                instanceMethod( handle.newInstance(), "conditional", boolean.class );
 
         // then
-        assertThat(conditional.invoke( true), equalTo(false));
-        assertThat(conditional.invoke( false), equalTo(true));
+        assertThat( conditional.invoke( true ), equalTo( false ) );
+        assertThat( conditional.invoke( false ), equalTo( true ) );
     }
 
     @Test
@@ -939,12 +944,14 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             try ( CodeBlock ternaryBlock = simple.generateMethod( String.class, "ternary",
-                    param( boolean.class, "test"), param( TernaryChecker.class, "check" )) )
+                    param( boolean.class, "test" ), param( TernaryChecker.class, "check" ) ) )
             {
                 ternaryBlock.returns(
                         ternary( ternaryBlock.load( "test" ),
-                            invoke( ternaryBlock.load("check"), methodReference( TernaryChecker.class, String.class, "onTrue" ) ),
-                            invoke( ternaryBlock.load("check"), methodReference( TernaryChecker.class, String.class, "onFalse" ) )));
+                                invoke( ternaryBlock.load( "check" ),
+                                        methodReference( TernaryChecker.class, String.class, "onTrue" ) ),
+                                invoke( ternaryBlock.load( "check" ),
+                                        methodReference( TernaryChecker.class, String.class, "onFalse" ) ) ) );
             }
 
             handle = simple.handle();
@@ -952,71 +959,99 @@ public class CodeGenerationTest
 
         // when
         MethodHandle ternary =
-                instanceMethod( handle.newInstance(), "ternary", boolean.class, TernaryChecker.class);
+                instanceMethod( handle.newInstance(), "ternary", boolean.class, TernaryChecker.class );
 
         // then
         TernaryChecker checker1 = new TernaryChecker();
-        assertThat(ternary.invoke( true, checker1), equalTo("on true"));
-        assertTrue(checker1.ranOnTrue);
-        assertFalse(checker1.ranOnFalse);
+        assertThat( ternary.invoke( true, checker1 ), equalTo( "on true" ) );
+        assertTrue( checker1.ranOnTrue );
+        assertFalse( checker1.ranOnFalse );
 
 
         TernaryChecker checker2 = new TernaryChecker();
-        assertThat(ternary.invoke( false, checker2), equalTo("on false"));
-        assertFalse(checker2.ranOnTrue);
-        assertTrue(checker2.ranOnFalse);
+        assertThat( ternary.invoke( false, checker2 ), equalTo( "on false" ) );
+        assertFalse( checker2.ranOnTrue );
+        assertTrue( checker2.ranOnFalse );
     }
 
     @Test
     public void shouldHandleEquality() throws Throwable
     {
         // boolean
-        assertTrue( compareForType( boolean.class, true, true, Expression::eq ) );
-        assertTrue( compareForType( boolean.class, false, false, Expression::eq ) );
-        assertFalse( compareForType( boolean.class, true, false, Expression::eq ) );
-        assertFalse( compareForType( boolean.class, false, true, Expression::eq ) );
+        assertTrue( compareForType( boolean.class, true, true,
+                ( a, b ) -> Expression.eq( a, b, typeReference( boolean.class ) ) ) );
+        assertTrue( compareForType( boolean.class, false, false,
+                ( a, b ) -> Expression.eq( a, b, typeReference( boolean.class ) ) ) );
+        assertFalse( compareForType( boolean.class, true, false,
+                ( a, b ) -> Expression.eq( a, b, typeReference( boolean.class ) ) ) );
+        assertFalse( compareForType( boolean.class, false, true,
+                ( a, b ) -> Expression.eq( a, b, typeReference( boolean.class ) ) ) );
 
         // byte
-        assertTrue( compareForType( byte.class, (byte) 42, (byte) 42, Expression::eq ) );
-        assertFalse( compareForType( byte.class, (byte) 43, (byte) 42, Expression::eq ) );
-        assertFalse( compareForType( byte.class, (byte) 42, (byte) 43, Expression::eq ) );
+        assertTrue( compareForType( byte.class, (byte) 42, (byte) 42,
+                ( a, b ) -> Expression.eq( a, b, typeReference( byte.class ) ) ) );
+        assertFalse( compareForType( byte.class, (byte) 43, (byte) 42,
+                ( a, b ) -> Expression.eq( a, b, typeReference( byte.class ) ) ) );
+        assertFalse( compareForType( byte.class, (byte) 42, (byte) 43,
+                ( a, b ) -> Expression.eq( a, b, typeReference( byte.class ) ) ) );
 
         // short
-        assertTrue( compareForType( short.class, (short) 42, (short) 42, Expression::eq ) );
-        assertFalse( compareForType( short.class, (short) 43, (short) 42, Expression::eq ) );
-        assertFalse( compareForType( short.class, (short) 42, (short) 43, Expression::eq ) );
+        assertTrue( compareForType( short.class, (short) 42, (short) 42,
+                ( a, b ) -> Expression.eq( a, b, typeReference( short.class ) ) ) );
+        assertFalse( compareForType( short.class, (short) 43, (short) 42,
+                ( a, b ) -> Expression.eq( a, b, typeReference( short.class ) ) ) );
+        assertFalse( compareForType( short.class, (short) 42, (short) 43,
+                ( a, b ) -> Expression.eq( a, b, typeReference( short.class ) ) ) );
 
         // char
-        assertTrue( compareForType( char.class, (char) 42, (char) 42, Expression::eq ) );
-        assertFalse( compareForType( char.class, (char) 43, (char) 42, Expression::eq ) );
-        assertFalse( compareForType( char.class, (char) 42, (char) 43, Expression::eq ) );
+        assertTrue( compareForType( char.class, (char) 42, (char) 42,
+                ( a, b ) -> Expression.eq( a, b, typeReference( char.class ) ) ) );
+        assertFalse( compareForType( char.class, (char) 43, (char) 42,
+                ( a, b ) -> Expression.eq( a, b, typeReference( char.class ) ) ) );
+        assertFalse( compareForType( char.class, (char) 42, (char) 43,
+                ( a, b ) -> Expression.eq( a, b, typeReference( char.class ) ) ) );
 
         //int
-        assertTrue( compareForType( int.class, 42, 42, Expression::eq ) );
-        assertFalse( compareForType( int.class, 43, 42, Expression::eq ) );
-        assertFalse( compareForType( int.class, 42, 43, Expression::eq ) );
+        assertTrue( compareForType( int.class, 42, 42,
+                ( a, b ) -> Expression.eq( a, b, typeReference( int.class ) ) ) );
+        assertFalse( compareForType( int.class, 43, 42,
+                ( a, b ) -> Expression.eq( a, b, typeReference( int.class ) ) ) );
+        assertFalse( compareForType( int.class, 42, 43,
+                ( a, b ) -> Expression.eq( a, b, typeReference( int.class ) ) ) );
 
         //long
-        assertTrue( compareForType( long.class, 42L, 42L, Expression::eq ) );
-        assertFalse( compareForType( long.class, 43L, 42L, Expression::eq ) );
-        assertFalse( compareForType( long.class, 42L, 43L, Expression::eq ) );
+        assertTrue( compareForType( long.class, 42L, 42L,
+                ( a, b ) -> Expression.eq( a, b, typeReference( long.class ) ) ) );
+        assertFalse( compareForType( long.class, 43L, 42L,
+                ( a, b ) -> Expression.eq( a, b, typeReference( long.class ) ) ) );
+        assertFalse( compareForType( long.class, 42L, 43L,
+                ( a, b ) -> Expression.eq( a, b, typeReference( long.class ) ) ) );
 
         //float
-        assertTrue( compareForType( float.class, 42F, 42F, Expression::eq ) );
-        assertFalse( compareForType( float.class, 43F, 42F, Expression::eq ) );
-        assertFalse( compareForType( float.class, 42F, 43F, Expression::eq ) );
+        assertTrue( compareForType( float.class, 42F, 42F,
+                ( a, b ) -> Expression.eq( a, b, typeReference( float.class ) ) ) );
+        assertFalse( compareForType( float.class, 43F, 42F,
+                ( a, b ) -> Expression.eq( a, b, typeReference( float.class ) ) ) );
+        assertFalse( compareForType( float.class, 42F, 43F,
+                ( a, b ) -> Expression.eq( a, b, typeReference( float.class ) ) ) );
 
         //double
-        assertTrue( compareForType( double.class, 42D, 42D, Expression::eq ) );
-        assertFalse( compareForType( double.class, 43D, 42D, Expression::eq ) );
-        assertFalse( compareForType( double.class, 42D, 43D, Expression::eq ) );
+        assertTrue( compareForType( double.class, 42D, 42D,
+                ( a, b ) -> Expression.eq( a, b, typeReference( double.class ) ) ) );
+        assertFalse( compareForType( double.class, 43D, 42D,
+                ( a, b ) -> Expression.eq( a, b, typeReference( double.class ) ) ) );
+        assertFalse( compareForType( double.class, 42D, 43D,
+                ( a, b ) -> Expression.eq( a, b, typeReference( double.class ) ) ) );
 
         //reference
-        Object a = new Object();
-        Object b = new Object();
-        assertTrue( compareForType( Object.class, a, a, Expression::eq ) );
-        assertFalse( compareForType( Object.class, a, b, Expression::eq ) );
-        assertFalse( compareForType( Object.class, b, a, Expression::eq ) );
+        Object obj1 = new Object();
+        Object obj2 = new Object();
+        assertTrue( compareForType( Object.class, obj1, obj1,
+                ( a, b ) -> Expression.eq( a, b, typeReference( Object.class ) ) ) );
+        assertFalse( compareForType( Object.class, obj1, obj2,
+                ( a, b ) -> Expression.eq( a, b, typeReference( Object.class ) ) ) );
+        assertFalse( compareForType( Object.class, obj2, obj1,
+                ( a, b ) -> Expression.eq( a, b, typeReference( Object.class ) ) ) );
     }
 
     @Test
@@ -1087,14 +1122,15 @@ public class CodeGenerationTest
             try ( CodeBlock block = simple.generateMethod( clazz, "add",
                     param( clazz, "a" ), param( clazz, "b" ) ) )
             {
-                if (clazz == int.class) {
+                if ( clazz == int.class )
+                {
                     block.returns( addInts( block.load( "a" ), block.load( "b" ) ) );
                 }
-                else if (clazz == long.class)
+                else if ( clazz == long.class )
                 {
                     block.returns( addLongs( block.load( "a" ), block.load( "b" ) ) );
                 }
-                else if (clazz == double.class)
+                else if ( clazz == double.class )
                 {
                     block.returns( addDoubles( block.load( "a" ), block.load( "b" ) ) );
                 }
@@ -1126,11 +1162,11 @@ public class CodeGenerationTest
             try ( CodeBlock block = simple.generateMethod( clazz, "sub",
                     param( clazz, "a" ), param( clazz, "b" ) ) )
             {
-               if (clazz == long.class)
+                if ( clazz == long.class )
                 {
                     block.returns( subtractLongs( block.load( "a" ), block.load( "b" ) ) );
                 }
-                else if (clazz == double.class)
+                else if ( clazz == double.class )
                 {
                     block.returns( subtractDoubles( block.load( "a" ), block.load( "b" ) ) );
                 }
@@ -1257,7 +1293,7 @@ public class CodeGenerationTest
                 try ( TryBlock tryBlock = run.tryBlock() )
                 {
                     tryBlock.expression( invoke( run.load( "body" ), RUN ) );
-                    try ( CodeBlock catchBlock = tryBlock.catchBlock(param(RuntimeException.class, "E")) )
+                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( RuntimeException.class, "E" ) ) )
                     {
                         catchBlock.expression( invoke( run.load( "catcher" ), RUN ) );
                     }
@@ -1297,15 +1333,15 @@ public class CodeGenerationTest
             try ( CodeBlock run = simple.generateMethod( void.class, "run",
                     param( Runnable.class, "body" ),
                     param( Runnable.class, "catcher" ),
-                    param( boolean.class, "test" )) )
+                    param( boolean.class, "test" ) ) )
             {
                 try ( TryBlock tryBlock = run.tryBlock() )
                 {
-                    try (CodeBlock ifBlock = tryBlock.ifStatement( run.load( "test" ) ))
+                    try ( CodeBlock ifBlock = tryBlock.ifStatement( run.load( "test" ) ) )
                     {
                         ifBlock.expression( invoke( run.load( "body" ), RUN ) );
                     }
-                    try ( CodeBlock catchBlock = tryBlock.catchBlock(param(RuntimeException.class, "E")) )
+                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( RuntimeException.class, "E" ) ) )
                     {
                         catchBlock.expression( invoke( run.load( "catcher" ), RUN ) );
                     }
@@ -1320,9 +1356,9 @@ public class CodeGenerationTest
 
 
         // then
-        run.invoke( runnable, mock(Runnable.class), false );
+        run.invoke( runnable, mock( Runnable.class ), false );
         verify( runnable, never() ).run();
-        run.invoke( runnable, mock(Runnable.class), true );
+        run.invoke( runnable, mock( Runnable.class ), true );
         verify( runnable ).run();
     }
 
@@ -1616,8 +1652,9 @@ public class CodeGenerationTest
         {
             simple.field( String.class, "foo" );
             simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( Object.class, "foo" ) )
-                    .invokeSuper( new ExpressionTemplate[]{load( "name" )}, new TypeReference[]{typeReference(String.class)} )
-                    .put( self(), String.class, "foo", cast(String.class, load( "foo" )) )
+                    .invokeSuper( new ExpressionTemplate[]{load( "name" )},
+                            new TypeReference[]{typeReference( String.class )} )
+                    .put( self(), String.class, "foo", cast( String.class, load( "foo" ) ) )
                     .build() );
             handle = simple.handle();
         }
@@ -1738,7 +1775,7 @@ public class CodeGenerationTest
         assertEquals( argument, instanceMethod( instance, "value" ).invoke() );
     }
 
-    private static MethodReference createMethod(Class<?> owner, Class<?> returnType, String name)
+    private static MethodReference createMethod( Class<?> owner, Class<?> returnType, String name )
     {
         try
         {

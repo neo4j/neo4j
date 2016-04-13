@@ -395,7 +395,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void eq( Expression lhs, Expression rhs )
+    public void eq( Expression lhs, Expression rhs, TypeReference ignored )
     {
         lhs.accept( this );
         append( " == " );
