@@ -100,7 +100,11 @@ public class InputCache implements Closeable
 
     static final byte SAME_GROUP = 0;
     static final byte NEW_GROUP = 1;
-    static final byte TOKEN = 1;
+    static final byte PROPERTY_KEY_TOKEN = 1;
+    static final byte LABEL_TOKEN = 2;
+    static final byte RELATIONSHIP_TYPE_TOKEN = 3;
+    static final byte GROUP_TOKEN = 4;
+    static final byte HIGH_TOKEN_TYPE = 5;
     static final short HAS_FIRST_PROPERTY_ID = -1;
     static final byte HAS_LABEL_FIELD = 3;
     static final byte LABEL_REMOVAL = 1;

@@ -35,10 +35,15 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_HEADER;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.GROUP_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_FIRST_PROPERTY_ID;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HIGH_TOKEN_TYPE;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_GROUP;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_GROUP;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.TOKEN;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.PROPERTY_KEY_TOKEN;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
 
 /**
  * Abstract class for reading cached entities previously stored using {@link InputEntityCacher} or derivative.
@@ -50,12 +55,18 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
     private final LogPositionMarker positionMarker = new LogPositionMarker();
     private int lineNumber;
     private final Group[] previousGroups;
-    private final PrimitiveIntObjectMap<String> tokens = Primitive.intObjectMap();
+    private final PrimitiveIntObjectMap<String>[] tokens;
     private final Runnable closeAction;
 
+    @SuppressWarnings( "unchecked" )
     InputEntityReader( StoreChannel channel, StoreChannel header, int bufferSize, int groupSlots,
             Runnable closeAction ) throws IOException
     {
+        tokens = new PrimitiveIntObjectMap[HIGH_TOKEN_TYPE];
+        tokens[PROPERTY_KEY_TOKEN] = Primitive.intObjectMap();
+        tokens[LABEL_TOKEN] = Primitive.intObjectMap();
+        tokens[RELATIONSHIP_TYPE_TOKEN] = Primitive.intObjectMap();
+        tokens[GROUP_TOKEN] = Primitive.intObjectMap();
         this.previousGroups = new Group[groupSlots];
         for ( int i = 0; i < groupSlots; i++ )
         {
@@ -76,9 +87,13 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
     {
         try ( ReadableClosableChannel reader = reader( header, (int) ByteUnit.kibiBytes( 8 ) ) )
         {
-            for ( short id = 0; reader.get() == TOKEN; id++ )
+            short[] tokenIds = new short[HIGH_TOKEN_TYPE];
+            byte type;
+            while ( (type = reader.get()) != END_OF_HEADER )
             {
-                tokens.put( id, (String) ValueType.stringType().read( reader ) );
+                short tokenId = tokenIds[type]++;
+                String name = (String) ValueType.stringType().read( reader );
+                tokens[type].put( tokenId, name );
             }
         }
     }
@@ -119,17 +134,24 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
             Object[] properties = new Object[count*2];
             for ( int i = 0; i < properties.length; i++ )
             {
-                properties[i++] = readToken();
+                properties[i++] = readToken( PROPERTY_KEY_TOKEN );
                 properties[i] = readValue();
             }
             return properties;
         }
     }
 
-    protected String readToken() throws IOException
+    protected Object readToken( byte type ) throws IOException
     {
         short id = channel.getShort();
-        String name = tokens.get( id );
+        if ( id == -1 )
+        {
+            // This is a real token id
+            int tokenId = channel.getShort() & 0xFFFF;
+            return tokenId; // as Integer
+        }
+
+        String name = tokens[type].get( id );
         if ( name == null )
         {
             throw new IllegalArgumentException( "Unknown token " + id );
@@ -148,7 +170,8 @@ abstract class InputEntityReader<ENTITY extends InputEntity> extends Prefetching
         switch ( groupMode )
         {
         case SAME_GROUP: return previousGroups[slot];
-        case NEW_GROUP: return previousGroups[slot] = new Group.Adapter( channel.getInt(), readToken() );
+        case NEW_GROUP: return previousGroups[slot] = new Group.Adapter( channel.getInt(),
+                (String) readToken( GROUP_TOKEN ) );
         default: throw new IllegalArgumentException( "Unknown group mode " + groupMode );
         }
     }

@@ -31,10 +31,12 @@ import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChann
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToShort;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_HEADER;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.GROUP_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_FIRST_PROPERTY_ID;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HIGH_TOKEN_TYPE;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_GROUP;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_GROUP;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.TOKEN;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.PROPERTY_KEY_TOKEN;
 
 /**
  * Abstract class for caching {@link InputEntity} or derivative to disk using a binary format.
@@ -47,8 +49,9 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
     private final StoreChannel headerChannel;
     private final int[] previousGroupIds;
 
-    private short nextKeyId;
-    private final Map<String,Short> tokens = new HashMap<>();
+    private final short[] nextKeyId = new short[HIGH_TOKEN_TYPE];
+    @SuppressWarnings( "unchecked" )
+    private final Map<String,Short>[] tokens = new Map[HIGH_TOKEN_TYPE];
 
     protected InputEntityCacher( StoreChannel channel, StoreChannel header, int bufferSize, int groupSlots )
             throws IOException
@@ -66,6 +69,10 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
                 new PhysicalLogVersionedStoreChannel( channel, 0, (byte)0 ), bufferSize );
         this.header = new PositionAwarePhysicalFlushableChannel(
                 new PhysicalLogVersionedStoreChannel( header, 0, (byte)0 ), (int) ByteUnit.kibiBytes( 8 ) );
+        for ( int i = 0; i < tokens.length; i++ )
+        {
+            tokens[i] = new HashMap<>();
+        }
     }
 
     @Override
@@ -90,13 +97,13 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
             channel.putShort( safeCastLongToShort( properties.length/2 ) );
             for ( int i = 0; i < properties.length; i++ )
             {
-                String key = (String) properties[i++];
+                Object key = properties[i++];
                 Object value = properties[i];
                 if ( value == null )
                 {
                     continue;
                 }
-                writeToken( key );
+                writeToken( PROPERTY_KEY_TOKEN, key );
                 writeValue( value );
             }
         }
@@ -112,7 +119,7 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
         {
             channel.put( NEW_GROUP );
             channel.putInt( previousGroupIds[slot] = group.id() );
-            writeToken( group.name() );
+            writeToken( GROUP_TOKEN, group.name() );
         }
     }
 
@@ -123,16 +130,34 @@ abstract class InputEntityCacher<ENTITY extends InputEntity> implements Receiver
         type.write( value, channel );
     }
 
-    protected void writeToken( String key ) throws IOException
+    protected void writeToken( byte type, Object key ) throws IOException
     {
-        Short id = tokens.get( key );
-        if ( id == null )
+        if ( key instanceof String )
         {
-            tokens.put( key, id = nextKeyId++ );
-            header.put( TOKEN );
-            ValueType.stringType().write( key, header );
+            Short id = tokens[type].get( key );
+            if ( id == null )
+            {
+                if ( nextKeyId[type] == -1 )
+                {
+                    throw new IllegalArgumentException( "Too many tokens" );
+                }
+                tokens[type].put( (String) key, id = nextKeyId[type]++ );
+                header.put( type );
+                ValueType.stringType().write( key, header );
+            }
+            channel.putShort( id );
         }
-        channel.putShort( id );
+        else if ( key instanceof Integer )
+        {
+            // Here we signal that we have a real token id, not to be confused by the local and contrived
+            // toiken ids we generate in here. Following this -1 is the real token id.
+            channel.putShort( (short) -1 );
+            channel.putShort( safeCastLongToShort( (Integer) key ) );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Invalid key " + key + ", " + key.getClass() );
+        }
     }
 
     @Override

@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.io.fs.StoreChannel;
 
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.NEW_TYPE;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SAME_TYPE;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.SPECIFIC_ID;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_TYPE_ID;
@@ -62,7 +63,7 @@ public class InputRelationshipReader extends InputEntityReader<InputRelationship
         switch ( typeMode )
         {
         case SAME_TYPE: type = previousType; break;
-        case NEW_TYPE: type = previousType = readToken(); break;
+        case NEW_TYPE: type = previousType = (String) readToken( RELATIONSHIP_TYPE_TOKEN ); break;
         case HAS_TYPE_ID: type = channel.getInt(); break;
         default: throw new IllegalArgumentException( "Unrecognized type mode " + typeMode );
         }
