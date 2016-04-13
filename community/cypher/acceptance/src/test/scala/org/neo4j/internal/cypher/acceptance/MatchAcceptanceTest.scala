@@ -2153,6 +2153,15 @@ return b
     resultWithAlias.close()
   }
 
+  test("should get correct amount of rows in case of loops") {
+    val node = createNode()
+    relate(node, node)
+
+    val result = executeWithAllPlanners("MATCH ()-[r]-() RETURN id(r) as r").columnAs[Long]("r")
+
+    result.toList should equal(List(0))
+  }
+
   /**
    * Append variable to keys and transform value arrays to lists
    */
