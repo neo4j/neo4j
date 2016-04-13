@@ -48,6 +48,9 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperations implements
@@ -229,17 +232,7 @@ public class LockingStatementOperations implements
     public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
             throws EntityNotFoundException
     {
-        // Order the locks to lower the risk of deadlocks with other threads adding rels concurrently
-        if(startNodeId < endNodeId)
-        {
-            state.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
-            state.locks().acquireExclusive( ResourceTypes.NODE, endNodeId );
-        }
-        else
-        {
-            state.locks().acquireExclusive( ResourceTypes.NODE, endNodeId );
-            state.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
-        }
+        lockRelationshipNodes( state, startNodeId, endNodeId );
         return entityWriteDelegate.relationshipCreate( state, relationshipTypeId, startNodeId, endNodeId );
     }
 
@@ -253,8 +246,7 @@ public class LockingStatementOperations implements
                 @Override
                 public void visit( long relId, int type, long startNode, long endNode )
                 {
-                    state.locks().acquireExclusive( ResourceTypes.NODE, startNode );
-                    state.locks().acquireExclusive( ResourceTypes.NODE, endNode );
+                    lockRelationshipNodes( state, startNode, endNode );
                 }
             });
         }
@@ -264,6 +256,16 @@ public class LockingStatementOperations implements
         }
         state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         entityWriteDelegate.relationshipDelete( state, relationshipId );
+    }
+
+    private void lockRelationshipNodes( KernelStatement state, long startNodeId, long endNodeId )
+    {
+        // Order the locks to lower the risk of deadlocks with other threads creating/deleting rels concurrently
+        state.locks().acquireExclusive( ResourceTypes.NODE, min( startNodeId, endNodeId ) );
+        if ( startNodeId != endNodeId )
+        {
+            state.locks().acquireExclusive( ResourceTypes.NODE, max( startNodeId, endNodeId ) );
+        }
     }
 
     @Override
