@@ -24,7 +24,6 @@ import java.util.Optional;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.desktop.config.Installation;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
@@ -74,8 +73,8 @@ public class DesktopConfigurator
         return dbDir.getAbsolutePath();
     }
 
-    public Setting<HostnamePort> getServerAddress()
+    public HostnamePort getServerAddress()
     {
-        return ServerSettings.httpConnector( config, HttpConnector.Encryption.NONE ).get().address;
+        return ServerSettings.httpConnector( config, HttpConnector.Encryption.NONE ).get().address.from( config );
     }
 }
