@@ -28,8 +28,8 @@ case class Division(lhs: CodeGenExpression, rhs: CodeGenExpression)
 
   override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     (lhs.cypherType, rhs.cypherType) match {
-      case (CTBoolean, _) => throw new CypherTypeException(s"Cannot multiply a boolean and ${rhs.cypherType}")
-      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot multiply a ${rhs.cypherType} and a boolean")
+      case (CTBoolean, _) => throw new CypherTypeException(s"Cannot divide a boolean and ${rhs.cypherType}")
+      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot divide a ${rhs.cypherType} and a boolean")
 
       case (Number(t1), Number(t2)) => (l, r) => structure.divide(structure.box(l, t1), structure.box(r, t2))
       case (Number(t), _) => (l, r) => structure.divide(structure.box(l, t), r)

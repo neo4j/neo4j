@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.cypher.internal.frontend.v3_1.ArithmeticException;
-import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.neo4j.cypher.internal.frontend.v3_1.ArithmeticException;
+import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException;
 
 /**
  * This is a helper class used by compiled plans for doing basic math operations
@@ -242,7 +242,18 @@ public final class CompiledMathHelper
 
         if ( lhs instanceof Number && rhs instanceof Number )
         {
-            return ((Number) lhs).doubleValue() % ((Number) rhs).doubleValue();
+            if ( lhs instanceof Double || rhs instanceof Double)
+            {
+                return ((Number) lhs).doubleValue() % ((Number) rhs).doubleValue();
+            }
+            else if (lhs instanceof Float || rhs instanceof Float )
+            {
+                return ((Number) lhs).floatValue() % ((Number) rhs).floatValue();
+            }
+            else
+            {
+                return ((Number) lhs).longValue() % ((Number) rhs).longValue();
+            }
         }
 
         throw new CypherTypeException( "Cannot modulo " + lhs.getClass().getSimpleName() +
