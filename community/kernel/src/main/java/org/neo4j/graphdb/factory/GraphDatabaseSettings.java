@@ -112,12 +112,21 @@ public abstract class GraphDatabaseSettings
             + "If true, then non-conformance will result in an error, otherwise only a warning is generated." )
     public static final Setting<Boolean> cypher_hints_error = setting( "cypher.hints_error", BOOLEAN, FALSE );
 
-    @Description( "If set to true it will disable the shortest path fallback. That means that no full path enumeration" +
-                  "will be performed in case shortest path algorithms cannot be used. This might happen in case of" +
-                  "existential predicates on the path, e.g., when searching for the shortest path containing a node" +
-                  "with property 'name=Emil'. The problem is that graph algorithms work only on universal predicates," +
-                  "e.g., when searching for the shortest where all nodes have label 'Person'.  Note that disabling " +
-                  "shortest path fallback (i.e., setting this property to true) might cause errors at runtime." )
+    @Description( "This setting is associated with performance optimization. Set this to `true` in situations where " +
+                  "it is preferable to have any queries using the 'shortestPath' function terminate as soon as " +
+                  "possible with no answer, rather than potentially running for a long time attempting to find an " +
+                  "answer (even if there is no path to be found). " +
+                  "For most queries, the 'shortestPath' algorithm will return the correct answer very quickly. However " +
+                  "there are some cases where it is possible that the fast bidirectional breadth-first search " +
+                  "algorithm will find no results even if they exist. This can happen when the predicates in the " +
+                  "`WHERE` clause applied to 'shortestPath' cannot be applied to each step of the traversal, and can " +
+                  "only be applied to the entire path. When the query planner detects these special cases, it will " +
+                  "plan to perform an exhaustive depth-first search if the fast algorithm finds no paths. However, " +
+                  "the exhaustive search may be orders of magnitude slower than the fast algorithm. If it is critical " +
+                  "that queries terminate as soon as possible, it is recommended that this option be set to `true`, " +
+                  "which means that Neo4j will never consider using the exhaustive search for shortestPath queries. " +
+                  "However, please note that if no paths are found, an error will be thrown at run time, which will " +
+                  "need to be handled by the application." )
     public static final Setting<Boolean> forbid_exhaustive_shortestpath = setting(
             "cypher.forbid_exhaustive_shortestpath", BOOLEAN, FALSE );
 
