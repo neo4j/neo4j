@@ -376,6 +376,22 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     }
 
     @Override
+    public void multiplyDoubles( Expression lhs, Expression rhs )
+    {
+        lhs.accept( this );
+        rhs.accept( this );
+        methodVisitor.visitInsn( DMUL );
+    }
+
+    @Override
+    public void multiplyLongs( Expression lhs, Expression rhs )
+    {
+        lhs.accept( this );
+        rhs.accept( this );
+        methodVisitor.visitInsn( LMUL );
+    }
+
+    @Override
     public void cast( TypeReference type, Expression expression )
     {
         expression.accept( this );

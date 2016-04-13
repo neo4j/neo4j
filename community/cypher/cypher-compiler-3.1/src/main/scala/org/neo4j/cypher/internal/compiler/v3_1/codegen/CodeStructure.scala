@@ -43,7 +43,6 @@ case class LongsToListTable(structure: Map[String, CypherType], localMap: Map[St
 
 trait MethodStructure[E] {
 
-
   // misc
   def projectVariable(variableName: String, value: E)
   def declareFlag(name: String, initialValue: Boolean)
@@ -81,7 +80,9 @@ trait MethodStructure[E] {
   def subtract(lhs: E, rhs: E): E
   def subtractIntegers(lhs: E, rhs: E): E
   def subtractFloats(lhs: E, rhs: E): E
-  def mul(lhs: E, rhs: E): E
+  def multiply(lhs: E, rhs: E): E
+  def multiplyIntegers(lhs: E, rhs: E): E
+  def multiplyFloats(lhs: E, rhs: E): E
   def div(lhs: E, rhs: E): E
   def mod(lhs: E, rhs: E): E
 

@@ -154,6 +154,31 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    public static Expression multiplyLongs( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.multiplyLongs( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression multiplyDoubles( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.multiplyDoubles( lhs, rhs );
+            }
+        };
+    }
+
+
     public static Expression constant( final Object value )
     {
         if ( !(value == null ||

@@ -469,6 +469,25 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
+    public void multiplyLongs( Expression lhs, Expression rhs )
+    {
+        mul( lhs, rhs);
+    }
+
+    @Override
+    public void multiplyDoubles( Expression lhs, Expression rhs )
+    {
+        mul( lhs, rhs);
+    }
+
+    private void mul( Expression lhs, Expression rhs )
+    {
+        lhs.accept( this );
+        append( " * " );
+        rhs.accept( this );
+    }
+
+    @Override
     public void cast( TypeReference type, Expression expression )
     {
         append( "(" );

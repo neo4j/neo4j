@@ -479,7 +479,11 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def subtract(lhs: Expression, rhs: Expression) = math(Methods.mathSub, lhs, rhs)
 
-  override def mul(lhs: Expression, rhs: Expression) = math(Methods.mathMul, lhs, rhs)
+  override def multiply(lhs: Expression, rhs: Expression) = math(Methods.mathMul, lhs, rhs)
+
+  override def multiplyIntegers(lhs: Expression, rhs: Expression) = Expression.multiplyLongs(lhs, rhs)
+
+  override def multiplyFloats(lhs: Expression, rhs: Expression) = Expression.multiplyDoubles(lhs, rhs)
 
   override def div(lhs: Expression, rhs: Expression) = math(Methods.mathDiv, lhs, rhs)
 

@@ -139,6 +139,18 @@ public abstract class BaseExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
+    public void multiplyLongs( Expression lhs, Expression rhs )
+    {
+
+    }
+
+    @Override
+    public void multiplyDoubles( Expression lhs, Expression rhs )
+    {
+
+    }
+
+    @Override
     public void cast( TypeReference type, Expression expression )
     {
 
