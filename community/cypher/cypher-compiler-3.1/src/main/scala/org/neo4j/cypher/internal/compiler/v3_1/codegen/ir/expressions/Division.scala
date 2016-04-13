@@ -20,11 +20,25 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.frontend.v3_1.{CypherTypeException, symbols}
 
 case class Division(lhs: CodeGenExpression, rhs: CodeGenExpression)
   extends CodeGenExpression with BinaryOperator with NumericalOpType {
 
-  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.div
+  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
+    (lhs.cypherType, rhs.cypherType) match {
+      case (CTBoolean, _) => throw new CypherTypeException(s"Cannot multiply a boolean and ${rhs.cypherType}")
+      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot multiply a ${rhs.cypherType} and a boolean")
+
+      case (Number(t1), Number(t2)) => (l, r) => structure.divide(structure.box(l, t1), structure.box(r, t2))
+      case (Number(t), _) => (l, r) => structure.divide(structure.box(l, t), r)
+      case (_, Number(t)) => (l, r) => structure.divide(l, structure.box(r, t))
+
+      case _ => structure.divide
+    }
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
+
+  override def cypherType(implicit context: CodeGenContext) = symbols.CTAny
 }

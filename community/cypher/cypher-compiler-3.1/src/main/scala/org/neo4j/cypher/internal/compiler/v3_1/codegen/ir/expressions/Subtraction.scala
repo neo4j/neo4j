@@ -33,8 +33,8 @@ case class Subtraction(lhs: CodeGenExpression, rhs: CodeGenExpression)
       case (CTFloat, CTFloat) => structure.subtractFloats
       case (CTInteger, CTFloat) => (l, r) => structure.subtractFloats(structure.toFloat(l), r)
       case (CTFloat, CTInteger) => (l, r) => structure.subtractFloats(l, structure.toFloat(r))
-      case (CTBoolean, _) => throw new CypherTypeException(s"Cannot add a boolean and ${rhs.cypherType}")
-      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot add a ${rhs.cypherType} and a boolean")
+      case (CTBoolean, _) => throw new CypherTypeException(s"Cannot subtract a boolean and ${rhs.cypherType}")
+      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot subtract a ${rhs.cypherType} and a boolean")
 
       //reference cases
       case (Number(t), _) => (l, r) => structure.subtract(structure.box(l, t), r)

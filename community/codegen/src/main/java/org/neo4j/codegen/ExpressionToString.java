@@ -236,6 +236,15 @@ class ExpressionToString implements ExpressionVisitor
         result.append( ")" );
     }
 
+    private void div( Expression lhs, Expression rhs )
+    {
+        result.append( "div(" );
+        lhs.accept( this );
+        result.append( " / " );
+        rhs.accept( this );
+        result.append( ")" );
+    }
+
     @Override
     public void cast( TypeReference type, Expression expression )
     {

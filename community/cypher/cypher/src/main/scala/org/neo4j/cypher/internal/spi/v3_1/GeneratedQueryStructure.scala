@@ -485,7 +485,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def multiplyFloats(lhs: Expression, rhs: Expression) = Expression.multiplyDoubles(lhs, rhs)
 
-  override def div(lhs: Expression, rhs: Expression) = math(Methods.mathDiv, lhs, rhs)
+  override def divide(lhs: Expression, rhs: Expression) = math(Methods.mathDiv, lhs, rhs)
 
   override def mod(lhs: Expression, rhs: Expression) = math(Methods.mathMod, lhs, rhs)
 

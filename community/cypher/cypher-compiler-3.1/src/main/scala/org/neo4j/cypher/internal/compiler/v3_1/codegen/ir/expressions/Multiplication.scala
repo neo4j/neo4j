@@ -35,8 +35,8 @@ case class Multiplication(lhs: CodeGenExpression, rhs: CodeGenExpression)
       case (CTFloat, CTFloat) => structure.multiplyFloats
       case (CTInteger, CTFloat) => (l, r) => structure.multiplyFloats(structure.toFloat(l), r)
       case (CTFloat, CTInteger) => (l, r) => structure.multiplyFloats(l, structure.toFloat(r))
-      case (CTBoolean, _) => throw new CypherTypeException(s"Cannot add a boolean and ${rhs.cypherType}")
-      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot add a ${rhs.cypherType} and a boolean")
+      case (CTBoolean, _) => throw new CypherTypeException(s"Cannot multiply a boolean and ${rhs.cypherType}")
+      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot multiply a ${rhs.cypherType} and a boolean")
 
       //reference cases
       case (Number(t), _) => (l, r) => structure.multiply(structure.box(l, t), r)

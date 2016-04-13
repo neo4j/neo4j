@@ -83,7 +83,7 @@ trait MethodStructure[E] {
   def multiply(lhs: E, rhs: E): E
   def multiplyIntegers(lhs: E, rhs: E): E
   def multiplyFloats(lhs: E, rhs: E): E
-  def div(lhs: E, rhs: E): E
+  def divide(lhs: E, rhs: E): E
   def mod(lhs: E, rhs: E): E
 
   // predicates

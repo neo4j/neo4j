@@ -487,6 +487,13 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         rhs.accept( this );
     }
 
+    private void div( Expression lhs, Expression rhs )
+    {
+        lhs.accept( this );
+        append( " / " );
+        rhs.accept( this );
+    }
+
     @Override
     public void cast( TypeReference type, Expression expression )
     {

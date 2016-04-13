@@ -178,7 +178,6 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-
     public static Expression constant( final Object value )
     {
         if ( !(value == null ||
