@@ -106,7 +106,8 @@ class PrettifierParser extends Parser with Base with Strings {
         keyword("FROM") |
         keyword("STARTS WITH") |
         keyword("ENDS WITH") |
-        keyword("CONTAINS")
+        keyword("CONTAINS") |
+        keyword("YIELD")
     ) ~> NonBreakingKeywords
   }
 
@@ -148,7 +149,8 @@ class PrettifierParser extends Parser with Base with Strings {
       keyword("ASSERT") |
       keyword("SCAN") |
       keyword("CALL") |
-      keyword("UNION")
+      keyword("UNION") |
+      keyword("CALL")
     ) ~> BreakingKeywords
   }
 
