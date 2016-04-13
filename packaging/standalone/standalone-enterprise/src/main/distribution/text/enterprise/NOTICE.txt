@@ -50,8 +50,8 @@ Apache Software License, Version 2.0
   Jetty :: XML utilities
   Lucene Core
   Metrics Core
-  Netty/All-in-One
   Netty
+  Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
@@ -60,7 +60,7 @@ Apache Software License, Version 2.0
 BSD - Scala License
   Scala Library
 
-BSD - seedrandom.js License
+BSD - seedrandom.js
   seedrandom.js
 
 BSD License

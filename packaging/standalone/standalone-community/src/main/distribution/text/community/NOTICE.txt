@@ -57,7 +57,7 @@ Apache Software License, Version 2.0
 BSD - Scala License
   Scala Library
 
-BSD - seedrandom.js License
+BSD - seedrandom.js
   seedrandom.js
 
 BSD License
