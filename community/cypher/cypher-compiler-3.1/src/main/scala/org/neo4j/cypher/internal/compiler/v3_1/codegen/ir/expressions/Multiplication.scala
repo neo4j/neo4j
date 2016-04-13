@@ -20,28 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 case class Multiplication(lhs: CodeGenExpression, rhs: CodeGenExpression)
-  extends CodeGenExpression with BinaryOperator with NumericalOpType {
+  extends CodeGenExpression with NumericBinaryOperator {
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    (lhs.cypherType, rhs.cypherType) match {
-      //primitive cases
-      case (CTInteger, CTInteger) => structure.multiplyIntegers
-      case (CTFloat, CTFloat) => structure.multiplyFloats
-      case (CTInteger, CTFloat) => (l, r) => structure.multiplyFloats(structure.toFloat(l), r)
-      case (CTFloat, CTInteger) => (l, r) => structure.multiplyFloats(l, structure.toFloat(r))
-      case (CTBoolean, _) => throw new CypherTypeException(s"Cannot multiply a boolean and ${rhs.cypherType}")
-      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot multiply a ${rhs.cypherType} and a boolean")
+  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.multiply
 
-      //reference cases
-      case (Number(t), _) => (l, r) => structure.multiply(structure.box(l, t), r)
-      case (_, Number(t)) => (l, r) => structure.multiply(l, structure.box(r, t))
-
-      case _ => structure.multiply
-    }
+  override def name: String = "multiply"
 }

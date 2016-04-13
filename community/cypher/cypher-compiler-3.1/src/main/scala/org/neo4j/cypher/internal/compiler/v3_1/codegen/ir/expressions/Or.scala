@@ -22,13 +22,22 @@ package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols
 
-case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with BinaryOperator {
+case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
   override def cypherType(implicit context: CodeGenContext) = symbols.CTBoolean
 
-  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    if (!nullable && lhs.cypherType == symbols.CTBoolean && rhs.cypherType == symbols.CTBoolean) structure.or
-    else structure.threeValuedOr
+  override final def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    lhs.init(generator)
+    rhs.init(generator)
+  }
+
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
+    if (!nullable && lhs.cypherType == symbols.CTBoolean && rhs.cypherType == symbols.CTBoolean)
+      structure.or(
+        structure.box(lhs.generateExpression(structure), symbols.CTBoolean),
+        structure.box(rhs.generateExpression(structure), symbols.CTBoolean))
+    else structure.threeValuedOr(structure.box(lhs.generateExpression(structure), symbols.CTBoolean),
+                                 structure.box(rhs.generateExpression(structure), symbols.CTBoolean))
 }

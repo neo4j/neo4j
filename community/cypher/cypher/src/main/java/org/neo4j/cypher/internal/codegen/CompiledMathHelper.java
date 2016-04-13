@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException;
 /**
  * This is a helper class used by compiled plans for doing basic math operations
  */
+@SuppressWarnings( "unused" )
 public final class CompiledMathHelper
 {
     private static final double EPSILON = Math.pow( 1, -10 );
@@ -184,7 +185,16 @@ public final class CompiledMathHelper
                  lhs instanceof Short || rhs instanceof Short ||
                  lhs instanceof Byte || rhs instanceof Byte )
             {
-                return ((Number) lhs).longValue() * ((Number) rhs).longValue();
+                try
+                {
+                    return Math.multiplyExact( ((Number) lhs).longValue(), ((Number) rhs).longValue() );
+                }
+                catch ( java.lang.ArithmeticException e )
+                {
+                    throw new ArithmeticException(
+                            String.format( "result of %d * %d cannot be represented as an integer",
+                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e);
+                }
             }
             // other numbers we cannot multiply
         }

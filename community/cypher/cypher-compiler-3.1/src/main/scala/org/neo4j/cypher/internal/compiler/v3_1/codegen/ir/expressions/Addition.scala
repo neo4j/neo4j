@@ -20,47 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with BinaryOperator {
+case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with NumericBinaryOperator {
 
-  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    (lhs.cypherType, rhs.cypherType) match {
-      //primitive cases
-      case (CTInteger, CTInteger) => structure.addIntegers
-      case (CTFloat, CTFloat) => structure.addFloats
-      case (CTInteger, CTFloat) => (l, r) => structure.addFloats(structure.toFloat(l), r)
-      case (CTFloat, CTInteger) => (l, r) => structure.addFloats(l, structure.toFloat(r))
-      case (CTBoolean, _) =>
-        throw new CypherTypeException(s"Cannot add a boolean and ${rhs.cypherType}")
-      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot add a ${rhs.cypherType} and a boolean")
-
-      //reference cases
-      case (Number(t), _) => (l, r) => structure.add(structure.box(l, t), r)
-      case (_, Number(t)) => (l, r) => structure.add(l, structure.box(r, t))
-
-      case _ => structure.add
-    }
+  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.add
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  val validTypes = Seq(CTString, CTFloat, CTInteger, CTList(CTAny))
-
-  override def cypherType(implicit context: CodeGenContext) = (lhs.cypherType, rhs.cypherType) match {
-    // Strings
-    case (CTString, CTString) => CTString
-
-    // Collections
-    case (ListType(left), ListType(right)) => ListType(left leastUpperBound right)
-    case (ListType(innerType), singleElement) => ListType(innerType leastUpperBound singleElement)
-    case (singleElement, ListType(innerType)) => ListType(innerType leastUpperBound singleElement)
-
-    // Numbers
-    case (CTInteger, CTInteger) => CTInteger
-    case (Number(_), Number(_)) => CTFloat
-
-    // Runtime we'll figure it out
-    case _ => CTAny
-  }
+  override def name: String = "add"
 }

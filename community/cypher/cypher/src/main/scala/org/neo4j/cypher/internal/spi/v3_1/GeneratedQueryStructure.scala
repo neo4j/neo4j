@@ -467,23 +467,11 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def load(varName: String) = generator.load(varName)
 
-  override def addIntegers(lhs: Expression, rhs: Expression) = Expression.addLongs(lhs, rhs)
-
-  override def addFloats(lhs: Expression, rhs: Expression) = Expression.addDoubles(lhs, rhs)
-
   override def add(lhs: Expression, rhs: Expression) = math(Methods.mathAdd, lhs, rhs)
-
-  override def subtractIntegers(lhs: Expression, rhs: Expression) = Expression.subtractLongs(lhs, rhs)
-
-  override def subtractFloats(lhs: Expression, rhs: Expression) = Expression.subtractDoubles(lhs, rhs)
 
   override def subtract(lhs: Expression, rhs: Expression) = math(Methods.mathSub, lhs, rhs)
 
   override def multiply(lhs: Expression, rhs: Expression) = math(Methods.mathMul, lhs, rhs)
-
-  override def multiplyIntegers(lhs: Expression, rhs: Expression) = Expression.multiplyLongs(lhs, rhs)
-
-  override def multiplyFloats(lhs: Expression, rhs: Expression) = Expression.multiplyDoubles(lhs, rhs)
 
   override def divide(lhs: Expression, rhs: Expression) = math(Methods.mathDiv, lhs, rhs)
 

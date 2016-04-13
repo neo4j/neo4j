@@ -20,13 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-trait BinaryOperator {
+trait NumericBinaryOperator {
   self: CodeGenExpression =>
 
   def lhs: CodeGenExpression
   def rhs: CodeGenExpression
+
+  def name: String
 
   override final def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     lhs.init(generator)
@@ -34,25 +37,27 @@ trait BinaryOperator {
   }
 
   override final def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    generator(structure)(context)(lhs.generateExpression(structure), rhs.generateExpression(structure))
-
-  protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext): (E, E) => E
-}
-
-// Trait that resolves type based on inputs.
-trait NumericalOpType {
-  self : CodeGenExpression =>
-
-  def lhs: CodeGenExpression
-  def rhs: CodeGenExpression
-
-  override def cypherType(implicit context: CodeGenContext) =
     (lhs.cypherType, rhs.cypherType) match {
-      case (CTInteger, CTInteger) => CTInteger
-      case (Number(_), Number(_)) => CTFloat
-      // Runtime we'll figure it out - can't store it in a primitive field unless we are 100% of the type
-      case _ => CTAny
+      case (CTBoolean, _) => throw new CypherTypeException(s"Cannot $name a boolean and ${rhs.cypherType}")
+      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot $name a ${rhs.cypherType} and a boolean")
+
+      case (Number(t1), Number(t2)) =>
+        generator(structure)(context)(structure.box(lhs.generateExpression(structure), t1),
+                                      structure.box(rhs.generateExpression(structure), t2))
+
+      case (Number(t), _) =>
+        generator(structure)(context)(structure.box(lhs.generateExpression(structure), t),
+                                      rhs.generateExpression(structure))
+      case (_, Number(t)) =>
+        generator(structure)(context)(lhs.generateExpression(structure),
+                                                           structure.box(rhs.generateExpression(structure), t))
+
+      case _ => generator(structure)(context)(lhs.generateExpression(structure),
+                                              rhs.generateExpression(structure))
     }
+
+  override def cypherType(implicit context: CodeGenContext) = CTAny
+  protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext): (E, E) => E
 }
 
 object Number {
