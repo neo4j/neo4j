@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.function.Function;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
@@ -261,6 +263,35 @@ public class LockingStatementOperations implements
         state.locks().acquireExclusive( ResourceTypes.NODE, nodeId );
         state.assertOpen();
         entityWriteDelegate.nodeDelete( state, nodeId );
+    }
+
+    @Override
+    public int nodeDetachDelete( final KernelStatement state, final long nodeId ) throws EntityNotFoundException
+    {
+        final AtomicInteger count = new AtomicInteger(  );
+        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( entityReadDelegate,
+                new Consumer<Long>()
+                {
+                    @Override
+                    public void accept( Long relId )
+                    {
+                        state.assertOpen();
+                        try
+                        {
+                            entityWriteDelegate.relationshipDelete( state, relId );
+                            count.incrementAndGet();
+                        }
+                        catch ( EntityNotFoundException e )
+                        {
+                            // it doesn't matter...
+                        }
+                    }
+                } );
+
+        locking.lockAllNodesAndConsumeRelationships( nodeId, state );
+        state.assertOpen();
+        entityWriteDelegate.nodeDetachDelete( state, nodeId );
+        return count.get();
     }
 
     @Override

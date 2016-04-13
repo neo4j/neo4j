@@ -197,6 +197,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public int nodeDetachDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    {
+        return entityWriteOperations.nodeDetachDelete( state, nodeId );
+    }
+
+    @Override
     public long relationshipCreate( KernelStatement statement,
             int relationshipTypeId,
             long startNodeId,

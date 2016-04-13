@@ -319,6 +319,15 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       }
     }
 
+    def detachDelete(obj: Node): Int = {
+      try {
+        statement.dataWriteOperations().nodeDetachDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
+        0
+      }
+    }
+
     def propertyKeyIds(id: Long): Iterator[Int] =
       JavaConversionSupport.asScala(statement.readOperations().nodeGetPropertyKeys(id))
 
@@ -365,6 +374,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
         case _: exceptions.EntityNotFoundException => // the relationship has been deleted by another transaction, oh well...
       }
     }
+
+    override def detachDelete(obj: Relationship): Int = ??? // not supported for relationships
 
     def propertyKeyIds(id: Long): Iterator[Int] =
       asScala(statement.readOperations().relationshipGetPropertyKeys(id))
