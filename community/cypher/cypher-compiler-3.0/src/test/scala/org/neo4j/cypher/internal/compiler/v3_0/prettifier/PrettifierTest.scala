@@ -149,6 +149,10 @@ class PrettifierTest extends CypherFunSuite {
     )
   }
 
+  test("should handle call yield") {
+    actual("match (n) call db.indexes yield state RETURN *") should equal(expected("MATCH (n)%nCALL db.indexes YIELD state%nRETURN *"))
+  }
+
   private def actual(text: String) = Prettifier(text)
   private def expected(text: String) = String.format(text)
 }
