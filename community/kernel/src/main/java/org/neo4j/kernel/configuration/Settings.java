@@ -283,6 +283,12 @@ public class Settings
                     return new File( GraphDatabaseSettings.neo4j_home.apply( config ), setting );
                 }
             }
+
+            @Override
+            public String toString()
+            {
+                return "A filesystem path; relative paths are resolved against the installation root, _<neo4j-home>_";
+            }
         };
     }
 
