@@ -40,6 +40,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 
 /**
  * Used by the robustness suite to check for partial failures.
@@ -64,7 +65,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     public StoreChannel open( File fileName, String mode ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return AdversarialFileChannel.wrap( delegate.open( fileName, mode ), adversary );
+        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.open( fileName, mode ), adversary );
     }
 
     public boolean renameFile( File from, File to ) throws IOException
@@ -82,7 +83,7 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     public StoreChannel create( File fileName ) throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
-        return AdversarialFileChannel.wrap( delegate.create( fileName ), adversary );
+        return AdversarialFileChannel.wrap( (StoreFileChannel) delegate.create( fileName ), adversary );
     }
 
     public boolean mkdir( File fileName )

@@ -284,19 +284,6 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         };
     }
 
-    /**
-     * We implement 'assumeTrue' ourselves because JUnit insist on adding hamcrest matchers to the
-     * AssumptionViolatedException instances it throws. This is a problem because those matchers are not serializable,
-     * so they cannot be used together with the BootClassPathRunner, because it uses RMI under the hood.
-     */
-    protected void assumeTrue( String description, boolean test )
-    {
-        if ( !test )
-        {
-            throw new AssumptionViolatedException( description );
-        }
-    }
-
     public static abstract class Fixture<T extends PageCache>
     {
         public abstract T createPageCache(
