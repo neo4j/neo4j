@@ -64,82 +64,82 @@ import java.io.IOException;
  * You can alternatively use the {@link #next(long)} method, to navigate the
  * pages you need in a non-linear fashion.
  */
-public interface PageCursor extends AutoCloseable
+public abstract class PageCursor implements AutoCloseable
 {
-    long UNBOUND_PAGE_ID = -1;
-    int UNBOUND_PAGE_SIZE = -1;
+    public static final long UNBOUND_PAGE_ID = -1;
+    public static final int UNBOUND_PAGE_SIZE = -1;
 
     /**
      * Get the signed byte at the current page offset, and then increment the offset by one.
      */
-    byte getByte();
+    public abstract byte getByte();
 
     /**
      * Get the signed byte at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    byte getByte( int offset );
+    public abstract byte getByte( int offset );
 
     /**
      * Set the signed byte at the current offset into the page, and then increment the offset by one.
      */
-    void putByte( byte value );
+    public abstract void putByte( byte value );
 
     /**
      * Set the signed byte at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    void putByte( int offset, byte value );
+    public abstract void putByte( int offset, byte value );
 
     /**
      * Get the signed long at the current page offset, and then increment the offset by one.
      */
-    long getLong();
+    public abstract long getLong();
 
     /**
      * Get the signed long at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    long getLong( int offset );
+    public abstract long getLong( int offset );
 
     /**
      * Set the signed long at the current offset into the page, and then increment the offset by one.
      */
-    void putLong( long value );
+    public abstract void putLong( long value );
 
     /**
      * Set the signed long at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    void putLong( int offset, long value );
+    public abstract void putLong( int offset, long value );
 
     /**
      * Get the signed int at the current page offset, and then increment the offset by one.
      */
-    int getInt();
+    public abstract int getInt();
 
     /**
      * Get the signed int at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    int getInt( int offset );
+    public abstract int getInt( int offset );
 
     /**
      * Set the signed int at the current offset into the page, and then increment the offset by one.
      */
-    void putInt( int value );
+    public abstract void putInt( int value );
 
     /**
      * Set the signed int at the given offset into the page.
      * Leaves the current page offset unchanged.
      */
-    void putInt( int offset, int value );
+    public abstract void putInt( int offset, int value );
 
     /**
      * Fill the given array with bytes from the page, beginning at the current offset into the page,
      * and then increment the current offset by the length of the array.
      */
-    void getBytes( byte[] data );
+    public abstract void getBytes( byte[] data );
 
     /**
      * Read the given length of bytes from the page into the given array, starting from the current offset into the
@@ -148,7 +148,7 @@ public interface PageCursor extends AutoCloseable
      * @throws IndexOutOfBoundsException
      * if the current offset plus the length reaches beyond the end of the page.
      */
-    void getBytes( byte[] data, int arrayOffset, int length );
+    public abstract void getBytes( byte[] data, int arrayOffset, int length );
 
     /**
      * Write out all the bytes of the given array into the page, beginning at the current offset into the page,
@@ -157,7 +157,7 @@ public interface PageCursor extends AutoCloseable
      * @throws IndexOutOfBoundsException
      * if the current offset plus the length of the array reaches beyond the end of the page.
      */
-    void putBytes( byte[] data );
+    public abstract void putBytes( byte[] data );
 
     /**
      * Write out the given length of bytes from the given offset into the the given array of bytes, into the page,
@@ -166,7 +166,7 @@ public interface PageCursor extends AutoCloseable
      * @throws IndexOutOfBoundsException
      * if the current offset plus the length reaches beyond the end of the page.
      */
-    void putBytes( byte[] data, int arrayOffset, int length );
+    public abstract void putBytes( byte[] data, int arrayOffset, int length );
 
     /**
      * Get the signed short at the current page offset, and then increment the offset by one.
@@ -174,7 +174,7 @@ public interface PageCursor extends AutoCloseable
      * @throws IndexOutOfBoundsException
      * if the current offset is not within the page bounds.
      */
-    short getShort();
+    public abstract short getShort();
 
     /**
      * Get the signed short at the given offset into the page.
@@ -183,7 +183,7 @@ public interface PageCursor extends AutoCloseable
      * @throws IndexOutOfBoundsException
      * if the given offset is not within the page bounds.
      */
-    short getShort( int offset );
+    public abstract short getShort( int offset );
 
     /**
      * Set the signed short at the current offset into the page, and then increment the offset by one.
@@ -191,7 +191,7 @@ public interface PageCursor extends AutoCloseable
      * @throws IndexOutOfBoundsException
      * if the current offset is not within the page bounds.
      */
-    void putShort( short value );
+    public abstract void putShort( short value );
 
     /**
      * Set the signed short at the given offset into the page.
@@ -200,19 +200,19 @@ public interface PageCursor extends AutoCloseable
      * @throws IndexOutOfBoundsException
      * if the given offset is not within the page bounds.
      */
-    void putShort( int offset, short value );
+    public abstract void putShort( int offset, short value );
 
     /**
      * Set the current offset into the page, for interacting with the page through the read and write methods that do
      * not take a specific offset as an argument.
      */
-    void setOffset( int offset );
+    public abstract void setOffset( int offset );
 
     /**
      * Get the current offset into the page, which is the location on the page where the next interaction would take
      * place through the read and write methods that do not take a specific offset as an argument.
      */
-    int getOffset();
+    public abstract int getOffset();
 
     /**
      * Get the file page id that the cursor is currently positioned at, or
@@ -220,21 +220,21 @@ public interface PageCursor extends AutoCloseable
      * A call to rewind() will make the current page id unbound as well, until
      * next() is called.
      */
-    long getCurrentPageId();
+    public abstract long getCurrentPageId();
 
     /**
      * Get the file page size of the page that the cursor is currently positioned at,
      * or UNBOUND_PAGE_SIZE if next() has not yet been called on this cursor, or returned false.
      * A call to rewind() will make the current page unbound as well, until next() is called.
      */
-    int getCurrentPageSize();
+    public abstract int getCurrentPageSize();
 
     /**
      * Get the file the cursor is currently bound to, or {@code null} if next() has not yet been called on this
      * cursor, or returned false.
      * A call to rewind() will make the cursor unbound as well, until next() is called.
      */
-    File getCurrentFile();
+    public abstract File getCurrentFile();
 
     /**
      * Rewinds the cursor to its initial condition, as if freshly returned from
@@ -242,7 +242,7 @@ public interface PageCursor extends AutoCloseable
      * move the cursor to the starting page that was specified in the io() that
      * produced the cursor.
      */
-    void rewind();
+    public abstract void rewind();
 
     /**
      * Moves the cursor to the next page, if any, and returns true when it is
@@ -250,7 +250,7 @@ public interface PageCursor extends AutoCloseable
      * processed. For instance, if the cursor was requested with PF_NO_GROW
      * and the page most recently processed was the last page in the file.
      */
-    boolean next() throws IOException;
+    public abstract boolean next() throws IOException;
 
     /**
      * Moves the cursor to the page specified by the given pageId, if any,
@@ -258,14 +258,14 @@ public interface PageCursor extends AutoCloseable
      * for instance, the cursor was requested with PF_NO_GROW and the page
      * most recently processed was the last page in the file.
      */
-    boolean next( long pageId ) throws IOException;
+    public abstract boolean next( long pageId ) throws IOException;
 
     /**
      * Relinquishes all resources associated with this cursor, including the
      * cursor itself, and any linked cursors opened through it. The cursor cannot be used after this call.
      * @see AutoCloseable#close()
      */
-    void close();
+    public abstract void close();
 
     /**
      * Returns true if the page has entered an inconsistent state since the
@@ -277,7 +277,7 @@ public interface PageCursor extends AutoCloseable
      *                     to do a page fault to get the page back.
      *                     This may throw an IOException.
      */
-    boolean shouldRetry() throws IOException;
+    public abstract boolean shouldRetry() throws IOException;
 
     /**
      * Copy the specified number of bytes from the given offset of this page, to the given offset of the target page.
@@ -291,7 +291,7 @@ public interface PageCursor extends AutoCloseable
      * @param lengthInBytes The number of bytes to copy.
      * @return The number of bytes actually copied.
      */
-    int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes );
+    public abstract int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes );
 
     /**
      * Discern whether an out-of-bounds access has occurred since the last call to {@link #next()} or
@@ -299,13 +299,13 @@ public interface PageCursor extends AutoCloseable
      * last call to this method.
      * @return {@code true} if an access was out of bounds, or the {@link #raiseOutOfBounds()} method has been called.
      */
-    boolean checkAndClearBoundsFlag();
+    public abstract boolean checkAndClearBoundsFlag();
 
     /**
      * Explicitly raise the out-of-bounds flag.
      * @see #checkAndClearBoundsFlag()
      */
-    void raiseOutOfBounds();
+    public abstract void raiseOutOfBounds();
 
     /**
      * Open a new page cursor with the same pf_flags as this cursor, as if calling the {@link PagedFile#io(long, int)}
@@ -317,5 +317,5 @@ public interface PageCursor extends AutoCloseable
      * @param pageId The page id that the linked cursor will be placed at after its first call to {@link #next()}.
      * @return A cursor that is linked with this cursor.
      */
-    PageCursor openLinkedCursor( long pageId );
+    public abstract PageCursor openLinkedCursor( long pageId );
 }

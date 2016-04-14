@@ -32,7 +32,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
-abstract class MuninnPageCursor implements PageCursor
+abstract class MuninnPageCursor extends PageCursor
 {
     private static final boolean tracePinnedCachePageId =
             flag( MuninnPageCursor.class, "tracePinnedCachePageId", false );
