@@ -23,11 +23,11 @@ import org.neo4j.io.pagecache.PageCursor;
 
 public class IntStoreHeaderFormat implements StoreHeaderFormat<IntStoreHeader>
 {
-    protected final int defaultValue;
+    protected final int header;
 
-    public IntStoreHeaderFormat( int defaultValue )
+    public IntStoreHeaderFormat( int header )
     {
-        this.defaultValue = defaultValue;
+        this.header = header;
     }
 
     @Override
@@ -39,7 +39,7 @@ public class IntStoreHeaderFormat implements StoreHeaderFormat<IntStoreHeader>
     @Override
     public void writeHeader( PageCursor cursor )
     {
-        cursor.putInt( defaultValue );
+        cursor.putInt( header );
     }
 
     @Override

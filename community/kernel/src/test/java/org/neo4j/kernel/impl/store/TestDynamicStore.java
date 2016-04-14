@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,13 +33,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.graphdb.config.InvalidSettingException;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
@@ -47,7 +45,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -81,22 +78,6 @@ public class TestDynamicStore
         {
             neoStores.close();
         }
-    }
-
-    @Test( expected = InvalidSettingException.class )
-    public void stringStoreCannotHaveZeroBlockSize()
-    {
-        Setting<Integer> setting = StoreFactory.Configuration.string_block_size;
-        setting.apply( singletonMap( setting.name(), "0" )::get );
-        fail( "Illegal blocksize should throw exception" );
-    }
-
-    @Test( expected = InvalidSettingException.class )
-    public void arrayStoreCannotHaveZeroBlockSize() throws Exception
-    {
-        Setting<Integer> setting = StoreFactory.Configuration.array_block_size;
-        setting.apply( singletonMap( setting.name(), "0" )::get );
-        fail( "Illegal blocksize should throw exception" );
     }
 
     private DynamicArrayStore createDynamicArrayStore()

@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.logging.Level;
 
-import static java.lang.String.valueOf;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -71,6 +70,13 @@ import static org.neo4j.kernel.configuration.Settings.setting;
  */
 public abstract class GraphDatabaseSettings
 {
+    /**
+     * Data block sizes for dynamic array stores.
+     */
+    public static final int DEFAULT_BLOCK_SIZE = 128;
+    public static final int DEFAULT_LABEL_BLOCK_SIZE = 64;
+    public static final int MINIMAL_BLOCK_SIZE = 16;
+
     @SuppressWarnings("unused") // accessed by reflection
     @Migrator
     private static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
@@ -375,6 +381,12 @@ public abstract class GraphDatabaseSettings
     public static final Setting<String> pagecache_swapper =
             setting( "dbms.memory.pagecache.swapper", STRING, (String) null );
 
+    /**
+     * Block size properties values depends from selected record format.
+     * We can't figured out record format until it will be selected by corresponding edition.
+     * As soon as we will figure it out properties will be re-evaluated and overwritten, except cases of user
+     * defined value.
+     */
     @Description("Specifies the block size for storing strings. This parameter is only honored when the store is " +
             "created, otherwise it is ignored. " +
             "Note that each character in a string occupies two bytes, meaning that e.g a block size of 120 will hold " +
@@ -383,7 +395,7 @@ public abstract class GraphDatabaseSettings
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> string_block_size = setting("unsupported.dbms.block_size.strings", INTEGER,
-            valueOf( dynamicRecordDataSizeForAligningWith( 128 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
+            "0", min( 0 ) );
 
     @Description("Specifies the block size for storing arrays. This parameter is only honored when the store is " +
             "created, otherwise it is ignored. " +
@@ -391,7 +403,7 @@ public abstract class GraphDatabaseSettings
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> array_block_size = setting("unsupported.dbms.block_size.array_properties", INTEGER,
-            valueOf( dynamicRecordDataSizeForAligningWith( 128 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
+            "0", min( 0 ) );
 
     @Description("Specifies the block size for storing labels exceeding in-lined space in node record. " +
     		"This parameter is only honored when the store is created, otherwise it is ignored. " +
@@ -399,7 +411,7 @@ public abstract class GraphDatabaseSettings
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> label_block_size = setting("unsupported.dbms.block_size.labels", INTEGER,
-            valueOf( dynamicRecordDataSizeForAligningWith( 64 ) ), min( dynamicRecordDataSizeForAligningWith( 16 ) ) );
+            "0", min( 0 ) );
 
     @Description("An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
@@ -535,19 +547,5 @@ public abstract class GraphDatabaseSettings
     public static BoltConnector boltConnector( String key )
     {
         return new BoltConnector( key );
-    }
-
-    /**
-     * Uses the default selected record format to figure out the correct dynamic record data size to create
-     * a store with.
-     *
-     * @param recordSize the desired record size, which optimally is a power-of-two, e.g. 64 or 128.
-     * The dynamic record header size from the selected record format will then be subtracted from this value
-     * to get to the data size, which is the value that the configuration will end up having.
-     * @return the dynamic record data size based on the desired record size and with the header size in mind.
-     */
-    private static int dynamicRecordDataSizeForAligningWith( int recordSize )
-    {
-        return recordSize - DynamicRecordFormat.RECORD_HEADER_SIZE;
     }
 }
