@@ -4,6 +4,7 @@ server/UPGRADE.txt  usr/share/doc/neo4j
 
 server/scripts/*    usr/bin
 
+server/bin/tools    usr/share/neo4j
 server/bin          usr/share/neo4j
 server/lib          usr/share/neo4j
 server/plugins      var/lib/neo4j
