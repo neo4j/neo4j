@@ -1241,4 +1241,10 @@ public class TestApps extends AbstractShellTest
     {
         executeCommand( "FOREACH(x in range(0,10) | CREATE ()));" );
     }
+
+    @Test
+    public void canUseCall() throws Exception
+    {
+        executeCommand( "CALL db.labels" );
+    }
 }
