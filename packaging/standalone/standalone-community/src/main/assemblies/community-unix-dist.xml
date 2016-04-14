@@ -62,9 +62,17 @@
         <exclude>**/*.ps1</exclude>
         <exclude>**/Neo4j-Management</exclude>
         <exclude>**/*.exe</exclude>
-        <exclude>**/tools</exclude>
+        <exclude>**/config-migrator.jar</exclude>
       </excludes>
       <filtered>true</filtered>
+    </fileSet>
+    <!-- configuration migrator -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>**/config-migrator.jar</include>
+      </includes>
     </fileSet>
     <!-- upgrade text file -->
     <fileSet>
