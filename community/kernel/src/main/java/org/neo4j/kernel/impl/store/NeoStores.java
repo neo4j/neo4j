@@ -493,6 +493,10 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createDynamicArrayStore( String storeName, IdType idType, int blockSize )
     {
+        if ( blockSize <= 0 )
+        {
+            throw new IllegalArgumentException( "Block size of dynamic array store should be positive integer." );
+        }
         File storeFile = getStoreFile( storeName );
         return initialize( new DynamicArrayStore( storeFile, config, idType, idGeneratorFactory, pageCache,
                 logProvider, blockSize, recordFormats.dynamic(), recordFormats.storeVersion() ) );

@@ -22,11 +22,10 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -87,6 +86,8 @@ public class StoreFactory
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.recordFormats = recordFormats;
+        new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
+
         setLogProvider( logProvider );
         setStoreDir( storeDir );
         this.pageCache = pageCache;
@@ -181,11 +182,5 @@ public class StoreFactory
         }
         return new NeoStores( neoStoreFileName, config, idGeneratorFactory, pageCache, logProvider,
                 fileSystemAbstraction, recordFormats, createStoreIfNotExists, storeTypes );
-    }
-
-    public abstract static class Configuration
-    {
-        public static final Setting<Integer> string_block_size = GraphDatabaseSettings.string_block_size;
-        public static final Setting<Integer> array_block_size = GraphDatabaseSettings.array_block_size;
     }
 }
