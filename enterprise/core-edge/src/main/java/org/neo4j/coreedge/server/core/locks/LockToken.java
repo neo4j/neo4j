@@ -31,7 +31,7 @@ package org.neo4j.coreedge.server.core.locks;
  * logically passed around. When bound to a transaction the id gets used as a
  * lock session id in the cluster.
  */
-public interface LockToken
+interface LockToken
 {
     int INVALID_LOCK_TOKEN_ID = -1;
 

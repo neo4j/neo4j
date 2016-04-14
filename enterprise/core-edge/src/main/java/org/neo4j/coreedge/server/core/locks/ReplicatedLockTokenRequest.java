@@ -22,7 +22,6 @@ package org.neo4j.coreedge.server.core.locks;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.replication.tx.CoreReplicatedContent;
 import org.neo4j.coreedge.raft.state.CoreStateMachines;
 import org.neo4j.coreedge.raft.state.Result;

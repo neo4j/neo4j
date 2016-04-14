@@ -20,22 +20,21 @@
 package org.neo4j.coreedge.raft.state;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.coreedge.catchup.storecopy.core.RaftStateType;
+import org.neo4j.coreedge.catchup.storecopy.core.CoreStateType;
+import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationRequest;
 import org.neo4j.coreedge.raft.replication.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenRequest;
 import org.neo4j.coreedge.raft.replication.token.ReplicatedTokenStateMachine;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransaction;
 import org.neo4j.coreedge.raft.replication.tx.ReplicatedTransactionStateMachine;
-import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.core.RecoverTransactionLogState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenRequest;
-import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.storageengine.api.Token;
 
@@ -49,6 +48,9 @@ public class CoreStateMachines
 
     private final ReplicatedLockTokenStateMachine<CoreMember> replicatedLockTokenStateMachine;
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine;
+    private final CoreState coreState;
+    private final RecoverTransactionLogState txLogState;
+    private final MonitoredRaftLog raftLog;
 
     public CoreStateMachines(
             ReplicatedTransactionStateMachine<CoreMember> replicatedTxStateMachine,
@@ -56,7 +58,10 @@ public class CoreStateMachines
             ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine,
             ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine,
             ReplicatedLockTokenStateMachine<CoreMember> replicatedLockTokenStateMachine,
-            ReplicatedIdAllocationStateMachine idAllocationStateMachine )
+            ReplicatedIdAllocationStateMachine idAllocationStateMachine,
+            CoreState coreState,
+            RecoverTransactionLogState txLogState,
+            MonitoredRaftLog raftLog )
     {
         this.replicatedTxStateMachine = replicatedTxStateMachine;
         this.labelTokenStateMachine = labelTokenStateMachine;
@@ -64,6 +69,9 @@ public class CoreStateMachines
         this.propertyKeyTokenStateMachine = propertyKeyTokenStateMachine;
         this.replicatedLockTokenStateMachine = replicatedLockTokenStateMachine;
         this.idAllocationStateMachine = idAllocationStateMachine;
+        this.coreState = coreState;
+        this.txLogState = txLogState;
+        this.raftLog = raftLog;
     }
 
     public Optional<Result> dispatch( ReplicatedTransaction transaction, long commandIndex )
@@ -108,23 +116,42 @@ public class CoreStateMachines
         idAllocationStateMachine.flush();
     }
 
-    Map<RaftStateType, Object> snapshots()
+    public void addSnapshots( CoreSnapshot coreSnapshot )
     {
-        Map<RaftStateType, Object> map = new HashMap<>();
-
-        map.put( RaftStateType.ID_ALLOCATION, idAllocationStateMachine.snapshot() );
-        map.put( RaftStateType.LOCK_TOKEN, replicatedLockTokenStateMachine.snapshot() );
-
+        coreSnapshot.add( CoreStateType.ID_ALLOCATION, idAllocationStateMachine.snapshot() );
+        coreSnapshot.add( CoreStateType.LOCK_TOKEN, replicatedLockTokenStateMachine.snapshot() );
         // transactions and tokens live in the store
-
-        return map;
     }
 
-    void installSnapshots( Map<RaftStateType, Object> snapshots )
+    void installSnapshots( CoreSnapshot coreSnapshot )
     {
-        idAllocationStateMachine.installSnapshot( (IdAllocationState) snapshots.get( RaftStateType.ID_ALLOCATION ) );
-        replicatedLockTokenStateMachine.installSnapshot( (ReplicatedLockTokenState) snapshots.get( RaftStateType.LOCK_TOKEN ) );
-
+        idAllocationStateMachine.installSnapshot( coreSnapshot.get( CoreStateType.ID_ALLOCATION ) );
+        replicatedLockTokenStateMachine.installSnapshot( coreSnapshot.get( CoreStateType.LOCK_TOKEN ) );
         // transactions and tokens live in the store
+
+        long snapshotPrevIndex = coreSnapshot.prevIndex();
+        try
+        {
+            if( snapshotPrevIndex > 1)
+            {
+                raftLog.skip( snapshotPrevIndex, coreSnapshot.prevTerm() );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    public void refresh( TransactionRepresentationCommitProcess localCommit )
+    {
+        long lastAppliedIndex = txLogState.findLastAppliedIndex();
+        replicatedTxStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
+
+        labelTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
+        relationshipTypeTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
+        propertyKeyTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
+
+        coreState.setStateMachine( this, lastAppliedIndex );
     }
 }

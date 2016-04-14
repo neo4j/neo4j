@@ -68,7 +68,7 @@ public class ReplicatedLockTokenStateMachine<MEMBER> implements StateMachine<Rep
 
     public synchronized ReplicatedLockTokenState<MEMBER> snapshot()
     {
-        return state;
+        return state.newInstance();
     }
 
     public synchronized void installSnapshot( ReplicatedLockTokenState<MEMBER> snapshot )

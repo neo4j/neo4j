@@ -44,10 +44,6 @@ public class GlobalSessionTrackerState<MEMBER>
 
     private long logIndex = -1L;
 
-    public GlobalSessionTrackerState()
-    {
-    }
-
     /**
      * Tracks the operation and returns true iff this operation should be allowed.
      */
@@ -94,11 +90,21 @@ public class GlobalSessionTrackerState<MEMBER>
         if ( localSessionTracker == null ||
                 !localSessionTracker.globalSessionId.equals( globalSession.sessionId() ) )
         {
-            localSessionTracker = new LocalSessionTracker( globalSession.sessionId() );
+            localSessionTracker = new LocalSessionTracker( globalSession.sessionId(), new HashMap<>() );
             sessionTrackers.put( globalSession.owner(), localSessionTracker );
         }
 
         return localSessionTracker;
+    }
+
+    public GlobalSessionTrackerState<MEMBER> newInstance()
+    {
+        GlobalSessionTrackerState<MEMBER> copy = new GlobalSessionTrackerState<>();
+        for ( Map.Entry<MEMBER,LocalSessionTracker> entry : sessionTrackers.entrySet() )
+        {
+            copy.sessionTrackers.put( entry.getKey(), entry.getValue().newInstance() );
+        }
+        return copy;
     }
 
     public static class Marshal<MEMBER> implements StateMarshal<GlobalSessionTrackerState<MEMBER>>
@@ -147,7 +153,7 @@ public class GlobalSessionTrackerState<MEMBER>
             {
                 final long logIndex = source.getLong();
                 final int sessionTrackerSize = source.getInt();
-                final Map<MEMBER, LocalSessionTracker> theMainMap = new HashMap<>();
+                final Map<MEMBER, LocalSessionTracker> sessionTrackers = new HashMap<>();
 
                 for ( int i = 0; i < sessionTrackerSize; i++ )
                 {
@@ -157,20 +163,23 @@ public class GlobalSessionTrackerState<MEMBER>
                         return null;
                     }
 
-                    final LocalSessionTracker localSessionTracker =
-                            new LocalSessionTracker( new UUID( source.getLong(), source.getLong() ) );
+                    long mostSigBits = source.getLong();
+                    long leastSigBits = source.getLong();
+                    UUID globalSessionId = new UUID( mostSigBits, leastSigBits );
 
                     final int localSessionTrackerSize = source.getInt();
-                    final HashMap<Long, Long> notSureAboutTheName = new HashMap<>();
+                    final Map<Long, Long> lastSequenceNumberPerSession = new HashMap<>();
                     for ( int j = 0; j < localSessionTrackerSize; j++ )
                     {
-                        notSureAboutTheName.put( source.getLong(), source.getLong() );
+                        long localSessionId = source.getLong();
+                        long sequenceNumber = source.getLong();
+                        lastSequenceNumberPerSession.put( localSessionId, sequenceNumber );
                     }
-                    localSessionTracker.lastSequenceNumberPerSession = notSureAboutTheName;
-                    theMainMap.put( unmarshal, localSessionTracker );
+                    final LocalSessionTracker localSessionTracker = new LocalSessionTracker( globalSessionId, lastSequenceNumberPerSession );
+                    sessionTrackers.put( unmarshal, localSessionTracker );
                 }
                 GlobalSessionTrackerState<MEMBER> result = new GlobalSessionTrackerState<>();
-                result.sessionTrackers = theMainMap;
+                result.sessionTrackers = sessionTrackers;
                 result.logIndex = logIndex;
                 return result;
             }
@@ -195,18 +204,13 @@ public class GlobalSessionTrackerState<MEMBER>
 
     private static class LocalSessionTracker
     {
-        UUID globalSessionId;
-        Map<Long, Long> lastSequenceNumberPerSession = new HashMap<>(); /* localSessionId -> lastSequenceNumber */
+        final UUID globalSessionId;
+        final Map<Long,Long> lastSequenceNumberPerSession; /* localSessionId -> lastSequenceNumber */
 
-        LocalSessionTracker( UUID globalSessionId )
+        LocalSessionTracker( UUID globalSessionId, Map<Long,Long> lastSequenceNumberPerSession )
         {
             this.globalSessionId = globalSessionId;
-        }
-
-        public LocalSessionTracker( LocalSessionTracker other )
-        {
-            this.globalSessionId = other.globalSessionId;
-            this.lastSequenceNumberPerSession = new HashMap<>( other.lastSequenceNumberPerSession );
+            this.lastSequenceNumberPerSession = lastSequenceNumberPerSession;
         }
 
         boolean validateAndTrackOperation( LocalOperationId operationId )
@@ -240,6 +244,11 @@ public class GlobalSessionTrackerState<MEMBER>
             }
 
             return true;
+        }
+
+        public LocalSessionTracker newInstance()
+        {
+            return new LocalSessionTracker( globalSessionId, new HashMap<>( lastSequenceNumberPerSession ) );
         }
     }
 }

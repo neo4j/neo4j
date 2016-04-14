@@ -19,22 +19,35 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.core;
 
-import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
-import org.neo4j.coreedge.raft.state.StateMarshal;
-import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
+import java.util.List;
 
-public enum RaftStateType
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageDecoder;
+
+import org.neo4j.coreedge.catchup.CatchupServerProtocol;
+
+public class CoreSnapshotRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    LOCK_TOKEN( new ReplicatedLockTokenState.Marshal<>( new CoreMember.CoreMemberMarshal() ) ),
-    SESSION_TRACKER( new GlobalSessionTrackerState.Marshal<>( new CoreMember.CoreMemberMarshal() ) ),
-    ID_ALLOCATION( new IdAllocationState.Marshal() );
+    private final CatchupServerProtocol protocol;
 
-    public final StateMarshal marshal;
-
-    RaftStateType( StateMarshal marshal )
+    public CoreSnapshotRequestDecoder( CatchupServerProtocol protocol )
     {
-        this.marshal = marshal;
+        this.protocol = protocol;
+    }
+
+    @Override
+    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    {
+        if ( protocol.isExpecting( CatchupServerProtocol.NextMessage.GET_RAFT_STATE ) )
+        {
+            out.add( new CoreSnapshotRequest() );
+        }
+        else
+        {
+            out.add( Unpooled.copiedBuffer( msg ) );
+        }
+
     }
 }

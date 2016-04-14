@@ -20,42 +20,38 @@
 package org.neo4j.coreedge.catchup.storecopy.core;
 
 import java.io.IOException;
-import java.util.Map;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupServerProtocol;
 import org.neo4j.coreedge.catchup.ResponseMessageType;
-import org.neo4j.coreedge.catchup.storecopy.edge.GetRaftStateRequest;
+import org.neo4j.coreedge.raft.state.CoreSnapshot;
 import org.neo4j.coreedge.raft.state.CoreState;
 
 import static org.neo4j.coreedge.catchup.CatchupServerProtocol.NextMessage;
 
-public class GetRaftStateRequestHandler extends SimpleChannelInboundHandler<GetRaftStateRequest>
+public class CoreSnapshotRequestHandler extends SimpleChannelInboundHandler<CoreSnapshotRequest>
 {
     private final CatchupServerProtocol protocol;
     private final CoreState coreState;
 
-    public GetRaftStateRequestHandler( CatchupServerProtocol protocol, CoreState coreState )
+    public CoreSnapshotRequestHandler( CatchupServerProtocol protocol, CoreState coreState )
     {
         this.protocol = protocol;
         this.coreState = coreState;
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, GetRaftStateRequest msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, CoreSnapshotRequest msg ) throws Exception
     {
         sendStates( ctx, coreState.snapshot() );
         protocol.expect( NextMessage.MESSAGE_TYPE );
     }
 
-    private void sendStates( ChannelHandlerContext ctx, Map<RaftStateType, Object> snapshot ) throws IOException
+    private void sendStates( ChannelHandlerContext ctx, CoreSnapshot coreSnapshot ) throws IOException
     {
-        for ( Map.Entry<RaftStateType, Object> entry : snapshot.entrySet() )
-        {
-            ctx.writeAndFlush( ResponseMessageType.RAFT_STATE_SNAPSHOT );
-            ctx.writeAndFlush( new RaftStateSnapshot( entry.getKey(), entry.getValue() ) );
-        }
+        ctx.writeAndFlush( ResponseMessageType.CORE_SNAPSHOT );
+        ctx.writeAndFlush( coreSnapshot );
     }
 }

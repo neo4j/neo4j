@@ -17,37 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.tx.edge;
+package org.neo4j.coreedge.catchup.storecopy.core;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.catchup.storecopy.core.RaftStateSnapshot;
+import org.neo4j.coreedge.raft.state.CoreSnapshot;
 
-public class RaftStateSnapshotHandler extends SimpleChannelInboundHandler<RaftStateSnapshot>
+public class CoreSnapshotResponseHandler extends SimpleChannelInboundHandler<CoreSnapshot>
 {
     private final CatchupClientProtocol protocol;
-    private final RaftStateSnapshotListener listener;
+    private final CoreSnapshotListener listener;
 
-    public RaftStateSnapshotHandler( CatchupClientProtocol protocol,
-                                     RaftStateSnapshotListener listener )
+    public CoreSnapshotResponseHandler( CatchupClientProtocol protocol, CoreSnapshotListener listener )
     {
         this.protocol = protocol;
         this.listener = listener;
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, final RaftStateSnapshot msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, final CoreSnapshot coreSnapshot ) throws Exception
     {
-        if ( protocol.isExpecting( CatchupClientProtocol.NextMessage.RAFT_STATE_SNAPSHOT ) )
+        if ( protocol.isExpecting( CatchupClientProtocol.NextMessage.CORE_SNAPSHOT ) )
         {
-            listener.onSnapshotReceived( msg );
+            listener.onSnapshotReceived( coreSnapshot );
             protocol.expect( CatchupClientProtocol.NextMessage.MESSAGE_TYPE );
         }
         else
         {
-            ctx.fireChannelRead( msg );
+            ctx.fireChannelRead( coreSnapshot );
         }
     }
 }

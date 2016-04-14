@@ -17,22 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.storecopy.edge;
+package org.neo4j.coreedge.catchup.storecopy;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
 import org.neo4j.coreedge.catchup.RequestMessageType;
-import org.neo4j.coreedge.catchup.storecopy.core.RaftStateSnapshot;
+import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotRequest;
+import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequest;
+import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileReceiver;
+import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileStreamingCompleteListener;
+import org.neo4j.coreedge.catchup.storecopy.edge.StoreFileStreams;
 import org.neo4j.coreedge.catchup.tx.edge.PullRequestMonitor;
-import org.neo4j.coreedge.catchup.tx.edge.RaftStateSnapshotListener;
+import org.neo4j.coreedge.catchup.storecopy.core.CoreSnapshotListener;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequest;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponse;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseListener;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamCompleteListener;
 import org.neo4j.coreedge.network.Message;
+import org.neo4j.coreedge.raft.state.CoreSnapshot;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.Expiration;
 import org.neo4j.coreedge.server.ExpiryScheduler;
@@ -43,15 +49,15 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 public abstract class CoreClient extends LifecycleAdapter implements StoreFileReceiver,
-        StoreFileStreamingCompleteListener,
-        TxStreamCompleteListener, TxPullResponseListener, RaftStateSnapshotListener
+                                                                     StoreFileStreamingCompleteListener,
+                                                                     TxStreamCompleteListener, TxPullResponseListener, CoreSnapshotListener
 {
     private final PullRequestMonitor pullRequestMonitor;
     private StoreFileStreams storeFileStreams = null;
     private Iterable<StoreFileStreamingCompleteListener> storeFileStreamingCompleteListeners = Listeners.newListeners();
     private Iterable<TxStreamCompleteListener> txStreamCompleteListeners = Listeners.newListeners();
     private Iterable<TxPullResponseListener> txPullResponseListeners = Listeners.newListeners();
-    private Iterable<RaftStateSnapshotListener> raftStateSnapshotListeners = Listeners.newListeners();
+    private CompletableFuture<CoreSnapshot> coreSnapshotFuture;
 
     private SenderService senderService;
 
@@ -69,10 +75,12 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
         send( serverAddress, RequestMessageType.STORE, getStoreRequest );
     }
 
-    public void requestRaftState( AdvertisedSocketAddress serverAddress )
+    public CompletableFuture<CoreSnapshot> requestCoreSnapshot( AdvertisedSocketAddress serverAddress )
     {
-        GetRaftStateRequest getRaftStateRequest = new GetRaftStateRequest();
-        send( serverAddress, RequestMessageType.RAFT_STATE, getRaftStateRequest );
+        coreSnapshotFuture = new CompletableFuture<>();
+        CoreSnapshotRequest coreSnapshotRequest = new CoreSnapshotRequest();
+        send( serverAddress, RequestMessageType.RAFT_STATE, coreSnapshotRequest );
+        return coreSnapshotFuture;
     }
 
     public void pollForTransactions( AdvertisedSocketAddress serverAddress, long lastTransactionId )
@@ -107,16 +115,6 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     public void removeTxPullResponseListener( TxPullResponseListener listener )
     {
         txPullResponseListeners = Listeners.removeListener( listener, txPullResponseListeners );
-    }
-
-    public void addRaftStateSnapshotListener( RaftStateSnapshotListener listener )
-    {
-        raftStateSnapshotListeners = Listeners.addListener( listener, raftStateSnapshotListeners );
-    }
-
-    public void removeRaftStateSnapshotListener( RaftStateSnapshotListener listener )
-    {
-        raftStateSnapshotListeners = Listeners.removeListener( listener, raftStateSnapshotListeners );
     }
 
     public void addStoreFileStreamingCompleteListener( StoreFileStreamingCompleteListener listener )
@@ -171,9 +169,9 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
     }
 
     @Override
-    public void onSnapshotReceived( RaftStateSnapshot snapshot )
+    public void onSnapshotReceived( CoreSnapshot snapshot )
     {
-        Listeners.notifyListeners( raftStateSnapshotListeners, listener -> listener.onSnapshotReceived( snapshot ) );
+        coreSnapshotFuture.complete( snapshot );
     }
 
     public void addTxStreamCompleteListener( TxStreamCompleteListener listener )

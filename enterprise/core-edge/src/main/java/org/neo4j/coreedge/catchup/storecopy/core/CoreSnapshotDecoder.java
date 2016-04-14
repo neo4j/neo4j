@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.catchup.tx.edge;
+package org.neo4j.coreedge.catchup.storecopy.core;
 
 import java.util.List;
 
@@ -27,15 +27,15 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
-import org.neo4j.coreedge.catchup.storecopy.core.RaftStateSnapshot;
+import org.neo4j.coreedge.raft.state.CoreSnapshot;
 
 import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
 
-public class RaftStateSnapshotDecoder extends MessageToMessageDecoder<ByteBuf>
+public class CoreSnapshotDecoder extends MessageToMessageDecoder<ByteBuf>
 {
     private final CatchupClientProtocol protocol;
 
-    public RaftStateSnapshotDecoder( CatchupClientProtocol protocol )
+    public CoreSnapshotDecoder( CatchupClientProtocol protocol )
     {
         this.protocol = protocol;
     }
@@ -43,9 +43,9 @@ public class RaftStateSnapshotDecoder extends MessageToMessageDecoder<ByteBuf>
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
     {
-        if ( protocol.isExpecting( NextMessage.RAFT_STATE_SNAPSHOT ) )
+        if ( protocol.isExpecting( NextMessage.CORE_SNAPSHOT ) )
         {
-            out.add( new RaftStateSnapshot.Marshal().unmarshal( new NetworkReadableClosableByteBuf( msg ) ) );
+            out.add( new CoreSnapshot.Marshal().unmarshal( msg ) );
         }
         else
         {

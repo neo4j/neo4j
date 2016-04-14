@@ -28,6 +28,7 @@ import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
 import org.neo4j.coreedge.catchup.RequestMessageTypeEncoder;
 import org.neo4j.coreedge.catchup.ResponseMessageTypeEncoder;
+import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;

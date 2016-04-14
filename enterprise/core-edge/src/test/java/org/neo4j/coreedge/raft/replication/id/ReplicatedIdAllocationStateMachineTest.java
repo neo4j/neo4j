@@ -28,7 +28,6 @@ import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.TestCase.assertEquals;
 
@@ -44,7 +43,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ) );
 
         // then
         assertEquals( 0, stateMachine.firstUnallocated( someType ) );
@@ -55,7 +54,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ) );
         ReplicatedIdAllocationRequest idAllocationRequest = new ReplicatedIdAllocationRequest( me, someType, 0, 1024 );
 
         // when
@@ -71,7 +70,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ) );
         long index = 0;
 
         // when
@@ -88,7 +87,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ) );
 
         // when
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
@@ -105,7 +104,7 @@ public class ReplicatedIdAllocationStateMachineTest
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ) );
 
         // when
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0, 1024 ), 0 );
@@ -120,7 +119,7 @@ public class ReplicatedIdAllocationStateMachineTest
     public void shouldIgnoreNotContiguousRequestAndAlreadySeenIndex() throws Exception
     {
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
-                new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+                new InMemoryStateStorage<>( new IdAllocationState() ) );
 
         stateMachine.applyCommand( new ReplicatedIdAllocationRequest( me, someType, 0L, 10 ), 0L );
         assertEquals( 10L, stateMachine.firstUnallocated( someType ) );

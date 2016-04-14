@@ -42,7 +42,7 @@ public class ReplicatedIdRangeAcquirerTest
             new CoreMember( new AdvertisedSocketAddress( "b:1" ), new AdvertisedSocketAddress( "b:2" ) );
 
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine(
-            new InMemoryStateStorage<>( new IdAllocationState() ), NullLogProvider.getInstance() );
+            new InMemoryStateStorage<>( new IdAllocationState() ) );
 
     private final DirectReplicator<ReplicatedIdAllocationRequest> replicator = new DirectReplicator<>( idAllocationStateMachine );
 

@@ -60,12 +60,9 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
-        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
-
         ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine<>(
-                localCommitProcess, lockState( lockSessionId ), NullLogProvider.getInstance(),
-                recoverTransactionLogState);
+                lockState( lockSessionId ), NullLogProvider.getInstance() );
+        stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         // when
         stateMachine.applyCommand( tx, 0 );
@@ -87,12 +84,9 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
-        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
-
         final ReplicatedTransactionStateMachine<RaftTestMember> stateMachine = new ReplicatedTransactionStateMachine<>(
-                localCommitProcess, lockState( currentLockSessionId ), NullLogProvider.getInstance(),
-                recoverTransactionLogState);
+                lockState( currentLockSessionId ), NullLogProvider.getInstance() );
+        stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         // when
         Optional<Result> result = stateMachine.applyCommand( tx, 0 );
@@ -121,12 +115,9 @@ public class ReplicatedTransactionStateMachineTest
 
         TransactionCommitProcess localCommitProcess = mock( TransactionCommitProcess.class );
 
-        RecoverTransactionLogState recoverTransactionLogState = mock( RecoverTransactionLogState.class );
-        when(recoverTransactionLogState.findLastAppliedIndex()).thenReturn( -1L );
-
         ReplicatedTransactionStateMachine<RaftStateMachine> stateMachine = new ReplicatedTransactionStateMachine<>(
-                localCommitProcess, lockState( currentLockSessionId ), NullLogProvider.getInstance(),
-                recoverTransactionLogState);
+                lockState( currentLockSessionId ), NullLogProvider.getInstance() );
+        stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         // when
         Optional<Result> result = stateMachine.applyCommand( tx, 0 );

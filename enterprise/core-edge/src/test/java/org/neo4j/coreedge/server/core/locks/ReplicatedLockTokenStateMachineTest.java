@@ -250,7 +250,7 @@ public class ReplicatedLockTokenStateMachineTest
         // Given
         StateStorage<ReplicatedLockTokenState<Object>> storage = mock( StateStorage.class );
         RaftTestMember initialHoldingRaftTestMember = new RaftTestMember( 0 );
-        ReplicatedLockTokenState<Object> initialState = new ReplicatedLockTokenState<>( 123, 3, initialHoldingRaftTestMember );
+        ReplicatedLockTokenState<Object> initialState = new ReplicatedLockTokenState<>( 123, new ReplicatedLockTokenRequest<>( initialHoldingRaftTestMember, 3 ) );
         when( storage.getInitialState() ).thenReturn( initialState );
 
         // When

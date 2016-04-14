@@ -51,9 +51,7 @@ public class IdAllocationState implements UnallocatedIds
         this( new long[IdType.values().length], -1L );
     }
 
-    public IdAllocationState( long[] firstUnallocated,
-                               long logIndex )
-
+    public IdAllocationState( long[] firstUnallocated, long logIndex )
     {
         this.firstUnallocated = firstUnallocated;
         this.logIndex = logIndex;
@@ -123,6 +121,11 @@ public class IdAllocationState implements UnallocatedIds
         int result = Arrays.hashCode( firstUnallocated );
         result = 31 * result + (int) (logIndex ^ (logIndex >>> 32));
         return result;
+    }
+
+    public IdAllocationState newInstance()
+    {
+        return new IdAllocationState( firstUnallocated.clone(), logIndex );
     }
 
     public static class Marshal implements StateMarshal<IdAllocationState>

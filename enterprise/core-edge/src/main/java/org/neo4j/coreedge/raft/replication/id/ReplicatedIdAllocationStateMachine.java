@@ -27,8 +27,6 @@ import org.neo4j.coreedge.raft.state.StateMachine;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 /**
  * Keeps track of global id allocations for all members.
@@ -36,30 +34,28 @@ import org.neo4j.logging.LogProvider;
 public class ReplicatedIdAllocationStateMachine implements StateMachine<ReplicatedIdAllocationRequest>
 {
     private final StateStorage<IdAllocationState> storage;
-    private IdAllocationState idAllocationState;
-    private final Log log;
+    private IdAllocationState state;
 
-    public ReplicatedIdAllocationStateMachine( StateStorage<IdAllocationState> storage, LogProvider logProvider )
+    public ReplicatedIdAllocationStateMachine( StateStorage<IdAllocationState> storage )
     {
         this.storage = storage;
-        this.idAllocationState = storage.getInitialState();
-        this.log = logProvider.getLog( getClass() );
+        this.state = storage.getInitialState();
     }
 
     @Override
     public synchronized Optional<Result> applyCommand( ReplicatedIdAllocationRequest request, long commandIndex )
     {
-        if( commandIndex <= idAllocationState.logIndex() )
+        if( commandIndex <= state.logIndex() )
         {
             return Optional.empty();
         }
-        idAllocationState.logIndex( commandIndex );
+        state.logIndex( commandIndex );
 
         IdType idType = request.idType();
 
         if ( request.idRangeStart() == firstUnallocated( idType ) )
         {
-            idAllocationState.firstUnallocated( idType, request.idRangeStart() + request.idRangeLength() );
+            state.firstUnallocated( idType, request.idRangeStart() + request.idRangeLength() );
             return Optional.of( Result.of( true ) );
         }
         else
@@ -70,22 +66,22 @@ public class ReplicatedIdAllocationStateMachine implements StateMachine<Replicat
 
     synchronized long firstUnallocated( IdType idType )
     {
-        return idAllocationState.firstUnallocated( idType );
+        return state.firstUnallocated( idType );
     }
 
     @Override
     public void flush() throws IOException
     {
-        storage.persistStoreData( idAllocationState );
+        storage.persistStoreData( state );
     }
 
     public synchronized IdAllocationState snapshot()
     {
-        return idAllocationState;
+        return state.newInstance();
     }
 
     public synchronized void installSnapshot( IdAllocationState snapshot )
     {
-        idAllocationState = snapshot;
+        state = snapshot;
     }
 }
