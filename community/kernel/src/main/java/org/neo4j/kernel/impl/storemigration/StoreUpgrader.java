@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor.Section;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -65,6 +66,7 @@ public class StoreUpgrader
     public static final String MIGRATION_DIRECTORY = "upgrade";
     public static final String MIGRATION_LEFT_OVERS_DIRECTORY = "upgrade_backup";
     private static final String MIGRATION_STATUS_FILE = "_status";
+    public static final String CUSTOM_IO_EXCEPTION_MESSAGE = "Store upgrade not allowed with custom IO integrations";
 
     private final UpgradableDatabase upgradableDatabase;
     private final MigrationProgressMonitor progressMonitor;
@@ -112,6 +114,8 @@ public class StoreUpgrader
         {
             throw new UpgradeNotAllowedByConfigurationException();
         }
+
+        CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
 
         // One or more participants would like to do migration
         progressMonitor.started();
