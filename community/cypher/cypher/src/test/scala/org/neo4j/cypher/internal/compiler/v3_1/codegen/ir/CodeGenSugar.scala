@@ -32,8 +32,9 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, InternalRes
 import org.neo4j.cypher.internal.compiler.v3_1.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
+import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_1.{GeneratedQueryStructure, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.security.AccessMode

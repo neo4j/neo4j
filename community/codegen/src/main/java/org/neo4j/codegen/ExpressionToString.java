@@ -277,4 +277,12 @@ class ExpressionToString implements ExpressionVisitor
         result.append( "(double)" );
         expression.accept( this );
     }
+
+    @Override
+    public void pop( Expression expression )
+    {
+        result.append( "pop(" );
+        expression.accept( this );
+        result.append( ")" );
+    }
 }

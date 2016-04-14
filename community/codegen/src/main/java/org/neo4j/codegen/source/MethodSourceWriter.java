@@ -522,4 +522,10 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     {
         cast( TypeReference.typeReference( double.class ), expression );
     }
+
+    @Override
+    public void pop( Expression expression )
+    {
+        expression.accept( this );
+    }
 }

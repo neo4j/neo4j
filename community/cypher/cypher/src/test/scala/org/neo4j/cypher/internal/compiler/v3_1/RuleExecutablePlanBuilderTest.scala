@@ -44,7 +44,8 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, Rewriter, Scope, SemanticTable}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
-import org.neo4j.cypher.internal.spi.v3_1.{GeneratedQueryStructure, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.Label.label
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AccessMode

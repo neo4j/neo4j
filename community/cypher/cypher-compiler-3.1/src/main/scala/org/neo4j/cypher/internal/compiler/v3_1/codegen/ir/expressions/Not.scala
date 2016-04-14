@@ -30,9 +30,11 @@ case class Not(inner: CodeGenExpression) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
     if (!nullable && inner.cypherType == symbols.CTBoolean) structure.not(inner.generateExpression(structure))
-    else structure.threeValuedNot(inner.generateExpression(structure))
+    else structure.threeValuedNot(structure.box(inner.generateExpression(structure), inner.cypherType))
 
   override def nullable(implicit context: CodeGenContext) = inner.nullable
 
-  override def cypherType(implicit context: CodeGenContext) = symbols.CTBoolean
+  override def cypherType(implicit context: CodeGenContext) =
+    if (!nullable && inner.cypherType == symbols.CTBoolean) symbols.CTBoolean
+    else symbols.CTAny
 }

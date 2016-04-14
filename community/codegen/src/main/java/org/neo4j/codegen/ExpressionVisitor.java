@@ -68,4 +68,6 @@ public interface ExpressionVisitor
     void newArray( TypeReference type, Expression... constants );
 
     void longToDouble( Expression expression );
+
+    void pop( Expression expression );
 }

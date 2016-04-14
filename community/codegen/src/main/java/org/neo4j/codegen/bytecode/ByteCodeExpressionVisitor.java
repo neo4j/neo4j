@@ -25,7 +25,6 @@ import org.objectweb.asm.Opcodes;
 
 import java.lang.reflect.Modifier;
 
-import org.neo4j.codegen.BaseExpressionVisitor;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
 import org.neo4j.codegen.FieldReference;
@@ -82,8 +81,9 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         {
             argument.accept( this );
         }
-        methodVisitor.visitMethodInsn( INVOKESTATIC, byteCodeName( method.owner() ), method.name(), desc( method ),
-                false );
+        methodVisitor.visitMethodInsn( INVOKESTATIC,
+                byteCodeName( method.owner() ),
+                method.name(), desc( method ), false );
     }
 
     @Override
@@ -403,6 +403,13 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         methodVisitor.visitInsn( L2D );
     }
 
+    @Override
+    public void pop( Expression expression )
+    {
+        expression.accept( this );
+        methodVisitor.visitInsn( POP );
+    }
+
     private void compareIntOrReferenceType( Expression lhs, Expression rhs, int opcode )
     {
         lhs.accept( this );
@@ -432,69 +439,6 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         methodVisitor.visitLabel( l0 );
         methodVisitor.visitInsn( ICONST_0 );
         methodVisitor.visitLabel( l1 );
-    }
-
-    private TypeReference findType( Expression expression )
-    {
-        TypeReference[] typeReference = new TypeReference[]{null};
-        expression.accept( new BaseExpressionVisitor()
-        {
-            @Override
-            public void load( LocalVariable variable )
-            {
-                typeReference[0] = variable.type();
-            }
-
-            @Override
-            public void constant( Object value )
-            {
-                //We are representing using unboxed expression whenever possible
-                if ( value == null )
-                {
-                    throw new IllegalStateException( "The type of null is none of your business" );
-                }
-                else if ( value instanceof Integer )
-                {
-                    typeReference[0] = TypeReference.typeReference( int.class );
-                }
-                else if ( value instanceof Byte )
-                {
-                    typeReference[0] = TypeReference.typeReference( byte.class );
-                }
-                else if ( value instanceof Short )
-                {
-                    typeReference[0] = TypeReference.typeReference( short.class );
-                }
-                else if ( value instanceof Long )
-                {
-                    typeReference[0] = TypeReference.typeReference( long.class );
-                }
-                else if ( value instanceof Double )
-                {
-                    typeReference[0] = TypeReference.typeReference( double.class );
-                }
-                else if ( value instanceof Float )
-                {
-                    typeReference[0] = TypeReference.typeReference( float.class );
-                }
-                else if ( value instanceof Boolean )
-                {
-                    typeReference[0] = TypeReference.typeReference( boolean.class );
-                }
-                else
-                {
-                    typeReference[0] = TypeReference.typeReference( value.getClass() );
-                }
-
-            }
-        } );
-
-        if ( typeReference[0] == null )
-        {
-            throw new IllegalStateException( "Did never load an expression to the stack" );
-        }
-
-        return typeReference[0];
     }
 
     private void pushInteger( int integer )

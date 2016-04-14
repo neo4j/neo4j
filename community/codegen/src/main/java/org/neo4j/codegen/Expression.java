@@ -332,6 +332,18 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    public static Expression pop( Expression expression )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.pop( expression );
+            }
+        };
+    }
+
     @Override
     Expression materialize( CodeBlock method )
     {

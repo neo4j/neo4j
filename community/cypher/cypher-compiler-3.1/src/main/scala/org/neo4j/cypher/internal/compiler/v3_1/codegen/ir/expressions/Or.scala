@@ -26,7 +26,9 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  override def cypherType(implicit context: CodeGenContext) = symbols.CTBoolean
+  override def cypherType(implicit context: CodeGenContext) =
+    if (!nullable && lhs.cypherType == symbols.CTBoolean && rhs.cypherType == symbols.CTBoolean) symbols.CTBoolean
+    else symbols.CTAny
 
   override final def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     lhs.init(generator)
@@ -35,9 +37,7 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
     if (!nullable && lhs.cypherType == symbols.CTBoolean && rhs.cypherType == symbols.CTBoolean)
-      structure.or(
-        structure.box(lhs.generateExpression(structure), symbols.CTBoolean),
-        structure.box(rhs.generateExpression(structure), symbols.CTBoolean))
-    else structure.threeValuedOr(structure.box(lhs.generateExpression(structure), symbols.CTBoolean),
-                                 structure.box(rhs.generateExpression(structure), symbols.CTBoolean))
+      structure.or(lhs.generateExpression(structure), rhs.generateExpression(structure))
+    else structure.threeValuedOr(structure.box(lhs.generateExpression(structure), lhs.cypherType),
+                                 structure.box(rhs.generateExpression(structure), rhs.cypherType))
 }

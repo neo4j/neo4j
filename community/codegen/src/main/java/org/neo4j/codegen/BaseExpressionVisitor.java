@@ -167,4 +167,10 @@ public abstract class BaseExpressionVisitor implements ExpressionVisitor
     {
 
     }
+
+    @Override
+    public void pop( Expression expression )
+    {
+
+    }
 }

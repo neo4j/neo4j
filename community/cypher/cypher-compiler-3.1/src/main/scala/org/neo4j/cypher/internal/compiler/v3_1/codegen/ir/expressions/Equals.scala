@@ -26,7 +26,11 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  override def cypherType(implicit context: CodeGenContext) = symbols.CTBoolean
+  override def cypherType(implicit context: CodeGenContext) = if (nullable) symbols.CTAny else (lhs, rhs) match {
+    case (_:NodeExpression, _:NodeExpression) => symbols.CTBoolean
+    case (_:RelationshipExpression, _:RelationshipExpression) => symbols.CTBoolean
+    case _ => symbols.CTAny
+  }
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     lhs.init(generator)
@@ -34,7 +38,8 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
   }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
-    if (nullable) structure.threeValuedEquals(lhs.generateExpression(structure), rhs.generateExpression(structure))
+    if (nullable) structure.threeValuedEquals(structure.box(lhs.generateExpression(structure), lhs.cypherType),
+                                              structure.box(rhs.generateExpression(structure), rhs.cypherType))
     else (lhs, rhs) match {
       case (NodeExpression(v1), NodeExpression(v2)) => structure.eq(structure.load(v1.name), structure.load(v2.name), symbols.CTNode)
       case (RelationshipExpression(v1), RelationshipExpression(v2)) => structure.eq(structure.load(v1.name), structure.load(v2.name),
@@ -43,7 +48,8 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
           IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
       case (RelationshipExpression(_), NodeExpression(_)) => throw new
           IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
-      case _ => structure.threeValuedEquals(lhs.generateExpression(structure), rhs.generateExpression(structure))
+      case _ => structure.threeValuedEquals(structure.box(lhs.generateExpression(structure), lhs.cypherType),
+                                            structure.box(rhs.generateExpression(structure), rhs.cypherType))
     }
   }
 
