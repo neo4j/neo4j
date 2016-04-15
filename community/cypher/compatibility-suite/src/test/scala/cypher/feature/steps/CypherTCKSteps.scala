@@ -108,43 +108,39 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     matcher should accept(successful(result))
   }
 
-  Then(EXPECT_ERROR) { (status: String, phase: String, detail: String) =>
-    if (phase == TCKErrorPhases.RUNTIME) {
-      result match {
+  Then(EXPECT_ERROR) { (typ: String, phase: String, detail: String) =>
+    phase match {
+      case TCKErrorPhases.COMPILE_TIME => checkError(result, typ, phase, detail)
+      case TCKErrorPhases.RUNTIME => result match {
         case Success(triedResult) =>
+          // might need to exhaust result to provoke error
           val consumedResult = Try {
             while (triedResult.hasNext) {
               triedResult.next()
             }
             triedResult
           }
-          checkruntimeError(consumedResult, status, phase, detail)
-        case x => checkruntimeError(x, status, phase, detail)
+          checkError(consumedResult, typ, phase, detail)
+        case x => checkError(x, typ, phase, detail)
       }
-    } else if (phase == TCKErrorPhases.COMPILE_TIME) {
-      result match {
-        case Success(triedResult) =>
-          val consumedResult = Try {
-            while (triedResult.hasNext) {
-              triedResult.next()
-            }
-            triedResult
-          }
-          checkcompiletimeError(consumedResult, status, phase, detail)
-        case x => checkcompiletimeError(x, status, phase, detail)
-      }
-    } else {
-      fail(s"Unknown phase $phase specified. Supported values are 'runtime' and 'compile time'.")
+      case _ => fail(s"Unknown phase $phase specified. Supported values are '${TCKErrorPhases.COMPILE_TIME}' and '${TCKErrorPhases.RUNTIME}'.")
     }
   }
 
-  private def checkruntimeError(result: Try[Result], status: String, phase: String, detail: String): Unit = {
-    val statusType = if (status == "ConstraintValidationFailed") "Schema" else "Statement"
+  private def checkError(result: Try[Result], typ: String, phase: String, detail: String) = {
+    val statusType = if (typ == "ConstraintValidationFailed") "Schema" else "Statement"
     result match {
       case Failure(e: QueryExecutionException) =>
-        s"Neo.ClientError.$statusType.$status" should equal(e.getStatusCode)
+        s"Neo.ClientError.$statusType.$typ" should equal(e.getStatusCode)
 
-        if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+"))
+        // Compile time errors
+        if (e.getMessage.matches("Invalid input .+ is not a valid value, must be a positive integer[\\s.\\S]+"))
+          detail should equal("LiteralMustBePositiveInteger")
+        else if (e.getMessage.matches("Can't use aggregate functions inside of aggregate functions\\."))
+          detail should equal("NestedAggregation")
+
+        // Runtime errors
+        else if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+"))
           detail should equal("MapElementAccessByNonString")
         else if (e.getMessage.matches("Expected .+ to be a java.lang.Number, but it was a .+"))
           detail should equal("ListElementAccessByNonInteger")
@@ -154,30 +150,14 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
           detail should equal("CreateBlockedByConstraint")
         else if (e.getMessage.matches("Node [0-9]+ already exists with label .+ and property \".+\"=\\[.+\\]"))
           detail should equal("CreateBlockedByConstraint")
-        else fail(s"Unknown runtime error: $e")
+
+        else fail(s"Unknown $phase error: $e")
 
       case Failure(e) =>
-        fail(s"Unknown runtime error: $e")
+        fail(s"Unknown $phase error: $e")
 
       case _: Success[_] =>
-        fail("No runtime error was raised")
-    }
-  }
-
-  private def checkcompiletimeError(result: Try[Result], status: String, phase: String, detail: String): Unit = {
-    result match {
-      case Failure(e: QueryExecutionException) =>
-        s"Neo.ClientError.Statement.$status" should equal(e.getStatusCode)
-
-        if (e.getMessage.matches("Invalid input .+ is not a valid value, must be a positive integer[\\s.\\S]+"))
-          detail should equal("LiteralMustBePositiveInteger")
-        else fail(s"Unknown compile time error: $e")
-
-      case Failure(e) =>
-        fail(s"Unknown compile time error: $e")
-
-      case _: Success[_] =>
-        fail("No compile time error was raised")
+        fail(s"No $phase error was raised")
     }
   }
 

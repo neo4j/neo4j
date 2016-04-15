@@ -19,7 +19,9 @@
  */
 package cypher.feature.parser.matchers;
 
+import java.lang.reflect.Array;
 import java.util.List;
+import java.util.function.Function;
 
 public class ListMatcher implements ValueMatcher
 {
@@ -33,20 +35,34 @@ public class ListMatcher implements ValueMatcher
     @Override
     public boolean matches( Object value )
     {
-        if ( value instanceof List )
+        if ( value == null )
+        {
+            return false;
+        }
+        else if ( value instanceof List )
         {
             List realList = (List) value;
-            if ( realList.size() == list.size() )
+            return sizeAndElements( realList.size(), realList::get );
+        }
+        else if ( value.getClass().isArray() )
+        {
+            return sizeAndElements( Array.getLength( value ), integer -> Array.get( value, integer ) );
+        }
+        return false;
+    }
+
+    private boolean sizeAndElements( int length, Function<Integer,Object> resultList )
+    {
+        if ( list.size() == length )
+        {
+            for ( int i = 0; i < length; ++i )
             {
-                for ( int i = 0; i < list.size(); ++i )
+                if ( !list.get( i ).matches( resultList.apply( i ) ) )
                 {
-                    if ( !list.get( i ).matches( realList.get( i ) ) )
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-                return true;
             }
+            return true;
         }
         return false;
     }
