@@ -25,17 +25,17 @@ set -euo pipefail
 readonly NEO4J_BIN
 . "${NEO4J_BIN}/neo4j-shared.sh"
 
-setup_environment
-check_java
-build_classpath
-
 ARGS=""
 while [[ $# > 0 ]]
 do
     option="$1"
     case $option in
         --file)
-            filename="$(pwd)/${2}"
+            if [[ ${2} == /* ]]; then
+                filename="${2}"
+            else
+                filename="$(pwd)/${2}"
+            fi
             ARGS="${ARGS} --file ${filename}"
             shift
             ;;
@@ -45,6 +45,10 @@ do
     esac
     shift
 done
+
+setup_environment
+check_java
+build_classpath
 
 exec "$JAVA_CMD" ${JAVA_OPTS:-} \
   -classpath "$CLASSPATH" \
