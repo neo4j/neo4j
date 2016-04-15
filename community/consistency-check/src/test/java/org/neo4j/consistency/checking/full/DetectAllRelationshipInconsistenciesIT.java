@@ -41,12 +41,14 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -74,6 +76,8 @@ public class DetectAllRelationshipInconsistenciesIT
         // GIVEN a database which lots of relationships
         GraphDatabaseAPI db = getGraphDatabaseAPI();
         Sabotage sabotage;
+        RecordFormats selectedRecordFormat = RecordFormatSelector.autoSelectFormat( getTuningConfiguration(),
+                NullLogService.getInstance() );
         try
         {
             Node[] nodes = new Node[1_000];
@@ -96,7 +100,7 @@ public class DetectAllRelationshipInconsistenciesIT
             DependencyResolver resolver = db.getDependencyResolver();
             PageCache pageCache = resolver.resolveDependency( PageCache.class );
             StoreFactory storeFactory = new StoreFactory( fileSystem, directory.directory(), pageCache,
-                    RecordFormatSelector.autoSelectFormat(), NullLogProvider.getInstance() );
+                    selectedRecordFormat, NullLogProvider.getInstance() );
 
             try ( NeoStores neoStores = storeFactory.openNeoStores( false, StoreType.RELATIONSHIP ) )
             {
@@ -117,7 +121,7 @@ public class DetectAllRelationshipInconsistenciesIT
             DependencyResolver resolver = db.getDependencyResolver();
             PageCache pageCache = resolver.resolveDependency( PageCache.class );
             StoreFactory storeFactory = new StoreFactory( fileSystem, directory.directory(), pageCache,
-                    RecordFormatSelector.autoSelectFormat(), NullLogProvider.getInstance() );
+                    selectedRecordFormat, NullLogProvider.getInstance() );
 
             try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
             {

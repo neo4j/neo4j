@@ -46,10 +46,12 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -82,6 +84,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
@@ -131,7 +134,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            neoStore = new StoreFactory( fileSystem, directory, pageCache, RecordFormatSelector.autoSelectFormat(),
+            Config config = new Config( stringMap( GraphDatabaseSettings.record_format.name(), formatName ) );
+            neoStore = new StoreFactory( fileSystem, directory, pageCache,
+                    RecordFormatSelector.autoSelectFormat(config,  NullLogService.getInstance() ),
                     NullLogProvider.getInstance() ).openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
