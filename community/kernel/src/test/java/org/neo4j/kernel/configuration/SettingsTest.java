@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.config.Setting;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
@@ -73,5 +74,11 @@ public class SettingsTest
     {
         Setting<File> setting = pathSetting( "some.setting", NO_DEFAULT );
         assertThat( setting.from( Config.empty() ), is( nullValue() ) );
+    }
+
+    @Test
+    public void shouldHaveAUsefulToStringWhichIsUsedAsTheValidValuesInDocumentation()
+    {
+        assertThat( pathSetting( "", NO_DEFAULT ).toString(), containsString( "A filesystem path" ) );
     }
 }
