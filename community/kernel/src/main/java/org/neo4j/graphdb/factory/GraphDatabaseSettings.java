@@ -102,8 +102,8 @@ public abstract class GraphDatabaseSettings
             "allows an upgrade to be performed.")
     public static final Setting<Boolean> allow_store_upgrade = setting("dbms.allow_format_migration", BOOLEAN, FALSE );
 
-
-    @Description( "Specifies custom storage format name. If not set default format will be used." )
+    @Description( "Database record format. Enterprise edition only. Valid values: `standard`, `high_limit`. " +
+                  "Default value:  `standard`." )
     public static final Setting<String> record_format = setting( "dbms.record_format", Settings.STRING, "" );
 
     // Cypher settings
