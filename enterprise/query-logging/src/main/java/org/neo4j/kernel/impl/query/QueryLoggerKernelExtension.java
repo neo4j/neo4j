@@ -20,11 +20,13 @@
 package org.neo4j.kernel.impl.query;
 
 import java.io.File;
+import java.util.Map;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.Strings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -74,9 +76,10 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
 
         Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
         long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold );
+        boolean logQueryParameters = config.get( GraphDatabaseSettings.log_queries_parameter_logging_enabled );
 
         LoggerFactory loggerFactory = new LoggerFactory( dependencies.filesystem(), queryLogFile, rotationThreshold );
-        QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, loggerFactory, thresholdMillis );
+        QueryLogger logger = new QueryLogger( Clock.SYSTEM_CLOCK, loggerFactory, thresholdMillis, logQueryParameters );
         dependencies.monitoring().addMonitorListener( logger );
         return logger;
     }
@@ -90,16 +93,21 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     {
         private static final MetadataKey<Long> START_TIME = new MetadataKey<>( Long.class, "start time" );
         private static final MetadataKey<String> QUERY_STRING = new MetadataKey<>( String.class, "query string" );
+        private static final MetadataKey<Map<String,Object>> PARAMS = new MetadataKey<>( paramsClass(), "parameters" );
+
         private final Clock clock;
         private final Factory<StringLogger> loggerFactory;
         private final long thresholdMillis;
+        private final boolean logQueryParameters;
         private StringLogger logger;
 
-        public QueryLogger( Clock clock, Factory<StringLogger> loggerFactory, long thresholdMillis )
+        public QueryLogger( Clock clock, Factory<StringLogger> loggerFactory, long thresholdMillis,
+                boolean logQueryParameters )
         {
             this.clock = clock;
             this.loggerFactory = loggerFactory;
             this.thresholdMillis = thresholdMillis;
+            this.logQueryParameters = logQueryParameters;
         }
 
         @Override
@@ -116,11 +124,15 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         }
 
         @Override
-        public void startQueryExecution( QuerySession session, String query )
+        public void startQueryExecution( QuerySession session, String query, Map<String,Object> parameters )
         {
             long startTime = clock.currentTimeMillis();
             Object oldTime = session.put( START_TIME, startTime );
             Object oldQuery = session.put( QUERY_STRING, query );
+            if ( logQueryParameters )
+            {
+                session.put( PARAMS, parameters );
+            }
             if ( oldTime != null || oldQuery != null )
             {
                 logger.warn( String.format( "Concurrent queries for session %s: \"%s\" @ %s and \"%s\" @ %s",
@@ -131,30 +143,102 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
         @Override
         public void endFailure( QuerySession session, Throwable failure )
         {
-            String query = session.remove( QUERY_STRING );
+            String query = extractQueryString( session );
             Long startTime = session.remove( START_TIME );
             if ( startTime != null )
             {
                 long time = clock.currentTimeMillis() - startTime;
-                logger.error( String.format( "FAILURE %d ms: %s - %s", time, session,
-                        query == null ? "<unknown query>" : query ), failure );
+                logFailure( time, session, query, failure );
             }
         }
 
         @Override
         public void endSuccess( QuerySession session )
         {
-            String query = session.remove( QUERY_STRING );
+            String query = extractQueryString( session );
             Long startTime = session.remove( START_TIME );
             if ( startTime != null )
             {
                 long time = clock.currentTimeMillis() - startTime;
                 if ( time >= thresholdMillis )
                 {
-                    logger.info( String.format( "SUCCESS %d ms: %s - %s", time, session,
-                            query == null ? "<unknown query>" : query ) );
+                    logSuccess( time, session, query );
                 }
             }
+        }
+
+        private void logFailure( long time, QuerySession session, String query, Throwable failure )
+        {
+            if ( logQueryParameters )
+            {
+                String params = extractParamsString( session );
+                logger.error( String.format( "FAILURE %d ms: %s - %s - %s", time, session, query, params ), failure );
+            }
+            else
+            {
+                logger.error( String.format( "FAILURE %d ms: %s - %s", time, session, query ), failure );
+            }
+        }
+
+        private void logSuccess( long time, QuerySession session, String query )
+        {
+            if ( logQueryParameters )
+            {
+                String params = extractParamsString( session );
+                logger.info( String.format( "SUCCESS %d ms: %s - %s - %s", time, session, query, params ) );
+            }
+            else
+            {
+                logger.info( String.format( "SUCCESS %d ms: %s - %s", time, session, query ) );
+            }
+        }
+
+        private static String extractQueryString( QuerySession session )
+        {
+            String query = session.remove( QUERY_STRING );
+            return query == null ? "<unknown query>" : query;
+        }
+
+        private static String extractParamsString( QuerySession session )
+        {
+            Map<String,Object> params = session.remove( PARAMS );
+            return mapAsString( params );
+        }
+
+        @SuppressWarnings( "unchecked" )
+        private static String mapAsString( Map<String,Object> params )
+        {
+            if ( params == null )
+            {
+                return "{}";
+            }
+
+            StringBuilder builder = new StringBuilder( "{" );
+            String sep = "";
+            for ( Map.Entry<String,Object> entry : params.entrySet() )
+            {
+                builder.append( sep ).append( entry.getKey() ).append( ": " );
+
+                Object value = entry.getValue();
+                if ( value instanceof Map<?,?> )
+                {
+                    builder.append( mapAsString( (Map<String,Object>) value ) );
+                }
+                else
+                {
+                    builder.append( Strings.prettyPrint( value ) );
+                }
+                sep = ", ";
+            }
+            builder.append( "}" );
+
+            return builder.toString();
+        }
+
+        @SuppressWarnings( "unchecked" )
+        private static Class<Map<String,Object>> paramsClass()
+        {
+            return (Class<Map<String,Object>>) (Object) Map.class;
         }
     }
 
