@@ -183,8 +183,10 @@ trait CompatibilityFor3_0 {
 
   class ExecutionPlanWrapper(inner: ExecutionPlan_v3_0) extends ExecutionPlan {
 
+    // Eagerly create a single, shared index monitor, to avoid locking in the kernel monitors on every query execution.
+    private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
+
     private def queryContext(transactionalContext: TransactionalContextWrapper) = {
-      val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
       val ctx = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
       new ExceptionTranslatingQueryContextFor3_0(ctx)
     }
