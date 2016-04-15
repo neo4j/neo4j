@@ -102,6 +102,10 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public final boolean next( long pageId ) throws IOException
     {
+        if ( currentPageId == nextPageId )
+        {
+            return true;
+        }
         nextPageId = pageId;
         return next();
     }
