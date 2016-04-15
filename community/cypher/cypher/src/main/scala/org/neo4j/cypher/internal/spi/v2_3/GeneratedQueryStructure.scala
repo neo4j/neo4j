@@ -20,10 +20,15 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import java.util
+import java.util.function.Consumer
 
 import org.neo4j.codegen
 import org.neo4j.codegen.CodeGeneratorOption._
+import org.neo4j.codegen.Expression._
 import org.neo4j.codegen.ExpressionTemplate._
+import org.neo4j.codegen.ExpressionTemplate.get
+import org.neo4j.codegen.ExpressionTemplate.invoke
+import org.neo4j.codegen.ExpressionTemplate.load
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen._
@@ -75,7 +80,8 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
         params = clazz.field(typeRef[util.Map[String, Object]], "params"),
         closeable = clazz.field(typeRef[SuccessfulCloseable], "closeable"),
-        success = clazz.generate(Templates.SUCCESS))
+        success = clazz.generate(Templates.SUCCESS),
+        close = clazz.generate(Templates.CLOSE))
       // the "COLUMNS" static field
       clazz.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList(
         columns.map(key => Expression.constant(key))))
@@ -88,7 +94,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       // simple methods
       clazz.generate(Templates.CONSTRUCTOR)
       clazz.generate(Templates.SET_SUCCESSFUL_CLOSEABLE)
-      val close = clazz.generate(Templates.CLOSE)
       clazz.generate(Templates.EXECUTION_MODE)
       clazz.generate(Templates.EXECUTION_PLAN_DESCRIPTION)
       clazz.generate(Templates.JAVA_COLUMNS)
@@ -97,15 +102,12 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         Parameter.param(parameterizedType(classOf[ResultVisitor[_]], typeParameter("E")), "visitor")).
         parameterizedWith("E", extending(typeRef[Exception])).
         throwsException(typeParameter("E")))) { method =>
-        using(method.tryBlock()) { body =>
-          body.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
-          body.assign(typeRef[RelationshipDataExtractor], "rel", Templates.newRelationshipDataExtractor)
-          block(Method(fields, body, new AuxGenerator(packageName, generator)))
-          body.expression(Expression.invoke(body.self(), fields.success))
-          using(body.finallyBlock()) { finallyBlock =>
-            finallyBlock.expression(Expression.invoke(body.self(), close))
-          }
-        }
+          method.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
+          method.assign(typeRef[RelationshipDataExtractor], "rel", Templates.newRelationshipDataExtractor)
+          block(Method(fields, method, new AuxGenerator(packageName, generator)))
+          method.expression(Expression.invoke(method.self(), fields.success))
+        method.expression(Expression.invoke(method.self(), fields.success))
+        method.expression(Expression.invoke(method.self(), fields.close))
       }
       clazz.handle()
     }
@@ -187,7 +189,8 @@ private case class Fields(closer: FieldReference,
                           tracer: FieldReference,
                           params: FieldReference,
                           closeable: FieldReference,
-                          success: MethodReference)
+                          success: MethodReference,
+                          close: MethodReference)
 
 private class AuxGenerator(val packageName: String, val generator: codegen.CodeGenerator) {
   private val types: mutable.Map[Map[String, CypherType], TypeReference] = mutable.Map.empty
@@ -353,10 +356,12 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   override def trace[V](planStepId: String)(block: MethodStructure[Expression]=>V) = if(!tracing) block(this)
   else {
     val eventName = s"event_$planStepId"
-    using(generator.tryBlock(typeRef[QueryExecutionEvent], eventName, traceEvent(planStepId))) { body =>
-      block(copy(event = Some(eventName),
-        generator = body))
-    }
+    generator.assign(typeRef[QueryExecutionEvent], eventName, traceEvent(planStepId))
+    val result = block(copy(event = Some(eventName), generator = generator))
+    Expression.invoke(tracer, Methods.executeOperator,
+                      Expression.invoke(generator.load(eventName),
+                                        GeneratedQueryStructure.method[QueryExecutionEvent, Unit]("close")))
+    result
   }
 
   private def traceEvent(planStepId: String) = Expression.invoke(tracer, Methods.executeOperator,
@@ -820,22 +825,28 @@ private object Templates {
     methodReference(typeRef[util.Arrays], typeRef[util.List[String]], "asList", typeRef[Array[Object]]),
     Expression.newArray(typeRef[String], values: _*))
 
-  def handleExceptions[V](generate: CodeBlock, ro: FieldReference)(block: CodeBlock => V) = using(generate.tryBlock()) { body =>
-    // the body of the try
-    val result = block(body)
-    // the catch block
-    using(body.catchBlock(param[KernelException]("e"))) { handle =>
-      handle.throwException(Expression.invoke(
-        Expression.newInstance(typeRef[CypherExecutionException]),
-        MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
-        Expression.invoke(handle.load("e"), GeneratedQueryStructure.method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
-          Expression.invoke(
-            Expression.newInstance(typeRef[StatementTokenNameLookup]),
-            MethodReference.constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-            Expression.get(handle.self(), ro))),
-        handle.load("e")
-      ))
-    }
+  def handleExceptions[V](generate: CodeBlock, ro: FieldReference)(block: CodeBlock => V) = {
+    var result = null.asInstanceOf[V]
+
+    generate.tryCatch(new Consumer[CodeBlock] {
+      override def accept(body: CodeBlock) = {
+        result = block(body)
+      }
+    }, new Consumer[CodeBlock]() {
+      override def accept(handle: CodeBlock) = {
+        handle.throwException(Expression.invoke(
+          Expression.newInstance(typeRef[CypherExecutionException]),
+          MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
+          Expression.invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
+                            Expression.invoke(
+                              Expression.newInstance(typeRef[StatementTokenNameLookup]),
+                              MethodReference
+                                .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
+                              Expression.get(handle.self(), ro))), handle.load("e")
+        ))
+      }
+    }, param[KernelException]("e"))
+
     result
   }
 

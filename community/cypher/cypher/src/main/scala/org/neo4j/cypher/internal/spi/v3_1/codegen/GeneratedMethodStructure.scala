@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_1.codegen
 
 import java.util
+import java.util.function.Consumer
 
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
@@ -182,14 +183,10 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
     body.returns()
   }
 
-  //TODO remove
-  //generator.expression(Expression.invoke(generator.load("visitor"), Methods.visit, generator.load("row")))
-
   override def materializeNode(nodeIdVar: String) = Expression
     .invoke(nodeManager, Methods.newNodeProxyById, generator.load(nodeIdVar))
 
   override def node(nodeIdVar: String) = Templates.newInstance(typeRef[NodeIdWrapper], generator.load(nodeIdVar))
-
 
   override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = {
     Expression.ternary(
@@ -206,14 +203,17 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
   override def trace[V](planStepId: String)(block: MethodStructure[Expression]=>V) = if(!tracing) block(this)
   else {
     val eventName = s"event_$planStepId"
-    using(generator.tryBlock(typeRef[QueryExecutionEvent], eventName, traceEvent(planStepId))) { body =>
-      block(copy(event = Some(eventName),
-                 generator = body))
-    }
+    generator.assign(typeRef[QueryExecutionEvent], eventName, traceEvent(planStepId))
+    val result = block(copy(event = Some(eventName), generator = generator))
+    Expression.invoke(tracer, Methods.executeOperator,
+                      Expression.invoke(generator.load(eventName),
+                                        GeneratedQueryStructure.method[QueryExecutionEvent, Unit]("close")))
+    result
   }
 
-  private def traceEvent(planStepId: String) = Expression.invoke(tracer, Methods.executeOperator,
-                                                                 Expression.get(FieldReference.staticField(generator.owner(), typeRef[Id], planStepId)))
+  private def traceEvent(planStepId: String) =
+    Expression.invoke(tracer, Methods.executeOperator,
+                      Expression.get(FieldReference.staticField(generator.owner(), typeRef[Id], planStepId)))
 
   override def incrementDbHits() = if(tracing) generator.expression(Expression.invoke(loadEvent, Methods.dbHit))
 
@@ -267,17 +267,15 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
 
   //TODO remove nodeGetAllRelationships again and do proper try catch
   override def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection) = {
-    //val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    generator.assign(typeRef[RelationshipIterator], iterVar,
-                     Expression.invoke( Methods.nodeGetAllRelationships, readOperations, generator.load(nodeVar), dir(direction)))
-    //    Templates.handleExceptions(generator, fields.ro, fields.close) { body =>
-    //      body.assign(local, Expression.invoke(readOperations, Methods.nodeGetAllRelationships, body.load(nodeVar), dir(direction)))
-    //    }
+    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
+          body.assign(local, Expression.invoke(readOperations, Methods.nodeGetAllRelationships, body.load(nodeVar), dir(direction)))
+        }
   }
 
   override def nodeGetRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection, typeVars: Seq[String]) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { body =>
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
       body.assign(local, Expression.invoke(readOperations, Methods.nodeGetRelationships,
                                            body.load(nodeVar), dir(direction),
                                            Expression.newArray(typeRef[Int], typeVars.map(body.load): _*)))
@@ -286,14 +284,14 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
 
   override def connectingRelationships(iterVar: String, fromNode: String, direction: SemanticDirection, toNode: String) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { body =>
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
       body.assign(local, Expression.invoke(Methods.allConnectingRelationships, readOperations, body.load(fromNode), dir(direction), body.load(toNode)))
     }
   }
 
   override def connectingRelationships(iterVar: String, fromNode: String, direction: SemanticDirection, typeVars: Seq[String], toNode: String) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { body =>
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
       val args = Seq(readOperations, body.load(fromNode), dir(direction),  body.load(toNode)) ++ typeVars.map(body.load)
       body.assign(local, Expression.invoke(Methods.connectingRelationships, args:_*))
     }
@@ -531,7 +529,8 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
 
   override def hasLabel(nodeVar: String, labelVar: String, predVar: String) =  {
     val local = locals(predVar)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { inner =>
+
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { inner =>
       val invoke = Expression.invoke(readOperations, Methods.nodeHasLabel, inner.load(nodeVar), inner.load(labelVar))
       inner.assign(local, invoke)
       generator.load(predVar)
@@ -541,7 +540,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
   override def relType(relVar: String, typeVar: String) =  {
     val variable = locals(typeVar)
     val typeOfRel = Expression.invoke(generator.load(relExtractor(relVar)), Methods.typeOf)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { inner =>
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { inner =>
       val invoke = Expression.invoke(readOperations, Methods.relationshipTypeGetName, typeOfRel)
       inner.assign(variable, invoke)
       generator.load(variable.name())
@@ -572,7 +571,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
 
   override def nodeGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { body =>
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
 
       body.assign(local, Expression
         .invoke(readOperations, Methods.nodeGetProperty, body.load(nodeIdVar), body.load(propIdVar)))
@@ -582,7 +581,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
 
   override def nodeGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { body =>
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
       body.assign(local, Expression
         .invoke(readOperations, Methods.nodeGetProperty, body.load(nodeIdVar), Expression.constant(propId)))
     }
@@ -590,7 +589,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
 
   override def relationshipGetPropertyForVar(relIdVar: String, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { body =>
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
       body.assign(local, Expression
         .invoke(readOperations, Methods.relationshipGetProperty, body.load(relIdVar), body.load(propIdVar)))
     }
@@ -598,7 +597,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
 
   override def relationshipGetPropertyById(relIdVar: String, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { body =>
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
       body.assign(local, Expression
         .invoke(readOperations, Methods.relationshipGetProperty, body.load(relIdVar), Expression.constant(propId)))
     }
@@ -616,7 +615,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
 
   override def indexSeek(iterVar: String, descriptorVar: String, value: Expression) = {
     val local = generator.declare(typeRef[PrimitiveLongIterator], iterVar)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { body =>
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
       body.assign(local, Expression
         .invoke(readOperations, Methods.nodesGetFromIndexLookup, generator.load(descriptorVar), value ))
     }
@@ -624,7 +623,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux:Au
 
   override def indexUniqueSeek(nodeVar: String, descriptorVar: String, value: Expression) = {
     val local = generator.declare(typeRef[Long], nodeVar)
-    Templates.handleExceptions(generator, fields.ro, fields.close) { body =>
+    Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
       body.assign(local, Expression
         .invoke(readOperations, Methods.nodeGetUniqueFromIndexLookup, generator.load(descriptorVar), value ))
     }

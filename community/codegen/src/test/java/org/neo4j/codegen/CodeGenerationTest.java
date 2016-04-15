@@ -688,32 +688,27 @@ public class CodeGenerationTest
                     param( boolean.class, "test" ),
                     param( Runnable.class, "runner" ) ) )
             {
-                try ( TryBlock tryBlock = callEach.tryBlock() )
-                {
-
-                    try ( CodeBlock loop = tryBlock.whileLoop( invoke( callEach.load( "targets" ),
-                            methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
-                    {
-
-                        try ( CodeBlock doStuff = loop.ifStatement( not( callEach.load( "test" ) ) ) )
+                callEach.tryCatch( ( tryBlock ) ->
                         {
-                            doStuff.expression(
-                                    invoke( doStuff.load( "runner" ), RUN ) );
-                        }
-                        loop.expression( invoke(
-                                Expression.cast( Runnable.class,
-                                        invoke( callEach.load( "targets" ),
-                                                methodReference( Iterator.class, Object.class, "next" ) ) ),
-                                methodReference( Runnable.class, void.class, "run" ) ) );
+                            try ( CodeBlock loop = tryBlock.whileLoop( invoke( callEach.load( "targets" ),
+                                    methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                            {
 
-                    }
+                                try ( CodeBlock doStuff = loop.ifStatement( not( callEach.load( "test" ) ) ) )
+                                {
+                                    doStuff.expression(
+                                            invoke( doStuff.load( "runner" ), RUN ) );
+                                }
+                                loop.expression( invoke(
+                                        Expression.cast( Runnable.class,
+                                                invoke( callEach.load( "targets" ),
+                                                        methodReference( Iterator.class, Object.class, "next" ) ) ),
+                                        methodReference( Runnable.class, void.class, "run" ) ) );
 
-                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
-                    {
-                        finallyBlock.expression(
-                                invoke( finallyBlock.load( "runner" ), RUN ) );
-                    }
-                }
+                            }
+                        },
+                        ( catchBlock ) -> catchBlock.expression(
+                                invoke( catchBlock.load( "runner" ), RUN ) ), param( RuntimeException.class, "e" ) );
             }
 
             handle = simple.handle();
@@ -724,6 +719,7 @@ public class CodeGenerationTest
 
         Runnable runner1 = mock( Runnable.class );
         Runnable runner2 = mock( Runnable.class );
+
         // when
         MethodHandle callEach =
                 instanceMethod( handle.newInstance(), "callEach", Iterator.class, boolean.class, Runnable.class );
@@ -732,64 +728,8 @@ public class CodeGenerationTest
         callEach.invoke( Arrays.asList( a, b, c ).iterator(), true, runner2 );
 
         // then
-        verify( runner1, times( 4 ) ).run();
-        verify( runner2, times( 1 ) ).run();
-    }
-
-    @Test
-    public void shouldGenerateNestedTryBlock() throws Throwable
-    {
-        // given
-        ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
-        {
-            try ( CodeBlock body = simple.generateMethod( void.class, "nested",
-                    param( Runnable.class, "body" ),
-                    param( Runnable.class, "always" ),
-                    param( Runnable.class, "onError" ) ) )
-            {
-                try ( TryBlock tryBlock = body.tryBlock() )
-                {
-
-                    try ( TryBlock innerBlock = tryBlock.tryBlock() )
-                    {
-                        innerBlock.expression(
-                                invoke( innerBlock.load( "body" ), RUN ) );
-
-
-                        try ( CodeBlock innerCatch = innerBlock.catchBlock( param( RuntimeException.class, "E" ) ) )
-                        {
-                            innerCatch.expression(
-                                    invoke( innerCatch.load( "onError" ), RUN ) );
-                        }
-                    }
-
-                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
-                    {
-                        finallyBlock.expression(
-                                invoke( finallyBlock.load( "always" ), RUN ) );
-                    }
-                }
-            }
-
-            handle = simple.handle();
-        }
-        Runnable a = mock( Runnable.class );
-        Runnable b = mock( Runnable.class );
-        Runnable c = mock( Runnable.class );
-
-        doThrow( IllegalArgumentException.class ).when( a ).run();
-
-        // when
-        MethodHandle nested =
-                instanceMethod( handle.newInstance(), "nested", Runnable.class, Runnable.class, Runnable.class );
-
-        nested.invoke( a, b, c );
-
-        // then
-        verify( a, times( 1 ) ).run();
-        verify( b, times( 1 ) ).run();
-        verify( c, times( 1 ) ).run();
+        verify( runner1, times( 3 ) ).run();
+        verify( runner2, times( 0 ) ).run();
     }
 
     @Test
@@ -840,7 +780,6 @@ public class CodeGenerationTest
         verify( runner2, never() ).run();
 
     }
-
 
     @Test
     public void shouldGenerateOr() throws Throwable
@@ -1270,39 +1209,6 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateTryWithResourceBlock() throws Throwable
-    {
-        // given
-        ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
-        {
-            try ( CodeBlock arm = simple.generate( MethodDeclaration.method( void.class, "arm",
-                    param( ResourceFactory.class, "factory" ) ).throwsException( Exception.class ) ) )
-            {
-
-                try ( CodeBlock block = arm.tryBlock( AutoCloseable.class, "resource", invoke(
-                        arm.load( "factory" ), methodReference(
-                                ResourceFactory.class, AutoCloseable.class, "resource" ) ) ) )
-                {
-                    block.expression( invoke( block.load( "factory" ),
-                            methodReference( ResourceFactory.class, void.class, "inside" ) ) );
-                }
-            }
-            handle = simple.handle();
-        }
-
-        // when
-        ResourceFactory factory = new ResourceFactory();
-        MethodHandle arm = instanceMethod( handle.newInstance(), "arm", ResourceFactory.class );
-        arm.invoke( factory );
-
-        // then
-        assertEquals( 1, factory.open );
-        assertEquals( 1, factory.inside );
-        assertEquals( 1, factory.close );
-    }
-
-    @Test
     public void shouldGenerateTryCatch() throws Throwable
     {
         // given
@@ -1313,14 +1219,10 @@ public class CodeGenerationTest
                     param( Runnable.class, "body" ),
                     param( Runnable.class, "catcher" ) ) )
             {
-                try ( TryBlock tryBlock = run.tryBlock() )
-                {
-                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
-                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( RuntimeException.class, "E" ) ) )
-                    {
-                        catchBlock.expression( invoke( run.load( "catcher" ), RUN ) );
-                    }
-                }
+                run.tryCatch(
+                        body -> body.expression( invoke( run.load( "body" ), RUN ) ),
+                        handler -> handler.expression( invoke( run.load( "catcher" ), RUN ) ),
+                        param( RuntimeException.class, "E" ) );
             }
             handle = simple.handle();
         }
@@ -1358,17 +1260,17 @@ public class CodeGenerationTest
                     param( Runnable.class, "catcher" ),
                     param( boolean.class, "test" ) ) )
             {
-                try ( TryBlock tryBlock = run.tryBlock() )
-                {
-                    try ( CodeBlock ifBlock = tryBlock.ifStatement( run.load( "test" ) ) )
-                    {
-                        ifBlock.expression( invoke( run.load( "body" ), RUN ) );
-                    }
-                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( RuntimeException.class, "E" ) ) )
-                    {
-                        catchBlock.expression( invoke( run.load( "catcher" ), RUN ) );
-                    }
-                }
+
+                run.tryCatch(
+                        ( tryBlock ) -> {
+                            try ( CodeBlock ifBlock = tryBlock.ifStatement( run.load( "test" ) ) )
+                            {
+                                ifBlock.expression( invoke( run.load( "body" ), RUN ) );
+                            }
+                        },
+                        ( catchBlock ) -> catchBlock.expression( invoke( run.load( "catcher" ), RUN ) ),
+                        param( RuntimeException.class, "E" )
+                );
             }
             handle = simple.handle();
         }
@@ -1397,18 +1299,16 @@ public class CodeGenerationTest
                     param( Runnable.class, "catcher1" ),
                     param( Runnable.class, "catcher2" ) ) )
             {
-                try ( TryBlock tryBlock = run.tryBlock() )
-                {
-                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
-                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( MyFirstException.class, "E" ) ) )
-                    {
-                        catchBlock.expression( invoke( run.load( "catcher1" ), RUN ) );
-                    }
-                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( MySecondException.class, "E" ) ) )
-                    {
-                        catchBlock.expression( invoke( run.load( "catcher2" ), RUN ) );
-                    }
-                }
+
+                run.tryCatch( ( tryBlock ) ->
+                                tryBlock.tryCatch(
+                                        ( innerTry ) -> innerTry.expression( invoke( run.load( "body" ), RUN ) ),
+                                        ( catchBlock1 ) -> catchBlock1.expression( invoke( run.load( "catcher1" ),
+                                                RUN ) ),
+                                        param( MyFirstException.class, "E" ) ),
+                        ( catchBlock2 ) -> catchBlock2.expression( invoke( run.load( "catcher2" ), RUN ) ),
+                        param( MySecondException.class, "E" ) );
+
             }
             handle = simple.handle();
         }
@@ -1435,206 +1335,6 @@ public class CodeGenerationTest
         verify( body2 ).run();
         verify( catcher22 ).run();
         verify( catcher21, never() ).run();
-    }
-
-    @Test
-    public void shouldGenerateTryFinally() throws Throwable
-    {
-        // given
-        ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
-        {
-            try ( CodeBlock run = simple.generateMethod( void.class, "run",
-                    param( Runnable.class, "body" ),
-                    param( Runnable.class, "finalize" ) ) )
-            {
-                try ( TryBlock tryBlock = run.tryBlock() )
-                {
-                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
-                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
-                    {
-                        finallyBlock.expression( invoke( run.load( "finalize" ), RUN ) );
-                    }
-                }
-            }
-            handle = simple.handle();
-        }
-
-        // when
-        Runnable body = mock( Runnable.class ), finalize = mock( Runnable.class );
-        RuntimeException theFailure = new RuntimeException();
-        doThrow( theFailure ).when( body ).run();
-        MethodHandle run = instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class );
-        try
-        {
-            run.invoke( body, finalize );
-            fail( "expected exception" );
-        }
-        // then
-        catch ( RuntimeException e )
-        {
-            assertSame( theFailure, e );
-        }
-        InOrder order = inOrder( body, finalize );
-        order.verify( body ).run();
-        order.verify( finalize ).run();
-    }
-
-    @Test
-    public void shouldGenerateTryFinally2() throws Throwable
-    {
-        // given
-        ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
-        {
-            try ( CodeBlock run = simple.generateMethod( void.class, "run",
-                    param( Runnable.class, "body" ),
-                    param( Runnable.class, "finalize" ) ) )
-            {
-                try ( TryBlock tryBlock = run.tryBlock() )
-                {
-                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
-                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
-                    {
-                        finallyBlock.expression( invoke( run.load( "finalize" ), RUN ) );
-                    }
-                }
-            }
-            handle = simple.handle();
-        }
-
-        // when
-        Runnable body = mock( Runnable.class ), finalize = mock( Runnable.class );
-        RuntimeException theFailure = new RuntimeException();
-        doThrow( theFailure ).when( body ).run();
-        MethodHandle run = instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class );
-        try
-        {
-            run.invoke( body, finalize );
-            fail( "expected exception" );
-        }
-        // then
-        catch ( RuntimeException e )
-        {
-            assertSame( theFailure, e );
-        }
-        InOrder order = inOrder( body, finalize );
-        order.verify( body ).run();
-        order.verify( finalize ).run();
-    }
-
-    @Test
-    public void shouldGenerateTryCatchFinally() throws Throwable
-    {
-        // given
-        ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
-        {
-            try ( CodeBlock run = simple.generateMethod( void.class, "run",
-                    param( Runnable.class, "body" ),
-                    param( Runnable.class, "catcher" ),
-                    param( Runnable.class, "finalize" ) ) )
-            {
-                try ( TryBlock tryBlock = run.tryBlock() )
-                {
-                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
-                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( RuntimeException.class, "E" ) ) )
-                    {
-                        catchBlock.expression( invoke( run.load( "catcher" ), RUN ) );
-                    }
-                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
-                    {
-                        finallyBlock.expression( invoke( run.load( "finalize" ), RUN ) );
-                    }
-                }
-            }
-            handle = simple.handle();
-        }
-
-        // when
-        Runnable successBody = mock( Runnable.class ), failBody = mock( Runnable.class ),
-                successCatch = mock( Runnable.class ), failCatch = mock( Runnable.class ),
-                successFinally = mock( Runnable.class ), failFinally = mock( Runnable.class );
-        RuntimeException theFailure = new RuntimeException();
-        doThrow( theFailure ).when( failBody ).run();
-        MethodHandle run =
-                instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class, Runnable.class );
-
-        //success
-        run.invoke( successBody, successCatch, successFinally );
-        verify( successBody ).run();
-        verify( successCatch, never() ).run();
-        verify( successFinally ).run();
-
-        //failure
-        run.invoke( failBody, failCatch, failFinally );
-        InOrder order = inOrder( failBody, failCatch, failFinally );
-        order.verify( failBody ).run();
-        order.verify( failCatch ).run();
-        order.verify( failFinally ).run();
-    }
-
-    @Test
-    public void shouldGenerateTryMultipleCatchAndFinally() throws Throwable
-    {
-        // given
-        ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
-        {
-            try ( CodeBlock run = simple.generateMethod( void.class, "run",
-                    param( Runnable.class, "body" ),
-                    param( Runnable.class, "catcher1" ),
-                    param( Runnable.class, "catcher2" ),
-                    param( Runnable.class, "finalize" )
-            ) )
-            {
-                try ( TryBlock tryBlock = run.tryBlock() )
-                {
-                    tryBlock.expression( invoke( run.load( "body" ), RUN ) );
-                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( MyFirstException.class, "E" ) ) )
-                    {
-                        catchBlock.expression( invoke( run.load( "catcher1" ), RUN ) );
-                    }
-                    try ( CodeBlock catchBlock = tryBlock.catchBlock( param( MySecondException.class, "E" ) ) )
-                    {
-                        catchBlock.expression( invoke( run.load( "catcher2" ), RUN ) );
-                    }
-                    try ( CodeBlock finallyBlock = tryBlock.finallyBlock() )
-                    {
-                        finallyBlock.expression( invoke( run.load( "finalize" ), RUN ) );
-                    }
-                }
-            }
-            handle = simple.handle();
-        }
-
-        // when
-
-        Runnable body1 = mock( Runnable.class ), body2 = mock( Runnable.class ),
-                catcher11 = mock( Runnable.class ), catcher12 = mock( Runnable.class ), finalize1 =
-                mock( Runnable.class ),
-                catcher21 = mock( Runnable.class ), catcher22 = mock( Runnable.class ), finalize2 =
-                mock( Runnable.class );
-        doThrow( MyFirstException.class ).when( body1 ).run();
-        doThrow( MySecondException.class ).when( body2 ).run();
-
-        MethodHandle run =
-                instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class, Runnable.class,
-                        Runnable.class );
-
-
-        run.invoke( body1, catcher11, catcher12, finalize1 );
-        verify( body1 ).run();
-        verify( catcher11 ).run();
-        verify( catcher12, never() ).run();
-        verify( finalize1 ).run();
-
-
-        run.invoke( body2, catcher21, catcher22, finalize2 );
-        verify( body2 ).run();
-        verify( catcher22 ).run();
-        verify( catcher21, never() ).run();
-        verify( finalize2 ).run();
     }
 
 
@@ -1800,14 +1500,7 @@ public class CodeGenerationTest
 
     private static MethodReference createMethod( Class<?> owner, Class<?> returnType, String name )
     {
-        try
-        {
-            return methodReference( Runnable.class, void.class, "run" );
-        }
-        catch ( NoSuchMethodException e )
-        {
-            throw new AssertionError( "Cannot create method", e );
-        }
+        return methodReference( Runnable.class, void.class, "run" );
     }
 
     public static class MyFirstException extends RuntimeException

@@ -23,15 +23,12 @@ import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.function.Consumer;
 
-import org.neo4j.codegen.CatchClause;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.ExpressionVisitor;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
-import org.neo4j.codegen.LocalVariables;
 import org.neo4j.codegen.MethodEmitter;
 import org.neo4j.codegen.MethodReference;
 import org.neo4j.codegen.Parameter;
@@ -215,28 +212,27 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void tryCatchBlock( List<Consumer<MethodEmitter>> body,
-            List<CatchClause> catchClauses,
-            List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables, Resource... resources )
+    public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block)
     {
-        //try
-        beginTry( resources );
-        body.forEach( e -> e.accept( this ) );
-        endBlock();
-        //catch
-        catchClauses.forEach( ( c ) -> {
-            beginCatch( c.exception() );
-            c.actions().forEach( e -> e.accept( this ) );
-            endBlock();
-        } );
-        if ( !finalClauses.isEmpty() )
-        {
-            beginFinally();
-            finalClauses.forEach( e -> e.accept( this ) );
-            endBlock();
-        }
+
+        indent().append( "try\n" );
+        indent().append( "{\n" );
+        level.push( LEVEL );
+        body.accept( block );
+        level.pop();
+        indent().append( "}\n" );
+        indent().append( "catch ( " )
+                .append( exception.type().name() ).append( " " )
+                .append( exception.name() )
+                .append( " )\n" );
+        indent().append( "{\n" );
+        level.push( LEVEL );
+        handler.accept( block );
+        level.pop();
+        indent().append( "}\n" );
     }
-//
+
+    //
 //        indent().append( "try\n" );
 //        indent().append( "{\n" );
 //        indent();

@@ -71,10 +71,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       codeGenerator(op.block, mode)
     }
   }
-
-
   case class Operation[E](name: String, block: GeneratedMethodStructure => Unit)
-
 
   private def codeGenerator[E](block: GeneratedMethodStructure => Unit, mode: CodeGenerationStrategy[Configuration] ) = {
     val codeGen = CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, SourceCode.PRINT_SOURCE)
@@ -97,10 +94,8 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       using(body.generate(MethodDeclaration.method(typeRef[Unit], "foo"))) { methodBody =>
         block(GeneratedMethodStructure(fields, methodBody, new AuxGenerator(packageName, codeGen)))
       }
-
       body.handle()
     }
-
     clazz.newInstance()
   }
 }

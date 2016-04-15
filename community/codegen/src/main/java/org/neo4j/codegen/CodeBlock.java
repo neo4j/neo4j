@@ -44,10 +44,10 @@ public class CodeBlock implements AutoCloseable
         parent.emitter = InvalidState.IN_SUB_BLOCK;
         this.parent = parent;
         //copy over local variables from parent
-        this.localVariables = copy(parent.localVariables);
+        this.localVariables = copy( parent.localVariables );
     }
 
-    CodeBlock( ClassGenerator clazz, MethodEmitter emitter, Parameter...parameters )
+    CodeBlock( ClassGenerator clazz, MethodEmitter emitter, Parameter... parameters )
     {
         this.clazz = clazz;
         this.emitter = emitter;
@@ -100,7 +100,7 @@ public class CodeBlock implements AutoCloseable
 
     LocalVariable local( String name )
     {
-        return localVariables.get( name);
+        return localVariables.get( name );
     }
 
     public LocalVariable declare( TypeReference type, String name )
@@ -149,22 +149,15 @@ public class CodeBlock implements AutoCloseable
     {
         String iteratorName = local.name() + "Iter";
 
-        try
-        {
-            assign( Iterator.class, iteratorName, Expression.invoke( iterable,
-                    MethodReference.methodReference( Iterable.class, Iterator.class, "iterator" ) ));
-            CodeBlock block = whileLoop( Expression
-                    .invoke( load( iteratorName ), methodReference( Iterator.class, boolean.class, "hasNext" ) ) );
-            block.assign( local.type(), local.name(),
-                    Expression.cast(local.type(), Expression.invoke( block.load( iteratorName ),
-                            methodReference( Iterator.class, Object.class, "next" ))) );
+        assign( Iterator.class, iteratorName, Expression.invoke( iterable,
+                MethodReference.methodReference( Iterable.class, Iterator.class, "iterator" ) ) );
+        CodeBlock block = whileLoop( Expression
+                .invoke( load( iteratorName ), methodReference( Iterator.class, boolean.class, "hasNext" ) ) );
+        block.assign( local.type(), local.name(),
+                Expression.cast( local.type(), Expression.invoke( block.load( iteratorName ),
+                        methodReference( Iterator.class, Object.class, "next" ) ) ) );
 
-            return block;
-        }
-        catch ( NoSuchMethodException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return block;
     }
 
     public CodeBlock whileLoop( Expression test )
@@ -179,20 +172,10 @@ public class CodeBlock implements AutoCloseable
         return new CodeBlock( this );
     }
 
-
-    public TryBlock tryBlock( Class<?> resourceType, String resourceName, Expression resource )
+    public void tryCatch( Consumer<CodeBlock> body, Consumer<CodeBlock> onError, Parameter exception )
     {
-        return tryBlock( withResource( resourceType, resourceName, resource ) );
-    }
-
-    public TryBlock tryBlock( TypeReference resourceType, String resourceName, Expression resource )
-    {
-        return tryBlock( withResource( resourceType, resourceName, resource ) );
-    }
-
-    public TryBlock tryBlock( Resource... resources )
-    {
-        return new TryBlock( this, resources );
+        emit( e -> e.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ),
+                this ) );
     }
 
     public void returns()

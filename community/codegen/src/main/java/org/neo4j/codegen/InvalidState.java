@@ -19,7 +19,6 @@
  */
 package org.neo4j.codegen;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 class InvalidState implements MethodEmitter
@@ -108,8 +107,7 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void tryCatchBlock( List<Consumer<MethodEmitter>> body, List<CatchClause> catchClauses,
-            List<Consumer<MethodEmitter>> finalClauses, LocalVariables localVariables, Resource... resources )
+    public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block )
     {
         throw new IllegalStateException( reason );
     }

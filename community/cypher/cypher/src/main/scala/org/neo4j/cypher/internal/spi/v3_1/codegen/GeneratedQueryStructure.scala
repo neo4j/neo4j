@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_1.codegen
 
 import java.lang.reflect.Modifier
 import java.util
+import java.util.function.Consumer
 
 import org.neo4j.codegen.CodeGeneratorOption._
 import org.neo4j.codegen.ExpressionTemplate._
@@ -189,25 +190,29 @@ private object Templates {
     methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
     Expression.newArray(typeRef[T], values: _*))
 
-  def handleExceptions[V](generate: CodeBlock, ro: FieldReference, close: MethodReference)
-                         (block: CodeBlock => V) = using(generate.tryBlock()) { body =>
-    // the body of the try
-    val result = block(body)
-    // the catch block
-    using(body.catchBlock(param[KernelException]("e"))) { handle =>
-      handle.expression(Expression.invoke(handle.self(), close))
-      handle.throwException(Expression.invoke(
-        Expression.newInstance(typeRef[CypherExecutionException]),
-        MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
-        Expression.invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
-                          Expression.invoke(
-                            Expression.newInstance(typeRef[StatementTokenNameLookup]),
-                            MethodReference
-                              .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-                            Expression.get(handle.self(), ro))),
-        handle.load("e")
-      ))
-    }
+  def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, close: MethodReference)
+                         (block: CodeBlock => V): V = {
+    var result = null.asInstanceOf[V]
+
+    generate.tryCatch(new Consumer[CodeBlock] {
+      override def accept(body: CodeBlock) = {
+        result = block(body)
+      }
+    }, new Consumer[CodeBlock]() {
+      override def accept(handle: CodeBlock) = {
+                handle.throwException(Expression.invoke(
+                  Expression.newInstance(typeRef[CypherExecutionException]),
+                  MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
+                  Expression.invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
+                                    Expression.invoke(
+                                      Expression.newInstance(typeRef[StatementTokenNameLookup]),
+                                      MethodReference
+                                        .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
+                                      Expression.get(handle.self(), ro))), handle.load("e")
+                ))
+      }
+    }, param[KernelException]("e"))
+
     result
   }
 

@@ -27,17 +27,33 @@ import static org.neo4j.codegen.TypeReference.typeReferences;
 public class MethodReference
 {
     public static MethodReference methodReference( Class<?> owner, Class<?> returns, String name,
-            Class<?>... parameters ) throws NoSuchMethodException
+            Class<?>... parameters )
     {
-        int modifiers = owner.getMethod( name, parameters ).getModifiers();
-        return methodReference( typeReference( owner ), typeReference( returns ), name, modifiers, typeReferences( parameters ) );
+        try
+        {
+            int modifiers = owner.getMethod( name, parameters ).getModifiers();
+            return methodReference( typeReference( owner ), typeReference( returns ), name, modifiers, typeReferences( parameters ) );
+        }
+        catch ( NoSuchMethodException e )
+        {
+            throw new IllegalArgumentException("No method with name " + name, e);
+        }
+
     }
 
     public static MethodReference methodReference( Class<?> owner, TypeReference returns, String name,
-            Class<?>... parameters ) throws NoSuchMethodException
+            Class<?>... parameters )
     {
-        int modifiers = owner.getMethod( name, parameters ).getModifiers();
-        return methodReference( owner, returns, name, modifiers, typeReferences( parameters ) );
+        try
+        {
+            int modifiers = owner.getMethod( name, parameters ).getModifiers();
+            return methodReference( owner, returns, name, modifiers, typeReferences( parameters ) );
+        }
+        catch ( NoSuchMethodException e )
+        {
+            throw new IllegalArgumentException("No method with name " + name, e);
+        }
+
     }
 
     private static MethodReference methodReference( Class<?> owner, TypeReference returns, String name, int modifiers,

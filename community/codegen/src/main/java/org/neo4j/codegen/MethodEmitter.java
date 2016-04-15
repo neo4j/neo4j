@@ -19,7 +19,6 @@
  */
 package org.neo4j.codegen;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 public interface MethodEmitter
@@ -42,10 +41,7 @@ public interface MethodEmitter
 
     void endBlock();
 
-    void tryCatchBlock( List<Consumer<MethodEmitter>> body,
-            List<CatchClause> catchClauses,
-            List<Consumer<MethodEmitter>> finalClauses,
-            LocalVariables localVariables, Resource... resources );
+    <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block);
 
     void throwException( Expression exception );
 

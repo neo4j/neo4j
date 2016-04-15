@@ -304,7 +304,6 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       expandAll, IdName("b"), SemanticDirection.INCOMING,
       Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(solved)
 
-
     val plan = ProduceResult(List("a", "b"), expandInto)
 
     //when

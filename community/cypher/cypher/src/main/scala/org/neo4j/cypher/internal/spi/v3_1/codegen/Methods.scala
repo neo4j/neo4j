@@ -33,7 +33,7 @@ private object Methods {
   val startNode = method[RelationshipDataExtractor, Long]("startNode")
   val endNode = method[RelationshipDataExtractor, Long]("endNode")
   val typeOf = method[RelationshipDataExtractor, Int]("type")
-  val nodeGetAllRelationships = method[CompiledReadOperationsUtils, RelationshipIterator]("nodeGetRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Direction])
+  val nodeGetAllRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction])
   val nodeGetRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
   val allConnectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Long], typeRef[Direction])
   val connectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
