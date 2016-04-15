@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v3_0.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0._
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, AstConstructionTestSupport, Variable, Statement}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{ASTAnnotationMap, AstConstructionTestSupport, Statement, Variable}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -66,7 +66,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
     "START `  root@6`=node:Person(id='deevian') RETURN id(`  root@6`) as id UNION START `  root@71`=node:Person(id='retophy') RETURN id(`  root@71`) as id"
     ,
     "WITH 1 AS p, count(*) AS rng RETURN p ORDER BY rng" ->
-    "WITH 1 AS `  p@10`, count(*) AS rng WITH `  p@10`  AS `  FRESHID36` ORDER BY rng RETURN `  FRESHID36` AS p"
+    "WITH 1 AS `  p@10`, count(*) AS rng WITH `  p@10`  AS `  FRESHID36` ORDER BY rng RETURN `  FRESHID36` AS p",
+    "CALL db.labels() YIELD label WITH count(*) AS c CALL db.labels() YIELD label RETURN *" ->
+    "CALL db.labels() YIELD label AS `  label@23` WITH count(*) AS c CALL db.labels() YIELD label AS `  label@71` RETURN c AS c, `  label@71` AS label"
   )
 
   tests.foreach {
