@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.record_format;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
 
 public class RecordFormatSelectorTest
 {

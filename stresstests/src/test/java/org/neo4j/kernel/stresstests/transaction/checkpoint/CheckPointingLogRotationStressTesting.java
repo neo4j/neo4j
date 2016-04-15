@@ -80,7 +80,7 @@ public class CheckPointingLogRotationStressTesting
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, pageCacheMemory )
                 .setConfig( GraphDatabaseSettings.mapped_memory_page_size, pageSize )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, LowLimitV3_0.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
                 .setConfig( GraphDatabaseSettings.check_point_interval_time, "1m" )
                 .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "timer" )
                 .newGraphDatabase();

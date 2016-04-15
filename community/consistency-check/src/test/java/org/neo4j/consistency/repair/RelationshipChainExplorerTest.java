@@ -32,9 +32,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -117,7 +117,7 @@ public class RelationshipChainExplorerTest
         File storeDirectory = storeLocation.graphDbDir();
         GraphDatabaseService database = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( storeDirectory )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, getRecordFormatName() )
+                .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .newGraphDatabase();
 
         try ( Transaction transaction = database.beginTx() )

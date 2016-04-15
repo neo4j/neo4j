@@ -29,10 +29,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.test.DbRepresentation;
@@ -129,7 +129,7 @@ public class BackupHaIT
 
     private Config getConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
+        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(),
                 LowLimitV3_0.NAME ) );
     }
 }

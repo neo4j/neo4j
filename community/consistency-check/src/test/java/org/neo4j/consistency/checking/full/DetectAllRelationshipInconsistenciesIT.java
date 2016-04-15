@@ -41,7 +41,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -149,13 +148,13 @@ public class DetectAllRelationshipInconsistenciesIT
     private Config getTuningConfiguration()
     {
         return new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
-                          GraphDatabaseFacadeFactory.Configuration.record_format.name(), getRecordFormatName() ) );
+                          GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
     }
 
     private GraphDatabaseAPI getGraphDatabaseAPI()
     {
         return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.absolutePath() )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, getRecordFormatName() )
+                .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .newGraphDatabase();
     }
 

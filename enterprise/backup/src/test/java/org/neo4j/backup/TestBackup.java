@@ -405,7 +405,7 @@ public class TestBackup
 
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, LowLimitV3_0.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
                 .newGraphDatabase();
         try
         {
@@ -643,7 +643,7 @@ public class TestBackup
         return dbFactory.newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, LowLimitV3_0.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
                 .newGraphDatabase();
     }
 
@@ -679,14 +679,14 @@ public class TestBackup
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, LowLimitV3_0.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
                 .newGraphDatabase();
     }
 
     private Config getFormatConfig()
     {
         return new Config(
-                MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(), LowLimitV3_0.NAME ) );
+                MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), LowLimitV3_0.NAME ) );
     }
 
     private DbRepresentation getDbRepresentation()

@@ -24,9 +24,9 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.test.TargetDirectory;
 
@@ -61,7 +61,7 @@ public class StartupConstraintSemanticsTest
         {
             graphDb = new GraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( dir.graphDbDir() )
-                    .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, LowLimitV3_0.NAME )
+                    .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
                     .newGraphDatabase();
             fail( "should have failed to start!" );
         }

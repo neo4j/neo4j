@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -425,7 +424,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         // applied and all would have been well.
 
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory )
-                             .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, formatName );
+                             .setConfig( GraphDatabaseSettings.record_format, formatName );
         GraphDatabaseAPI database = (GraphDatabaseAPI) builder.newGraphDatabase();
         try
         {
@@ -456,7 +455,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
         GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, formatName )
+                .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
                 // tests and records around that. Those tests could change, but the simpler option is to just
                 // keep the block size to 60 and let them be.

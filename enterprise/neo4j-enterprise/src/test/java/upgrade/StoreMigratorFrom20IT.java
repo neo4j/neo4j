@@ -42,7 +42,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -210,6 +209,6 @@ public class StoreMigratorFrom20IT
 
     private Map<String,String> configMap()
     {
-        return stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(), LowLimitV3_0.NAME );
+        return stringMap( GraphDatabaseSettings.record_format.name(), LowLimitV3_0.NAME );
     }
 }

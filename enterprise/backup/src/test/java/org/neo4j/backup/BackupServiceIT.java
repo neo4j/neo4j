@@ -54,7 +54,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -330,7 +329,7 @@ public class BackupServiceIT
         // their ids should not clash with already existing
         GraphDatabaseService backupBasedDatabase =
                 new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( backupDir.getAbsoluteFile() )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, LowLimitV3_0.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
                         .newGraphDatabase();
         try
         {
@@ -868,7 +867,7 @@ public class BackupServiceIT
 
     private Config getConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
+        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(),
                 LowLimitV3_0.NAME ) );
     }
 

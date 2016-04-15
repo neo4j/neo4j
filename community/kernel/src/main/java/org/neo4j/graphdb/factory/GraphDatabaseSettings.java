@@ -34,9 +34,9 @@ import org.neo4j.kernel.configuration.Group;
 import org.neo4j.kernel.configuration.GroupSettingSupport;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.impl.cache.MonitorGc;
-import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
 import org.neo4j.logging.Level;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.BoltConnector.EncryptionLevel.OPTIONAL;
@@ -101,6 +101,10 @@ public abstract class GraphDatabaseSettings
             "Setting this to `true` does not guarantee successful upgrade, it just " +
             "allows an upgrade to be performed.")
     public static final Setting<Boolean> allow_store_upgrade = setting("dbms.allow_format_migration", BOOLEAN, FALSE );
+
+
+    @Description( "Specifies custom storage format name. If not set default format will be used." )
+    public static final Setting<String> record_format = setting( "dbms.record_format", Settings.STRING, "" );
 
     // Cypher settings
     // TODO: These should live with cypher

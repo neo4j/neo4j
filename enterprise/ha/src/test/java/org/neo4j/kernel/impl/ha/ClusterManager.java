@@ -131,7 +131,7 @@ public class ClusterManager
     public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m",
-            GraphDatabaseFacadeFactory.Configuration.record_format.name(), LowLimitV3_0.NAME ) );
+            GraphDatabaseSettings.record_format.name(), LowLimitV3_0.NAME ) );
 
     public interface StoreDirInitializer
     {

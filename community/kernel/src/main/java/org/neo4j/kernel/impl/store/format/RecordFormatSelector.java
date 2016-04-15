@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.store.format;
 
 import org.apache.commons.lang3.StringUtils;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
@@ -59,7 +59,7 @@ public class RecordFormatSelector
 
     /**
      * Select record formats based on provided format name in
-     * {@link GraphDatabaseFacadeFactory.Configuration#record_format} property
+     * {@link GraphDatabaseSettings#record_format} property
      *
      * @param config database configuration
      * @param logService logging service
@@ -80,7 +80,7 @@ public class RecordFormatSelector
 
     /**
      * Select record formats based on provided format name in
-     * {@link GraphDatabaseFacadeFactory.Configuration#record_format} property
+     * {@link GraphDatabaseSettings#record_format} property
      * If property not specified provided defaultFormat will be return instead.
      *
      * @param config database configuration
@@ -134,7 +134,7 @@ public class RecordFormatSelector
 
     /**
      * Select configured record format based on available services in class path.
-     * Specific format can be specified by {@link GraphDatabaseFacadeFactory.Configuration#record_format} property.
+     * Specific format can be specified by {@link GraphDatabaseSettings#record_format} property.
      * <p>
      * If format is not specified {@link #DEFAULT_AUTOSELECT_FORMAT} will be used.
      *
@@ -201,6 +201,6 @@ public class RecordFormatSelector
 
     private static String configuredRecordFormat( Config config )
     {
-        return config.get( GraphDatabaseFacadeFactory.Configuration.record_format );
+        return config.get( GraphDatabaseSettings.record_format );
     }
 }
