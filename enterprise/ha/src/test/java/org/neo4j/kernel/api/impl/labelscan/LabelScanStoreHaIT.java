@@ -35,7 +35,7 @@ import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -119,7 +119,7 @@ public class LabelScanStoreHaIT
                     {
                         GraphDatabaseService db = new TestGraphDatabaseFactory()
                                 .newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() )
-                                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
+                                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                                 .newGraphDatabase();
                         try
                         {

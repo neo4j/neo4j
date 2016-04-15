@@ -22,11 +22,10 @@ package org.neo4j.kernel.impl.store.format;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 
 import static java.util.stream.Collectors.toSet;
-
 import static org.neo4j.helpers.ArrayUtil.contains;
 
 /**

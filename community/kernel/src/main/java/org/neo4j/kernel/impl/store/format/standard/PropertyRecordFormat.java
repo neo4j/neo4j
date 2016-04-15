@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.lowlimit;
+package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -41,7 +41,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
 
     public PropertyRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, LowLimitFormatSettings.PROPERTY_RECORD_MAXIMUM_ID_BITS );
+        super( fixedRecordSize( RECORD_SIZE ), 0, StandardFormatSettings.PROPERTY_RECORD_MAXIMUM_ID_BITS );
     }
 
     @Override

@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -117,7 +117,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
     public GraphStoreFixture()
     {
-        this( false, LowLimitV3_0.NAME );
+        this( false, StandardV3_0.NAME );
     }
 
     public void apply( Transaction transaction ) throws TransactionFailureException

@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -62,7 +62,7 @@ public class RelationshipGroupGetterTest
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
         StoreFactory storeFactory = new StoreFactory( fs.get(), dir, pageCache.getPageCache( fs.get() ),
-                LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
         {
             RecordStore<RelationshipGroupRecord> store = spy( stores.getRelationshipGroupStore() );

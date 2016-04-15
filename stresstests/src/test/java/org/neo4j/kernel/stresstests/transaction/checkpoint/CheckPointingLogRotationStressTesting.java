@@ -31,7 +31,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.stresstests.transaction.checkpoint.tracers.TimerTransactionTracer;
 import org.neo4j.kernel.stresstests.transaction.checkpoint.workload.Workload;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
@@ -80,7 +80,7 @@ public class CheckPointingLogRotationStressTesting
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.pagecache_memory, pageCacheMemory )
                 .setConfig( GraphDatabaseSettings.mapped_memory_page_size, pageSize )
-                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                 .setConfig( GraphDatabaseSettings.check_point_interval_time, "1m" )
                 .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "timer" )
                 .newGraphDatabase();

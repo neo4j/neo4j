@@ -51,11 +51,11 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
-import org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -161,7 +161,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     progressMonitor, oldFormat, newFormat );
         }
 
-        if ( versionToMigrateFrom.equals( LowLimitV2_1.STORE_VERSION ) )
+        if ( versionToMigrateFrom.equals( StandardV2_1.STORE_VERSION ) )
         {
             removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider, oldFormat, newFormat );
         }
@@ -601,8 +601,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     {
         switch ( versionToMigrateFrom )
         {
-        case LowLimitV2_1.STORE_VERSION:
-        case LowLimitV2_2.STORE_VERSION:
+        case StandardV2_1.STORE_VERSION:
+        case StandardV2_2.STORE_VERSION:
             // create counters from scratch
             Iterable<StoreFile> countsStoreFiles =
                     Iterables.iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );

@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -96,9 +96,9 @@ public class StoreMigratorFrom20IT
         labelScanStoreProvider = new LabelScanStoreProvider( new InMemoryLabelScanStore(), 1 );
 
         storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                pageCache, fs, StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
-                new LegacyStoreVersionCheck( fs ), LowLimitV3_0.RECORD_FORMATS );
+                new LegacyStoreVersionCheck( fs ), StandardV3_0.RECORD_FORMATS );
     }
 
     @After
@@ -190,7 +190,7 @@ public class StoreMigratorFrom20IT
         assertEquals( 1317392957120L, metaDataStore.getCreationTime() );
         assertEquals( -472309512128245482L, metaDataStore.getRandomNumber() );
         assertEquals( 5L, metaDataStore.getCurrentLogVersion() );
-        assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(),
+        assertEquals( StandardV3_0.RECORD_FORMATS.storeVersion(),
                 MetaDataStore.versionLongToString( metaDataStore.getStoreVersion() ) );
         assertEquals( 1042L, metaDataStore.getLastCommittedTransactionId() );
     }
@@ -209,6 +209,6 @@ public class StoreMigratorFrom20IT
 
     private Map<String,String> configMap()
     {
-        return stringMap( GraphDatabaseSettings.record_format.name(), LowLimitV3_0.NAME );
+        return stringMap( GraphDatabaseSettings.record_format.name(), StandardV3_0.NAME );
     }
 }

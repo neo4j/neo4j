@@ -46,11 +46,11 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
-import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.PropertyKeyTokenRecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.PropertyKeyTokenRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -549,7 +549,7 @@ public class IdGeneratorTest
     @Test
     public void makeSureIdCapacityCannotBeExceeded() throws Exception
     {
-        RecordFormats formats = LowLimitV3_0.RECORD_FORMATS;
+        RecordFormats formats = StandardV3_0.RECORD_FORMATS;
         List<RecordFormat<? extends AbstractBaseRecord>> recordFormats = Arrays.asList( formats.node(),
                 formats.dynamic(),
                 formats.labelToken(),

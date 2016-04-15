@@ -27,7 +27,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
@@ -42,7 +42,7 @@ public class RecordFormatSelectorTest
     {
         Config config = new Config( MapUtil.stringMap( record_format.name(), HighLimit.NAME ) );
         RecordFormats formatSelector = RecordFormatSelector.select( config,
-                LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance() );
+                StandardV3_0.RECORD_FORMATS, NullLogService.getInstance() );
         assertEquals( HighLimit.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
 
@@ -51,8 +51,8 @@ public class RecordFormatSelectorTest
     {
         Config config = Config.empty();
         RecordFormats formatSelector = RecordFormatSelector.select( config,
-                LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance() );
-        assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
+                StandardV3_0.RECORD_FORMATS, NullLogService.getInstance() );
+        assertEquals( StandardV3_0.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
 
     @Test
@@ -61,22 +61,22 @@ public class RecordFormatSelectorTest
         Config config = new Config( MapUtil.stringMap( record_format.name(), "notAValidRecordFormat" ) );
         expectedException.expect( IllegalArgumentException.class );
 
-        RecordFormatSelector.select( config, LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance() );
+        RecordFormatSelector.select( config, StandardV3_0.RECORD_FORMATS, NullLogService.getInstance() );
     }
 
     @Test
-    public void autoSelectLowLimitFormat()
+    public void autoSelectStandardFormat()
     {
         RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat();
         assertEquals( "Autoselectable format should be equal to default format.", recordFormats,
-                LowLimitV3_0.RECORD_FORMATS );
+                StandardV3_0.RECORD_FORMATS );
     }
 
     @Test
     public void autoselectCommunityFormat()
     {
         RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat( Config.empty(), NullLogService.getInstance() );
-        assertEquals( "autoselect should select specified format.", recordFormats, LowLimitV3_0.RECORD_FORMATS );
+        assertEquals( "autoselect should select specified format.", recordFormats, StandardV3_0.RECORD_FORMATS );
     }
 
     @Test

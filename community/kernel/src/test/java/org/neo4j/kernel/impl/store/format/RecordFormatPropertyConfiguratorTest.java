@@ -25,8 +25,8 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
-import org.neo4j.kernel.impl.store.format.lowlimit.NoRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -54,7 +54,7 @@ public class RecordFormatPropertyConfiguratorTest
     public void keepUserDefinedFormatConfig() throws Exception
     {
         Config config = new Config( MapUtil.stringMap( string_block_size.name(), "36" ) );
-        RecordFormats recordFormats = LowLimitV3_0.RECORD_FORMATS;
+        RecordFormats recordFormats = StandardV3_0.RECORD_FORMATS;
         new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
         assertEquals( "Should keep used specified value", 36, config.get( string_block_size ).intValue() );
     }

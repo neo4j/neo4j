@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;

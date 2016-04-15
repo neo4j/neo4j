@@ -26,7 +26,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
 public class EmbeddedServer implements ServerInterface
 {
@@ -37,7 +37,7 @@ public class EmbeddedServer implements ServerInterface
         GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         graphDatabaseBuilder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
         graphDatabaseBuilder.setConfig( OnlineBackupSettings.online_backup_server, serverAddress );
-        graphDatabaseBuilder.setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME );
+        graphDatabaseBuilder.setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME );
         graphDatabaseBuilder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         this.db = graphDatabaseBuilder.newGraphDatabase();
     }

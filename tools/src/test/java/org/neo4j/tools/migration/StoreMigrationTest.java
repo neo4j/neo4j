@@ -29,7 +29,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -56,7 +56,7 @@ public class StoreMigrationTest
         // after migration we can open store and do something
         GraphDatabaseService database = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDir.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                 .newGraphDatabase();
         try (Transaction transaction = database.beginTx())
         {

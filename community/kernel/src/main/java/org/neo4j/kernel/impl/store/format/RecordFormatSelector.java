@@ -26,11 +26,11 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.Log;
 
 import static java.util.Arrays.asList;
@@ -47,14 +47,14 @@ import static org.neo4j.helpers.collection.Iterables.map;
 public class RecordFormatSelector
 {
 
-    private static final RecordFormats DEFAULT_AUTOSELECT_FORMAT = LowLimitV3_0.RECORD_FORMATS;
+    private static final RecordFormats DEFAULT_AUTOSELECT_FORMAT = StandardV3_0.RECORD_FORMATS;
 
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
-            LowLimitV2_0.RECORD_FORMATS,
-            LowLimitV2_1.RECORD_FORMATS,
-            LowLimitV2_2.RECORD_FORMATS,
-            LowLimitV2_3.RECORD_FORMATS,
-            LowLimitV3_0.RECORD_FORMATS
+            StandardV2_0.RECORD_FORMATS,
+            StandardV2_1.RECORD_FORMATS,
+            StandardV2_2.RECORD_FORMATS,
+            StandardV2_3.RECORD_FORMATS,
+            StandardV3_0.RECORD_FORMATS
     );
 
     /**
@@ -168,9 +168,9 @@ public class RecordFormatSelector
     {
         if ( StringUtils.isNotEmpty( recordFormat ) )
         {
-            if ( LowLimitV3_0.NAME.equals( recordFormat ) )
+            if ( StandardV3_0.NAME.equals( recordFormat ) )
             {
-                return LowLimitV3_0.RECORD_FORMATS;
+                return StandardV3_0.RECORD_FORMATS;
             }
             RecordFormats.Factory formatFactory = Service.loadSilently( RecordFormats.Factory.class, recordFormat );
             if ( formatFactory != null )

@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -405,7 +405,7 @@ public class TestBackup
 
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                 .newGraphDatabase();
         try
         {
@@ -643,7 +643,7 @@ public class TestBackup
         return dbFactory.newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                 .newGraphDatabase();
     }
 
@@ -679,14 +679,14 @@ public class TestBackup
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.record_format, LowLimitV3_0.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                 .newGraphDatabase();
     }
 
     private Config getFormatConfig()
     {
         return new Config(
-                MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), LowLimitV3_0.NAME ) );
+                MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), StandardV3_0.NAME ) );
     }
 
     private DbRepresentation getDbRepresentation()
