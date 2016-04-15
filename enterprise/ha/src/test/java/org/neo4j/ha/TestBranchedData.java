@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.kernel.impl.logging.StoreLogService;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.StoreUtil;
 import org.neo4j.kernel.lifecycle.LifeRule;
@@ -333,7 +333,7 @@ public class TestBranchedData
     {
         return new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder(  storeDir )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, LowLimitV3_0.NAME )
                 .newGraphDatabase();
     }
 }

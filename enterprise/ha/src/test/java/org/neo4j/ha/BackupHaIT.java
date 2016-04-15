@@ -34,7 +34,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.SuppressOutput;
 import org.neo4j.test.ha.ClusterRule;
@@ -130,6 +130,6 @@ public class BackupHaIT
     private Config getConfig()
     {
         return new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
-                HighLimit.NAME ) );
+                LowLimitV3_0.NAME ) );
     }
 }

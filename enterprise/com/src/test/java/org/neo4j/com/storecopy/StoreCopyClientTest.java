@@ -43,7 +43,6 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -301,7 +300,7 @@ public class StoreCopyClientTest
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        return startDatabase( storeDir, HighLimit.NAME );
+        return startDatabase( storeDir, LowLimitV3_0.NAME );
     }
 
     private GraphDatabaseService startDatabase( File storeDir, String recordFormatName )

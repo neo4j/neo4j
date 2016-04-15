@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.store.format;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Iterator;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -43,7 +41,8 @@ import static org.neo4j.helpers.collection.Iterables.map;
  * Selects record format that will be used in a database.
  * Support two types of selection : config based or automatic.
  * <p>
- * Automatic selection is used by various tools and tests that should work for format independent (for example backup)
+ * Automatic selection is used by various tools and tests that should pretend being format independent (for
+ * example backup)
  */
 public class RecordFormatSelector
 {
@@ -124,12 +123,9 @@ public class RecordFormatSelector
     }
 
     /**
-     * Select record formats based on available services in class path.
-     * In case if multiple services are available only 'first' will be considered.
-     * In case if no record format providers are found - default record format ({@link #DEFAULT_AUTOSELECT_FORMAT}) will
-     * be used.
+     * Select {@link #DEFAULT_AUTOSELECT_FORMAT} record format.
      *
-     * @return - selected record format.
+     * @return selected record format.
      */
     public static RecordFormats autoSelectFormat()
     {
@@ -137,12 +133,10 @@ public class RecordFormatSelector
     }
 
     /**
-     * Select record formats based on available services in class path.
-     * Specific format selection can be forced by specifying format name in
-     * {@link GraphDatabaseFacadeFactory.Configuration#record_format} property.
-     * In case if multiple services are available only 'first' will be considered.
-     * In case if no record format providers are found - default record format ({@link #DEFAULT_AUTOSELECT_FORMAT}) will
-     * be used.
+     * Select configured record format based on available services in class path.
+     * Specific format can be specified by {@link GraphDatabaseFacadeFactory.Configuration#record_format} property.
+     * <p>
+     * If format is not specified {@link #DEFAULT_AUTOSELECT_FORMAT} will be used.
      *
      * @param config - configuration parameters
      * @param logService - logging service
@@ -154,7 +148,7 @@ public class RecordFormatSelector
         String recordFormat = configuredRecordFormat( config );
         RecordFormats recordFormats = StringUtils.isNotEmpty( recordFormat ) ?
                                       selectSpecificFormat( recordFormat, logService ) :
-                                      getFirstAvailableOrDefault( DEFAULT_AUTOSELECT_FORMAT );
+                                      DEFAULT_AUTOSELECT_FORMAT;
         logSelectedFormat( logService, recordFormats );
         return recordFormats;
     }
@@ -169,12 +163,6 @@ public class RecordFormatSelector
         return formats;
     }
 
-    private static RecordFormats getFirstAvailableOrDefault( RecordFormats defaultAutoSelectFormat )
-    {
-        Iterable<RecordFormats.Factory> formatFactories = Service.load( RecordFormats.Factory.class );
-        Iterator<RecordFormats.Factory> factoryIterator = formatFactories.iterator();
-        return factoryIterator.hasNext() ? factoryIterator.next().newInstance() : defaultAutoSelectFormat;
-    }
 
     private static RecordFormats loadRecordFormat( String recordFormat )
     {

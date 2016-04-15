@@ -34,7 +34,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -48,7 +47,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
@@ -103,14 +102,14 @@ public class StoreMigratorFrom21IT
 
         GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
                         .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
-                        .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
+                        .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, LowLimitV3_0.NAME );
         GraphDatabaseService database = builder.newGraphDatabase();
         database.shutdown();
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck(
                 dir.getAbsoluteFile(), Config.defaults().with( MapUtil.stringMap( GraphDatabaseFacadeFactory
-                        .Configuration.record_format.name(), HighLimit.NAME ) ),
+                        .Configuration.record_format.name(), LowLimitV3_0.NAME ) ),
                 ProgressMonitorFactory.NONE,
                 NullLogProvider
                         .getInstance(), false );

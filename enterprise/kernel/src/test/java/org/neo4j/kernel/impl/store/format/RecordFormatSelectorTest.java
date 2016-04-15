@@ -40,7 +40,6 @@ public class RecordFormatSelectorTest
     @Test
     public void selectSpecifiedRecordFormat() throws Exception
     {
-
         Config config = new Config( MapUtil.stringMap( record_format.name(), HighLimit.NAME ) );
         RecordFormats formatSelector = RecordFormatSelector.select( config,
                 LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance() );
@@ -52,8 +51,8 @@ public class RecordFormatSelectorTest
     {
         Config config = Config.empty();
         RecordFormats formatSelector = RecordFormatSelector.select( config,
-                HighLimit.RECORD_FORMATS, NullLogService.getInstance() );
-        assertEquals( HighLimit.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
+                LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance() );
+        assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(), formatSelector.storeVersion() );
     }
 
     @Test
@@ -66,18 +65,17 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void autoSelectHighLimitFormat()
+    public void autoSelectLowLimitFormat()
     {
         RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat();
-        assertEquals( "Default autoselectable format should be format from available format provider.",
-                recordFormats, HighLimit.RECORD_FORMATS );
+        assertEquals( "Autoselectable format should be equal to default format.", recordFormats,
+                LowLimitV3_0.RECORD_FORMATS );
     }
 
     @Test
     public void autoselectCommunityFormat()
     {
-        Config config = new Config( MapUtil.stringMap( record_format.name(), LowLimitV3_0.NAME ) );
-        RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat( config, NullLogService.getInstance() );
+        RecordFormats recordFormats = RecordFormatSelector.autoSelectFormat( Config.empty(), NullLogService.getInstance() );
         assertEquals( "autoselect should select specified format.", recordFormats, LowLimitV3_0.RECORD_FORMATS );
     }
 

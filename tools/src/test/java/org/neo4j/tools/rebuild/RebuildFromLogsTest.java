@@ -40,7 +40,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.SuppressOutput;
@@ -137,14 +137,14 @@ public class RebuildFromLogsTest
 
     private Config getConfig()
     {
-        return new Config( stringMap( record_format.name(), HighLimit.NAME ) );
+        return new Config( stringMap( record_format.name(), LowLimitV3_0.NAME ) );
     }
 
     private GraphDatabaseAPI db( File rebuiltPath )
     {
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( rebuiltPath )
-                .setConfig( record_format, HighLimit.NAME )
+                .setConfig( record_format, LowLimitV3_0.NAME )
                 .newGraphDatabase();
 
     }

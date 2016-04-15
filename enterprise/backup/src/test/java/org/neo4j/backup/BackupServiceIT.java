@@ -60,7 +60,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -330,7 +330,7 @@ public class BackupServiceIT
         // their ids should not clash with already existing
         GraphDatabaseService backupBasedDatabase =
                 new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( backupDir.getAbsoluteFile() )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, LowLimitV3_0.NAME )
                         .newGraphDatabase();
         try
         {
@@ -869,7 +869,7 @@ public class BackupServiceIT
     private Config getConfig()
     {
         return new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
-                HighLimit.NAME ) );
+                LowLimitV3_0.NAME ) );
     }
 
     private DbRepresentation getBackupDbRepresentation()

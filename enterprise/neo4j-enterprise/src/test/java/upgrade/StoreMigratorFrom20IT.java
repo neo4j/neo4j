@@ -19,14 +19,14 @@
  */
 package upgrade;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -63,12 +63,11 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.find20FormatStoreDirectory;
+import static upgrade.StoreMigratorTestUtil.buildClusterWithMasterDirIn;
 
 public class StoreMigratorFrom20IT
 {
@@ -98,9 +97,9 @@ public class StoreMigratorFrom20IT
         labelScanStoreProvider = new LabelScanStoreProvider( new InMemoryLabelScanStore(), 1 );
 
         storeFactory = new StoreFactory( storeDir.directory(), config, new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, HighLimit.RECORD_FORMATS, NullLogProvider.getInstance() );
+                pageCache, fs, LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
-                new LegacyStoreVersionCheck( fs ), HighLimit.RECORD_FORMATS );
+                new LegacyStoreVersionCheck( fs ), LowLimitV3_0.RECORD_FORMATS );
     }
 
     @After
@@ -192,7 +191,7 @@ public class StoreMigratorFrom20IT
         assertEquals( 1317392957120L, metaDataStore.getCreationTime() );
         assertEquals( -472309512128245482L, metaDataStore.getRandomNumber() );
         assertEquals( 5L, metaDataStore.getCurrentLogVersion() );
-        assertEquals( HighLimit.RECORD_FORMATS.storeVersion(),
+        assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(),
                 MetaDataStore.versionLongToString( metaDataStore.getStoreVersion() ) );
         assertEquals( 1042L, metaDataStore.getLastCommittedTransactionId() );
     }
@@ -211,6 +210,6 @@ public class StoreMigratorFrom20IT
 
     private Map<String,String> configMap()
     {
-        return stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(), HighLimit.NAME );
+        return stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(), LowLimitV3_0.NAME );
     }
 }
