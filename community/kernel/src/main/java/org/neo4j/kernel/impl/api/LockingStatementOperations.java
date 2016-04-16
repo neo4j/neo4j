@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.ProcedureConstraintViolation;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.procedures.ProcedureDescriptor;
@@ -57,6 +57,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.PROCEDURE;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.SCHEMA;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.procedureResourceId;
@@ -275,19 +277,7 @@ public class LockingStatementOperations implements
             throws EntityNotFoundException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
-
-        // Order the locks to lower the risk of deadlocks with other threads adding rels concurrently
-        if ( startNodeId < endNodeId )
-        {
-            state.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
-            state.locks().acquireExclusive( ResourceTypes.NODE, endNodeId );
-        }
-        else
-        {
-            state.locks().acquireExclusive( ResourceTypes.NODE, endNodeId );
-            state.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
-        }
-        state.assertOpen();
+        lockRelationshipNodes( state, startNodeId, endNodeId );
         return entityWriteDelegate.relationshipCreate( state, relationshipTypeId, startNodeId, endNodeId );
     }
 
@@ -300,13 +290,22 @@ public class LockingStatementOperations implements
                     @Override
                     public void visit( long relId, int type, long startNode, long endNode )
                     {
-                        state.locks().acquireExclusive( ResourceTypes.NODE, startNode );
-                        state.locks().acquireExclusive( ResourceTypes.NODE, endNode );
+                        lockRelationshipNodes( state, startNode, endNode );
                     }
                 } );
         state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         state.assertOpen();
         entityWriteDelegate.relationshipDelete( state, relationshipId );
+    }
+
+    private void lockRelationshipNodes( KernelStatement state, long startNodeId, long endNodeId )
+    {
+        // Order the locks to lower the risk of deadlocks with other threads creating/deleting rels concurrently
+        state.locks().acquireExclusive( ResourceTypes.NODE, min( startNodeId, endNodeId ) );
+        if ( startNodeId != endNodeId )
+        {
+            state.locks().acquireExclusive( ResourceTypes.NODE, max( startNodeId, endNodeId ) );
+        }
     }
 
     @Override

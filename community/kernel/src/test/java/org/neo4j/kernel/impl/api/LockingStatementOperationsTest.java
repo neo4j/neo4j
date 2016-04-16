@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -42,8 +44,12 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 import static org.junit.Assert.assertSame;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.neo4j.function.Functions.constant;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
@@ -58,8 +64,7 @@ public class LockingStatementOperationsTest
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-    private final KernelStatement state = new KernelStatement( transaction, null, null, null, locks, null,
-            null );
+    private final KernelStatement state = new KernelStatement( transaction, null, null, null, locks, null, null );
     private final SchemaStateOperations schemaStateOps;
 
     public LockingStatementOperationsTest()
@@ -278,7 +283,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeUpdatingSchemaState() throws Exception
     {
         // given
-        Function<Object, Object> creator = constant( null );
+        Function<Object,Object> creator = constant( null );
 
         // when
         lockingOps.schemaStateGetOrCreate( state, null, creator );
@@ -308,5 +313,99 @@ public class LockingStatementOperationsTest
         // then
         order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaStateOps ).schemaStateFlush( state );
+    }
+
+    @Test
+    public void shouldAcquireNodeLocksWhenCreatingRelationshipInOrderOfAscendingId() throws Exception
+    {
+        // GIVEN
+        long lowId = 3;
+        long highId = 5;
+
+        {
+            // WHEN
+            lockingOps.relationshipCreate( state, 0, lowId, highId );
+
+            // THEN
+            InOrder lockingOrder = inOrder( locks );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verifyNoMoreInteractions();
+            reset( locks );
+        }
+
+        {
+            // WHEN
+            lockingOps.relationshipCreate( state, 0, highId, lowId );
+
+            // THEN
+            InOrder lockingOrder = inOrder( locks );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verifyNoMoreInteractions();
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldAcquireNodeLocksWhenDeletingRelationshipInOrderOfAscendingId() throws Exception
+    {
+        // GIVEN
+        final long relationshipId = 10;
+        final long lowId = 3;
+        final long highId = 5;
+
+        {
+            // and GIVEN
+            doAnswer( new Answer<Void>()
+            {
+                @Override
+                public Void answer( InvocationOnMock invocation ) throws Throwable
+                {
+                    RelationshipVisitor<RuntimeException> visitor =
+                            (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
+                    visitor.visit( relationshipId, 0, lowId, highId );
+                    return null;
+                }
+            } ).when( entityReadOps ).relationshipVisit( any( KernelStatement.class ), anyLong(),
+                    any( RelationshipVisitor.class ) );
+
+            // WHEN
+            lockingOps.relationshipDelete( state, relationshipId );
+
+            // THEN
+            InOrder lockingOrder = inOrder( locks );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
+            lockingOrder.verifyNoMoreInteractions();
+            reset( locks );
+        }
+
+        {
+            // and GIVEN
+            doAnswer( new Answer<Void>()
+            {
+                @Override
+                public Void answer( InvocationOnMock invocation ) throws Throwable
+                {
+                    RelationshipVisitor<RuntimeException> visitor =
+                            (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
+                    visitor.visit( relationshipId, 0, highId, lowId );
+                    return null;
+                }
+            } ).when( entityReadOps ).relationshipVisit( any( KernelStatement.class ), anyLong(),
+                    any( RelationshipVisitor.class ) );
+
+            // WHEN
+            lockingOps.relationshipDelete( state, relationshipId );
+
+            // THEN
+            InOrder lockingOrder = inOrder( locks );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
+            lockingOrder.verifyNoMoreInteractions();
+        }
     }
 }
