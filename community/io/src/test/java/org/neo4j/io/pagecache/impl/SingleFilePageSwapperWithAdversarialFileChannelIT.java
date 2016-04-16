@@ -19,27 +19,14 @@
  */
 package org.neo4j.io.pagecache.impl;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import org.neo4j.adversaries.fs.AdversarialChannelDefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
-import org.neo4j.adversaries.fs.AdversarialFileChannel;
-import org.neo4j.test.bootclasspathrunner.BootClassPathRunner;
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtilTest;
-
-@BootClassPathRunner.BootEntryOf( UnsafeUtilTest.class )
-@RunWith( BootClassPathRunner.class )
-public class SingleFilePageSwapperWithAdversarialFileDispatcherIT extends SingleFilePageSwapperWithRealFileSystemIT
+public class SingleFilePageSwapperWithAdversarialFileChannelIT extends SingleFilePageSwapperWithRealFileSystemIT
 {
-    @BeforeClass
-    public static void enableAdversarialFileDispatcher()
+    @Override
+    protected FileSystemAbstraction getFs()
     {
-        AdversarialFileChannel.useAdversarialFileDispatcherHack = true;
-    }
-
-    @AfterClass
-    public static void disableAdversarialFileDispatcher()
-    {
-        AdversarialFileChannel.useAdversarialFileDispatcherHack = false;
+        return new AdversarialChannelDefaultFileSystemAbstraction();
     }
 }
