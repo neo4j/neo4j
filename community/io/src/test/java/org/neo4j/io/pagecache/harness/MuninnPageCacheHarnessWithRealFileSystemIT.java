@@ -23,7 +23,7 @@ import org.junit.Rule;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.rule.TargetDirectory;
 
 public class MuninnPageCacheHarnessWithRealFileSystemIT extends MunninPageCacheHarnessTest
 {
