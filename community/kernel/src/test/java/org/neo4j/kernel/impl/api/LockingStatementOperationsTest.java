@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Test;
+import org.mockito.InOrder;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
-
-import org.junit.Test;
-import org.mockito.InOrder;
 
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.PropertyConstraint;
@@ -46,8 +46,12 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
 import static org.junit.Assert.assertSame;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
@@ -284,7 +288,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaReadLockBeforeUpdatingSchemaState() throws Exception
     {
         // given
-        Function<Object, Object> creator = from -> null;
+        Function<Object,Object> creator = from -> null;
 
         // when
         lockingOps.schemaStateGetOrCreate( state, null, creator );
@@ -314,5 +318,89 @@ public class LockingStatementOperationsTest
         // then
         order.verify( locks ).acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         order.verify( schemaStateOps ).schemaStateFlush( state );
+    }
+
+    @Test
+    public void shouldAcquireNodeLocksWhenCreatingRelationshipInOrderOfAscendingId() throws Exception
+    {
+        // GIVEN
+        long lowId = 3;
+        long highId = 5;
+
+        {
+            // WHEN
+            lockingOps.relationshipCreate( state, 0, lowId, highId );
+
+            // THEN
+            InOrder lockingOrder = inOrder( locks );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verifyNoMoreInteractions();
+            reset( locks );
+        }
+
+        {
+            // WHEN
+            lockingOps.relationshipCreate( state, 0, highId, lowId );
+
+            // THEN
+            InOrder lockingOrder = inOrder( locks );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verifyNoMoreInteractions();
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldAcquireNodeLocksWhenDeletingRelationshipInOrderOfAscendingId() throws Exception
+    {
+        // GIVEN
+        final long relationshipId = 10;
+        final long lowId = 3;
+        final long highId = 5;
+
+        {
+            // and GIVEN
+            doAnswer( invocation -> {
+                RelationshipVisitor<RuntimeException> visitor =
+                        (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
+                visitor.visit( relationshipId, 0, lowId, highId );
+                return null;
+            } ).when( entityReadOps ).relationshipVisit( any( KernelStatement.class ), anyLong(),
+                    any( RelationshipVisitor.class ) );
+
+            // WHEN
+            lockingOps.relationshipDelete( state, relationshipId );
+
+            // THEN
+            InOrder lockingOrder = inOrder( locks );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
+            lockingOrder.verifyNoMoreInteractions();
+            reset( locks );
+        }
+
+        {
+            // and GIVEN
+            doAnswer( invocation -> {
+                RelationshipVisitor<RuntimeException> visitor =
+                        (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
+                visitor.visit( relationshipId, 0, highId, lowId );
+                return null;
+            } ).when( entityReadOps ).relationshipVisit( any( KernelStatement.class ), anyLong(),
+                    any( RelationshipVisitor.class ) );
+
+            // WHEN
+            lockingOps.relationshipDelete( state, relationshipId );
+
+            // THEN
+            InOrder lockingOrder = inOrder( locks );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, lowId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.NODE, highId );
+            lockingOrder.verify( locks ).acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
+            lockingOrder.verifyNoMoreInteractions();
+        }
     }
 }
