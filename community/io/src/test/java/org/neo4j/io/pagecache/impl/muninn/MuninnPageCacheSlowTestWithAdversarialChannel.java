@@ -19,27 +19,17 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import org.neo4j.adversaries.fs.AdversarialChannelDefaultFileSystemAbstraction;
 
-import org.neo4j.adversaries.fs.AdversarialFileChannel;
-import org.neo4j.test.bootclasspathrunner.BootClassPathRunner;
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtilTest;
-
-@BootClassPathRunner.BootEntryOf( UnsafeUtilTest.class )
-@RunWith( BootClassPathRunner.class )
-public class MuninnPageCacheSlowTestWithAdversarialFileDispatcherIT extends MuninnPageCacheSlowTestWithRealFileSystemIT
+public class MuninnPageCacheSlowTestWithAdversarialChannel extends MuninnPageCacheSlowTestWithRealFileSystemIT
 {
-    @BeforeClass
-    public static void enableAdversarialFileDispatcher()
+
+    @Override
+    protected Fixture<MuninnPageCache> createFixture()
     {
-        AdversarialFileChannel.useAdversarialFileDispatcherHack = true;
+        return super.createFixture()
+                .withFileSystemAbstraction( AdversarialChannelDefaultFileSystemAbstraction::new )
+                .withFileConstructor( pathname -> directory.file( pathname ) );
     }
 
-    @AfterClass
-    public static void disableAdversarialFileDispatcher()
-    {
-        AdversarialFileChannel.useAdversarialFileDispatcherHack = false;
-    }
 }

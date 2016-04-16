@@ -26,7 +26,7 @@ import org.neo4j.io.pagecache.PageCacheTestSupport;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
-class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnPageCache>
+public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnPageCache>
 {
     CountDownLatch backgroundFlushLatch;
 

@@ -51,7 +51,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     {
         // Returning only the channel is ok, because the channel, when close()d will close its parent File.
         FileChannel channel = new RandomAccessFile( fileName, mode ).getChannel();
-        return new StoreFileChannel( channel );
+        return getStoreFileChannel( channel );
     }
 
     @Override
@@ -193,5 +193,10 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     public void truncate( File path, long size ) throws IOException
     {
         FileUtils.truncateFile( path, size );
+    }
+
+    protected StoreFileChannel getStoreFileChannel( FileChannel channel )
+    {
+        return new StoreFileChannel( channel );
     }
 }

@@ -19,56 +19,28 @@
  */
 package org.neo4j.adversaries.fs;
 
-import sun.nio.ch.FileChannelImpl;
-
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.io.fs.StoreFileChannelUnwrapper;
-
-import static org.neo4j.adversaries.fs.AdversarialFileDispatcherFactory.makeFileDispatcherAdversarial;
 
 @SuppressWarnings( "unchecked" )
-public class AdversarialFileChannel implements StoreChannel
+public class AdversarialFileChannel extends StoreFileChannel
 {
-    public static volatile boolean useAdversarialFileDispatcherHack;
-
     private final StoreChannel delegate;
     private final Adversary adversary;
 
-    public static StoreChannel wrap( StoreChannel channel, Adversary adversary )
+    public static StoreFileChannel wrap( StoreFileChannel channel, Adversary adversary )
     {
-        if ( useAdversarialFileDispatcherHack && channel.getClass() == StoreFileChannel.class )
-        {
-            FileChannel innerChannel = StoreFileChannelUnwrapper.unwrap( channel );
-            if ( innerChannel.getClass() == FileChannelImpl.class )
-            {
-                FileChannelImpl channelImpl = (FileChannelImpl) innerChannel;
-                try
-                {
-                    Field nd = FileChannelImpl.class.getDeclaredField( "nd" );
-                    nd.setAccessible( true );
-                    Object fileDispatcher = nd.get( channelImpl );
-                    nd.set( channelImpl, makeFileDispatcherAdversarial( fileDispatcher, adversary ) );
-                    return new StoreFileChannel( innerChannel );
-                }
-                catch ( Exception e )
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
         return new AdversarialFileChannel( channel, adversary );
     }
 
-    private AdversarialFileChannel( StoreChannel channel, Adversary adversary )
+    private AdversarialFileChannel( StoreFileChannel channel, Adversary adversary )
     {
+        super( channel );
         this.delegate = channel;
         this.adversary = adversary;
     }
@@ -130,17 +102,17 @@ public class AdversarialFileChannel implements StoreChannel
     }
 
     @Override
-    public StoreChannel truncate( long size ) throws IOException
+    public StoreFileChannel truncate( long size ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return delegate.truncate( size );
+        return (StoreFileChannel) delegate.truncate( size );
     }
 
     @Override
-    public StoreChannel position( long newPosition ) throws IOException
+    public StoreFileChannel position( long newPosition ) throws IOException
     {
         adversary.injectFailure( IOException.class );
-        return delegate.position( newPosition );
+        return (StoreFileChannel) delegate.position( newPosition );
     }
 
     @Override
