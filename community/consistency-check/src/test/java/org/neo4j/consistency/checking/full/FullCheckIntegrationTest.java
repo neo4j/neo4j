@@ -81,7 +81,6 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PreAllocatedRecords;
@@ -1998,7 +1997,7 @@ public class FullCheckIntegrationTest
         Map<String,String> params = stringMap(
                 // Enable property owners check by default in tests:
                 ConsistencyCheckSettings.consistency_check_property_owners.name(), "true",
-                GraphDatabaseFacadeFactory.Configuration.record_format.name(), getRecordFormatName());
+                GraphDatabaseSettings.record_format.name(), getRecordFormatName());
         return new Config( params, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 

@@ -55,7 +55,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -128,7 +127,7 @@ public class ExecutionOrderIntegrationTest
     private Config getTuningConfiguration()
     {
         return new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
-                GraphDatabaseFacadeFactory.Configuration.record_format.name(), getRecordFormatName() ) );
+                GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
     }
 
     protected String getRecordFormatName()

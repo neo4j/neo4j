@@ -29,8 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.Log;
@@ -73,8 +73,8 @@ public class LegacyIndexMigratorTest
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
-                LowLimitV3_0.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+                StandardV3_0.STORE_VERSION );
 
         verify( fs, never() ).deleteRecursively( originalIndexStore );
         verify( fs, never() ).moveToDirectory( migratedIndexStore, storeDir );
@@ -86,8 +86,8 @@ public class LegacyIndexMigratorTest
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
-                LowLimitV3_0.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+                StandardV3_0.STORE_VERSION );
 
         verify( fs ).copyRecursively( originalIndexStore, migratedIndexStore );
     }
@@ -98,8 +98,8 @@ public class LegacyIndexMigratorTest
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
-                LowLimitV3_0.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+                StandardV3_0.STORE_VERSION );
         reset( fs );
 
         indexMigrator.moveMigratedFiles( migrationDir, storeDir, "any", "any" );
@@ -118,8 +118,8 @@ public class LegacyIndexMigratorTest
         try
         {
             LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, false );
-            indexMigrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
-                    LowLimitV3_0.STORE_VERSION );
+            indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+                    StandardV3_0.STORE_VERSION );
 
             fail( "Index migration should fail" );
         }
@@ -139,8 +139,8 @@ public class LegacyIndexMigratorTest
 
         HashMap<String,IndexImplementation> indexProviders = getIndexProviders();
         LegacyIndexMigrator indexMigrator = new TestLegacyIndexMigrator( fs, indexProviders, logProvider, true );
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
-                LowLimitV3_0.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+                StandardV3_0.STORE_VERSION );
         indexMigrator.cleanup( migrationDir );
 
         verify( fs ).deleteRecursively( migratedIndexStore );

@@ -17,17 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.lowlimit;
+package org.neo4j.kernel.impl.store.format.standard;
 
-import org.junit.Test;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 
-import static org.junit.Assert.assertEquals;
-
-public class LowLimitV3_0Test
+public class LabelTokenRecordFormat extends TokenRecordFormat<LabelTokenRecord>
 {
-    @Test
-    public void shouldResolveLowLimitsRecordFormat() throws Exception
+    public LabelTokenRecordFormat()
     {
-        assertEquals( LowLimitV3_0.RECORD_FORMATS.storeVersion(), LowLimitV3_0.RECORD_FORMATS.storeVersion() );
+        super( BASE_RECORD_SIZE, StandardFormatSettings.LABEL_TOKEN_MAXIMUM_ID_BITS );
+    }
+
+    @Override
+    public LabelTokenRecord newRecord()
+    {
+        return new LabelTokenRecord( -1 );
     }
 }

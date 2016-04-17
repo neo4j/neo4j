@@ -36,11 +36,11 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipGroupRecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.RelationshipRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipGroupRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 

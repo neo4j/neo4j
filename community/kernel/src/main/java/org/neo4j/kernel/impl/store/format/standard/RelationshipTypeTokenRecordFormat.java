@@ -17,23 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.lowlimit;
+package org.neo4j.kernel.impl.store.format.standard;
 
-/**
- * Common low limit format settings.
- */
-final class LowLimitFormatSettings
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+
+public class RelationshipTypeTokenRecordFormat extends TokenRecordFormat<RelationshipTypeTokenRecord>
 {
-    static final int NODE_RECORD_MAXIMUM_ID_BITS = 35;
-    static final int RELATIONSHIP_MAXIMUM_ID_BITS = 35;
-    static final int PROPERTY_RECORD_MAXIMUM_ID_BITS = 36;
-    static final int DYNAMIC_RECORD_MAXIMUM_ID_BITS = 36;
-    static final int LABEL_TOKEN_MAXIMUM_ID_BITS = 32;
-    static final int PROPERTY_TOKEN_MAXIMUM_ID_BITS = 32;
-    static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = 16;
-    static final int RELATIONSHIP_GROUP_MAXIMUM_ID_BITS = 35;
-
-    private LowLimitFormatSettings()
+    public RelationshipTypeTokenRecordFormat()
     {
+        super( BASE_RECORD_SIZE, StandardFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS );
+    }
+
+    @Override
+    public RelationshipTypeTokenRecord newRecord()
+    {
+        return new RelationshipTypeTokenRecord( -1 );
     }
 }

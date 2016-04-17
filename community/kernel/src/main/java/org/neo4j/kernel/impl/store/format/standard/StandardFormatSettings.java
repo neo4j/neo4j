@@ -17,19 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format;
+package org.neo4j.kernel.impl.store.format.standard;
 
-import org.neo4j.kernel.impl.store.format.LimitedRecordGenerators;
-import org.neo4j.kernel.impl.store.format.RecordFormatTest;
-import org.neo4j.kernel.impl.store.format.RecordGenerators;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
-
-public class LowLimitRecordFormatTest extends RecordFormatTest
+/**
+ * Common low limit format settings.
+ */
+final class StandardFormatSettings
 {
-    private static final RecordGenerators LOW_LIMITS = new LimitedRecordGenerators( random, 35, 36, 40, 16, NULL );
+    static final int NODE_RECORD_MAXIMUM_ID_BITS = 35;
+    static final int RELATIONSHIP_MAXIMUM_ID_BITS = 35;
+    static final int PROPERTY_RECORD_MAXIMUM_ID_BITS = 36;
+    static final int DYNAMIC_RECORD_MAXIMUM_ID_BITS = 36;
+    static final int LABEL_TOKEN_MAXIMUM_ID_BITS = 32;
+    static final int PROPERTY_TOKEN_MAXIMUM_ID_BITS = 32;
+    static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = 16;
+    static final int RELATIONSHIP_GROUP_MAXIMUM_ID_BITS = 35;
 
-    public LowLimitRecordFormatTest()
+    private StandardFormatSettings()
     {
-        super( LowLimitV3_0.RECORD_FORMATS, LOW_LIMITS );
     }
 }

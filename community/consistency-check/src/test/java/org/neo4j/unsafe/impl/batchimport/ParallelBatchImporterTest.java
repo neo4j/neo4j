@@ -55,7 +55,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.RandomRule;
@@ -157,8 +156,7 @@ public class ParallelBatchImporterTest
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         final BatchImporter inserter = new ParallelBatchImporter( directory.graphDbDir(),
                 new DefaultFileSystemAbstraction(), config, NullLogService.getInstance(),
-                processorAssigner, EMPTY, new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory
-                .Configuration.record_format.name(), getFormatName() ) ) );
+                processorAssigner, EMPTY, new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getFormatName() ) ) );
 
         boolean successful = false;
         IdGroupDistribution groups = new IdGroupDistribution( NODE_COUNT, 5, random.random() );
@@ -176,7 +174,7 @@ public class ParallelBatchImporterTest
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
-                    .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, getFormatName() )
+                    .setConfig( GraphDatabaseSettings.record_format, getFormatName() )
                     .newGraphDatabase();
             try ( Transaction tx = db.beginTx() )
             {
@@ -225,7 +223,7 @@ public class ParallelBatchImporterTest
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
         Result result = consistencyChecker.runFullConsistencyCheck( storeDir,
                 new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
-                        GraphDatabaseFacadeFactory.Configuration.record_format.name(), getFormatName()) ),
+                        GraphDatabaseSettings.record_format.name(), getFormatName()) ),
                 ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false );
         assertTrue( "Database contains inconsistencies, there should be a report in " + storeDir,

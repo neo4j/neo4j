@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -206,7 +206,7 @@ public class WriteTransactionCommandOrderingTest
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
             super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, null, null,
-                    LowLimitV3_0.RECORD_FORMATS );
+                    StandardV3_0.RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -233,7 +233,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, LowLimitV3_0.RECORD_FORMATS );
+            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), null, StandardV3_0.RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 
@@ -268,7 +268,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), LowLimitV3_0.RECORD_FORMATS );
+            super( null, Config.empty(), null, null, NullLogProvider.getInstance(), StandardV3_0.RECORD_FORMATS );
             this.currentRecording = currentRecording;
         }
 

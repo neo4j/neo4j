@@ -43,8 +43,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -65,8 +64,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.record_format;
 
 public class StoreCopyClientTest
 {
@@ -173,17 +172,17 @@ public class StoreCopyClientTest
         final File copyDir = new File( testDir.directory(), "copy" );
         final File originalDir = new File( testDir.directory(), "original" );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        Config config = Config.empty().augment( stringMap( record_format.name(), LowLimitV3_0.NAME ) );
+        Config config = Config.empty().augment( stringMap( record_format.name(), StandardV3_0.NAME ) );
         StoreCopyClient copier = new StoreCopyClient(
                 copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache,
                 new StoreCopyClient.Monitor.Adapter(), false );
 
-        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, LowLimitV3_0.NAME );
+        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, StandardV3_0.NAME );
         StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( originalDir, original );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED );
 
-        GraphDatabaseService copy = startDatabase( copyDir, LowLimitV3_0.NAME );
+        GraphDatabaseService copy = startDatabase( copyDir, StandardV3_0.NAME );
 
         copy.shutdown();
         original.shutdown();
@@ -301,7 +300,7 @@ public class StoreCopyClientTest
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        return startDatabase( storeDir, HighLimit.NAME );
+        return startDatabase( storeDir, StandardV3_0.NAME );
     }
 
     private GraphDatabaseService startDatabase( File storeDir, String recordFormatName )

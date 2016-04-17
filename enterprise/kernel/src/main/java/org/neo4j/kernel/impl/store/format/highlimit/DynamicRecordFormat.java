@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
-import static org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat.readData;
+import static org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat.readData;
 
 /**
  * LEGEND:

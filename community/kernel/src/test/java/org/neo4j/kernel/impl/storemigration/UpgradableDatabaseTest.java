@@ -35,13 +35,12 @@ import java.util.Collection;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.PageCacheRule;
@@ -75,10 +74,10 @@ public class UpgradableDatabaseTest
         public static Collection<String> versions()
         {
             return Arrays.asList(
-                    LowLimitV2_0.STORE_VERSION,
-                    LowLimitV2_1.STORE_VERSION,
-                    LowLimitV2_2.STORE_VERSION,
-                    LowLimitV2_3.STORE_VERSION
+                    StandardV2_0.STORE_VERSION,
+                    StandardV2_1.STORE_VERSION,
+                    StandardV2_2.STORE_VERSION,
+                    StandardV2_3.STORE_VERSION
             );
         }
 
@@ -124,7 +123,7 @@ public class UpgradableDatabaseTest
         public void shouldRejectStoresIfOneFileHasIncorrectVersion() throws IOException
         {
             // there are no store trailers in 2.3
-            Assume.assumeFalse( LowLimitV2_3.STORE_VERSION.equals( version ) );
+            Assume.assumeFalse( StandardV2_3.STORE_VERSION.equals( version ) );
 
             // given
             changeVersionNumber( fileSystem, new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
@@ -158,7 +157,7 @@ public class UpgradableDatabaseTest
         public void shouldRejectStoresIfOneFileShorterThanExpectedVersionString() throws IOException
         {
             // there are no store trailers in 2.3
-            Assume.assumeFalse( LowLimitV2_3.STORE_VERSION.equals( version ) );
+            Assume.assumeFalse( StandardV2_3.STORE_VERSION.equals( version ) );
 
             // given
             final int shortFileLength = 5 /* (RelationshipTypeStore.RECORD_SIZE) */ * 3;
@@ -180,7 +179,7 @@ public class UpgradableDatabaseTest
         public void shouldRejectStoresIfDBIsNotShutdownCleanly() throws IOException
         {
             // checkpoint has been introduced in 2.3
-            Assume.assumeTrue( LowLimitV2_3.STORE_VERSION.equals( version ) );
+            Assume.assumeTrue( StandardV2_3.STORE_VERSION.equals( version ) );
 
             // given
             removeCheckPointFromTxLog( fileSystem, workingDirectory );
@@ -221,7 +220,7 @@ public class UpgradableDatabaseTest
         {
             workingDirectory = testDirectory.graphDbDir();
             // doesn't matter which version we pick we are changing it to the wrong one...
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( LowLimitV2_1.STORE_VERSION, workingDirectory );
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV2_1.STORE_VERSION, workingDirectory );
             changeVersionNumber( fileSystem, new File( workingDirectory, neostoreFilename ), version );
             File metadataStore = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
             MetaDataStore.setRecord( pageCacheRule.getPageCache( fileSystem ), metadataStore, STORE_VERSION,
@@ -267,6 +266,6 @@ public class UpgradableDatabaseTest
 
     private static RecordFormats getRecordFormat()
     {
-        return LowLimitV3_0.RECORD_FORMATS;
+        return StandardV3_0.RECORD_FORMATS;
     }
 }

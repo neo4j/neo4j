@@ -38,10 +38,10 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.test.PageCacheRule;
@@ -78,10 +78,10 @@ public class StoreUpgradeOnStartupTest
     public static Collection<String> versions()
     {
         return Arrays.asList(
-                LowLimitV2_0.STORE_VERSION,
-                LowLimitV2_1.STORE_VERSION,
-                LowLimitV2_2.STORE_VERSION,
-                LowLimitV2_3.STORE_VERSION
+                StandardV2_0.STORE_VERSION,
+                StandardV2_1.STORE_VERSION,
+                StandardV2_2.STORE_VERSION,
+                StandardV2_3.STORE_VERSION
         );
     }
 
@@ -93,7 +93,7 @@ public class StoreUpgradeOnStartupTest
         check = new StoreVersionCheck( pageCache );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDirectory, prepareDirectory );
-        assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
+        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fileSystem, workingDirectory, version ) );
     }
 
@@ -133,7 +133,7 @@ public class StoreUpgradeOnStartupTest
 
     private void makeDbNotCleanlyShutdown() throws IOException
     {
-        if ( LowLimitV2_3.STORE_VERSION.equals( version ) )
+        if ( StandardV2_3.STORE_VERSION.equals( version ) )
         {
             removeCheckPointFromTxLog( fileSystem, workingDirectory );
         }

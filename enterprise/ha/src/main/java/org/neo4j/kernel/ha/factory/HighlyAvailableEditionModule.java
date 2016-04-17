@@ -135,7 +135,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -176,7 +176,7 @@ public class HighlyAvailableEditionModule
     {
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 
-        formats = HighLimit.RECORD_FORMATS;
+        formats = StandardV3_0.RECORD_FORMATS;
 
         final LifeSupport life = platformModule.life;
         life.add( platformModule.dataSourceManager );

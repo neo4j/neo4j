@@ -31,11 +31,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
@@ -150,13 +150,13 @@ public class MigrationTestUtils
     {
         switch ( version )
         {
-        case LowLimitV2_3.STORE_VERSION:
+        case StandardV2_3.STORE_VERSION:
             return find23FormatStoreDirectory( targetDir );
-        case LowLimitV2_2.STORE_VERSION:
+        case StandardV2_2.STORE_VERSION:
             return find22FormatStoreDirectory( targetDir );
-        case LowLimitV2_1.STORE_VERSION:
+        case StandardV2_1.STORE_VERSION:
             return find21FormatStoreDirectory( targetDir );
-        case LowLimitV2_0.STORE_VERSION:
+        case StandardV2_0.STORE_VERSION:
             return find20FormatStoreDirectory( targetDir );
         default:
             throw new IllegalArgumentException( "Unknown version" );
@@ -206,7 +206,7 @@ public class MigrationTestUtils
     public static boolean allStoreFilesHaveNoTrailer( FileSystemAbstraction fs, File dir )
     {
         final Iterable<StoreFile> storeFilesWithGivenVersions =
-                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( LowLimitV3_0.STORE_VERSION ) );
+                Iterables.filter( ALL_EXCEPT_COUNTS_STORE, StoreFile.legacyStoreFilesForVersion( StandardV3_0.STORE_VERSION ) );
         LegacyStoreVersionCheck legacyStoreVersionCheck = new LegacyStoreVersionCheck( fs );
 
         boolean success = true;
@@ -214,7 +214,7 @@ public class MigrationTestUtils
         {
             File file = new File( dir, storeFile.storeFileName() );
             StoreVersionCheck.Result result =
-                    legacyStoreVersionCheck.hasVersion( file, LowLimitV3_0.STORE_VERSION, storeFile.isOptional() );
+                    legacyStoreVersionCheck.hasVersion( file, StandardV3_0.STORE_VERSION, storeFile.isOptional() );
             success &= result.outcome == Outcome.unexpectedUpgradingStoreVersion ||
                        result.outcome == Outcome.storeVersionNotFound;
         }

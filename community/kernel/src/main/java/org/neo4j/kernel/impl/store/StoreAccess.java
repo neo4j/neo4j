@@ -84,7 +84,7 @@ public class StoreAccess
         this( fileSystem, pageCache, storeDir, Config.defaults() );
     }
 
-    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
+    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
         this( new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                 fileSystem, RecordFormatSelector.autoSelectFormat(config, NullLogService.getInstance()),

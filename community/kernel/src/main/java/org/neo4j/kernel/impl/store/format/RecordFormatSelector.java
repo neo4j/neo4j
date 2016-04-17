@@ -21,18 +21,16 @@ package org.neo4j.kernel.impl.store.format;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Iterator;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.logging.Log;
 
 import static java.util.Arrays.asList;
@@ -43,24 +41,25 @@ import static org.neo4j.helpers.collection.Iterables.map;
  * Selects record format that will be used in a database.
  * Support two types of selection : config based or automatic.
  * <p>
- * Automatic selection is used by various tools and tests that should work for format independent (for example backup)
+ * Automatic selection is used by various tools and tests that should pretend being format independent (for
+ * example backup)
  */
 public class RecordFormatSelector
 {
 
-    private static final RecordFormats DEFAULT_AUTOSELECT_FORMAT = LowLimitV3_0.RECORD_FORMATS;
+    private static final RecordFormats DEFAULT_AUTOSELECT_FORMAT = StandardV3_0.RECORD_FORMATS;
 
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
-            LowLimitV2_0.RECORD_FORMATS,
-            LowLimitV2_1.RECORD_FORMATS,
-            LowLimitV2_2.RECORD_FORMATS,
-            LowLimitV2_3.RECORD_FORMATS,
-            LowLimitV3_0.RECORD_FORMATS
+            StandardV2_0.RECORD_FORMATS,
+            StandardV2_1.RECORD_FORMATS,
+            StandardV2_2.RECORD_FORMATS,
+            StandardV2_3.RECORD_FORMATS,
+            StandardV3_0.RECORD_FORMATS
     );
 
     /**
      * Select record formats based on provided format name in
-     * {@link GraphDatabaseFacadeFactory.Configuration#record_format} property
+     * {@link GraphDatabaseSettings#record_format} property
      *
      * @param config database configuration
      * @param logService logging service
@@ -81,7 +80,7 @@ public class RecordFormatSelector
 
     /**
      * Select record formats based on provided format name in
-     * {@link GraphDatabaseFacadeFactory.Configuration#record_format} property
+     * {@link GraphDatabaseSettings#record_format} property
      * If property not specified provided defaultFormat will be return instead.
      *
      * @param config database configuration
@@ -124,12 +123,9 @@ public class RecordFormatSelector
     }
 
     /**
-     * Select record formats based on available services in class path.
-     * In case if multiple services are available only 'first' will be considered.
-     * In case if no record format providers are found - default record format ({@link #DEFAULT_AUTOSELECT_FORMAT}) will
-     * be used.
+     * Select {@link #DEFAULT_AUTOSELECT_FORMAT} record format.
      *
-     * @return - selected record format.
+     * @return selected record format.
      */
     public static RecordFormats autoSelectFormat()
     {
@@ -137,12 +133,10 @@ public class RecordFormatSelector
     }
 
     /**
-     * Select record formats based on available services in class path.
-     * Specific format selection can be forced by specifying format name in
-     * {@link GraphDatabaseFacadeFactory.Configuration#record_format} property.
-     * In case if multiple services are available only 'first' will be considered.
-     * In case if no record format providers are found - default record format ({@link #DEFAULT_AUTOSELECT_FORMAT}) will
-     * be used.
+     * Select configured record format based on available services in class path.
+     * Specific format can be specified by {@link GraphDatabaseSettings#record_format} property.
+     * <p>
+     * If format is not specified {@link #DEFAULT_AUTOSELECT_FORMAT} will be used.
      *
      * @param config - configuration parameters
      * @param logService - logging service
@@ -154,7 +148,7 @@ public class RecordFormatSelector
         String recordFormat = configuredRecordFormat( config );
         RecordFormats recordFormats = StringUtils.isNotEmpty( recordFormat ) ?
                                       selectSpecificFormat( recordFormat, logService ) :
-                                      getFirstAvailableOrDefault( DEFAULT_AUTOSELECT_FORMAT );
+                                      DEFAULT_AUTOSELECT_FORMAT;
         logSelectedFormat( logService, recordFormats );
         return recordFormats;
     }
@@ -169,20 +163,14 @@ public class RecordFormatSelector
         return formats;
     }
 
-    private static RecordFormats getFirstAvailableOrDefault( RecordFormats defaultAutoSelectFormat )
-    {
-        Iterable<RecordFormats.Factory> formatFactories = Service.load( RecordFormats.Factory.class );
-        Iterator<RecordFormats.Factory> factoryIterator = formatFactories.iterator();
-        return factoryIterator.hasNext() ? factoryIterator.next().newInstance() : defaultAutoSelectFormat;
-    }
 
     private static RecordFormats loadRecordFormat( String recordFormat )
     {
         if ( StringUtils.isNotEmpty( recordFormat ) )
         {
-            if ( LowLimitV3_0.NAME.equals( recordFormat ) )
+            if ( StandardV3_0.NAME.equals( recordFormat ) )
             {
-                return LowLimitV3_0.RECORD_FORMATS;
+                return StandardV3_0.RECORD_FORMATS;
             }
             RecordFormats.Factory formatFactory = Service.loadSilently( RecordFormats.Factory.class, recordFormat );
             if ( formatFactory != null )
@@ -213,6 +201,6 @@ public class RecordFormatSelector
 
     private static String configuredRecordFormat( Config config )
     {
-        return config.get( GraphDatabaseFacadeFactory.Configuration.record_format );
+        return config.get( GraphDatabaseSettings.record_format );
     }
 }

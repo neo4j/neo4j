@@ -17,20 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.lowlimit;
+package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
-public class RelationshipTypeTokenRecordFormat extends TokenRecordFormat<RelationshipTypeTokenRecord>
+public class StandardRecordFormatTest extends RecordFormatTest
 {
-    public RelationshipTypeTokenRecordFormat()
-    {
-        super( BASE_RECORD_SIZE, LowLimitFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS );
-    }
+    private static final RecordGenerators LOW_LIMITS = new LimitedRecordGenerators( random, 35, 36, 40, 16, NULL );
 
-    @Override
-    public RelationshipTypeTokenRecord newRecord()
+    public StandardRecordFormatTest()
     {
-        return new RelationshipTypeTokenRecord( -1 );
+        super( StandardV3_0.RECORD_FORMATS, LOW_LIMITS );
     }
 }

@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.store.format.lowlimit.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 
 /**

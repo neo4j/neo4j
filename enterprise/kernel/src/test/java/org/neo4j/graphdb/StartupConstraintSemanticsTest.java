@@ -24,10 +24,10 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -61,7 +61,7 @@ public class StartupConstraintSemanticsTest
         {
             graphDb = new GraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( dir.graphDbDir() )
-                    .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                    .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                     .newGraphDatabase();
             fail( "should have failed to start!" );
         }
