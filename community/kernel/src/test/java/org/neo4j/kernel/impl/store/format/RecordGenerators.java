@@ -33,7 +33,7 @@ public interface RecordGenerators
 {
     interface Generator<RECORD extends AbstractBaseRecord>
     {
-        RECORD get( int recordSize, RecordFormat<RECORD> format );
+        RECORD get( int recordSize, RecordFormat<RECORD> format, long id );
     }
 
     Generator<NodeRecord> node();

@@ -23,10 +23,8 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
 public class StandardRecordFormatTest extends RecordFormatTest
 {
-    private static final RecordGenerators LOW_LIMITS = new LimitedRecordGenerators( random, 35, 36, 40, 16, NULL );
-
     public StandardRecordFormatTest()
     {
-        super( StandardV3_0.RECORD_FORMATS, LOW_LIMITS );
+        super( StandardV3_0.RECORD_FORMATS, 35, 36 );
     }
 }
