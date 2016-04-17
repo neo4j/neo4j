@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -36,17 +36,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_advertised_address;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -120,7 +118,7 @@ public class ConvertNonCoreEdgeStoreIT
         File existingDbDir = new File( base, "existing" );
         GraphDatabaseService db = new GraphDatabaseFactory()
                             .newEmbeddedDatabaseBuilder( existingDbDir )
-                            .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                            .setConfig( GraphDatabaseSettings.record_format, HighLimit.NAME )
                             .newGraphDatabase();
 
         for ( int i = 0; i < (nodesToCreate / 2); i++ )
