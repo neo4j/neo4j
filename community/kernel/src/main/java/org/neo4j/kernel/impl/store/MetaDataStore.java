@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -48,10 +48,9 @@ import org.neo4j.logging.Logger;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.kernel.impl.store.format.lowlimit.MetaDataRecordFormat.RECORD_SIZE;
+import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
 
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader>
         implements TransactionIdStore, LogVersionRepository

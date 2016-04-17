@@ -46,11 +46,12 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -58,7 +59,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -83,6 +84,7 @@ import org.neo4j.test.rule.TargetDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
@@ -118,7 +120,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
     public GraphStoreFixture()
     {
-        this( false, LowLimitV3_0.NAME );
+        this( false, StandardV3_0.NAME );
     }
 
     public void apply( Transaction transaction ) throws TransactionFailureException
@@ -132,7 +134,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            neoStore = new StoreFactory( fileSystem, directory, pageCache, RecordFormatSelector.autoSelectFormat(),
+            Config config = new Config( stringMap( GraphDatabaseSettings.record_format.name(), formatName ) );
+            neoStore = new StoreFactory( fileSystem, directory, pageCache,
+                    RecordFormatSelector.autoSelectFormat(config,  NullLogService.getInstance() ),
                     NullLogProvider.getInstance() ).openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
@@ -425,7 +429,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         // applied and all would have been well.
 
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory )
-                             .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, formatName );
+                             .setConfig( GraphDatabaseSettings.record_format, formatName );
         GraphDatabaseAPI database = (GraphDatabaseAPI) builder.newGraphDatabase();
         try
         {
@@ -456,7 +460,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
         GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, formatName )
+                .setConfig( GraphDatabaseSettings.record_format, formatName )
                 // Some tests using this fixture were written when the label_block_size was 60 and so hardcoded
                 // tests and records around that. Those tests could change, but the simpler option is to just
                 // keep the block size to 60 and let them be.

@@ -43,12 +43,11 @@ import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -84,10 +83,10 @@ public class StoreUpgraderInterruptionTestIT
     public static Collection<String> versions()
     {
         return Arrays.asList(
-                LowLimitV2_0.STORE_VERSION,
-                LowLimitV2_1.STORE_VERSION,
-                LowLimitV2_2.STORE_VERSION,
-                LowLimitV2_3.STORE_VERSION
+                StandardV2_0.STORE_VERSION,
+                StandardV2_1.STORE_VERSION,
+                StandardV2_2.STORE_VERSION,
+                StandardV2_3.STORE_VERSION
         );
     }
 
@@ -107,7 +106,7 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), LowLimitV3_0.RECORD_FORMATS );
+                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), StandardV3_0.RECORD_FORMATS );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = Config.empty();
@@ -124,7 +123,7 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
+        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         try
@@ -138,7 +137,7 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
+        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         progressMonitor = new SilentMigrationProgressMonitor();
@@ -167,7 +166,7 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), LowLimitV3_0.RECORD_FORMATS );
+                new UpgradableDatabase( fs, check, new LegacyStoreVersionCheck( fs ), StandardV3_0.RECORD_FORMATS );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         final Config config = Config.empty();
@@ -182,7 +181,7 @@ public class StoreUpgraderInterruptionTestIT
             }
         };
 
-        assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
+        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fs, workingDirectory, version ) );
 
         try

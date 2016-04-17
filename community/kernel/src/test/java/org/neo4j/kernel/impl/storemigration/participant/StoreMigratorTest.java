@@ -38,11 +38,11 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -79,13 +79,13 @@ public class StoreMigratorTest
     {
         return Arrays.asList(
                 new Object[]{
-                        LowLimitV2_0.STORE_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                        StandardV2_0.STORE_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
                 new Object[]{
-                        LowLimitV2_1.STORE_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
+                        StandardV2_1.STORE_VERSION, new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET )},
                 new Object[]{
-                        LowLimitV2_2.STORE_VERSION, new LogPosition( 2, BASE_TX_LOG_BYTE_OFFSET )},
+                        StandardV2_2.STORE_VERSION, new LogPosition( 2, BASE_TX_LOG_BYTE_OFFSET )},
                 new Object[]{
-                        LowLimitV2_3.STORE_VERSION, new LogPosition( 3, 169 )}
+                        StandardV2_3.STORE_VERSION, new LogPosition( 3, 169 )}
         );
     }
 
@@ -187,6 +187,6 @@ public class StoreMigratorTest
 
     private RecordFormats selectFormat()
     {
-        return LowLimitV3_0.RECORD_FORMATS;
+        return StandardV3_0.RECORD_FORMATS;
     }
 }

@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
@@ -246,7 +246,7 @@ public class TestBackup
         OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
         backup.full( backupPath.getPath() );
         assertTrue( "Should be consistent", backup.isConsistent() );
-        assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath, getHighLimitConfigConfig() ) );
+        assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath, getFormatConfig() ) );
         shutdownServer( server );
 
         // Create data set X+Y on server B
@@ -272,7 +272,7 @@ public class TestBackup
         server = startServer( serverPath );
         backup.incremental( backupPath.getPath() );
         assertTrue( "Should be consistent", backup.isConsistent() );
-        assertEquals( furtherRepresentation, DbRepresentation.of( backupPath, getHighLimitConfigConfig() ) );
+        assertEquals( furtherRepresentation, DbRepresentation.of( backupPath, getFormatConfig() ) );
         shutdownServer( server );
     }
 
@@ -405,7 +405,7 @@ public class TestBackup
 
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                 .newGraphDatabase();
         try
         {
@@ -643,7 +643,7 @@ public class TestBackup
         return dbFactory.newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, String.valueOf( withOnlineBackup ) )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                 .newGraphDatabase();
     }
 
@@ -679,18 +679,18 @@ public class TestBackup
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-                .setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME )
+                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                 .newGraphDatabase();
     }
 
-    private Config getHighLimitConfigConfig()
+    private Config getFormatConfig()
     {
         return new Config(
-                MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(), HighLimit.NAME ) );
+                MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), StandardV3_0.NAME ) );
     }
 
     private DbRepresentation getDbRepresentation()
     {
-        return DbRepresentation.of( backupPath, getHighLimitConfigConfig() );
+        return DbRepresentation.of( backupPath, getFormatConfig() );
     }
 }

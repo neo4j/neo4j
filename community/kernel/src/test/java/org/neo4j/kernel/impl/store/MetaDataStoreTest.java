@@ -48,7 +48,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
@@ -119,7 +119,7 @@ public class MetaDataStoreTest
     private MetaDataStore newMetaDataStore() throws IOException
     {
         StoreFactory storeFactory = new StoreFactory( fs, STORE_DIR, pageCacheWithFakeOverflow,
-                LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 
@@ -612,7 +612,7 @@ public class MetaDataStoreTest
     {
         File file = createMetaDataFile();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        long storeVersion = versionStringToLong( LowLimitV3_0.RECORD_FORMATS.storeVersion());
+        long storeVersion = versionStringToLong( StandardV3_0.RECORD_FORMATS.storeVersion());
         writeCorrectMetaDataRecord( file, positions, storeVersion );
 
         List<Long> actualValues = new ArrayList<>();
@@ -651,7 +651,7 @@ public class MetaDataStoreTest
     {
         File file = createMetaDataFile();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        long storeVersion = versionStringToLong( LowLimitV3_0.RECORD_FORMATS.storeVersion());
+        long storeVersion = versionStringToLong( StandardV3_0.RECORD_FORMATS.storeVersion());
         writeCorrectMetaDataRecord( file, positions, storeVersion );
 
         List<Long> actualValues = new ArrayList<>();

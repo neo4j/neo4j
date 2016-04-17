@@ -37,7 +37,7 @@ import org.neo4j.io.pagecache.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.RecordingPageCacheTracer.Pin;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -150,7 +150,7 @@ public class CommonAbstractStoreTest
         PageCache pageCache = pageCacheRule.getPageCache( fs, tracer, Config.empty() );
 
         try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fs ),
-                pageCache, NullLogProvider.getInstance(), null, LowLimitV3_0.RECORD_FORMATS ) )
+                pageCache, NullLogProvider.getInstance(), null, StandardV3_0.RECORD_FORMATS ) )
         {
             store.initialise( true );
             assertNull( tracer.tryObserve( Event.class ) );

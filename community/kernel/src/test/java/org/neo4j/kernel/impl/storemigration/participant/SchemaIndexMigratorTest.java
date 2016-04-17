@@ -27,8 +27,8 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 
 import static org.mockito.Mockito.mock;
@@ -53,10 +53,10 @@ public class SchemaIndexMigratorTest
         when( schemaIndexProvider.getProviderDescriptor() )
                 .thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
 
-        migrator.migrate( storeDir, migrationDir, progressMonitor, LowLimitV2_3.STORE_VERSION,
-                LowLimitV3_0.STORE_VERSION );
+        migrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION,
+                StandardV3_0.STORE_VERSION );
 
-        migrator.moveMigratedFiles( migrationDir, storeDir, LowLimitV2_3.STORE_VERSION, LowLimitV3_0.STORE_VERSION );
+        migrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_0.STORE_VERSION );
 
         verify( fs ).deleteRecursively( schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir ) );
         verify( fs ).deleteRecursively( labelScanStoreProvider.getStoreDirectory( storeDir ) );

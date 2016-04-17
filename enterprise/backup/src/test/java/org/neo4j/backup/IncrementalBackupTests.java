@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.io.File;
-import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -39,8 +38,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
@@ -230,7 +228,7 @@ public class IncrementalBackupTests
                 newEmbeddedDatabaseBuilder( path ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                 setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).
-                setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME ).
+                setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME ).
                 newGraphDatabase();
     }
 
@@ -249,12 +247,12 @@ public class IncrementalBackupTests
 
     private DbRepresentation getBackupDbRepresentation()
     {
-        return DbRepresentation.of( backupPath, getHighLimitConfig() );
+        return DbRepresentation.of( backupPath, getFormatConfig() );
     }
 
-    private Config getHighLimitConfig()
+    private Config getFormatConfig()
     {
         return new Config(
-                MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(), HighLimit.NAME ) );
+                MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), StandardV3_0.NAME ) );
     }
 }

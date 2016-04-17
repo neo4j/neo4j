@@ -38,7 +38,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -68,7 +68,7 @@ public class TestDynamicStore
         fs.get().mkdir( storeDir );
         config = config();
         storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(),LowLimitV3_0.RECORD_FORMATS,
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), StandardV3_0.RECORD_FORMATS,
                 NullLogProvider.getInstance() );
     }
 

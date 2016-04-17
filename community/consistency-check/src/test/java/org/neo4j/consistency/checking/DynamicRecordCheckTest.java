@@ -27,14 +27,13 @@ import org.junit.runners.Suite;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.format.lowlimit.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.consistency.store.RecordAccessStub.SCHEMA_RECORD_TYPE;
 
 @RunWith(Suite.class)

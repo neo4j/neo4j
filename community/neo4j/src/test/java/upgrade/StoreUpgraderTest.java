@@ -45,7 +45,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -53,10 +52,10 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_0;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_1;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -129,10 +128,10 @@ public class StoreUpgraderTest
     public static Collection<String> versions()
     {
         return Arrays.asList(
-                LowLimitV2_0.STORE_VERSION,
-                LowLimitV2_1.STORE_VERSION,
-                LowLimitV2_2.STORE_VERSION,
-                LowLimitV2_3.STORE_VERSION
+                StandardV2_0.STORE_VERSION,
+                StandardV2_1.STORE_VERSION,
+                StandardV2_2.STORE_VERSION,
+                StandardV2_3.STORE_VERSION
         );
     }
 
@@ -152,7 +151,7 @@ public class StoreUpgraderTest
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ), new LegacyStoreVersionCheck( fileSystem ),
                 getRecordFormats() );
-        assertEquals( !LowLimitV2_3.STORE_VERSION.equals( version ),
+        assertEquals( !StandardV2_3.STORE_VERSION.equals( version ),
                 allLegacyStoreFilesHaveVersion( fileSystem, dbDirectory, version ) );
 
         // When
@@ -170,7 +169,7 @@ public class StoreUpgraderTest
 
     private Config getTunnningConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
+        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(),
                 getRecordFormatsName() ) );
     }
 
@@ -200,7 +199,7 @@ public class StoreUpgraderTest
     public void shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound()
             throws IOException
     {
-        Assume.assumeFalse( LowLimitV2_3.STORE_VERSION.equals( version ) );
+        Assume.assumeFalse( StandardV2_3.STORE_VERSION.equals( version ) );
 
         File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName()
                                              + "shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound-comparison" );
@@ -449,7 +448,7 @@ public class StoreUpgraderTest
 
     private void makeDbNotCleanlyShutdown( boolean truncateAll ) throws IOException
     {
-        if ( LowLimitV2_3.STORE_VERSION.equals( version ) )
+        if ( StandardV2_3.STORE_VERSION.equals( version ) )
         {
             removeCheckPointFromTxLog( fileSystem, dbDirectory );
         }

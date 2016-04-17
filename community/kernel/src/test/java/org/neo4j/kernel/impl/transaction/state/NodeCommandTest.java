@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -48,9 +48,11 @@ import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+
+import static java.util.Collections.singletonList;
+
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
@@ -199,7 +201,7 @@ public class NodeCommandTest
         fs.get().mkdirs( dir );
         @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory( dir, Config.empty(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), LowLimitV3_0.RECORD_FORMATS,
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), StandardV3_0.RECORD_FORMATS,
                 NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();

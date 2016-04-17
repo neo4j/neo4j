@@ -44,7 +44,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -385,7 +385,7 @@ public class NodeStoreTest
             }
         } );
         StoreFactory factory = new StoreFactory( storeDir, Config.empty(), idGeneratorFactory, pageCache, fs,
-                LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
         return nodeStore;

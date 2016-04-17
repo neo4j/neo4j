@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.ha;
 
-import org.neo4j.cluster.client.Cluster;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -56,6 +54,7 @@ import java.util.stream.Collectors;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.client.Cluster;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.com.NetworkReceiver;
@@ -87,7 +86,7 @@ import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -135,7 +134,7 @@ public class ClusterManager
     public static final long DEFAULT_TIMEOUT_SECONDS = 60L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m",
-            GraphDatabaseFacadeFactory.Configuration.record_format.name(), HighLimit.NAME ) );
+            GraphDatabaseSettings.record_format.name(), StandardV3_0.NAME ) );
 
     public interface StoreDirInitializer
     {

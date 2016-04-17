@@ -37,7 +37,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
@@ -67,7 +67,7 @@ public class TestArrayStore
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreFactory factory = new StoreFactory( dir, Config.empty(), idGeneratorFactory, pageCache, fs,
-                LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );
         arrayStore = neoStores.getPropertyStore().getArrayStore();
     }

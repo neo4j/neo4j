@@ -34,7 +34,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.JumpingIdGeneratorFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -83,7 +83,7 @@ public class PropertyStoreTest
         final PropertyStore store = new PropertyStore( path, config, new JumpingIdGeneratorFactory( 1 ), pageCache,
                 NullLogProvider.getInstance(), stringPropertyStore,
                 mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
-                select(config, LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance()) );
+                select(config, StandardV3_0.RECORD_FORMATS, NullLogService.getInstance()) );
         store.initialise( true );
 
         try

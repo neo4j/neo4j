@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.lowlimit;
+package org.neo4j.kernel.impl.store.format.standard;
 
 import java.io.IOException;
 
@@ -31,7 +31,7 @@ class RelationshipRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<Relatio
 {
     RelationshipRecordFormatV2_0()
     {
-        super( fixedRecordSize( 33 ), 0, IN_USE_BIT, LowLimitFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS );
+        super( fixedRecordSize( 33 ), 0, IN_USE_BIT, StandardFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS );
     }
 
     @Override

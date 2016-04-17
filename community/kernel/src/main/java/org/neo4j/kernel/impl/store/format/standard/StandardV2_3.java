@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.lowlimit;
+package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
@@ -32,32 +32,32 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public class LowLimitV2_0 extends BaseRecordFormats
+public class StandardV2_3 extends BaseRecordFormats
 {
-    public static final RecordFormats RECORD_FORMATS = new LowLimitV2_0();
-    public static final String STORE_VERSION = "v0.A.1";
+    public static final RecordFormats RECORD_FORMATS = new StandardV2_3();
+    public static final String STORE_VERSION = "v0.A.6";
 
-    public LowLimitV2_0()
+    public StandardV2_3()
     {
-        super( STORE_VERSION, 2, Capability.SCHEMA, Capability.LUCENE_3, Capability.VERSION_TRAILERS );
+        super( STORE_VERSION, 4, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_3 );
     }
 
     @Override
     public RecordFormat<NodeRecord> node()
     {
-        return new NodeRecordFormatV2_0();
-    }
-
-    @Override
-    public RecordFormat<RelationshipRecord> relationship()
-    {
-        return new RelationshipRecordFormatV2_0();
+        return new NodeRecordFormat();
     }
 
     @Override
     public RecordFormat<RelationshipGroupRecord> relationshipGroup()
     {
-        return new NoRecordFormat<>();
+        return new RelationshipGroupRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<RelationshipRecord> relationship()
+    {
+        return new RelationshipRecordFormat();
     }
 
     @Override

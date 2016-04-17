@@ -35,7 +35,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -82,7 +82,7 @@ public class TestIdGeneratorRebuilding
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
-                select(config, LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance()) );
+                select(config, StandardV3_0.RECORD_FORMATS, NullLogService.getInstance()) );
         store.initialise( true );
         store.makeStoreOk();
 
@@ -131,7 +131,7 @@ public class TestIdGeneratorRebuilding
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
 
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs ), fs, StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         DynamicStringStore store = neoStores.getPropertyStore().getStringStore();
 
@@ -187,7 +187,7 @@ public class TestIdGeneratorRebuilding
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
         NodeStore store = new NodeStore( storeFile, config, new DefaultIdGeneratorFactory( fs ),
                 pageCacheRule.getPageCache( fs ), NullLogProvider.getInstance(), labelStore,
-                select( config, LowLimitV3_0.RECORD_FORMATS, NullLogService.getInstance() ) );
+                select( config, StandardV3_0.RECORD_FORMATS, NullLogService.getInstance() ) );
         store.initialise( true );
         store.makeStoreOk();
 

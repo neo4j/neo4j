@@ -59,11 +59,10 @@ import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -174,7 +173,7 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-            builder.setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
+            builder.setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
@@ -206,7 +205,7 @@ public class StoreUpgradeIntegrationTest
             props.setProperty( GraphDatabaseSettings.logs_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
-            props.setProperty( GraphDatabaseFacadeFactory.Configuration.record_format.name(), HighLimit.NAME );
+            props.setProperty( GraphDatabaseSettings.record_format.name(), StandardV3_0.NAME );
             props.setProperty( httpConnector( "1" ).type.name(), "HTTP" );
             props.setProperty( httpConnector( "1" ).enabled.name(), "true" );
             try ( FileWriter writer = new FileWriter( configFile ) )
@@ -238,7 +237,7 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-            builder.setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
+            builder.setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
@@ -311,7 +310,7 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-            builder.setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
+            builder.setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME );
             try
             {
                 builder.newGraphDatabase();
@@ -358,7 +357,7 @@ public class StoreUpgradeIntegrationTest
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
-            builder.setConfig( GraphDatabaseFacadeFactory.Configuration.record_format, HighLimit.NAME );
+            builder.setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -595,7 +594,7 @@ public class StoreUpgradeIntegrationTest
 
     private static Config getConfig()
     {
-        return new Config( stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
-                HighLimit.NAME ) );
+        return new Config( stringMap( GraphDatabaseSettings.record_format.name(),
+                StandardV3_0.NAME ) );
     }
 }

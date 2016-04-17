@@ -31,8 +31,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.kernel.impl.store.format.lowlimit.NodeRecordFormat.RECORD_SIZE;
+import static org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat.RECORD_SIZE;
 
 public class TestJumpingIdGenerator
 {

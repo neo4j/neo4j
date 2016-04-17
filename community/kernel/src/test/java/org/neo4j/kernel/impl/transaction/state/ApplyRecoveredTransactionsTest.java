@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV3_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -51,8 +51,8 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyLong;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -114,7 +114,7 @@ public class ApplyRecoveredTransactionsTest
         FileSystemAbstraction fs = fsr.get();
         File storeDir = new File( "dir" );
         StoreFactory storeFactory = new StoreFactory( storeDir, Config.empty(), new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, LowLimitV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs ), fs, StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 

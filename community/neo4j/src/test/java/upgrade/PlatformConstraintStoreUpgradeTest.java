@@ -30,7 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.format.lowlimit.LowLimitV2_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TargetDirectory;
@@ -59,7 +59,7 @@ public class PlatformConstraintStoreUpgradeTest
     @Test
     public void shouldFailToStartWithCustomIOConfigurationTest() throws IOException
     {
-        prepareSampleLegacyDatabase( LowLimitV2_2.STORE_VERSION, fileSystem, workingDir, prepareDir );
+        prepareSampleLegacyDatabase( StandardV2_2.STORE_VERSION, fileSystem, workingDir, prepareDir );
         try
         {
             createGraphDatabaseService();

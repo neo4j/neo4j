@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.lowlimit;
+package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -26,7 +26,7 @@ public class PropertyKeyTokenRecordFormat extends TokenRecordFormat<PropertyKeyT
 {
     public PropertyKeyTokenRecordFormat()
     {
-        super( BASE_RECORD_SIZE + 4/*prop count field*/, LowLimitFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS );
+        super( BASE_RECORD_SIZE + 4/*prop count field*/, StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS );
     }
 
     @Override

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.lowlimit;
+package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -38,7 +38,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     public DynamicRecordFormat()
     {
         super( INT_STORE_HEADER_READER, RECORD_HEADER_SIZE, 0x10/*the inUse bit is the lsb in the second nibble*/,
-                LowLimitFormatSettings.DYNAMIC_RECORD_MAXIMUM_ID_BITS );
+                StandardFormatSettings.DYNAMIC_RECORD_MAXIMUM_ID_BITS );
     }
 
     @Override

@@ -35,12 +35,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -152,8 +152,8 @@ public class BackupEmbeddedIT
 
     private Config getConfig()
     {
-        return new Config( MapUtil.stringMap( GraphDatabaseFacadeFactory.Configuration.record_format.name(),
-                HighLimit.NAME ) );
+        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(),
+                StandardV3_0.NAME ) );
     }
 
     private DbRepresentation getDbRepresentation()
