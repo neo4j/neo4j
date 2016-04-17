@@ -41,6 +41,7 @@ import org.neo4j.helpers.HostnamePort;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.Messages.init;
@@ -133,6 +134,79 @@ public class TransportSessionIT
                 msgRecord( eqRecord( equalTo( 3L ), equalTo( 9L ) ) ),
                 msgSuccess() ) );
     }
+
+    @Test
+    public void shouldHandleDeletedNodes() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "CREATE (n:Test) DELETE n RETURN n" ),
+                        pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves(
+                msgSuccess(),
+                msgSuccess( map("fields", singletonList( "n" )))));
+
+        //
+        //Record(0x71) {
+        //    fields: [ Node(0x4E) {
+        //                 id: 00
+        //                 labels: [] (90)
+        //                  props: {} (A)]
+        //}
+        assertThat( client,
+                eventuallyRecieves(bytes(0x00, 0x08, 0xB1, 0x71,  0x91,
+                        0xB3, 0x4E,  0x00, 0x90, 0xA0, 0x00, 0x00) ));
+        assertThat(client, eventuallyRecieves( msgSuccess()));
+    }
+
+    @Test
+    public void shouldHandleDeletedRelationships() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "CREATE ()-[r:T {prop: 42}]->() DELETE r RETURN r" ),
+                        pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves(
+                msgSuccess(),
+                msgSuccess( map( "fields", singletonList( "r" ) ) ) ) );
+
+        //
+        //Record(0x71) {
+        //    fields: [ Relationship(0x52) {
+        //                 relId: 00
+        //                 startId: 00
+        //                 endId: 01
+        //                 type: "T" (81 54)
+        //                 props: {} (A0)]
+        //}
+        assertThat( client,
+                eventuallyRecieves( bytes( 0x00, 0x0B, 0xB1, 0x71, 0x91,
+                        0xB5, 0x52, 0x00, 0x00, 0x01, 0x81, 0x54, 0xA0, 0x00,0x00  ) ) );
+        assertThat( client, eventuallyRecieves( msgSuccess() ) );
+    }
+
+    private byte[] bytes( int...ints )
+    {
+        byte[] bytes = new byte[ints.length];
+        for ( int i = 0; i < ints.length; i++ )
+        {
+            bytes[i] = (byte) ints[i];
+        }
+        return bytes;
+    }
+
 
     @Test
     public void shouldNotLeakStatsToNextStatement() throws Throwable

@@ -20,12 +20,14 @@
 package org.neo4j.bolt.v1.messaging.infrastructure;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -42,7 +44,17 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
         packer.pack( rel.getStartNode().getId() );
         packer.pack( rel.getEndNode().getId() );
         packer.pack( rel.getType().name() );
-        packer.packProperties( rel );
+        //TODO: We should mark deleted relationships properly but that requires updates
+        // to protocol and clients.
+        try{
+            Map<String,Object> properties = rel.getAllProperties();
+            packer.packRawMap( properties );
+        }
+        catch(NotFoundException e)
+        {
+            //relationship was deleted, just send empty property map back
+            packer.packRawMap( Collections.emptyMap() );
+        }
     }
 
     public static ValueRelationship unpack( Neo4jPack.Unpacker unpacker )
