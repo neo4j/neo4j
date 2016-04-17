@@ -31,14 +31,17 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.test.RandomRule;
+import org.neo4j.test.Randoms;
 
+import static java.lang.Long.max;
 import static java.lang.Math.abs;
+import static java.lang.Math.toIntExact;
 
 public class LimitedRecordGenerators implements RecordGenerators
 {
     static final long NULL = -1;
 
-    private final RandomRule random;
+    private final Randoms random;
     private final int entityBits;
     private final int propertyBits;
     private final int nodeLabelBits;
@@ -46,13 +49,13 @@ public class LimitedRecordGenerators implements RecordGenerators
     private final long nullValue;
     private final float fractionNullValues;
 
-    public LimitedRecordGenerators( RandomRule random, int entityBits, int propertyBits, int nodeLabelBits,
+    public LimitedRecordGenerators( Randoms random, int entityBits, int propertyBits, int nodeLabelBits,
             int tokenBits, long nullValue )
     {
         this( random, entityBits, propertyBits, nodeLabelBits, tokenBits, nullValue, 0.2f );
     }
 
-    public LimitedRecordGenerators( RandomRule random, int entityBits, int propertyBits, int nodeLabelBits,
+    public LimitedRecordGenerators( Randoms random, int entityBits, int propertyBits, int nodeLabelBits,
             int tokenBits, long nullValue, float fractionNullValues )
     {
         this.random = random;
@@ -67,19 +70,16 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<RelationshipTypeTokenRecord> relationshipTypeToken()
     {
-        return (recordSize, format) -> new RelationshipTypeTokenRecord( randomId() ).initialize( random.nextBoolean(),
+        return (recordSize, format, recordId) -> new RelationshipTypeTokenRecord( toIntExact( recordId ) ).initialize(
+                random.nextBoolean(),
                 randomInt( tokenBits ) );
-    }
-
-    private int randomId()
-    {
-        return random.nextInt( 5 );
     }
 
     @Override
     public Generator<RelationshipGroupRecord> relationshipGroup()
     {
-        return (recordSize, format) -> new RelationshipGroupRecord( randomId() ).initialize( random.nextBoolean(),
+        return (recordSize, format, recordId) -> new RelationshipGroupRecord( recordId ).initialize(
+                random.nextBoolean(),
                 randomInt( tokenBits ),
                 randomLongOrOccasionallyNull( entityBits ),
                 randomLongOrOccasionallyNull( entityBits ),
@@ -91,7 +91,8 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<RelationshipRecord> relationship()
     {
-        return (recordSize, format) -> new RelationshipRecord( randomId() ).initialize( random.nextBoolean(),
+        return (recordSize, format, recordId) -> new RelationshipRecord( recordId ).initialize(
+                random.nextBoolean(),
                 randomLongOrOccasionallyNull( propertyBits ),
                 random.nextLong( entityBits ), random.nextLong( entityBits ), randomInt( tokenBits ),
                 randomLongOrOccasionallyNull( entityBits ), randomLongOrOccasionallyNull( entityBits ),
@@ -102,15 +103,17 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<PropertyKeyTokenRecord> propertyKeyToken()
     {
-        return (recordSize, format) -> new PropertyKeyTokenRecord( randomId() ).initialize( random.nextBoolean(),
-                random.nextInt( tokenBits ), abs( random.nextInt() ) );
+        return (recordSize, format, recordId) -> new PropertyKeyTokenRecord( toIntExact( recordId ) ).initialize(
+                random.nextBoolean(),
+                random.nextInt( tokenBits ),
+                abs( random.nextInt() ) );
     }
 
     @Override
     public Generator<PropertyRecord> property()
     {
-        return (recordSize, format) -> {
-            PropertyRecord record = new PropertyRecord( randomId() );
+        return (recordSize, format, recordId) -> {
+            PropertyRecord record = new PropertyRecord( recordId );
             int maxProperties = random.intBetween( 1, 4 );
             StandaloneDynamicRecordAllocator stringAllocator = new StandaloneDynamicRecordAllocator();
             StandaloneDynamicRecordAllocator arrayAllocator = new StandaloneDynamicRecordAllocator();
@@ -139,8 +142,10 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<NodeRecord> node()
     {
-        return (recordSize, format) -> new NodeRecord( randomId() ).initialize(
-                random.nextBoolean(), randomLongOrOccasionallyNull( propertyBits ), random.nextBoolean(),
+        return (recordSize, format, recordId) -> new NodeRecord( recordId ).initialize(
+                random.nextBoolean(),
+                randomLongOrOccasionallyNull( propertyBits ),
+                random.nextBoolean(),
                 randomLongOrOccasionallyNull( entityBits ),
                 randomLongOrOccasionallyNull( nodeLabelBits, 0 ) );
     }
@@ -148,18 +153,19 @@ public class LimitedRecordGenerators implements RecordGenerators
     @Override
     public Generator<LabelTokenRecord> labelToken()
     {
-        return (recordSize, format) -> new LabelTokenRecord( randomId() ).initialize(
-                random.nextBoolean(), random.nextInt( tokenBits ) );
+        return (recordSize, format, recordId) -> new LabelTokenRecord( toIntExact( recordId ) ).initialize(
+                random.nextBoolean(),
+                random.nextInt( tokenBits ) );
     }
 
     @Override
     public Generator<DynamicRecord> dynamic()
     {
-        return (recordSize, format) -> {
+        return (recordSize, format, recordId) -> {
             int dataSize = recordSize - format.getRecordHeaderSize();
             int length = random.nextBoolean() ? dataSize : random.nextInt( dataSize );
             long next = length == dataSize ? randomLong( propertyBits ) : nullValue;
-            DynamicRecord record = new DynamicRecord( random.nextInt( 1, 5 ) ).initialize( random.nextBoolean(),
+            DynamicRecord record = new DynamicRecord( max( 1, recordId ) ).initialize( random.nextBoolean(),
                     random.nextBoolean(), next, random.nextInt( PropertyType.values().length ), length );
             byte[] data = new byte[record.getLength()];
             random.nextBytes( data );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -47,12 +48,14 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 @Ignore( "Not a test, a base class for testing formats" )
 public abstract class RecordFormatTest
 {
-    private static final int PAGE_SIZE = 1_024;
+    private static final int PAGE_SIZE = (int) kibiBytes( 1 );
 
     // Whoever is hit first
     private static final long TEST_ITERATIONS = 20_000;
@@ -72,12 +75,21 @@ public abstract class RecordFormatTest
     public RecordKeys keys = FullyCoveringRecordKeys.INSTANCE;
 
     private final RecordFormats formats;
-    private final RecordGenerators generators;
+    private final int entityBits;
+    private final int propertyBits;
+    private RecordGenerators generators;
 
-    protected RecordFormatTest( RecordFormats formats, RecordGenerators generators )
+    protected RecordFormatTest( RecordFormats formats, int entityBits, int propertyBits )
     {
         this.formats = formats;
-        this.generators = generators;
+        this.entityBits = entityBits;
+        this.propertyBits = propertyBits;
+    }
+
+    @Before
+    public void before()
+    {
+        generators = new LimitedRecordGenerators( random.randoms(), entityBits, propertyBits, 40, 16, -1 );
     }
 
     @Test
@@ -158,7 +170,7 @@ public abstract class RecordFormatTest
             long i = 0;
             for ( ; i < TEST_ITERATIONS && currentTimeMillis() < endTime; i++ )
             {
-                R written = generator.get( recordSize, format );
+                R written = generator.get( recordSize, format, i % 5 );
                 R read = format.newRecord();
                 try
                 {

@@ -26,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.helpers.ArrayUtil;
 
 import static java.lang.Integer.bitCount;
+import static java.lang.Math.abs;
 
 /**
  * Set of useful randomizing utilities, for example randomizing a string or property value of random type and value.
@@ -251,5 +252,35 @@ public class Randoms
         default:
             throw new IllegalArgumentException( "Unknown symbol range " + range );
         }
+    }
+
+    public long nextLong( long bound )
+    {
+        return abs( random.nextLong() ) % bound;
+    }
+
+    public boolean nextBoolean()
+    {
+        return random.nextBoolean();
+    }
+
+    public int nextInt( int bound )
+    {
+        return random.nextInt( bound );
+    }
+
+    public int nextInt()
+    {
+        return random.nextInt();
+    }
+
+    public void nextBytes( byte[] data )
+    {
+        random.nextBytes( data );
+    }
+
+    public float nextFloat()
+    {
+        return random.nextFloat();
     }
 }
