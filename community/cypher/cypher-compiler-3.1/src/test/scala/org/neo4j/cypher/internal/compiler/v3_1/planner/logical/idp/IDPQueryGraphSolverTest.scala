@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
+import org.scalatest.exceptions.TestFailedException
 
 import scala.collection.immutable
 import scala.language.reflectiveCalls
@@ -516,7 +517,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           }
           assertMinExpandsAndJoins(plan, Map("expands" -> numberOfPatternRelationships, "joins" -> minJoinsExpected))
         } catch {
-          case e: Exception => fail(s"Failed to plan with config '$solverConfig': ${e.getMessage}")
+          case e: TestFailedException => fail(s"Failed to plan with config '$solverConfig': ${e.getMessage}")
+          case e: Throwable => throw new RuntimeException(s"Failed to plan with config '$solverConfig'", e)
         }
       }
     }

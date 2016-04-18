@@ -120,7 +120,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
     val rel = x.relateTo("r", y, Seq.empty, SemanticDirection.OUTGOING)
 
     val patternNodes = Map("x" -> x, "y" -> y)
-    val patternRels = Map("r" -> rel)
+    val patternRels = Map("r" -> Seq(rel))
     val graph = new PatternGraph(patternNodes, patternRels, Seq("x"), Seq.empty)
     val pipe = new MatchPipe(src, Seq(), graph, Set("x", "r", "y"))
     (pipe, iter)

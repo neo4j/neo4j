@@ -104,4 +104,21 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
     resultList.head.get("i.foo") should equal(Some("i_bar"))
     resultList.head.get("p.foo") should equal(Some("p_bar"))
   }
+
+  test("Foreach and delete should work together without breaking on unknown identifier types") {
+    // given
+    val node = createLabeledNode("Label")
+    relate(node, createNode())
+
+    val query =
+      """MATCH (n: Label)
+        |OPTIONAL MATCH (n)-[rel]->()
+        |FOREACH (r IN CASE WHEN rel IS NOT NULL THEN [rel] ELSE [] END | DELETE r )""".stripMargin
+
+    // when
+    val result = updateWithBothPlanners(query)
+
+    // then
+    assertStats(result, relationshipsDeleted = 1)
+  }
 }

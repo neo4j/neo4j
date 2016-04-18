@@ -313,4 +313,26 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
 
     result.columnAs[Long]("c").next() should equal(1)
   }
+
+  test("should aggregate using as grouping key expressions using variables in scope and nothing else") {
+    val userId = createLabeledNode(Map("userId" -> 11), "User")
+    relate(userId, createNode(), "FRIEND", Map("propFive" -> 1))
+    relate(userId, createNode(), "FRIEND", Map("propFive" -> 3))
+    relate(createNode(), userId, "FRIEND", Map("propFive" -> 2))
+    relate(createNode(), userId, "FRIEND", Map("propFive" -> 4))
+
+    val query1 = """MATCH (user:User {userId: 11})-[friendship:FRIEND]-()
+                   |WITH user, collect(friendship)[toInt(rand() * count(friendship))] AS selectedFriendship
+                   |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
+    val query2 = """MATCH (user:User {userId: 11})-[friendship:FRIEND]-()
+                   |WITH user, collect(friendship) AS friendships
+                   |WITH user, friendships[toInt(rand() * size(friendships))] AS selectedFriendship
+                   |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
+
+    // TODO: this can be executed with the compatibility mode when we'll depend on the 2.3.4 cypher-compiler
+    val result1 = executeWithCostPlannerOnly(query1).toList
+    val result2 = executeWithCostPlannerOnly(query2).toList
+
+    result1.size should equal(result2.size)
+  }
 }
