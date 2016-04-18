@@ -69,4 +69,4 @@ exec "$JAVA_CMD" ${JAVA_OPTS:-} \
   -classpath "$CLASSPATH" \
   -Dfile.encoding=UTF-8 \
   org.neo4j.shell.StartClient \
-  "$ARGS"
+  ${ARGS}
