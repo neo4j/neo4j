@@ -25,6 +25,42 @@ set -euo pipefail
 readonly NEO4J_BIN
 . "${NEO4J_BIN}/neo4j-shared.sh"
 
+resolve_path() {
+    orig_filename=$1
+    if [[ ${orig_filename} == /* ]]; then
+        filename="${orig_filename}"
+    else
+        filename="$(pwd)/${orig_filename}"
+    fi
+    echo "${filename}"
+}
+
+ARGS=""
+while [[ $# > 0 ]]
+do
+    option="$1"
+    case "${option}" in
+        --file=*|-file=*|--path=*|-path=*|--conf=*|-conf=*)
+            orig_filename="${option#*=}"
+            orig_arg="${option%=*}"
+
+            ARGS="${ARGS} ${orig_arg}=$(resolve_path "${orig_filename}")"
+            shift
+            ;;
+        --file|-file|--path|-path|--conf|-conf)
+            orig_filename="${2}"
+
+            ARGS="${ARGS} ${option} $(resolve_path "${orig_filename}")"
+            shift
+            shift
+            ;;
+        *)
+            ARGS="${ARGS} ${option}"
+            shift
+            ;;
+    esac
+done
+
 setup_environment
 check_java
 build_classpath
@@ -33,4 +69,4 @@ exec "$JAVA_CMD" ${JAVA_OPTS:-} \
   -classpath "$CLASSPATH" \
   -Dfile.encoding=UTF-8 \
   org.neo4j.shell.StartClient \
-  "$@"
+  "$ARGS"
