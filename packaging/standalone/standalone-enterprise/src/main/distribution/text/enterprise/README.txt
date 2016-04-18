@@ -3,14 +3,15 @@
 
 Welcome to #{product.fullname} release #{neo4j.version}, a high-performance graph database.
 This is the enterprise distribution of #{product.fullname}, including everything you need to
-start building applications that can model, persist and explore graph-like data.
+start building applications that can model, persist and explore graph data.
 
 In the box
 ----------
 
 #{product.fullname} runs as a server application, exposing a Web-based management
-interface and RESTful endpoints for data access, along with logging, capabilities
-for participating in a database cluster and JMX remote monitoring.
+interface, RESTful and high-performance binary protocol endpoints for data access,
+along with logging, capabilities for participating in a database cluster and JMX
+remote monitoring.
 
 Here in the installation directory, you'll find:
 
