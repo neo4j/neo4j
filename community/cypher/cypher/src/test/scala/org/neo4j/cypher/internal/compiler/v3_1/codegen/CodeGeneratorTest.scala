@@ -48,7 +48,7 @@ import scala.collection.JavaConverters
 
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val generator = new CodeGenerator(GeneratedQueryStructure)
+  private val generator = new CodeGenerator(GeneratedQueryStructure, CodeGenConfiguration(mode = SourceCodeMode))
 
   test("all nodes scan") { // MATCH a RETURN a
     //given
@@ -841,7 +841,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def compile(plan: LogicalPlan) = {
-    generator.generate(plan, newMockedPlanContext, Clock.systemUTC(), semanticTable, CostBasedPlannerName.default)
+    generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }
 
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {

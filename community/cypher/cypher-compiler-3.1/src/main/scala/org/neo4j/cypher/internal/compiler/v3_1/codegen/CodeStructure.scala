@@ -27,9 +27,13 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
  * This constitutes the SPI for code generation.
  */
 trait CodeStructure[T] {
-  type SourceSink = (String, String) => Unit
-  def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id], sourceSink: Option[SourceSink])
-                   (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext): T
+  def generateQuery(className: String, columns: Seq[String], operatorIds: Map[String, Id], conf: CodeGenConfiguration)
+                   (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext): CodeStructureResult[T]
+}
+
+trait CodeStructureResult[T] {
+  def query: T
+  def source: Option[(String, String)]
 }
 
 sealed trait JoinTableType

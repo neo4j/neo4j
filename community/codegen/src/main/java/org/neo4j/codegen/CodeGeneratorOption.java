@@ -23,11 +23,6 @@ public interface CodeGeneratorOption
 {
     void applyTo( Object target );
 
-    CodeGeneratorOption BLANK_OPTION = new CodeGeneratorOption()
-    {
-        @Override
-        public void applyTo( Object target )
-        {
-        }
+    CodeGeneratorOption BLANK_OPTION = target -> {
     };
 }

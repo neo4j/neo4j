@@ -30,7 +30,7 @@ import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, _}
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, CodeStructure, MethodStructure, QueryExecutionTracer, ResultRowImpl, setStaticField}
+import org.neo4j.cypher.internal.compiler.v3_1.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, InternalPlanDescription}
@@ -50,21 +50,46 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
   import Expression.{constant, invoke, newInstance}
 
-  override def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id],
-                             sourceSink: Option[SourceSink])
-                            (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
-    val generator: CodeGenerator = try {
-      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, SourceCode.BYTECODE, SourceCode.PRINT_SOURCE,
-                                 sourceSink.map(sink => new SourceVisitor {
-                                   override protected def visitSource(reference: TypeReference,
-                                                                      sourceCode: CharSequence): Unit =
-                                     sink.apply(reference.name(), sourceCode.toString)
-                                 }).getOrElse(BLANK_OPTION))
+  case class GeneratedQueryStructureResult(query: GeneratedQuery, source: Option[(String, String)])
+    extends CodeStructureResult[GeneratedQuery]
+
+  private def createGenerator(conf: CodeGenConfiguration, source: (Option[(String, String)]) => Unit) = {
+    val mode = conf.mode match {
+      case SourceCodeMode => SourceCode.SOURCECODE
+      case ByteCodeMode => SourceCode.BYTECODE
+    }
+    val option = if (conf.saveSource) new SourceVisitor {
+      override protected def visitSource(reference: TypeReference,
+                                         sourceCode: CharSequence) = source(Some(reference.name(), sourceCode.toString))
+    } else {
+      source(None)
+      BLANK_OPTION
+    }
+
+    try {
+      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, option, SourceCode.PRINT_SOURCE)
     } catch {
       case e: Exception => throw new CantCompileQueryException(e.getMessage, e)
     }
+  }
+
+  class SourceSaver extends ((Option[(String, String)]) => Unit) {
+
+    private var _source: Option[(String, String)] = None
+
+    override def apply(v1: Option[(String, String)]) =  _source = v1
+
+    def source: Option[(String, String)] = _source
+  }
+
+  override def generateQuery(className: String, columns: Seq[String], operatorIds: Map[String, Id],
+                             conf: CodeGenConfiguration)
+                            (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
+
+    val sourceSaver = new SourceSaver
+    val generator = createGenerator(conf, sourceSaver)
     val execution = using(
-      generator.generateClass(packageName, className + "Execution", typeRef[GeneratedQueryExecution],
+      generator.generateClass(conf.packageName, className + "Execution", typeRef[GeneratedQueryExecution],
                               typeRef[SuccessfulCloseable])) { clazz =>
       // fields
       val fields = Fields(
@@ -100,13 +125,13 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         parameterizedWith("E", extending(typeRef[Exception])).
         throwsException(typeParameter("E")))) { method =>
         method.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
-        block(GeneratedMethodStructure(fields, method, new AuxGenerator(packageName, generator)))
+        block(GeneratedMethodStructure(fields, method, new AuxGenerator(conf.packageName, generator)))
         method.expression(invoke(method.self(), fields.success))
         method.expression(invoke(method.self(), fields.close))
       }
       clazz.handle()
     }
-    val query = using(generator.generateClass(packageName, className, typeRef[GeneratedQuery])) { clazz =>
+    val query = using(generator.generateClass(conf.packageName, className, typeRef[GeneratedQuery])) { clazz =>
       using(clazz.generateMethod(typeRef[GeneratedQueryExecution], "execute",
                                  param[TaskCloser]("closer"),
                                  param[QueryContext]("queryContext"),
@@ -135,7 +160,8 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     operatorIds.foreach {
       case (key, id) => setStaticField(clazz, key, id)
     }
-    query
+
+    GeneratedQueryStructureResult(query, sourceSaver.source)
   }
 
   def method[O <: AnyRef, R](name: String, params: TypeReference*)
