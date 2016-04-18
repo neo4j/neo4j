@@ -25,19 +25,21 @@ import pipes.QueryState
 import org.neo4j.graphdb.{Relationship, Node}
 import collection.Map
 
-class PatternMatcher(bindings: Map[String, MatchingPair],
+class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
                      predicates: Seq[Predicate],
                      source:ExecutionContext,
                      state:QueryState,
                      identifiersInClause: Set[String])
   extends Traversable[ExecutionContext] {
-  val boundNodes: Map[String, MatchingPair] = bindings.filter(_._2.patternElement.isInstanceOf[PatternNode])
-  val boundRels: Map[String, MatchingPair] = bindings.filter(_._2.patternElement.isInstanceOf[PatternRelationship])
+  val boundNodes: Map[String, Set[MatchingPair]] =
+    bindings.filter(x => x._2.nonEmpty && x._2.head.patternElement.isInstanceOf[PatternNode])
+  val boundRels: Map[String, Set[MatchingPair]] =
+    bindings.filter(x => x._2.nonEmpty && x._2.head.patternElement.isInstanceOf[PatternRelationship])
 
   def foreach[U](f: ExecutionContext => U) {
     debug("startPatternMatching")
 
-    traverseNode(boundNodes.values.toSet, createInitialHistory, f)
+    traverseNode(boundNodes.values.flatten.toSet, createInitialHistory, f)
   }
 
 
@@ -134,7 +136,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair],
 
   private def alreadyPinned[U](currentRel: PatternRelationship, x: GraphRelationship): Boolean = {
     boundRels.get(currentRel.key) match {
-      case Some(pinnedRel) => pinnedRel.matches(x)
+      case Some(pinnedRel) => pinnedRel.forall(_.matches(x))
       case None => true
     }
   }

@@ -227,9 +227,9 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, collection: Ex
       expression.semanticCheck(SemanticContext.Simple)
     } chain expression.expectType(init.types, AccumulatorExpressionTypeMismatchMessageGenerator) chain
     this.specifyType(s => init.types(s) leastUpperBounds expression.types(s)) chain
-    failIfAggregrating
+    failIfAggregating
 
-  protected def failIfAggregrating: Option[SemanticError] =
+  protected def failIfAggregating: Option[SemanticError] =
     if (expression.containsAggregate) {
       val message = "Can't use aggregating expressions inside of expressions executing over collections"
       Some(SemanticError(message, expression.position))

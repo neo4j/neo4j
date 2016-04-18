@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.Predicate
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import pipes.QueryState
-import org.neo4j.graphdb.{Relationship, Node, DynamicRelationshipType}
-import org.neo4j.graphmatching.{PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode,
-PatternRelationship => SimplePatternRelationship, PatternMatch}
-import collection.{immutable, Map}
-import collection.JavaConverters._
+import org.neo4j.graphdb.{DynamicRelationshipType, Node, Relationship}
+import org.neo4j.graphmatching.{PatternMatch, PatternMatcher => SimplePatternMatcher, PatternNode => SimplePatternNode, PatternRelationship => SimplePatternRelationship}
+
+import scala.collection.JavaConverters._
+import scala.collection.{Map, Set, immutable}
 
 class SimplePatternMatcherBuilder(pattern: PatternGraph,
                                   predicates: Seq[Predicate],
@@ -43,8 +43,8 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
     }
   }
 
-  def createPatternRels(patternNodes:immutable.Map[String, SimplePatternNode]):immutable.Map[String, SimplePatternRelationship]  = pattern.patternRels.map {
-    case (key, pr) =>
+  def createPatternRels(patternNodes: immutable.Map[String, SimplePatternNode]): immutable.Map[String, SimplePatternRelationship] = pattern.patternRels.flatMap {
+    case (key, prs) => prs.map(pr => {
       val start = patternNodes(pr.startNode.key)
       val end = patternNodes(pr.endNode.key)
 
@@ -59,6 +59,7 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
       patternRel.setLabel(pr.key)
 
       key -> patternRel
+    })
   }
 
   def setAssociations(sourceRow: Map[String, Any]): (immutable.Map[String, SimplePatternNode], immutable.Map[String, SimplePatternRelationship]) = {
@@ -132,11 +133,11 @@ class SimplePatternMatcherBuilder(pattern: PatternGraph,
 
 object SimplePatternMatcherBuilder {
   def canHandle(graph: PatternGraph): Boolean = {
-    val a = !graph.patternRels.values.exists(pr => pr.isInstanceOf[VariableLengthPatternRelationship] || pr.startNode == pr.endNode || pr.relTypes.size > 1)
+    val a = !graph.patternRels.values.exists(_.forall(pr => pr.isInstanceOf[VariableLengthPatternRelationship] || pr.startNode == pr.endNode || pr.relTypes.size > 1))
     val b = !graph.patternRels.keys.exists(graph.boundElements.contains)
-    val c = !graph.patternNodes.values.exists(pn => pn.relationships.isEmpty )
+    val c = !graph.patternNodes.values.exists(pn => pn.relationships.isEmpty)
     val d = !graph.patternNodes.values.exists(node => node.labels.nonEmpty || node.properties.nonEmpty)
-    val e = !graph.patternRels.values.exists(rel => rel.properties.nonEmpty)
+    val e = !graph.patternRels.values.exists(_.forall(rel => rel.properties.nonEmpty))
     a && b && c && d && e
   }
 }

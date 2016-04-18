@@ -51,12 +51,12 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     state.decorator.registerParentPipe(this)
 
     // This is the temporary storage used while the aggregation is going on
-    val result = MutableMap[NiceHasher, (ExecutionContext, Seq[AggregationFunction])]()
+    val result = MutableMap[NiceHasher, Seq[AggregationFunction]]()
     val keyNames: Seq[String] = keyExpressions.toSeq
-    val aggregationNames: Seq[String] = aggregations.map(_._1).toSeq
+    val aggregationNames: Seq[String] = aggregations.keys.toSeq
     val mapSize = keyNames.size + aggregationNames.size
 
-    def createResults(key: NiceHasher, aggregator: scala.Seq[AggregationFunction], ctx: ExecutionContext): ExecutionContext = {
+    def createResults(key: NiceHasher, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
       val newMap = MutableMaps.create(mapSize)
 
       //add key values
@@ -65,7 +65,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
       //add aggregated values
       (aggregationNames zip aggregator.map(_.result)).foreach(newMap += _)
 
-      ctx.newFromMutableMap(newMap)
+      ExecutionContext(newMap)
     }
 
     def createEmptyResult(params: Map[String, Any]): Iterator[ExecutionContext] = {
@@ -79,8 +79,10 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
 
     input.foreach(ctx => {
       val groupValues: NiceHasher = new NiceHasher(keyNames.map(ctx))
-      val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
-      val (_, functions) = result.getOrElseUpdate(groupValues, (ctx, aggregateFunctions))
+      val functions = result.getOrElseUpdate(groupValues, {
+        val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toSeq
+        aggregateFunctions
+      })
       functions.foreach(func => func(ctx)(state))
     })
 
@@ -88,7 +90,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
       createEmptyResult(state.params)
     } else {
       result.map {
-        case (key, (ctx, aggregator)) => createResults(key, aggregator, ctx)
+        case (key, aggregator) => createResults(key, aggregator)
       }.toIterator
     }
   }
