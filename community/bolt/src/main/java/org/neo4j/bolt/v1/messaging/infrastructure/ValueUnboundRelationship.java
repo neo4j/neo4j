@@ -20,11 +20,13 @@
 package org.neo4j.bolt.v1.messaging.infrastructure;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
@@ -40,7 +42,17 @@ public class ValueUnboundRelationship
         packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.UNBOUND_RELATIONSHIP );
         packer.pack( rel.getId() );
         packer.pack( rel.getType().name() );
-        packer.packProperties( rel );
+        //TODO: We should mark deleted relationships properly but that requires updates
+        // to protocol and clients.
+        try{
+            Map<String,Object> properties = rel.getAllProperties();
+            packer.packRawMap( properties );
+        }
+        catch(NotFoundException e)
+        {
+            //relationship was deleted, just send empty property map back
+            packer.packRawMap( Collections.emptyMap() );
+        }
     }
 
     public static ValueUnboundRelationship unpack( Neo4jPack.Unpacker unpacker )

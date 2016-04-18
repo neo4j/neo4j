@@ -34,7 +34,6 @@ import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -198,28 +197,13 @@ public class Neo4jPack
             }
         }
 
-        public void packRawMap( Map<String, Object> map ) throws IOException
+        public void packRawMap( Map<String,Object> map ) throws IOException
         {
             packMapHeader( map.size() );
-            if ( map.size() > 0 )
+            for ( Map.Entry<String,Object> entry : map.entrySet() )
             {
-                for ( Map.Entry<String, Object> entry : map.entrySet() )
-                {
-                    pack( entry.getKey() );
-                    pack( entry.getValue() );
-                }
-            }
-        }
-
-        // TODO: combine these
-        public void packProperties( PropertyContainer entity ) throws IOException
-        {
-            Map<String, Object> props = entity.getAllProperties();
-            packMapHeader( props.size() );
-            for ( Map.Entry<String, Object> property : props.entrySet() )
-            {
-                pack( property.getKey() );
-                pack( property.getValue() );
+                pack( entry.getKey() );
+                pack( entry.getValue() );
             }
         }
     }

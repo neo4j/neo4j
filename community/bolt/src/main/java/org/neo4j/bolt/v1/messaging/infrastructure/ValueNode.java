@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterables;
@@ -46,15 +47,29 @@ public class ValueNode
     public static void pack( Neo4jPack.Packer packer, Node node )
             throws IOException
     {
+        //TODO: We should mark deleted nodes properly but that requires updates to protocol and
+        //clients. Until that we merely don't fail and return a node with neither labels nor properties
         packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.NODE );
         packer.pack( node.getId() );
-        Collection<Label> collectedLabels = Iterables.asList( node.getLabels() );
-        packer.packListHeader( collectedLabels.size() );
-        for ( Label label : collectedLabels )
+        try
         {
-            packer.pack( label.name() );
+            //read labels and properties, will fail if node has been deleted
+            Collection<Label> collectedLabels = Iterables.asList( node.getLabels() );
+            Map<String, Object> props = node.getAllProperties();
+
+            packer.packListHeader( collectedLabels.size() );
+            for ( Label label : collectedLabels )
+            {
+                packer.pack( label.name() );
+            }
+            packer.packRawMap( props );
         }
-        packer.packProperties( node );
+        catch ( NotFoundException e )
+        {
+            //node is deleted, just send along an empty node
+            packer.packListHeader( 0 );
+            packer.packRawMap( Collections.emptyMap() );
+        }
     }
 
     public static ValueNode unpack( Neo4jPack.Unpacker unpacker )
