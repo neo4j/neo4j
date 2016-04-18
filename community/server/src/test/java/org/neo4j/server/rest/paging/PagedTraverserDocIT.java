@@ -92,14 +92,9 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
                 .withClock( clock )
                 .build();
 
-        suppressAll().call( new Callable<Void>()
-        {
-            @Override
-            public Void call() throws Exception
-            {
-                server.start();
-                return null;
-            }
+        suppressAll().call( (Callable<Void>) () -> {
+            server.start();
+            return null;
         } );
         functionalTestHelper = new FunctionalTestHelper( server );
     }
@@ -113,14 +108,9 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     @AfterClass
     public static void stopServer() throws Exception
     {
-        suppressAll().call( new Callable<Void>()
-        {
-            @Override
-            public Void call() throws Exception
-            {
-                server.stop();
-                return null;
-            }
+        suppressAll().call( (Callable<Void>) () -> {
+            server.stop();
+            return null;
         } );
     }
 
