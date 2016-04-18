@@ -80,6 +80,25 @@ class InQueryProcedureCallAcceptanceTest extends ProcedureCallAcceptanceTest {
     result.toList should equal(List(Map("out0" -> "42", "out1" -> 42)))
   }
 
+  test("should be able to call the same procedure twice even using the same outputs") {
+    // Given
+    createLabeledNode("A", "B", "C")
+
+    // When
+    val result = execute(
+      """call db.labels() yield label
+        |with count(*) as c
+        |call db.labels() yield label
+        |return *""".stripMargin)
+
+    // Then
+    result.toSet should equal(Set(
+      Map("label" -> "A", "c" -> 3),
+      Map("label" -> "B", "c" -> 3),
+      Map("label" -> "C", "c" -> 3)
+    ))
+  }
+
   test("should be able to call empty procedure") {
     //Given
     registerProcedureReturningNoRowsOrColumns()

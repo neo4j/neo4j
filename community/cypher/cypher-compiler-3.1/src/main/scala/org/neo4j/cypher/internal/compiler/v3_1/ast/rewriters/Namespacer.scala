@@ -65,13 +65,18 @@ object Namespacer {
 }
 
 case class Namespacer(renamings: VariableRenamings) {
-  val statementRewriter: Rewriter = bottomUp(Rewriter.lift {
-    case i: Variable =>
-      renamings.get(Ref(i)) match {
-        case Some(newVariable) => newVariable
-        case None                => i
-      }
-  })
+  val statementRewriter: Rewriter = inSequence(
+    bottomUp(Rewriter.lift {
+      case item@ProcedureResultItem(None, v: Variable) if renamings.contains(Ref(v)) =>
+        item.copy(output = Some(ProcedureOutput(v.name)(v.position)))(item.position)
+    }),
+    bottomUp(Rewriter.lift {
+      case v: Variable =>
+        renamings.get(Ref(v)) match {
+          case Some(newVariable) => newVariable
+          case None              => v
+        }
+    }))
 
   val tableRewriter = (semanticTable: SemanticTable) => {
     val replacements = renamings.toSeq.collect { case (old, newVariable) => old.value -> newVariable }
