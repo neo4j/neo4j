@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-test_description="Test differences running the shell"
+test_description="Test shell argument handling."
 
 . ./lib/sharness.sh
 fake_install
