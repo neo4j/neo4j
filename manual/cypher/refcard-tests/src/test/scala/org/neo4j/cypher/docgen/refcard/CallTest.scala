@@ -42,7 +42,7 @@ class CallTest extends RefcardTest with QueryStatisticsTestSupport {
     super.init()
 
     val kernel = db.getDependencyResolver.resolveDependency(classOf[KernelAPI])
-    val builder = procedureSignature(Array.empty[String], "procWithArg")
+    val builder = procedureSignature(Array("java", "stored"), "procedureWithArgs")
       .in("input", Neo4jTypes.NTString)
       .out("result", Neo4jTypes.NTString)
 
@@ -74,28 +74,29 @@ class CallTest extends RefcardTest with QueryStatisticsTestSupport {
 ### assertion=labels
 //
 
-CALL db.labels
+CALL db.labels() YIELD label
 ###
 
-This invokes the built-in procedure db.labels, which lists all in-use labels in the database.
-
-### assertion=arg
-//
-
-CALL procWithArg('foo')
-###
-
-For a procedure that takes arguments, these can be provided explicitly.
+This shows a standalone call to the built-in procedure +db.labels+ to list all labels used in the database.
+Note that required procedure arguments are given explicitly in brackets after the procedure name.
 
 ### assertion=arg parameters=arg
 //
 
-CALL procWithArg
+CALL java.stored.procedureWithArgs
 ###
 
-For a procedure that takes arguments you can also provide the arguments implicitly via parameters.
-Note that the keys in the parameter map must match the names of the procedure argument, e.g. `{input: 'foo'}`, if the procedure defines one argument with the name `input`.
+Standalone calls may omit +YIELD+ and also provide arguments implicitly via statement parameters, e.g. a standalone call requiring one argument `input` may be run by passing the parameter map `{input: 'foo'}`.
 
+### assertion=labels
+//
+
+CALL db.labels() YIELD label
+RETURN count(label) AS count
+###
+
+Calls the built-in procedure `db.labels` inside a larger query to count all labels used in the database.
+Calls inside a larger query always requires passing arguments and naming results explicitly with +YIELD+.
 """
 }
 
