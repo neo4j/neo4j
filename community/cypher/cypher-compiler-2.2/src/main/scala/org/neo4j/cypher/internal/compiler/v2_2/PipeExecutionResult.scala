@@ -24,6 +24,7 @@ import java.util
 import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.JavaCompatibility.asJavaCompatible
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.{Eagerly, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
@@ -55,7 +56,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext
-    def next() = makeValueJavaCompatible(getAnyColumn(column, self.next())).asInstanceOf[T]
+    def next() = asJavaCompatible(getAnyColumn(column, self.next())).asInstanceOf[T]
   }
 
   def columnAs[T](column: String): Iterator[T] =
@@ -64,7 +65,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next() = Eagerly.immutableMapValues(self.next(), makeValueJavaCompatible).asJava
+    def next() = Eagerly.immutableMapValues(self.next(), asJavaCompatible).asJava
   }
 
   override def toList: List[Predef.Map[String, Any]] = result.toList
@@ -84,12 +85,6 @@ class PipeExecutionResult(val result: ResultIterator,
 
   private def getAnyColumn[T](column: String, m: Map[String, Any]): Any =
     m.getOrElse(column, columnNotFoundException(column, m.keys))
-
-  private def makeValueJavaCompatible(value: Any): Any = value match {
-    case iter: Seq[_]    => iter.map(makeValueJavaCompatible).asJava
-    case iter: Map[_, _] => Eagerly.immutableMapValues(iter, makeValueJavaCompatible).asJava
-    case x               => x
-  }
 
   private def withDumper[T](f: (ExecutionResultDumper) => (QueryContext => T)): T = {
     val result = toList

@@ -257,11 +257,20 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner:
     )
   }
 
-  def close() = exceptionHandlerFor2_2.runSafely{ inner.close() }
+  def close() = exceptionHandlerFor2_2.runSafely {
+    endQueryExecution()
+    inner.close()
+  }
 
   def next() = exceptionHandlerFor2_2.runSafely{ inner.next() }
 
-  def hasNext = exceptionHandlerFor2_2.runSafely{ inner.hasNext }
+  def hasNext = exceptionHandlerFor2_2.runSafely {
+    val next = inner.hasNext
+    if (!next) {
+      endQueryExecution()
+    }
+    next
+  }
 
   def convert(i: InternalPlanDescription): ExtendedPlanDescription = exceptionHandlerFor2_2.runSafely {
     CompatibilityPlanDescription(i, CypherVersion.v2_2, planner)

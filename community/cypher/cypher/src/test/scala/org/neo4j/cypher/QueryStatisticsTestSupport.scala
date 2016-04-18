@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import java.util
+
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_2
 import org.neo4j.cypher.internal.compiler.v2_2.PlannerName
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
@@ -35,7 +37,7 @@ trait QueryStatisticsTestSupport {
 
     def apply(actual: InternalExecutionResult) {
       implicit val monitor = new QueryExecutionMonitor {
-        override def startQueryExecution(session: QuerySession, query: String){}
+        override def startQueryExecution(session: QuerySession, query: String, parameters: util.Map[String, AnyRef]){}
 
         override def endSuccess(session: QuerySession){}
 
