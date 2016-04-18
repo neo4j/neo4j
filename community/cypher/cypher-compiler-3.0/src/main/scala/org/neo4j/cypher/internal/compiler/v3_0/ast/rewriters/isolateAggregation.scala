@@ -47,29 +47,23 @@ case object isolateAggregation extends Rewriter {
     case q@SingleQuery(clauses) =>
 
       val newClauses = clauses.flatMap {
-        case clause if !clauseNeedingWork(clause) => Some(clause)
+        case clause if !clauseNeedingWork(clause) => Seq(clause)
         case clause =>
-          val originalExpressions = getExpressions(clause)
-
-          val expressionsToGoToWith: Set[Expression] = fixedPoint {
+          val (withAggregations, others) = getExpressions(clause).partition(hasAggregateButIsNotAggregate(_))
+          val expressionsToGoToWith: Set[Expression] = others ++ fixedPoint {
             (expressions: Set[Expression]) => expressions.flatMap {
               case e if hasAggregateButIsNotAggregate(e) =>
                 e match {
                   case ReduceExpression(_, init, coll) => Seq(init, coll)
-                  case FilterExpression(_, expr)       => Some(expr)
-                  case ExtractExpression(_, expr)      => Some(expr)
-                  case ListComprehension(_, expr)      => Some(expr)
+                  case FilterExpression(_, expr)       => Seq(expr)
+                  case ExtractExpression(_, expr)      => Seq(expr)
+                  case ListComprehension(_, expr)      => Seq(expr)
                   case _                               => e.arguments
                 }
-
-              case e =>
-                Some(e)
-
+              case e => Seq(e)
             }
-          }(originalExpressions).filter {
-            //Constant expressions should never be isolated
-            case ConstantExpression(_) => false
-            case expr => true
+          }(withAggregations).filter {
+            expr => IsAggregate(expr) || expr.dependencies.nonEmpty
           }
 
           val withReturnItems: Set[ReturnItem] = expressionsToGoToWith.map {

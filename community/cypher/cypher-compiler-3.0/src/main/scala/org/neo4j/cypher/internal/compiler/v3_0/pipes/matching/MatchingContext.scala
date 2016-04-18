@@ -41,7 +41,7 @@ class MatchingContext(boundVariables: SymbolTable,
   val builder: MatcherBuilder = decideWhichMatcherToUse()
 
   private def variables: immutable.Map[String, CypherType] =
-    patternGraph.patternRels.values.flatMap(p => p.variables2).toMap
+    patternGraph.patternRels.values.flatMap(p => p.flatMap(_.variables2)).toMap
 
   lazy val symbols = {
     val ids = variables

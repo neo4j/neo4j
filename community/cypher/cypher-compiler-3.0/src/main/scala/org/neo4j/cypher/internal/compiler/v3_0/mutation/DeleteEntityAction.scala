@@ -86,5 +86,6 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
     case _: NodeType         => Effects(DeletesNode)
     case _: RelationshipType => Effects(DeletesRelationship)
     case _: PathType         => Effects(DeletesNode, DeletesRelationship)
+    case _                   => Effects(DeletesNode, DeletesRelationship)
   }
 }

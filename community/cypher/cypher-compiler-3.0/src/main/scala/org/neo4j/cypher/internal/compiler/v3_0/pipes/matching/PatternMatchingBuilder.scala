@@ -33,18 +33,18 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
                              variablesInClause: Set[String]) extends MatcherBuilder {
   def getMatches(sourceRow: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
     val bindings: Map[String, Any] = sourceRow.filter(_._2.isInstanceOf[PropertyContainer])
-    val boundPairs: Map[String, MatchingPair] = extractBoundMatchingPairs(bindings)
+    val boundPairs: Map[String, Set[MatchingPair]] = extractBoundMatchingPairs(bindings)
 
     val undirectedBoundRelationships: Iterable[PatternRelationship] = bindings.keys.
       filter(z => patternGraph.contains(z)).
-      filter(patternGraph(_).isInstanceOf[PatternRelationship]).
-      map(patternGraph(_).asInstanceOf[PatternRelationship]).
+      filter(patternGraph(_).exists(_.isInstanceOf[PatternRelationship])).
+      flatMap(patternGraph(_).asInstanceOf[Seq[PatternRelationship]]).
       filter(_.dir == SemanticDirection.BOTH)
 
     val mandatoryPattern: Traversable[ExecutionContext] = if (undirectedBoundRelationships.isEmpty) {
       createPatternMatcher(boundPairs, includeOptionals = false, sourceRow, state)
     } else {
-      val boundRels: Seq[Map[String, MatchingPair]] = createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships, bindings)
+      val boundRels = createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships, bindings)
 
       boundRels.
         flatMap(relMap => createPatternMatcher(relMap ++ boundPairs, includeOptionals = false, sourceRow, state))
@@ -53,18 +53,20 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
     mandatoryPattern
   }
 
-  private def createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships: Iterable[PatternRelationship], bindings: Map[String, Any]): Seq[Map[String, MatchingPair]] = {
+  private def createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships:
+                                                             Iterable[PatternRelationship], bindings: Map[String,
+    Any]): Seq[Map[String, Set[MatchingPair]]] = {
     val toList = undirectedBoundRelationships.map(patternRel => {
       val rel = bindings(patternRel.key).asInstanceOf[Relationship]
-      val x = patternRel.key -> MatchingPair(patternRel, rel)
+      val x = patternRel.key -> Set(MatchingPair(patternRel, rel))
 
       // Outputs the first direction of the pattern relationship
-      val a1 = patternRel.startNode.key -> MatchingPair(patternRel.startNode, rel.getStartNode)
-      val a2 = patternRel.endNode.key -> MatchingPair(patternRel.endNode, rel.getEndNode)
+      val a1 = patternRel.startNode.key -> Set(MatchingPair(patternRel.startNode, rel.getStartNode))
+      val a2 = patternRel.endNode.key -> Set(MatchingPair(patternRel.endNode, rel.getEndNode))
 
       // Outputs the second direction of the pattern relationship
-      val b1 = patternRel.startNode.key -> MatchingPair(patternRel.startNode, rel.getEndNode)
-      val b2 = patternRel.endNode.key -> MatchingPair(patternRel.endNode, rel.getStartNode)
+      val b1 = patternRel.startNode.key -> Set(MatchingPair(patternRel.startNode, rel.getEndNode))
+      val b2 = patternRel.endNode.key -> Set(MatchingPair(patternRel.endNode, rel.getStartNode))
 
       Seq(Map(x, a1, a2), Map(x, b1, b2))
     }).toList
@@ -79,35 +81,37 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
         result.flatMap(r => element.map(e => e :: r))
     ).toSeq
 
-  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: ExecutionContext, state:QueryState): Traversable[ExecutionContext] =
+  private def createPatternMatcher(boundPairs: Map[String, Set[MatchingPair]], includeOptionals: Boolean, source: ExecutionContext, state:QueryState): Traversable[ExecutionContext] =
       new PatternMatcher(boundPairs, predicates, source, state, variablesInClause)
 
-  private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, MatchingPair] = bindings.flatMap {
-    case (key, node: Node) if patternGraph.contains(key)        => Seq(key -> MatchingPair(patternGraph(key), node))
+
+  private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, Set[MatchingPair]] = bindings.flatMap {
+    case (key, node: Node) if patternGraph.contains(key) =>
+      Seq(key -> patternGraph(key).map(pNode => MatchingPair(pNode, node)).toSet)
     case (key, rel: Relationship) if patternGraph.contains(key) =>
-      val pRel = patternGraph(key).asInstanceOf[PatternRelationship]
+      val patternRels = patternGraph(key).asInstanceOf[Seq[PatternRelationship]]
+      patternRels.flatMap(pRel => {
+        def extractMatchingPairs(startNode: PatternNode, endNode: PatternNode): Seq[(String, Set[MatchingPair])] = {
+          val t1 = startNode.key -> Set(MatchingPair(startNode, rel.getStartNode))
+          val t2 = endNode.key -> Set(MatchingPair(endNode, rel.getEndNode))
+          val t3 = pRel.key -> Set(MatchingPair(pRel, rel))
 
-      def extractMatchingPairs(startNode: PatternNode, endNode: PatternNode): Seq[(String, MatchingPair)] = {
-        val t1 = startNode.key -> MatchingPair(startNode, rel.getStartNode)
-        val t2 = endNode.key -> MatchingPair(endNode, rel.getEndNode)
-        val t3 = pRel.key -> MatchingPair(pRel, rel)
+          // Check that found end nodes correspond to what is already in scope
+          if (bindings.get(t1._1).forall(_ == t1._2.head.entity) &&
+              bindings.get(t2._1).forall(_ == t2._2.head.entity))
+            Seq(t1, t2, t3)
+          else
+            Seq.empty[(String, Set[MatchingPair])]
+        }
 
-        // Check that found end nodes correspond to what is already in scope
-        if (bindings.get(t1._1).forall(_ == t1._2.entity) &&
-            bindings.get(t2._1).forall(_ == t2._2.entity))
-          Seq(t1, t2, t3)
-        else
-          Seq.empty
-      }
-
-      pRel.dir match {
-        case OUTGOING                            => extractMatchingPairs(pRel.startNode, pRel.endNode)
-        case INCOMING                            => extractMatchingPairs(pRel.endNode, pRel.startNode)
-        case BOTH if bindings.contains(pRel.key) => Seq(pRel.key -> MatchingPair(pRel, rel))
-        case BOTH                                => Seq.empty
-      }
-
-    case (key, _) => Nil
+        pRel.dir match {
+          case SemanticDirection.OUTGOING => extractMatchingPairs(pRel.startNode, pRel.endNode)
+          case SemanticDirection.INCOMING => extractMatchingPairs(pRel.endNode, pRel.startNode)
+          case SemanticDirection.BOTH if bindings.contains(pRel.key) => Seq(pRel.key -> Set(MatchingPair(pRel, rel)))
+          case SemanticDirection.BOTH => Seq.empty[(String, Set[MatchingPair])]
+        }
+      })
+    case (key, _) => Seq(key -> Set.empty[MatchingPair])
   }
 
   def name = "PatternMatcher"

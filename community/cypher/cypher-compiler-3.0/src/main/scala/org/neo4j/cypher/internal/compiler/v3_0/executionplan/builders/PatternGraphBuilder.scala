@@ -33,7 +33,7 @@ trait PatternGraphBuilder {
       return new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty)
 
     val patternNodeMap: mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
-    val patternRelMap: mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
+    val patternRelMap: mutable.Map[String, Seq[PatternRelationship]] = scala.collection.mutable.Map()
 
     def takeOnPattern(x: Pattern): Boolean = {
       x match {
@@ -49,14 +49,24 @@ trait PatternGraphBuilder {
       val relName = r.relName
       val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left.name, new PatternNode(left))
       val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right.name, new PatternNode(right))
-      patternRelMap(relName) = leftNode.relateTo(relName, rightNode, r)
+      val maybeSetOfPatternRel =  patternRelMap.get(relName)
+      val newPatternRel = leftNode.relateTo(relName, rightNode, r)
+      if (maybeSetOfPatternRel.isDefined)
+        patternRelMap(relName) = maybeSetOfPatternRel.get :+ newPatternRel
+      else
+        patternRelMap(relName) = Seq(newPatternRel)
       true
     }
 
     def takeOnVarLengthRel(r: VarLengthRelatedTo) = {
       val startNode: PatternNode = patternNodeMap.getOrElseUpdate(r.left.name, new PatternNode(r.left))
       val endNode: PatternNode = patternNodeMap.getOrElseUpdate(r.right.name, new PatternNode(r.right))
-      patternRelMap(r.pathName) = startNode.relateViaVariableLengthPathTo(r.pathName, endNode, r.minHops, r.maxHops, r.relTypes, r.direction, r.relIterator, r.properties)
+      val maybeSetOfPatternRel =  patternRelMap.get(r.pathName)
+      val newPatternRel = startNode.relateViaVariableLengthPathTo(r.pathName, endNode, r.minHops, r.maxHops, r.relTypes, r.direction, r.relIterator, r.properties)
+      if (maybeSetOfPatternRel.isDefined)
+        patternRelMap(r.pathName) = maybeSetOfPatternRel.get :+ newPatternRel
+      else
+        patternRelMap(r.pathName) = Seq(newPatternRel)
       true
     }
 
