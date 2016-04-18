@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +46,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static org.hamcrest.Matchers.endsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -77,13 +78,14 @@ public class QueryLoggerIT
         final File logFilename = new File( logsDirectory, "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.log_queries_parameter_logging_enabled, Settings.FALSE )
                 .newGraphDatabase();
 
         executeQueryAndShutdown( database );
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
-        assertThat( logLines.get( 0 ), Matchers.endsWith( String.format( " ms: %s - %s - {}",
+        assertThat( logLines.get( 0 ), endsWith( String.format( " ms: %s - %s",
                 QueryEngineProvider.embeddedSession( null ), QUERY ) ) );
     }
 
@@ -94,9 +96,10 @@ public class QueryLoggerIT
         final File logFilename = new File( logsDirectory, "query.log" );
         GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logs_directory, logsDirectory.getPath() )
+                .setConfig( GraphDatabaseSettings.log_queries_parameter_logging_enabled, Settings.TRUE )
                 .newGraphDatabase();
 
-        Map<String, Object> props = new HashMap<>();
+        Map<String,Object> props = new LinkedHashMap<>(); // to be sure about ordering in the last assertion
         props.put( "name", "Roland" );
         props.put( "position", "Gunslinger" );
         props.put( "followers", Arrays.asList("Jake", "Eddie", "Susannah") );
@@ -109,9 +112,8 @@ public class QueryLoggerIT
 
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
-        assertThat( logLines.get( 0 ),
-                Matchers.endsWith( String.format(
-                        " ms: %s - %s - {props: {followers: [Jake, Eddie, Susannah], name: Roland, position: Gunslinger}}",
+        assertThat( logLines.get( 0 ), endsWith( String.format(
+                " ms: %s - %s - {props: {name: Roland, position: Gunslinger, followers: [Jake, Eddie, Susannah]}}",
                 QueryEngineProvider.embeddedSession( null ), query) ) );
     }
 
@@ -132,7 +134,7 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ),
-                Matchers.endsWith( String.format(
+                endsWith( String.format(
                         " ms: %s - %s - {ids: [0, 1, 2]}",
                         QueryEngineProvider.embeddedSession( null ), query) ) );
     }
