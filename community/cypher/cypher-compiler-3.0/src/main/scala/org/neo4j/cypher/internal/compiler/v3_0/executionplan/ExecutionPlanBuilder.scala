@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.executionplan
 
+import java.time.Clock
+
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.ExecutionPlanBuilder.DescriptionProvider
@@ -34,10 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, ProfileMode, _}
 import org.neo4j.cypher.internal.frontend.v3_0.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_0.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_0.notification.InternalNotification
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
-
-import scala.annotation.tailrec
 
 
 trait RunnablePlan {

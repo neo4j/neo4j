@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.codegen
 
+import java.time.Clock
+
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -37,7 +39,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.{ParameterNotFoundException, Sema
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
 import org.neo4j.graphdb.{Direction, Node, Relationship}
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -842,7 +843,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def compile(plan: LogicalPlan) = {
-    generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK, semanticTable, CostBasedPlannerName.default)
+    generator.generate(plan, newMockedPlanContext, Clock.systemUTC(), semanticTable, CostBasedPlannerName.default)
   }
 
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {

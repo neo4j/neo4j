@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner.execution
 
+import java.time.Clock
+
 import org.neo4j.cypher.internal.compiler.v3_0.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_0.ast.convert.commands.PatternConverters._
@@ -39,7 +41,6 @@ import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
-import org.neo4j.helpers.Clock
 
 import scala.collection.mutable
 
@@ -50,7 +51,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors, pipeBuilderFact
 
     val fingerprint = planContext.statistics match {
       case igs: InstrumentedGraphStatistics =>
-        Some(PlanFingerprint(clock.currentTimeMillis(), planContext.txIdProvider(), igs.snapshot.freeze))
+        Some(PlanFingerprint(clock.millis(), planContext.txIdProvider(), igs.snapshot.freeze))
       case _ =>
         None
     }

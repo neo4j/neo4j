@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0
 
 import java.io.{File, FileWriter}
 import java.text.NumberFormat
+import java.time.Clock
 import java.util.{Date, Locale}
 
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors3_0
@@ -37,7 +38,6 @@ import org.neo4j.cypher.internal.spi.v3_0.{GeneratedQueryStructure, TransactionB
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -47,7 +47,7 @@ import scala.xml.Elem
 class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   val monitorTag = "CompilerComparison"
-  val clock = Clock.SYSTEM_CLOCK
+  val clock = Clock.systemUTC()
   override val config = CypherCompilerConfiguration(
     queryCacheSize = 100,
     statsDivergenceThreshold = 0.5,

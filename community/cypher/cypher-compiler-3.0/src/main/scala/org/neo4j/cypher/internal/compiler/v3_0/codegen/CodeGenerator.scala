@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.codegen
 
 import java.lang.Boolean.getBoolean
+import java.time.Clock
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.CodeGenerator.SourceSink
@@ -35,7 +36,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.{InstrumentedGraphStatistics,
 import org.neo4j.cypher.internal.compiler.v3_0.{ExecutionMode, PlannerName, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_0.helpers.Eagerly
-import org.neo4j.helpers.Clock
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 
@@ -57,7 +57,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
-            Some(PlanFingerprint(clock.currentTimeMillis(), planContext.txIdProvider(), igs.snapshot.freeze))
+            Some(PlanFingerprint(clock.millis(), planContext.txIdProvider(), igs.snapshot.freeze))
           case _ =>
             None
         }
