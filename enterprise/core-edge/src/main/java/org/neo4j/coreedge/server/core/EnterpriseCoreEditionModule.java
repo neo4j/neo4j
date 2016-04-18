@@ -133,7 +133,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -154,6 +153,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.udc.UsageData;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 /**
