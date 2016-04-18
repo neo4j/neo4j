@@ -70,6 +70,7 @@ case class DeleteEntityAction(elementToDelete: Expression)
       case _: RelationshipType => Effects(DeletesRelationship, WritesRelationships, WritesAnyRelationshipProperty)
       case _: PathType         => Effects(DeletesRelationship, WritesRelationships, WritesAnyRelationshipProperty,
                                           DeletesNode, WritesNodes, WritesAnyLabel, WritesAnyNodeProperty)
+      case _                   => Effects((AllWriteEffects | Effects(DeletesNode, DeletesRelationship)).effectsSet)
     }
     case _ => Effects((AllWriteEffects | Effects(DeletesNode, DeletesRelationship)).effectsSet)
   }
