@@ -215,7 +215,6 @@ object LogicalPlanConverter {
         val notNodeSymbols = lhsSymbols intersect context.variableQueryVariables() diff nodeNames
         val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
 
-
         val opName = context.registerOperator(nodeHashJoin)
         val probeTable = BuildProbeTable(opName, probeTableName, joinNodes, symbols)(context)
         val probeTableSymbol = JoinTableMethod(probeTableName, probeTable.tableType)

@@ -133,7 +133,7 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
             createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference): ExecutionPlan = {
             monitor.newPlanSeen(logicalPlan)
     closing(tracer.beginPhase(CODE_GENERATION)) {
-      val compiled = codeGen.generate(logicalPlan, planContext, clock, semanticTable, plannerName)
+      val compiled = codeGen.generate(logicalPlan, planContext, semanticTable, plannerName)
 
       new ExecutionPlan {
         val fingerprint = createFingerprintReference(compiled.fingerprint)

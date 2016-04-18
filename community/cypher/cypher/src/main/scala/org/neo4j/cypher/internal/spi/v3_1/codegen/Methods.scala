@@ -35,14 +35,14 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
 
-private object Methods {
+object Methods {
 
   import GeneratedQueryStructure.{method, typeRef}
 
   val countingTablePut = method[PrimitiveLongIntMap, Int]("put", typeRef[Long], typeRef[Int])
-  val countingTableCompositeKeyPut = method[util.HashMap[_, _], Int]("put", typeRef[CompositeKey], typeRef[Int])
+  val countingTableCompositeKeyPut = method[util.HashMap[CompositeKey, Integer], Object]("put", typeRef[Object], typeRef[Object])
   val countingTableGet = method[PrimitiveLongIntMap, Int]("get", typeRef[Long])
-  val countingTableCompositeKeyGet = method[util.HashMap[_, _], Int]("get", typeRef[CompositeKey])
+  val countingTableCompositeKeyGet = method[util.HashMap[CompositeKey, Integer], Object]("get", typeRef[Object])
   val compositeKey = method[CompiledConversionUtils, CompositeKey]("compositeKey", typeRef[Array[Long]])
   val hasNextLong = method[PrimitiveLongIterator, Boolean]("hasNext")
   val hasNextRelationship = method[RelationshipIterator, Boolean]("hasNext")
@@ -95,5 +95,7 @@ private object Methods {
   val row = method[QueryExecutionEvent, Unit]("row")
   val boxBoolean = method[java.lang.Boolean, java.lang.Boolean]("valueOf", typeRef[Boolean])
   val boxLong = method[java.lang.Long, java.lang.Long]("valueOf", typeRef[Long])
+  val boxInteger = method[java.lang.Integer, java.lang.Integer]("valueOf", typeRef[Int])
   val boxDouble = method[java.lang.Double, java.lang.Double]("valueOf", typeRef[Double])
+  val unboxInteger = method[java.lang.Integer, Int]("intValue")
 }

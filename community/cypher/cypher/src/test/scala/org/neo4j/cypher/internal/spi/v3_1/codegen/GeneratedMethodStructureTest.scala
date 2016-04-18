@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi.v3_1.codegen
 import java.util
 
 import org.neo4j.codegen.source.{Configuration, SourceCode}
-import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, MethodDeclaration}
+import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{Provider, SuccessfulCloseable}
 import org.neo4j.cypher.internal.compiler.v3_1.helpers._
@@ -45,6 +45,49 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
   val modes = Seq(SourceCode.SOURCECODE, SourceCode.BYTECODE)
   val ops = Seq(
     Operation("create rel extractor", _.createRelExtractor("foo")),
+    Operation("use a LongsToCount probe table", m => {
+      m.declare("a", symbols.CTNode)
+      m.allocateProbeTable("table", LongsToCountTable)
+      m.updateProbeTableCount("table", LongsToCountTable, Seq("a"))
+      m.probe("table", LongsToCountTable, Seq("a")) { inner =>
+        inner.allNodesScan("foo")
+      }
+    }),
+   Operation("use a LongToCount key probe table", m => {
+      m.declare("a", symbols.CTNode)
+      m.allocateProbeTable("table", LongToCountTable)
+      m.updateProbeTableCount("table", LongToCountTable, Seq("a"))
+      m.probe("table", LongToCountTable, Seq("a")) { inner =>
+        inner.allNodesScan("foo")
+      }
+    }),
+   Operation("use a LongToList probe table", m => {
+     val table: LongToListTable = LongToListTable(Map("a" -> symbols.CTNode), Map("b" -> "a"))
+     m.declare("a", symbols.CTNode)
+     m.allocateProbeTable("table", table)
+     val value: Expression = m.newTableValue("value", table.structure)
+     m.updateProbeTable(table.structure, "table", table, Seq("a"), value)
+     m.probe("table", table, Seq("a")) { inner =>
+       inner.allNodesScan("foo")
+     }
+   }),
+   Operation("use a LongsToList probe table", m => {
+     val table: LongsToListTable = LongsToListTable(Map("a" -> symbols.CTNode, "b" -> symbols.CTNode),
+                                                    Map("aa" -> "a", "bb" -> "b"))
+     m.declare("a", symbols.CTNode)
+     m.declare("b", symbols.CTNode)
+     m.allocateProbeTable("table", table)
+     val value: Expression = m.newTableValue("value", table.structure)
+     m.updateProbeTable(table.structure, "table", table, Seq("a", "b"), value)
+     m.probe("table", table, Seq("a", "b")) { inner =>
+       inner.allNodesScan("foo")
+     }
+   }),
+    Operation("Method invocation", m => {
+      m.method(LongToCountTable, "v1", "inner") {inner => {
+        inner.allocateProbeTable("v1", LongToCountTable)
+      }}
+    }),
     Operation("look up rel type", _.lookupRelationshipTypeId("foo", "bar")),
     Operation("all relationships for node", (m) => {
       m.declare("node", symbols.CTNode)
