@@ -53,8 +53,7 @@ ifdef::upgradetext[online backup tool (see http://neo4j.com/docs/{neo4j-version}
 available with Neo4j Enterprise, ensure that backups have completed successfully.
 
 . Install Neo4j {neo4j-version}.
-. Review the settings in the files under configuration files in the previous installation, and transfer any custom settings to the {neo4j-version} installation.
-  Be aware of settings that have changed name between versions.
+. Review the settings in the configuration files in the previous installation, and transfer any custom settings to the {neo4j-version} installation. Since many settings have been changed between Neo4j 2.x and Neo4j 3.0, it is advisable to use the `config-migrator` to migrate the config files for you. The `config-migrator` can be found in the `tools` directory, and can be invoked with a command like: `java -jar config-migrator.jar path/to/neo4j2.3 path/to/neo4j3.0`. Take note of any warnings printed, and manually review the edited config files produced.
 . Import your data from the old installation using `neo4j-admin import --mode=database --database=<database-name> --from=<source-directory>` (for details, see
 ifndef::upgradetext[<<neo4j-admin-manpage, the man page>>).]
 ifdef::upgradetext[the man page at {manual-neo4j-admin-manpage}).]
