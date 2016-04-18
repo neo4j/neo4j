@@ -43,12 +43,31 @@ public class VisibleMigrationProgressMonitorTest
         monitor.completed();
 
         // THEN
+        verifySectionReportedCorrectly( logProvider );
+    }
+
+    @Test
+    public void progressNeverReportMoreThenHundredPercent()
+    {
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log log = logProvider.getLog( getClass() );
+        VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log );
+
+        monitor.started();
+        monitorSection( monitor, "First", 100, 1, 10, 99, 170 );
+        monitor.completed();
+
+        verifySectionReportedCorrectly( logProvider );
+    }
+
+    private void verifySectionReportedCorrectly( AssertableLogProvider logProvider )
+    {
         logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.MESSAGE_STARTED );
         for ( int i = 10; i <= 100; i += 10 )
         {
             logProvider.assertContainsMessageContaining( String.valueOf( i ) + "%" );
         }
-        logProvider.assertNone( logProvider.inLog( VisibleMigrationProgressMonitor.class ).info( containsString( "110%" ) ) );
+        logProvider.assertNone( AssertableLogProvider.inLog( VisibleMigrationProgressMonitor.class ).info( containsString( "110%" ) ) );
         logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.MESSAGE_COMPLETED );
     }
 
