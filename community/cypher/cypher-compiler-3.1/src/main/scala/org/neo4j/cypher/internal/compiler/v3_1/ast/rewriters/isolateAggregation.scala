@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.AggregationNameGenerator
+import org.neo4j.cypher.internal.frontend.v3_1.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_1.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_1.{bottomUp, Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_1.{Rewriter, bottomUp}
 
 /**
  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
@@ -51,45 +53,66 @@ case object isolateAggregation extends Rewriter {
         case clause =>
           val originalExpressions = getExpressions(clause)
 
-          val expressionsToGoToWith: Set[Expression] = fixedPoint {
-            (expressions: Set[Expression]) => expressions.flatMap {
-              case e if hasAggregateButIsNotAggregate(e) =>
-                e match {
-                  case ReduceExpression(_, init, coll) => Seq(init, coll)
-                  case FilterExpression(_, expr)       => Some(expr)
-                  case ExtractExpression(_, expr)      => Some(expr)
-                  case ListComprehension(_, expr)      => Some(expr)
-                  case _                               => e.arguments
-                }
+          val expressionsToIncludeInWith: Set[Expression] = extractExpressionsToInclude(originalExpressions)
 
-              case e =>
-                Some(e)
-
-            }
-          }(originalExpressions).filter {
-            //Constant expressions should never be isolated
-            case ConstantExpression(_) => false
-            case expr => true
-          }
-
-          val withReturnItems: Set[ReturnItem] = expressionsToGoToWith.map {
-            case id: Variable => AliasedReturnItem(id.copyId, id.copyId)(id.position)
-            case e              => AliasedReturnItem(e, Variable(AggregationNameGenerator.name(e.position))(e.position))(e.position)
+          val withReturnItems: Set[ReturnItem] = expressionsToIncludeInWith.map {
+            case e => AliasedReturnItem(e, Variable(AggregationNameGenerator.name(e.position))(e.position))(e.position)
           }
           val pos = clause.position
           val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toSeq)(pos), None, None, None, None)(pos)
 
-          val resultClause = clause.endoRewrite(topDown(Rewriter.lift {
-            case e: Expression =>
-              withReturnItems.collectFirst {
-                case AliasedReturnItem(expression, variable) if e == expression => variable.copyId
-              }.getOrElse(e)
-          }))
+          val expressionRewriter = createRewriterFor(withReturnItems)
+          val resultClause = clause.endoRewrite(expressionRewriter)
 
           Seq(withClause, resultClause)
       }
 
       q.copy(clauses = newClauses)(q.position)
+  }
+
+  private def createRewriterFor(withReturnItems: Set[ReturnItem]): Rewriter = {
+    def inner = Rewriter.lift {
+        case original: Expression =>
+          val rewrittenExpression = withReturnItems.collectFirst {
+            case item@AliasedReturnItem(expression, variable) if original == expression =>
+              item.alias.get.copyId
+          }
+          rewrittenExpression getOrElse original
+      }
+
+    ReturnItemSafeTopDownRewriter(inner)
+  }
+
+  private def extractExpressionsToInclude(originalExpressions: Set[Expression]): Set[Expression] = {
+    val expressionsToGoToWith: Set[Expression] = fixedPoint {
+      (expressions: Set[Expression]) => expressions.flatMap {
+        case e@ReduceExpression(_, init, coll) if hasAggregateButIsNotAggregate(e) =>
+          Seq(init, coll)
+
+        case e@FilterExpression(_, expr) if hasAggregateButIsNotAggregate(e) =>
+          Seq(expr)
+
+        case e@ExtractExpression(_, expr) if hasAggregateButIsNotAggregate(e) =>
+          Seq(expr)
+
+        case e@ListComprehension(_, expr) if hasAggregateButIsNotAggregate(e) =>
+          Seq(expr)
+
+        case e@DesugaredMapProjection(variable, items, _) if hasAggregateButIsNotAggregate(e) =>
+          items.map(_.exp) :+ variable
+
+        case e if hasAggregateButIsNotAggregate(e) =>
+          e.arguments
+
+        case e =>
+          Seq(e)
+      }
+    }(originalExpressions).filter {
+      //Constant expressions should never be isolated
+      case ConstantExpression(_) => false
+      case expr => true
+    }
+    expressionsToGoToWith
   }
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
