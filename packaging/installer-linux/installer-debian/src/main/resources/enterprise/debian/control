@@ -8,7 +8,7 @@ Homepage: http://neo4j.org/
 
 Package: neo4j-enterprise
 Architecture: all
-Pre-Depends: dpkg (>= 1.17.14)
+Pre-Depends: dpkg (>= 1.15.7.2)
 Depends: ${misc:Depends}, bash, daemon, adduser, psmisc, lsb-base, java8-runtime | j2re1.8
 Conflicts: 
 Replaces: neo4j, neo4j-advanced
