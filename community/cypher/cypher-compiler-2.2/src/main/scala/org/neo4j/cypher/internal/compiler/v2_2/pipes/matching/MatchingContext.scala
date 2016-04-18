@@ -39,7 +39,7 @@ class MatchingContext(boundIdentifiers: SymbolTable,
   val builder: MatcherBuilder = decideWhichMatcherToUse()
 
   private def identifiers: immutable.Map[String, CypherType] =
-    patternGraph.patternRels.values.flatMap(p => p.identifiers2).toMap
+    patternGraph.patternRels.values.flatMap(p => p.flatMap(_.identifiers2)).toMap
 
   lazy val symbols = {
     val ids = identifiers

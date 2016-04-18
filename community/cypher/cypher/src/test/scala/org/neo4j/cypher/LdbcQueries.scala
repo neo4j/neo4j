@@ -1462,6 +1462,48 @@ object LdbcQueries {
       Map("weight" -> 3.0, "pathNodeIds" -> List(0, 1, 2, 4, 6, 5)))
   }
 
-  val LDBC_QUERIES = Seq(Query1, Query2, Query3, Query4, Query5, Query6, Query7, Query8,
-    Query9, Query10, Query11, Query12, Query13, Query14)
+  object Query14_v2 extends LdbcQuery {
+
+    val name = "LDBC Query 14 v2"
+
+    val createQuery = Query14.createQuery
+
+    def createParams = Map.empty
+
+    val query = """MATCH path = allShortestPaths((person1:Person {id:{1}})-[:KNOWS*0..]-(person2:Person {id:{2}}))
+                  |RETURN
+                  |extract(n IN nodes(path) | n.id) AS pathNodeIds,
+                  |reduce(weight=0.0, r IN rels(path) |
+                  |           weight +
+                  |           length(()-[r]->()<-[:COMMENT_HAS_CREATOR]-(:Comment)-[:REPLY_OF_POST]->(:Post)-[:POST_HAS_CREATOR]->()-[r]->())*1.0 +
+                  |           length(()<-[r]-()<-[:COMMENT_HAS_CREATOR]-(:Comment)-[:REPLY_OF_POST]->(:Post)-[:POST_HAS_CREATOR]->()<-[r]-())*1.0 +
+                  |           length(()<-[r]-()-[:COMMENT_HAS_CREATOR]-(:Comment)-[:REPLY_OF_COMMENT]-(:Comment)-[:COMMENT_HAS_CREATOR]-()<-[r]-())*0.5
+                  |) AS weight
+                  |ORDER BY weight DESC""".stripMargin
+
+    def params = Map("1" -> 0, "2" -> 5)
+
+    def expectedResult = List(
+      Map("weight" -> 5.5, "pathNodeIds" -> List(0, 1, 7, 4, 8, 5)),
+      Map("weight" -> 4.5, "pathNodeIds" -> List(0, 1, 7, 4, 6, 5)),
+      Map("weight" -> 4.0, "pathNodeIds" -> List(0, 1, 2, 4, 8, 5)),
+      Map("weight" -> 3.0, "pathNodeIds" -> List(0, 1, 2, 4, 6, 5)))
+  }
+
+  val LDBC_QUERIES = Seq(
+    Query1,
+    Query2,
+    Query3,
+    Query4,
+    Query5,
+    Query6,
+    Query7,
+    Query8,
+    Query9,
+    Query10,
+    Query11,
+    Query12,
+    Query13,
+    Query14,
+    Query14_v2)
 }

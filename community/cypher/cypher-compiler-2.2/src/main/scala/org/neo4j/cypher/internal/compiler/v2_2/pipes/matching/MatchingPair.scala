@@ -29,8 +29,9 @@ case class MatchingPair(patternElement: PatternElement, entity: Any) {
 
   override def toString = patternElement.key + "=" + entity
 
-  def matchesBoundEntity(boundNodes: Map[String, MatchingPair]): Boolean = boundNodes.get(patternElement.key) match {
-    case Some(pinnedNode) => (entity, pinnedNode.entity) match {
+  def matchesBoundEntity(boundNodes: Map[String, Set[MatchingPair]]): Boolean = boundNodes.get(patternElement.key)
+  match {
+    case Some(pinnedNodeSet) => pinnedNodeSet.forall(pinnedNode => (entity, pinnedNode.entity) match {
       case (a: Node, b: Node)                                                       => a == b
       case (a: SingleGraphRelationship, b: Relationship)                            => a.rel == b
       case (a: Relationship, b: SingleGraphRelationship)                            => a == b.rel
@@ -38,7 +39,7 @@ case class MatchingPair(patternElement: PatternElement, entity: Any) {
       case (a: VariableLengthGraphRelationship, b)                                  => false
       case (a, b: VariableLengthGraphRelationship)                                  => false
 
-    }
+    })
     case None             => true
   }
 
