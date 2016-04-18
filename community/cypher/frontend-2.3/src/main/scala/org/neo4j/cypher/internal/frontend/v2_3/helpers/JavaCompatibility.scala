@@ -17,20 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query;
+package org.neo4j.cypher.internal.frontend.v2_3.helpers
 
-import java.util.Map;
+import java.util
 
-/**
- * The current (December 2014) usage of this interface expects the {@code end*} methods to be idempotent.
- * That is, once either of them have been invoked with a particular session as parameter, invoking either
- * of them with the same session parameter should do nothing.
- */
-public interface QueryExecutionMonitor
-{
-    void startQueryExecution( QuerySession session, String query, Map<String,Object> parameters );
+import scala.collection.JavaConverters._
 
-    void endFailure( QuerySession session, Throwable failure );
+object JavaCompatibility {
 
-    void endSuccess( QuerySession session );
+  def asJavaCompatible(value: Any): Any = value match {
+    case seq: Seq[_] => seq.map(asJavaCompatible).asJava
+    case map: Map[_, _] => Eagerly.immutableMapValues(map, asJavaCompatible).asJava
+    case x => x
+  }
+
+  def asJavaMap[S, T](map: Map[S, T]): util.Map[S, AnyRef] = Eagerly.immutableMapValues(map, asJavaCompatible).asJava.asInstanceOf[util.Map[S, AnyRef]]
 }

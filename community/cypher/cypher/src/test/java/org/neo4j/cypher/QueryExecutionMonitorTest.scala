@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import java.util.Collections
+
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
@@ -37,7 +39,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     engine.execute("RETURN 42", Map.empty[String, Any], session)
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "RETURN 42")
+    verify(monitor, times(1)).startQueryExecution(session, "RETURN 42", Collections.emptyMap())
     verify(monitor, never()).endSuccess(session)
   }
 
@@ -53,7 +55,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     }
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "RETURN 42")
+    verify(monitor, times(1)).startQueryExecution(session, "RETURN 42", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
   }
 
@@ -65,7 +67,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     val result = engine.execute("CREATE()", Map.empty[String, Any], session).javaIterator
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CREATE()")
+    verify(monitor, times(1)).startQueryExecution(session, "CREATE()", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
   }
 
@@ -77,7 +79,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     val result = engine.execute("RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
 
     //then
-    verify(monitor, times(1)).startQueryExecution(session, "RETURN [1, 2, 3, 4, 5]")
+    verify(monitor, times(1)).startQueryExecution(session, "RETURN [1, 2, 3, 4, 5]", Collections.emptyMap())
     while (result.hasNext) {
       verify(monitor, never).endSuccess(session)
       result.next()
@@ -102,7 +104,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     val result = engine.execute("RETURN 42", Map.empty[String, Any], session).javaIterator.close()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "RETURN 42")
+    verify(monitor, times(1)).startQueryExecution(session, "RETURN 42", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
   }
 
@@ -123,7 +125,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     }
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "RETURN 42")
+    verify(monitor, times(1)).startQueryExecution(session, "RETURN 42", Collections.emptyMap())
     verify(monitor, times(1)).endFailure(session, throwable)
   }
 
@@ -135,7 +137,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     val result = engine.profile("RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
 
     //then
-    verify(monitor, times(1)).startQueryExecution(session, "RETURN [1, 2, 3, 4, 5]")
+    verify(monitor, times(1)).startQueryExecution(session, "RETURN [1, 2, 3, 4, 5]", Collections.emptyMap())
     while (result.hasNext) {
       verify(monitor, never).endSuccess(session)
       result.next()
@@ -151,7 +153,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     val result = engine.profile("CYPHER 2.2 RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
 
     //then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN [1, 2, 3, 4, 5]")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN [1, 2, 3, 4, 5]", Collections.emptyMap())
     while (result.hasNext) {
       verify(monitor, never).endSuccess(session)
       result.next()
@@ -167,7 +169,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     val result = engine.execute("CYPHER 2.2 RETURN 42", Map.empty[String, Any], session).javaIterator.close()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN 42")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN 42", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
   }
 
@@ -188,7 +190,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     }
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN 42")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 RETURN 42", Collections.emptyMap())
     verify(monitor, times(1)).endFailure(session, throwable)
   }
 
@@ -200,7 +202,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     val result = engine.execute("CYPHER 2.2 CREATE()", Map.empty[String, Any], session).javaIterator
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 CREATE()")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 2.2 CREATE()", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
   }
 
@@ -212,7 +214,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     val result = engine.profile("CYPHER 1.9 CREATE() RETURN [1, 2, 3, 4, 5]", Map.empty[String, Any], session).javaIterator
 
     //then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE() RETURN [1, 2, 3, 4, 5]")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE() RETURN [1, 2, 3, 4, 5]", Collections.emptyMap())
     while (result.hasNext) {
       verify(monitor, never).endSuccess(session)
       result.next()
@@ -228,7 +230,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     val result = engine.execute("CYPHER 1.9 CREATE() RETURN 42", Map.empty[String, Any], session).javaIterator.close()
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE() RETURN 42")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE() RETURN 42", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
   }
 
@@ -249,7 +251,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     }
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE() RETURN 42")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE() RETURN 42", Collections.emptyMap())
     verify(monitor, times(1)).endFailure(session, throwable)
   }
 
@@ -261,7 +263,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite {
     val result = engine.execute("CYPHER 1.9 CREATE()", Map.empty[String, Any], session).javaIterator
 
     // then
-    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE()")
+    verify(monitor, times(1)).startQueryExecution(session, "CYPHER 1.9 CREATE()", Collections.emptyMap())
     verify(monitor, times(1)).endSuccess(session)
   }
 

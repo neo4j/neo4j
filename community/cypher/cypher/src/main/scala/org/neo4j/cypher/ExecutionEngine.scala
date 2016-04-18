@@ -24,6 +24,7 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v2_3.{LRUCache => LRUCachev2_3, _}
+import org.neo4j.cypher.internal.frontend.v2_3.helpers.JavaCompatibility.asJavaMap
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -89,7 +90,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
-    executionMonitor.startQueryExecution(session, query)
+    executionMonitor.startQueryExecution(session, query, asJavaMap(params))
 
     val (preparedPlanExecution, txInfo) = planQuery(query)
     preparedPlanExecution.profile(graphAPI, txInfo, params, session)
@@ -115,7 +116,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
-    executionMonitor.startQueryExecution(session, query)
+    executionMonitor.startQueryExecution(session, query, asJavaMap(params))
     val (preparedPlanExecution, txInfo) = planQuery(query)
     preparedPlanExecution.execute(graphAPI, txInfo, params, session)
   }

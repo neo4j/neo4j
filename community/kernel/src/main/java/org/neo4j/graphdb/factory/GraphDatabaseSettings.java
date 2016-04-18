@@ -492,6 +492,9 @@ public abstract class GraphDatabaseSettings
     @Description( "Log executed queries that take longer than the configured threshold" )
     public static final Setting<File> log_queries_filename = setting("dbms.querylog.filename", PATH, NO_DEFAULT );
 
+    @Description( "Log parameters for executed queries that took longer than the configured threshold." )
+    public static final Setting<Boolean> log_queries_parameter_logging_enabled = setting( "dbms.querylog.parameter_logging_enabled", BOOLEAN, TRUE );
+
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
                  "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
     public static final Setting<Long> log_queries_threshold = setting("dbms.querylog.threshold", DURATION, "0s");
