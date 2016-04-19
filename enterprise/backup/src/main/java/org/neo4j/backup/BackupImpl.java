@@ -36,6 +36,8 @@ import static org.neo4j.com.RequestContext.anonymous;
 
 class BackupImpl implements TheBackupInterface
 {
+    static final String FULL_BACKUP_CHECKPOINT_TRIGGER = "full backup";
+
     private final StoreCopyServer storeCopyServer;
     private final ResponsePacker incrementalResponsePacker;
     private final LogicalTransactionStore logicalTransactionStore;
@@ -60,7 +62,8 @@ class BackupImpl implements TheBackupInterface
     {
         try ( StoreWriter storeWriter = writer )
         {
-            RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter, forensics );
+            RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles(
+                    FULL_BACKUP_CHECKPOINT_TRIGGER, storeWriter, forensics );
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
                     transactionIdStore, logFileInformation, storeId,
                     copyStartContext.lastAppliedTransaction() + 1, storeCopyServer.monitor() ); // mandatory transaction id
