@@ -58,6 +58,7 @@ object QueryTags {
     LoadCSVTag,
     CreateTag,
     DeleteTag,
+    DetachDeleteTag,
     SetTag,
     RemoveTag,
     MergeTag,
@@ -74,7 +75,6 @@ object QueryTags {
     CreateConstraintTag,
     DropIndexTag,
     DropConstraintTag,
-
 
     AggregationTag,
     MathFunctionTag,
@@ -160,6 +160,7 @@ case object UpdatesTag extends QueryTag("updates")
 case object LoadCSVTag extends QueryTag("load-csv")
 case object CreateTag extends QueryTag("create")
 case object DeleteTag extends QueryTag("delete")
+case object DetachDeleteTag extends QueryTag("detach-delete")
 case object SetTag extends QueryTag("set")
 case object RemoveTag extends QueryTag("remove")
 case object MergeTag extends QueryTag("merge")
@@ -232,7 +233,7 @@ object QueryTagger extends QueryTagger[String] {
       case x: UpdateClause =>
         val specificTag = x match {
           case u: Create => Set(CreateTag)
-          case u: Delete => Set(DeleteTag)
+          case Delete(_, forced) => if (forced) Set(DetachDeleteTag) else Set(DeleteTag)
           case u: SetClause => Set(SetTag)
           case u: Remove => Set(RemoveTag)
           case u: Merge => Set(MergeTag) ++ u.actions.map {

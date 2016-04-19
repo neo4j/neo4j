@@ -142,6 +142,11 @@ class QueryTaggerTest extends CypherFunSuite {
     QueryTagger("CREATE ()-[r:T]->() DELETE r") should contain(DeleteTag)
   }
 
+  test(queryTag(DetachDeleteTag)) {
+    QueryTagger("CREATE (n) DETACH DELETE n") should contain(DetachDeleteTag)
+    QueryTagger("CREATE ()-[r:T]->() DETACH DELETE r") should contain(DetachDeleteTag)
+  }
+
   test(queryTag(SetTag)) {
     QueryTagger("CREATE (n) SET n:L") should contain(SetTag)
     QueryTagger("CREATE (n) SET n.prop = 0") should contain(SetTag)
