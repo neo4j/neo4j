@@ -58,9 +58,24 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustNotPutLimitOnIOWhenNoLimitIsConfigured() throws Exception
+    public void mustPutDefaultLimitOnIOWhenNoLimitIsConfigured() throws Exception
     {
         createIOLimiter( Config.defaults() );
+
+
+        // Do 100*100 = 10000 IOs real quick, when we're limited to 1000 IOPS.
+        long stamp = IOLimiter.INITIAL_STAMP;
+        repeatedlyCallMaybeLimitIO( limiter, stamp, 100 );
+
+        // This should have led to about 10 seconds of pause, minus the time we spent in the loop.
+        // So let's say 9 seconds - experiments indicate this gives us about a 10x margin.
+        assertThat( pauseNanosCounter.get(), greaterThan( TimeUnit.SECONDS.toNanos( 9 ) ) );
+    }
+
+    @Test
+    public void mustNotPutLimitOnIOWhenConfiguredToBeUnlimited() throws Exception
+    {
+        createIOLimiter( -1 );
         assertUnlimited();
     }
 
