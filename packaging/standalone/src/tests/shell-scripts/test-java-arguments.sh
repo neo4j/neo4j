@@ -39,9 +39,9 @@ for run_command in run_console run_daemon; do
     test_expect_java_arg '-Dfile.encoding=UTF-8'
   "
 
-  test_expect_success "should construct the classpath" "
+  test_expect_success "should construct the classpath and include plugins and conf dirs so that plugins can load config files from the classpath and developers can override plugin classes" "
     ${run_command} &&
-    test_expect_java_arg '-cp lib/*:plugins/*'
+    test_expect_java_arg '-cp plugins:conf:lib/*:plugins/*'
   "
 
   test_expect_success "classpath elements should be configurable" "
@@ -49,7 +49,7 @@ for run_command in run_console run_daemon; do
     set_config 'dbms.directories.lib' 'some-other-lib' neo4j.conf &&
     set_config 'dbms.directories.plugins' 'some-other-plugins' neo4j.conf &&
     ${run_command} &&
-    test_expect_java_arg '-cp some-other-lib/*:some-other-plugins/*'
+    test_expect_java_arg '-cp some-other-plugins:conf:some-other-lib/*:some-other-plugins/*'
   "
 
   test_expect_success "should set gc log location when gc log is enabled" "

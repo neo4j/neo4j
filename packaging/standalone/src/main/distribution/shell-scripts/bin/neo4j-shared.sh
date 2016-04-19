@@ -39,7 +39,7 @@ setup_environment() {
 }
 
 build_classpath() {
-  CLASSPATH="${NEO4J_LIB}/*:${NEO4J_PLUGINS}/*"
+  CLASSPATH="${NEO4J_PLUGINS}:${NEO4J_CONF}:${NEO4J_LIB}/*:${NEO4J_PLUGINS}/*"
 }
 
 detect_os() {
