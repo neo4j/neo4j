@@ -52,8 +52,8 @@ The first time the server starts, it automatically generates a self-signed SSL c
 Because the certificate is self signed, it is not safe to rely on for production use, instead, you should provide your own key and certificate for the server to use.
 
 [CAUTION]
-Using autogeneration of self-signed SSL certificates will not work if the Neo4j server has been configured with multiple connectors that do not bind to the same IP address.
-If you need to use multiple IP addresses, please configure certificates manually and consider using multi-host or wildcard certificates instead.
+Using auto-generation of self-signed SSL certificates will not work if the Neo4j server has been configured with multiple connectors that bind to different IP addresses.
+If you need to use multiple IP addresses, please configure certificates manually and use multi-host or wildcard certificates instead.
 
 To provide your own key and certificate put them in the <<file-locations, _certificates_>> directory.
 The files must be named _neo4j.key_ and _neo4j.cert_.
