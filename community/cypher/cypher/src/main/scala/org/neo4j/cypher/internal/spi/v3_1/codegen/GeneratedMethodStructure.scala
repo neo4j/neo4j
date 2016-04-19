@@ -179,8 +179,9 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def setInRow(column: String, value: Expression) =
     generator.expression(Expression.invoke(resultRow, Methods.set, Expression.constant(column), value))
 
-  override def visitorAccept() = using(generator.ifStatement(Expression.not(
-    Expression.invoke(generator.load("visitor"), Methods.visit, generator.load("row"))))) { body =>
+  override def visitorAccept() = using(
+    generator.ifNotStatement(Expression.invoke(generator.load("visitor"),
+                                               Methods.visit, generator.load("row")))) { body =>
     // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
     body.expression(Expression.invoke(body.self(), fields.success))
     body.expression(Expression.invoke(body.self(), fields.close))
@@ -228,7 +229,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def expectParameter(key: String, variableName: String) = {
     using(
-      generator.ifStatement(Expression.not(Expression.invoke(params, Methods.mapContains, Expression.constant(key)))))
+      generator.ifNotStatement(Expression.invoke(params, Methods.mapContains, Expression.constant(key))))
     { block =>
       block.throwException(parameterNotFoundException(key))
     }
@@ -482,7 +483,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
       generator.assign(list, Expression.invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar)))
-      using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null), typeRef[Object]))))
+      using(generator.ifNotStatement(Expression.eq(list, Expression.constant(null), typeRef[Object])))
       { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
@@ -507,7 +508,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                                   Expression.newArray(typeRef[Long],
                                     keyVars.map(generator.load): _*))
                          )))
-      using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null), typeRef[Object]))))
+      using(generator.ifNotStatement(Expression.eq(list, Expression.constant(null), typeRef[Object])))
       { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {

@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 
 import static org.neo4j.codegen.LocalVariables.copy;
 import static org.neo4j.codegen.MethodReference.methodReference;
-import static org.neo4j.codegen.Resource.withResource;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
 public class CodeBlock implements AutoCloseable
@@ -169,6 +168,12 @@ public class CodeBlock implements AutoCloseable
     public CodeBlock ifStatement( Expression test )
     {
         emit( e -> e.beginIf( test ) );
+        return new CodeBlock( this );
+    }
+
+    public CodeBlock ifNotStatement( Expression test )
+    {
+        emit( e -> e.beginIfNot( test ) );
         return new CodeBlock( this );
     }
 

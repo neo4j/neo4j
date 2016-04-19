@@ -31,8 +31,6 @@ import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
 import org.neo4j.codegen.MethodEmitter;
 import org.neo4j.codegen.MethodReference;
-import org.neo4j.codegen.Parameter;
-import org.neo4j.codegen.Resource;
 import org.neo4j.codegen.TypeReference;
 
 class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
@@ -154,61 +152,10 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         level.push( LEVEL );
     }
 
-    private void beginCatch( Parameter exception )
+    @Override
+    public void beginIfNot( Expression test )
     {
-        indent().append( "catch ( " ).append( exception.type().name() ).append( " " ).append( exception.name() )
-                .append( " )\n" );
-        indent().append( "{\n" );
-        level.push( LEVEL );
-    }
-
-    private void beginFinally()
-    {
-        indent().append( "finally\n" );
-        indent().append( "{\n" );
-        level.push( LEVEL );
-    }
-
-    private void beginTry( final Resource... resources )
-    {
-        if ( resources.length > 0 && classSourceWriter.configuration.isSet( SourceCode.SIMPLIFY_TRY_WITH_RESOURCE ) )
-        {
-            for ( Resource resource : resources )
-            {
-                indent().append( resource.type().name() ).append( " " ).append( resource.name() ).append( " = " );
-                resource.producer().accept( this );
-                append( ";\n" );
-            }
-            indent().append( "try\n" );
-            indent().append( "{" );
-            level.push( () -> {
-                beginFinally();
-                for ( Resource resource : resources )
-                {
-                    indent().append( resource.name() ).append( ".close();\n" );
-                }
-                endBlock();
-            } );
-        }
-        else
-        {
-            indent().append( "try" );
-            if ( resources.length > 0 )
-            {
-                String sep = " ( ";
-                for ( Resource resource : resources )
-                {
-                    append( sep ).append( resource.type().name() ).append( " " ).append( resource.name() )
-                            .append( " = " );
-                    resource.producer().accept( this );
-                    sep = "; ";
-                }
-                append( " )" );
-            }
-            append( "\n" );
-            indent().append( "{\n" );
-            level.push( LEVEL );
-        }
+        beginIf(Expression.not(test));
     }
 
     @Override
@@ -231,29 +178,6 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         level.pop();
         indent().append( "}\n" );
     }
-
-    //
-//        indent().append( "try\n" );
-//        indent().append( "{\n" );
-//        indent();
-//        body.forEach( e -> e.accept( this ) );
-//        indent().append( '}' );
-//        for ( CatchClause catchClause : catchClauses )
-//        {
-//            indent().append( "catch ( " ).append( catchClause.exception().type().name() ).append( " " )
-//                    .append( catchClause.exception().name() )
-//                    .append( " )\n" );
-//            indent().append( "{\n" );
-//           catchClause.actions().forEach( e -> e.accept( this ) );
-//        }
-//        indent().append( '}' );
-//        if (!finalClauses.isEmpty())
-//        {
-//            indent().append( "finally\n" );
-//            indent().append( "{\n" );
-//            finalClauses.forEach( e -> e.accept( this ) );
-//            indent().append( '}' );
-//        }
 
     @Override
     public void throwException( Expression exception )

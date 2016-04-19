@@ -24,18 +24,14 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.function.Consumer;
 
 import org.neo4j.codegen.BaseExpressionVisitor;
-import org.neo4j.codegen.CatchClause;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
-import org.neo4j.codegen.LocalVariables;
 import org.neo4j.codegen.MethodDeclaration;
 import org.neo4j.codegen.MethodEmitter;
 import org.neo4j.codegen.MethodReference;
@@ -48,7 +44,6 @@ import static org.neo4j.codegen.ByteCodeUtils.exceptions;
 import static org.neo4j.codegen.ByteCodeUtils.outerName;
 import static org.neo4j.codegen.ByteCodeUtils.signature;
 import static org.neo4j.codegen.ByteCodeUtils.typeName;
-import static org.neo4j.codegen.MethodReference.methodReference;
 
 class MethodByteCodeEmitter implements MethodEmitter, Opcodes
 {
@@ -189,12 +184,16 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
         callSuperIfNecessary();
         test.accept( expressionVisitor );
 
-        Label l0 = new Label();
-        methodVisitor.visitJumpInsn( IFEQ, l0 );
-
-        stateStack.push(new If(methodVisitor, l0));
+        beginConditional( IFEQ );
     }
 
+    @Override
+    public void beginIfNot( Expression test )
+    {
+        callSuperIfNecessary();
+        test.accept( expressionVisitor );
+        beginConditional( IFNE );
+    }
 
     @Override
     public void endBlock()
@@ -317,4 +316,10 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
         return loadsSuper[0];
     }
 
+    private void beginConditional(int op)
+    {
+        Label l0 = new Label();
+        methodVisitor.visitJumpInsn( op, l0 );
+        stateStack.push(new If(methodVisitor, l0));
+    }
 }

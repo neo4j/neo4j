@@ -644,7 +644,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateIfNotStatement() throws Throwable
+    public void shouldGenerateIfNotExpressionStatement() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -654,6 +654,39 @@ public class CodeGenerationTest
                     param( boolean.class, "test" ), param( Runnable.class, "runner" ) ) )
             {
                 try ( CodeBlock doStuff = conditional.ifStatement( not( conditional.load( "test" ) ) ) )
+                {
+                    doStuff.expression(
+                            invoke( doStuff.load( "runner" ), RUN ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable runner1 = mock( Runnable.class );
+        Runnable runner2 = mock( Runnable.class );
+
+        // when
+        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", boolean.class, Runnable.class );
+        conditional.invoke( true, runner1 );
+        conditional.invoke( false, runner2 );
+
+        // then
+        verify( runner2 ).run();
+        verifyZeroInteractions( runner1 );
+    }
+
+    @Test
+    public void shouldGenerateIfNotStatement() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
+                    param( boolean.class, "test" ), param( Runnable.class, "runner" ) ) )
+            {
+                try ( CodeBlock doStuff = conditional.ifNotStatement( conditional.load( "test" ) )  )
                 {
                     doStuff.expression(
                             invoke( doStuff.load( "runner" ), RUN ) );

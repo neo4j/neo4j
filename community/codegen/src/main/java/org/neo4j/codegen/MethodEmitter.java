@@ -39,6 +39,8 @@ public interface MethodEmitter
 
     void beginIf( Expression test );
 
+    void beginIfNot( Expression test );
+
     void endBlock();
 
     <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block);
