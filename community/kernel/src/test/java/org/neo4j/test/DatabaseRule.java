@@ -50,16 +50,19 @@ import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 public abstract class DatabaseRule extends ExternalResource implements GraphDatabaseAPI
 {
-    GraphDatabaseBuilder databaseBuilder;
-    GraphDatabaseAPI database;
+    private GraphDatabaseBuilder databaseBuilder;
+    private GraphDatabaseAPI database;
     private String storeDir;
     private Supplier<Statement> statementSupplier;
     private boolean startEagerly = true;
@@ -99,11 +102,10 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     public <FROM, TO> Function<FROM,TO> tx( Function<FROM,TO> function )
     {
-        Function<FROM,TO> outer = from -> {
+        return from -> {
             Function<GraphDatabaseService,TO> inner = graphDb -> function.apply( from );
             return executeAndCommit( inner );
         };
-        return outer;
     }
 
     private <T> T transaction( Function<? super GraphDatabaseService, T> function, boolean commit )
@@ -131,6 +133,12 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
     {
         return getGraphDatabaseAPI().execute( query, parameters );
+    }
+
+    @Override
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
+    {
+        return getGraphDatabaseAPI().beginTransaction( type, accessMode );
     }
 
     @Override
