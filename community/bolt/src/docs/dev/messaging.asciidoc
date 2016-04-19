@@ -107,7 +107,7 @@ B1 01 8C 4D  79 43 6C 69  65 6E 74 2F  31 2E 30 A3
 |=======================
 |Parameter   |Description
 |clientName  |A name and version for the client, if the user has allowed usage data collection, this is used to track popular clients. Example: "MyClient/1.0"
-|authToken   |An authorization token used to authenticate to the database. The token must contain either just contain the entry { "scheme" : "none" } or the keys `scheme`, `principal`, and `credentials`. Example { "scheme": "basic", "principal": "neo4j", "credentials": "secret"}". If no `scheme` is provided, it is assumed to be "none".
+|authToken   |An authorization token used to authenticate to the database. The token must contain either just the entry { "scheme" : "none" } or the keys scheme, principal, and credentials. Example { "scheme": "basic", "principal": "neo4j", "credentials": "secret"}". If no scheme is provided, it defaults to "none".
 |=======================
 
 [[bolt-message-structs-run]]
