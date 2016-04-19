@@ -71,6 +71,18 @@ check_java() {
   fi
 }
 
+# Resolve a path relative to where the script was called from.
+# Don't resolve if the path is absolute.
+resolve_path() {
+    orig_filename=$1
+    if [[ ${orig_filename} == /* ]]; then
+        filename="${orig_filename}"
+    else
+        filename="$(pwd)/${orig_filename}"
+    fi
+    echo "${filename}"
+}
+
 _find_java_cmd() {
   [[ "${JAVA_CMD:-}" ]] && return
   detect_os
