@@ -171,10 +171,10 @@ Function Get-Java
 
       # Parse Java config settings - Heap
       $option = (Get-Neo4jSetting -Name 'dbms.memory.heap.initial_size' -Neo4jServer $Neo4jServer)
-      if ($option -ne $null) { $ShellArgs += "-Xms$($option.Value))m" }
+      if ($option -ne $null) { $ShellArgs += "-Xms$($option.Value)m" }
 
       $option = (Get-Neo4jSetting -Name 'dbms.memory.heap.max_size' -Neo4jServer $Neo4jServer)
-      if ($option -ne $null) { $ShellArgs += "-Xmx$($option.Value))m" }
+      if ($option -ne $null) { $ShellArgs += "-Xmx$($option.Value)m" }
 
       # Parse Java config settings - Explicit
       $option = (Get-Neo4jSetting -Name 'dbms.jvm.additional' -Neo4jServer $Neo4jServer)
