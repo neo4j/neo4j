@@ -550,14 +550,14 @@ public interface Status
     enum Classification
     {
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
-        ClientError( TransactionEffect.ROLLBACK, PublishingPolicy.PUBLISHABLE,
+        ClientError( TransactionEffect.ROLLBACK, PublishingPolicy.REPORTS_TO_CLIENT,
                 "The Client sent a bad request - changing the request might yield a successful outcome."),
         /** There are notifications about the request sent by the client.*/
-        ClientNotification( TransactionEffect.NONE, PublishingPolicy.PUBLISHABLE,
+        ClientNotification( TransactionEffect.NONE, PublishingPolicy.REPORTS_TO_CLIENT,
                 "There are notifications about the request sent by the client." ),
 
         /** The database cannot service the request right now, retrying later might yield a successful outcome. */
-        TransientError( TransactionEffect.ROLLBACK, PublishingPolicy.PUBLISHABLE,
+        TransientError( TransactionEffect.ROLLBACK, PublishingPolicy.REFERS_TO_LOG,
                 "The database cannot service the request right now, retrying later might yield a successful outcome. "),
 
         // Implementation note: These are a sharp tool, database error signals
@@ -565,37 +565,28 @@ public interface Status
         // an error report back to us. Only use this if the code path you are
         // at would truly indicate the database is in a broken or bug-induced state.
         /** The database failed to service the request. */
-        DatabaseError( TransactionEffect.ROLLBACK, PublishingPolicy.INTERNAL,
-                "The database failed to service the request. " ),
-
-        ;
+        DatabaseError( TransactionEffect.ROLLBACK, PublishingPolicy.REFERS_TO_LOG,
+                "The database failed to service the request. " );
 
         private enum TransactionEffect
         {
             ROLLBACK, NONE,
         }
 
-        /**
-         * A PUBLISHABLE error/warning is one which allows sending a meaningful error message to
-         * the client with the expectation that the user will be able to take any necessary action
-         * to resolve the error. INTERNAL errors are more sensitive and may not be resolvable by
-         * the user - these will be logged and only a reference will be forwarded to the user.
-         * This is a security feature to avoid leaking potentially sensitive information to end
-         * users.
-         */
+        
         private enum PublishingPolicy
         {
-            PUBLISHABLE, INTERNAL,
+            REPORTS_TO_CLIENT, REFERS_TO_LOG
         }
 
         private final boolean rollbackTransaction;
-        private final boolean publishable;
+        private final boolean refersToLog;
         private final String description;
 
         Classification( TransactionEffect transactionEffect, PublishingPolicy publishingPolicy, String description )
         {
             this.description = description;
-            this.publishable = publishingPolicy == PublishingPolicy.PUBLISHABLE;
+            this.refersToLog = publishingPolicy == PublishingPolicy.REFERS_TO_LOG;
             this.rollbackTransaction = transactionEffect == TransactionEffect.ROLLBACK;
         }
 
@@ -604,9 +595,9 @@ public interface Status
             return rollbackTransaction;
         }
 
-        public boolean publishable()
+        public boolean refersToLog()
         {
-            return publishable;
+            return refersToLog;
         }
 
         public String description()
