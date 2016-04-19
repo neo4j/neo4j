@@ -28,9 +28,6 @@ import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.TransactionChecksumLookup;
@@ -43,17 +40,22 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public class DefaultMasterImplSPI implements MasterImpl.SPI
 {
     private static final int ID_GRAB_SIZE = 1000;
+    static final String STORE_COPY_CHECKPOINT_TRIGGER = "store copy";
+
     private final GraphDatabaseAPI graphDb;
     private final TransactionChecksumLookup txChecksumLookup;
     private final FileSystemAbstraction fileSystem;
@@ -157,7 +159,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     {
         StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource,
                 checkPointer, fileSystem, storeDir, monitors.newMonitor( StoreCopyServer.Monitor.class ) );
-        return streamer.flushStoresAndStreamStoreFiles( writer, false );
+        return streamer.flushStoresAndStreamStoreFiles( STORE_COPY_CHECKPOINT_TRIGGER, writer, false );
     }
 
     @Override
