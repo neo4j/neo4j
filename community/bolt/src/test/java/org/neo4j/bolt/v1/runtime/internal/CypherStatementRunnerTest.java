@@ -47,6 +47,7 @@ public class CypherStatementRunnerTest
     public void shouldCreateImplicitTxIfNoneExists() throws Exception
     {
         // Given
+        when( engine.isPeriodicCommit( anyString() )).thenReturn( false );
         when( engine.executeQuery( anyString(), anyMap(), any( QuerySession.class ) ) ).thenReturn( mock( Result.class ) );
         when( ctx.hasTransaction() ).thenReturn( false );
 
@@ -59,6 +60,7 @@ public class CypherStatementRunnerTest
         verify( ctx ).createSession( any( GraphDatabaseQueryService.class ), any( PropertyContainerLocker.class ));
         verify( ctx ).hasTransaction();
         verify( ctx ).beginImplicitTransaction();
+        verify( engine ).isPeriodicCommit( "<query>" );
         verify( engine ).queryService();
         verify( engine ).executeQuery( eq( "<query>" ), eq( EMPTY_MAP ), any( QuerySession.class ) );
         verifyNoMoreInteractions( engine, ctx );

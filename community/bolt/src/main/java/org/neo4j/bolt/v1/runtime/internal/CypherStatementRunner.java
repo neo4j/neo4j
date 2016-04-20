@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
+import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -60,13 +61,23 @@ public class CypherStatementRunner implements StatementRunner
         }
         else
         {
-            if ( !ctx.hasTransaction() )
+            boolean hasTx = ctx.hasTransaction();
+            boolean isPeriodicCommit = queryExecutionEngine.isPeriodicCommit( statement );
+
+            if ( !hasTx && !isPeriodicCommit )
             {
                 ctx.beginImplicitTransaction();
             }
 
             QuerySession session = ctx.createSession( queryExecutionEngine.queryService(), locker );
-            return new CypherAdapterStream( queryExecutionEngine.executeQuery( statement, params, session ) );
+            Result result = queryExecutionEngine.executeQuery( statement, params, session );
+
+            if ( isPeriodicCommit )
+            {
+                ctx.beginImplicitTransaction();
+            }
+
+            return new CypherAdapterStream( result );
         }
     }
 }
