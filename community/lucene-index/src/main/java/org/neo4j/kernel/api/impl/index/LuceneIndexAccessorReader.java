@@ -66,7 +66,8 @@ class LuceneIndexAccessorReader implements IndexReader
     public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException
     {
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( bufferSizeLimit );
-        try ( TermEnum terms = luceneIndexReader().terms() )
+        org.apache.lucene.index.IndexReader indexReader = luceneIndexReader();
+        try ( TermEnum terms = indexReader.terms() )
         {
             while ( terms.next() )
             {
@@ -86,7 +87,12 @@ class LuceneIndexAccessorReader implements IndexReader
             throw new RuntimeException( e );
         }
 
-        return sampler.result( result );
+        sampler.result( result );
+
+        // Here do not return the count from the sampler, since when traversing all terms lucene will consider also the
+        // logical delete once that are gonna be physically deleted in the next compaction. The index size can be
+        // computed exactly by asking the current number of documents in the lucene index.
+        return indexReader.numDocs();
     }
 
     @Override

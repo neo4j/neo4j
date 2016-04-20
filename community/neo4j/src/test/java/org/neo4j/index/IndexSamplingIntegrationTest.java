@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
+import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.TargetDirectory;
@@ -59,6 +60,7 @@ public class IndexSamplingIntegrationTest
     public void shouldSampleNotUniqueIndex() throws Throwable
     {
         GraphDatabaseService db = null;
+        long deletedNodes = 0;
         try
         {
             // Given
@@ -83,6 +85,17 @@ public class IndexSamplingIntegrationTest
                     db.createNode( label ).setProperty( property, names[i % names.length] );
                     tx.success();
                 }
+
+            }
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                for ( int i = 0; i < (nodes / 10) ; i++ )
+                {
+                    db.findNodes( label, property, names[i % names.length] ).next().delete();
+                    deletedNodes++;
+                    tx.success();
+                }
             }
         }
         finally
@@ -97,15 +110,23 @@ public class IndexSamplingIntegrationTest
         triggerIndexResamplingOnNextStartup();
 
         // Then
+
+        // sampling will consider also the delete nodes till the next lucene compaction
         DoubleLongRegister register = fetchIndexSamplingValues( db );
         assertEquals( names.length, register.readFirst() );
         assertEquals( nodes, register.readSecond() );
+
+        // but the deleted nodes should not be considered in the index size value
+        DoubleLongRegister indexSizeRegister = fetchIndexSizeValues( db );
+        assertEquals( 0, indexSizeRegister.readFirst() );
+        assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
     }
 
     @Test
     public void shouldSampleUniqueIndex() throws Throwable
     {
         GraphDatabaseService db = null;
+        long deletedNodes = 0;
         try
         {
             // Given
@@ -124,6 +145,19 @@ public class IndexSamplingIntegrationTest
                     tx.success();
                 }
             }
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                for ( int i = 0; i < nodes; i++ )
+                {
+                    if ( i % 10 == 0 )
+                    {
+                        deletedNodes++;
+                        db.findNode( label, property, "" + i ).delete();
+                        tx.success();
+                    }
+                }
+            }
         }
         finally
         {
@@ -137,9 +171,13 @@ public class IndexSamplingIntegrationTest
         triggerIndexResamplingOnNextStartup();
 
         // Then
-        DoubleLongRegister register = fetchIndexSamplingValues( db );
-        assertEquals( nodes, register.readFirst() );
-        assertEquals( nodes, register.readSecond() );
+        DoubleLongRegister indexSampleRegister = fetchIndexSamplingValues( db );
+        assertEquals( nodes - deletedNodes, indexSampleRegister.readFirst() );
+        assertEquals( nodes - deletedNodes, indexSampleRegister.readSecond() );
+
+        DoubleLongRegister indexSizeRegister = fetchIndexSizeValues( db );
+        assertEquals( 0, indexSizeRegister.readFirst() );
+        assertEquals( nodes - deletedNodes, indexSizeRegister.readSecond() );
     }
 
     private DoubleLongRegister fetchIndexSamplingValues( GraphDatabaseService db )
@@ -152,6 +190,27 @@ public class IndexSamplingIntegrationTest
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
             CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
             IndexSampleKey key = CountsKeyFactory.indexSampleKey( 0, 0 ); // cheating a bit...
+            return countsTracker.get( key, Registers.newDoubleLongRegister() );
+        }
+        finally
+        {
+            if ( db != null )
+            {
+                db.shutdown();
+            }
+        }
+    }
+
+    private DoubleLongRegister fetchIndexSizeValues( GraphDatabaseService db )
+    {
+        try
+        {
+            // Then
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
+            @SuppressWarnings( "deprecation" )
+            GraphDatabaseAPI api = (GraphDatabaseAPI) db;
+            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
+            IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( 0, 0 ); // cheating a bit...
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }
         finally
