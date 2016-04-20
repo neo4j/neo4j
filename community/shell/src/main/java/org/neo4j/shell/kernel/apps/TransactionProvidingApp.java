@@ -44,6 +44,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -58,6 +61,8 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.shell.util.json.JSONArray;
 import org.neo4j.shell.util.json.JSONException;
 
+import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
+import static org.neo4j.kernel.api.security.AccessMode.Static.FULL;
 import static org.neo4j.shell.ShellException.stackTraceAsString;
 
 /**
@@ -229,9 +234,9 @@ public abstract class TransactionProvidingApp extends AbstractApp
 
     @Override
     public Continuation execute( AppCommandParser parser, Session session,
-        Output out ) throws Exception
+            Output out ) throws Exception
     {
-        try (Transaction tx = getServer().getDb().beginTx())
+        try ( Transaction tx = getServer().getDb().beginTransaction( implicit, FULL ) )
         {
             getServer().registerTopLevelTransactionInProgress( session.getId() );
             Continuation result = this.exec( parser, session, out );
