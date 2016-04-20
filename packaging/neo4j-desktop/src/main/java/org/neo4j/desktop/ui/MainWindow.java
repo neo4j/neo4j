@@ -24,13 +24,19 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import javax.swing.*;
 
 import org.neo4j.desktop.model.DesktopModel;
 import org.neo4j.desktop.model.LastLocation;
 import org.neo4j.desktop.model.SysTrayListener;
+import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DatabaseActions;
 
+import static javax.swing.JOptionPane.CANCEL_OPTION;
+import static javax.swing.JOptionPane.ERROR_MESSAGE;
+import static javax.swing.JOptionPane.OK_CANCEL_OPTION;
+import static javax.swing.JOptionPane.OK_OPTION;
 import static javax.swing.SwingUtilities.invokeLater;
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.createUnmodifiableTextField;
@@ -44,6 +50,7 @@ import static org.neo4j.desktop.ui.Components.withTitledBorder;
 import static org.neo4j.desktop.ui.DatabaseStatus.STARTED;
 import static org.neo4j.desktop.ui.DatabaseStatus.STOPPED;
 import static org.neo4j.desktop.ui.Graphics.loadImage;
+import static org.neo4j.desktop.ui.ScrollableOptionPane.showWrappedConfirmDialog;
 
 /**
  * The main window of the Neo4j Desktop. Able to start/stop a database as well as providing access to some
@@ -86,6 +93,16 @@ public class MainWindow extends JFrame
         setupComponents();
 
         updateStatus( STOPPED );
+
+        try
+        {
+            model.setDatabaseDirectory( new File( LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() ) ) );
+        }
+        catch ( UnsuitableDirectoryException ude )
+        {
+            showWrappedConfirmDialog( this, "Please choose a different folder." + "\n" + ude.getStackTrace(),
+                    "Invalid folder selected", OK_OPTION, ERROR_MESSAGE );
+        }
     }
 
     private JPanel createRootPanel( JTextField directoryDisplay, JButton browseButton, Component statusPanel,
@@ -99,6 +116,7 @@ public class MainWindow extends JFrame
     private void createComponents()
     {
         directoryDisplay = createUnmodifiableTextField( LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() ), 35 );
+
 
         optionsButton = createOptionsButton();
         browseButton = createBrowseButton();
