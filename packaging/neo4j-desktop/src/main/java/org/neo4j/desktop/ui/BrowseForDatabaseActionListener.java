@@ -83,9 +83,7 @@ class BrowseForDatabaseActionListener implements ActionListener
             }
             catch ( UnsuitableDirectoryException ude )
             {
-                int choice = showWrappedConfirmDialog(
-                        frame,
-                        ude.getMessage() + "\n" + "Please choose a different folder.",
+                int choice = showWrappedConfirmDialog( frame, "Please choose a different folder." + "\n" + ude.getStackTrace(),
                         "Invalid folder selected", OK_CANCEL_OPTION, ERROR_MESSAGE );
 
                 if ( choice == CANCEL_OPTION )
