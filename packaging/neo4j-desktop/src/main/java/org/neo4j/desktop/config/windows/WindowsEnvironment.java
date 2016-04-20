@@ -59,11 +59,11 @@ class WindowsEnvironment extends Environment
     }
 
     @Override
-    public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws IOException
+    public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory, File configurationDirectory ) throws IOException
     {
         String[] shellStartupCommands = {
                 format( "set PATH=\"%s\";\"%s\";%%PATH%%", jreBinDirectory, binDirectory ),
-                "set REPO=" + binDirectory,
+                "set NEO4J_CONF=\""+ configurationDirectory + "\"",
                 "cd /D " + workingDirectory,
                 "echo Neo4j Command Prompt",
                 "echo.",

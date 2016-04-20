@@ -20,8 +20,10 @@
 package org.neo4j.desktop.config;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+
 import org.neo4j.desktop.config.portable.Environment;
 
 /**
@@ -96,4 +98,6 @@ public interface Installation
      * Get the directory where bundled JRE binaries are located.
      */
     File getInstallationJreBinDirectory() throws URISyntaxException;
+
+    void writeDefaultDatabaseConfiguration( File file ) throws IOException;
 }

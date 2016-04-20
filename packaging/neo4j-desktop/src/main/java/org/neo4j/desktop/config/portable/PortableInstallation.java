@@ -19,13 +19,20 @@
  */
 package org.neo4j.desktop.config.portable;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.desktop.config.Installation;
+import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 
 import static java.lang.String.format;
 
@@ -77,6 +84,20 @@ public abstract class PortableInstallation implements Installation
         if ( !vmopts.exists() )
         {
             createVmOptionsFile( vmopts );
+        }
+
+        File configurationFile = getConfigurationsFile();
+        if ( !configurationFile.exists() )
+        {
+            try
+            {
+                writeDefaultDatabaseConfiguration( configurationFile );
+            }
+            catch ( IOException e )
+            {
+                throw new UnsuitableDirectoryException( "Unable to write default configuration to %s",
+                        configurationFile );
+            }
         }
     }
 
@@ -144,6 +165,23 @@ public abstract class PortableInstallation implements Installation
         }
     }
 
+    @Override
+    public void writeDefaultDatabaseConfiguration( File file ) throws IOException
+    {
+        InputStream defaults = getDefaultDatabaseConfiguration();
+        writeInto( file, defaults );
+
+        try
+        {
+            String line = "dbms.directories.lib=" + getInstallationBinDirectory().getAbsolutePath() + System.lineSeparator();
+            Files.write( file.toPath(), line.getBytes(), StandardOpenOption.APPEND );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
     private static class PathAlreadyExistException extends RuntimeException
     {
         public PathAlreadyExistException( File path, String description )
@@ -174,5 +212,22 @@ public abstract class PortableInstallation implements Installation
     {
         Template template = new Template( getDefaultVmOptions() );
         template.write( file );
+    }
+
+    private void writeInto( File file, InputStream data ) throws IOException
+    {
+        if ( data != null )
+        {
+            try( BufferedReader reader = new BufferedReader( new InputStreamReader( data ) );
+                 PrintWriter writer = new PrintWriter( file ) )
+            {
+                String input = reader.readLine();
+                while ( input != null )
+                {
+                    writer.println( input );
+                    input = reader.readLine();
+                }
+            }
+        }
     }
 }

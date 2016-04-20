@@ -19,12 +19,8 @@
  */
 package org.neo4j.desktop.model;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,20 +100,6 @@ public class DesktopModel
         {
             databaseDirectory.mkdirs();
         }
-
-        File configurationFile = installation.getConfigurationsFile();
-        if ( !configurationFile.exists() )
-        {
-            try
-            {
-                writeDefaultDatabaseConfiguration( configurationFile );
-            }
-            catch ( IOException e )
-            {
-                throw new UnsuitableDirectoryException( "Unable to write default configuration to %s",
-                        databaseDirectory );
-            }
-        }
     }
 
     private static void verifyGraphDirectory( File dir ) throws UnsuitableDirectoryException
@@ -168,25 +150,7 @@ public class DesktopModel
 
     public void writeDefaultDatabaseConfiguration( File file ) throws IOException
     {
-        InputStream defaults = installation.getDefaultDatabaseConfiguration();
-        writeInto( file, defaults );
-    }
-
-    private void writeInto( File file, InputStream data ) throws IOException
-    {
-        if ( data != null )
-        {
-            try( BufferedReader reader = new BufferedReader( new InputStreamReader( data ) );
-                 PrintWriter writer = new PrintWriter( file ) )
-            {
-                String input = reader.readLine();
-                while ( input != null )
-                {
-                    writer.println( input );
-                    input = reader.readLine();
-                }
-            }
-        }
+        installation.writeDefaultDatabaseConfiguration( file );
     }
 
     public File getPluginsDirectory()
@@ -204,6 +168,7 @@ public class DesktopModel
         installation.getEnvironment().openCommandPrompt(
                 installation.getInstallationBinDirectory(),
                 installation.getInstallationJreBinDirectory(),
-                installation.getDatabaseDirectory().getParentFile() );
+                installation.getDatabaseDirectory().getParentFile(),
+                installation.getConfigurationDirectory() );
     }
 }

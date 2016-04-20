@@ -49,7 +49,7 @@ public class UnixInstallation extends PortableInstallation
     @Override
     public File getConfigurationsFile()
     {
-        return new File( getConfigurationDirectory(), "." + NEO4J_CONFIG_FILENAME );
+        return new File( getConfigurationDirectory(), NEO4J_CONFIG_FILENAME );
     }
 
     @Override
