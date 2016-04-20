@@ -87,6 +87,7 @@ public class LuceneIndexAccessorReaderTest
                 new Term( "string", "aaa" ),
                 new Term( "string", "ccc" )
         );
+        when(reader.numDocs() ).thenReturn( 3 );
 
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -108,6 +109,7 @@ public class LuceneIndexAccessorReaderTest
                 new Term( NODE_ID_KEY, "aaa" ), // <- this should be ignored
                 new Term( "string", "bbb" )
         );
+        when(reader.numDocs() ).thenReturn( 1 );
 
         // When
 
