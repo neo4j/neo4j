@@ -177,7 +177,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                 } )
                 .collect( toList() );
 
-        if ( connectors.size() > 0 )
+        if ( connectors.size() > 0 && !config.get( GraphDatabaseSettings.disconnected ) )
         {
             life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors ) );
             log.info( "Bolt Server extension loaded." );

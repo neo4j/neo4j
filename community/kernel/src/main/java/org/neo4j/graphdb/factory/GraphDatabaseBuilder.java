@@ -119,16 +119,6 @@ public class GraphDatabaseBuilder
     }
 
     /**
-     * Retrieve the configured configuration values.
-     *
-     * @return the configured configuration values.
-     */
-    public Config config()
-    {
-        return new Config( config );
-    }
-
-    /**
      * Load a Properties file from a given file, and add the settings to
      * the builder.
      *

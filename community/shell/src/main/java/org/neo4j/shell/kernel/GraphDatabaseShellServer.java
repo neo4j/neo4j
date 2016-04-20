@@ -206,18 +206,12 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     {
         GraphDatabaseBuilder builder = factory.
                 newEmbeddedDatabaseBuilder( path ).
+                setConfig( GraphDatabaseSettings.disconnected, Boolean.toString( true ) ).
                 setConfig( GraphDatabaseSettings.read_only, Boolean.toString( readOnly ) );
         if ( configFileOrNull != null )
         {
             builder.loadPropertiesFromFile( configFileOrNull );
         }
-        // Explicitly disable all connectors since we're starting an embedded database for the shell client (only!)
-        // This only deals with Bolt since it's the only connector type to start from a kernel extension
-        Config config = builder.config();
-        config.view( enumerate( GraphDatabaseSettings.Connector.class ) )
-                .map( GraphDatabaseSettings.BoltConnector::new )
-                .filter( ( connConfig ) -> config.get( connConfig.enabled ) )
-                .forEach( connector -> builder.setConfig( connector.enabled, Settings.FALSE ) );
         return (GraphDatabaseAPI) builder.newGraphDatabase();
     }
 
