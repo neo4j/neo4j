@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandReader;
@@ -54,6 +54,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
@@ -63,7 +64,7 @@ public class NodeCommandTest
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     private NodeStore nodeStore;
     InMemoryClosableChannel channel = new InMemoryClosableChannel();
-    private final CommandReader commandReader = new PhysicalLogCommandReaderV2_2();
+    private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NeoStores neoStores;
@@ -85,6 +86,18 @@ public class NodeCommandTest
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setCreated();
+        after.setInUse( true );
+        // When
+        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
+    }
+
+    @Test
+    public void shouldSerializeDenseRecord() throws Exception
+    {
+        // Given
+        NodeRecord before = new NodeRecord( 12, false, 1, 2 );
+        before.setInUse( true );
+        NodeRecord after = new NodeRecord( 12, true, 2, 1 );
         after.setInUse( true );
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
@@ -114,6 +127,26 @@ public class NodeCommandTest
         nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore() );
         // When
         assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
+    }
+
+    @Test
+    public void shouldSerializeSecondaryUnitUsage() throws Exception
+    {
+        // Given
+        // a record that is changed to include a secondary unit
+        NodeRecord before = new NodeRecord( 13, false, 1, 2 );
+        before.setInUse( true );
+        before.setRequiresSecondaryUnit( false );
+        before.setSecondaryUnitId( NO_ID ); // this and the previous line set the defaults, they are here for clarity
+        NodeRecord after = new NodeRecord( 13, false, 1, 2 );
+        after.setInUse( true );
+        after.setRequiresSecondaryUnit( true );
+        after.setSecondaryUnitId( 14L );
+
+        Command.NodeCommand command = new Command.NodeCommand( before, after );
+
+        // Then
+        assertSerializationWorksFor( command );
     }
 
     @Test
@@ -173,12 +206,26 @@ public class NodeCommandTest
         assertThat( result.getMode(), equalTo( cmd.getMode() ) );
         assertThat( result.getBefore(), equalTo( cmd.getBefore() ) );
         assertThat( result.getAfter(), equalTo( cmd.getAfter() ) );
+        // And created and dense flags should be the same
+        assertThat( result.getBefore().isCreated(), equalTo( cmd.getBefore().isCreated() ) );
+        assertThat( result.getAfter().isCreated(), equalTo( cmd.getAfter().isCreated() ) );
+        assertThat( result.getBefore().isDense(), equalTo( cmd.getBefore().isDense() ) );
+        assertThat( result.getAfter().isDense(), equalTo( cmd.getAfter().isDense()) );
         // And labels should be the same
         assertThat( labels( result.getBefore() ), equalTo( labels( cmd.getBefore() ) ) );
         assertThat( labels( result.getAfter() ), equalTo( labels( cmd.getAfter() ) ) );
         // And dynamic records should be the same
-        assertThat( result.getBefore().getDynamicLabelRecords(), equalTo( result.getBefore().getDynamicLabelRecords() ) );
-        assertThat( result.getAfter().getDynamicLabelRecords(), equalTo( result.getAfter().getDynamicLabelRecords() ) );
+        assertThat( result.getBefore().getDynamicLabelRecords(), equalTo( cmd.getBefore().getDynamicLabelRecords() ) );
+        assertThat( result.getAfter().getDynamicLabelRecords(), equalTo( cmd.getAfter().getDynamicLabelRecords() ) );
+        // And the secondary unit information should be the same
+        // Before
+        assertThat( result.getBefore().requiresSecondaryUnit(), equalTo( cmd.getBefore().requiresSecondaryUnit() ) );
+        assertThat( result.getBefore().hasSecondaryUnitId(), equalTo( cmd.getBefore().hasSecondaryUnitId() ) );
+        assertThat( result.getBefore().getSecondaryUnitId(), equalTo( cmd.getBefore().getSecondaryUnitId() ) );
+        // and after
+        assertThat( result.getAfter().requiresSecondaryUnit(), equalTo( cmd.getAfter().requiresSecondaryUnit() ) );
+        assertThat( result.getAfter().hasSecondaryUnitId(), equalTo( cmd.getAfter().hasSecondaryUnitId() ) );
+        assertThat( result.getAfter().getSecondaryUnitId(), equalTo( cmd.getAfter().getSecondaryUnitId() ) );
     }
 
     private Set<Integer> labels( NodeRecord record )
