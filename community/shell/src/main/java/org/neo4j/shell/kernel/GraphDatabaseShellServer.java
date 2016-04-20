@@ -203,6 +203,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     {
         GraphDatabaseBuilder builder = factory.
                 newEmbeddedDatabaseBuilder( path ).
+                setConfig( GraphDatabaseSettings.disconnected, Boolean.toString( true ) ).
                 setConfig( GraphDatabaseSettings.read_only, Boolean.toString( readOnly ) );
         if ( configFileOrNull != null )
         {
