@@ -41,12 +41,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.udc.UsageData;
 
-public class TestSessions implements TestRule, Sessions
+class TestSessions implements TestRule, Sessions
 {
     private GraphDatabaseFacade gdb;
     private Sessions actual;
@@ -106,13 +107,13 @@ public class TestSessions implements TestRule, Sessions
         return session;
     }
 
-    public TestSessions withAuthEnabled( boolean authEnabled )
+    TestSessions withAuthEnabled( boolean authEnabled )
     {
         this.authEnabled = authEnabled;
         return this;
     }
 
-    public URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
+    URL putTmpFile( String prefix, String suffix, String contents ) throws IOException
     {
         File tmpFile = File.createTempFile( prefix, suffix, null );
         tmpFile.deleteOnExit();
@@ -121,5 +122,10 @@ public class TestSessions implements TestRule, Sessions
             out.println( contents);
         }
         return tmpFile.toURI().toURL();
+    }
+
+    long lastClosedTxId()
+    {
+        return gdb.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
     }
 }
