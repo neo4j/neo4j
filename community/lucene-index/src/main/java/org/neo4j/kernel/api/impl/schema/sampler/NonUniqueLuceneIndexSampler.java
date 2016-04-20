@@ -85,7 +85,6 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
                 throw new RuntimeException( e );
             }
         }
-        Thread.dumpStack();
 
         return sampler.result( indexReader.numDocs() );
     }
