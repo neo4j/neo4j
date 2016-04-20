@@ -32,6 +32,7 @@ public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMon
 {
     private final long totalNumberOfBatches;
     private long[] prevDoneBatches;
+    private long totalReportedBatches = 0;
 
     public CoarseBoundedProgressExecutionMonitor( long highNodeId, long highRelationshipId,
             Configuration configuration )
@@ -40,8 +41,8 @@ public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMon
         // This calculation below is aware of internals of the parallel importer and may
         // be wrong for other importers.
         this.totalNumberOfBatches =
-                (highNodeId/configuration.batchSize()) * 2 + // node records encountered twice
-                (highRelationshipId/configuration.batchSize()) * 3; // rel records encountered three times;
+                (highNodeId/configuration.batchSize()) * 3 + // node records encountered three times
+                (highRelationshipId/configuration.batchSize()) * 4; // rel records encountered four times
     }
 
     protected long total()
@@ -72,6 +73,7 @@ public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMon
         }
         if ( diff > 0 )
         {
+            totalReportedBatches += diff;
             progress( diff );
         }
     }
@@ -83,19 +85,14 @@ public abstract class CoarseBoundedProgressExecutionMonitor extends ExecutionMon
 
     private long doneBatches( StageExecution execution )
     {
-        return Iterables.last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
+        Step<?> step = Iterables.last( execution.steps() );
+        return step.stats().stat( Keys.done_batches ).asLong();
     }
 
     @Override
     public void done( long totalTimeMillis, String additionalInformation )
     {
-        long prev = 0;
-        for ( long done : prevDoneBatches )
-        {
-            prev += done;
-        }
-
         // Just report the last progress
-        progress( totalNumberOfBatches-prev );
+        progress( totalNumberOfBatches - totalReportedBatches );
     }
 }

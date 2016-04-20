@@ -25,9 +25,8 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Collections;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
@@ -48,37 +47,52 @@ public class CoarseBoundedProgressExecutionMonitorTest
     public void shouldReportProgressOnSingleExecution() throws Exception
     {
         // GIVEN
-        final AtomicLong progress = new AtomicLong();
         Configuration config = config();
-        CoarseBoundedProgressExecutionMonitor monitor = new CoarseBoundedProgressExecutionMonitor(
-                100 * batchSize, 100 * batchSize, config )
-        {
-            @Override
-            protected void progress( long add )
-            {
-                progress.addAndGet( add );
-            }
-        };
+        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor(batchSize, config());
 
         // WHEN
-        monitor.start( singleExecution( 0, config ) );
-        long total = monitor.total();
+        long total = monitorSingleStageExecution( progressExecutionMonitor, config );
+
+        // THEN
+        assertEquals( total, progressExecutionMonitor.getProgress() );
+    }
+
+    @Test
+    public void progressOnMultipleExecutions()
+    {
+        Configuration config = config();
+        ProgressExecutionMonitor progressExecutionMonitor = new ProgressExecutionMonitor(batchSize, config );
+
+        long total = progressExecutionMonitor.total();
+
+        for ( int i = 0; i < 4; i++ )
+        {
+            progressExecutionMonitor.start( singleExecution( 0, config ) );
+            progressExecutionMonitor.check( singleExecution( total / 4, config ) );
+        }
+        progressExecutionMonitor.done( 0, "Completed" );
+
+        assertEquals( "Each item should be completed", total, progressExecutionMonitor.getProgress());
+    }
+
+    private long monitorSingleStageExecution( ProgressExecutionMonitor progressExecutionMonitor, Configuration config )
+    {
+        progressExecutionMonitor.start( singleExecution( 0, config ) );
+        long total = progressExecutionMonitor.total();
         long part = total / 10;
         for ( int i = 0; i < 9; i++ )
         {
-            monitor.check( singleExecution( part * (i+1), config ) );
-            assertTrue( progress.get() < total );
+            progressExecutionMonitor.check( singleExecution( part * (i+1), config ) );
+            assertTrue( progressExecutionMonitor.getProgress() < total );
         }
-        monitor.done( 0, "Test" );
-
-        // THEN
-        assertEquals( total, progress.get() );
+        progressExecutionMonitor.done( 0, "Test" );
+        return total;
     }
 
     private StageExecution[] singleExecution( long doneBatches, Configuration config )
     {
         Step<?> step = ControlledStep.stepWithStats( "Test", 0, done_batches, doneBatches );
-        StageExecution execution = new StageExecution( "Test", config, asList( step ), 0 );
+        StageExecution execution = new StageExecution( "Test", config, Collections.singletonList( step ), 0 );
         return new StageExecution[] {execution};
     }
 
@@ -92,5 +106,26 @@ public class CoarseBoundedProgressExecutionMonitorTest
                 return batchSize;
             }
         };
+    }
+
+    private class ProgressExecutionMonitor extends CoarseBoundedProgressExecutionMonitor
+    {
+        private long progress = 0;
+
+        ProgressExecutionMonitor( int batchSize, Configuration configuration )
+        {
+            super( 100 * batchSize, 100 * batchSize, configuration );
+        }
+
+        @Override
+        protected void progress( long progress )
+        {
+            this.progress += progress;
+        }
+
+        public long getProgress()
+        {
+            return progress;
+        }
     }
 }

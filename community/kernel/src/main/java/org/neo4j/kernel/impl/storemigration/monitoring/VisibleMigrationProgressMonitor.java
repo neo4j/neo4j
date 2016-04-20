@@ -58,6 +58,7 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     private class ProgressSection implements Section
     {
         private static final int STRIDE = 10;
+        private static final int HUNDRED = 100;
 
         private long current;
         private int currentPercent;
@@ -67,7 +68,7 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
         public void progress( long add )
         {
             current += add;
-            int percent = max == 0 ? 100 : (int) (current*100/max);
+            int percent = max == 0 ? HUNDRED : Math.min( HUNDRED, (int) ((current * HUNDRED) / max) );
             ensurePercentReported( percent );
         }
 
@@ -96,7 +97,7 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
         @Override
         public void completed()
         {
-            ensurePercentReported( 100 );
+            ensurePercentReported( HUNDRED );
         }
     }
 }
