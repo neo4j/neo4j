@@ -70,8 +70,8 @@ class WindowsEnvironment extends Environment
                 "echo This window is configured with Neo4j on the path.",
                 "echo.",
                 "echo Available commands:",
-                "echo * Neo4jShell",
-                "echo * Neo4jImport"
+                "echo * neo4j-shell",
+                "echo * neo4j-import"
         };
 
         String[] cmdArray = {
