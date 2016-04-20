@@ -77,7 +77,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final long id;
     private TransitionalTxManagementKernelTransaction context;
 
-    public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
+    TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
             TransactionRegistry registry, TransactionUriScheme uriScheme, boolean implicitTransaction, AccessMode mode,
             LogProvider logProvider )
     {
@@ -86,7 +86,6 @@ public class TransactionHandle implements TransactionTerminationHandle
         this.registry = registry;
         this.uriScheme = uriScheme;
         this.type = implicitTransaction ? Type.implicit : Type.explicit;
-        ;
         this.mode = mode;
         this.log = logProvider.getLog( getClass() );
         this.id = registry.begin( this );
@@ -192,7 +191,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         }
     }
 
-    public void forceRollback() throws TransactionFailureException
+    void forceRollback() throws TransactionFailureException
     {
         context.resumeSinceTransactionsAreStillThreadBound();
         context.rollback();
@@ -298,16 +297,22 @@ public class TransactionHandle implements TransactionTerminationHandle
                 Statement statement = statements.next();
                 try
                 {
-                    if ( (statements.hasNext() || hasPrevious) && engine.isPeriodicCommit( statement.statement() ) )
+                    boolean hasPeriodicCommit = engine.isPeriodicCommit( statement.statement() );
+                    if ( (statements.hasNext() || hasPrevious) && hasPeriodicCommit )
                     {
                         throw new QueryExecutionKernelException(
                                 new InvalidSemanticsException( "Cannot execute another statement after executing " +
                                                                "PERIODIC COMMIT statement in the same transaction" ) );
                     }
 
+                    if ( !hasPrevious && hasPeriodicCommit )
+                    {
+                        context.closeTransactionForPeriodicCommit();
+                    }
+
                     hasPrevious = true;
                     QuerySession querySession = txManagerFacade.create( engine.queryService(), type, mode, request );
-                    Result result = engine.executeQuery( statement.statement(), statement.parameters(), querySession );
+                    Result result = safelyExecute( statement, hasPeriodicCommit, querySession );
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
                     output.notifications( result.getNotifications() );
                 }
@@ -327,9 +332,10 @@ public class TransactionHandle implements TransactionTerminationHandle
                 }
                 catch ( Exception e )
                 {
-                    if ( e.getCause() instanceof Status.HasStatus )
+                    Throwable cause = e.getCause();
+                    if ( cause instanceof Status.HasStatus )
                     {
-                        errors.add( new Neo4jError( ((Status.HasStatus) e.getCause()).status(), e ) );
+                        errors.add( new Neo4jError( ((Status.HasStatus) cause).status(), cause ) );
                     }
                     else
                     {
@@ -345,6 +351,22 @@ public class TransactionHandle implements TransactionTerminationHandle
         catch ( Throwable e )
         {
             errors.add( new Neo4jError( Status.General.UnknownError, e ) );
+        }
+    }
+
+    private Result safelyExecute( Statement statement, boolean hasPeriodicCommit, QuerySession querySession )
+            throws QueryExecutionKernelException
+    {
+        try
+        {
+            return engine.executeQuery( statement.statement(), statement.parameters(), querySession );
+        }
+        finally
+        {
+            if ( hasPeriodicCommit )
+            {
+                context.reopenAfterPeriodicCommit();
+            }
         }
     }
 }

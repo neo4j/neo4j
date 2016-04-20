@@ -21,7 +21,6 @@ package org.neo4j.server.rest.transactional;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.security.AccessMode;
@@ -49,8 +48,7 @@ public class TransitionalPeriodTransactionMessContainer
 
     public TransitionalTxManagementKernelTransaction newTransaction( Type type, AccessMode mode )
     {
-        Transaction tx = db.beginTransaction( type, mode );
-        return new TransitionalTxManagementKernelTransaction( new TransactionTerminator( tx ), txBridge );
+        return new TransitionalTxManagementKernelTransaction( db, type, mode, txBridge );
     }
 
     public ThreadToStatementContextBridge getBridge()
