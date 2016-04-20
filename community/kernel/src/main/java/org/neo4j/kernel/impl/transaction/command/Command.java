@@ -226,13 +226,19 @@ public abstract class Command implements StorageCommand
 
         private boolean writeNodeRecord( WritableChannel channel, NodeRecord record ) throws IOException
         {
-            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-            channel.put( inUse );
+            byte flags = bitFlags(  bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                                    bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
+                                    bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ) );
+            channel.put( flags );
             if ( record.inUse() )
             {
                 channel.put( record.isDense() ? (byte) 1 : (byte) 0 );
                 channel.putLong( record.getNextRel() ).putLong( record.getNextProp() );
                 channel.putLong( record.getLabelField() );
+                if( record.hasSecondaryUnitId() )
+                {
+                    channel.putLong( record.getSecondaryUnitId() );
+                }
             }
             // Always write dynamic label records because we want to know which ones have been deleted
             // especially if the node has been deleted.
