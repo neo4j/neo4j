@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection, SemanticTable, symbols}
 import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager
 
 /**
@@ -44,93 +45,116 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
 
   val modes = Seq(SourceCode.SOURCECODE, SourceCode.BYTECODE)
   val ops = Seq(
-    Operation("create rel extractor", _.createRelExtractor("foo")),
-    Operation("nullable object", m => {
-      m.declare("foo", symbols.CTAny)
-      m.generator.assign(typeRef[Object], "bar",
-                         m.nullablePrimitive("foo", symbols.CTAny, Expression.constant("hello")))
-
-    }),
-    Operation("nullable node", m => {
-      m.declare("foo", symbols.CTNode)
-      m.generator.assign(typeRef[Long], "bar",
-                         m.nullablePrimitive("foo", symbols.CTNode, m.load("foo")))
-
-    }),
-    Operation("mark variables as null", m => {
-      m.declareFlag("flag", initialValue = false)
-      m.updateFlag("flag", newValue = true)
-      m.ifNotStatement(m.generator.load("flag")) { ifBody =>
-        //mark variables as null
-       ifBody.markAsNull("node", symbols.CTNode)
-       ifBody.markAsNull("object", symbols.CTAny)
+    //    Operation("create rel extractor", _.createRelExtractor("foo")),
+    //    Operation("nullable object", m => {
+    //      m.declare("foo", symbols.CTAny)
+    //      m.generator.assign(typeRef[Object], "bar",
+    //                         m.nullablePrimitive("foo", symbols.CTAny, Expression.constant("hello")))
+    //
+    //    }),
+    //    Operation("nullable node", m => {
+    //      m.declare("foo", symbols.CTNode)
+    //      m.generator.assign(typeRef[Long], "bar",
+    //                         m.nullablePrimitive("foo", symbols.CTNode, m.load("foo")))
+    //
+    //    }),
+    //    Operation("mark variables as null", m => {
+    //      m.declareFlag("flag", initialValue = false)
+    //      m.updateFlag("flag", newValue = true)
+    //      m.ifNotStatement(m.generator.load("flag")) { ifBody =>
+    //        //mark variables as null
+    //       ifBody.markAsNull("node", symbols.CTNode)
+    //       ifBody.markAsNull("object", symbols.CTAny)
+    //      }
+    //    }),
+    //    Operation("use a LongsToCount probe table", m => {
+    //      m.declare("a", symbols.CTNode)
+    //      m.allocateProbeTable("table", LongsToCountTable)
+    //      m.updateProbeTableCount("table", LongsToCountTable, Seq("a"))
+    //      m.probe("table", LongsToCountTable, Seq("a")) { inner =>
+    //        inner.allNodesScan("foo")
+    //      }
+    //    }),
+    //   Operation("use a LongToCount key probe table", m => {
+    //      m.declare("a", symbols.CTNode)
+    //      m.allocateProbeTable("table", LongToCountTable)
+    //      m.updateProbeTableCount("table", LongToCountTable, Seq("a"))
+    //      m.probe("table", LongToCountTable, Seq("a")) { inner =>
+    //        inner.allNodesScan("foo")
+    //      }
+    //    }),
+    //   Operation("use a LongToList probe table", m => {
+    //     val table: LongToListTable = LongToListTable(Map("a" -> symbols.CTNode), Map("b" -> "a"))
+    //     m.declare("a", symbols.CTNode)
+    //     m.allocateProbeTable("table", table)
+    //     val value: Expression = m.newTableValue("value", table.structure)
+    //     m.updateProbeTable(table.structure, "table", table, Seq("a"), value)
+    //     m.probe("table", table, Seq("a")) { inner =>
+    //       inner.allNodesScan("foo")
+    //     }
+    //   }),
+    //   Operation("use a LongsToList probe table", m => {
+    //     val table: LongsToListTable = LongsToListTable(Map("a" -> symbols.CTNode, "b" -> symbols.CTNode),
+    //                                                    Map("aa" -> "a", "bb" -> "b"))
+    //     m.declare("a", symbols.CTNode)
+    //     m.declare("b", symbols.CTNode)
+    //     m.allocateProbeTable("table", table)
+    //     val value: Expression = m.newTableValue("value", table.structure)
+    //     m.updateProbeTable(table.structure, "table", table, Seq("a", "b"), value)
+    //     m.probe("table", table, Seq("a", "b")) { inner =>
+    //       inner.allNodesScan("foo")
+    //     }
+    //   }),
+    //    Operation("Method invocation", m => {
+    //      m.method(LongToCountTable, "v1", "inner") {inner => {
+    //        inner.allocateProbeTable("v1", LongToCountTable)
+    //      }}
+    //    }),
+    //    Operation("look up rel type", _.lookupRelationshipTypeId("foo", "bar")),
+    //    Operation("all relationships for node", (m) => {
+    //      m.declare("node", symbols.CTNode)
+    //      m.nodeGetAllRelationships("foo", "node", SemanticDirection.OUTGOING)
+    //    }),
+    //    Operation("has label", m => {
+    //      m.lookupLabelId("label", "A")
+    //      m.declarePredicate("predVar")
+    //      m.declare("node", symbols.CTNode)
+    //      m.hasLabel("node", "label", "predVar")
+    //    }),
+    //    Operation("all relationships for node and types", (m) => {
+    //      m.declare("node", symbols.CTNode)
+    //      m.lookupRelationshipTypeId("a", "A")
+    //      m.lookupRelationshipTypeId("b", "B")
+    //      m.nodeGetRelationships("foo", "node", SemanticDirection.OUTGOING, Seq("a", "b"))
+    //    }),
+    //    Operation("next relationship", (m) => {
+    //      m.createRelExtractor("r")
+    //      m.declare("node", symbols.CTNode)
+    //      m.nodeGetAllRelationships("foo", "node", SemanticDirection.OUTGOING)
+    //      m.nextRelationshipAndNode("nextNode", "foo", SemanticDirection.OUTGOING, "node", "r")
+    //    }),
+    Operation("expand into", (m) => {
+      m.declare("from", symbols.CTNode)
+      m.declare("to", symbols.CTNode)
+      val local = m.generator.declare(typeRef[RelationshipIterator], "iter")
+      Templates.handleKernelExceptions(m.generator, m.fields.ro, m.fields.close) { body =>
+        body.assign(local, Expression.invoke(Methods.allConnectingRelationships,
+                                             Expression.get(m.generator.self(), m.fields.ro), body.load("from"),
+                                             Templates.outgoing,
+                                             body.load("to")))
       }
     }),
-    Operation("use a LongsToCount probe table", m => {
-      m.declare("a", symbols.CTNode)
-      m.allocateProbeTable("table", LongsToCountTable)
-      m.updateProbeTableCount("table", LongsToCountTable, Seq("a"))
-      m.probe("table", LongsToCountTable, Seq("a")) { inner =>
-        inner.allNodesScan("foo")
+    Operation("expand into with types", (m) => {
+      m.declare("from", symbols.CTNode)
+      m.declare("to", symbols.CTNode)
+      val local = m.generator.declare(typeRef[RelationshipIterator], "iter")
+      Templates.handleKernelExceptions(m.generator, m.fields.ro, m.fields.close) { body =>
+        body.assign(local, Expression.invoke(Methods.connectingRelationships,
+                                             Expression.get(m.generator.self(), m.fields.ro), body.load("from"),
+                                             Templates.outgoing,
+                                             body.load("to"),
+                                             Expression.newArray(typeRef[Int], Expression.constant(1))))
       }
-    }),
-   Operation("use a LongToCount key probe table", m => {
-      m.declare("a", symbols.CTNode)
-      m.allocateProbeTable("table", LongToCountTable)
-      m.updateProbeTableCount("table", LongToCountTable, Seq("a"))
-      m.probe("table", LongToCountTable, Seq("a")) { inner =>
-        inner.allNodesScan("foo")
-      }
-    }),
-   Operation("use a LongToList probe table", m => {
-     val table: LongToListTable = LongToListTable(Map("a" -> symbols.CTNode), Map("b" -> "a"))
-     m.declare("a", symbols.CTNode)
-     m.allocateProbeTable("table", table)
-     val value: Expression = m.newTableValue("value", table.structure)
-     m.updateProbeTable(table.structure, "table", table, Seq("a"), value)
-     m.probe("table", table, Seq("a")) { inner =>
-       inner.allNodesScan("foo")
-     }
-   }),
-   Operation("use a LongsToList probe table", m => {
-     val table: LongsToListTable = LongsToListTable(Map("a" -> symbols.CTNode, "b" -> symbols.CTNode),
-                                                    Map("aa" -> "a", "bb" -> "b"))
-     m.declare("a", symbols.CTNode)
-     m.declare("b", symbols.CTNode)
-     m.allocateProbeTable("table", table)
-     val value: Expression = m.newTableValue("value", table.structure)
-     m.updateProbeTable(table.structure, "table", table, Seq("a", "b"), value)
-     m.probe("table", table, Seq("a", "b")) { inner =>
-       inner.allNodesScan("foo")
-     }
-   }),
-    Operation("Method invocation", m => {
-      m.method(LongToCountTable, "v1", "inner") {inner => {
-        inner.allocateProbeTable("v1", LongToCountTable)
-      }}
-    }),
-    Operation("look up rel type", _.lookupRelationshipTypeId("foo", "bar")),
-    Operation("all relationships for node", (m) => {
-      m.declare("node", symbols.CTNode)
-      m.nodeGetAllRelationships("foo", "node", SemanticDirection.OUTGOING)
-    }),
-    Operation("has label", m => {
-      m.lookupLabelId("label", "A")
-      m.declarePredicate("predVar")
-      m.declare("node", symbols.CTNode)
-      m.hasLabel("node", "label", "predVar")
-    }),
-    Operation("all relationships for node and types", (m) => {
-      m.declare("node", symbols.CTNode)
-      m.lookupRelationshipTypeId("a", "A")
-      m.lookupRelationshipTypeId("b", "B")
-      m.nodeGetRelationships("foo", "node", SemanticDirection.OUTGOING, Seq("a", "b"))
-    }),
-    Operation("next relationship", (m) => {
-      m.createRelExtractor("r")
-      m.declare("node", symbols.CTNode)
-      m.nodeGetAllRelationships("foo", "node", SemanticDirection.OUTGOING)
-      m.nextRelationshipAndNode("nextNode", "foo", SemanticDirection.OUTGOING, "node", "r")
     }),
     Operation("expand from all node", (m) => {
       m.createRelExtractor("r")
@@ -144,7 +168,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       }
     }),
     Operation("all node scan", _.allNodesScan("foo"))
-    )
+  )
 
   for {
     op <- ops
@@ -154,9 +178,10 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       codeGenerator(op.block, mode)
     }
   }
+
   case class Operation[E](name: String, block: GeneratedMethodStructure => Unit)
 
-  private def codeGenerator[E](block: GeneratedMethodStructure => Unit, mode: CodeGenerationStrategy[Configuration] ) = {
+  private def codeGenerator[E](block: GeneratedMethodStructure => Unit, mode: CodeGenerationStrategy[Configuration]) = {
     val codeGen = CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, SourceCode.PRINT_SOURCE)
     val packageName = "foo"
     implicit val context = new CodeGenContext(SemanticTable(), Map.empty)

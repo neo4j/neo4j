@@ -118,7 +118,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         target.accept( this );
         methodVisitor
                 .visitFieldInsn( GETFIELD, byteCodeName( field.owner() ), field.name(), typeName( field.type() ) );
-    }
+}
 
     @Override
     public void constant( Object value )

@@ -60,9 +60,4 @@ public class LocalVariables
         original.localVariables.forEach( variables.localVariables::put );
         return variables;
     }
-
-    public int nextIndex()
-    {
-        return counter.getAndIncrement();
-    }
 }

@@ -294,6 +294,24 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
   }
 
+  test("expand into self loop") {
+    //given
+    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
+    val expandInto = Expand(
+      scanT1, IdName("a"), SemanticDirection.INCOMING,
+      Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(solved)
+
+    val plan = ProduceResult(List("a"), expandInto)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getNodesFromResult(compiled, "a")
+
+    result shouldBe empty
+  }
+
   test("expand into on top of expand all") {
     //given
     val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
@@ -317,6 +335,28 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> bNode, "b" -> dNode),
       Map("a" -> cNode, "b" -> eNode)
     ))
+  }
+
+  test("optional expand into self loop") {
+    //given
+    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
+    val optionalExpandInto = OptionalExpand(
+      scanT1, IdName("a"), SemanticDirection.OUTGOING,
+      Seq.empty, IdName("a"), IdName("r2"), ExpandInto, Seq(HasLabels(varFor("a"), Seq(LabelName("T2")(pos)))(pos)))(solved)
+
+
+    val plan = ProduceResult(List("a", "r2"), optionalExpandInto)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "a", "r2")
+
+    result should equal(List(
+      Map("a" -> aNode, "r2" -> null),
+      Map("a" -> bNode, "r2" -> null),
+      Map("a" -> cNode, "r2" -> null)))
   }
 
   test("optional expand into on top of expand all") {

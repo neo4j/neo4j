@@ -107,9 +107,11 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def nextRelationship(iterVar: String, ignored: SemanticDirection, relVar: String) = {
     val extractor = relExtractor(relVar)
-    generator.expression(Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
+    generator.expression(
+      Expression.pop(
+        Expression.invoke(generator.load(iterVar), Methods.relationshipVisit,
                                            Expression.invoke(generator.load(iterVar), Methods.nextRelationship),
-                                           generator.load(extractor)))
+                                           generator.load(extractor))))
     generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load(extractor), Methods.relationship))
   }
 
@@ -269,8 +271,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def threeValuedEquals(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.ternaryEquals, lhs, rhs)
 
-  override def eq(lhs: Expression, rhs: Expression, cypherType: CypherType) = Expression
-    .eq(lhs, rhs, lowerType(cypherType))
+  override def eq(lhs: Expression, rhs: Expression, cypherType: CypherType) = Expression.eq(lhs, rhs, lowerType(cypherType))
 
   override def or(lhs: Expression, rhs: Expression) = Expression.or(lhs, rhs)
 
@@ -314,8 +315,8 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                                        toNode: String) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
-      body.assign(local, Expression
-        .invoke(Methods.allConnectingRelationships, readOperations, body.load(fromNode), dir(direction),
+      body.assign(local, Expression.invoke(Methods.allConnectingRelationships,
+                                           readOperations, body.load(fromNode), dir(direction),
                 body.load(toNode)))
     }
   }
@@ -324,8 +325,9 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                                        typeVars: Seq[String], toNode: String) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
     Templates.handleKernelExceptions(generator, fields.ro, fields.close) { body =>
-      val args = Seq(readOperations, body.load(fromNode), dir(direction), body.load(toNode)) ++ typeVars.map(body.load)
-      body.assign(local, Expression.invoke(Methods.connectingRelationships, args: _*))
+      body.assign(local, Expression.invoke(Methods.connectingRelationships, readOperations, body.load(fromNode), dir(direction),
+                                           body.load(toNode),
+                                           Expression.newArray(typeRef[Int], typeVars.map(body.load):_*)))
     }
   }
 
@@ -342,7 +344,6 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def mod(lhs: Expression, rhs: Expression) = math(Methods.mathMod, lhs, rhs)
 
   private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
-  // TODO: generate specialized versions for specific types
     Expression.invoke(method, lhs, rhs)
 
   private def readOperations = Expression.get(generator.self(), fields.ro)
