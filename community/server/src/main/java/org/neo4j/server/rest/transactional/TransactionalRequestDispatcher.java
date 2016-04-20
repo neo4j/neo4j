@@ -75,7 +75,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         {
             CypherService cypherService = (CypherService) o;
 
-            final Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, mode );
+            final Transaction transaction = database.getGraph().beginTransaction( KernelTransaction.Type.explicit, mode );
 
             cypherService.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
                     CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );

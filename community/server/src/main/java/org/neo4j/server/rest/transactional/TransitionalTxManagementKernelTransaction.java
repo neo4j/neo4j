@@ -21,30 +21,39 @@ package org.neo4j.server.rest.transactional;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 class TransitionalTxManagementKernelTransaction
 {
-    private final TransactionTerminator txTerminator;
+    private final GraphDatabaseFacade db;
+    private final KernelTransaction.Type type;
+    private final AccessMode mode;
     private final ThreadToStatementContextBridge bridge;
 
+    private InternalTransaction tx;
     private KernelTransaction suspendedTransaction;
 
-    TransitionalTxManagementKernelTransaction( TransactionTerminator txTerminator,
-            ThreadToStatementContextBridge bridge )
+    TransitionalTxManagementKernelTransaction( GraphDatabaseFacade db, KernelTransaction.Type type,
+            AccessMode mode, ThreadToStatementContextBridge bridge )
     {
-        this.txTerminator = txTerminator;
+        this.db = db;
+        this.type = type;
+        this.mode = mode;
         this.bridge = bridge;
+        this.tx = db.beginTransaction( type, mode );
     }
 
-    public void suspendSinceTransactionsAreStillThreadBound()
+    void suspendSinceTransactionsAreStillThreadBound()
     {
         assert suspendedTransaction == null : "Can't suspend the transaction if it already is suspended.";
         suspendedTransaction = bridge.getTopLevelTransactionBoundToThisThread( true );
         bridge.unbindTransactionFromCurrentThread();
     }
 
-    public void resumeSinceTransactionsAreStillThreadBound()
+    void resumeSinceTransactionsAreStillThreadBound()
     {
         assert suspendedTransaction != null : "Can't resume the transaction if it has not first been suspended.";
         bridge.bindTransactionToCurrentThread( suspendedTransaction );
@@ -53,7 +62,7 @@ class TransitionalTxManagementKernelTransaction
 
     public void terminate()
     {
-        txTerminator.terminate();
+        tx.terminate();
     }
 
     public void rollback()
@@ -90,5 +99,15 @@ class TransitionalTxManagementKernelTransaction
         {
             bridge.unbindTransactionFromCurrentThread();
         }
+    }
+
+    void closeTransactionForPeriodicCommit()
+    {
+        tx.close();
+    }
+
+    void reopenAfterPeriodicCommit()
+    {
+        tx = db.beginTransaction( type, mode );
     }
 }

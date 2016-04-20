@@ -479,7 +479,8 @@ public class TransactionHandleTest
                 NullLogProvider.getInstance() );
 
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
-        handle.execute( statements(), output, mock( HttpServletRequest.class ) );
+        Statement statement = new Statement( "MATCH (n) RETURN n", map(), false, (ResultDataContent[]) null );
+        handle.execute( statements( statement ), output, mock( HttpServletRequest.class ) );
 
         // when
         handle.terminate();

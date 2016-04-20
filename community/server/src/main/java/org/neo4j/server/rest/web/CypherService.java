@@ -29,6 +29,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.cypher.CypherException;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QuerySession;
@@ -38,6 +39,7 @@ import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.transactional.CommitOnSuccessfulStatusCodeRepresentationWriteHandler;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.udc.UsageDataKeys.Features.http_cypher_endpoint;
@@ -54,14 +56,16 @@ public class CypherService
     private static final String INCLUDE_PLAN_PARAM = "includePlan";
     private static final String PROFILE_PARAM = "profile";
 
+    private final GraphDatabaseService database;
     private final CypherExecutor cypherExecutor;
     private final UsageData usage;
     private final OutputFormat output;
     private final InputFormat input;
 
-    public CypherService( @Context CypherExecutor cypherExecutor, @Context InputFormat input,
-                          @Context OutputFormat output, @Context UsageData usage )
+    public CypherService( @Context GraphDatabaseService database, @Context CypherExecutor cypherExecutor,
+            @Context InputFormat input, @Context OutputFormat output, @Context UsageData usage )
     {
+        this.database = database;
         this.cypherExecutor = cypherExecutor;
         this.input = input;
         this.output = output;
@@ -104,6 +108,14 @@ public class CypherService
         try
         {
             QueryExecutionEngine executionEngine = cypherExecutor.getExecutionEngine();
+            boolean periodicCommitQuery = executionEngine.isPeriodicCommit( query );
+            CommitOnSuccessfulStatusCodeRepresentationWriteHandler handler =
+                    (CommitOnSuccessfulStatusCodeRepresentationWriteHandler) output.getRepresentationWriteHandler();
+            if ( periodicCommitQuery )
+            {
+                handler.closeTransaction();
+            }
+
             QuerySession querySession = cypherExecutor.createSession( request );
 
             Result result;
@@ -116,6 +128,11 @@ public class CypherService
             {
                 result = executionEngine.executeQuery( query, params, querySession );
                 includePlan = result.getQueryExecutionType().requestedExecutionPlanDescription();
+            }
+
+            if ( periodicCommitQuery )
+            {
+                handler.setTransaction( database.beginTx() );
             }
 
             return output.ok( new CypherResultRepresentation( result, includeStats, includePlan ) );
