@@ -33,6 +33,10 @@ import org.neo4j.desktop.model.SysTrayListener;
 import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DatabaseActions;
 
+import static javax.swing.JOptionPane.CANCEL_OPTION;
+import static javax.swing.JOptionPane.ERROR_MESSAGE;
+import static javax.swing.JOptionPane.OK_CANCEL_OPTION;
+import static javax.swing.JOptionPane.OK_OPTION;
 import static javax.swing.SwingUtilities.invokeLater;
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.createUnmodifiableTextField;
@@ -46,6 +50,7 @@ import static org.neo4j.desktop.ui.Components.withTitledBorder;
 import static org.neo4j.desktop.ui.DatabaseStatus.STARTED;
 import static org.neo4j.desktop.ui.DatabaseStatus.STOPPED;
 import static org.neo4j.desktop.ui.Graphics.loadImage;
+import static org.neo4j.desktop.ui.ScrollableOptionPane.showWrappedConfirmDialog;
 
 /**
  * The main window of the Neo4j Desktop. Able to start/stop a database as well as providing access to some
@@ -93,9 +98,10 @@ public class MainWindow extends JFrame
         {
             model.setDatabaseDirectory( new File( LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() ) ) );
         }
-        catch ( UnsuitableDirectoryException e )
+        catch ( UnsuitableDirectoryException ude )
         {
-            e.printStackTrace();
+            showWrappedConfirmDialog( this, "Please choose a different folder." + "\n" + ude.getStackTrace(),
+                    "Invalid folder selected", OK_OPTION, ERROR_MESSAGE );
         }
     }
 
