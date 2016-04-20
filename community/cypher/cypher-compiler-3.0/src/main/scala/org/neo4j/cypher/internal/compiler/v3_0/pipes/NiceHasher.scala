@@ -64,14 +64,14 @@ object NiceHasherValue {
     case x: Array[AnyRef] => java.util.Arrays.deepHashCode(x)
     case null => 0
     case x: List[_] => seqHashFun(x)
-    case x: Map[_, _] => seqHashFun(x.keySet ++ x.values)
+    case x: Map[_, _] => x.keySet.hashCode() * 31 + seqHashFun(x.values)
     case x => x.hashCode()
   }
 
   def comparableValuesFun(y: Any): Any = y match {
     case x: Array[_] => x.deep
     case x: List[_] => x.map(comparableValuesFun)
-    case x: Map[_, _] => (x.keys ++ x.values).map(comparableValuesFun)
+    case x: Map[_, _] => x.keys.toSeq ++ x.values.map(comparableValuesFun)
     case x => x
   }
 
