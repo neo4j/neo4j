@@ -209,7 +209,7 @@ public class IndexSamplingIntegrationTest
             db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
+            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( NeoStores.class ).getCounts();
             IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( 0, 0 ); // cheating a bit...
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }
