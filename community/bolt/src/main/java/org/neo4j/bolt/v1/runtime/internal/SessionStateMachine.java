@@ -764,8 +764,7 @@ public class SessionStateMachine implements Session, SessionState
     @Override
     public QuerySession createSession( GraphDatabaseQueryService service, PropertyContainerLocker locker )
     {
-        InternalTransaction transaction =
-                service.beginTransaction( currentTransaction.transactionType(), currentTransaction.mode() );
+        InternalTransaction transaction = service.beginTransaction( implicit, accessMode );
         Neo4jTransactionalContext transactionalContext =
                 new Neo4jTransactionalContext( service, transaction, spi.currentStatement(), locker );
         return new BoltQuerySession( transactionalContext, querySource() );
