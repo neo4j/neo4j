@@ -181,6 +181,10 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         {
             life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors ) );
             log.info( "Bolt Server extension loaded." );
+            for ( ProtocolInitializer connector : connectors )
+            {
+                logging.getUserLog( Sessions.class ).info( "Bolt enabled on %s.", connector.address() );
+            }
         }
 
         return life;

@@ -30,6 +30,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.shell.Output;
@@ -43,6 +45,7 @@ import org.neo4j.shell.impl.AbstractAppServer;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
 import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
 
+import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 import static org.neo4j.shell.Variables.PROMPT_KEY;
 
 /**
@@ -208,6 +211,13 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         {
             builder.loadPropertiesFromFile( configFileOrNull );
         }
+        // Explicitly disable all connectors since we're starting an embedded database for the shell client (only!)
+        // This only deals with Bolt since it's the only connector type to start from a kernel extension
+        Config config = builder.config();
+        config.view( enumerate( GraphDatabaseSettings.Connector.class ) )
+                .map( GraphDatabaseSettings.BoltConnector::new )
+                .filter( ( connConfig ) -> config.get( connConfig.enabled ) )
+                .forEach( connector -> builder.setConfig( connector.enabled, Settings.FALSE ) );
         return (GraphDatabaseAPI) builder.newGraphDatabase();
     }
 
