@@ -92,6 +92,11 @@ public abstract class GraphDatabaseSettings
                  "This mode still requires write access to the directory for lock purposes.")
     public static final Setting<Boolean> read_only = setting( "dbms.read_only", BOOLEAN, FALSE );
 
+    @Title("Disconnected")
+    @Internal
+    @Description("Disable all protocol connectors.")
+    public static final Setting<Boolean> disconnected = setting( "unsupported.dbms.disconnected", BOOLEAN, FALSE );
+
     @Description("Print out the effective Neo4j configuration after startup.")
     @Internal
     public static final Setting<Boolean> dump_configuration = setting("unsupported.dbms.report_configuration", BOOLEAN, FALSE );

@@ -19,10 +19,6 @@
  */
 package org.neo4j.logging;
 
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.StringDescription;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,9 +29,15 @@ import java.util.Set;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.StringDescription;
+
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+
 import static org.apache.commons.lang3.StringEscapeUtils.escapeJava;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.equalTo;
@@ -244,6 +246,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
     private static final Matcher<Level> WARN_LEVEL_MATCHER = equalTo( Level.WARN );
     private static final Matcher<Level> ERROR_LEVEL_MATCHER = equalTo( Level.ERROR );
     private static final Matcher<Level> ANY_LEVEL_MATCHER = any( Level.class );
+    private static final Matcher<String> ANY_MESSAGE_MATCHER = any( String.class );
     private static final Matcher<Object[]> NULL_ARGUMENTS_MATCHER = nullValue( Object[].class );
     private static final Matcher<Object[]> ANY_ARGUMENTS_MATCHER = any( Object[].class );
     private static final Matcher<Throwable> NULL_THROWABLE_MATCHER = nullValue( Throwable.class );
@@ -402,6 +405,14 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         public LogMatcher error( Matcher<String> format, Object... arguments )
         {
             return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, format, arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
+        }
+
+        public LogMatcher any()
+        {
+            return new LogMatcher(
+                    contextMatcher, ANY_LEVEL_MATCHER, ANY_MESSAGE_MATCHER,
+                    anyOf( NULL_ARGUMENTS_MATCHER, ANY_ARGUMENTS_MATCHER ),
+                    anyOf( NULL_THROWABLE_MATCHER, ANY_THROWABLE_MATCHER ) );
         }
 
         @SuppressWarnings( "unchecked" )
