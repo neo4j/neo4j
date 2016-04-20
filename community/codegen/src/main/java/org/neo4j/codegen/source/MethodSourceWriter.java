@@ -159,6 +159,18 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
+    public void beginIfNull( Expression test )
+    {
+        beginIf(Expression.eq(test, Expression.constant( null ), TypeReference.OBJECT));
+    }
+
+    @Override
+    public void beginIfNonNull( Expression test )
+    {
+        beginIfNot(Expression.eq(test, Expression.constant( null ), TypeReference.OBJECT));
+    }
+
+    @Override
     public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block)
     {
 
@@ -312,6 +324,21 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         append( ") : (" );
         onFalse.accept( this );
         append( "))" );
+    }
+
+    @Override
+    public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
+    {
+        ternary( Expression.eq( test, Expression.constant( null ), TypeReference.OBJECT ),
+                onTrue, onFalse );
+    }
+
+    @Override
+    public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
+    {
+        ternary( Expression.not(
+                Expression.eq( test, Expression.constant( null ), TypeReference.OBJECT )),
+                onTrue, onFalse );
     }
 
     @Override

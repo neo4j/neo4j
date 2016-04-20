@@ -177,6 +177,18 @@ public class CodeBlock implements AutoCloseable
         return new CodeBlock( this );
     }
 
+    public CodeBlock ifNullStatement( Expression test )
+    {
+        emit( e -> e.beginIfNull( test ) );
+        return new CodeBlock( this );
+    }
+
+    public CodeBlock ifNonNullStatement( Expression test )
+    {
+        emit( e -> e.beginIfNonNull( test ) );
+        return new CodeBlock( this );
+    }
+
     public void tryCatch( Consumer<CodeBlock> body, Consumer<CodeBlock> onError, Parameter exception )
     {
         emit( e -> e.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ),

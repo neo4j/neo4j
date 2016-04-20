@@ -45,6 +45,18 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
   val modes = Seq(SourceCode.SOURCECODE, SourceCode.BYTECODE)
   val ops = Seq(
     Operation("create rel extractor", _.createRelExtractor("foo")),
+    Operation("nullable object", m => {
+      m.declare("foo", symbols.CTAny)
+      m.generator.assign(typeRef[Object], "bar",
+                         m.nullable("foo", symbols.CTAny, Expression.constant("hello")))
+
+    }),
+    Operation("nullable node", m => {
+      m.declare("foo", symbols.CTNode)
+      m.generator.assign(typeRef[Long], "bar",
+                         m.nullable("foo", symbols.CTNode, m.load("foo")))
+
+    }),
     Operation("use a LongsToCount probe table", m => {
       m.declare("a", symbols.CTNode)
       m.allocateProbeTable("table", LongsToCountTable)

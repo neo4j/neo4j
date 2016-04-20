@@ -710,6 +710,72 @@ public class CodeGenerationTest
     }
 
     @Test
+    public void shouldGenerateIfNullStatement() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
+                    param( Object.class, "test" ), param( Runnable.class, "runner" ) ) )
+            {
+                try ( CodeBlock doStuff = conditional.ifNullStatement( conditional.load( "test" ) ) )
+                {
+                    doStuff.expression(
+                            invoke( doStuff.load( "runner" ), RUN ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable runner1 = mock( Runnable.class );
+        Runnable runner2 = mock( Runnable.class );
+
+        // when
+        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", Object.class, Runnable.class );
+        conditional.invoke( null, runner1 );
+        conditional.invoke( new Object(), runner2 );
+
+        // then
+        verify( runner1 ).run();
+        verifyZeroInteractions( runner2 );
+    }
+
+    @Test
+    public void shouldGenerateIfNonNullStatement() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( void.class, "conditional",
+                    param( Object.class, "test" ), param( Runnable.class, "runner" ) ) )
+            {
+                try ( CodeBlock doStuff = conditional.ifNonNullStatement( conditional.load( "test" ) ) )
+                {
+                    doStuff.expression(
+                            invoke( doStuff.load( "runner" ), RUN ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable runner1 = mock( Runnable.class );
+        Runnable runner2 = mock( Runnable.class );
+
+        // when
+        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", Object.class, Runnable.class );
+        conditional.invoke( new Object(), runner1 );
+        conditional.invoke( null, runner2 );
+
+        // then
+        verify( runner1 ).run();
+        verifyZeroInteractions( runner2 );
+    }
+
+    @Test
     public void shouldGenerateTryWithNestedWhileIfLoop() throws Throwable
     {
         // given
@@ -942,6 +1008,82 @@ public class CodeGenerationTest
 
         TernaryChecker checker2 = new TernaryChecker();
         assertThat( ternary.invoke( false, checker2 ), equalTo( "on false" ) );
+        assertFalse( checker2.ranOnTrue );
+        assertTrue( checker2.ranOnFalse );
+    }
+
+    @Test
+    public void shouldHandleTernaryOnNullOperator() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock ternaryBlock = simple.generateMethod( String.class, "ternary",
+                    param( Object.class, "test" ), param( TernaryChecker.class, "check" ) ) )
+            {
+                ternaryBlock.returns(
+                        Expression.ternaryOnNull( ternaryBlock.load( "test" ),
+                                invoke( ternaryBlock.load( "check" ),
+                                        methodReference( TernaryChecker.class, String.class, "onTrue" ) ),
+                                invoke( ternaryBlock.load( "check" ),
+                                        methodReference( TernaryChecker.class, String.class, "onFalse" ) ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle ternary =
+                instanceMethod( handle.newInstance(), "ternary", Object.class, TernaryChecker.class );
+
+        // then
+        TernaryChecker checker1 = new TernaryChecker();
+        assertThat( ternary.invoke( null, checker1 ), equalTo( "on true" ) );
+        assertTrue( checker1.ranOnTrue );
+        assertFalse( checker1.ranOnFalse );
+
+
+        TernaryChecker checker2 = new TernaryChecker();
+        assertThat( ternary.invoke( new Object(), checker2 ), equalTo( "on false" ) );
+        assertFalse( checker2.ranOnTrue );
+        assertTrue( checker2.ranOnFalse );
+    }
+
+    @Test
+    public void shouldHandleTernaryOnNonNullOperator() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock ternaryBlock = simple.generateMethod( String.class, "ternary",
+                    param( Object.class, "test" ), param( TernaryChecker.class, "check" ) ) )
+            {
+                ternaryBlock.returns(
+                        Expression.ternaryOnNonNull( ternaryBlock.load( "test" ),
+                                invoke( ternaryBlock.load( "check" ),
+                                        methodReference( TernaryChecker.class, String.class, "onTrue" ) ),
+                                invoke( ternaryBlock.load( "check" ),
+                                        methodReference( TernaryChecker.class, String.class, "onFalse" ) ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle ternary =
+                instanceMethod( handle.newInstance(), "ternary", Object.class, TernaryChecker.class );
+
+        // then
+        TernaryChecker checker1 = new TernaryChecker();
+        assertThat( ternary.invoke( new Object(), checker1 ), equalTo( "on true" ) );
+        assertTrue( checker1.ranOnTrue );
+        assertFalse( checker1.ranOnFalse );
+
+
+        TernaryChecker checker2 = new TernaryChecker();
+        assertThat( ternary.invoke( null, checker2 ), equalTo( "on false" ) );
         assertFalse( checker2.ranOnTrue );
         assertTrue( checker2.ranOnFalse );
     }

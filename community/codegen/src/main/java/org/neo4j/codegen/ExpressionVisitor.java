@@ -41,6 +41,10 @@ public interface ExpressionVisitor
 
     void ternary( Expression test, Expression onTrue, Expression onFalse );
 
+    void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse );
+
+    void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse );
+
     void eq( Expression lhs, Expression rhs, TypeReference type );
 
     void or( Expression lhs, Expression rhs );

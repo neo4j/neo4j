@@ -188,23 +188,24 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     body.returns()
   }
 
-  override def materializeNode(nodeIdVar: String) = Expression
-    .invoke(nodeManager, Methods.newNodeProxyById, generator.load(nodeIdVar))
+  override def materializeNode(nodeIdVar: String) =
+    Expression.invoke(nodeManager, Methods.newNodeProxyById, generator.load(nodeIdVar))
 
   override def node(nodeIdVar: String) = Templates.newInstance(typeRef[NodeIdWrapper], generator.load(nodeIdVar))
 
-  override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = {
-    Expression.ternary(
-      Expression.eq(nullValue(cypherType), generator.load(varName), lowerType(cypherType)),
-      Expression.constant(null),
-      onSuccess)
+  override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = cypherType match {
+    case symbols.CTNode | symbols.CTRelationship =>
+      Expression.ternary(
+        Expression.eq(nullValue(cypherType), generator.load(varName), lowerType(cypherType)),
+        nullValue(cypherType),
+        onSuccess)
+    case _ => Expression.ternaryOnNull(generator.load(varName), Expression.constant(null), onSuccess)
   }
 
-  override def materializeRelationship(relIdVar: String) = Expression
-    .invoke(nodeManager, Methods.newRelationshipProxyById, generator.load(relIdVar))
+  override def materializeRelationship(relIdVar: String) =
+    Expression.invoke(nodeManager, Methods.newRelationshipProxyById, generator.load(relIdVar))
 
-  override def relationship(relIdVar: String) = Templates
-    .newInstance(typeRef[RelationshipIdWrapper], generator.load(relIdVar))
+  override def relationship(relIdVar: String) = Templates.newInstance(typeRef[RelationshipIdWrapper], generator.load(relIdVar))
 
   override def trace[V](planStepId: String)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
   else {
@@ -431,11 +432,10 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       generator.expression(
         Expression.pop(
           Expression.invoke(generator.load(tableVar), Methods.countingTableCompositeKeyPut,
-                            generator.load(keyName), Expression.ternary(
-              Expression.eq(generator.load(countName), Expression.constant(null), typeRef[Object]),
-              Expression.invoke(Methods.boxInteger,
-                                Expression.constant(1)),
-              Expression.invoke(Methods.boxInteger,
+                            generator.load(keyName),
+                            Expression.ternaryOnNull(generator.load(countName),
+                                                     Expression.invoke(Methods.boxInteger,
+                                Expression.constant(1)), Expression.invoke(Methods.boxInteger,
                                 Expression.addInts(
                                   Expression.invoke(generator.load(countName), Methods.unboxInteger),
                                   Expression.constant(1)))))))
@@ -464,10 +464,10 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                                                                          Expression.newArray(typeRef[Long],
                                                                          keyVars.map(generator.load): _*)))))
       generator.assign(times,
-                       Expression.ternary(
-                         Expression.eq(generator.load(intermediate.name()), Expression.constant(null), typeRef[Object]),
+                       Expression.ternaryOnNull(
+                        intermediate,
                          Expression.constant(-1),
-                         Expression.invoke(generator.load(intermediate.name()), Methods.unboxInteger)))
+                         Expression.invoke(intermediate, Methods.unboxInteger)))
 
       using(generator.whileLoop(Expression.gt(times, Expression.constant(0), typeRef[Int]))) { body =>
         block(copy(generator = body))
@@ -483,8 +483,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
       generator.assign(list, Expression.invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar)))
-      using(generator.ifNotStatement(Expression.eq(list, Expression.constant(null), typeRef[Object])))
-      { onTrue =>
+      using(generator.ifNonNullStatement(list)) { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (local, field) =>
@@ -508,8 +507,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                                   Expression.newArray(typeRef[Long],
                                     keyVars.map(generator.load): _*))
                          )))
-      using(generator.ifNotStatement(Expression.eq(list, Expression.constant(null), typeRef[Object])))
-      { onTrue =>
+      using(generator.ifNonNullStatement(list)) { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (local, field) =>
@@ -543,7 +541,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
                        Expression.invoke(
                          generator.load(tableVar), hashTable.get,
                          generator.load(keyVar))))
-      using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName), typeRef[Object]))) { onTrue => // if (null == list)
+      using(generator.ifNullStatement(list)) { onTrue => // if (null == list)
         // list = new ListType();
         onTrue.assign(list, Templates.newInstance(hashTable.listType))
         onTrue.expression(
@@ -571,7 +569,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
       generator.assign(list,
                        Expression.cast(hashTable.listType,
                         Expression.invoke(generator.load(tableVar), hashTable.get, generator.load(keyName))))
-      using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName), typeRef[Object])))
+      using(generator.ifNullStatement(generator.load(listName)))
       { onTrue => // if (null == list)
         // list = new ListType();
         onTrue.assign(list, Templates.newInstance(hashTable.listType))

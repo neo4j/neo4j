@@ -85,6 +85,18 @@ public abstract class BaseExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
+    public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
+    {
+
+    }
+
+    @Override
+    public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
+    {
+
+    }
+
+    @Override
     public void eq( Expression lhs, Expression rhs, TypeReference type )
     {
 

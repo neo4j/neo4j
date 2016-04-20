@@ -196,6 +196,22 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     }
 
     @Override
+    public void beginIfNull( Expression test )
+    {
+        callSuperIfNecessary();
+        test.accept( expressionVisitor );
+        beginConditional( IFNONNULL );
+    }
+
+    @Override
+    public void beginIfNonNull( Expression test )
+    {
+        callSuperIfNecessary();
+        test.accept( expressionVisitor );
+        beginConditional( IFNULL );
+    }
+
+    @Override
     public void endBlock()
     {
         callSuperIfNecessary();

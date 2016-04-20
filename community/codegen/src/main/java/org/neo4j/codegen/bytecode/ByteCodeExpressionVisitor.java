@@ -199,15 +199,19 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     @Override
     public void ternary( Expression test, Expression onTrue, Expression onFalse )
     {
-        test.accept( this );
-        Label l0 = new Label();
-        methodVisitor.visitJumpInsn( IFEQ, l0 );
-        onTrue.accept( this );
-        Label l1 = new Label();
-        methodVisitor.visitJumpInsn( GOTO, l1 );
-        methodVisitor.visitLabel( l0 );
-        onFalse.accept( this );
-        methodVisitor.visitLabel( l1 );
+        ternaryExpression( IFEQ, test, onTrue, onFalse );
+    }
+
+    @Override
+    public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
+    {
+       ternaryExpression( IFNONNULL, test, onTrue, onFalse );
+    }
+
+    @Override
+    public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
+    {
+        ternaryExpression( IFNULL, test, onTrue, onFalse );
     }
 
     @Override
@@ -430,8 +434,16 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
 
     private void pushInteger( int integer )
     {
-        if ( integer < 6 && integer >= 0 )
+        if ( integer < 6 && integer >= -1 )
         {
+            //LOAD fast, specialized constant instructions
+            //ICONST_M1 = 2;
+            //ICONST_0 = 3;
+            //ICONST_1 = 4;
+            //ICONST_2 = 5;
+            //ICONST_3 = 6;
+            //ICONST_4 = 7;
+            //ICONST_5 = 8;
             methodVisitor.visitInsn( ICONST_0 + integer );
         }
         else if ( integer < Byte.MAX_VALUE && integer > Byte.MIN_VALUE )
@@ -515,23 +527,16 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
         }
     }
 
-    private int findAdder( TypeReference type )
+    private void ternaryExpression(int op, Expression test, Expression onTrue, Expression onFalse)
     {
-        switch ( type.simpleName() )
-        {
-        case "int":
-        case "byte":
-        case "short":
-        case "char":
-            return IADD;
-        case "long":
-            return LADD;
-        case "float":
-            return FADD;
-        case "double":
-            return DADD;
-        default:
-            throw new IllegalStateException( "Addition is only supported for primitive number types" );
-        }
+        test.accept( this );
+        Label l0 = new Label();
+        methodVisitor.visitJumpInsn( op, l0 );
+        onTrue.accept( this );
+        Label l1 = new Label();
+        methodVisitor.visitJumpInsn( GOTO, l1 );
+        methodVisitor.visitLabel( l0 );
+        onFalse.accept( this );
+        methodVisitor.visitLabel( l1 );
     }
 }

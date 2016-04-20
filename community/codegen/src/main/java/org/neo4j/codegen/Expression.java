@@ -237,6 +237,30 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    public static Expression ternaryOnNull( final Expression test, final Expression onTrue, final Expression onFalse )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.ternaryOnNull( test, onTrue, onFalse );
+            }
+        };
+    }
+
+    public static Expression ternaryOnNonNull( final Expression test, final Expression onTrue, final Expression onFalse )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.ternaryOnNonNull( test, onTrue, onFalse );
+            }
+        };
+    }
+
     public static Expression ternary( final Expression test, final Expression onTrue, final Expression onFalse )
     {
         return new Expression()
