@@ -155,7 +155,6 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
     {
         long id = channel.getLong();
 
-
         RelationshipRecord before = readRelationshipRecord( id, channel );
         if ( before == null )
         {
@@ -400,16 +399,11 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
 
     private NodeRecord readNodeRecord( long id, ReadableChannel channel ) throws IOException
     {
-        byte inUseFlag = channel.get();
-        boolean inUse = false;
-        if ( inUseFlag == Record.IN_USE.byteValue() )
-        {
-            inUse = true;
-        }
-        else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
-        {
-            throw new IOException( "Illegal in use flag: " + inUseFlag );
-        }
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean requiresSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+
         NodeRecord record;
         Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
         long labelField = Record.NO_LABELS_FIELD.intValue();
@@ -419,6 +413,11 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             record = new NodeRecord( id, dense, channel.getLong(), channel.getLong() );
             // labels
             labelField = channel.getLong();
+            record.setRequiresSecondaryUnit( requiresSecondaryUnit );
+            if( hasSecondaryUnit )
+            {
+                record.setSecondaryUnitId( channel.getLong() );
+            }
         }
         else
         {
@@ -450,7 +449,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             byte extraByte = channel.get();
             record.setFirstInFirstChain( (extraByte & 0x1) > 0 );
             record.setFirstInSecondChain( (extraByte & 0x2) > 0 );
-            if (hasSecondaryUnit)
+            if ( hasSecondaryUnit )
             {
                 record.setSecondaryUnitId( channel.getLong() );
             }
