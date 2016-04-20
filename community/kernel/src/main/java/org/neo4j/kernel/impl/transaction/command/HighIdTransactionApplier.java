@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.kernel.impl.transaction.command.Command.BaseCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -45,6 +46,8 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCo
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.TokenCommand;
 import org.neo4j.storageengine.api.Token;
+
+import static java.lang.Math.max;
 
 public class HighIdTransactionApplier extends TransactionApplier.Adapter
 {
@@ -129,7 +132,7 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
         SchemaStore schemaStore = neoStores.getSchemaStore();
         for ( DynamicRecord record : command.getRecordsAfter() )
         {
-            track( schemaStore, record.getId() );
+            track( schemaStore, record );
         }
         return false;
     }
@@ -145,8 +148,9 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
         }
     }
 
-    private void track( RecordStore<?> store, long id )
+    private void track( RecordStore<?> store, AbstractBaseRecord record )
     {
+        long id = max( record.getId(), record.requiresSecondaryUnit() ? record.getSecondaryUnitId() : -1 );
         HighId highId = highIds.get( store );
         if ( highId == null )
         {
@@ -158,23 +162,23 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
         }
     }
 
-    private void track( RecordStore<?> store, Command command )
+    private <RECORD extends AbstractBaseRecord> void track( RecordStore<RECORD> store, BaseCommand<RECORD> command )
     {
-        track( store, command.getKey() );
+        track( store, command.getAfter() );
     }
 
     private void track( RecordStore<?> store, Collection<? extends AbstractBaseRecord> records )
     {
         for ( AbstractBaseRecord record : records )
         {
-            track( store, record.getId() );
+            track( store, record );
         }
     }
 
     private <RECORD extends TokenRecord, TOKEN extends Token>
     void trackToken( TokenStore<RECORD, TOKEN> tokenStore, TokenCommand<RECORD> tokenCommand )
     {
-        track( tokenStore, tokenCommand );
+        track( tokenStore, tokenCommand.getAfter() );
         track( tokenStore.getNameStore(), tokenCommand.getAfter().getNameRecords() );
     }
 
