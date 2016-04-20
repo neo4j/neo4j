@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema.sampler;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
@@ -86,6 +87,7 @@ public class NonUniqueLuceneIndexSamplerTest
         Terms bTerms = getTerms( "b", 3 );
         Map<String,Terms> fieldTermsMap = MapUtil.genericMap( "string", aTerms, "id", idTerms, "array", bTerms );
         IndexReaderStub indexReader = new IndexReaderStub( new SamplingFields( fieldTermsMap ) );
+        indexReader.setElements( new String[4] );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
 
         assertEquals( new IndexSample( 4, 2, 4 ), createSampler().sampleIndex() );
