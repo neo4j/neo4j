@@ -30,7 +30,6 @@ import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
