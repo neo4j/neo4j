@@ -38,6 +38,8 @@ public interface EntityWriteOperations
 
     void nodeDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException;
 
+    int nodeDetachDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException;
+
     void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException;
 
     /**

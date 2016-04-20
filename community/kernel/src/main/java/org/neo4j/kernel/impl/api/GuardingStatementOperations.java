@@ -82,6 +82,13 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public int nodeDetachDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException
+    {
+        guard.check();
+        return entityWriteDelegate.nodeDetachDelete( state, nodeId );
+    }
+
+    @Override
     public void relationshipDelete( KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
         guard.check();

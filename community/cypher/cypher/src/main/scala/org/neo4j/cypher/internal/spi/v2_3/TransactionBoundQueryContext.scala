@@ -43,7 +43,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api._
+import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
@@ -312,7 +312,20 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
-      statement.dataWriteOperations().nodeDelete(obj.getId)
+      try {
+        statement.dataWriteOperations().nodeDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
+      }
+    }
+
+    def detachDelete(obj: Node): Int = {
+      try {
+        statement.dataWriteOperations().nodeDetachDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
+        0
+      }
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =
@@ -355,8 +368,14 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   class RelationshipOperations extends BaseOperations[Relationship] {
     def delete(obj: Relationship) {
-      statement.dataWriteOperations().relationshipDelete(obj.getId)
+      try {
+        statement.dataWriteOperations().relationshipDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // the relationship has been deleted by another transaction, oh well...
+      }
     }
+
+    override def detachDelete(obj: Relationship): Int = ??? // not supported for relationships
 
     def propertyKeyIds(id: Long): Iterator[Int] =
       asScala(statement.readOperations().relationshipGetPropertyKeys(id))

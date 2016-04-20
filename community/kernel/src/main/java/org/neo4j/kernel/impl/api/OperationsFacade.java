@@ -859,6 +859,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public int nodeDetachDelete( long nodeId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataWrite().nodeDetachDelete( statement, nodeId );
+    }
+
+    @Override
     public long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
             throws RelationshipTypeIdNotFoundKernelException, EntityNotFoundException
     {
