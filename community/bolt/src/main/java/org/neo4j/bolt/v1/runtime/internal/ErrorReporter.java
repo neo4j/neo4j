@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.runtime.internal;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
@@ -30,8 +29,6 @@ import static java.lang.String.format;
  */
 class ErrorReporter
 {
-    private static final String EMPTY_STRING = "";
-
     private final Log userLog;
     private final Log debugLog;
 
@@ -49,20 +46,15 @@ class ErrorReporter
 
     public void report( Neo4jError error )
     {
-        if ( !error.status().code().classification().publishable() )
+        if ( error.status().code().classification().refersToLog() )
         {
-            userLog.error( format( "Client triggered an unexpected error: %s. See debug.log for more details.",
-                    error.cause().getMessage() ) );
-        }
+            userLog.error( "Client triggered an unexpected error [%s]: %s. " +
+                            "See debug.log for more details, reference %s.",
+                    error.status(), error.message(), error.reference() );
 
-        if ( somethingToLog( error ) )
-        {
-            debugLog.error( Exceptions.stringify( error.cause() ) );
+            debugLog.error( format( "Client triggered an unexpected error [%s]: %s, reference %s.",
+                    error.status(), error.message(), error.reference() ),
+                    error.cause() );
         }
-    }
-
-    private boolean somethingToLog( Neo4jError error )
-    {
-        return error != null && error.cause() != null;
     }
 }

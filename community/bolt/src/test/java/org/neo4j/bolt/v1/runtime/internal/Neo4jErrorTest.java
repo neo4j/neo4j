@@ -25,9 +25,22 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class Neo4jErrorTest
 {
+    @Test
+    public void shouldAssignUnknownStatusToUnpredictedException()
+    {
+        // Given
+        Throwable cause = new Throwable( "This is not an error we know how to handle." );
+        Neo4jError error = Neo4jError.from( cause );
+
+        // Then
+        assertThat( error.status(), equalTo( (Status) Status.General.UnknownError ) );
+    }
+
     @Test
     public void shouldConvertDeadlockException() throws Throwable
     {
