@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.sampler;
 
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -58,7 +59,8 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
     protected IndexSample performSampling() throws IndexNotFoundKernelException
     {
         NonUniqueIndexSampler sampler = new NonUniqueIndexSampler( indexSamplingConfig.bufferSize() );
-        for ( LeafReaderContext readerContext : indexSearcher.getIndexReader().leaves() )
+        IndexReader indexReader = indexSearcher.getIndexReader();
+        for ( LeafReaderContext readerContext : indexReader.leaves() )
         {
             try
             {
@@ -83,8 +85,9 @@ public class NonUniqueLuceneIndexSampler extends LuceneIndexSampler
                 throw new RuntimeException( e );
             }
         }
+        Thread.dumpStack();
 
-        return sampler.result();
+        return sampler.result( indexReader.numDocs() );
     }
 
     private static Set<String> getFieldNamesToSample( LeafReaderContext readerContext ) throws IOException

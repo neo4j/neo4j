@@ -206,10 +206,11 @@ public class IndexSamplingIntegrationTest
         try
         {
             // Then
-            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir().getAbsolutePath() );
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
+            CountsTracker countsTracker = api.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                    .testAccessNeoStores().getCounts();
             IndexStatisticsKey key = CountsKeyFactory.indexStatisticsKey( 0, 0 ); // cheating a bit...
             return countsTracker.get( key, Registers.newDoubleLongRegister() );
         }
