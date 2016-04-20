@@ -201,7 +201,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   }
 }
 
-private object Templates {
+object Templates {
 
   import GeneratedQueryStructure.{method, param, staticField, typeRef}
 
@@ -226,20 +226,30 @@ private object Templates {
       }
     }, new Consumer[CodeBlock]() {
       override def accept(handle: CodeBlock) = {
-                handle.throwException(Expression.invoke(
-                  Expression.newInstance(typeRef[CypherExecutionException]),
-                  MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
-                  Expression.invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
-                                    Expression.invoke(
-                                      Expression.newInstance(typeRef[StatementTokenNameLookup]),
-                                      MethodReference
-                                        .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-                                      Expression.get(handle.self(), ro))), handle.load("e")
-                ))
+        handle.expression(Expression.invoke(handle.self(), close))
+        handle.throwException(Expression.invoke(
+          Expression.newInstance(typeRef[CypherExecutionException]),
+          MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
+          Expression
+            .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
+                    Expression.invoke(
+                      Expression.newInstance(typeRef[StatementTokenNameLookup]),
+                      MethodReference
+                        .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
+                      Expression.get(handle.self(), ro))), handle.load("e")
+        ))
       }
     }, param[KernelException]("e"))
 
     result
+  }
+
+  def tryCatch(generate: CodeBlock)(tryBlock :CodeBlock => Unit)(exception: Parameter)(catchBlock :CodeBlock => Unit): Unit = {
+    generate.tryCatch(new Consumer[CodeBlock] {
+      override def accept(body: CodeBlock) = tryBlock(body)
+    }, new Consumer[CodeBlock]() {
+      override def accept(handle: CodeBlock) = catchBlock(handle)
+    }, exception)
   }
 
   val incoming = Expression.get(staticField[Direction, Direction](Direction.INCOMING.name()))

@@ -187,13 +187,20 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
   override def setInRow(column: String, value: Expression) =
     generator.expression(Expression.invoke(resultRow, Methods.set, Expression.constant(column), value))
 
-  override def visitorAccept() = using(
-    generator.ifNotStatement(Expression.invoke(generator.load("visitor"),
-                                               Methods.visit, generator.load("row")))) { body =>
-    // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
-    body.expression(Expression.invoke(body.self(), fields.success))
-    body.expression(Expression.invoke(body.self(), fields.close))
-    body.returns()
+  override def visitorAccept() = {
+    Templates.tryCatch(generator) { onSuccess =>
+      using(
+        onSuccess.ifNotStatement(Expression.invoke(onSuccess.load("visitor"),
+                                                   Methods.visit, onSuccess.load("row")))) { body =>
+        // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
+        body.expression(Expression.invoke(body.self(), fields.success))
+        body.expression(Expression.invoke(body.self(), fields.close))
+        body.returns()
+      }
+    }(exception = param[Throwable]("e")) { handle =>
+      handle.expression(Expression.invoke(handle.self(), fields.close))
+      handle.throwException(handle.load("e"))
+    }
   }
 
   override def materializeNode(nodeIdVar: String) =
