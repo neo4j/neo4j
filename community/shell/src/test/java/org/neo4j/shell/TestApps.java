@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -65,27 +64,6 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 
 public class TestApps extends AbstractShellTest
 {
-    // TODO: FIX THIS BEFORE MERGE
-    @Test @Ignore("I don't get how pwd is supposed to work, and subsequently don't grok how to fix this test.")
-    public void variationsOfCdAndPws() throws Exception
-    {
-        Relationship[] relationships = createRelationshipChain( 3 );
-        executeCommand( "mknode --cd" );
-        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ) ) );
-        executeCommandExpectingException( "cd " + getStartNode( relationships[0] ).getId(), "stand" );
-        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ) ) );
-        executeCommand( "cd " + getEndNode( relationships[0] ).getId() );
-        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ), getEndNode( relationships[0] ) ) );
-        executeCommandExpectingException( "cd " + getEndNode( relationships[2] ).getId(), "connected" );
-        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ), getEndNode( relationships[0] ) ) );
-        executeCommand( "cd -a " + getEndNode( relationships[2] ).getId() );
-        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ), getEndNode( relationships[0] ), getEndNode( relationships[2] ) ) );
-        executeCommand( "cd .." );
-        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ), getEndNode( relationships[0] ) ) );
-        executeCommand( "cd " + getEndNode( relationships[1] ).getId() );
-        executeCommand( "pwd", pwdOutputFor( getStartNode( relationships[0] ), getEndNode( relationships[0] ), getEndNode( relationships[1] ) ) );
-    }
-
     @Test
     public void canSetPropertiesAndLsWithFilters() throws Exception
     {
@@ -370,7 +348,8 @@ public class TestApps extends AbstractShellTest
         node.createRelationshipTo( otherNode, RELATIONSHIP_TYPE );
         finishTx();
 
-        executeCommand( "MATCH n WHERE id(n) = " + node.getId() + " optional match p=n-[r*]-m RETURN p;", "\\d+ ms" );
+        executeCommand( "MATCH (n) WHERE id(n) = " + node.getId() + " optional match p=(n)-[r*]-(m) RETURN p;",
+                "\\d+ ms", "1 row" );
     }
 
     @Test
@@ -548,19 +527,20 @@ public class TestApps extends AbstractShellTest
         assertThat( findNodesByLabelAndProperty( label( "Person" ), "name", "Andres", db ), hasSize( 1 ) );
     }
 
-
     @Test
     public void use_cypher_periodic_commit() throws Exception
     {
         File file = File.createTempFile( "file", "csv", null );
         try ( PrintWriter writer = new PrintWriter( file ) )
         {
-            String url = file.toURI().toURL().toString().replace("\\", "\\\\");
-            writer.println("1,2,3");
-            writer.println("4,5,6");
+            String url = file.toURI().toURL().toString().replace( "\\", "\\\\" );
+            writer.println( "1,2,3" );
+            writer.println( "4,5,6" );
+            writer.close();
 
             // WHEN
-            executeCommand( "USING PERIODIC COMMIT 100 LOAD CSV FROM '" + url + "' AS line CREATE ();" );
+            executeCommand( "USING PERIODIC COMMIT 100 LOAD CSV FROM '" + url + "' AS line CREATE ();",
+                    "Nodes created: 2" );
         }
         catch ( ShellException e )
         {
@@ -1232,13 +1212,35 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canUseForeach() throws Exception
     {
-        executeCommand( "FOREACH (x in range(0,10) | CREATE ()));" );
+        executeCommand( "FOREACH(x in range(0,10) | CREATE ());" );
     }
 
     @Test
-    public void canUseCommandsWithoutSpaceBeforeLeftParenthesis() throws Exception
+    public void use_cypher_periodic_commit2() throws Exception
     {
-        executeCommand( "FOREACH(x in range(0,10) | CREATE ()));" );
+        File file = File.createTempFile( "file", "csv", null );
+        try ( PrintWriter writer = new PrintWriter( file ) )
+        {
+            String url = file.toURI().toURL().toString().replace("\\", "\\\\");
+            writer.println("apa,2,3");
+            writer.println("4,5,6");
+            writer.close();
+
+            // WHEN
+            executeCommand( "cypher planner=rule USING PERIODIC COMMIT 100 " +
+                            "LOAD CSV FROM '" + url + "' AS line " +
+                            "CREATE () " +
+                            "RETURN line;", "apa" );
+        }
+        catch ( ShellException e )
+        {
+            // THEN NOT
+            fail( "Failed to execute PERIODIC COMMIT query" );
+        }
+        finally
+        {
+            file.delete();
+        }
     }
 
     @Test

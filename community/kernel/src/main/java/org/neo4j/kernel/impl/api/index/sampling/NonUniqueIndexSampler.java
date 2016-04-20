@@ -78,6 +78,11 @@ public class NonUniqueIndexSampler
 
     public IndexSample result()
     {
+        return result( -1 );
+    }
+
+    public IndexSample result( int numDocs )
+    {
         if ( !values.isEmpty() )
         {
             nextStep();
@@ -86,7 +91,7 @@ public class NonUniqueIndexSampler
         long uniqueValues = sampledSteps != 0 ? accumulatedUniqueValues / sampledSteps : 0;
         long sampledSize = sampledSteps != 0 ? accumulatedSampledSize / sampledSteps : 0;
 
-        return new IndexSample( accumulatedSampledSize, uniqueValues, sampledSize );
+        return new IndexSample( numDocs < 0 ? accumulatedSampledSize : numDocs, uniqueValues, sampledSize );
     }
 
     private void nextStep()

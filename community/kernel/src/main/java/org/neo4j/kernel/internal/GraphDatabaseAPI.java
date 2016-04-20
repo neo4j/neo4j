@@ -24,6 +24,9 @@ import java.net.URL;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
 
 /**
@@ -49,4 +52,6 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 
     String getStoreDir();
+
+    InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode );
 }

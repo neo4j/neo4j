@@ -56,6 +56,9 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AccessMode;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.StoreId;
 
@@ -86,6 +89,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     private static UnsupportedOperationException readOnlyException()
     {
         return new UnsupportedOperationException( "Read only Graph Database!" );
+    }
+
+    @Override
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, AccessMode accessMode )
+    {
+        return actual.beginTransaction( type, accessMode );
     }
 
     @Override

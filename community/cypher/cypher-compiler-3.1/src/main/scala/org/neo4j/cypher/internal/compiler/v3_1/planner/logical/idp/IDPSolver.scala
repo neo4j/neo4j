@@ -77,7 +77,11 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     def findBestCandidateInBlock(blockSize: Int): (Goal, Result) = {
       val blockCandidates: Iterable[(Goal, Result)] = LazyIterable(table.plansOfSize(blockSize)).toSeq
       val bestInBlock = goalSelector(blockCandidates)
-      bestInBlock.getOrElse(throw new IllegalStateException("Found no solution for block"))
+      bestInBlock.getOrElse {
+        throw new IllegalStateException(
+          s"""Found no solution for block with size $blockSize,
+              |$blockCandidates were the selected candidates from the table $table""".stripMargin)
+      }
     }
 
     def compactBlock(original: Goal, candidate: Result): Unit = {

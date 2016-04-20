@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_1.CostBasedPlannerName
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
@@ -27,8 +28,17 @@ import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.exceptions.ProcedureException
+import org.neo4j.kernel.api.proc.CallableProcedure.Context
+import org.neo4j.kernel.api.proc.CallableProcedure.Context.KERNEL_TRANSACTION
+import org.neo4j.kernel.api.proc.ProcedureSignature.FieldSignature
+import org.neo4j.kernel.api.proc.{CallableProcedure, Neo4jTypes, ProcedureSignature}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.test.TestGraphDatabaseFactory
+
+import scala.collection.immutable.Map
 
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
@@ -202,13 +212,11 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
     // when
     db.execute("return 1").close()
-
     // then
     txBridge(service).hasTransaction shouldBe false
 
     // when
     engine.execute("return 1", Map.empty[String, Object], service.session()).close()
-
     // then
     txBridge(service).hasTransaction shouldBe false
 
@@ -230,7 +238,6 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     txBridge(service).hasTransaction shouldBe false
 
     // when
-
     engine.execute("profile return 1", Map.empty[String, Object], service.session()).close()
     // then
     txBridge(service).hasTransaction shouldBe false
@@ -269,7 +276,339 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
     // when
     engine.execute("explain return 1", Map.empty[String, Object], service.session()).javaIterator.close()
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
 
+  test("should not leak transaction when closing the result for a procedure query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    procedures(service).register(new AllNodesProcedure())
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    db.execute("CALL org.neo4j.bench.getAllNodes()").close()
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).close()
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).javaIterator.close()
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when closing the result for a profile procedure query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    procedures(service).register(new AllNodesProcedure())
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    db.execute("profile CALL org.neo4j.bench.getAllNodes()").close()
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("profile CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).close()
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("profile CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).javaIterator.close()
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when closing the result for an explain procedure query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    procedures(service).register(new AllNodesProcedure())
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    db.execute("explain CALL org.neo4j.bench.getAllNodes()").close()
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("explain CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).close()
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("explain CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).javaIterator.close()
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when consuming the whole iterator for a regular query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    import scala.collection.JavaConverters._
+    // when
+    db.execute("return 1").asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("return 1", Map.empty[String, Object], service.session()).length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("return 1", Map.empty[String, Object], service.session()).javaIterator.asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when consuming the whole iterator for a profile query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    import scala.collection.JavaConverters._
+    // when
+    db.execute("profile return 1").asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("profile return 1", Map.empty[String, Object], service.session()).length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("profile return 1", Map.empty[String, Object], service.session()).javaIterator.asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when consuming the whole iterator for an explain query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    import scala.collection.JavaConverters._
+    // when
+    db.execute("explain return 1").asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("explain return 1", Map.empty[String, Object], service.session()).length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("explain return 1", Map.empty[String, Object], service.session()).javaIterator.asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when consuming the whole iterator for a procedure query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    procedures(service).register(new AllNodesProcedure())
+    txBridge(service).hasTransaction shouldBe false
+
+    import scala.collection.JavaConverters._
+    // when
+    db.execute("CALL org.neo4j.bench.getAllNodes()").asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).javaIterator.asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when consuming the whole iterator for a profile procedure query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    procedures(service).register(new AllNodesProcedure())
+    txBridge(service).hasTransaction shouldBe false
+
+    import scala.collection.JavaConverters._
+    // when
+    db.execute("profile CALL org.neo4j.bench.getAllNodes()").asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("profile CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("profile CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).javaIterator.asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when consuming the whole iterator for an explain procedure query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    procedures(service).register(new AllNodesProcedure())
+    txBridge(service).hasTransaction shouldBe false
+
+    import scala.collection.JavaConverters._
+    // when
+    db.execute("explain CALL org.neo4j.bench.getAllNodes()").asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("explain CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("explain CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).javaIterator.asScala.length
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when visiting the result for a regular query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    // when
+    db.execute("return 1").accept(consumerVisitor)
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("return 1", Map.empty[String, Object], service.session()).accept(consumerVisitor)
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when visiting the result for a profile query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    // when
+    db.execute("profile return 1").accept(consumerVisitor)
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("profile return 1", Map.empty[String, Object], service.session()).accept(consumerVisitor)
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when visiting the result for an explain query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    // when
+    db.execute("explain return 1").accept(consumerVisitor)
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("explain return 1", Map.empty[String, Object], service.session()).accept(consumerVisitor)
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when visiting the result for a procedure query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    procedures(service).register(new AllNodesProcedure())
+    txBridge(service).hasTransaction shouldBe false
+
+    db.execute("CALL org.neo4j.bench.getAllNodes()").accept(consumerVisitor)
+
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).accept(consumerVisitor)
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when visiting the result for a profile procedure query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    procedures(service).register(new AllNodesProcedure())
+    txBridge(service).hasTransaction shouldBe false
+
+    db.execute("profile CALL org.neo4j.bench.getAllNodes()").accept(consumerVisitor)
+
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("profile CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).accept(consumerVisitor)
+    // then
+    txBridge(service).hasTransaction shouldBe false
+  }
+
+  test("should not leak transaction when visiting the result for an explain procedure query") {
+    //given
+    val db = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    val service = new GraphDatabaseCypherService(db)
+    val engine = new ExecutionEngine(service)
+
+    procedures(service).register(new AllNodesProcedure())
+    txBridge(service).hasTransaction shouldBe false
+
+    db.execute("explain CALL org.neo4j.bench.getAllNodes()").accept(consumerVisitor)
+
+    // then
+    txBridge(service).hasTransaction shouldBe false
+
+    // when
+    engine.execute("explain CALL org.neo4j.bench.getAllNodes()", Map.empty[String, Object], service.session()).accept(consumerVisitor)
     // then
     txBridge(service).hasTransaction shouldBe false
   }
@@ -303,6 +642,10 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     db.shutdown()
   }
 
+  private val consumerVisitor = new ResultVisitor[RuntimeException] {
+    override def visit(row: ResultRow): Boolean = true
+  }
+
   private implicit class RichDb(db: GraphDatabaseCypherService) {
     def planDescriptionForQuery(query: String) = {
       val res = db.execute(query)
@@ -313,5 +656,43 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
   private def txBridge(db: GraphDatabaseQueryService) = {
     db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+  }
+
+  private def procedures(db: GraphDatabaseQueryService) = {
+    db.getDependencyResolver.resolveDependency(classOf[Procedures])
+  }
+
+  class AllNodesProcedure extends CallableProcedure {
+    import scala.collection.JavaConverters._
+
+    private val results = Map[String, AnyRef]("node" -> Neo4jTypes.NTInteger)
+    val procedureName = new ProcedureSignature.ProcedureName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
+    val emptySignature = List.empty[ProcedureSignature.FieldSignature].asJava
+    val signature: ProcedureSignature = new ProcedureSignature(
+      procedureName, paramSignature, resultSignature, ProcedureSignature.Mode.READ_ONLY)
+
+    def paramSignature = List.empty[ProcedureSignature.FieldSignature].asJava
+
+    def resultSignature = results.keys.foldLeft(List.empty[FieldSignature]) { (fields, entry) =>
+      fields :+ new FieldSignature(entry, results(entry).asInstanceOf[Neo4jTypes.AnyType])
+    }.asJava
+
+    override def apply(context: Context, objects: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+      val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
+      val readOperations = statement.readOperations
+      val nodes = readOperations.nodesGetAll()
+      var count = 0
+      new RawIterator[Array[AnyRef], ProcedureException] {
+        override def next(): Array[AnyRef] = {
+          count = count + 1
+          Array(new java.lang.Long(nodes.next()))
+        }
+
+        override def hasNext: Boolean = {
+          if (!nodes.hasNext) statement.close()
+          nodes.hasNext
+        }
+      }
+    }
   }
 }

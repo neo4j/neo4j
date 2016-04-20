@@ -62,7 +62,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
       try { resultAsMap( executionResults.next( ) ) }
       catch { case e: NoSuchElementException => success(); throw e }
 
-    override def hasNext: Boolean = if (executionResults.hasNext) true else { success(); false }
+    override def hasNext: Boolean = if (executionResults.hasNext) true else { success(); close(); false }
   }
 
   override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
