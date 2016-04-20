@@ -94,7 +94,8 @@ trait MethodStructure[E] {
 
   // object handling
   def markAsNull(varName: String, cypherType: CypherType): Unit
-  def nullable(varName: String, cypherType: CypherType, onSuccess: E): E
+  def nullablePrimitive(varName: String, cypherType: CypherType, onSuccess: E): E
+  def nullableReference(varName: String, cypherType: CypherType, onSuccess: E): E
   def notNull(name: String, cypherType: CypherType): E
   def box(expression:E, cypherType: CypherType): E
   def toFloat(expression:E): E
@@ -138,6 +139,7 @@ trait MethodStructure[E] {
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit
   def forEach(varName: String, cypherType: CypherType, iterable: E)(block: MethodStructure[E] => Unit): Unit
   def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
+  def ifNotStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ternaryOperator(test:E, onSuccess:E, onError: E): E
   def returnSuccessfully(): Unit
 

@@ -151,6 +151,12 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     }
   }
 
+  override def ifNotStatement(test: Expression)(block: (MethodStructure[Expression]) => Unit) = {
+    using(generator.ifNotStatement(test)) { body =>
+      block(copy(generator = body))
+    }
+  }
+
   override def ternaryOperator(test: Expression, onTrue: Expression, onFalse: Expression): Expression =
     Expression.ternary(test, onTrue, onFalse)
 
@@ -193,11 +199,20 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
 
   override def node(nodeIdVar: String) = Templates.newInstance(typeRef[NodeIdWrapper], generator.load(nodeIdVar))
 
-  override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = cypherType match {
+  override def nullablePrimitive(varName: String, cypherType: CypherType, onSuccess: Expression) = cypherType match {
     case symbols.CTNode | symbols.CTRelationship =>
       Expression.ternary(
         Expression.eq(nullValue(cypherType), generator.load(varName), lowerType(cypherType)),
         nullValue(cypherType),
+        onSuccess)
+    case _ => Expression.ternaryOnNull(generator.load(varName), Expression.constant(null), onSuccess)
+  }
+
+  override def nullableReference(varName: String, cypherType: CypherType, onSuccess: Expression) = cypherType match {
+    case symbols.CTNode | symbols.CTRelationship =>
+      Expression.ternary(
+        Expression.eq(nullValue(cypherType), generator.load(varName), lowerType(cypherType)),
+        Expression.constant(null),
         onSuccess)
     case _ => Expression.ternaryOnNull(generator.load(varName), Expression.constant(null), onSuccess)
   }

@@ -48,14 +48,23 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
     Operation("nullable object", m => {
       m.declare("foo", symbols.CTAny)
       m.generator.assign(typeRef[Object], "bar",
-                         m.nullable("foo", symbols.CTAny, Expression.constant("hello")))
+                         m.nullablePrimitive("foo", symbols.CTAny, Expression.constant("hello")))
 
     }),
     Operation("nullable node", m => {
       m.declare("foo", symbols.CTNode)
       m.generator.assign(typeRef[Long], "bar",
-                         m.nullable("foo", symbols.CTNode, m.load("foo")))
+                         m.nullablePrimitive("foo", symbols.CTNode, m.load("foo")))
 
+    }),
+    Operation("mark variables as null", m => {
+      m.declareFlag("flag", initialValue = false)
+      m.updateFlag("flag", newValue = true)
+      m.ifNotStatement(m.generator.load("flag")) { ifBody =>
+        //mark variables as null
+       ifBody.markAsNull("node", symbols.CTNode)
+       ifBody.markAsNull("object", symbols.CTAny)
+      }
     }),
     Operation("use a LongsToCount probe table", m => {
       m.declare("a", symbols.CTNode)

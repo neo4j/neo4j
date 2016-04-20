@@ -34,13 +34,15 @@ case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: St
 
     structure.incrementDbHits()
     if (nodeVariable.nullable)
-      structure.nullable(nodeVariable.name, nodeVariable.cypherType,
-                         structure.hasLabel(nodeVariable.name, labelVariable, localName))
+      structure.nullableReference(nodeVariable.name, nodeVariable.cypherType,
+                                  structure.box(
+                                    structure.hasLabel(nodeVariable.name, labelVariable, localName), CTBoolean))
     else
       structure.hasLabel(nodeVariable.name, labelVariable, localName)
   }
 
   override def nullable(implicit context: CodeGenContext) = nodeVariable.nullable
 
-  override def cypherType(implicit context: CodeGenContext): CypherType = CTBoolean
+  override def cypherType(implicit context: CodeGenContext): CypherType =
+    if (nullable) CTAny else CTBoolean
 }

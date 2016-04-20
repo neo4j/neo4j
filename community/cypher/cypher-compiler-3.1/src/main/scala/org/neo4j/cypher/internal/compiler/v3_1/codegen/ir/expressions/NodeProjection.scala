@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.{Variable, CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure, Variable}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
@@ -30,12 +30,12 @@ case class NodeProjection(nodeIdVar: Variable) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) ={
     if (nodeIdVar.nullable)
-      structure.nullable(nodeIdVar.name, nodeIdVar.cypherType, structure.materializeNode(nodeIdVar.name))
+      structure.nullableReference(nodeIdVar.name, nodeIdVar.cypherType, structure.materializeNode(nodeIdVar.name))
     else
       structure.materializeNode(nodeIdVar.name)
   }
 
   override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
 
-  override def cypherType(implicit context: CodeGenContext) = CTNode
+  override def cypherType(implicit context: CodeGenContext) = CTAny
 }
