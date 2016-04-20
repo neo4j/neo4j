@@ -93,8 +93,9 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> read_only = setting( "dbms.read_only", BOOLEAN, FALSE );
 
     @Title("Disconnected")
+    @Internal
     @Description("Disable all protocol connectors.")
-    public static final Setting<Boolean> disconnected = setting( "dbms.disconnected", BOOLEAN, FALSE );
+    public static final Setting<Boolean> disconnected = setting( "unsupported.dbms.disconnected", BOOLEAN, FALSE );
 
     @Description("Print out the effective Neo4j configuration after startup.")
     @Internal
