@@ -24,11 +24,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import javax.swing.*;
 
 import org.neo4j.desktop.model.DesktopModel;
 import org.neo4j.desktop.model.LastLocation;
 import org.neo4j.desktop.model.SysTrayListener;
+import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DatabaseActions;
 
 import static javax.swing.SwingUtilities.invokeLater;
@@ -86,6 +88,15 @@ public class MainWindow extends JFrame
         setupComponents();
 
         updateStatus( STOPPED );
+
+        try
+        {
+            model.setDatabaseDirectory( new File( LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() ) ) );
+        }
+        catch ( UnsuitableDirectoryException e )
+        {
+            e.printStackTrace();
+        }
     }
 
     private JPanel createRootPanel( JTextField directoryDisplay, JButton browseButton, Component statusPanel,
@@ -99,6 +110,7 @@ public class MainWindow extends JFrame
     private void createComponents()
     {
         directoryDisplay = createUnmodifiableTextField( LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() ), 35 );
+
 
         optionsButton = createOptionsButton();
         browseButton = createBrowseButton();
