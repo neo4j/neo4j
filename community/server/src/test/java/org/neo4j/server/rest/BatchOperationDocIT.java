@@ -748,9 +748,9 @@ public class BatchOperationDocIT extends AbstractRestFunctionalDocTestBase
                 JsonNode errors = result.get(0).get("body").get("errors");
 
                 assertTrue( "Results not an array", results.isArray() );
-                assertTrue( "Results not empty", 0 == results.size() );
+                assertEquals( 0, results.size() );
                 assertTrue( "Errors not an array", errors.isArray() );
-                assertTrue("Didn't find exactly one error", 1 == errors.size());
+                assertEquals( 1, errors.size() );
 
                 String errorCode = errors.get(0).get("code").getTextValue();
                 assertEquals( "Neo.ClientError.Statement.SemanticError", errorCode );
