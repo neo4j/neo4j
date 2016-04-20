@@ -55,6 +55,7 @@ public class DesktopConfigurator
                 Optional.of( installation.getConfigurationsFile() ),
                 FormattedLog.toOutputStream( System.out ),
                 (settings) -> settings.put( GraphDatabaseSettings.neo4j_home.name(), dbDir.getAbsolutePath() ),
+                pair( GraphDatabaseSettings.neo4j_lib.name(), dbDir.getAbsolutePath() + "/bin" ),
                 pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) );
     }
 
