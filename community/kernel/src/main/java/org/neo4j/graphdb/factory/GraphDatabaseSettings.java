@@ -87,6 +87,11 @@ public abstract class GraphDatabaseSettings
     public static final Setting<File> neo4j_home =
             setting( "unsupported.dbms.directories.neo4j_home", PATH, NO_DEFAULT );
 
+    @Internal
+    @Description("Directory to be added to the classpath.")
+    public static final Setting<File> neo4j_lib =
+            setting( "dbms.directories.lib", PATH, NO_DEFAULT );
+
     @Title("Read only database")
     @Description("Only allow read operations from this Neo4j instance. " +
                  "This mode still requires write access to the directory for lock purposes.")
