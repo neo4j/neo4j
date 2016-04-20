@@ -26,8 +26,7 @@ import org.neo4j.desktop.config.portable.Environment;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
-
-import static org.apache.commons.lang.StringUtils.join;
+import static org.neo4j.helpers.ArrayUtil.join;
 
 class WindowsEnvironment extends Environment
 {
