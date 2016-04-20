@@ -19,9 +19,10 @@
  */
 package org.neo4j.backup;
 
-import java.io.IOException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
+
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.ObjectSerializer;
@@ -50,7 +51,7 @@ import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
 class BackupClient extends Client<TheBackupInterface> implements TheBackupInterface
 {
 
-    static final long BIG_READ_TIMEOUT = 40 * 1000;
+    static final long BIG_READ_TIMEOUT = TimeUnit.MINUTES.toMillis( 20 );
 
     public BackupClient( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
             LogProvider logProvider, StoreId storeId, long timeout,
