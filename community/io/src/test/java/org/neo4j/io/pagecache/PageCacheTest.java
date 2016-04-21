@@ -32,6 +32,8 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
@@ -42,7 +44,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,11 +56,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.randomharness.PageCountRecordFormat;
-import org.neo4j.io.pagecache.randomharness.Phase;
-import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
 import org.neo4j.io.pagecache.randomharness.Record;
-import org.neo4j.io.pagecache.randomharness.RecordFormat;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -67,7 +64,6 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.test.RepeatRule;
 
 import static java.lang.Long.toHexString;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -84,14 +80,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.randomharness.Command.FlushCache;
-import static org.neo4j.io.pagecache.randomharness.Command.FlushFile;
-import static org.neo4j.io.pagecache.randomharness.Command.MapFile;
-import static org.neo4j.io.pagecache.randomharness.Command.ReadMulti;
-import static org.neo4j.io.pagecache.randomharness.Command.ReadRecord;
-import static org.neo4j.io.pagecache.randomharness.Command.UnmapFile;
-import static org.neo4j.io.pagecache.randomharness.Command.WriteMulti;
-import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
@@ -3955,7 +3943,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue( linked.next() );
             writeRecords( parent );
             writeRecords( linked );
-            PageCursor secondLinked = parent.openLinkedCursor( 2 );
+            parent.openLinkedCursor( 2 );
 
             // should cause out of bounds condition because it should be closed by our opening of another linked cursor
             linked.putByte( 0, (byte) 1 );
@@ -3969,7 +3957,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             PageCursor linked = parent.openLinkedCursor( 1 );
             assertTrue( parent.next() );
             assertTrue( linked.next() );
-            PageCursor secondLinked = parent.openLinkedCursor( 2 );
+            parent.openLinkedCursor( 2 );
 
             // should cause out of bounds condition because it should be closed by our opening of another linked cursor
             linked.getByte( 0 );
@@ -4012,5 +4000,47 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    // TODO paged file must be able to present itself as a ReadableByteChannel
+    @Test
+    public void readableByteChannelMustBeOpenUntilClosed() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            ReadableByteChannel channel;
+            try ( ReadableByteChannel ch = pf.openReadableByteChannel() )
+            {
+                assertTrue( ch.isOpen() );
+                channel = ch;
+            }
+            assertFalse( channel.isOpen() );
+        }
+    }
+
+    @Test
+    public void readableByteChannelMustReadAllBytesInFile() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              ReadableByteChannel channel = pf.openReadableByteChannel() )
+        {
+            verifyRecordsInFile( channel, recordCount );
+        }
+    }
+
+    @Test( expected = ClosedChannelException.class )
+    public void readingFromClosedReadableByteChannelMustThrow() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            ReadableByteChannel channel = pf.openReadableByteChannel();
+            channel.close();
+            channel.read( ByteBuffer.allocate( recordSize ) );
+            fail( "That read should have thrown" );
+        }
+    }
 }
