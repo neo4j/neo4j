@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -209,7 +210,7 @@ public class UpgradableDatabaseTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String> versions()
         {
-            return Arrays.asList( "v0.9.5", "v0.A.4" );
+            return Arrays.asList( "v0.9.5", "v0.A.4", "vE.H.0" );
         }
 
         @Rule
@@ -258,8 +259,16 @@ public class UpgradableDatabaseTest
             catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )
             {
                 // then
+                assertFalse( version.startsWith( "vE" ) );
                 File expectedFile = new File( workingDirectory, neostoreFilename ).getAbsoluteFile();
                 assertEquals( String.format( MESSAGE, expectedFile, version ), e.getMessage() );
+            }
+            catch ( StoreUpgrader.UnexpectedUpgradingStoreFormatException e )
+            {
+                // then
+                assertTrue( version.startsWith( "vE" ) );
+                assertEquals( String.format( StoreUpgrader.UnexpectedUpgradingStoreFormatException.MESSAGE,
+                        GraphDatabaseSettings.record_format.name() ), e.getMessage() );
             }
         }
     }
