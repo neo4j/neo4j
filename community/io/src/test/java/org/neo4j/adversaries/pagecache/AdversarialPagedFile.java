@@ -21,6 +21,7 @@ package org.neo4j.adversaries.pagecache;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Objects;
 
 import org.neo4j.adversaries.Adversary;
@@ -91,5 +92,11 @@ class AdversarialPagedFile implements PagedFile
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
         delegate.close();
+    }
+
+    @Override
+    public ReadableByteChannel openReadableByteChannel()
+    {
+        throw new UnsupportedOperationException( "Not implemented for AdversarialPagedFile" );
     }
 }
