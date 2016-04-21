@@ -28,6 +28,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.PagedReadableByteChannel;
 
 /**
  * A {@linkplain PagedFile paged file} that wraps another paged file and an {@linkplain Adversary adversary} to provide
@@ -37,12 +38,12 @@ import org.neo4j.io.pagecache.PagedFile;
  * or {@link IOException} like {@link FileNotFoundException}.
  */
 @SuppressWarnings( "unchecked" )
-class AdversarialPagedFile implements PagedFile
+public class AdversarialPagedFile implements PagedFile
 {
     private final PagedFile delegate;
     private final Adversary adversary;
 
-    AdversarialPagedFile( PagedFile delegate, Adversary adversary )
+    public AdversarialPagedFile( PagedFile delegate, Adversary adversary )
     {
         this.delegate = Objects.requireNonNull( delegate );
         this.adversary = Objects.requireNonNull( adversary );
@@ -95,8 +96,8 @@ class AdversarialPagedFile implements PagedFile
     }
 
     @Override
-    public ReadableByteChannel openReadableByteChannel()
+    public ReadableByteChannel openReadableByteChannel() throws IOException
     {
-        throw new UnsupportedOperationException( "Not implemented for AdversarialPagedFile" );
+        return new PagedReadableByteChannel( this );
     }
 }
