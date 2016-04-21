@@ -52,7 +52,6 @@ class SettingsDialog extends JDialog
         this.model = model;
 
         getContentPane().add( withSpacingBorder( withBoxLayout( BoxLayout.Y_AXIS, createPanel(
-                createCommandPromptPanel( createCommandPromptButton() ),
                 createEditDatabaseConfigPanel( createEditDatabaseConfigurationButton() ),
                 createEditVmOptionsPanel( createEditVmOptionsButton() ),
                 createExtensionsPanel( createOpenPluginsDirectoryButton() ),
