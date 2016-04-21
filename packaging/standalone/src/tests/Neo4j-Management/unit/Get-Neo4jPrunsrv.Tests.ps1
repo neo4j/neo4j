@@ -55,7 +55,8 @@ InModuleScope Neo4j-Management {
     }
 
     Context "PRUNSRV arguments" {
-      $serverObject = global:New-MockNeo4jInstall
+      $mockLib = 'mock_lib'
+      $serverObject = global:New-MockNeo4jInstall -Lib $mockLib
 
       It "return //IS/xxx argument on service install" {
         $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall
@@ -73,6 +74,12 @@ InModuleScope Neo4j-Management {
         $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForConsole
 
         $prunsrv.args -join ' ' | Should Match ([regex]::Escape("//TS//$($global:mockServiceName)"))
+      }
+
+      It "return configured lib ClassPath for service install" {
+        $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $serverObject -ForServerInstall
+
+        $prunsrv.args -join ' ' | Should Match ([regex]::Escape("--ClassPath=$($mockLib)/*"))
       }
     }
 

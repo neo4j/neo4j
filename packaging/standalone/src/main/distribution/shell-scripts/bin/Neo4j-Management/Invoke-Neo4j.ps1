@@ -74,9 +74,11 @@ Function Invoke-Neo4j
       
       $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jHome -ErrorAction Stop
       if ($thisServer -eq $null) { throw "Unable to determine the Neo4j Server installation information" }
-      Write-Verbose "Neo4j Server Type is '$($thisServer.ServerType)'"
-      Write-Verbose "Neo4j Version is '$($thisServer.ServerVersion)'"
-      Write-Verbose "Neo4j Database Mode is '$($thisServer.DatabaseMode)'"
+      # Verbose output of the Neo4j server properties
+      Get-Member -InputObject $thisServer -MemberType NoteProperty | ForEach-Object {
+        $value = $thisServer."$($_.Name)"
+        Write-Verbose "Neo4j $($_.Name) is '$($value)'"
+      }
 
       # Check if we have administrative rights; If the current user's token contains the Administrators Group SID (S-1-5-32-544)
       if (-not [bool](([System.Security.Principal.WindowsIdentity]::GetCurrent()).groups -match "S-1-5-32-544")) {
