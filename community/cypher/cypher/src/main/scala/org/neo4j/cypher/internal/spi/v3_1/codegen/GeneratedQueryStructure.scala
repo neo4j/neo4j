@@ -300,8 +300,9 @@ object Templates {
     returns(get(self(), typeRef[ExecutionMode], "executionMode")).
     build()
   val EXECUTION_PLAN_DESCRIPTION = MethodTemplate.method(typeRef[InternalPlanDescription], "executionPlanDescription").
-    returns(invoke(get(self(), typeRef[Provider[InternalPlanDescription]], "description"),
-                   method[Provider[InternalPlanDescription], InternalPlanDescription]("get"))).
+    returns(cast( typeRef[InternalPlanDescription],
+      invoke(get(self(), typeRef[Provider[InternalPlanDescription]], "description"),
+                   method[Provider[InternalPlanDescription], Object]("get")))).
     build()
   val JAVA_COLUMNS = MethodTemplate.method(typeRef[util.List[String]], "javaColumns").
     returns(get(typeRef[util.List[String]], "COLUMNS")).

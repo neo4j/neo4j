@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{QualifiedProcedureName, GraphStatistics}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, QualifiedProcedureName}
 import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
@@ -38,7 +38,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
     createNode()
-
     val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN n")
 
     assertRows(3)(result)("AllNodesScan", "ProduceResults")

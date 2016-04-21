@@ -105,10 +105,12 @@ trait CodeGenSugar extends MockitoSugar {
     rows
   }
 
+  def codeGenConfiguration = CodeGenConfiguration(mode = SourceCodeMode)
+
   def compile(instructions: Seq[Instruction], columns: Seq[String], operatorIds: Map[String, Id] = Map.empty): GeneratedQuery = {
     //In reality the same namer should be used for construction Instruction as in generating code
     //these tests separate the concerns so we give this namer non-standard prefixes
-    CodeGenerator.generateCode(GeneratedQueryStructure)(instructions, operatorIds, columns, CodeGenConfiguration())(
+    CodeGenerator.generateCode(GeneratedQueryStructure)(instructions, operatorIds, columns, codeGenConfiguration)(
       new CodeGenContext(new SemanticTable(), Map.empty, new Namer(
         new AtomicInteger(0), varPrefix = "TEST_VAR", methodPrefix = "TEST_METHOD"))).query
   }

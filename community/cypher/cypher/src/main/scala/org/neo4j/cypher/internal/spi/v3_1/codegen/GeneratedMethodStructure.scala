@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
-case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: AuxGenerator, tracing: Boolean = false,
+case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: AuxGenerator, tracing: Boolean = true,
                                     event: Option[String] = None, var locals: Map[String, LocalVariable] = Map.empty)
                                    (implicit context: CodeGenContext)
   extends MethodStructure[Expression] {
@@ -236,9 +236,7 @@ case class GeneratedMethodStructure(fields: Fields, generator: CodeBlock, aux: A
     val eventName = s"event_$planStepId"
     generator.assign(typeRef[QueryExecutionEvent], eventName, traceEvent(planStepId))
     val result = block(copy(event = Some(eventName), generator = generator))
-    Expression.invoke(tracer, Methods.executeOperator,
-                      Expression.invoke(generator.load(eventName),
-                                        GeneratedQueryStructure.method[QueryExecutionEvent, Unit]("close")))
+    generator.expression(Expression.invoke(generator.load(eventName), GeneratedQueryStructure.method[QueryExecutionEvent, Unit]("close")))
     result
   }
 
