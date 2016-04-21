@@ -48,6 +48,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.adversaries.RandomAdversary;
+import org.neo4j.adversaries.pagecache.AdversarialPagedFile;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
@@ -4026,6 +4028,24 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
               ReadableByteChannel channel = pf.openReadableByteChannel() )
         {
             verifyRecordsInFile( channel, recordCount );
+        }
+    }
+
+    @RepeatRule.Repeat( times = 20 )
+    @Test
+    public void readableByteChannelMustReadAllBytesInFileConsistently() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            RandomAdversary adversary = new RandomAdversary( 0.9, 0, 0 );
+            AdversarialPagedFile apf = new AdversarialPagedFile( pf, adversary );
+            try ( ReadableByteChannel channel = apf.openReadableByteChannel() )
+            {
+                verifyRecordsInFile( channel, recordCount );
+            }
         }
     }
 

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.io.pagecache.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,7 +27,7 @@ import java.nio.channels.ReadableByteChannel;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-final class PagedReadableByteChannel implements ReadableByteChannel
+public final class PagedReadableByteChannel implements ReadableByteChannel
 {
     private final PageCursor cursor;
     private boolean open = true;
