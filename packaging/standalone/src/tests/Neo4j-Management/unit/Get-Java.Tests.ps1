@@ -169,7 +169,8 @@ InModuleScope Neo4j-Management {
 
     # Utility Invoke
     Context "Utility Invoke" {
-      $serverObject = global:New-MockNeo4jInstall -ServerVersion '99.99' -ServerType 'Community'
+      $mockLib = 'mock_lib'
+      $serverObject = global:New-MockNeo4jInstall -ServerVersion '99.99' -ServerType 'Community' -Lib $mockLib
 
       $result = Get-Java -ForUtility -StartingClass 'someclass' -Neo4jServer $serverObject -ErrorAction Stop
       $resultArgs = ($result.args -join ' ')
@@ -178,7 +179,7 @@ InModuleScope Neo4j-Management {
         $resultArgs | Should Match ([regex]::Escape('\bin\bin1.jar"'))
       }
       It "should have jars from lib" {
-        $resultArgs | Should Match ([regex]::Escape('\lib\lib1.jar"'))
+        $resultArgs | Should Match ([regex]::Escape('\' + $mockLib + '\lib1.jar"'))
       }
       It "should have correct Starting Class" {
         $resultArgs | Should Match ([regex]::Escape(' someclass'))
