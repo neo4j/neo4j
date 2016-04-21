@@ -34,6 +34,7 @@ import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -52,6 +53,7 @@ import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
+    static final String CUSTOM_IO_EXCEPTION_MESSAGE = "Online Backup not allowed with custom IO integration";
 
     private Object startBindingListener;
     private Object bindingListener;
@@ -121,6 +123,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
     {
         if ( config.<Boolean>get( OnlineBackupSettings.online_backup_enabled ) )
         {
+            CustomIOConfigValidator.assertCustomIOConfigNotUsed( config, CUSTOM_IO_EXCEPTION_MESSAGE );
+
             try
             {
                 server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ),

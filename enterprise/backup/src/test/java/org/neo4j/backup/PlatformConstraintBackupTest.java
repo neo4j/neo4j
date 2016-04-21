@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.TargetDirectory;
@@ -48,18 +49,30 @@ public class PlatformConstraintBackupTest
     }
 
     @Test
-    public void shouldFailToStartWithCustomIOConfigurationTest()
+    public void shouldFailToStartWithCustomIOConfiguration()
     {
         try
         {
-            createGraphDatabaseService();
+            GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDir );
+            builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
+            builder.setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" );
+            builder.newGraphDatabase();
             fail( "Should not have created database with custom IO configuration and online backup." );
         }
         catch ( RuntimeException ex )
         {
-            assertEquals( OnlineBackupExtensionFactory.CUSTOM_IO_EXCEPTION_MESSAGE,
+            assertEquals( OnlineBackupKernelExtension.CUSTOM_IO_EXCEPTION_MESSAGE,
                     ex.getCause().getCause().getMessage() );
         }
+    }
+
+    @Test
+    public void shouldNotFailToStartWithCustomIOConfigurationWhenOnlineBackupIsDisabled() throws Exception
+    {
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDir );
+        builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+        builder.setConfig( GraphDatabaseSettings.pagecache_swapper, "custom" );
+        builder.newGraphDatabase().shutdown();
     }
 
     private GraphDatabaseService createGraphDatabaseService()
