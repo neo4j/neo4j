@@ -510,12 +510,17 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     /**
      * Returns the next id for this store's {@link IdGenerator}.
      *
-     * @return The next free id, or -1 if not initialized
+     * @return The next free id
+     * @throws IllegalStateException if {@link IdGenerator} is null
      */
     @Override
     public long nextId()
     {
-        return idGenerator != null ? idGenerator.nextId() : -1;
+        if ( idGenerator == null )
+        {
+            throw new IllegalStateException( "IdGenerator is not initialized" );
+        }
+        return idGenerator.nextId();
     }
 
     /**
