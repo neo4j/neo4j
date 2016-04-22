@@ -34,6 +34,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.server.web.JettyThreadCalculator;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.HTTP;
 import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
@@ -53,6 +54,7 @@ import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
+import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description("Settings used by the server configuration")
@@ -118,9 +120,11 @@ public interface ServerSettings
                 .findFirst();
     }
 
-    @Description("Number of Neo4j worker threads.")
-    Setting<Integer> webserver_max_threads = setting( "dbms.threads.worker_count",
-            INTEGER, "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ), min( 1 ) );
+    @Description( "Number of Neo4j worker threads, your OS might enforce a lower limit than the maximum value " +
+            "specified here." )
+    Setting<Integer> webserver_max_threads = setting( "dbms.threads.worker_count", INTEGER,
+            "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ),
+            range( 1, JettyThreadCalculator.MAX_THREADS ) );
 
     @Description("If execution time limiting is enabled in the database, this configures the maximum request execution time.")
     @Internal
