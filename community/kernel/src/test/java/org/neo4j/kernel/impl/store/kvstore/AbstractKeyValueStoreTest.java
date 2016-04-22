@@ -440,7 +440,6 @@ public class AbstractKeyValueStoreTest
         update.accept( transaction );
     }
 
-
     static DataProvider data( final Entry... data )
     {
         return new DataProvider()

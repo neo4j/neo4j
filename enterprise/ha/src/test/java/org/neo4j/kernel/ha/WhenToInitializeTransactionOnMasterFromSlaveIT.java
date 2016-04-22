@@ -87,20 +87,17 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
             // Then
             assertDidntStartMasterTx();
 
-
             // When
             count(node.getLabels());
 
             // Then
             assertDidntStartMasterTx();
 
-
             // When
             readAllRels( node );
 
             // Then
             assertDidntStartMasterTx();
-
 
             // When
             readEachProperty(node);

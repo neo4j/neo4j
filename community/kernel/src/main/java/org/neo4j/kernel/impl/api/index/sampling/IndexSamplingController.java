@@ -118,7 +118,6 @@ public class IndexSamplingController
         }
     }
 
-
     private void tryScheduleSampling( IndexMap indexMap )
     {
         if ( tryEmptyLock() )

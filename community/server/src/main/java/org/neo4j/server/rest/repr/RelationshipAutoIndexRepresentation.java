@@ -25,19 +25,19 @@ import org.neo4j.server.rest.web.RestfulGraphDatabase;
 
 public class RelationshipAutoIndexRepresentation extends IndexRepresentation {
 
-	public RelationshipAutoIndexRepresentation() {
-		super("", Collections.EMPTY_MAP);
-	}
+    public RelationshipAutoIndexRepresentation() {
+        super("", Collections.EMPTY_MAP);
+    }
 
-	@Override
+    @Override
     protected String path()
     {
-	    return RestfulGraphDatabase.PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.RELATIONSHIP_AUTO_INDEX_TYPE) + "/";
+        return RestfulGraphDatabase.PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.RELATIONSHIP_AUTO_INDEX_TYPE) + "/";
     }
-	
-	@Override
-	protected String propertyContainerType() {
-		return null;
-	}
+
+    @Override
+    protected String propertyContainerType() {
+        return null;
+    }
 
 }

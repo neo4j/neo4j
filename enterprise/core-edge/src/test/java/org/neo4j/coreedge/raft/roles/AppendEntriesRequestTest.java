@@ -285,7 +285,6 @@ public class AppendEntriesRequestTest
                 .leaderCommit( 0 )
                 .build(), state, log() );
 
-
         // then
         assertFalse( ((Response) messageFor( outcome, leader )).success() );
         assertThat( outcome.getLogCommands(), empty() );

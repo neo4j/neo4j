@@ -138,7 +138,6 @@ public class RelationshipProxy extends PropertyContainerProxy implements Relatio
         return endNode;
     }
 
-
     @Override
     public GraphDatabaseService getGraphDatabase()
     {

@@ -37,7 +37,7 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
     {
         this( iterators.iterator() );
     }
-    
+
    public CombiningIterator( Iterator<? extends Iterator<T>> iterators )
    {
         this.iterators = iterators;

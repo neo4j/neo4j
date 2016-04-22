@@ -29,138 +29,138 @@ import java.util.Arrays;
  */
 public interface ValueFormatter<T>
 {
-	/**
-	 * Format a string.
-	 * @param value
-	 *            the string to format.
-	 * @return a formatted version of the given string.
-	 */
-	T formatString( String value );
+    /**
+     * Format a string.
+     * @param value
+     *            the string to format.
+     * @return a formatted version of the given string.
+     */
+    T formatString( String value );
 
-	/**
-	 * Format a string array.
-	 * @param array
-	 *            the string array to format.
-	 * @return a formatted version of the given string array.
-	 */
-	T formatStringArray( String[] array );
+    /**
+     * Format a string array.
+     * @param array
+     *            the string array to format.
+     * @return a formatted version of the given string array.
+     */
+    T formatStringArray( String[] array );
 
-	/**
-	 * Format a boxed primitive.
-	 * @param type
-	 *            an object representing the type of the primitive.
-	 * @param value
-	 *            the boxed primitive object to format.
-	 * @return a formatted version of the given value.
-	 */
-	T formatBoxedPrimitive( PropertyType type, Object value );
+    /**
+     * Format a boxed primitive.
+     * @param type
+     *            an object representing the type of the primitive.
+     * @param value
+     *            the boxed primitive object to format.
+     * @return a formatted version of the given value.
+     */
+    T formatBoxedPrimitive( PropertyType type, Object value );
 
-	/**
-	 * Format an array of primitives.
-	 * @param elementType
-	 *            an object representing the type of the elements of the array.
-	 * @param array
-	 *            the array to format.
-	 * @return a formatted version of the given array.
-	 */
-	T formatPrimitiveArray( PropertyType elementType, Object array );
+    /**
+     * Format an array of primitives.
+     * @param elementType
+     *            an object representing the type of the elements of the array.
+     * @param array
+     *            the array to format.
+     * @return a formatted version of the given array.
+     */
+    T formatPrimitiveArray( PropertyType elementType, Object array );
 
-	/**
-	 * Format an array of boxed primitives.
-	 * @param elementType
-	 *            an object representing the type of the elements of the array.
-	 * @param array
-	 *            the array to format.
-	 * @return a formatted version of the given array.
-	 */
-	T formatBoxedPrimitiveArray( PropertyType elementType, Object[] array );
+    /**
+     * Format an array of boxed primitives.
+     * @param elementType
+     *            an object representing the type of the elements of the array.
+     * @param array
+     *            the array to format.
+     * @return a formatted version of the given array.
+     */
+    T formatBoxedPrimitiveArray( PropertyType elementType, Object[] array );
 
-	/**
-	 * Format an object of unsupported type.
-	 * @param value the value of unsupported type
-	 * @return a formatted version of the given value.
-	 */
-	T formatUnknownObject( Object value );
+    /**
+     * Format an object of unsupported type.
+     * @param value the value of unsupported type
+     * @return a formatted version of the given value.
+     */
+    T formatUnknownObject( Object value );
 
-	/**
-	 * A default implementation that formats a String.
-	 */
-	static final ValueFormatter<String> DEFAULT_STRING_FORMATTER = new ValueFormatter<String>()
-	{
-		public String formatString( String string )
-		{
-			string = string.replace( "\\n", "\\\\n" );
-			string = string.replace( "\\", "\\\\" );
-			string = string.replace( "\"", "\\\"" );
-			string = string.replace( "'", "\\\\'" );
-			string = string.replace( "\n", "\\\\n" );
-	        string = string.replace( "<", "\\<" );
-	        string = string.replace( ">", "\\>" );
+    /**
+     * A default implementation that formats a String.
+     */
+    static final ValueFormatter<String> DEFAULT_STRING_FORMATTER = new ValueFormatter<String>()
+    {
+        public String formatString( String string )
+        {
+            string = string.replace( "\\n", "\\\\n" );
+            string = string.replace( "\\", "\\\\" );
+            string = string.replace( "\"", "\\\"" );
+            string = string.replace( "'", "\\\\'" );
+            string = string.replace( "\n", "\\\\n" );
+            string = string.replace( "<", "\\<" );
+            string = string.replace( ">", "\\>" );
             string = string.replace( "[", "\\[" );
             string = string.replace( "]", "\\]" );
             string = string.replace( "{", "\\{" );
             string = string.replace( "}", "\\}" );
             string = string.replace( "|", "\\|" );
 
-			return "'" + string + "'";
-		}
+            return "'" + string + "'";
+        }
 
-		public String formatStringArray( String[] value )
-		{
-			boolean comma = false;
-			StringBuilder result = new StringBuilder( "[" );
-			for ( String string : value )
-			{
-				if ( comma )
-				{
-					result.append( ", " );
-				}
-				result.append( formatString( string ) );
-				comma = true;
-			}
-			result.append( "]" );
-			return result.toString();
-		}
+        public String formatStringArray( String[] value )
+        {
+            boolean comma = false;
+            StringBuilder result = new StringBuilder( "[" );
+            for ( String string : value )
+            {
+                if ( comma )
+                {
+                    result.append( ", " );
+                }
+                result.append( formatString( string ) );
+                comma = true;
+            }
+            result.append( "]" );
+            return result.toString();
+        }
 
-		public String formatBoxedPrimitive( PropertyType type, Object primitive )
-		{
-			return primitive.toString();
-		}
+        public String formatBoxedPrimitive( PropertyType type, Object primitive )
+        {
+            return primitive.toString();
+        }
 
-		public String formatBoxedPrimitiveArray( PropertyType elementType,
-		    Object[] array )
-		{
-			return Arrays.toString( array );
-		}
+        public String formatBoxedPrimitiveArray( PropertyType elementType,
+            Object[] array )
+        {
+            return Arrays.toString( array );
+        }
 
-		public String formatPrimitiveArray( PropertyType type, Object array )
-		{
-			switch ( type )
-			{
-				case INT:
-					return Arrays.toString( ( int[] ) array );
-				case LONG:
-					return Arrays.toString( ( long[] ) array );
-				case BOOLEAN:
-					return Arrays.toString( ( boolean[] ) array );
-				case SHORT:
-					return Arrays.toString( ( short[] ) array );
-				case CHAR:
-					return Arrays.toString( ( char[] ) array );
-				case BYTE:
-					return Arrays.toString( ( byte[] ) array );
-				case FLOAT:
-					return Arrays.toString( ( float[] ) array );
-				case DOUBLE:
-					return Arrays.toString( ( double[] ) array );
-				default:
-					throw new IllegalArgumentException();
-			}
-		}
+        public String formatPrimitiveArray( PropertyType type, Object array )
+        {
+            switch ( type )
+            {
+                case INT:
+                    return Arrays.toString( ( int[] ) array );
+                case LONG:
+                    return Arrays.toString( ( long[] ) array );
+                case BOOLEAN:
+                    return Arrays.toString( ( boolean[] ) array );
+                case SHORT:
+                    return Arrays.toString( ( short[] ) array );
+                case CHAR:
+                    return Arrays.toString( ( char[] ) array );
+                case BYTE:
+                    return Arrays.toString( ( byte[] ) array );
+                case FLOAT:
+                    return Arrays.toString( ( float[] ) array );
+                case DOUBLE:
+                    return Arrays.toString( ( double[] ) array );
+                default:
+                    throw new IllegalArgumentException();
+            }
+        }
 
-		public String formatUnknownObject( Object value )
-		{
-			return value.toString();
-		}
-	};
+        public String formatUnknownObject( Object value )
+        {
+            return value.toString();
+        }
+    };
 }

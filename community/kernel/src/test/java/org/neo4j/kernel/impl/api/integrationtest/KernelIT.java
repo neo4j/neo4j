@@ -119,7 +119,6 @@ public class KernelIT extends KernelIntegrationTest
         transaction.success();
         transaction.close();
 
-
         // NOTE: Transactions are still thread-bound right now, because we use JTA to "own" transactions,
         // meaning if you use
         // both the Kernel API to create transactions while a Beans API transaction is running in the same
@@ -313,7 +312,6 @@ public class KernelIT extends KernelIntegrationTest
         statement.close();
         tx.success();
         tx.close();
-
 
         // WHEN
         tx = db.beginTx();

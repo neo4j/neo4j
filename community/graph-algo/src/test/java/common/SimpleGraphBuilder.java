@@ -37,7 +37,7 @@ import org.neo4j.graphdb.RelationshipType;
 public class SimpleGraphBuilder
 {
     public static final String KEY_ID = "name";
-    
+
     GraphDatabaseService graphDb;
     HashMap<String,Node> nodes;
     HashMap<Node,String> nodeNames;
@@ -89,12 +89,12 @@ public class SimpleGraphBuilder
     {
         return makeNode( id, Collections.<String, Object>emptyMap() );
     }
-    
+
     public Node makeNode( String id, Object... keyValuePairs )
     {
         return makeNode( id, toMap( keyValuePairs ) );
     }
-    
+
     private Map<String, Object> toMap( Object[] keyValuePairs )
     {
         Map<String, Object> map = new HashMap<String, Object>();
@@ -146,7 +146,7 @@ public class SimpleGraphBuilder
     {
         return makeEdge( node1, node2, Collections.<String, Object>emptyMap() );
     }
-    
+
     public Relationship makeEdge( String node1, String node2, Map<String, Object> edgeProperties )
     {
         Node n1 = getNode( node1, true ), n2 = getNode( node2, true );
@@ -211,7 +211,7 @@ public class SimpleGraphBuilder
             makeEdge( nodeNames[i * 2], nodeNames[i * 2 + 1] );
         }
     }
-    
+
     public void importEdges( File file )
     {
         try

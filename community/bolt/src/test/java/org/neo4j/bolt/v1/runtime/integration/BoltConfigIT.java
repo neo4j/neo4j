@@ -66,7 +66,6 @@ public class BoltConfigIT
         assertConnectionAccepted( address0, new SocketConnection() );
         assertConnectionAccepted( address0, new SecureSocketConnection() );
 
-
         HostnamePort address1 = new HostnamePort( "localhost:7687" );
         assertConnectionRejected( address1, new WebSocketConnection() );
         assertConnectionAccepted( address1, new SecureWebSocketConnection() );

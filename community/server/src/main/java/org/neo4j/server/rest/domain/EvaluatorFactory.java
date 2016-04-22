@@ -154,7 +154,7 @@ public class EvaluatorFactory
         {
             super( executor );
         }
-        
+
         @Override
         public Evaluation evaluate( Path path )
         {

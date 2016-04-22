@@ -88,7 +88,6 @@ public class MethodSignatureCompilerTest
         assertThat(signature, contains( new FieldSignature("name", Neo4jTypes.NTString)));
     }
 
-
     @Test
     public void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
     {

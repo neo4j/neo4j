@@ -40,7 +40,6 @@ public class CompositePageCursor extends PageCursor
     private PageCursor byteAccessCursor;
     private boolean outOfBounds;
 
-
     // Constructed with static factory methods.
     private CompositePageCursor(
             PageCursor first, int firstBaseOffset, int firstLength,

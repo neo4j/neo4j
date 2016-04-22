@@ -115,8 +115,6 @@ public class ProposerStateTest
         MessageHolder mockHolder = mock( MessageHolder.class );
         ProposerState.proposer.handle(context, message, mockHolder);
 
-
-
     }
 
     @Test

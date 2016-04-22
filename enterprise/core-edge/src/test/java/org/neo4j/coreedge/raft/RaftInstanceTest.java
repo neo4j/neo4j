@@ -466,7 +466,6 @@ public class RaftInstanceTest
         LeaderNotFoundMonitor leaderNotFoundMonitor = new StubLeaderNotFoundMonitor();
         monitors.addMonitorListener( leaderNotFoundMonitor );
 
-
         RaftInstance<RaftTestMember> raft = new RaftInstanceBuilder<>( myself, 3, RaftTestMemberSetBuilder.INSTANCE )
                 .timeoutService( timeouts )
                 .leaderWaitTimeout( leaderWaitTimeout )

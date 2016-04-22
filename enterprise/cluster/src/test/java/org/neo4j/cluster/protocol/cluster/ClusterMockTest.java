@@ -317,7 +317,6 @@ public class ClusterMockTest
 //        assertEquals( "In:" + in + ", Out:" + out, protocolServers.size(), Iterables.count( Iterables.<Cluster,
 //                List<Cluster>>flatten( in, out ) ) );
 
-
         if ( !errors.isEmpty() )
         {
             for ( AssertionError error : errors )
@@ -377,7 +376,6 @@ public class ClusterMockTest
                 Iterables.count( Iterables.<Cluster,
                 List<Cluster>>flatten( in, out ) ) );
 
-
         if ( !errors.isEmpty() )
         {
             for ( AssertionError error : errors )
@@ -402,7 +400,6 @@ public class ClusterMockTest
             logger.getLogger().warning( "Instance " + myId + " is not in the cluster (" + clusterState + ")" );
             return;
         }
-
 
         HeartbeatContext heartbeatContext = (HeartbeatContext) stateMachines.getStateMachine(
                 HeartbeatMessage.class ).getContext();

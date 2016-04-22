@@ -84,7 +84,6 @@ public class DesktopModel
         serverConfigurator.setDatabaseDirectory( databaseDirectory );
     }
 
-
     public File getVmOptionsFile()
     {
         return installation.getVmOptionsFile();

@@ -57,7 +57,6 @@ public class IdAllocationState implements UnallocatedIds
         this.logIndex = logIndex;
     }
 
-
     /**
      * @return The last set log index, which is the value last passed to {@link #logIndex(long)}
      */
@@ -95,7 +94,6 @@ public class IdAllocationState implements UnallocatedIds
     {
         firstUnallocated[idType.ordinal()] = idRangeEnd;
     }
-
 
     @Override
     public boolean equals( Object o )

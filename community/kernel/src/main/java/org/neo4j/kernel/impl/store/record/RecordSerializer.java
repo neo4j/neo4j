@@ -26,20 +26,20 @@ import java.util.List;
 public class RecordSerializer
 {
     private final List<RecordSerializable> serializables = new ArrayList<RecordSerializable>();
-    
+
     public RecordSerializer append( RecordSerializable serializable )
     {
         this.serializables.add( serializable );
         return this;
     }
-    
+
     public byte[] serialize()
     {
         int[] lengths = new int[serializables.size()];
         int totalLength = 0;
         for ( int i = 0; i < serializables.size(); i++ )
             totalLength += (lengths[i] = serializables.get( i ).length());
-        
+
         byte[] array = new byte[totalLength];
         ByteBuffer target = ByteBuffer.wrap( array );
         for ( int i = 0; i < serializables.size(); i++ )

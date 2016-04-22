@@ -47,27 +47,27 @@ class TransactionDataSortOf
             new HashMap<Node, Map<String, PropertyEntryImpl<Node>>>();
     final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedRemovedRelationshipProperties =
             new HashMap<Relationship, Map<String, PropertyEntryImpl<Relationship>>>();
-    
+
     void assignedProperty( Node node, String key, Object value, Object valueBeforeTx )
     {
         putInMap( this.expectedAssignedNodeProperties, node, key, value, valueBeforeTx );
     }
-    
+
     void assignedProperty( Relationship rel, String key, Object value, Object valueBeforeTx )
     {
         putInMap( this.expectedAssignedRelationshipProperties, rel, key, value, valueBeforeTx );
     }
-    
+
     void removedProperty( Node node, String key, Object value, Object valueBeforeTx )
     {
         putInMap( this.expectedRemovedNodeProperties, node, key, value, valueBeforeTx );
     }
-    
+
     void removedProperty( Relationship rel, String key, Object value, Object valueBeforeTx )
     {
         putInMap( this.expectedRemovedRelationshipProperties, rel, key, value, valueBeforeTx );
     }
-    
+
     <T extends PropertyContainer> void putInMap( Map<T, Map<String, PropertyEntryImpl<T>>> map,
             T entity, String key, Object value, Object valueBeforeTx )
     {
@@ -79,7 +79,7 @@ class TransactionDataSortOf
         }
         innerMap.put( key, new PropertyEntryImpl<T>( entity, key, value, valueBeforeTx ) );
     }
-    
+
     void compareTo( TransactionData data )
     {
         for ( Node node : data.createdNodes() )
@@ -87,25 +87,25 @@ class TransactionDataSortOf
             assertTrue( expectedCreatedNodes.remove( node ) );
         }
         assertTrue( expectedCreatedNodes.isEmpty() );
-        
+
         for ( Relationship rel : data.createdRelationships() )
         {
             assertTrue( expectedCreatedRelationships.remove( rel ) );
         }
         assertTrue( expectedCreatedRelationships.isEmpty() );
-        
+
         for ( Node node : data.deletedNodes() )
         {
             assertTrue( expectedDeletedNodes.remove( node ) );
         }
         assertTrue( expectedDeletedNodes.isEmpty() );
-        
+
         for ( Relationship rel : data.deletedRelationships() )
         {
             assertTrue( expectedDeletedRelationships.remove( rel ) );
         }
         assertTrue( expectedDeletedRelationships.isEmpty() );
-        
+
         for ( PropertyEntry<Node> entry : data.assignedNodeProperties() )
         {
             checkAssigned( expectedAssignedNodeProperties, entry );
@@ -130,7 +130,7 @@ class TransactionDataSortOf
         }
         assertTrue( expectedRemovedRelationshipProperties.isEmpty() );
     }
-    
+
     <T extends PropertyContainer> void checkAssigned(
             Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
     {
@@ -142,7 +142,7 @@ class TransactionDataSortOf
     {
         fetchExpectedPropertyEntry( map, entry ).compareToRemoved( entry );
     }
-    
+
     <T extends PropertyContainer> PropertyEntryImpl<T> fetchExpectedPropertyEntry(
             Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
     {

@@ -30,7 +30,7 @@ public class CompareExpression extends AbstractFilterExpression
 {
     private final String operator;
     private final Object compareValue;
-    
+
     /**
      * Constructs a new comparison expression.
      * @param label the {@link PatternNode} label.
@@ -45,7 +45,7 @@ public class CompareExpression extends AbstractFilterExpression
         this.operator = operator;
         this.compareValue = value;
     }
-    
+
     public boolean matches( FilterValueGetter valueGetter )
     {
         for ( Object value : valueGetter.getValues( getLabel() ) )

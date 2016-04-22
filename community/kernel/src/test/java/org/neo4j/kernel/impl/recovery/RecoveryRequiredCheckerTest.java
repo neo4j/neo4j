@@ -99,13 +99,11 @@ public class RecoveryRequiredCheckerTest
         final GraphDatabaseService db =
                 new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store );
 
-
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             tx.success();
         }
-
 
         EphemeralFileSystemAbstraction snapshot = fileSystem.snapshot();
         db.shutdown();

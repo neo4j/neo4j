@@ -61,10 +61,10 @@ public class ClusterStateTest
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
         Message<ClusterMessage> message = to( configurationRequest, uri( 1 ), configuration( 2 ) )
                 .setHeader( Message.FROM, uri( 2 ).toString() );
-        
+
         // WHEN an instance responds to a join request, responding that the joining instance cannot join
         ClusterState.entered.handle( context, message, outgoing );
-        
+
         // THEN assert that the responding instance sends its configuration along with the response
         Message<ClusterMessage> response = outgoing.single();
         assertTrue( response.getPayload() instanceof ConfigurationResponseState );
@@ -80,16 +80,16 @@ public class ClusterStateTest
         when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
         Map<InstanceId, URI> members = members( 1, 2 );
-        
+
         // WHEN a joining instance receives a denial to join
         ClusterState.discovery.handle( context, to( joinDenied, uri( 2 ),
                 configurationResponseState( members ) ), outgoing );
-        
+
         // THEN assert that the response contains the configuration
         verify( context ).joinDenied( argThat(
                 new ConfigurationResponseStateMatcher().withMembers( members ) ) );
     }
-    
+
     @Test
     public void joinDeniedTimeoutShouldBeHandledWithExceptionIncludingConfiguration() throws Throwable
     {
@@ -102,11 +102,11 @@ public class ClusterStateTest
         when( context.getJoinDeniedConfigurationResponseState() )
                 .thenReturn( configurationResponseState( existingMembers ) );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
-        
+
         // WHEN the join denial actually takes effect (signaled by a join timeout locally)
         ClusterState.joining.handle( context, to( ClusterMessage.joiningTimeout, uri( 2 ) )
                 .setHeader( Message.CONVERSATION_ID, "bla" ), outgoing );
-        
+
         // THEN assert that the failure contains the received configuration
         Message<? extends MessageType> response = outgoing.single();
         ClusterEntryDeniedException deniedException = response.getPayload();

@@ -329,7 +329,6 @@ public class LuceneLabelScanStoreTest
         // WHEN the index is corrupted and then started again
         scrambleIndexFilesAndRestart( data );
 
-
         assertTrue( "Index corruption should be detected", monitor.corruptedIndex );
         assertTrue( "Index should be rebuild", monitor.rebuildingCalled );
     }

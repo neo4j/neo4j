@@ -222,7 +222,6 @@ public class AvailabilityGuard
         return availability() == Availability.AVAILABLE;
     }
 
-
     /**
      * Check if the database has been shut down.
      */

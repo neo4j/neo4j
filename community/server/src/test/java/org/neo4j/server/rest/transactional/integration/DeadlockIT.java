@@ -62,7 +62,6 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         HTTP.Response begin = http.POST( "/db/data/transaction",
                 quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:First) SET n.prop=1' } ] }" ));
 
-
         // and I lock node:Second, and wait for a lock on node:First in another transaction
         otherThread.execute( writeToFirstAndSecond() );
 
@@ -73,7 +72,6 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         // and I then try and lock node:Second in the first transaction
         HTTP.Response deadlock = http.POST( begin.location(),
                 quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ));
-
 
         // Then
         assertThat( deadlock.get( "errors" ).get( 0 ).get( "code" ).getTextValue(),

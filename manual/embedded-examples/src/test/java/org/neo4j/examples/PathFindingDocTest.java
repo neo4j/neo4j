@@ -127,7 +127,7 @@ public class PathFindingDocTest
     public WeightedPath findCheapestPathWithDijkstra( final Node nodeA, final Node nodeB )
     {
         // START SNIPPET: dijkstraUsage
-        PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(                
+        PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(
             PathExpanders.forTypeAndDirection( ExampleTypes.MY_TYPE, Direction.BOTH ), "cost" );
 
         WeightedPath path = finder.findSinglePath( nodeA, nodeB );

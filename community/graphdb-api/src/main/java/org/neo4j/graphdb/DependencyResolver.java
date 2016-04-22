@@ -56,7 +56,6 @@ public interface DependencyResolver
 
     <T> Supplier<T> provideDependency( final Class<T> type );
 
-
     /**
      * Responsible for making the choice between available candidates.
      */

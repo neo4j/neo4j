@@ -216,20 +216,20 @@ public class TestIndexDeletion
         firstTx.commit();
     }
 
-	@Test
-	public void deleteAndCommitShouldBePublishedToOtherTransaction2() throws Exception
-	{
-		WorkThread firstTx = createWorker( "First" );
-		WorkThread secondTx = createWorker( "Second" );
+    @Test
+    public void deleteAndCommitShouldBePublishedToOtherTransaction2() throws Exception
+    {
+        WorkThread firstTx = createWorker( "First" );
+        WorkThread secondTx = createWorker( "Second" );
 
-		firstTx.beginTransaction();
-		secondTx.beginTransaction();
+        firstTx.beginTransaction();
+        secondTx.beginTransaction();
 
-		firstTx.createNodeAndIndexBy(key, "some value");
-		secondTx.createNodeAndIndexBy(key, "some other value");
+        firstTx.createNodeAndIndexBy(key, "some value");
+        secondTx.createNodeAndIndexBy(key, "some other value");
 
-		firstTx.deleteIndex();
-		firstTx.commit();
+        firstTx.deleteIndex();
+        firstTx.commit();
 
         try
         {
@@ -244,11 +244,11 @@ public class TestIndexDeletion
 
         secondTx.rollback();
 
-		// Since $Before will start a tx, add a value and keep tx open and
-		// workers will delete the index so this test will fail in @After
-		// if we don't rollback this tx
-		rollbackTx();
-	}
+        // Since $Before will start a tx, add a value and keep tx open and
+        // workers will delete the index so this test will fail in @After
+        // if we don't rollback this tx
+        rollbackTx();
+    }
 
     @Test
     public void indexDeletesShouldNotByVisibleUntilCommit() throws Exception

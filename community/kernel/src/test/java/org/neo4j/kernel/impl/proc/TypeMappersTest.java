@@ -156,7 +156,6 @@ public class TypeMappersTest
 
     static Type listOfListOfMap = typeOf( "listOfListOfMap" );
 
-
     interface ClassToGetGenericTypeSignatures
     {
         void listOfListOfMap( List<List<Map<String,Object>>> arg );

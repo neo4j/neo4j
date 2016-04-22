@@ -165,7 +165,6 @@ public interface Session extends AutoCloseable
      */
     <A> void ackFailure( A attachment, Callback<Void,A> callback );
 
-
     /**
      * Reset the session to an IDLE state. This clears any outstanding failure condition, disposes
      * of any outstanding result records and rolls back the current transaction (if any).

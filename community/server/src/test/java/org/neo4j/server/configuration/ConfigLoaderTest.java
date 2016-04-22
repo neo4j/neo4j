@@ -205,5 +205,4 @@ public class ConfigLoaderTest
                 is( new File( "foo/bar/auth" ).getAbsoluteFile() ) );
     }
 
-
 }

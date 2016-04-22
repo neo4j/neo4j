@@ -50,7 +50,6 @@ public class DependenciesProxy
                 new ProxyHandler(dependencyResolver) );
     }
 
-
     private static class ProxyHandler
             implements InvocationHandler
     {

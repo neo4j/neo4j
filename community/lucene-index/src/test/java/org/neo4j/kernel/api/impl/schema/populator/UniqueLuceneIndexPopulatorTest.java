@@ -253,7 +253,6 @@ public class UniqueLuceneIndexPopulatorTest
         addUpdate( populator, 2, 2 );
         addUpdate( populator, 3, 1 );
 
-
         when( propertyAccessor.getProperty( 1, PROPERTY_KEY_ID ) ).thenReturn( intProperty( PROPERTY_KEY_ID, 1 ) );
         when( propertyAccessor.getProperty( 3, PROPERTY_KEY_ID ) ).thenReturn( intProperty( PROPERTY_KEY_ID, 1 ) );
 

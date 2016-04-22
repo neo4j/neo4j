@@ -40,7 +40,7 @@ public class TestClientReconnect extends AbstractShellTest
         executeCommand( client, "help", "Available commands" );
         client.shutdown();
     }
-    
+
     @Test
     public void initialSessionValuesSurvivesReconnect() throws Exception
     {

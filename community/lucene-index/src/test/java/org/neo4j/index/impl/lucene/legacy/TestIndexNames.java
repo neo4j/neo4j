@@ -39,7 +39,7 @@ public class TestIndexNames
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
-    
+
     @BeforeClass
     public static void setUpStuff()
     {
@@ -84,7 +84,7 @@ public class TestIndexNames
         finishTx( true );
         beginTx();
     }
-    
+
     @Test
     public void makeSureIndexNamesCanBeRead()
     {

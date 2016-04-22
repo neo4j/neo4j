@@ -30,13 +30,13 @@ public class PrintStreamLinePrinter implements LinePrinter
     {
         this( out, 0 );
     }
-    
+
     public PrintStreamLinePrinter( PrintStream out, int indentation )
     {
         this.out = out;
         this.indentation = indentation;
     }
-    
+
     @Override
     public void println( String line )
     {

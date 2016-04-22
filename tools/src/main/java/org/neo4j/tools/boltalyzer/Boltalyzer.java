@@ -19,7 +19,6 @@
  */
 package org.neo4j.tools.boltalyzer;
 
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;

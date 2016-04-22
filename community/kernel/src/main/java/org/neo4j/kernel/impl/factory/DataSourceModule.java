@@ -162,7 +162,6 @@ public class DataSourceModule
 
         autoIndexing = new InternalAutoIndexing( platformModule.config, editionModule.propertyKeyTokenHolder );
 
-
         AtomicReference<QueryExecutionEngine> queryExecutor = new AtomicReference<>( QueryEngineProvider.noEngine() );
         this.queryExecutor = queryExecutor::get;
         Procedures procedures = setupProcedures( platformModule, editionModule.coreAPIAvailabilityGuard );

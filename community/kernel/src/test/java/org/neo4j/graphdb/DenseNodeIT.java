@@ -42,7 +42,6 @@ public class DenseNodeIT
         // GIVEN
         GraphDatabaseService db = databaseRule.getGraphDatabaseAPI();
 
-
         Node root;
         try( Transaction tx = db.beginTx() )
         {
@@ -103,7 +102,6 @@ public class DenseNodeIT
             assertEquals( 0, root.getDegree( Direction.INCOMING ) );
             tx.success();
         }
-
 
         try( Transaction tx = db.beginTx() )
         {

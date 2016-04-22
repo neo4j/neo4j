@@ -173,7 +173,6 @@ public class NonUniqueLuceneIndexPopulatingUpdaterTest
         verify( writer ).deleteDocuments( newTermForChangeOrRemove( 3 ) );
     }
 
-
     private static void verifySamplingResult( NonUniqueIndexSampler sampler, long expectedIndexSize,
             long expectedUniqueValues, long expectedSampleSize )
     {

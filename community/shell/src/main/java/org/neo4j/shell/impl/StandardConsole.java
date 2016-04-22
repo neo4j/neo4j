@@ -32,34 +32,34 @@ import org.neo4j.shell.Console;
 public class StandardConsole implements Console
 {
     private BufferedReader consoleReader;
-    
-	/**
-	 * Prints a formatted string to the console (System.out).
-	 * @param format the string/format to print.
-	 * @param args values used in conjunction with {@code format}.
-	 */
-	public void format( String format, Object... args )
-	{
-		System.out.print( format );
-	}
-	
-	/**
-	 * @return the next line read from the console (user input).
-	 */
-	public String readLine( String prompt )
-	{
-	    try
-	    {
-	        format( prompt );
-	        if ( consoleReader == null )
-	        {
-				consoleReader = new BufferedReader( new InputStreamReader( System.in, StandardCharsets.UTF_8 ) );
-			}
-	        return consoleReader.readLine();
-	    }
-	    catch ( IOException e )
-	    {
-	        throw new RuntimeException( e );
-	    }
-	}
+
+    /**
+     * Prints a formatted string to the console (System.out).
+     * @param format the string/format to print.
+     * @param args values used in conjunction with {@code format}.
+     */
+    public void format( String format, Object... args )
+    {
+        System.out.print( format );
+    }
+
+    /**
+     * @return the next line read from the console (user input).
+     */
+    public String readLine( String prompt )
+    {
+        try
+        {
+            format( prompt );
+            if ( consoleReader == null )
+            {
+                consoleReader = new BufferedReader( new InputStreamReader( System.in, StandardCharsets.UTF_8 ) );
+            }
+            return consoleReader.readLine();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
 }

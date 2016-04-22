@@ -793,7 +793,6 @@ public enum LongerShortString
         return UnsafeUtil.newSharedArrayString( result );
     }
 
-
     // lookup table by encoding header
     // +2 because of ENCODING_LATIN1 gap and one based index
     private final static LongerShortString[] ENCODINGS_BY_ENCODING = new LongerShortString[ENCODING_COUNT + 2];

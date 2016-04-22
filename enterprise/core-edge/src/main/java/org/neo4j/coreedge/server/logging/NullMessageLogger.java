@@ -33,4 +33,3 @@ public class NullMessageLogger<MEMBER> implements MessageLogger<MEMBER>
     }
 }
 
-

@@ -683,7 +683,6 @@ public class MetaDataStoreTest
             }
         } ).collect( Collectors.toList() );
 
-
         assertThat( actualValues, is( expectedValues ) );
     }
 

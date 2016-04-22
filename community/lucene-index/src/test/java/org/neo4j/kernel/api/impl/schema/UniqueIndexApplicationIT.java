@@ -74,7 +74,6 @@ public class UniqueIndexApplicationIT
                 hasSize( 1 ) );
     }
 
-
     @Before
     public void given() throws Exception
     {

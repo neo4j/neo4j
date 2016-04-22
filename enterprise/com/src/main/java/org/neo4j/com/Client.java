@@ -268,7 +268,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         };
     }
 
-
     @Override
     public void stop()
     {

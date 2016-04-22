@@ -58,7 +58,6 @@ public class LuceneLabelScanIndexIT
         System.setProperty( "labelScanStore.maxPartitionSize", "" );
     }
 
-
     @Parameterized.Parameters( name = "{0}" )
     public static List<Integer> affectedNodes()
     {

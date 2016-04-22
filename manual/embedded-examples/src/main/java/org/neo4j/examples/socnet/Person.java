@@ -185,7 +185,6 @@ public class Person
                 .relationships( NEXT );
         // END SNIPPET: getStatusTraversal
 
-
         return new IterableWrapper<StatusUpdate, Path>(
                 traversal.traverse( firstStatus.getEndNode() ) )
         {

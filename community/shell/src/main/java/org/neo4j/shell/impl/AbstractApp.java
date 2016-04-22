@@ -41,96 +41,96 @@ import org.neo4j.shell.util.json.JSONObject;
  */
 public abstract class AbstractApp implements App
 {
-	private final Map<String, OptionDefinition> optionDefinitions =	new HashMap<>();
-	private AppShellServer server;
-	
-	@Override
+    private final Map<String, OptionDefinition> optionDefinitions =    new HashMap<>();
+    private AppShellServer server;
+
+    @Override
     public String getName()
-	{
-		return this.getClass().getSimpleName().toLowerCase();
-	}
+    {
+        return this.getClass().getSimpleName().toLowerCase();
+    }
 
-	@Override
+    @Override
     public OptionDefinition getOptionDefinition( String option )
-	{
-		return this.optionDefinitions.get( option );
-	}
+    {
+        return this.optionDefinitions.get( option );
+    }
 
-	protected void addOptionDefinition( String option,
-	        OptionDefinition definition )
-	{
-		this.optionDefinitions.put( option, definition );
-	}
-	
-	@Override
+    protected void addOptionDefinition( String option,
+            OptionDefinition definition )
+    {
+        this.optionDefinitions.put( option, definition );
+    }
+
+    @Override
     public String[] getAvailableOptions()
-	{
-		String[] result = this.optionDefinitions.keySet().toArray(
-			new String[ this.optionDefinitions.size() ] );
-		Arrays.sort( result );
-		return result;
-	}
+    {
+        String[] result = this.optionDefinitions.keySet().toArray(
+            new String[ this.optionDefinitions.size() ] );
+        Arrays.sort( result );
+        return result;
+    }
 
-	public void setServer( AppShellServer server )
-	{
+    public void setServer( AppShellServer server )
+    {
         if ( this.server != null )
             throw new IllegalStateException( "Server already set" );
-		this.server = server;
-	}
-	
-	@Override
+        this.server = server;
+    }
+
+    @Override
     public AppShellServer getServer()
-	{
-		return this.server;
-	}
-	
-	@Override
+    {
+        return this.server;
+    }
+
+    @Override
     public String getDescription()
-	{
-		return null;
-	}
-	
-	@Override
+    {
+        return null;
+    }
+
+    @Override
     public String getDescription( String option )
-	{
-		OptionDefinition definition = this.optionDefinitions.get( option );
-		return definition == null ? null : definition.getDescription();
-	}
-	
-	@Override
+    {
+        OptionDefinition definition = this.optionDefinitions.get( option );
+        return definition == null ? null : definition.getDescription();
+    }
+
+    @Override
     public void shutdown()
-	{
-	    // Default behavior is to do nothing
-	}
-	
-	@Override
+    {
+        // Default behavior is to do nothing
+    }
+
+    @Override
     public List<String> completionCandidates( String partOfLine, Session session ) throws ShellException
     {
-	    return Collections.emptyList();
-	}
+        return Collections.emptyList();
+    }
 
     protected static Map<String, Object> parseFilter( String filterString,
-	    Output out ) throws RemoteException, ShellException
-	{
-	    if ( filterString == null )
-	    {
-	        return new HashMap<>();
-	    }
-	    
-	    Map<String, Object> map;
-	    String signsOfJSON = ":";
-	    int numberOfSigns = 0;
-	    for ( int i = 0; i < signsOfJSON.length(); i++ )
-	    {
-	        if ( filterString.contains(
-	            String.valueOf( signsOfJSON.charAt( i ) ) ) )
-	        {
-	            numberOfSigns++;
-	        }
-	    }
-	    
-	    if ( numberOfSigns >= 1 )
-	    {
+        Output out ) throws RemoteException, ShellException
+    {
+        if ( filterString == null )
+        {
+            return new HashMap<>();
+        }
+
+        Map<String, Object> map;
+        String signsOfJSON = ":";
+        int numberOfSigns = 0;
+        for ( int i = 0; i < signsOfJSON.length(); i++ )
+        {
+            if ( filterString.contains(
+                String.valueOf( signsOfJSON.charAt( i ) ) ) )
+            {
+                numberOfSigns++;
+            }
+        }
+
+        if ( numberOfSigns >= 1 )
+        {
             String jsonString = filterString;
             if ( !jsonString.startsWith( "{" ) )
             {
@@ -147,21 +147,21 @@ public abstract class AbstractApp implements App
             catch ( JSONException e )
             {
                 out.println( "parser: \"" + filterString + "\" hasn't got " +
-                	"correct JSON formatting: " + e.getMessage() );
+                    "correct JSON formatting: " + e.getMessage() );
                 throw ShellException.wrapCause( e );
             }
-	    }
-	    else
-	    {
-	        map = new HashMap<>();
-	        map.put( filterString, null );
-	    }
-	    return map;
-	}
+        }
+        else
+        {
+            map = new HashMap<>();
+            map.put( filterString, null );
+        }
+        return map;
+    }
 
     protected static Map<String, Object> parseJSONMap( String jsonString )
         throws JSONException
-	{
+    {
         JSONObject object = new JSONObject( jsonString );
         Map<String, Object> result = new HashMap<>();
         for ( String name : JSONObject.getNames( object ) )
@@ -175,8 +175,8 @@ public abstract class AbstractApp implements App
             result.put( name, value );
         }
         return result;
-	}
-    
+    }
+
     protected static Object[] parseArray( String string )
     {
         try

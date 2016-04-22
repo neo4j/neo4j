@@ -41,7 +41,7 @@ public class TestEphemeralFileChannel
     {
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         StoreChannel channel = fs.open( new File( "yo" ), "rw" );
-        
+
         // Clear it because we depend on it to be zeros where we haven't written
         ByteBuffer buffer = allocateDirect( 23 );
         buffer.put( new byte[23] ); // zeros
@@ -49,15 +49,15 @@ public class TestEphemeralFileChannel
         channel.write( buffer );
         channel = fs.open( new File("yo"), "rw" );
         long longValue = 1234567890L;
-        
+
         // [1].....[2]........[1234567890L]...
-        
+
         buffer.clear();
         buffer.limit( 1 );
         buffer.put( (byte) 1 );
         buffer.flip();
         channel.write( buffer );
-        
+
         buffer.clear();
         buffer.limit( 1 );
         buffer.put( (byte) 2 );
@@ -72,7 +72,7 @@ public class TestEphemeralFileChannel
         channel.position( 15 );
         channel.write( buffer );
         assertEquals( 23, channel.size() );
-        
+
         // Read with position
         // byte 0
         buffer.clear();
@@ -80,7 +80,7 @@ public class TestEphemeralFileChannel
         channel.read( buffer, 0 );
         buffer.flip();
         assertEquals( (byte) 1, buffer.get() );
-        
+
         // bytes 5-7
         buffer.clear();
         buffer.limit( 3 );
@@ -89,7 +89,7 @@ public class TestEphemeralFileChannel
         assertEquals( (byte) 0, buffer.get() );
         assertEquals( (byte) 2, buffer.get() );
         assertEquals( (byte) 0, buffer.get() );
-        
+
         // bytes 15-23
         buffer.clear();
         buffer.limit( 8 );
@@ -98,7 +98,7 @@ public class TestEphemeralFileChannel
         assertEquals( longValue, buffer.getLong() );
         fs.shutdown();
     }
-    
+
     @Test
     @Ignore
     public void absoluteVersusRelative() throws Exception
@@ -121,7 +121,7 @@ public class TestEphemeralFileChannel
         assertTrue( Arrays.equals( bytes, readBytes ) );
         fs.shutdown();
     }
-    
+
     @Test
     public void listFiles() throws Exception
     {
@@ -143,11 +143,11 @@ public class TestEphemeralFileChannel
         File file2 = new File( dir1, "file2" );
         File file3 = new File( dir2, "file" );
         File file4 = new File( subdir1, "file" );
-        
+
         fs.mkdirs( dir2 );
         fs.mkdirs( dir1 );
         fs.mkdirs( subdir1 );
-        
+
         fs.create( file1 );
         fs.create( file2 );
         fs.create( file3 );

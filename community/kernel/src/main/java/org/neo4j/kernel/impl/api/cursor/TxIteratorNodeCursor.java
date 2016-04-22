@@ -61,7 +61,6 @@ public class TxIteratorNodeCursor
             {
                 id = cursor.get().id();
 
-
                 if ( state.nodeIsDeletedInThisTx( id ) )
                 {
                     id = -1;

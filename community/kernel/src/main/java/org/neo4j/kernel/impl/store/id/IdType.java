@@ -39,7 +39,6 @@ public enum IdType
 
     private final boolean allowAggressiveReuse;
 
-
     IdType( boolean allowAggressiveReuse )
     {
         this.allowAggressiveReuse = allowAggressiveReuse;

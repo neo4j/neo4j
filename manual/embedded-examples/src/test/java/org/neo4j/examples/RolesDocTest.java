@@ -196,7 +196,7 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
                     .resultAsString();
             assertTrue( result.contains("Engin") );
             gen.get().addSnippet( "o-query-get-admins", createQueryResultSnippet( result ) );
-            
+
             //Jale's memberships
             // START SNIPPET: get-user-memberships
             Node jale = getNodeByName( "Jale" );
@@ -207,7 +207,7 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
                     .relationships( RoleRels.PART_OF, Direction.OUTGOING );
             traverser = traversalDescription.traverse( jale );
             // END SNIPPET: get-user-memberships
-    
+
             gen.get().addSnippet( "o-get-user-memberships", createOutputSnippet( traverserToString( traverser ) ) );
             query = "match ({name: 'Jale'})-[:MEMBER_OF]->()-[:PART_OF*0..]->(group) return group.name";
             gen.get().addSnippet( "query-get-user-memberships", createCypherSnippet( query ) );
@@ -217,7 +217,7 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
             gen.get()
                     .addSnippet( "o-query-get-user-memberships",
                             createQueryResultSnippet( result ) );
-            
+
             // get all groups
             // START SNIPPET: get-groups
             Node referenceNode = getNodeByName( "Reference_Node") ;
@@ -228,7 +228,7 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
                     .relationships( RoleRels.PART_OF, Direction.INCOMING );
             traverser = traversalDescription.traverse( referenceNode );
             // END SNIPPET: get-groups
-    
+
             gen.get().addSnippet( "o-get-groups", createOutputSnippet( traverserToString( traverser ) ) );
             query = "match ({name: 'Reference_Node'})<-[:ROOT]->()<-[:PART_OF*0..]-(group) return group.name";
             gen.get().addSnippet( "query-get-groups", createCypherSnippet( query ) );
@@ -238,7 +238,7 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
             gen.get()
                     .addSnippet( "o-query-get-groups",
                             createQueryResultSnippet( result ) );
-            
+
             //get all members
             // START SNIPPET: get-members
             traversalDescription = db.traversalDescription()
@@ -247,11 +247,11 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
                             Evaluators.includeWhereLastRelationshipTypeIs( RoleRels.MEMBER_OF ) );
             traverser = traversalDescription.traverse( referenceNode );
             // END SNIPPET: get-members
-    
+
             gen.get().addSnippet( "o-get-members", createOutputSnippet( traverserToString( traverser ) ) );
             query = "match ({name: 'Reference_Node'})<-[:ROOT]->(root), p=(root)<-[PART_OF*0..]-()<-[:MEMBER_OF]-(user) " +
-            		"return user.name, min(length(p)) " +
-            		"order by min(length(p)), user.name";
+                    "return user.name, min(length(p)) " +
+                    "order by min(length(p)), user.name";
             gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
             result = db.execute( query )
                     .resultAsString();
@@ -259,7 +259,7 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
             gen.get()
                     .addSnippet( "o-query-get-members",
                             createQueryResultSnippet( result ) );
-    
+
             /* more advanced example
             query = "start refNode=node("+ referenceNode.getId() +") " +
                     "match p=refNode<-[:ROOT]->parent<-[:PART_OF*0..]-group, group<-[:MEMBER_OF]-user return group.name, user.name, LENGTH(p) " +

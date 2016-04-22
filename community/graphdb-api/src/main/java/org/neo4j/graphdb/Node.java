@@ -151,7 +151,7 @@ public interface Node extends PropertyContainer
      * @param dir the given direction, where <code>Direction.OUTGOING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getStartNode() start node} and <code>
-	 * Direction.INCOMING</code>
+     * Direction.INCOMING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getEndNode() end node}
      * @return all relationships with the given direction that are attached to
@@ -169,7 +169,7 @@ public interface Node extends PropertyContainer
      * @param dir the given direction, where <code>Direction.OUTGOING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getStartNode() start node} and <code>
-	 * Direction.INCOMING</code>
+     * Direction.INCOMING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getEndNode() end node}
      * @return <code>true</code> if there are any relationships in the given
@@ -186,7 +186,7 @@ public interface Node extends PropertyContainer
      * @param dir the given direction, where <code>Direction.OUTGOING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getStartNode() start node} and <code>
-	 * Direction.INCOMING</code>
+     * Direction.INCOMING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getEndNode() end node}
      * @return all relationships attached to this node that match the given type
@@ -203,7 +203,7 @@ public interface Node extends PropertyContainer
      * @param dir the given direction, where <code>Direction.OUTGOING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getStartNode() start node} and <code>
-	 * Direction.INCOMING</code>
+     * Direction.INCOMING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getEndNode() end node}
      * @return <code>true</code> if there are any relationships of the given
@@ -238,7 +238,7 @@ public interface Node extends PropertyContainer
      *            <code>Direction.OUTGOING</code> means a relationship that has
      *            this node as {@link Relationship#getStartNode() start node}
      *            and <code>
-	 * Direction.INCOMING</code> means a relationship that has
+     * Direction.INCOMING</code> means a relationship that has
      *            this node as {@link Relationship#getEndNode() end node}) or
      *            {@link Direction#BOTH} if direction is irrelevant
      * @return the single relationship matching the given type and direction if

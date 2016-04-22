@@ -67,7 +67,6 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
         return false;
     }
 
-
     @Override
     public void close()
     {

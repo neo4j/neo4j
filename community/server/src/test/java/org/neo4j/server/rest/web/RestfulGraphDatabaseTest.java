@@ -1094,7 +1094,6 @@ public class RestfulGraphDatabaseTest
         assertEquals( 413, response.getStatus() );
     }
 
-
     @Test
     public void shouldBeAbleToIndexNodeUniquely()
     {
@@ -2017,7 +2016,6 @@ public class RestfulGraphDatabaseTest
 
         response = service.startAutoIndexingProperty( type, "myAutoIndexedProperty2" );
         assertEquals( 204, response.getStatus() );
-
 
         response = service.getAutoIndexedProperties( type );
         assertEquals( 200, response.getStatus() );

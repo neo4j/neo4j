@@ -189,7 +189,6 @@ public class NodeLabelsFieldTest
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
-
         // WHEN
         Set<DynamicRecord> changedDynamicRecords = Iterables.asSet( nodeLabels.add( 1, nodeStore, nodeStore.getDynamicLabelStore() ) );
 

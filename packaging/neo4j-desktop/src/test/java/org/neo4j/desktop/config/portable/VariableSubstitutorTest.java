@@ -44,14 +44,12 @@ public class VariableSubstitutorTest
         assertEquals( "", substitutor.substitute( "", null ) );
     }
 
-
     @Test
     public void shouldAcceptInputWithoutVariables()
     {
         String expected = "Hello/Kitty/{TEST}";
         assertEquals( expected, substitutor.substitute( expected, null ) );
     }
-
 
     @Test
     public void shouldSubstituteVariable()

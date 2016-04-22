@@ -620,7 +620,6 @@ public class ImportToolTest
         assertTrue( badContents.contains( "Extra column not present in header on line" ) );
     }
 
-
     @Test
     public void shouldImportSplitInputFiles() throws Exception
     {

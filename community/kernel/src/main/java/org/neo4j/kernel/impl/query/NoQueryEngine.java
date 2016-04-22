@@ -52,13 +52,11 @@ enum NoQueryEngine implements QueryExecutionEngine
         throw noQueryEngine();
     }
 
-
     @Override
     public GraphDatabaseQueryService queryService()
     {
         throw noQueryEngine();
     }
-
 
     private RuntimeException noQueryEngine()
     {

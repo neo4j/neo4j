@@ -35,67 +35,67 @@ import org.neo4j.walk.Walker;
  */
 public final class GraphvizWriter
 {
-	private final GraphStyle style;
+    private final GraphStyle style;
 
-	/**
-	 * Create a new Graphviz writer.
-	 * @param configuration
-	 *            the style parameters determining how the style of the output
-	 *            of this writer.
-	 */
-	public GraphvizWriter( StyleParameter... configuration )
-	{
-		this( new GraphStyle( configuration ) );
-	}
+    /**
+     * Create a new Graphviz writer.
+     * @param configuration
+     *            the style parameters determining how the style of the output
+     *            of this writer.
+     */
+    public GraphvizWriter( StyleParameter... configuration )
+    {
+        this( new GraphStyle( configuration ) );
+    }
 
-	public GraphvizWriter( GraphStyle style )
-	{
-		this.style = style;
-	}
+    public GraphvizWriter( GraphStyle style )
+    {
+        this.style = style;
+    }
 
-	/**
-	 * Emit a graph to a file in graphviz format using this writer.
-	 * @param dest
-	 *            the file to write the graph to.
-	 * @param walker
-	 *            a walker that walks the graph to emit.
-	 * @throws IOException
-	 *             if there is an error in outputting to the specified file.
-	 */
-	public void emit( File dest, Walker walker ) throws IOException
-	{
-		OutputStream stream = new FileOutputStream( dest );
-		emit( stream, walker );
-		stream.close();
-	}
+    /**
+     * Emit a graph to a file in graphviz format using this writer.
+     * @param dest
+     *            the file to write the graph to.
+     * @param walker
+     *            a walker that walks the graph to emit.
+     * @throws IOException
+     *             if there is an error in outputting to the specified file.
+     */
+    public void emit( File dest, Walker walker ) throws IOException
+    {
+        OutputStream stream = new FileOutputStream( dest );
+        emit( stream, walker );
+        stream.close();
+    }
 
-	/**
-	 * Emit a graph to an output stream in graphviz format using this writer.
-	 * @param outputStream
-	 *            the stream to write the graph to.
-	 * @param walker
-	 *            a walker that walks the graph to emit.
-	 * @throws IOException
-	 *             if there is an error in outputting to the specified stream.
-	 */
-	public void emit( OutputStream outputStream, Walker walker )
-	    throws IOException
-	{
-		if ( outputStream instanceof PrintStream )
-		{
-			emit( walker, new GraphvizRenderer( style,
-			    ( PrintStream ) outputStream ) );
-		}
-		else
-		{
-			emit( walker, new GraphvizRenderer( style,
-					new PrintStream( outputStream, true, StandardCharsets.UTF_8.name() ) ) );
-		}
-	}
+    /**
+     * Emit a graph to an output stream in graphviz format using this writer.
+     * @param outputStream
+     *            the stream to write the graph to.
+     * @param walker
+     *            a walker that walks the graph to emit.
+     * @throws IOException
+     *             if there is an error in outputting to the specified stream.
+     */
+    public void emit( OutputStream outputStream, Walker walker )
+        throws IOException
+    {
+        if ( outputStream instanceof PrintStream )
+        {
+            emit( walker, new GraphvizRenderer( style,
+                ( PrintStream ) outputStream ) );
+        }
+        else
+        {
+            emit( walker, new GraphvizRenderer( style,
+                    new PrintStream( outputStream, true, StandardCharsets.UTF_8.name() ) ) );
+        }
+    }
 
-	private void emit( Walker walker, GraphvizRenderer renderer )
-	    throws IOException
-	{
-		walker.accept( new Visualizer<>( renderer ) );
-	}
+    private void emit( Walker walker, GraphvizRenderer renderer )
+        throws IOException
+    {
+        walker.accept( new Visualizer<>( renderer ) );
+    }
 }

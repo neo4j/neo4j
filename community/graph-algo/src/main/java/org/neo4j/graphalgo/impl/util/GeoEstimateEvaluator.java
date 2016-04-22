@@ -25,18 +25,18 @@ import org.neo4j.graphdb.Node;
 public class GeoEstimateEvaluator implements EstimateEvaluator<Double>
 {
     private static final double EARTH_RADIUS = 6371*1000; // Meters
-    
+
     private Node cachedGoal;
     private double[] cachedGoalCoordinates;
     private final String latitudePropertyKey;
     private final String longitudePropertyKey;
-    
+
     public GeoEstimateEvaluator( String latitudePropertyKey, String longitudePropertyKey )
     {
         this.latitudePropertyKey = latitudePropertyKey;
         this.longitudePropertyKey = longitudePropertyKey;
     }
-    
+
     public Double getCost( Node node, Node goal )
     {
         double[] nodeCoordinates = getCoordinates( node );
@@ -48,7 +48,7 @@ public class GeoEstimateEvaluator implements EstimateEvaluator<Double>
         return distance( nodeCoordinates[0], nodeCoordinates[1],
                 cachedGoalCoordinates[0], cachedGoalCoordinates[1] );
     }
-    
+
     private double[] getCoordinates( Node node )
     {
         return new double[] {
@@ -56,7 +56,7 @@ public class GeoEstimateEvaluator implements EstimateEvaluator<Double>
                 ((Number) node.getProperty( longitudePropertyKey )).doubleValue()
         };
     }
-    
+
     private double distance( double latitude1, double longitude1,
             double latitude2, double longitude2 )
     {

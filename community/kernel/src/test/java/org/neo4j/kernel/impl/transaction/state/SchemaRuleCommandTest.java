@@ -219,8 +219,6 @@ public class SchemaRuleCommandTest
         assertSchemaRule( (SchemaRuleCommand)readCommand );
     }
 
-
-
     private SchemaRecord serialize( AbstractSchemaRule rule, long id, boolean inUse, boolean created )
     {
         RecordSerializer serializer = new RecordSerializer();

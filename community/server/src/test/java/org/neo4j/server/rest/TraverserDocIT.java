@@ -73,7 +73,6 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
                 getTraverseUriRelationships( getNode( "I" ) ) ).entity());
     }
 
-
     /**
      * In order to return paths from a traversal,
      * specify the +Path+ return type as part of the URL.
@@ -85,7 +84,6 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
         assertSize( 3, gen().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
                 getTraverseUriPaths( getNode( "I" ) ) ).entity());
     }
-
 
     private String getTraverseUriRelationships( Node node )
     {

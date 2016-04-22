@@ -19,7 +19,6 @@
  */
 package org.neo4j.tools.boltalyzer;
 
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 

@@ -136,7 +136,6 @@ public class LockManagerImplTest
         return locks[0];
     }
 
-
     private int countLocks( LockManagerImpl lockManager )
     {
         final int[] counter = new int[1];

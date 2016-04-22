@@ -202,7 +202,6 @@ public class ConfigureBaseUriDocIT extends AbstractRestFunctionalTestBase
         }
     }
 
-
     @Test
     public void shouldUseRequestUriWhenNoXForwardHeadersPresent() throws Exception
     {

@@ -83,7 +83,6 @@ public class ClusterTest
                 tx.success();
             }
 
-
             HighlyAvailableGraphDatabase slave = clusterManager.getCluster().getAnySlave();
             try ( Transaction transaction = slave.beginTx() )
             {

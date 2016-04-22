@@ -222,7 +222,6 @@ public class NodeProxyTest extends PropertyContainerProxyTest
             }
         };
 
-
         Future<?> readerFuture = executor.submit( reader );
         Future<?> writerFuture = executor.submit( writer );
 

@@ -230,7 +230,6 @@ public final class DocValuesCollectorTest
         collector.setScorer( constantScorer( 2.0f ) );
         collector.collect( 2 );
 
-
         // then
         IndexHits<Document> indexHits = collector.getIndexHits( Sort.RELEVANCE );
         assertEquals( 2, indexHits.size() );

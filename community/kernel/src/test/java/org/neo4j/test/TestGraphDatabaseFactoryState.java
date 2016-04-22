@@ -46,12 +46,10 @@ public class TestGraphDatabaseFactoryState extends GraphDatabaseFactoryState
         return fileSystem;
     }
 
-
     public void setFileSystem( FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
     }
-
 
     public LogProvider getInternalLogProvider()
     {

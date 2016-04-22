@@ -33,7 +33,7 @@ public interface BranchSelector
      * has the {@link TraversalBranch#endNode()} of the position and the
      * {@link TraversalBranch#lastRelationship()} to how it got there, decisions
      * can be based on the current expansion source and the given rules.
-     * 
+     *
      * @param metadata the context for the traversal
      * @return the next position based on the current position and the
      * {@code rules} of the traversal.

@@ -399,7 +399,6 @@ public enum ShortArray
             return 1;
         }
 
-
         @Override
         int getRequiredBits( Object array, int arrayLength )
         {
@@ -735,7 +734,6 @@ public enum ShortArray
         ShortArray type = typeOf( (byte)typeId );
         return type.createArray(arrayLength, bits, requiredBits);
     }
-
 
     private static boolean willFit( int requiredBits, int arrayLength, int payloadSizeInBytes )
     {

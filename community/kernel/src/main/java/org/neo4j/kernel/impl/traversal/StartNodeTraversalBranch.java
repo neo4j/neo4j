@@ -29,7 +29,7 @@ import org.neo4j.graphdb.traversal.TraversalContext;
 class StartNodeTraversalBranch extends TraversalBranchWithState
 {
     private final InitialBranchState initialState;
-    
+
     StartNodeTraversalBranch( TraversalContext context, TraversalBranch parent, Node source,
             InitialBranchState initialState )
     {
@@ -49,7 +49,7 @@ class StartNodeTraversalBranch extends TraversalBranchWithState
         }
         return super.next( expander, metadata );
     }
-    
+
     @Override
     protected TraversalBranch newNextBranch( Node node, Relationship relationship )
     {

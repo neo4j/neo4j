@@ -69,7 +69,6 @@ public class LuceneDocumentStructure
     //  when lucene writer trying to add or update document
     private static final int MAX_FIELD_LENGTH = IndexWriter.MAX_TERM_LENGTH;
 
-
     private static final ThreadLocal<DocWithId> perThreadDocument = new ThreadLocal<DocWithId>()
     {
         @Override
@@ -231,7 +230,6 @@ public class LuceneDocumentStructure
         {
             return term.bytes().length == 0 ? terms.iterator() : new PrefixTermsEnum( terms.iterator(), term.bytes() );
         }
-
 
         @Override
         public String toString( String field )

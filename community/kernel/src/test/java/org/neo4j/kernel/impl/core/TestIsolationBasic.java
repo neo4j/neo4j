@@ -142,7 +142,6 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
             throw t1Exception.get();
         }
 
-
         try (Transaction tx = getGraphDb().beginTx())
         {
             for ( Relationship rel : node1.getRelationships() )
@@ -154,8 +153,8 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
             tx.success();
         }
     }
-    
-    private void assertPropertyEqual( PropertyContainer primitive, String key, 
+
+    private void assertPropertyEqual( PropertyContainer primitive, String key,
         String value )
     {
         try ( Transaction tx = getGraphDb().beginTx() )
@@ -163,7 +162,7 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
             assertEquals( value, primitive.getProperty( key ) );
         }
     }
-    
+
     private void assertRelationshipCount( Node node, int count )
     {
 

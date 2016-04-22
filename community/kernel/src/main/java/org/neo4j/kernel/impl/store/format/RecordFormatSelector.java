@@ -163,7 +163,6 @@ public class RecordFormatSelector
         return formats;
     }
 
-
     private static RecordFormats loadRecordFormat( String recordFormat )
     {
         if ( StringUtils.isNotEmpty( recordFormat ) )

@@ -221,7 +221,6 @@ public class ClusterManager
         return () -> {
             final Cluster cluster = new Cluster();
 
-
             HashSet<Integer> takenPorts = new HashSet<>();
             try
             {
@@ -643,7 +642,6 @@ public class ClusterManager
 
         return buf.toString();
     }
-
 
     @Override
     public void start() throws Throwable

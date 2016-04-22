@@ -338,7 +338,6 @@ public class NodeStateImpl extends PropertyContainerStateImpl implements NodeSta
                 return rels;
             }
 
-
             @Override
             public int augmentDegree( Direction direction, int degree )
             {

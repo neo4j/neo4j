@@ -152,7 +152,6 @@ public class CommitContentionTests
                                     return;
                                 }
 
-
                                 if ( committed )
                                 {
                                     // skip signal and waiting for second transaction

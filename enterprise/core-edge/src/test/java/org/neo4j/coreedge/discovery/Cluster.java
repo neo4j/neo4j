@@ -275,7 +275,6 @@ public class Cluster
         }
     }
 
-
     public CoreGraphDatabase getCoreServerById( int serverId )
     {
         for ( CoreGraphDatabase coreServer : coreServers )
@@ -438,7 +437,6 @@ public class Cluster
         Config config = coreServers.iterator().next().getDependencyResolver().resolveDependency( Config.class );
         List<AdvertisedSocketAddress> advertisedAddresses = config.get( CoreEdgeClusterSettings
                 .initial_core_cluster_members );
-
 
         edgeServers.add( startEdgeServer( 999, edgeDatabaseStoreFileLocation, advertisedAddresses ) );
     }

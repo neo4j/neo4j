@@ -35,7 +35,6 @@ public class SchemaFacadeMethods
 
     private static final IndexDefinition INDEX_DEFINITION = mock( IndexDefinition.class );
 
-
     private static final FacadeMethod<Schema> INDEX_FOR = new FacadeMethod<Schema>( "IndexCreator indexFor( Label label )" )
     {
         @Override

@@ -453,7 +453,6 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             assertThat( index.query( "username:*@matrix AND sex:male" ), Contains.contains( neo ) );
             assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.AND ) ), Contains
 
-
                     .contains( neo ) );
             assertThat( index.query( "username:*@matrix OR sex:male" ), Contains.contains( neo, trinity ) );
             assertThat( index.query( new QueryContext( "username:*@matrix sex:male" ).defaultOperator( Operator.OR ) ), Contains
@@ -754,7 +753,6 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( node1, "number", new ValueContext[]{ numeric( 45 ), numeric( 98 ) } );
         Node node2 = graphDb.createNode();
         index.add( node2, "number", new ValueContext[]{ numeric( 47 ), numeric( 100 ) } );
-
 
         IndexHits<Node> indexResult1 = index.query( "number", newIntRange( "number", 47, 98, true, true ) );
         assertThat( indexResult1, Contains.contains( node1, node2 ) );

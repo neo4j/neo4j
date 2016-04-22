@@ -141,7 +141,6 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         }
     }
 
-
     @Override
     public String getDiagnosticsIdentifier()
     {

@@ -46,7 +46,6 @@ public class DuplicateEntitySchemaRuleException extends DuplicateSchemaRuleExcep
         this.entityType = entityType;
     }
 
-
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {

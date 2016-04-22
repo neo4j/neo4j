@@ -87,7 +87,7 @@ public class HostnamePort
 
     /**
      * The host part, or {@code null} if not given.
-     * 
+     *
      * @return the host part, or {@code null} if not given
      */
     public String getHost()
@@ -106,16 +106,16 @@ public class HostnamePort
             return host;
         }
     }
-    
+
     public String getHost( String defaultHost )
     {
-    	return getHostAddress( host, defaultHost );
+        return getHostAddress( host, defaultHost );
     }
 
     /**
      * The port range as two ints. If only one port given, then both ints have the same value.
      * If no port range is given, then the array has {0,0} as value.
-     * 
+     *
      * @return the port range as two ints, which may have the same value; if no port range has been given both ints are {@code 0}
      */
     public int[] getPorts()
@@ -125,7 +125,7 @@ public class HostnamePort
 
     /**
      * The first port, or 0 if no port was given.
-     * 
+     *
      * @return the first port or {@code 0} if no port was given
      */
     public int getPort()
@@ -189,7 +189,7 @@ public class HostnamePort
 
         // URI may contain IP, so make sure we check it too by converting ours, if necessary
         String toMatchHost = toMatch.getHost();
-        
+
         // this tries to match hostnames as they are at first, then tries to extract and match ip addresses of both
         return result && ( host.equalsIgnoreCase( toMatchHost ) || getHost(null).equalsIgnoreCase( getHostAddress( toMatchHost, toMatchHost ) ) );
     }

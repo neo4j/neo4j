@@ -68,7 +68,6 @@ public class SingleVersionReader
         ReadAheadChannel<LogVersionedStoreChannel> readAheadChannel = new ReadAheadChannel<>(
                 physicalLogVersionedStoreChannel );
 
-
         return new RaftAppendRecordCursor( readAheadChannel, marshal );
     }
 }

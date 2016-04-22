@@ -33,7 +33,7 @@ public class Session
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final Map<String, String> aliases = new HashMap<String, String>();
     private final InterruptSignalHandler signalHandler = InterruptSignalHandler.getHandler();
-    
+
     public Session( Serializable id )
     {
         this.id = id;
@@ -49,15 +49,15 @@ public class Session
         return signalHandler;
     }
 
-	/**
+    /**
      * Sets a session value.
      * @param key the session key.
      * @param value the value.
      * @throws ShellException if the execution fails
      */
-	public void set( String key, Object value ) throws ShellException
+    public void set( String key, Object value ) throws ShellException
     {
-	    Variables.checkIsValidVariableName( key );
+        Variables.checkIsValidVariableName( key );
         setInternal( key, value );
     }
 
@@ -71,7 +71,7 @@ public class Session
      * @return the value for the {@code key} or {@code null} if not found.
      * @throws ShellException if the execution fails
      */
-	public Object get( String key ) throws ShellException
+    public Object get( String key ) throws ShellException
     {
         Variables.checkIsValidVariableName( key );
         return getInternal( key );
@@ -83,43 +83,43 @@ public class Session
     }
 
     /**
-	 * @param key the key to check the session value for.
-	 * @return true if the session contains a variable with that name.
-	 */
-	public boolean has( String key )
-	{
-	    return properties.containsKey( key );
-	}
+     * @param key the key to check the session value for.
+     * @return true if the session contains a variable with that name.
+     */
+    public boolean has( String key )
+    {
+        return properties.containsKey( key );
+    }
 
-	/**
+    /**
      * Removes a value from the session.
      * @param key the session key to remove.
      * @return the removed value, or {@code null} if none.
      * @throws ShellException if the execution fails
      */
-	public Object remove( String key ) throws ShellException
+    public Object remove( String key ) throws ShellException
     {
         Variables.checkIsValidVariableName( key );
-	    return properties.remove( key );
-	}
-	
-	/**
-	 * @return all the available session keys.
-	 */
-	public String[] keys()
-	{
-	    return properties.keySet().toArray( new String[ properties.size() ] );
-	}
-	
-	/**
-	 * Returns the session as a {@link Map} representation. Changes in the
-	 * returned instance won't be reflected in the session.
-	 * @return the session as a {@link Map}.
-	 */
-	public Map<String, Object> asMap()
-	{
-	    return properties;
-	}
+        return properties.remove( key );
+    }
+
+    /**
+     * @return all the available session keys.
+     */
+    public String[] keys()
+    {
+        return properties.keySet().toArray( new String[ properties.size() ] );
+    }
+
+    /**
+     * Returns the session as a {@link Map} representation. Changes in the
+     * returned instance won't be reflected in the session.
+     * @return the session as a {@link Map}.
+     */
+    public Map<String, Object> asMap()
+    {
+        return properties;
+    }
 
     public void removeAlias( String key )
     {

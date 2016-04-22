@@ -25,7 +25,7 @@ import java.util.Iterator;
  * Represents a path in the graph. A path starts with a node followed by
  * pairs of {@link Relationship} and {@link Node} objects. The shortest path
  * is of length 0. Such a path contains only one node and no relationships.
- * 
+ *
  * During a traversal {@link Path} instances are emitted where the current
  * position of the traverser is represented by each such path. The current
  * node in such a traversal is reached via {@link Path#endNode()}.
@@ -43,17 +43,17 @@ public interface Path extends Iterable<PropertyContainer>
      * Returns the end node of this path. It's also the last node returned
      * from {@link #nodes()} iterable. If the {@link #length()} of this path
      * is 0 the end node returned by this method is the same as the start node.
-     * 
+     *
      * If a path is emitted from a traverser the end node is the current node
      * where the traverser is at the moment.
-     * 
+     *
      * @return the end node.
      */
     Node endNode();
 
     /**
      * Returns the last {@link Relationship} in this path.
-     * 
+     *
      * @return the last {@link Relationship} in this path, or <code>null</code>
      *         if this path contains no {@link Relationship}s.
      */
@@ -75,7 +75,7 @@ public interface Path extends Iterable<PropertyContainer>
      * @return the relationships in this path in reverse order.
      */
     Iterable<Relationship> reverseRelationships();
-    
+
     /**
      * Returns all the nodes in this path starting from the start node going
      * forward towards the end node. The first node is the same as
@@ -83,11 +83,11 @@ public interface Path extends Iterable<PropertyContainer>
      * In between those nodes there can be an arbitrary number of nodes. The
      * shortest path possible is just one node, where also the the start node is
      * the same as the end node.
-     * 
+     *
      * @return the nodes in this path.
      */
     Iterable<Node> nodes();
-    
+
     /**
      * Returns all the nodes in this path in reversed order, i.e. starting from the
      * end node going backwards instead of from the start node going forwards.
@@ -95,12 +95,12 @@ public interface Path extends Iterable<PropertyContainer>
      * same as {@link #startNode()}. In between those nodes there can be an arbitrary
      * number of nodes. The shortest path possible is just one node, where also the
      * the start node is the same as the end node.
-     * 
+     *
      * @return the nodes in this path starting from the end node going backwards
      * towards the start node.
      */
     Iterable<Node> reverseNodes();
-    
+
     /**
      * Returns the length of this path. That is the number of relationships
      * (which is the same as the number of nodes minus one). The shortest path

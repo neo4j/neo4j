@@ -110,7 +110,6 @@ public class LogEntryParserV2_2Test
         assertFalse( parser.skip() );
     }
 
-
     @Test
     public void shouldParseEmptyEntry() throws IOException
     {

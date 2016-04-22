@@ -186,7 +186,6 @@ public class NeoStoreIndexStoreViewTest
                         neoStores.getPropertyStore(), null, propertyUpdateVisitor,
                         id -> id == labelId, id -> true );
 
-
         NodeRecord nodeRecord = new NodeRecord( -1 );
         neoStores.getNodeStore().getRecord( 1L, nodeRecord, RecordLoad.FORCE );
 

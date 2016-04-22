@@ -134,7 +134,6 @@ public class OutputMappersTest
         mapper( RecordWithPrivateField.class );
     }
 
-
     @Test
     public void shouldGiveHelpfulErrorOnMapWithNonStringKeyMap() throws Throwable
     {
@@ -174,6 +173,5 @@ public class OutputMappersTest
     {
         return new OutputMappers( new TypeMappers() ).mapper( clazz );
     }
-
 
 }

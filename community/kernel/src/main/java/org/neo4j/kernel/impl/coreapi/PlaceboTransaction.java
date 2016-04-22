@@ -49,7 +49,7 @@ public class PlaceboTransaction implements InternalTransaction
     @Override
     public void failure()
     {
-    	currentTransaction.get().failure();
+        currentTransaction.get().failure();
     }
 
     @Override
@@ -67,17 +67,17 @@ public class PlaceboTransaction implements InternalTransaction
         }
     }
 
-	@Override
-	public Lock acquireWriteLock( PropertyContainer entity )
-	{
-		return locker.exclusiveLock( stmt, entity );
-	}
+    @Override
+    public Lock acquireWriteLock( PropertyContainer entity )
+    {
+        return locker.exclusiveLock( stmt, entity );
+    }
 
-	@Override
-	public Lock acquireReadLock( PropertyContainer entity )
-	{
-		return locker.sharedLock( stmt, entity );
-	}
+    @Override
+    public Lock acquireReadLock( PropertyContainer entity )
+    {
+        return locker.sharedLock( stmt, entity );
+    }
 
     @Override
     public KernelTransaction.Type transactionType()

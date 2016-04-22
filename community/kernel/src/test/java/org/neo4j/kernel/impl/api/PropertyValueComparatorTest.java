@@ -93,7 +93,6 @@ public class PropertyValueComparatorTest
                 Integer.compare( lower, upper )
         ) );
 
-
         boolean includesAny = false;
         for ( double value : TESTED_VALUES )
         {
@@ -131,7 +130,6 @@ public class PropertyValueComparatorTest
             return Integer.compare( x, y );
         }
     };
-
 
     private final static boolean DEBUG = false;
 

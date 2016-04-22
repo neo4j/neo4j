@@ -60,7 +60,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.udc.UsageData;
 
-
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Community edition.
@@ -171,8 +170,6 @@ public class CommunityEditionModule extends EditionModule
     {
         return life.add( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI ) );
     }
-
-
 
     protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs )
     {

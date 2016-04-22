@@ -114,7 +114,6 @@ public class IdleChannelReaperTest
         clock.forward( THRESHOLD + 1, TimeUnit.MILLISECONDS );
         idleChannelReaper.run();
 
-
         // then
         verifyNoMoreInteractions( channelCloser );
     }

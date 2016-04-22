@@ -146,8 +146,6 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         }
     }
 
-
-
     private static LogProvider logProvider()
     {
         return Boolean.getBoolean( "logger" ) ? FormattedLogProvider.toOutputStream( System.out ) : NullLogProvider.getInstance();

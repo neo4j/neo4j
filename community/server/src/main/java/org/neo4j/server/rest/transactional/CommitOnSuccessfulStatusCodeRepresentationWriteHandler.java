@@ -60,7 +60,6 @@ public class CommitOnSuccessfulStatusCodeRepresentationWriteHandler implements R
         closeTransaction();
     }
 
-
     public void closeTransaction()
     {
         transaction.close();

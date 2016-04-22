@@ -155,7 +155,6 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         return new ReadOnlyRelationshipProxy( actual.getRelationshipById( id ) );
     }
 
-
     @Override
     public ResourceIterable<Relationship> getAllRelationships()
     {

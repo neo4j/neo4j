@@ -559,7 +559,6 @@ public class StorePropertyCursorTest
         PropertyBlock block = new PropertyBlock();
         PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator );
 
-
         PropertyRecord record = new PropertyRecord( recordId );
         record.addPropertyBlock( block );
         record.setInUse( true );

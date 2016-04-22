@@ -29,67 +29,67 @@ import org.neo4j.visualization.PropertyRenderer;
 
 class GraphvizRenderer implements GraphRenderer<IOException>
 {
-	private final PrintStream stream;
-	private final GraphStyle graphStyle;
-	private final NodeStyle nodeStyle;
-	private final RelationshipStyle edgeStyle;
+    private final PrintStream stream;
+    private final GraphStyle graphStyle;
+    private final NodeStyle nodeStyle;
+    private final RelationshipStyle edgeStyle;
 
-	GraphvizRenderer( GraphStyle style, PrintStream stream ) throws IOException
-	{
-		this.stream = stream;
-		nodeStyle = style.nodeStyle;
-		edgeStyle = style.edgeStyle;
-		graphStyle = style;
-		graphStyle.emitGraphStart( stream );
-	}
+    GraphvizRenderer( GraphStyle style, PrintStream stream ) throws IOException
+    {
+        this.stream = stream;
+        nodeStyle = style.nodeStyle;
+        edgeStyle = style.edgeStyle;
+        graphStyle = style;
+        graphStyle.emitGraphStart( stream );
+    }
 
-	public void done() throws IOException
-	{
-		graphStyle.emitGraphEnd( stream );
-	}
+    public void done() throws IOException
+    {
+        graphStyle.emitGraphEnd( stream );
+    }
 
-	public PropertyRenderer<IOException> renderNode( Node node )
-	    throws IOException
-	{
-		return new PropertyAdapter( node );
-	}
+    public PropertyRenderer<IOException> renderNode( Node node )
+        throws IOException
+    {
+        return new PropertyAdapter( node );
+    }
 
-	public PropertyRenderer<IOException> renderRelationship(
-	    Relationship relationship ) throws IOException
-	{
-		return new PropertyAdapter( relationship );
-	}
+    public PropertyRenderer<IOException> renderRelationship(
+        Relationship relationship ) throws IOException
+    {
+        return new PropertyAdapter( relationship );
+    }
 
     public GraphvizRenderer renderSubgraph( String name ) throws IOException
     {
         return new GraphvizRenderer( graphStyle.getSubgraphStyle( name ), stream );
     }
 
-	private class PropertyAdapter implements PropertyRenderer<IOException>
-	{
-		private final PropertyContainerStyle style;
+    private class PropertyAdapter implements PropertyRenderer<IOException>
+    {
+        private final PropertyContainerStyle style;
 
-		PropertyAdapter( Node node ) throws IOException
-		{
-			nodeStyle.emitNodeStart( stream, node );
-			this.style = nodeStyle;
-		}
+        PropertyAdapter( Node node ) throws IOException
+        {
+            nodeStyle.emitNodeStart( stream, node );
+            this.style = nodeStyle;
+        }
 
-		PropertyAdapter( Relationship relationship ) throws IOException
-		{
-			edgeStyle.emitRelationshipStart( stream, relationship );
-			this.style = edgeStyle;
-		}
+        PropertyAdapter( Relationship relationship ) throws IOException
+        {
+            edgeStyle.emitRelationshipStart( stream, relationship );
+            this.style = edgeStyle;
+        }
 
-		public void done() throws IOException
-		{
-			style.emitEnd( stream );
-		}
+        public void done() throws IOException
+        {
+            style.emitEnd( stream );
+        }
 
-		public void renderProperty( String propertyKey, Object propertyValue )
-		    throws IOException
-		{
-			style.emitProperty( stream, propertyKey, propertyValue );
-		}
-	}
+        public void renderProperty( String propertyKey, Object propertyValue )
+            throws IOException
+        {
+            style.emitProperty( stream, propertyKey, propertyValue );
+        }
+    }
 }

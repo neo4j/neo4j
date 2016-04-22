@@ -44,7 +44,7 @@ import static java.util.Arrays.asList;
 /**
  * Suppresses outputs such as System.out, System.err and java.util.logging for example when running a test.
  * It's also a {@link TestRule} which makes it fit in nicely in JUnit.
- * 
+ *
  * The suppressing occurs visitor-style and if there's an exception in the code executed when being muted
  * all the logging that was temporarily muted will be resent to the peers as if they weren't muted to begin with.
  */
@@ -56,7 +56,7 @@ public final class SuppressOutput implements TestRule
     {
         return new SuppressOutput( suppressibles );
     }
-    
+
     public static SuppressOutput suppressAll()
     {
         return suppress( System.out, System.err, java_util_logging );

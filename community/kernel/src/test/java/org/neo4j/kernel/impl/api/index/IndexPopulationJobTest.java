@@ -382,7 +382,6 @@ public class IndexPopulationJobTest
                 newIndexPopulationJob( FIRST, name, failureDelegateFactory, populator,
                         new FlippableIndexProxy(), indexStoreView, NullLogProvider.getInstance(), false );
 
-
         IllegalStateException failure = new IllegalStateException( "not successful" );
         doThrow( failure ).when( populator ).close( true );
 
@@ -524,7 +523,6 @@ public class IndexPopulationJobTest
                             throw new IllegalArgumentException( update.getUpdateMode().name() );
                     }
                 }
-
 
                 @Override
                 public void close() throws IOException, IndexEntryConflictException

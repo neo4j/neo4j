@@ -212,7 +212,6 @@ public class BatchInserterImpl implements BatchInserter
     private RecordFormats recordFormats;
     private final long maxNodeId;
 
-
     BatchInserterImpl( File storeDir,
                        Map<String, String> stringParams ) throws IOException
     {
@@ -1219,7 +1218,6 @@ public class BatchInserterImpl implements BatchInserter
             this.directRecordAccess = directRecordAccess;
             this.batchSize = batchSize;
         }
-
 
         @Override
         public void flush()

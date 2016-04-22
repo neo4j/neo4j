@@ -54,7 +54,7 @@ public class ColumnPrinter
                     this.columns.size() );
         }
     }
-    
+
     public void addRaw( String string )
     {
         rawColumn.add( string );
@@ -110,7 +110,7 @@ public class ColumnPrinter
             return value.length() > 0;
         }
     }
-    
+
     private static class RawColumn extends Column
     {
         public RawColumn( int indentation )

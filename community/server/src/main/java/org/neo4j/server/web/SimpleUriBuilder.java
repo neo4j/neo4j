@@ -30,7 +30,7 @@ public class SimpleUriBuilder {
     {
         StringBuilder sb = new StringBuilder();
         sb.append( "http" );
-        
+
         if ( isSsl )
         {
             sb.append( "s" );

@@ -33,7 +33,6 @@ public class FilenameBasedLogVersionRepository implements LogVersionRepository
         version = Math.max(logFiles.getHighestLogVersion(), 0);
     }
 
-
     @Override
     public long getCurrentLogVersion()
     {

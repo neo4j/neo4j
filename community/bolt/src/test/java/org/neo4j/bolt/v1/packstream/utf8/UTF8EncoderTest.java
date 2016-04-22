@@ -44,7 +44,6 @@ public class UTF8EncoderTest
         assertEquals( val,  encodeDecode( val ) );
     }
 
-
     private String encodeDecode( String original )
     {
         ByteBuffer encoded = UTF8Encoder.fastestAvailableEncoder().encode( original );

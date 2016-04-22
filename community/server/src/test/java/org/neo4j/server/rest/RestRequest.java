@@ -88,7 +88,6 @@ public class RestRequest {
         }
     }
 
-
     private Builder builder( String path ) {
         return builder( path, accept );
     }
@@ -152,7 +151,6 @@ public class RestRequest {
         }
         return new JaxRsResponse( HTTP.sanityCheck( builder.put( ClientResponse.class ) ) );
     }
-
 
     public Object toEntity( JaxRsResponse JaxRsResponse ) throws JsonParseException {
         return JsonHelper.readJson( entityString( JaxRsResponse ) );

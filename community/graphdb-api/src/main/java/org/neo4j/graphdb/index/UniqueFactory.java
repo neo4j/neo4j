@@ -216,7 +216,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
     {
         return getOrCreateWithOutcome( key, value ).entity();
     }
-    
+
     /**
      * Get the indexed entity, creating it (exactly once) if no indexed entity exists.
      * Includes the outcome, i.e. whether the entity was created or not.

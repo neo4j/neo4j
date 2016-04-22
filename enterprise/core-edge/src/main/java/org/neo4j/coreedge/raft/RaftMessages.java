@@ -237,7 +237,6 @@ public interface RaftMessages
                 this.prevLogIndex = prevLogIndex;
                 this.prevLogTerm = prevLogTerm;
 
-
                 this.leaderCommit = leaderCommit;
             }
 

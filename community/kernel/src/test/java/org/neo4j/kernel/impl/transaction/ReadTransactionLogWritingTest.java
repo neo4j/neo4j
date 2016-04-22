@@ -91,7 +91,6 @@ public class ReadTransactionLogWritingTest
                 logEntriesWrittenBeforeReadOperations, actualCount );
     }
 
-
     private long countLogEntries()
     {
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();

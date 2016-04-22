@@ -69,13 +69,13 @@ public class CreateSimpleGraph
                 .type( MediaType.APPLICATION_JSON )
                 .entity( payload )
                 .post( ClientResponse.class );
-        
+
         System.out.println( String.format(
                 "POST [%s] to [%s], status code [%d], returned data: "
                         + System.lineSeparator() + "%s",
                 payload, txUri, response.getStatus(),
                 response.getEntity( String.class ) ) );
-        
+
         response.close();
         // END SNIPPET: queryAllNodes
     }

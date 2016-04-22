@@ -33,7 +33,7 @@ import static java.util.Collections.reverseOrder;
 
 /**
  * Factory for common {@link SlavePriority} implementations.
- * 
+ *
  * @author Mattias Persson
  */
 public abstract class SlavePriorities
@@ -58,7 +58,7 @@ public abstract class SlavePriorities
             }
         };
     }
-    
+
     /**
      * @return {@link SlavePriority} which returns the slaves in a round robin
      * fashion, more precisely the start index in the array increments with
@@ -70,7 +70,7 @@ public abstract class SlavePriorities
         return new SlavePriority()
         {
             final AtomicInteger index = new AtomicInteger();
-            
+
             @Override
             public Iterable<Slave> prioritize( final Iterable<Slave> slaves )
             {
@@ -101,7 +101,7 @@ public abstract class SlavePriorities
             }
         };
     }
-    
+
     /**
      * @return {@link SlavePriority} which returns the slaves in the same fixed order
      * sorted by server id in descending order.
@@ -158,6 +158,6 @@ public abstract class SlavePriorities
             return first.getServerId() - second.getServerId();
         }
     };
-    
+
     private static final Comparator<Slave> REVERSE_SERVER_ID_COMPARATOR = reverseOrder( SERVER_ID_COMPARATOR );
 }

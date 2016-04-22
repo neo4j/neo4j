@@ -82,7 +82,6 @@ public class PrimitiveCollectionEqualityTest
         public abstract Value<T> randomValue();
     }
 
-
     // ==== Test Value Producers ====
 
     @DataPoint
@@ -263,7 +262,6 @@ public class PrimitiveCollectionEqualityTest
             };
         }
     };
-
 
     // ==== Primitive Collection Implementations ====
 

@@ -117,7 +117,6 @@ public class NonUniqueLuceneIndexPopulatorTest
 
         updates.forEach( populator::includeSample );
 
-
         IndexSample sample = populator.sampleResult();
 
         assertEquals( new IndexSample( 3, 2, 3 ), sample );

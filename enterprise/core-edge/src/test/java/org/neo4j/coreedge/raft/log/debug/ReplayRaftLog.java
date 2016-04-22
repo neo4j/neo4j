@@ -47,14 +47,12 @@ public class ReplayRaftLog
         String to = arg.get( "to" );
         System.out.println("to is " + to);
 
-
         File logDirectory = new File( from );
         System.out.println( "logDirectory = " + logDirectory );
         NaiveDurableRaftLog log = new NaiveDurableRaftLog( new DefaultFileSystemAbstraction(),
                 logDirectory, new CoreReplicatedContentMarshal(), NullLogProvider.getInstance() );
 
         long totalCommittedEntries = log.appendIndex(); // Not really, but we need to have a way to pass in the commit index
-
 
 //        File target = new File( to );
 //        RandomAccessFile newLog = new RandomAccessFile( target, "rw" );

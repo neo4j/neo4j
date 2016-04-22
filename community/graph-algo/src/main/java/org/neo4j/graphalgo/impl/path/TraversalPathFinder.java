@@ -30,13 +30,13 @@ import org.neo4j.helpers.collection.LimitingIterable;
 public abstract class TraversalPathFinder implements PathFinder<Path>
 {
     private Traverser lastTraverser;
-    
+
     @Override
     public Path findSinglePath( Node start, Node end )
     {
         return Iterables.firstOrNull( findAllPaths( start, end ) );
     }
-    
+
     protected Integer maxResultCount()
     {
         return null;

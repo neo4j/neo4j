@@ -101,7 +101,6 @@ public class PartialTransactionFailureIT
             }
         };
 
-
         Node a, b, c, d;
         try ( Transaction tx = db.beginTx() )
         {

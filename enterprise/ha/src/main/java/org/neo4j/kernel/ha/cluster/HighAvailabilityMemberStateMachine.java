@@ -154,7 +154,6 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 context.setAvailableHaMasterId( null );
                 state = state.masterIsElected( context, coordinatorId );
 
-
                 context.setElectedMasterId( coordinatorId );
                 final HighAvailabilityMemberChangeEvent event =
                         new HighAvailabilityMemberChangeEvent( oldState, state, coordinatorId, null );

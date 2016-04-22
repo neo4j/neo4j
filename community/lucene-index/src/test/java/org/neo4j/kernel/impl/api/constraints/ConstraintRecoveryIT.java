@@ -80,7 +80,6 @@ public class ConstraintRecoveryIT
         } );
         dbFactory.setMonitors( monitors );
 
-
         db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabase( pathToDb );
 
         try ( Transaction tx = db.beginTx() )

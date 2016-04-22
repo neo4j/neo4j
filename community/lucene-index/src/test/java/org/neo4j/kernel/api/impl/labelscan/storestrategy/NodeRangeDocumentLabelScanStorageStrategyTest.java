@@ -255,7 +255,6 @@ public class NodeRangeDocumentLabelScanStorageStrategyTest
         }
     }
 
-
     private IndexPartition newIndexPartitionMock( IndexWriter indexWriter, Document... documents ) throws IOException
     {
         IndexPartition partition = mock( IndexPartition.class );

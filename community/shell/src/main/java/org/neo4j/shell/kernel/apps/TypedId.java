@@ -30,7 +30,7 @@ class TypedId
     private final String type;
     private final long id;
     private final boolean isNode;
-    
+
     /**
      * @param typedId the serialized string.
      */
@@ -39,7 +39,7 @@ class TypedId
         this( typedId.substring( 0, 1 ),
             Long.parseLong( typedId.substring( 1 ) ) );
     }
-    
+
     /**
      * @param type the type
      * @param id the object's id.
@@ -50,7 +50,7 @@ class TypedId
         this.id = id;
         this.isNode = type.equals( NodeOrRelationship.TYPE_NODE );
     }
-    
+
     /**
      * @return the type.
      */
@@ -58,7 +58,7 @@ class TypedId
     {
         return this.type;
     }
-    
+
     /**
      * @return the object's id.
      */
@@ -66,7 +66,7 @@ class TypedId
     {
         return this.id;
     }
-    
+
     /**
      * @return whether or not the type is a {@link Node}.
      */
@@ -74,7 +74,7 @@ class TypedId
     {
         return this.isNode;
     }
-    
+
     /**
      * @return whether or not the type is a {@link Relationship}.
      */
@@ -82,7 +82,7 @@ class TypedId
     {
         return !this.isNode;
     }
-    
+
     @Override
     public boolean equals( Object o )
     {
@@ -94,7 +94,7 @@ class TypedId
         return this.type.equals( other.type ) &&
             this.id == other.id;
     }
-    
+
     @Override
     public int hashCode()
     {
@@ -103,7 +103,7 @@ class TypedId
         code = 31 * code + this.type.hashCode();
         return code;
     }
-    
+
     @Override
     public String toString()
     {

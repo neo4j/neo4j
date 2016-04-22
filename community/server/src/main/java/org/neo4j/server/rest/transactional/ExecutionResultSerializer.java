@@ -190,7 +190,6 @@ public class ExecutionResultSerializer
         }
     }
 
-
     private void writeStats( QueryStatistics stats ) throws IOException
     {
         out.writeObjectFieldStart( "stats" );

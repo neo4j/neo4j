@@ -505,7 +505,6 @@ public class LifeSupportTest
 
     }
 
-
     public class LifecycleMock
         implements Lifecycle
     {

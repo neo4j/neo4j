@@ -56,7 +56,6 @@ public class HaKernelDataTest
                     .newGraphDatabase();
         }
 
-
         @Override
         protected void disposeResource( HighlyAvailableGraphDatabase resource )
         {

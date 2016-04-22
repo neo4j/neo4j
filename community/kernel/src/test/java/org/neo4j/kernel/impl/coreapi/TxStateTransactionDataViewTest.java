@@ -63,7 +63,6 @@ public class TxStateTransactionDataViewTest
 
     private final TransactionState state = new TxState();
 
-
     @Before
     public void setup()
     {

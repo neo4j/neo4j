@@ -48,7 +48,6 @@ public class TxBench
         bench( (long) iterations / 8, 8 );
     }
 
-
     private static GraphDatabaseService db;
 
     public static void setup() throws IOException
@@ -91,7 +90,6 @@ public class TxBench
     {
         db.shutdown();
     }
-
 
     private static void bench( long iterations, int concurrency ) throws InterruptedException, ExecutionException,
             IOException

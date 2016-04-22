@@ -195,7 +195,6 @@ public final class FunctionalTestHelper
         return indexNodeUri( indexName ) + "/" + key + "/" + value;
     }
 
-
     public String indexRelationshipUri( String indexName )
     {
         return relationshipIndexUri() + indexName;

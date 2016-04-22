@@ -106,7 +106,6 @@ public class ExtensionTestingDocTest
     }
     // END SNIPPET: testEnterpriseExtension
 
-
     private TestServerBuilder getServerBuilder( ) throws IOException
     {
         TestServerBuilder serverBuilder = EnterpriseTestServerBuilders.newInProcessBuilder();

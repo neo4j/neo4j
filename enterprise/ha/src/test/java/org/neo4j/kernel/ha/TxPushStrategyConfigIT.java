@@ -79,7 +79,6 @@ public class TxPushStrategyConfigIT
         }
     }
 
-
     @Test
     public void shouldPushToSlavesInAscendingOrder() throws Exception
     {

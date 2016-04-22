@@ -27,7 +27,7 @@ public class AlternatingSelectorOrderer extends AbstractSelectorOrderer<Integer>
     {
         super( startSelector, endSelector );
     }
-    
+
     @Override
     protected Integer initialState()
     {

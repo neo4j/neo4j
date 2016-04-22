@@ -40,19 +40,19 @@ package org.neo4j.graphdb;
  * relationship's start node and end node and their relation to
  * {@link Direction#OUTGOING} and {@link Direction#INCOMING} are defined so that
  * the assertions in the following code are <code>true</code>:
- * 
+ *
  * <pre>
  * <code>
  * {@link Node} a = graphDb.{@link GraphDatabaseService#createNode() createNode}(), b = graphDb.{@link GraphDatabaseService#createNode() createNode}();
  * {@link Relationship} rel = a.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( b, {@link RelationshipType MyRels.REL_TYPE} );
  * // Now we have: (a) --- REL_TYPE ---&gt; (b)
- * 
+ *
  * assert rel.{@link Relationship#getStartNode() getStartNode}().equals( a );
  * assert rel.{@link Relationship#getEndNode() getEndNode}().equals( b );
  * assert rel.{@link Relationship#getNodes() getNodes}()[0].equals( a ) &amp;&amp; rel.{@link Relationship#getNodes() getNodes}()[1].equals( b );
  * </code>
  * </pre>
- * 
+ *
  * Even though all relationships have a direction they are equally well
  * traversed in both directions so there's no need to create duplicate
  * relationships in the opposite direction (with regard to traversal or
@@ -118,8 +118,8 @@ public interface Relationship extends PropertyContainer
      * a relationship, use the following:
      * <p>
      * <code>
-	 * Node endNode = node.getSingleRelationship( MyRels.REL_TYPE ).getOtherNode( node );
-	 * </code>
+     * Node endNode = node.getSingleRelationship( MyRels.REL_TYPE ).getOtherNode( node );
+     * </code>
      * <p>
      * This operation will throw a runtime exception if <code>node</code> is
      * neither this relationship's start node nor its end node.

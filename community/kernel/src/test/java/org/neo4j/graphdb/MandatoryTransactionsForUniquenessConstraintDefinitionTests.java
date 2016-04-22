@@ -39,7 +39,6 @@ public class MandatoryTransactionsForUniquenessConstraintDefinitionTests
         assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
-
     @Override
     protected ConstraintDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {

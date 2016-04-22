@@ -37,7 +37,6 @@ public class UpdatesTracker
         deleted += num;
     }
 
-
     void notifyPopulationCompleted()
     {
         if ( populationCompleted )

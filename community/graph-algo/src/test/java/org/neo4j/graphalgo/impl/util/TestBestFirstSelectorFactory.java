@@ -88,7 +88,6 @@ public class TestBestFirstSelectorFactory extends Neo4jAlgoTestCase
                 expectedResult.length, i );
     }
 
-
     @Parameterized.Parameters
     public static Collection<Object[]> data()
     {

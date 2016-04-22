@@ -34,7 +34,7 @@ public class TextUtil
     {
         return templateString( templateString, "\\$", data );
     }
-    
+
     public static String templateString( String templateString,
             String variablePrefix, Map<String, ? extends Object> data )
     {
@@ -49,7 +49,7 @@ public class TextUtil
             {
                 longest = length;
             }
-            
+
             List<String> innerList = null;
             Integer innerKey = Integer.valueOf( length );
             if ( lengthMap.containsKey( innerKey ) )
@@ -63,7 +63,7 @@ public class TextUtil
             }
             innerList.add( key );
         }
-        
+
         // Replace it.
         String result = templateString;
         for ( int i = longest; i >= 0; i-- )
@@ -73,7 +73,7 @@ public class TextUtil
             {
                 continue;
             }
-            
+
             List<String> list = lengthMap.get( lengthKey );
             for ( String key : list )
             {
@@ -86,10 +86,10 @@ public class TextUtil
                 }
             }
         }
-        
+
         return result;
     }
-    
+
     public static String lastWordOrQuoteOf( String text, boolean preserveQuotation )
     {
         String[] quoteParts = text.split( "\"" );
@@ -129,7 +129,7 @@ public class TextUtil
                     continue;
                 }
             }
-            
+
             if ( preserveEscapes || ch != '\\' )
             {
                 current.append( ch );
@@ -169,7 +169,7 @@ public class TextUtil
 
     /**
      * Tokenizes a string, regarding quotes. Examples:
-     * 
+     *
      * o '"One two"'              ==&gt; [ "One two" ]
      * o 'One two'                ==&gt; [ "One", "two" ]
      * o 'One "two three" four'   ==&gt; [ "One", "two three", "four" ]
@@ -212,7 +212,7 @@ public class TextUtil
         }
         return result.toArray( new String[result.size()] );
     }
-    
+
     public static String stripFromQuotes( String string )
     {
         if ( string != null )

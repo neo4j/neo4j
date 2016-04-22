@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Path;
  * should be included in the traversal result. It also decides whether the traverser
  * should continue down that path or if it should be pruned so that the traverser
  * won't continue down that path.
- * 
+ *
  * @author Mattias Persson
  * @see Evaluation
  * @see Evaluators
@@ -42,7 +42,7 @@ public interface Evaluator
      * continue traversing down that {@code path} or if it instead should be
      * pruned so that the traverser won't continue down that branch represented
      * by {@code path}.
-     * 
+     *
      * @param path the {@link Path} to evaluate.
      * @return an {@link Evaluation} containing information about whether or not
      * to return it from the {@link Traverser} and whether or not to continue

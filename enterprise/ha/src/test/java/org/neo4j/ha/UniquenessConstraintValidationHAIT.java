@@ -98,7 +98,6 @@ public class UniquenessConstraintValidationHAIT
             tx.success();
         }
 
-
         // then
         assertFalse( "creating violating data should fail", created.get() );
     }
@@ -151,7 +150,6 @@ public class UniquenessConstraintValidationHAIT
 
             tx.failure();
         }
-
 
         // then
         assertTrue( "creating data that conflicts only with rolled back data should pass", created.get() );

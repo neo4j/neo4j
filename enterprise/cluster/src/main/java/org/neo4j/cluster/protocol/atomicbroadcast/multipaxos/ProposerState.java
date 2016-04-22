@@ -102,7 +102,7 @@ public enum ProposerState
                                             acceptor, new AcceptorMessage.PrepareState( ballot ) ),
                                             org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE ) );
                                 }
-                                
+
                                 assert instance.value_1 == null : "value_1 should have been null at this point";
                                 Object payload = context.getBookedInstance( instanceId ).getPayload();
                                 assert payload != null : "Should have a booked instance payload for " + instanceId;

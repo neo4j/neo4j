@@ -34,7 +34,6 @@ public class ThisShouldNotHappenError extends Error
         super( "Developer: " + developer + " claims that: " + message );
     }
 
-
     public ThisShouldNotHappenError( String developer, String message, Throwable cause )
     {
         super( "Developer: " + developer + " claims that: " + message, cause );

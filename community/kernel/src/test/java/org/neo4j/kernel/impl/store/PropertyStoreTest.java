@@ -138,7 +138,6 @@ public class PropertyStoreTest
                 .getId() << 28) );
         propertyBlock.addValueRecord( dynamicRecord );
 
-
         return propertyBlock;
     }
 }

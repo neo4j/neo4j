@@ -49,7 +49,6 @@ public class OperationContext
         return localSession;
     }
 
-
     @Override
     public String toString()
     {

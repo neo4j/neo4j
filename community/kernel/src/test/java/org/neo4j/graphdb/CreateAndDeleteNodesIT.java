@@ -51,7 +51,6 @@ public class CreateAndDeleteNodesIT
             bobTransaction.success();
         }
 
-
         // When
         try ( Transaction tx2 = dataBase.beginTx() )
         {

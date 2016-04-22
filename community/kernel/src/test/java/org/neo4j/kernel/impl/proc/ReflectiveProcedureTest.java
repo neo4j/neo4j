@@ -95,7 +95,6 @@ public class ReflectiveProcedureTest
                         .build() ) );
     }
 
-
     @Test
     public void shouldRunSimpleReadOnlyProcedure() throws Throwable
     {
@@ -270,7 +269,6 @@ public class ReflectiveProcedureTest
             this.name = name;
         }
     }
-
 
     public static class SomeOtherOutputRecord
     {

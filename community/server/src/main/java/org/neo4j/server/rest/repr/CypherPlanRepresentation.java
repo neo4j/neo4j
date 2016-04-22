@@ -81,7 +81,6 @@ public abstract class CypherPlanRepresentation extends MappingRepresentation
             private ExecutionPlanDescription plan = null;
             private boolean fetched = false;
 
-
             @Override
             protected ExecutionPlanDescription getPlan()
             {

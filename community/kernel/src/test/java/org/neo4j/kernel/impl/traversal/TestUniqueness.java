@@ -111,7 +111,6 @@ public class TestUniqueness extends TraversalTestBase
         createGraph( "a TO b", "b TO c", "a TO b", "b TO c", "a TO c", "a TO c", "c TO d" );
         RelationshipType to = withName( "TO" );
 
-
         try ( Transaction tx = beginTx() )
         {
             Node a = getNodeWithName( "a" );

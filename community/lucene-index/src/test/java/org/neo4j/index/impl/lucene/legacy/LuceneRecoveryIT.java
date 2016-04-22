@@ -45,12 +45,10 @@ public class LuceneRecoveryIT
         File hcdb = new File( path );
         FileUtils.deleteRecursively( hcdb );
 
-
         Process process = Runtime.getRuntime().exec( new String[]{
                 ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
                 Inserter.class.getName(), path
         } );
-
 
         // Let it run for a while and then kill it, and wait for it to die
         awaitFile( new File( path, "started" ) );

@@ -113,7 +113,6 @@ public class NaiveDurableRaftLogTest
         verify( commitChannel ).close();
     }
 
-
     @Test
     public void shouldForceAndCloseFilesOnShutdownEvenOnFailure() throws Throwable
     {
@@ -126,7 +125,6 @@ public class NaiveDurableRaftLogTest
         doThrow( new IOException() ).when( entriesChannel ).force( anyBoolean() );
         doThrow( new IOException() ).when( contentChannel ).force( anyBoolean() );
         doThrow( new IOException() ).when( commitChannel ).force( anyBoolean() );
-
 
         File directory = new File( "." );
 

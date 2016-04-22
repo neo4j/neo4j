@@ -116,7 +116,7 @@ public class EntryCountThresholdTest
             assertTrue( ((IllegalLogFormatException) e.getCause()).wasNewerLogVersion() );
         }
     }
-    
+
     @Test
     public void shouldWorkWhenCalledMultipleTimesKeeping2Files() throws Exception
     {

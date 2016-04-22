@@ -117,7 +117,6 @@ public class MainWindow extends JFrame
     {
         directoryDisplay = createUnmodifiableTextField( LastLocation.getLastLocation( model.getDatabaseDirectory().getAbsolutePath() ), 35 );
 
-
         optionsButton = createOptionsButton();
         browseButton = createBrowseButton();
         startButton = createStartButton();

@@ -187,5 +187,4 @@ public class GraphDatabaseServiceFacadeMethods
                 // TODO: INDEX
         ) );
 
-
 }

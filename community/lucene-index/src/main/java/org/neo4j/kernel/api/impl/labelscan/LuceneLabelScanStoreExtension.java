@@ -81,7 +81,6 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
                 fullStoreLabelUpdateStream( dependencies.indexStoreView() ),
                 dependencies.getLogService().getInternalLogProvider(), monitor );
 
-
         return new LabelScanStoreProvider( scanStore, priority );
     }
 

@@ -97,7 +97,6 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
         return false;
     }
 
-
     @Override
     public void close()
     {

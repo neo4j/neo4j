@@ -435,8 +435,6 @@ public interface Status
                 "Neo4j Desktop, found through the user interface) or if you are running an embedded installation " +
                 "just add -Xss2M as command line flag." ),
 
-
-
         // transient errors
         DatabaseUnavailable( TransientError,
                 "The database is not currently available to serve your request, refer to the database logs for more " +
@@ -573,7 +571,6 @@ public interface Status
             ROLLBACK, NONE,
         }
 
-        
         private enum PublishingPolicy
         {
             REPORTS_TO_CLIENT, REFERS_TO_LOG

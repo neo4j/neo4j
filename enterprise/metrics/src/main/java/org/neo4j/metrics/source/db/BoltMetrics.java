@@ -51,7 +51,6 @@ public class BoltMetrics extends LifecycleAdapter
     @Documented( "The accumulated time worker threads have spent processing messages." )
     public static final String TOTAL_PROCESSING_TIME = name( NAME_PREFIX, "accumulated_processing_time" );
 
-
     private final MetricRegistry registry;
     private final Monitors monitors;
     private final BoltMetricsMonitor boltMonitor = new BoltMetricsMonitor();

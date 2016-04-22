@@ -79,7 +79,6 @@ public class ContractCheckingIndexProxyTest
         outer.drop();
     }
 
-
     @Test
     public void shouldDropAfterCreate() throws IOException
     {
@@ -94,7 +93,6 @@ public class ContractCheckingIndexProxyTest
         outer.drop();
     }
 
-
     @Test
     public void shouldCloseAfterCreate() throws IOException
     {
@@ -108,7 +106,6 @@ public class ContractCheckingIndexProxyTest
         // PASS
         outer.close();
     }
-
 
     @Test(expected = IllegalStateException.class)
     public void shouldNotUpdateBeforeCreate() throws Exception
@@ -235,7 +232,6 @@ public class ContractCheckingIndexProxyTest
             latch.finish();
         }
     }
-
 
     @Test( expected = /* THEN */ IllegalStateException.class )
     public void shouldNotCloseWhileUpdating() throws IOException

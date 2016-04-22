@@ -46,7 +46,7 @@ public class CollectingOutput extends UnicastRemoteObject implements Output, Ser
     {
         super();
     }
-    
+
     @Override
     public Appendable append( CharSequence csq, int start, int end )
             throws IOException
@@ -97,21 +97,21 @@ public class CollectingOutput extends UnicastRemoteObject implements Output, Ser
                 ongoingLine += string;
                 break;
             }
-            
+
             String part = string.substring( 0, index );
             ongoingLine += part;
             println();
-            
+
             string = string.substring( index + System.lineSeparator().length(), string.length() );
         }
     }
-    
+
     @Override
     public Iterator<String> iterator()
     {
         return lines.iterator();
     }
-    
+
     public String asString()
     {
         try
@@ -125,7 +125,7 @@ public class CollectingOutput extends UnicastRemoteObject implements Output, Ser
             clear();
         }
     }
-    
+
     private void clear()
     {
         lines.clear();

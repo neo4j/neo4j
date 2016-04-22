@@ -132,7 +132,6 @@ public class JaxRsResponse extends Response
         return type;
     }
 
-
     public static class ServerRootRepresentationTest
     {
         @Test

@@ -79,7 +79,6 @@ public class Fixtures
         }
     }
 
-
     public void add( Function<GraphDatabaseService,Void> fixtureFunction )
     {
         fixtureFunctions.add( fixtureFunction );

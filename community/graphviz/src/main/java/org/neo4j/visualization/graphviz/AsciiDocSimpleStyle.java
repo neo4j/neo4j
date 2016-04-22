@@ -33,7 +33,7 @@ import org.neo4j.visualization.graphviz.color.SimpleRelationshipTypeColorMapper;
  * {@link SimpleRelationshipTypeColorMapper} for easy ways to add predefined
  * colors, consumable by static factory methods of this class. For more control,
  * provide {@link NodeStyle} and {@link RelationshipStyle} implementations.
- * 
+ *
  * @author anders
  */
 public class AsciiDocSimpleStyle extends AsciiDocStyle

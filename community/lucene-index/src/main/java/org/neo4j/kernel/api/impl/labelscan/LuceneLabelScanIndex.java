@@ -57,7 +57,6 @@ public class LuceneLabelScanIndex extends AbstractLuceneIndex
         this.storageStrategy = new NodeRangeDocumentLabelScanStorageStrategy( format );
     }
 
-
     public LabelScanReader getLabelScanReader()
     {
         ensureOpen();

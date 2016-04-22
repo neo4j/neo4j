@@ -54,13 +54,13 @@ public abstract class Neo4jTestCase
     {
         graphDb.shutdown();
     }
-    
+
     @Before
     public void setUpTest()
     {
         tx = graphDb.beginTx();
     }
-    
+
     @After
     public void tearDownTest()
     {
@@ -69,19 +69,19 @@ public abstract class Neo4jTestCase
             finishTx( true );
         }
     }
-    
+
     protected boolean manageMyOwnTxFinish()
     {
         return false;
     }
-    
+
     protected void finishTx( boolean commit )
     {
         if ( tx == null )
         {
             return;
         }
-        
+
         if ( commit )
         {
             tx.success();
@@ -89,7 +89,7 @@ public abstract class Neo4jTestCase
         tx.close();
         tx = null;
     }
-    
+
     protected Transaction beginTx()
     {
         if ( tx == null )
@@ -98,14 +98,14 @@ public abstract class Neo4jTestCase
         }
         return tx;
     }
-    
+
     public static void deleteFileOrDirectory( File file )
     {
         if ( !file.exists() )
         {
             return;
         }
-        
+
         if ( file.isDirectory() )
         {
             for ( File child : Objects.requireNonNull( file.listFiles() ) )
@@ -120,7 +120,7 @@ public abstract class Neo4jTestCase
     {
         return graphDb;
     }
-    
+
     public static <T> void assertContains( Collection<T> collection,
         T... expectedItems )
     {
@@ -137,7 +137,7 @@ public abstract class Neo4jTestCase
     {
         assertContains( asCollection( items ), expectedItems );
     }
-    
+
     public static <T> void assertContainsInOrder( Collection<T> collection,
             T... expectedItems )
     {
@@ -149,13 +149,13 @@ public abstract class Neo4jTestCase
             assertEquals( expectedItems[i], itr.next() );
         }
     }
-    
+
     public static <T> void assertContainsInOrder( Iterable<T> collection,
             T... expectedItems )
     {
         assertContainsInOrder( asCollection( collection ), expectedItems );
     }
-    
+
     public static <T> Collection<T> asCollection( Iterable<T> iterable )
     {
         List<T> list = new ArrayList<T>();

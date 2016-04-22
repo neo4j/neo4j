@@ -19,7 +19,6 @@
  */
 package org.neo4j.com;
 
-
 public interface ConnectionLostHandler
 {
     public static final ConnectionLostHandler NO_ACTION = new ConnectionLostHandler()

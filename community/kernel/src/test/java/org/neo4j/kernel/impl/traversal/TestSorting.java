@@ -48,7 +48,7 @@ public class TestSorting extends TraversalTestBase
          *                   |
          *              (Nicholas)
          */
-        
+
         String me = "me";
         String abraham = "Abraham";
         String george = "George";
@@ -82,7 +82,7 @@ public class TestSorting extends TraversalTestBase
         }
         return all;
     }
-    
+
     private static String triplet( String i, String type, String you )
     {
         return i + " " + type + " " + you;

@@ -34,7 +34,7 @@ public interface NeoCommandType
     public static final byte SCHEMA_RULE_COMMAND = (byte) 7;
     public static final byte LABEL_KEY_COMMAND = (byte) 8;
     public static final byte REL_GROUP_COMMAND = (byte) 9;
-    
+
     public static final byte INDEX_DEFINE_COMMAND = (byte) 10;
     public static final byte INDEX_ADD_COMMAND = (byte) 11;
     public static final byte INDEX_ADD_RELATIONSHIP_COMMAND = (byte) 12;

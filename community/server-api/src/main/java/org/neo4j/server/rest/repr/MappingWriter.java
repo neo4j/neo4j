@@ -36,7 +36,7 @@ public abstract class MappingWriter
     ListWriter newList( RepresentationType type, String param )
     {
         if ( type.valueName == "map" ) {
-        	return newList( type.listName, param );
+            return newList( type.listName, param );
         }
         if ( type.listName == null ) {
             throw new IllegalStateException( "Invalid list type: " + type );

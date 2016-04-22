@@ -23,14 +23,14 @@ import org.neo4j.graphdb.PropertyContainer;
 
 interface ParameterGetter<C extends PropertyContainer>
 {
-	/**
-	 * Get the value for a parameter.
-	 * @param container
-	 *            the node or relationship to get the value for.
-	 * @param key
-	 *            the parameter to get.
-	 * @return the value of the parameter, or <code>null</code> to not emit
-	 *         the parameter for this node/relationship.
-	 */
-	String getParameterValue( C container, String key );
+    /**
+     * Get the value for a parameter.
+     * @param container
+     *            the node or relationship to get the value for.
+     * @param key
+     *            the parameter to get.
+     * @return the value of the parameter, or <code>null</code> to not emit
+     *         the parameter for this node/relationship.
+     */
+    String getParameterValue( C container, String key );
 }

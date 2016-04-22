@@ -834,7 +834,6 @@ public class TransactionRecordStateTest
         int typeB = 1;
         tx.createRelationshipTypeToken( "B", typeB );
 
-
         // WHEN
         // i remove enough relationships to become dense and remove enough to become not dense
         long[] relationshipsOfTypeB = createRelationships( neoStores, tx, nodeId, typeB, OUTGOING, 5 );
@@ -1103,7 +1102,6 @@ public class TransactionRecordStateTest
             // THEN that group should end up first in the chain
             assertRelationshipGroupsInOrder( neoStores, nodeId, type5, type10 );
         }
-
 
         // WHEN inserting a relationship of type 15
         {

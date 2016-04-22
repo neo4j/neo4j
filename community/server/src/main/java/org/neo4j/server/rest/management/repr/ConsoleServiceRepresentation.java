@@ -32,7 +32,7 @@ public class ConsoleServiceRepresentation extends ServiceDefinitionRepresentatio
         resourceUri( "exec", "" );
         this.engines = engines;
     }
-    
+
     @Override
     public void serialize( MappingSerializer serializer )
     {

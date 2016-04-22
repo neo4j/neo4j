@@ -63,7 +63,6 @@ public class RelationshipCheckType extends CheckType<Command.RelationshipCommand
                record1.getType() == record2.getType();
     }
 
-
     @Override
     public String name()
     {

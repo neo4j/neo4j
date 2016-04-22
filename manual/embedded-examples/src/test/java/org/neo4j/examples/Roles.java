@@ -184,7 +184,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
                 .relationships( RoleRels.PART_OF, INCOMING )
                 .relationships( RoleRels.MEMBER_OF, INCOMING );
         // END SNIPPET: get-admins
-        
+
         gen.get().addSnippet( "o-get-admins",
                 createOutputSnippet( traverserToString( traversal.traverse( admins ) ) ) );
         String query = "start admins=node("
@@ -195,7 +195,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
                 .resultAsString();
         assertTrue( result.contains("Engin") );
         gen.get().addSnippet( "o-query-get-admins", createQueryResultSnippet( result ) );
-        
+
         //Jale's memberships
         // START SNIPPET: get-user-memberships
         Node jale = getNodeByName( "Jale" );
@@ -217,7 +217,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
         gen.get()
                 .addSnippet( "o-query-get-user-memberships",
                         createQueryResultSnippet( result ) );
-        
+
         // get all groups
         // START SNIPPET: get-groups
         Node referenceNode = getNodeByName( "Reference_Node") ;
@@ -239,7 +239,7 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
         gen.get()
                 .addSnippet( "o-query-get-groups",
                         createQueryResultSnippet( result ) );
-        
+
         //get all members
         // START SNIPPET: get-members
         traversal = db.traversalDescription()
@@ -252,9 +252,9 @@ public class Roles extends ImpermanentGraphJavaDocTestBase
         gen.get().addSnippet( "o-get-members",
                 createOutputSnippet( traverserToString( traversal.traverse( referenceNode ) ) ) );
         query = "start refNode=node("+ referenceNode.getId() +") " +
-        		"match (refNode)<-[:ROOT]->(root), p=(root)<-[PART_OF*0..]-()<-[:MEMBER_OF]-(user) " +
-        		"return user.name, min(length(p)) " +
-        		"order by min(length(p)), user.name";
+                "match (refNode)<-[:ROOT]->(root), p=(root)<-[PART_OF*0..]-()<-[:MEMBER_OF]-(user) " +
+                "return user.name, min(length(p)) " +
+                "order by min(length(p)), user.name";
         gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
         result = db.execute( query )
                 .resultAsString();

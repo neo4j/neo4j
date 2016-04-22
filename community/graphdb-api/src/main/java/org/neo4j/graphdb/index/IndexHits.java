@@ -38,13 +38,13 @@ import static java.util.Spliterators.spliteratorUnknownSize;
  * foremost an {@link Iterator}, but also an {@link Iterable} JUST so that it
  * can be used in a for-each loop. The <code>iterator()</code> method
  * <i>always</i> returns <code>this</code>.
- * 
+ *
  * The size is calculated before-hand so that calling it is always fast.
- * 
+ *
  * When you're done with the result and haven't reached the end of the
  * iteration {@link #close()} must be called. Results which are looped through
  * entirely closes automatically. Typical use:
- * 
+ *
  * <pre>
  * <code>
  * IndexHits&lt;Node&gt; hits = index.get( "key", "value" );
@@ -61,7 +61,7 @@ import static java.util.Spliterators.spliteratorUnknownSize;
  * }
  * </code>
  * </pre>
- * 
+ *
  * @param <T> the type of items in the Iterator.
  */
 public interface IndexHits<T> extends ResourceIterator<T>, ResourceIterable<T>
@@ -69,13 +69,13 @@ public interface IndexHits<T> extends ResourceIterator<T>, ResourceIterable<T>
     /**
      * Returns the size of this iterable, in most scenarios this value is accurate
      * while in some scenarios near-accurate.
-     * 
+     *
      * There's no cost in calling this method. It's considered near-accurate if this
      * {@link IndexHits} object has been returned when inside a {@link Transaction}
      * which has index modifications, of a certain nature. Also entities
      * ({@link Node}s/{@link Relationship}s) which have been deleted from the graph,
      * but are still in the index will also affect the accuracy of the returned size.
-     * 
+     *
      * @return the near-accurate size if this iterable.
      */
     int size();
@@ -85,7 +85,7 @@ public interface IndexHits<T> extends ResourceIterator<T>, ResourceIterable<T>
      * whenever you've got what you wanted from the result and won't use it
      * anymore. It's necessary to call it so that underlying indexes can dispose
      * of allocated resources for this search result.
-     * 
+     *
      * You can however skip to call this method if you loop through the whole
      * result, then close() will be called automatically. Even if you loop
      * through the entire result and then call this method it will silently
@@ -113,15 +113,15 @@ public interface IndexHits<T> extends ResourceIterator<T>, ResourceIterable<T>
      * {@link NoSuchElementException} will be thrown. This method must be called
      * first in the iteration and will grab the first item from the iteration,
      * so the result is considered broken after this call.
-     * 
+     *
      * @return the first and only item, or {@code null} if none.
      */
     T getSingle();
-    
+
     /**
      * Returns the score of the most recently fetched item from this iterator
      * (from {@link #next()}). The range of the returned values is up to the
-     * {@link Index} implementation to dictate. 
+     * {@link Index} implementation to dictate.
      * @return the score of the most recently fetched item from this iterator.
      */
     float currentScore();

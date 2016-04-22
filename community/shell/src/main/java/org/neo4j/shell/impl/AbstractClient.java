@@ -61,7 +61,7 @@ public abstract class AbstractClient implements ShellClient
     private String prompt;
 
     private final Map<String, Serializable> initialSession;
-    
+
     public AbstractClient( Map<String, Serializable> initialSession, CtrlCHandler signalHandler )
     {
         this.signalHandler = signalHandler;
@@ -138,10 +138,10 @@ public abstract class AbstractClient implements ShellClient
     {
         if ( EXIT_COMMANDS.contains( line ) )
         {
-            end(); 
+            end();
             return;
         }
-        
+
         boolean success = false;
         try
         {
@@ -181,7 +181,7 @@ public abstract class AbstractClient implements ShellClient
     {
         multiLine.clear();
     }
-    
+
     private String fullLine( String line )
     {
         if ( multiLine.isEmpty() )
@@ -272,12 +272,12 @@ public abstract class AbstractClient implements ShellClient
     {
         this.timeConnection = System.currentTimeMillis();
     }
-    
+
     public long timeForMostRecentConnection()
     {
         return timeConnection;
     }
-    
+
     public void shutdown()
     {
         if ( !multiLine.isEmpty() )
@@ -292,7 +292,7 @@ public abstract class AbstractClient implements ShellClient
             }
         }
     }
-    
+
     @Override
     public Serializable getId()
     {
@@ -301,16 +301,16 @@ public abstract class AbstractClient implements ShellClient
 
     protected void tryUnexport( Remote remote )
     {
-    	try
-    	{
-    		UnicastRemoteObject.unexportObject( remote, true );
-    	}
-    	catch ( NoSuchObjectException e )
-    	{
-    		System.out.println( "Couldn't unexport: " + remote );
-    	}
+        try
+        {
+            UnicastRemoteObject.unexportObject( remote, true );
+        }
+        catch ( NoSuchObjectException e )
+        {
+            System.out.println( "Couldn't unexport: " + remote );
+        }
     }
-    
+
     @Override
     public void setSessionVariable( String key, Serializable value ) throws ShellException
     {

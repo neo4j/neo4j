@@ -48,7 +48,7 @@ public class ProcessTestUtil
                     " failed, returned exit value " + result );
         }
     }
-    
+
     public static Future<Integer> startSubProcess( Class<?> mainClass, String... arguments ) throws IOException
     {
         List<String> args = new ArrayList<>();

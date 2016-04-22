@@ -93,7 +93,6 @@ public class DecayingFlags
      */
     private final int keepalive;
 
-
     /**
      * @param keepalive controls the maximum length of time
      *                     a flag will stay toggled if it is not

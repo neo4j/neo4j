@@ -144,7 +144,6 @@ public class Start extends TransactionProvidingApp
         return query.endsWith( ";" );
     }
 
-
     protected QueryExecutionEngine getEngine()
     {
         if ( this.engine == null )

@@ -29,7 +29,7 @@ class PostorderDepthFirstSelector implements BranchSelector
 {
     private TraversalBranch current;
     private final PathExpander expander;
-    
+
     PostorderDepthFirstSelector( TraversalBranch startSource, PathExpander expander )
     {
         this.current = startSource;
@@ -46,7 +46,7 @@ class PostorderDepthFirstSelector implements BranchSelector
             {
                 return null;
             }
-            
+
             TraversalBranch next = current.next( expander, metadata );
             if ( next != null )
             {

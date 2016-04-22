@@ -62,7 +62,6 @@ public class ErrorDocumentationGeneratorTest
         assertThat( result, is(equalTo( expected )) );
     }
 
-
     @Test
     public void shouldGenerateTableOfClassifications() throws Exception
     {

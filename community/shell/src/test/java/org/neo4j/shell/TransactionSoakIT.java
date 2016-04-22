@@ -174,7 +174,6 @@ public class TransactionSoakIT
         return threads;
     }
 
-
     private class Reader extends Tester
     {
         public Reader( String name )
@@ -283,7 +282,6 @@ public class TransactionSoakIT
             return name;
         }
     }
-
 
     public void executeCommand( ShellServer server, ShellClient client, String command ) throws Exception
     {

@@ -31,7 +31,7 @@ public interface Action<T,F>
      * For outputting a test case, this is the code that represents this action.
      */
     void printAsCode( T source, LinePrinter out, boolean includeChecks );
-    
+
     public abstract static class Adapter<T,F> implements Action<T,F>
     {
         @Override

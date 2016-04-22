@@ -153,7 +153,6 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
                 .payload( quotedJson( "{ 'statements': [ ] }" ) )
                 .post( location );
 
-
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );
         assertNoErrors( result );
@@ -368,8 +367,6 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         Map<String,Object> stats = (Map<String,Object>) firstResult.get( "stats" );
         assertThat( (Integer) stats.get( "nodes_created" ), equalTo( 1 ) );
     }
-
-
 
     private void assertNoErrors( Map<String, Object> response )
     {

@@ -63,7 +63,7 @@ public enum ElectionMessage
         {
             return voteCredentials;
         }
-        
+
         @Override
         public String toString()
         {

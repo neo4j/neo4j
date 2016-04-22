@@ -42,7 +42,6 @@ public class VoteResponseBuilder<MEMBER>
         return this;
     }
 
-
     public VoteResponseBuilder<MEMBER> grant()
     {
         this.voteGranted = true;

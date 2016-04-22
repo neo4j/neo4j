@@ -71,7 +71,6 @@ public class TxStateVisitorTest
         return new GatheringVisitor.PropertyChange( relId, added, changed, removed );
     }
 
-
     private TransactionState state;
     private final Collection<StorageProperty> noProperty = Collections.emptySet();
     private final Collection<Integer> noRemoved = Collections.emptySet();

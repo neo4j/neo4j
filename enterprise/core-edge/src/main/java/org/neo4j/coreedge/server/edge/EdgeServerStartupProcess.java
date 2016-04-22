@@ -84,7 +84,6 @@ public class EdgeServerStartupProcess implements Lifecycle
 
         } while ( !copiedStore );
 
-
         dataSourceManager.start();
         txPuller.startPolling();
     }

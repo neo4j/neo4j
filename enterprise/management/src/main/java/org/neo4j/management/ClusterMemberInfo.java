@@ -64,12 +64,12 @@ public class ClusterMemberInfo implements Serializable
     {
         return available;
     }
-    
+
     public boolean isAlive()
     {
         return alive;
     }
-    
+
     public String getHaRole()
     {
         return haRole;

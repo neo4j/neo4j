@@ -374,7 +374,6 @@ class RWLock
             {
                 ragManager.checkWaitOn( this, tx );
 
-
                 if ( addLockRequest )
                 {
                     lockRequest = new LockRequest( tle, WRITE, currentThread );

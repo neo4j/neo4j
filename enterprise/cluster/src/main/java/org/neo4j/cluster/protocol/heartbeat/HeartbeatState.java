@@ -102,7 +102,6 @@ public enum HeartbeatState
                                 break;
                             }
 
-
                             if ( state.getServer() == null )
                             {
                                 break;

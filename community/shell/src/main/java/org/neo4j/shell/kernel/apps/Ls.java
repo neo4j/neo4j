@@ -94,7 +94,7 @@ public class Ls extends TransactionProvidingApp
     public String getDescription()
     {
         return "Lists the contents of the current node or relationship. " +
-        	"Optionally supply\n" +
+            "Optionally supply\n" +
             "node id for listing a certain node using \"ls <node-id>\"";
     }
 

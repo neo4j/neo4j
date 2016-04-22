@@ -27,13 +27,13 @@ import org.neo4j.helpers.collection.Iterables;
 public class TrackingMessageHolder implements MessageHolder
 {
     private final List<Message> messages = new ArrayList<>();
-    
+
     @Override
     public void offer( Message<? extends MessageType> message )
     {
         messages.add( message );
     }
-    
+
     public <T extends MessageType> Message<T> single()
     {
         return Iterables.single( messages );

@@ -29,14 +29,14 @@ import org.neo4j.graphdb.RelationshipType;
 @Deprecated
 public class PatternRelationship extends AbstractPatternObject<Relationship>
 {
-	private final RelationshipType type;
+    private final RelationshipType type;
     private final boolean directed;
     private final boolean optional;
     private final boolean anyType;
-	private final PatternNode firstNode;
-	private final PatternNode secondNode;
+    private final PatternNode firstNode;
+    private final PatternNode secondNode;
 
-	private boolean isMarked = false;
+    private boolean isMarked = false;
 
     PatternRelationship( PatternNode firstNode,
         PatternNode secondNode, boolean optional, boolean directed )
@@ -49,16 +49,16 @@ public class PatternRelationship extends AbstractPatternObject<Relationship>
         this.type = null;
     }
 
-	PatternRelationship( RelationshipType type, PatternNode firstNode,
-		PatternNode secondNode, boolean optional, boolean directed )
-	{
-	    this.directed = directed;
-	    this.anyType = false;
-		this.type = type;
-		this.firstNode = firstNode;
-		this.secondNode = secondNode;
-		this.optional = optional;
-	}
+    PatternRelationship( RelationshipType type, PatternNode firstNode,
+        PatternNode secondNode, boolean optional, boolean directed )
+    {
+        this.directed = directed;
+        this.anyType = false;
+        this.type = type;
+        this.firstNode = firstNode;
+        this.secondNode = secondNode;
+        this.optional = optional;
+    }
 
     boolean anyRelType()
     {
@@ -73,39 +73,39 @@ public class PatternRelationship extends AbstractPatternObject<Relationship>
      *            relates.
      * @return the other pattern node.
      */
-	public PatternNode getOtherNode( PatternNode node )
-	{
-		if ( node == firstNode )
-		{
-			return secondNode;
-		}
-		if ( node == secondNode )
-		{
-			return firstNode;
-		}
-		throw new RuntimeException( "Node[" + node +
-			"] not in this relationship" );
-	}
+    public PatternNode getOtherNode( PatternNode node )
+    {
+        if ( node == firstNode )
+        {
+            return secondNode;
+        }
+        if ( node == secondNode )
+        {
+            return firstNode;
+        }
+        throw new RuntimeException( "Node[" + node +
+            "] not in this relationship" );
+    }
 
     /**
      * Get the first pattern node that this pattern relationship relates.
      *
      * @return the first pattern node.
      */
-	public PatternNode getFirstNode()
-	{
-		return firstNode;
-	}
+    public PatternNode getFirstNode()
+    {
+        return firstNode;
+    }
 
     /**
      * Get the second pattern node that this pattern relationship relates.
      *
      * @return the second pattern node.
      */
-	public PatternNode getSecondNode()
-	{
-		return secondNode;
-	}
+    public PatternNode getSecondNode()
+    {
+        return secondNode;
+    }
 
     /**
      * Does this pattern relationship represent a relationship that has to exist
@@ -116,25 +116,25 @@ public class PatternRelationship extends AbstractPatternObject<Relationship>
      *         optional relationship, <code>false</code> if it represents a
      *         required relationship.
      */
-	public boolean isOptional()
-	{
-		return optional;
-	}
+    public boolean isOptional()
+    {
+        return optional;
+    }
 
-	void mark()
-	{
-		isMarked = true;
-	}
+    void mark()
+    {
+        isMarked = true;
+    }
 
-	void unMark()
-	{
-		isMarked = false;
-	}
+    void unMark()
+    {
+        isMarked = false;
+    }
 
-	boolean isMarked()
-	{
-		return isMarked;
-	}
+    boolean isMarked()
+    {
+        return isMarked;
+    }
 
     /**
      * Get the {@link RelationshipType} a relationship must have in order to
@@ -143,10 +143,10 @@ public class PatternRelationship extends AbstractPatternObject<Relationship>
      *
      * @return the {@link RelationshipType} of this relationship pattern.
      */
-	public RelationshipType getType()
-	{
-		return type;
-	}
+    public RelationshipType getType()
+    {
+        return type;
+    }
 
     /**
      * Get the direction in which relationships are discovered using this
@@ -158,26 +158,26 @@ public class PatternRelationship extends AbstractPatternObject<Relationship>
      *            relationship from.
      * @return the direction to discover relationships matching this pattern in.
      */
-	public Direction getDirectionFrom( PatternNode fromNode )
+    public Direction getDirectionFrom( PatternNode fromNode )
     {
         if ( !directed )
         {
             return Direction.BOTH;
         }
-	    if ( fromNode.equals( firstNode ) )
-	    {
-	    	return Direction.OUTGOING;
-	    }
-	    if ( fromNode.equals( secondNode ) )
-	    {
-	    	return Direction.INCOMING;
-	    }
-	    throw new RuntimeException( fromNode + " not in " + this );
+        if ( fromNode.equals( firstNode ) )
+        {
+            return Direction.OUTGOING;
+        }
+        if ( fromNode.equals( secondNode ) )
+        {
+            return Direction.INCOMING;
+        }
+        throw new RuntimeException( fromNode + " not in " + this );
     }
 
-	@Override
-	public String toString()
-	{
-		return type + ":" + optional;
-	}
+    @Override
+    public String toString()
+    {
+        return type + ":" + optional;
+    }
 }

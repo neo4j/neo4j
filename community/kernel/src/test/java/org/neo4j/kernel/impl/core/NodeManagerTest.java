@@ -84,7 +84,6 @@ public class NodeManagerTest
         thread.start();
         thread.join();
 
-
         // THEN the new node is picked up by the iterator
         assertThat( addToCollection( allNodes, new ArrayList<Node>() ).size(), is( 2 ) );
         transaction.close();
@@ -142,7 +141,6 @@ public class NodeManagerTest
         tx.close();
         return node;
     }
-
 
     private Relationship createRelationshipWith( String key, Object value )
     {

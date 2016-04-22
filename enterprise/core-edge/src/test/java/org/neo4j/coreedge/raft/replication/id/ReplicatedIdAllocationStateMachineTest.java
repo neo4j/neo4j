@@ -98,7 +98,6 @@ public class ReplicatedIdAllocationStateMachineTest
         assertEquals( 1024, stateMachine.firstUnallocated( someType ) );
     }
 
-
     @Test
     public void outOfOrderRequestShouldBeIgnored() throws IOException
     {

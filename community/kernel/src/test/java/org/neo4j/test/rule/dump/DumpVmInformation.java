@@ -41,7 +41,7 @@ public class DumpVmInformation
                 out.close();
         }
     }
-    
+
     public static void dumpVmInfo( PrintStream out )
     {
         // Find the top thread group
@@ -52,7 +52,7 @@ public class DumpVmInformation
         // Get all the thread groups under the top.
         ThreadGroup[] allGroups = new ThreadGroup[1000];
         topThreadGroup.enumerate( allGroups, true );
-        
+
         // Dump the info.
         for ( ThreadGroup group : allGroups )
         {
@@ -82,14 +82,14 @@ public class DumpVmInformation
             out.println(
                     "\"" + thread.getName() + "\"" +
                     (thread.isDaemon() ? " daemon" : "") +
-            		" prio=" + thread.getPriority() +
-            		" tid=" + thread.getId() +
-            		" " + thread.getState().name().toLowerCase() );
+                    " prio=" + thread.getPriority() +
+                    " tid=" + thread.getId() +
+                    " " + thread.getState().name().toLowerCase() );
             out.println( "  " + State.class.getName() + ": " + thread.getState().name() );
             for ( StackTraceElement element : thread.getStackTrace() )
             {
                 out.println( "\tat " + element );
             }
         }
-    } 
+    }
 }

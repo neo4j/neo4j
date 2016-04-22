@@ -26,7 +26,7 @@ public class OptionDefinition
 {
     private OptionValueType type;
     private String description;
-    
+
     /**
      * @param type the type for the option.
      * @param description the description of the option.
@@ -36,7 +36,7 @@ public class OptionDefinition
         this.type = type;
         this.description = description;
     }
-    
+
     /**
      * @return the option value type.
      */
@@ -44,7 +44,7 @@ public class OptionDefinition
     {
         return this.type;
     }
-    
+
     /**
      * @return the description.
      */

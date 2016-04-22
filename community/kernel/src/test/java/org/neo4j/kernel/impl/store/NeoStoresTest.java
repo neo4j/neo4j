@@ -173,7 +173,6 @@ public class NeoStoresTest
                 fs.get(), StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
         NeoStores neoStores = sf.openNeoStores( true, StoreType.NODE_LABEL );
 
-
         exception.expect( IllegalStateException.class );
         exception.expectMessage(
                 "Specified store was not initialized. Please specify " + StoreType.META_DATA.name() +

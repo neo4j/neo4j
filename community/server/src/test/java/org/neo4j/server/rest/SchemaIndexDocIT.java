@@ -71,7 +71,6 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
 
         Map<String,Object> serialized = jsonToMap( result );
 
-
         Map<String,Object> index = new HashMap<>();
         index.put( "label", labelName );
         index.put( "property_keys", singletonList( propertyKey ) );

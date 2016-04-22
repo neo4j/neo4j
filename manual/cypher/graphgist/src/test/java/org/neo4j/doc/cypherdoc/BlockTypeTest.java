@@ -358,7 +358,6 @@ public class BlockTypeTest
         doReturn( "apa" ).when( state ).prettify( httpQuery.capture() );
         state.knownFiles.add( "my_file.csv" );
 
-
         // when
         block.process( state );
 

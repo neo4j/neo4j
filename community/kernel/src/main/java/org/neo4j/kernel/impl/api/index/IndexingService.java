@@ -100,7 +100,6 @@ public class IndexingService extends LifecycleAdapter
     private final JobScheduler scheduler;
     private final Runnable schemaStateChangeCallback;
 
-
     enum State
     {
         NOT_STARTED,

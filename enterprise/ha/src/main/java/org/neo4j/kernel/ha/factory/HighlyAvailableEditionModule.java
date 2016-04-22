@@ -250,7 +250,6 @@ public class HighlyAvailableEditionModule
                         lastTxIdGetter, () -> electionProviderRef.get().getCurrentState()
                 );
 
-
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
 
         ClusterClientModule clusterClientModule = new ClusterClientModule( clusteringLife, dependencies, monitors,
@@ -422,7 +421,6 @@ public class HighlyAvailableEditionModule
                             platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
                             platformModule.dependencies.resolveDependency( LogicalTransactionStore.class ) );
 
-
                     return new MasterServer( master1, logging.getInternalLogProvider(),
                             masterServerConfig( config ),
                             new BranchDetectingTxVerifier( logging.getInternalLogProvider(), txChecksumLookup ),
@@ -452,11 +450,9 @@ public class HighlyAvailableEditionModule
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
 
-
         paxosLife.add( highAvailabilityModeSwitcher );
 
         componentSwitcherContainer.add( new UpdatePullerSwitcher( updatePullerDelegate, pullerFactory ) );
-
 
         life.add( requestContextFactory );
         life.add( responseUnpacker );

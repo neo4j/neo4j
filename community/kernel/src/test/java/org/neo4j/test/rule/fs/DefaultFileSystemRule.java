@@ -51,7 +51,7 @@ public class DefaultFileSystemRule extends ExternalResource
         }
         return fs;
     }
-    
+
     public void clear()
     {
         fs = new DefaultFileSystemAbstraction();

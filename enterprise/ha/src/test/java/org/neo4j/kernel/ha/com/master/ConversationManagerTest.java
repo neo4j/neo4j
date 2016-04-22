@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
@@ -40,7 +39,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 
 @RunWith( MockitoJUnitRunner.class )
 public class ConversationManagerTest
@@ -107,7 +105,6 @@ public class ConversationManagerTest
         conversationOrder.verify(conversationStorage).release( requestContext );
         conversationOrder.verify(conversationStorage).end( requestContext );
     }
-
 
     @Test
     public void testConversationStop()

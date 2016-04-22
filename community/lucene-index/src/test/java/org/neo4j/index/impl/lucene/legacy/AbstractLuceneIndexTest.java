@@ -57,13 +57,13 @@ public abstract class AbstractLuceneIndexTest
     {
         graphDb.shutdown();
     }
-    
+
     @After
     public void commitTx()
     {
         finishTx( true );
     }
-    
+
     public void rollbackTx()
     {
         finishTx( false );
@@ -100,7 +100,7 @@ public abstract class AbstractLuceneIndexTest
     protected interface EntityCreator<T extends PropertyContainer>
     {
         T create( Object... properties );
-        
+
         void delete( T entity );
     }
 
@@ -114,7 +114,7 @@ public abstract class AbstractLuceneIndexTest
             setProperties( node, properties );
             return node;
         }
-        
+
         public void delete( Node entity )
         {
             entity.delete();
@@ -129,7 +129,7 @@ public abstract class AbstractLuceneIndexTest
                     setProperties( rel, properties );
                     return rel;
                 }
-                
+
                 public void delete( Relationship entity )
                 {
                     entity.delete();
@@ -151,13 +151,13 @@ public abstract class AbstractLuceneIndexTest
             setProperties( rel, properties );
             return rel;
         }
-        
+
         public void delete( Relationship entity )
         {
             entity.delete();
         }
     }
-    
+
     private static void setProperties( PropertyContainer entity, Object... properties )
     {
         for ( Map.Entry<String, Object> entry : MapUtil.map( properties ).entrySet() )
@@ -165,27 +165,27 @@ public abstract class AbstractLuceneIndexTest
             entity.setProperty( entry.getKey(), entry.getValue() );
         }
     }
-    
+
     protected Index<Node> nodeIndex( Map<String, String> config )
     {
         return nodeIndex( currentIndexName(), config );
     }
-    
+
     protected Index<Node> nodeIndex( String name, Map<String, String> config )
     {
         return graphDb.index().forNodes( name, config );
     }
-    
+
     protected RelationshipIndex relationshipIndex( Map<String, String> config )
     {
         return relationshipIndex( currentIndexName(), config );
     }
-    
+
     protected RelationshipIndex relationshipIndex( String name, Map<String, String> config )
     {
         return graphDb.index().forRelationships( name, config );
     }
-    
+
     protected String currentIndexName()
     {
         return testname.getMethodName();

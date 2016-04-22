@@ -129,7 +129,6 @@ public class StatementDeserializerTest
         assertThat( de.hasNext(), equalTo( false ) );
     }
 
-
     @Test
     public void shouldTreatEmptyInputStreamAsEmptyStatementList() throws Exception
     {
@@ -180,7 +179,6 @@ public class StatementDeserializerTest
                         "deserialize request. " +
                         "Expected [START_OBJECT, FIELD_NAME, START_ARRAY], " +
                         "found [START_OBJECT, END_OBJECT, null]." ) ) );
-
 
         assertYieldsErrors( "{ \"statements\":\"WAIT WAT A STRING NOO11!\" }",
                 new Neo4jError( Status.Request.InvalidFormat, new DeserializationException( "Unable to " +

@@ -252,7 +252,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
-
     private final Monitors monitors;
     private final Tracers tracers;
 
@@ -469,7 +468,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     storageEngine.storeReadLayer(),
                     updateableSchemaState, dependencies.resolveDependency( LabelScanStore.class ),
                     storageEngine, indexConfigStore, transactionIdStore );
-
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
             this.storageEngine = storageEngine;

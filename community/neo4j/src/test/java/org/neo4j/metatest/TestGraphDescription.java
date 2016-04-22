@@ -136,7 +136,7 @@ public class TestGraphDescription implements GraphHolder
                             "name", "I" ).hasNext() );
         }
     }
-    
+
     @Test
     @Graph( nodes = { @NODE( name = "I", setNameProperty=true, properties = {
                     @PROP( key = "name", value = "I" )})}, autoIndexNodes=true )

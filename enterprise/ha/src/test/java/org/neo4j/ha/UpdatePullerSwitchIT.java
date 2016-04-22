@@ -89,7 +89,6 @@ public class UpdatePullerSwitchIT
         // checking pulling threads
         verifyUpdatePullerThreads();
 
-
         // and finally switching roles back
         ClusterManager.RepairKit justiceRepairKit = managedCluster.shutdown( managedCluster.getMaster() );
         managedCluster.await( ClusterManager.masterAvailable() );

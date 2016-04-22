@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC
+        "-//Puppy Crawl//DTD Check Configuration 1.2//EN"
+        "http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
+
+<module name="Checker">
+
+  <property name="charset" value="UTF-8"/>
+  <property name="fileExtensions" value="java"/>
+
+  <!-- Require license headers (GPL, AGPL or Apache 2.0) -->
+  <module name="RegexpSingleline">
+    <property name="format"
+              value="^(\s|\*)*Copyright \(c\) 2002-[0-9]{4} &quot;Neo Technology,&quot;*$|^(\s|\*)*Licensed to Neo Technology under one or more contributor*$"/>
+    <property name="minimum" value="1"/>
+    <property name="maximum" value="1"/>
+    <property name="message" value="Missing, wrong or duplicated license header"/>
+  </module>
+
+  <!-- Prohibit tabs -->
+  <module name="FileTabCharacter">
+    <property name="eachLine" value="true"/>
+  </module>
+
+  <!-- Require new line at the end of file -->
+  <module name="NewlineAtEndOfFile"/>
+
+  <!-- Prohibit trailing spaces -->
+  <module name="RegexpSingleline">
+    <property name="format" value="\s+$"/>
+    <property name="minimum" value="0"/>
+    <property name="maximum" value="0"/>
+    <property name="message" value="Line has trailing spaces."/>
+  </module>
+
+  <!-- Prohibit consecutive empty lines (except the lines after package/import) -->
+  <module name="RegexpMultiline">
+    <property name="format" value="\n *(?!package )(?!import )[^\n]+\n{3,}"/>
+    <property name="message" value="Two or more consecutive empty lines"/>
+  </module>
+
+</module>

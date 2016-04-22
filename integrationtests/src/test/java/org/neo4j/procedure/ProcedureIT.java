@@ -662,7 +662,6 @@ public class ProcedureIT
         }
     }
 
-
     public static class NodeOutput
     {
         public Node node;

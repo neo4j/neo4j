@@ -57,7 +57,6 @@ abstract class IndexKey implements CountsKey
         return type;
     }
 
-
     @Override
     public int hashCode()
     {

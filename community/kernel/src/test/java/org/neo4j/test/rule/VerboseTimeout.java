@@ -148,7 +148,6 @@ public class VerboseTimeout extends Timeout
         }
     }
 
-
     /**
      * Statement that in case of timeout, unlike junit {@link org.junit.internal.runners.statements.FailOnTimeout}
      * will print thread dumps of all threads in JVM, that should help in investigation of stuck threads.

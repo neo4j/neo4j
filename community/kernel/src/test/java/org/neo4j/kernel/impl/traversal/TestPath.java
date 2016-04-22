@@ -61,23 +61,21 @@ public class TestPath extends TraversalTestBase
     {
         tx.close();
     }
-    
+
     @Test
     public void testPathIterator()
     {
         Path path = getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( node( "A" ) ).iterator().next();
-        
+
         assertPathIsCorrect( path );
     }
 
-
-    
     @Test
     public void reverseNodes() throws Exception
     {
         Path path = Iterables.first( getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a ) );
         assertContains( path.reverseNodes(), a );
-        
+
         path = Iterables.first( getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a ) );
         assertContainsInOrder( path.reverseNodes(), e, d, c, b, a );
     }
@@ -87,7 +85,7 @@ public class TestPath extends TraversalTestBase
     {
         Path path = Iterables.first( getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a ) );
         assertFalse( path.reverseRelationships().iterator().hasNext() );
-        
+
         path = Iterables.first( getGraphDb().traversalDescription().evaluator( atDepth( 4 ) ).traverse( a ) );
         Node[] expectedNodes = new Node[] { e, d, c, b, a };
         int index = 0;
@@ -95,7 +93,7 @@ public class TestPath extends TraversalTestBase
             assertEquals( "For index " + index, expectedNodes[index++], rel.getEndNode() );
         assertEquals( 4, index );
     }
-    
+
     @Test
     public void testBidirectionalPath() throws Exception
     {
@@ -104,9 +102,9 @@ public class TestPath extends TraversalTestBase
                 getGraphDb().bidirectionalTraversalDescription().mirroredSides( side );
         Path bidirectionalPath = Iterables.first( bidirectional.traverse( a, e ) );
         assertPathIsCorrect( bidirectionalPath );
-        
+
         assertEquals( a, Iterables.first( bidirectional.traverse( a, e ) ).startNode() );
-        
+
         // White box testing below: relationships(), nodes(), reverseRelationships(), reverseNodes()
         // does cache the start node if not already cached, so just make sure they to it properly.
         bidirectionalPath = Iterables.first( bidirectional.traverse( a, e ) );

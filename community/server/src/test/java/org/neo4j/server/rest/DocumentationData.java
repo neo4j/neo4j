@@ -75,7 +75,6 @@ class DocumentationData
     {
         this.title = title;
     }
-    
 
     public void setUri( final String uri )
     {

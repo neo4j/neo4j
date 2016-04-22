@@ -24,5 +24,3 @@ public interface StoreFileReceiver
     StoreFileStreams getStoreFileStreams();
 }
 
-
-

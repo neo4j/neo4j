@@ -146,7 +146,6 @@ public class StatementDeserializer extends PrefetchingIterator<Statement>
                     return new Statement( statement, parameters == null ? NO_PARAMETERS : parameters, includeStats,
                                           ResultDataContent.fromNames( resultsDataContents ) );
 
-
                 case FINISHED:
                     return null;
             }

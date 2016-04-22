@@ -347,7 +347,6 @@ public class BufferingLog extends AbstractLog
         }
     };
 
-
     @Override
     public boolean isDebugEnabled()
     {

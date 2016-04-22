@@ -38,167 +38,167 @@ import static org.neo4j.shell.TextUtil.tokenizeStringWithQuotes;
  */
 public abstract class ScriptExecutor
 {
-	protected abstract String getPathKey();
+    protected abstract String getPathKey();
 
-	protected String getDefaultPaths()
-	{
-		return ".:src:src" + File.separator + "script";
-	}
+    protected String getDefaultPaths()
+    {
+        return ".:src:src" + File.separator + "script";
+    }
 
-	/**
-	 * Executes a groovy script (with arguments) defined in {@code line}.
-	 * @param line the line which defines the groovy script with arguments.
-	 * @param session the {@link Session} to include as argument in groovy.
-	 * @param out the {@link Output} to include as argument in groovy.
-	 * @throws ShellException if the execution of a groovy script fails.
-	 */
-	public void execute( String line, Session session, Output out )
-		throws Exception
-	{
-		this.ensureDependenciesAreInClasspath();
-		if ( line == null || line.trim().length() == 0 )
-		{
-			return;
-		}
+    /**
+     * Executes a groovy script (with arguments) defined in {@code line}.
+     * @param line the line which defines the groovy script with arguments.
+     * @param session the {@link Session} to include as argument in groovy.
+     * @param out the {@link Output} to include as argument in groovy.
+     * @throws ShellException if the execution of a groovy script fails.
+     */
+    public void execute( String line, Session session, Output out )
+        throws Exception
+    {
+        this.ensureDependenciesAreInClasspath();
+        if ( line == null || line.trim().length() == 0 )
+        {
+            return;
+        }
 
-		List<String> pathList = this.getEnvPaths( session );
-		String[] paths = pathList.toArray( new String[ pathList.size() ] );
-		Object interpreter = this.newInterpreter( paths );
-		Map<String, Object> properties = new HashMap<>();
-		properties.put( "out", out );
-		properties.put( "session", session );
-		this.runScripts( interpreter, properties, line, paths );
-	}
+        List<String> pathList = this.getEnvPaths( session );
+        String[] paths = pathList.toArray( new String[ pathList.size() ] );
+        Object interpreter = this.newInterpreter( paths );
+        Map<String, Object> properties = new HashMap<>();
+        properties.put( "out", out );
+        properties.put( "session", session );
+        this.runScripts( interpreter, properties, line, paths );
+    }
 
-	private void runScripts( Object interpreter,
-		Map<String, Object> properties, String line, String[] paths )
-		throws Exception
-	{
-		ArgReader reader = new ArgReader( tokenizeStringWithQuotes( line ) );
-		while ( reader.hasNext() )
-		{
-			String arg = reader.next();
-			if ( arg.startsWith( "--" ) )
-			{
-				String[] scriptArgs = getScriptArgs( reader );
-				String scriptName = arg.substring( 2 );
-				Map<String, Object> props = new HashMap<>( properties );
-				props.put( "args", scriptArgs );
-				this.runScript( interpreter, scriptName, props, paths );
-			}
-		}
-	}
+    private void runScripts( Object interpreter,
+        Map<String, Object> properties, String line, String[] paths )
+        throws Exception
+    {
+        ArgReader reader = new ArgReader( tokenizeStringWithQuotes( line ) );
+        while ( reader.hasNext() )
+        {
+            String arg = reader.next();
+            if ( arg.startsWith( "--" ) )
+            {
+                String[] scriptArgs = getScriptArgs( reader );
+                String scriptName = arg.substring( 2 );
+                Map<String, Object> props = new HashMap<>( properties );
+                props.put( "args", scriptArgs );
+                this.runScript( interpreter, scriptName, props, paths );
+            }
+        }
+    }
 
-	protected abstract void runScript( Object interpreter,
-		String scriptName, Map<String, Object> properties, String[] paths )
-		throws Exception;
+    protected abstract void runScript( Object interpreter,
+        String scriptName, Map<String, Object> properties, String[] paths )
+        throws Exception;
 
-	private String[] getScriptArgs( ArgReader reader )
-	{
-		reader.mark();
-		try
-		{
-			ArrayList<String> list = new ArrayList<>();
-			while ( reader.hasNext() )
-			{
-				String arg = reader.next();
-				if ( arg.startsWith( "--" ) )
-				{
-					break;
-				}
-				list.add( arg );
-				reader.mark();
-			}
-			return list.toArray( new String[ list.size() ] );
-		}
-		finally
-		{
-			reader.flip();
-		}
-	}
+    private String[] getScriptArgs( ArgReader reader )
+    {
+        reader.mark();
+        try
+        {
+            ArrayList<String> list = new ArrayList<>();
+            while ( reader.hasNext() )
+            {
+                String arg = reader.next();
+                if ( arg.startsWith( "--" ) )
+                {
+                    break;
+                }
+                list.add( arg );
+                reader.mark();
+            }
+            return list.toArray( new String[ list.size() ] );
+        }
+        finally
+        {
+            reader.flip();
+        }
+    }
 
-	private List<String> getEnvPaths( Session session )
-		throws ShellException
-	{
-	    List<String> list = new ArrayList<>();
-	    collectPaths( list, ( String ) session.get( getPathKey() ) );
-	    collectPaths( list, getDefaultPaths() );
-	    return list;
-	}
+    private List<String> getEnvPaths( Session session )
+        throws ShellException
+    {
+        List<String> list = new ArrayList<>();
+        collectPaths( list, ( String ) session.get( getPathKey() ) );
+        collectPaths( list, getDefaultPaths() );
+        return list;
+    }
 
-	private void collectPaths( List<String> paths, String pathString )
-	{
-		if ( pathString != null && pathString.trim().length() > 0 )
-		{
-			for ( String path : pathString.split( ":" ) )
-			{
-				paths.add( path );
-			}
-		}
-	}
+    private void collectPaths( List<String> paths, String pathString )
+    {
+        if ( pathString != null && pathString.trim().length() > 0 )
+        {
+            for ( String path : pathString.split( ":" ) )
+            {
+                paths.add( path );
+            }
+        }
+    }
 
-	protected abstract Object newInterpreter( String[] paths )
-		throws Exception;
+    protected abstract Object newInterpreter( String[] paths )
+        throws Exception;
 
-	protected abstract void ensureDependenciesAreInClasspath()
-		throws Exception;
+    protected abstract void ensureDependenciesAreInClasspath()
+        throws Exception;
 
-	static class ArgReader implements Iterator<String>
-	{
-		private static final int START_INDEX = -1;
+    static class ArgReader implements Iterator<String>
+    {
+        private static final int START_INDEX = -1;
 
-		private int index = START_INDEX;
-		private final String[] args;
-		private Integer mark;
+        private int index = START_INDEX;
+        private final String[] args;
+        private Integer mark;
 
-		ArgReader( String[] args )
-		{
-			this.args = args;
-		}
+        ArgReader( String[] args )
+        {
+            this.args = args;
+        }
 
-		@Override
+        @Override
         public boolean hasNext()
-		{
-			return this.index + 1 < this.args.length;
-		}
+        {
+            return this.index + 1 < this.args.length;
+        }
 
-		@Override
+        @Override
         public String next()
-		{
-			if ( !hasNext() )
-			{
-				throw new NoSuchElementException();
-			}
-			this.index++;
-			return this.args[ this.index ];
-		}
+        {
+            if ( !hasNext() )
+            {
+                throw new NoSuchElementException();
+            }
+            this.index++;
+            return this.args[ this.index ];
+        }
 
-		@Override
+        @Override
         public void remove()
-		{
-			throw new UnsupportedOperationException();
-		}
+        {
+            throw new UnsupportedOperationException();
+        }
 
-		/**
-		 * Marks the position so that a call to {@link #flip()} returns to that
-		 * position.
-		 */
-		public void mark()
-		{
-			this.mark = this.index;
-		}
+        /**
+         * Marks the position so that a call to {@link #flip()} returns to that
+         * position.
+         */
+        public void mark()
+        {
+            this.mark = this.index;
+        }
 
-		/**
-		 * Flips back to the position defined in {@link #mark()}.
-		 */
-		public void flip()
-		{
-			if ( this.mark == null )
-			{
-				throw new IllegalStateException();
-			}
-			this.index = this.mark;
-			this.mark = null;
-		}
-	}
+        /**
+         * Flips back to the position defined in {@link #mark()}.
+         */
+        public void flip()
+        {
+            if ( this.mark == null )
+            {
+                throw new IllegalStateException();
+            }
+            this.index = this.mark;
+            this.mark = null;
+        }
+    }
 }

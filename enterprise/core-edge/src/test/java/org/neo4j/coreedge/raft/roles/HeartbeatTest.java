@@ -143,5 +143,4 @@ public class HeartbeatTest
         return NullLogProvider.getInstance().getLog( getClass() );
     }
 
-
 }

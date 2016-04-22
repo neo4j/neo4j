@@ -73,7 +73,6 @@ public class VersionBridgingRaftEntryStoreTest
         // given
         SingleVersionReader versionReader = mock( SingleVersionReader.class );
 
-
         when( versionReader.readEntriesFrom( positionAtBeginningOfVersion( 0 ) ) ).thenReturn( cursor( entry0, entry1, entry2, entry3 ) );
 
         VersionIndexRanges ranges = new VersionIndexRanges();

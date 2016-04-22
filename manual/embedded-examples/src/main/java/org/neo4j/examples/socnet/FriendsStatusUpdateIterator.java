@@ -16,8 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-
 package org.neo4j.examples.socnet;
 
 import java.util.ArrayList;

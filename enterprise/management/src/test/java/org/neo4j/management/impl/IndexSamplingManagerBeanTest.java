@@ -104,7 +104,6 @@ public class IndexSamplingManagerBeanTest
         storeAccess.triggerIndexSampling( NON_EXISTING_LABEL, EXISTING_PROPERTY, false );
     }
 
-
     @Test(expected = IllegalArgumentException.class)
     public void exceptionThrownWhenMissingProperty()
     {

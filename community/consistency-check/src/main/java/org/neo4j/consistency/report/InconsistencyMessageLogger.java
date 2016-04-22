@@ -30,7 +30,6 @@ public class InconsistencyMessageLogger implements InconsistencyLogger
 {
     private final Log log;
 
-
     public InconsistencyMessageLogger( Log log )
     {
         this.log = log;

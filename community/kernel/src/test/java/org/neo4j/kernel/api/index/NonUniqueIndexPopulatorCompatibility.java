@@ -151,8 +151,6 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
 
         populator.close( true );
 
-
-
         // then
         IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, IndexConfiguration.NON_UNIQUE, indexSamplingConfig );
         try ( IndexReader reader = accessor.newReader() )

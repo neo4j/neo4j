@@ -53,7 +53,7 @@ public class ClosingTablesTest
         // Then
         verify( table ).close();
     }
-    
+
     @Test
     public void longCollectionsMustDelegateCloseToTable()
     {

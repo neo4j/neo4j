@@ -165,7 +165,6 @@ public abstract class PathExpanders
         return printingWrapper( source, new Paths.DefaultPathDescriptor() );
     }
 
-
     /**
      * A wrapper that uses {@link org.neo4j.graphdb.traversal.Paths.DefaultPathDescriptor}
      * to print expanded paths that fulfill {@link BiFunction} predicate.
