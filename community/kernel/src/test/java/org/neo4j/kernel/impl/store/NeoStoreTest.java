@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -35,6 +36,7 @@ import org.neo4j.test.PageCacheRule;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 public class NeoStoreTest
 {
@@ -234,6 +236,29 @@ public class NeoStoreTest
         {
             assertThat( e, instanceOf( IllegalStateException.class ) );
         }
+    }
+
+    @Test
+    public void logIdUsageShouldNotThrowExceptionWithNullIdGenerator() throws IOException
+    {
+        // Given
+        NeoStore neoStore = newNeoStore();
+        neoStore.visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore store ) throws RuntimeException
+            {
+                // Make sure id generator is null
+                store.deleteIdGenerator();
+                return false;
+            }
+        } );
+
+        // When
+        neoStore.logIdUsage( mock( StringLogger.LineLogger.class ) );
+        // Then should not throw exception
+        // Cleanup
+        neoStore.close();
     }
 
     @Test

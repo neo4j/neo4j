@@ -510,12 +510,12 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     /**
      * Returns the next id for this store's {@link IdGenerator}.
      *
-     * @return The next free id
+     * @return The next free id, or -1 if not initialized
      */
     @Override
     public long nextId()
     {
-        return idGenerator.nextId();
+        return idGenerator != null ? idGenerator.nextId() : -1;
     }
 
     /**
@@ -880,10 +880,10 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
     }
 
-    /** @return The total number of ids in use. */
+    /** @return The total number of ids in use, or -1 if not initialized. */
     public long getNumberOfIdsInUse()
     {
-        return idGenerator.getNumberOfIdsInUse();
+        return idGenerator != null ? idGenerator.getNumberOfIdsInUse() : -1;
     }
 
     /**
