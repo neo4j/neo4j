@@ -382,7 +382,8 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
             try
             {
                 delegate.run();
-                log.info( "Completed node store scan. Flushing all pending deletes." + EOL + this );
+                log.info( "Completed node store scan. " +
+                          "Flushing all pending deletes." + EOL + BatchingMultipleIndexPopulator.this );
                 flushAll();
             }
             catch ( Throwable scanError )
