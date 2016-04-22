@@ -255,7 +255,7 @@ public class IndexPopulationJobTest
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
-        when( storeView.visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
+        when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
                 Matchers.<Visitor<NodePropertyUpdates,RuntimeException>>any(),
                 Matchers.<Visitor<NodeLabelUpdate,RuntimeException>>any()) )
                 .thenReturn(storeScan );
@@ -263,10 +263,10 @@ public class IndexPopulationJobTest
         final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView,
                 NullLogProvider.getInstance(), false );
 
-        OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<Void>(
+        OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<>(
                 "Population job test runner", null ) );
         Future<Void> runFuture = populationJobRunner
-                .executeDontWait( (WorkerCommand<Void,Void>) state -> {
+                .executeDontWait( state -> {
                     job.run();
                     return null;
                 } );

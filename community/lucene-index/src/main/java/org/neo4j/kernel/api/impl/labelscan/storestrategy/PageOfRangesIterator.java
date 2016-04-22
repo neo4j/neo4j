@@ -61,9 +61,12 @@ class PageOfRangesIterator extends PrefetchingIterator<PrimitiveLongIterator>
     {
         switch ( occur )
         {
-        case MUST: return false;
-        case SHOULD: return true;
-        default: throw new IllegalArgumentException( "Unexpected occurence parameter " + occur );
+        case MUST:
+            return false;
+        case SHOULD:
+            return true;
+        default:
+            throw new IllegalArgumentException( "Unexpected occurence parameter " + occur );
         }
     }
 

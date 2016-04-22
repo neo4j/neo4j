@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -69,7 +70,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLogProvider;
@@ -85,7 +86,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
 {
@@ -152,18 +152,12 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                 nativeStores = new StoreAccess( neoStore );
             }
             nativeStores.initialize();
-            IndexStoreView indexStoreView =
-                    new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
-            directStoreAccess = new DirectStoreAccess(
-                    nativeStores,
-                    new LuceneLabelScanStoreBuilder(
-                            directory,
-                            fullStoreLabelUpdateStream( () -> indexStoreView ),
-                            fileSystem,
-                            FormattedLogProvider.toOutputStream( System.out )
-                    ).build(),
-                    createIndexes( fileSystem )
-            );
+
+            IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
+            LabelScanStore labelScanStore = new LuceneLabelScanStoreBuilder( directory, indexStoreView,
+                    fileSystem, FormattedLogProvider.toOutputStream( System.out ) )
+                    .build();
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, createIndexes( fileSystem ) );
         }
         return directStoreAccess;
     }

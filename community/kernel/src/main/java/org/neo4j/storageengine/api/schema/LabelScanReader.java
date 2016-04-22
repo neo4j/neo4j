@@ -50,4 +50,10 @@ public interface LabelScanReader extends Resource
      * @return label ids for the given {@code nodeId}.
      */
     PrimitiveLongIterator labelsForNode( long nodeId );
+
+    /**
+     * Highest available in index node id
+     * @return maximum labeled node id
+     */
+    long getHighestIndexedNodeId();
 }

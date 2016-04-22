@@ -127,8 +127,7 @@ public class MultipleIndexPopulatorTest
         multipleIndexPopulator.create();
         multipleIndexPopulator.indexAllNodes();
 
-        verify( indexStoreView ).visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
-                any( Visitor.class ), any( Visitor.class ) );
+        verify( indexStoreView ).visitNodes( any(int[].class), any( IntPredicate.class ), any( Visitor.class ), any( Visitor.class ) );
     }
 
     @Test

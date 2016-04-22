@@ -99,7 +99,6 @@ public class LuceneLabelScanStoreWriterTest
     @After
     public void closeDirFactory() throws Exception
     {
-        System.setProperty( "labelScanStore.maxPartitionSize", "");
         dirFactory.close();
     }
 
@@ -262,11 +261,9 @@ public class LuceneLabelScanStoreWriterTest
         int labelNode1 = 201;
         int labelNode2 = 202;
 
-        System.setProperty( "labelScanStore.maxPartitionSize", "2" );
-
         StubIndexPartition partition = newStubIndexPartition();
         LuceneLabelScanIndex index = buildLabelScanIndex( partition );
-        PartitionedLuceneLabelScanWriter writer = createWriter( index );
+        PartitionedLuceneLabelScanWriter writer = createWriter( index, 2 );
 
         writer.write( NodeLabelUpdate.labelChanges( nodeForPartition1, new long[]{}, new long[]{labelNode1} ) );
 
@@ -277,7 +274,12 @@ public class LuceneLabelScanStoreWriterTest
 
     private PartitionedLuceneLabelScanWriter createWriter( LuceneLabelScanIndex index )
     {
-        return new PartitionedLuceneLabelScanWriter( index, format );
+        return createWriter( index, IndexWriter.MAX_DOCS );
+    }
+
+    private PartitionedLuceneLabelScanWriter createWriter( LuceneLabelScanIndex index, int maxPartitionSize )
+    {
+        return new PartitionedLuceneLabelScanWriter( index, format, maxPartitionSize );
     }
 
     private StubIndexPartition newStubIndexPartition( File folder )

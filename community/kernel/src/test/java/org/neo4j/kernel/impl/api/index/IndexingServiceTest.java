@@ -899,7 +899,7 @@ public class IndexingServiceTest
         when( indexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) ) )
                 .thenReturn( accessor );
-        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.<File>emptyIterator() );
+        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.emptyIterator() );
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ),
                 any( LabelScanStoreProvider.class ) ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
@@ -938,7 +938,7 @@ public class IndexingServiceTest
 
         void getsProcessedByStoreScanFrom( IndexStoreView mock )
         {
-            when( mock.visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
+            when( mock.visitNodes( any(int[].class), any( IntPredicate.class ),
                     any( Visitor.class ), any( Visitor.class ) ) ).thenAnswer( this );
         }
 

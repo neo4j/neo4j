@@ -66,6 +66,12 @@ public class SimpleLuceneLabelScanStoreReader implements LabelScanReader
     }
 
     @Override
+    public long getHighestIndexedNodeId()
+    {
+        return strategy.getHighestIndexedNodeId( partitionSearcher.getIndexSearcher() );
+    }
+
+    @Override
     public void close()
     {
         try

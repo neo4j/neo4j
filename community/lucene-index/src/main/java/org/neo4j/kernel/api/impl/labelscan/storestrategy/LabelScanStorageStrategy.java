@@ -36,4 +36,6 @@ public interface LabelScanStorageStrategy
     AllEntriesLabelScanReader newNodeLabelReader( LuceneAllDocumentsReader allDocumentsReader );
 
     PrimitiveLongIterator labelsForNode( IndexSearcher searcher, long nodeId );
+
+    long getHighestIndexedNodeId( IndexSearcher indexSearcher );
 }
