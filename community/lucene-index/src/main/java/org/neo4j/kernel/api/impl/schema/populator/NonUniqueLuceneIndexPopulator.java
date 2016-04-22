@@ -27,22 +27,38 @@ import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
  * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes.
- * Performs sampling using {@link NonUniqueIndexSampler}.
+ * Performs sampling using {@link DefaultNonUniqueIndexSampler}.
  */
 public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
-    private final NonUniqueIndexSampler sampler;
+    private final IndexSamplingConfig samplingConfig;
+    private NonUniqueIndexSampler sampler;
+    private boolean updateSampling;
 
     public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
     {
         super( luceneIndex );
-        this.sampler = new NonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+        this.samplingConfig = samplingConfig;
+    }
+
+    @Override
+    public void configureSampling( boolean fullIndexSampling )
+    {
+        this.updateSampling = fullIndexSampling;
+        this.sampler = fullIndexSampling ? createDefaultSampler()
+                                         : new DirectNonUniqueIndexSampler( luceneIndex );
+    }
+
+    private DefaultNonUniqueIndexSampler createDefaultSampler()
+    {
+        return new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
     }
 
     @Override
@@ -54,18 +70,32 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
     {
+        checkSampler();
         return new NonUniqueLuceneIndexPopulatingUpdater( writer, sampler );
     }
 
     @Override
     public void includeSample( NodePropertyUpdate update )
     {
-        sampler.include( LuceneDocumentStructure.encodedStringValue( update.getValueAfter() ) );
+        if (updateSampling)
+        {
+            checkSampler();
+            sampler.include( LuceneDocumentStructure.encodedStringValue( update.getValueAfter() ) );
+        }
+    }
+
+    private void checkSampler()
+    {
+        if (sampler == null)
+        {
+            sampler = createDefaultSampler();
+        }
     }
 
     @Override
     public IndexSample sampleResult()
     {
+        checkSampler();
         return sampler.result();
     }
 }

@@ -67,6 +67,12 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
+    public void configureSampling( boolean fullIndexSampling )
+    {
+        // nothing to configure so far
+    }
+
+    @Override
     public IndexSample sampleResult()
     {
         return sampler.result();

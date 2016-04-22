@@ -43,15 +43,15 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
 
     private final List<LabelScanReader> storeReaders;
 
-    public PartitionedLuceneLabelScanStoreReader( List<PartitionSearcher> searchers,
-            LabelScanStorageStrategy storageStrategy )
+    public PartitionedLuceneLabelScanStoreReader( List<PartitionSearcher> searchers, LabelScanStorageStrategy
+            storageStrategy)
     {
         this( searchers.stream()
                 .map( searcher -> new SimpleLuceneLabelScanStoreReader( searcher, storageStrategy ) )
                 .collect( Collectors.toList() ) );
     }
 
-    PartitionedLuceneLabelScanStoreReader(List<LabelScanReader> readers)
+    PartitionedLuceneLabelScanStoreReader(List<LabelScanReader> readers )
     {
         this.storeReaders = readers;
     }
@@ -93,11 +93,10 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
         }
     }
 
-    private PrimitiveLongIterator partitionedOperation(
-            Function<LabelScanReader,PrimitiveLongIterator> readerFunction )
+    private PrimitiveLongIterator partitionedOperation( Function<LabelScanReader,PrimitiveLongIterator> readerFunction )
     {
         return PrimitiveLongCollections.concat( storeReaders.parallelStream()
-                .map( readerFunction::apply )
+                .map( readerFunction )
                 .iterator() );
     }
 }

@@ -90,8 +90,8 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 
-import static java.lang.System.currentTimeMillis;
 import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -246,6 +246,7 @@ public class IndexingServiceTest
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
+        order.verify( populator ).configureSampling( true );
         order.verify( populator ).includeSample( add( 1, "value1" ) );
         order.verify( populator ).add( Mockito.anyListOf (NodePropertyUpdate.class));
 
@@ -1007,7 +1008,7 @@ public class IndexingServiceTest
         when( indexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ),
                 any( IndexSamplingConfig.class ) ) )
                 .thenReturn( accessor );
-        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.<File>emptyIterator() );
+        when( indexProvider.snapshotMetaFiles() ).thenReturn( Iterators.emptyIterator() );
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ),
                 any( LabelScanStoreProvider.class ) ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
@@ -1046,7 +1047,7 @@ public class IndexingServiceTest
 
         void getsProcessedByStoreScanFrom( IndexStoreView mock )
         {
-            when( mock.visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
+            when( mock.visitNodes( any(int[].class), any( IntPredicate.class ),
                     any( Visitor.class ), any( Visitor.class ) ) ).thenAnswer( this );
         }
 

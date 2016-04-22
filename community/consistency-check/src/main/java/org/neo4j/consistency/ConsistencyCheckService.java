@@ -57,14 +57,13 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
-import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 public class ConsistencyCheckService
 {
@@ -147,12 +146,11 @@ public class ConsistencyCheckService
             {
                 IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
                 OperationalMode operationalMode = OperationalMode.single;
-                labelScanStore = new LuceneLabelScanStoreBuilder(
-                        storeDir, fullStoreLabelUpdateStream( () -> indexStoreView ),
-                        fileSystem, consistencyCheckerConfig, operationalMode, logProvider ).build();
-                SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
-                        fileSystem,
-                        DirectoryFactory.PERSISTENT,
+                labelScanStore = new LuceneLabelScanStoreBuilder( storeDir, indexStoreView, fileSystem,
+                        consistencyCheckerConfig, operationalMode, logProvider )
+                        .build();
+
+                SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT,
                         storeDir, logProvider, consistencyCheckerConfig, operationalMode );
 
                 int numberOfThreads = defaultConsistencyCheckThreadsNumber();

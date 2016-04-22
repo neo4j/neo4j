@@ -153,10 +153,15 @@ public class MultipleIndexPopulator implements IndexPopulator
     {
         int[] labelIds = labelIds();
         int[] propertyKeyIds = propertyKeyIds();
-        IntPredicate labelIdFilter = (labelId) -> contains( labelIds, labelId );
         IntPredicate propertyKeyIdFilter = (propertyKeyId) -> contains( propertyKeyIds, propertyKeyId );
 
-        return storeView.visitNodes( labelIdFilter, propertyKeyIdFilter, new NodePopulationVisitor(), null );
+        StoreScan<IndexPopulationFailedKernelException> storeScan =
+                storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null );
+
+        populations.forEach( population -> population.populator.configureSampling( storeView.isFullScan() ) );
+
+        return storeScan;
+
     }
 
     /**
@@ -268,6 +273,12 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
+    public void configureSampling( boolean fullIndexSampling )
+    {
+        throw new UnsupportedOperationException( "Multiple index populator can't be configured." );
+    }
+
+    @Override
     public IndexSample sampleResult()
     {
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
@@ -326,11 +337,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                 {
                     // no need to check for null as nobody else is emptying this queue
                     NodePropertyUpdate update = queue.poll();
-                    // TODO: We see updates twice here from IndexStatisticsTest
-                    if ( update.getNodeId() <= currentlyIndexedNodeId )
-                    {
-                        updater.process( update );
-                    }
+                    storeView.acceptUpdate( updater, update, currentlyIndexedNodeId );
                 }
                 while ( !queue.isEmpty() );
             }
@@ -352,7 +359,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    private static class MultipleIndexUpdater implements IndexUpdater
+    public static class MultipleIndexUpdater implements IndexUpdater
     {
         private final Map<IndexPopulation,IndexUpdater> populationsWithUpdaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
@@ -461,6 +468,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         private void flipToFailed( Throwable t )
         {
+            t.printStackTrace( System.out );
             flipper.flipTo( new FailedIndexProxy( descriptor, config, providerDescriptor, indexUserDescription,
                     populator, failure( t ), indexCountsRemover, logProvider ) );
         }
@@ -499,10 +507,10 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             flipper.flip( () -> {
                 populateFromQueueIfAvailable( Long.MAX_VALUE );
+                storeView.complete(populator, descriptor);
                 IndexSample sample = populator.sampleResult();
                 storeView.replaceIndexCounts( descriptor, sample.uniqueValues(), sample.sampleSize(),
                         sample.indexSize() );
-
                 populator.close( true );
                 return null;
             }, failedIndexProxyFactory );

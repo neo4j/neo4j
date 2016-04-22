@@ -42,7 +42,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -58,6 +57,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -73,7 +73,6 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
@@ -119,6 +118,7 @@ public class IndexPopulationJobTest
         NodePropertyUpdate update = add( nodeId, 0, value, new long[]{0} );
 
         verify( populator ).create();
+        verify( populator ).configureSampling( true );
         verify( populator ).includeSample( update );
         verify( populator ).add( anyListOf(NodePropertyUpdate.class) );
         verify( populator ).verifyDeferredConstraints( indexStoreView );
@@ -166,6 +166,7 @@ public class IndexPopulationJobTest
         NodePropertyUpdate update2 = add( node4, 0, value, new long[]{0} );
 
         verify( populator ).create();
+        verify( populator ).configureSampling( true );
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
         verify( populator, times( 2 ) ).add( anyListOf(NodePropertyUpdate.class ) );
@@ -255,7 +256,7 @@ public class IndexPopulationJobTest
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
-        when( storeView.visitNodes( any( IntPredicate.class ), any( IntPredicate.class ),
+        when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
                 Matchers.<Visitor<NodePropertyUpdates,RuntimeException>>any(),
                 Matchers.<Visitor<NodeLabelUpdate,RuntimeException>>any()) )
                 .thenReturn(storeScan );
@@ -263,10 +264,10 @@ public class IndexPopulationJobTest
         final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView,
                 NullLogProvider.getInstance(), false );
 
-        OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<Void>(
+        OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<>(
                 "Population job test runner", null ) );
         Future<Void> runFuture = populationJobRunner
-                .executeDontWait( (WorkerCommand<Void,Void>) state -> {
+                .executeDontWait( state -> {
                     job.run();
                     return null;
                 } );

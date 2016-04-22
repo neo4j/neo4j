@@ -35,6 +35,9 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
@@ -95,12 +98,15 @@ public class BatchingMultipleIndexPopulatorTest
     {
         setProperty( QUEUE_THRESHOLD_NAME, 2 );
 
+        NeoStoreIndexStoreView storeView =
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, mock( NeoStores.class ) );
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator(
-                mock( IndexStoreView.class ), mock( ExecutorService.class ), NullLogProvider.getInstance() );
+                storeView, mock( ExecutorService.class ), NullLogProvider.getInstance() );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, 1 );
         IndexUpdater updater1 = mock( IndexUpdater.class );
         when( populator1.newPopulatingUpdater( any() ) ).thenReturn( updater1 );
+
 
         IndexPopulator populator2 = addPopulator( batchingPopulator, 2 );
         IndexUpdater updater2 = mock( IndexUpdater.class );

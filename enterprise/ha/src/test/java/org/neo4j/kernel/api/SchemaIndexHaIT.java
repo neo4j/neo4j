@@ -478,6 +478,12 @@ public class SchemaIndexHaIT
         }
 
         @Override
+        public void configureSampling( boolean fullIndexSampling )
+        {
+            //nothing
+        }
+
+        @Override
         public IndexSample sampleResult()
         {
             return delegate.sampleResult();
