@@ -32,7 +32,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
     testQuery(
       title = "Create single node",
       text = "Creating a single node is done by issuing the following query.",
-      queryText = "create (n)",
+      queryText = "CREATE (n)",
       optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
       assertions = (p) => assertStats(p, nodesCreated = 1))
   }
@@ -41,7 +41,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
     testQuery(
       title = "Create multiple nodes",
       text = "Creating multiple nodes is done by separating them with a comma.",
-      queryText = "create (n), (m)",
+      queryText = "CREATE (n), (m)",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 2))
   }
@@ -50,7 +50,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
     testQuery(
       title = "Create a node with a label",
       text = "To add a label when creating a node, use the syntax below.",
-      queryText = "create (n:Person)",
+      queryText = "CREATE (n:Person)",
       optionalResultExplanation = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 1))
   }
@@ -59,7 +59,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
     testQuery(
       title = "Create a node with multiple labels",
       text = "To add labels when creating a node, use the syntax below. In this case, we add two labels.",
-      queryText = "create (n:Person:Swedish)",
+      queryText = "CREATE (n:Person:Swedish)",
       optionalResultExplanation = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, labelsAdded = 2))
   }
@@ -68,7 +68,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
     testQuery(
       title = "Create node and add labels and properties",
       text = "When creating a new node with labels, you can add properties at the same time.",
-      queryText = "create (n:Person {name : 'Andres', title : 'Developer'})",
+      queryText = "CREATE (n:Person {name: 'Andres', title: 'Developer'})",
       optionalResultExplanation = "Nothing is returned from this query.",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesWritten = 2, labelsAdded = 1))
   }
@@ -77,7 +77,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
     testQuery(
       title = "Return created node",
       text = "Creating a single node is done by issuing the following query.",
-      queryText = "create (a {name : 'Andres'}) return a",
+      queryText = "CREATE (a {name: 'Andres'}) RETURN a",
       optionalResultExplanation = "The newly created node is returned.",
       assertions = (p) => assert(p.size === 1))
   }
@@ -94,7 +94,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       title = "Create a relationship between two nodes",
       text = "To create a relationship between two nodes, we first get the two nodes. " +
         "Once the nodes are loaded, we simply create a relationship between them.",
-      queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create (a)-[r:RELTYPE]->(b) return r",
+      queryText = "MATCH (a:Person), (b:Person) WHERE a.name = 'Node A' AND b.name = 'Node B' CREATE (a)-[r:RELTYPE]->(b) RETURN r",
       optionalResultExplanation = "The created relationship is returned by the query.",
       prepare = createTwoPersonNodesWithNames,
       assertions = (p) => assert(p.size === 1))
@@ -111,7 +111,7 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport wit
       text = """When you set a property to an expression that returns a list of values,
 Cypher will turn that into an array. All the elements in the list must be of the same type
 for this to work.""",
-      queryText = "match (n) where exists(n.name) with collect(n.name) as names create (new { name : names }) return new",
+      queryText = "MATCH (n) WHERE exists(n.name) WITH collect(n.name) AS names CREATE (new {name: names}) RETURN new",
       optionalResultExplanation = "A node with an array property named name is returned.",
       prepare = createTwoNodesWithProperty,
       assertions = (p) => {
@@ -126,7 +126,7 @@ for this to work.""",
       text =
         """When you use `CREATE` and a pattern, all parts of the pattern that are not already in scope at this time
 will be created. """,
-      queryText = "create p = (andres {name:'Andres'})-[:WORKS_AT]->(neo)<-[:WORKS_AT]-(michael {name:'Michael'}) return p",
+      queryText = "CREATE p = (andres {name: 'Andres'})-[:WORKS_AT]->(neo)<-[:WORKS_AT]-(michael {name: 'Michael'}) return p",
       optionalResultExplanation = "This query creates three nodes and two relationships in one go, assigns it to a path variable, " +
         "and returns it.",
       assertions = (p) => assertStats(p, nodesCreated = 3, relationshipsCreated = 2, propertiesWritten = 2))
@@ -137,7 +137,7 @@ will be created. """,
       title = "Create a relationship and set properties",
       text = "Setting properties on relationships is done in a similar manner to how it's done when creating nodes. " +
         "Note that the values can be any expression.",
-      queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create (a)-[r:RELTYPE {name : a.name + '<->' + b.name }]->(b) return r",
+      queryText = "MATCH (a:Person), (b:Person) WHERE a.name = 'Node A' AND b.name = 'Node B' CREATE (a)-[r:RELTYPE {name: a.name + '<->' + b.name}]->(b) RETURN r",
       optionalResultExplanation = "The newly created relationship is returned by the example query.",
       prepare = createTwoPersonNodesWithNames,
       assertions = (p) => {
@@ -154,10 +154,10 @@ will be created. """,
       text = """
 You can also create a graph entity from a map.
 All the key/value pairs in the map will be set as properties on the created relationship or node.
-In this case we add a +Person+ label to the node as well.
+In this case we add a `Person` label to the node as well.
 """,
       parameters = Map("props" -> Map("name" -> "Andres", "position" -> "Developer")),
-      queryText = "create (n:Person {props}) return n",
+      queryText = "CREATE (n:Person {props}) RETURN n",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 1, propertiesWritten = 2, labelsAdded = 1))
   }
@@ -169,7 +169,7 @@ In this case we add a +Person+ label to the node as well.
       parameters = Map("props" -> List(
         Map("name" -> "Andres", "position" -> "Developer"),
         Map("name" -> "Michael", "position" -> "Developer"))),
-      queryText = "UNWIND {props} as map CREATE (n) SET n = map",
+      queryText = "UNWIND {props} AS map CREATE (n) SET n = map",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 2, propertiesWritten = 4))
   }

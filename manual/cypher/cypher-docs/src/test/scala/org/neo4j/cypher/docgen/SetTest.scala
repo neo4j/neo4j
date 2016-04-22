@@ -43,8 +43,8 @@ class SetTest extends DocumentingTestBase with QueryStatisticsTestSupport with S
   @Test def set_property_on_node() {
     testQuery(
       title = "Set a property",
-      text = "To set a property on a node or relationship, use +SET+.",
-      queryText = "match (n {name: 'Andres'}) set n.surname = 'Taylor' return n",
+      text = "To set a property on a node or relationship, use `SET`.",
+      queryText = "MATCH (n {name: 'Andres'}) SET n.surname = 'Taylor' RETURN n",
       optionalResultExplanation = "The newly changed node is returned by the query.",
       assertions = (p) => assert(node("Andres").getProperty("surname") === "Taylor"))
   }
@@ -52,9 +52,9 @@ class SetTest extends DocumentingTestBase with QueryStatisticsTestSupport with S
   @Test def set_property_to_null() {
     testQuery(
       title = "Remove a property",
-      text = """Normally you remove a property by using +<<query-remove,REMOVE>>+, but it's sometimes handy to do
-it using the +SET+ command. One example is if the property comes from a parameter.""",
-      queryText = "match (n {name: 'Andres'}) set n.name = null return n",
+      text = """Normally you remove a property by using `<<query-remove,REMOVE>>`, but it's sometimes handy to do
+it using the `SET` command. One example is if the property comes from a parameter.""",
+      queryText = "MATCH (n {name: 'Andres'}) SET n.name = null RETURN n",
       optionalResultExplanation = "The node is returned by the query, and the name property is now missing.",
       assertions = (p) => assertFalse(node("Andres").hasProperty("name")))
   }
@@ -63,13 +63,13 @@ it using the +SET+ command. One example is if the property comes from a paramete
     testQuery(
       title = "Copying properties between nodes and relationships",
       text =
-        """You can also use +SET+ to copy all properties from one graph element to another. Remember that doing this
+        """You can also use `SET` to copy all properties from one graph element to another. Remember that doing this
 will remove all other properties on the receiving graph element.""".stripMargin,
-      queryText = "match (at {name: 'Andres'}), (pn {name: 'Peter'}) set at = pn return at, pn",
-      optionalResultExplanation = "The Andres node has had all it's properties replaced by the properties in the Peter node.",
+      queryText = "MATCH (at {name: 'Andres'}), (pn {name: 'Peter'}) SET at = pn RETURN at, pn",
+      optionalResultExplanation = "The 'Andres' node has had all of its properties replaced by the properties in the 'Peter' node.",
       assertions = (p) => {
         assert(node("Andres").getProperty("name") === "Peter")
-        assertFalse("Didn't expect the Andres node to have an hungry property", node("Andres").hasProperty("hungry"))
+        assertFalse("Didn't expect the Andres node to have a hungry property", node("Andres").hasProperty("hungry"))
       })
   }
 
@@ -80,7 +80,7 @@ will remove all other properties on the receiving graph element.""".stripMargin,
         """When setting properties from a map (literal, paremeter, or graph element), you can use the `+=` form of `SET`
           |to only add properties, and not remove any of the existing properties on the graph element.
         """.stripMargin,
-      queryText = "match (peter {name: 'Peter'}) SET peter += { hungry: true, position: 'Entrepreneur' }",
+      queryText = "MATCH (peter {name: 'Peter'}) SET peter += { hungry: true, position: 'Entrepreneur' }",
       optionalResultExplanation = "",
       assertions = (p) => {
         assert(node("Peter").getProperty("name") === "Peter")
@@ -96,8 +96,8 @@ will remove all other properties on the receiving graph element.""".stripMargin,
 Use a parameter to give the value of a property.
 """,
       parameters = Map("surname" -> "Taylor"),
-      queryText = "match (n {name: 'Andres'}) set n.surname = {surname} return n",
-      optionalResultExplanation = "The Andres node has got an surname added.",
+      queryText = "MATCH (n {name: 'Andres'}) SET n.surname = {surname} RETURN n",
+      optionalResultExplanation = "The Andres node has got a surname added.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesWritten = 1))
   }
 
@@ -108,8 +108,8 @@ Use a parameter to give the value of a property.
 This will replace all existing properties on the node with the new set provided by the parameter.
 """,
       parameters = Map("props" -> Map("name" -> "Andres", "position" -> "Developer")),
-      queryText = "match (n {name: 'Andres'}) set n = {props} return n",
-      optionalResultExplanation = "The Andres node has had all it's properties replaced by the properties in the +props+ parameter.",
+      queryText = "MATCH (n {name: 'Andres'}) SET n = {props} RETURN n",
+      optionalResultExplanation = "The Andres node has had all of its properties replaced by the properties in the `props` parameter.",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesWritten = 4))
   }
 
@@ -117,7 +117,7 @@ This will replace all existing properties on the node with the new set provided 
     testQuery(
       title = "Set multiple properties using one SET clause",
       text = "If you want to set multiple properties in one go, simply separate them with a comma.",
-      queryText = "match (n {name: 'Andres'}) set n.position = 'Developer', n.surname = 'Taylor'",
+      queryText = "MATCH (n {name: 'Andres'}) SET n.position = 'Developer', n.surname = 'Taylor'",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 0, propertiesWritten = 2))
   }
@@ -125,8 +125,8 @@ This will replace all existing properties on the node with the new set provided 
   @Test def set_single_label_on_a_node() {
     testQuery(
       title = "Set a label on a node",
-      text = "To set a label on a node, use +SET+.",
-      queryText = "match (n {name: 'Stefan'}) set n :German return n",
+      text = "To set a label on a node, use `SET`.",
+      queryText = "MATCH (n {name: 'Stefan'}) SET n :German RETURN n",
       optionalResultExplanation = "The newly labeled node is returned by the query.",
       assertions = (p) => assert(getLabelsFromNode(p) === List("German")))
   }
@@ -134,8 +134,8 @@ This will replace all existing properties on the node with the new set provided 
   @Test def set_multiple_labels_on_a_node() {
     testQuery(
       title = "Set multiple labels on a node",
-      text = "To set multiple labels on a node, use +SET+ and separate the different labels using +:+.",
-      queryText = "match (n {name: 'Emil'}) set n :Swedish:Bossman return n",
+      text = "To set multiple labels on a node, use `SET` and separate the different labels using +:+.",
+      queryText = "MATCH (n {name: 'Emil'}) SET n :Swedish:Bossman RETURN n",
       optionalResultExplanation = "The newly labeled node is returned by the query.",
       assertions = (p) => assert(getLabelsFromNode(p) === List("Swedish", "Bossman")))
   }

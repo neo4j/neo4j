@@ -20,11 +20,11 @@ We'll start out with a minimal set of data and see what that gives us.
 
 [source,cypher]
 ----
-CREATE (rachel:User {name: "Rachel Green"})
-CREATE (monica:User {name: "Monica Geller"})
+CREATE (rachel:User {name: 'Rachel Green'})
+CREATE (monica:User {name: 'Monica Geller'})
 CREATE (rachel)-[:FRIEND]->(monica)
-CREATE (monica)-[:POSTED]->(post:Post { text: "You don't like the game, because you suck at it." })
-CREATE (post)<-[:COMMENTED{ text: "lol" }]-(rachel)
+CREATE (monica)-[:POSTED]->(post:Post {text: 'You don't like the game, because you suck at it.'})
+CREATE (post)<-[:COMMENTED {text: 'lol'}]-(rachel)
 ----
 
 [source,querytest]
@@ -43,12 +43,12 @@ Now let's add more data:
 
 [source,cypher]
 ----
-MATCH (rachel:User {name: "Rachel Green"})
-MATCH (monica:User {name: "Monica Geller"})
-CREATE (phoebe:User {name: "Phoebe Buffay"})
-CREATE (joey:User {name: "Joey Tribbiani"})
-CREATE (chandler:User {name: "Chandler Bing"})
-CREATE (ross:User {name: "Ross Geller"})
+MATCH (rachel:User {name: 'Rachel Green'})
+MATCH (monica:User {name: 'Monica Geller'})
+CREATE (phoebe:User {name: 'Phoebe Buffay'})
+CREATE (joey:User {name: 'Joey Tribbiani'})
+CREATE (chandler:User {name: 'Chandler Bing'})
+CREATE (ross:User {name: 'Ross Geller'})
 CREATE (rachel)-[:FRIEND]->(phoebe)
 CREATE (rachel)-[:FRIEND]->(joey)
 CREATE (rachel)-[:FRIEND]->(chandler)
@@ -63,16 +63,16 @@ CREATE (phoebe)-[:FRIEND]->(ross)
 CREATE (joey)-[:FRIEND]->(chandler)
 CREATE (joey)-[:FRIEND]->(ross)
 CREATE (chandler)-[:FRIEND]->(ross)
-CREATE (phoebe)-[:POSTED]->(post1:Post { text: "Chandler still thinks I'm pregnant and he hasn't asked me how I'm feeling or offered to carry my bags. I feel bad for the woman who ends up with him." })
-CREATE (joey)-[:POSTED]->(post2:Post { text: "Just because she went to Yale drama, she thinks she's like the greatest actress since, since, sliced bread!" })
-CREATE (chandler)-[:POSTED]->(post3:Post { text: "In my defense, it was dark and he was a very pretty guy." })
-CREATE (rachel)-[:POSTED]->(post4:Post { text: "I don't want my baby's first words to be 'How You Doing'" })
-CREATE (ross)-[:POSTED]->(post5:Post { text: "Chandler entered a Vanilla Ice look-alike contest and *won*!" })
-CREATE (post1)<-[:COMMENTED{ text: "lol" }]-(rachel)
-CREATE (post2)<-[:COMMENTED{ text: "lol" }]-(chandler)
-CREATE (post3)<-[:COMMENTED{ text: "lol" }]-(joey)
-CREATE (post4)<-[:COMMENTED{ text: "lol" }]-(phoebe)
-CREATE (post5)<-[:COMMENTED{ text: "lol" }]-(ross)
+CREATE (phoebe)-[:POSTED]->(post1:Post {text: "Chandler still thinks I'm pregnant and he hasn't asked me how I'm feeling or offered to carry my bags. I feel bad for the woman who ends up with him."})
+CREATE (joey)-[:POSTED]->(post2:Post {text: "Just because she went to Yale drama, she thinks she's like the greatest actress since, since, sliced bread!"})
+CREATE (chandler)-[:POSTED]->(post3:Post {text: 'In my defense, it was dark and he was a very pretty guy.'})
+CREATE (rachel)-[:POSTED]->(post4:Post {text: "I don't want my baby's first words to be 'How You Doing'"})
+CREATE (ross)-[:POSTED]->(post5:Post {text: 'Chandler entered a Vanilla Ice look-alike contest and *won*!'})
+CREATE (post1)<-[:COMMENTED {text: 'lol'}]-(rachel)
+CREATE (post2)<-[:COMMENTED {text: 'lol'}]-(chandler)
+CREATE (post3)<-[:COMMENTED {text: 'lol'}]-(joey)
+CREATE (post4)<-[:COMMENTED {text: 'lol'}]-(phoebe)
+CREATE (post5)<-[:COMMENTED {text: 'lol'}]-(ross)
 CREATE (post1)<-[:LIKED]-(rachel)
 CREATE (post1)<-[:LIKED]-(monica)
 CREATE (post2)<-[:LIKED]-(chandler)
@@ -97,7 +97,7 @@ We'll start with one to find the posts made by Rachel's friends:
 
 [source,cypher]
 ----
-MATCH (u:User {name: "Rachel Green"})-[:FRIEND]-(f)-[:POSTED]->(post)
+MATCH (u:User {name: 'Rachel Green'})-[:FRIEND]-(f)-[:POSTED]->(post)
 RETURN f.name AS Friend, post.text as Content
 ----
 
@@ -118,7 +118,7 @@ Our next query might be a slight variation on this to collect the people who hav
 
 [source,cypher]
 ----
-MATCH (u:User {name: "Rachel Green"})-[:FRIEND]-(f)-[:POSTED]->(post)<-[like:LIKED]-(liker)
+MATCH (u:User {name: 'Rachel Green'})-[:FRIEND]-(f)-[:POSTED]->(post)<-[like:LIKED]-(liker)
 RETURN f.name AS Friend, post.text as Content, collect(liker.name) as `Liked by`
 ----
 
@@ -135,9 +135,9 @@ In this case we'll gather the data as one map per action.
 
 [source,cypher]
 ----
-MATCH (u:User)-[:FRIEND]-(f)-[:POSTED]->(post)<-[a:LIKED|:COMMENTED]->(person) 
-WHERE u.name = "Rachel Green" 
-RETURN f.name AS Friend, left(post.text, 25) + "..." AS Content, 
+MATCH (u:User)-[:FRIEND]-(f)-[:POSTED]->(post)<-[a:LIKED|:COMMENTED]->(person)
+WHERE u.name = 'Rachel Green'
+RETURN f.name AS Friend, left(post.text, 25) + '...' AS Content,
        collect({ person: person.name, action: type(a), text: a.text }) AS Actions
 ----
 
@@ -149,7 +149,7 @@ In my defense, it was dar...
 
 // table
 
-As there are no texts on the +LIKED+ actions, they will give a +NULL+ back for the +text+ property instead.
+As there are no texts on the `LIKED` actions, they will give a `NULL` back for the `text` property instead.
 
 For a different social network data model optimized for easy access to the latest posts from everyone, see <<cypher-cookbook-newsfeed>>.
 

@@ -31,7 +31,7 @@ The following points give some details on how the comparison is performed.
 * The special value `java.lang.Double.NaN` is regarded as being larger than all other numbers.
 * String values are compared for ordering using lexicographic order (e.g. `"x" < "xy"`).
 * Boolean values are compared for ordering such that `false < true`.
-* Comparing for ordering when one argument is +NULL+ is +NULL+ (e.g. `NULL < 3` is +NULL+).
+* Comparing for ordering when one argument is `NULL` is `NULL` (e.g. `NULL < 3` is `NULL`).
 * It is an error to compare other types of values with each other for ordering.
 
 == Chaining Comparison Operations ==

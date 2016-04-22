@@ -113,7 +113,7 @@ class ConstraintsTest extends DocumentingTestBase with SoftReset {
 
     prepareAndTestQuery(
       title = "Drop node property existence constraint",
-      text = "By using +DROP+ +CONSTRAINT+, you remove a constraint from the database.",
+      text = "By using `DROP` `CONSTRAINT`, you remove a constraint from the database.",
       queryText = "DROP CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)",
       optionalResultExplanation = "",
       prepare = _ => executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT exists(book.isbn)")),

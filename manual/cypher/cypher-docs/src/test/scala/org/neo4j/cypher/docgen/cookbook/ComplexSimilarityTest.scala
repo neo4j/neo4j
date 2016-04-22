@@ -30,9 +30,9 @@ class ComplexSimilarityTest extends DocumentingTestBase {
   override protected def getGraphvizStyle: GraphStyle = {
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
   }
-  
+
   override val setupQueries = List(
-      "CREATE (me {name:'me'})-[:ATE {times:10}]->(food {name:'meat'})<-[:ATE {times:5}]-(you {name:'you'})")
+      "CREATE (me {name: 'me'})-[:ATE {times: 10}]->(food {name: 'meat'})<-[:ATE {times: 5}]-(you {name: 'you'})")
 
   @Test def testSimliarity() {
     testQuery(
@@ -45,5 +45,5 @@ MATCH (me)-[r1:ATE]->(food)<-[r2:ATE]-(you)
 RETURN sum((1-ABS(r1.times/H1-r2.times/H2))*(r1.times+r2.times)/(H1+H2)) as similarity""",
       optionalResultExplanation = "The two players and their similarity measure.",
       assertions = (p) => assertEquals(List(Map("similarity" -> -30.0)),p.toList))
-  } 
+  }
 }

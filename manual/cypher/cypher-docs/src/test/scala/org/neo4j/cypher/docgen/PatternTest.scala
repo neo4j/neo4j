@@ -129,7 +129,7 @@ E.g. a node with two properties on it would look like:
 
 [source,cypher]
 ----
-(a { name: "Andres", sport: "Brazilian Ju-Jitsu" })
+(a { name: 'Andres', sport: 'Brazilian Ju-Jitsu' })
 ----
 
 A relationship with expectations on it would could look like:
@@ -254,10 +254,10 @@ As a simple example, let's take the query below:
 
 ###
 MATCH (me)-[:KNOWS*1..2]-(remote_friend)
-WHERE me.name = "Filipa"
+WHERE me.name = 'Filipa'
 RETURN remote_friend.name###
 
-This query finds data in the graph which a shape that fits the pattern: specifically a node (with the name property +Filipa+) and then the +KNOWS+ related nodes, one or two steps out.
+This query finds data in the graph which a shape that fits the pattern: specifically a node (with the name property `Filipa`) and then the `KNOWS` related nodes, one or two steps out.
 This is a typical example of finding first and second degree friends.
 
 Note that variable length relationships can not be used with `CREATE` and `MERGE`.

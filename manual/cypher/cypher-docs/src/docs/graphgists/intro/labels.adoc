@@ -7,10 +7,10 @@ They are used to restrict queries, define constraints and create indexes.
 
 You can also specify unique constraints that guarantee uniqueness of a certain property on nodes with a specific label.
 
-These constraints are also used by the +MERGE+ clause to make certain that a node only exists once.
+These constraints are also used by the `MERGE` clause to make certain that a node only exists once.
 
 The following will give an example of how to use labels and add constraints and indexes to them.
-Let's start out adding a constraint -- in this case we decided that all +Movie+ node ++title++s should be unique.
+Let's start out adding a constraint -- in this case we decided that all `Movie` node `title`s should be unique.
 
 [source,cypher]
 ----
@@ -54,8 +54,8 @@ Now, let's add some data.
 
 [source,cypher]
 ----
-CREATE (actor:Actor {name:"Tom Hanks"}),
-  (movie:Movie {title:'Sleepless in Seattle'}),
+CREATE (actor:Actor {name: 'Tom Hanks'}),
+  (movie:Movie {title: 'Sleepless in Seattle'}),
   (actor)-[:ACTED_IN]->(movie);
 ----
 
@@ -73,7 +73,7 @@ This means we can simply look up the Tom Hanks node, and the index will kick in 
 
 [source,cypher]
 ----
-MATCH (actor:Actor {name: "Tom Hanks"})
+MATCH (actor:Actor {name: 'Tom Hanks'})
 RETURN actor;
 ----
 
@@ -90,7 +90,7 @@ Here's how to do that:
 
 [source,cypher]
 ----
-MATCH (actor:Actor {name: "Tom Hanks"})
+MATCH (actor:Actor {name: 'Tom Hanks'})
 SET actor :American;
 ----
 
@@ -103,7 +103,7 @@ To remove a label from nodes, this is what to do:
 
 [source,cypher]
 ----
-MATCH (actor:Actor {name: "Tom Hanks"})
+MATCH (actor:Actor {name: 'Tom Hanks'})
 REMOVE actor:American;
 ----
 

@@ -44,7 +44,7 @@ class DocumentationTestBaseTest extends DocumentingTestBase with QueryStatistics
     testQuery(
       title = "Test DocumentationTestBase",
       text = "Aggregated results have to pass through a `WITH` clause to be able to filter on.",
-      queryText = """match (david)--(otherPerson)-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson""",
+      queryText = """MATCH (david)--(otherPerson)-->() WHERE david.name = 'David' WITH otherPerson, count(*) AS foaf WHERE foaf > 1 RETURN otherPerson""",
       optionalResultExplanation = """The person connected to David with the at least more than one outgoing relationship will be returned by the query.""",
       assertions = (p) => assertEquals(List(node("A")), p.columnAs[Node]("otherPerson").toList))
 
@@ -79,7 +79,7 @@ Use `UNWIND` to create multiple nodes from a parameter.
           Map("name" -> "Andres", "position" -> "Developer"),
           Map("name" -> "Michael", "position" -> "Developer")))
       ,
-      queryText = "unwind {props} as properties create (n) set n = properties return n",
+      queryText = "UNWIND {props} AS properties CREATE (n) SET n = properties RETURN n",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 2, propertiesWritten = 4))
 

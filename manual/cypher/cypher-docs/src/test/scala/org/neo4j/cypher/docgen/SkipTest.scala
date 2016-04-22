@@ -36,7 +36,7 @@ class SkipTest extends DocumentingTestBase {
     testQuery(
       title = "Skip first three",
       text = "To return a subset of the result, starting from the fourth result, use the following syntax:",
-      queryText = "match (n) return n order by n.name skip 3",
+      queryText = "MATCH (n) RETURN n ORDER BY n.name skip 3",
       optionalResultExplanation = "The first three nodes are skipped, and only the last two are returned in the result.",
       assertions = (p) => assertEquals(List(node("D"), node("E")), p.columnAs[Node]("n").toList))
   }
@@ -45,7 +45,7 @@ class SkipTest extends DocumentingTestBase {
     testQuery(
       title = "Return middle two",
       text = "To return a subset of the result, starting from somewhere in the middle, use this syntax:",
-      queryText = "match (n) return n order by n.name skip 1 limit 2",
+      queryText = "MATCH (n) RETURN n ORDER BY n.name SKIP 1 LIMIT 2",
       optionalResultExplanation = "Two nodes from the middle are returned.",
       assertions = (p) => assertEquals(List(node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
@@ -53,8 +53,8 @@ class SkipTest extends DocumentingTestBase {
   @Test def returnFromExpression() {
     testQuery(
       title = "Skip first from expression",
-      text = "Skip accepts any expression that evaluates to a positive integer as long as it is not referring to any external variables:",
-      queryText = "match (n) return n order by n.name skip toInt(3*rand()) + 1",
+      text = "`SKIP` accepts any expression that evaluates to a positive integer as long as it is not referring to any external variables:",
+      queryText = "MATCH (n) RETURN n ORDER BY n.name SKIP toInt(3*rand()) + 1",
       optionalResultExplanation = "The first three nodes are skipped, and only the last two are returned in the result.",
       assertions = (p) => assertTrue(p.columnAs[Node]("n").nonEmpty))
   }

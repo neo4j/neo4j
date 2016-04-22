@@ -30,7 +30,7 @@ class InsertStatusUpdateTest extends DocumentingTestBase {
 
   override val setupQueries = List("""
 create
-(bob{name:'Bob'})-[:STATUS]->(bob_s1{name:'bob_s1', text:'bobs status1',date:1})-[:NEXT]->(bob_s2{name:'bob_s2', text:'bobs status2',date:4})
+(bob{name: 'Bob'})-[:STATUS]->(bob_s1 {name: 'bob_s1', text: 'bobs status1', date: 1})-[:NEXT]->(bob_s2 {name: 'bob_s2', text: 'bobs status2', date: 4})
 """)
 
   @Test def updateStatus() {
@@ -44,7 +44,7 @@ MATCH (me)
 WHERE me.name='Bob'
 OPTIONAL MATCH (me)-[r:STATUS]-(secondlatestupdate)
 DELETE r
-CREATE (me)-[:STATUS]->(latest_update {text:'Status',date:123})
+CREATE (me)-[:STATUS]->(latest_update {text: 'Status', date: 123})
 WITH latest_update, collect(secondlatestupdate) as seconds
 FOREACH(x in seconds | CREATE (latest_update)-[:NEXT]->(x))
 RETURN latest_update.text as new_status""",
@@ -57,7 +57,7 @@ Dividing the query into steps, this query resembles adding new item in middle of
   and only the latest update would be added through a `STATUS` relationship;
   all earlier updates would be connected to their subsequent updates through a `NEXT` relationship. (`DELETE r`).
 . Now, create the new `statusupdate` node (with text and date as properties) and connect this with the user through a `STATUS` relationship
-  (`CREATE (me)-[:STATUS]->(latest_update { text:'Status',date:123 })`).
+  (`CREATE (me)-[:STATUS]->(latest_update {text: 'Status', date: 123 })`).
 . Pipe over `statusupdate` or an empty list to the next query part
   (`WITH latest_update, collect(secondlatestupdate) AS seconds`).
 . Now, create a `NEXT` relationship between the latest status update and the second latest status update (if it exists) (`FOREACH(x in seconds | CREATE (latest_update)-[:NEXT]->(x))`).""",

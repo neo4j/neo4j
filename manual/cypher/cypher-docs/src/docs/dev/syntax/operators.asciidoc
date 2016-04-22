@@ -29,7 +29,7 @@ For regular expression matching the `=~` operator is used.
 == List operators ==
 
 Lists can be concatenated using the `+` operator.
-To check if an element exists in a list, you can use the +IN+ operator.
+To check if an element exists in a list, you can use the `IN` operator.
 
 [[query-operators-property]]
 == Property operators ==
@@ -37,7 +37,7 @@ To check if an element exists in a list, you can use the +IN+ operator.
 [NOTE]
 Since version 2.0, the previously existing property operators `?` and `!` have been removed.
 This syntax is no longer supported.
-Missing properties are now returned as +NULL+.
+Missing properties are now returned as `NULL`.
 Please use `(NOT(has(<ident>.prop)) OR <ident>.prop=<value>)` if you really need the old behavior of the `?` operator.
 -- Also, the use of `?` for optional relationships has been removed in favor of the newly introduced `OPTIONAL MATCH` clause.
 

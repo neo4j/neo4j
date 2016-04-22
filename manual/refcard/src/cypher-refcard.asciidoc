@@ -117,14 +117,14 @@ include::{sources}/import.asciidoc[]
 |===
 | link:../cypher-working-with-null.html[NULL]
 |
-* +NULL+ is used to represent missing/undefined values.
-* +NULL+ is not equal to +NULL+.
+* `NULL` is used to represent missing/undefined values.
+* `NULL` is not equal to `NULL`.
   Not knowing two values does not imply that they are the same value.
-  So the expression `NULL = NULL` yields +NULL+ and not +TRUE+.
-  To check if an expression is +NULL+, use +IS NULL+.
-* Arithmetic expressions, comparisons and function calls (except +coalesce+) will return +NULL+ if any argument is +NULL+.
-* An attempt to access a missing element in a list or a property that doesn't exist yields +NULL+.
-* In +OPTIONAL MATCH+ clauses, ++NULL++s will be used for missing parts of the pattern.
+  So the expression `NULL = NULL` yields `NULL` and not `TRUE`.
+  To check if an expression is `NULL`, use `IS NULL`.
+* Arithmetic expressions, comparisons and function calls (except +coalesce+) will return `NULL` if any argument is `NULL`.
+* An attempt to access a missing element in a list or a property that doesn't exist yields `NULL`.
+* In `OPTIONAL MATCH` clauses, `NULL`s will be used for missing parts of the pattern.
 |===
 
 ++++

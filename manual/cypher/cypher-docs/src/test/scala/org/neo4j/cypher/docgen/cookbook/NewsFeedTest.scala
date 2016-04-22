@@ -35,12 +35,12 @@ class NewsFeedTest extends DocumentingTestBase {
 
   override val setupQueries = List("""
 create
-(bob{name:'Bob'})-[:STATUS]->(bob_s1{name:'bob_s1', text:'bobs status1',date:1})-[:NEXT]->(bob_s2{name:'bob_s2', text:'bobs status2',date:4}),
-(alice{name:'Alice'})-[:STATUS]->(alice_s1{name:'alice_s1', text:'Alices status1',date:2})-[:NEXT]->(alice_s2{name:'alice_s2', text:'Alices status2',date:5}),
-(joe{name:'Joe'})-[:STATUS]->(joe_s1{name:'joe_s1', text:'Joe status1',date:3})-[:NEXT]->(joe_s2{name:'joe_s2', text:'Joe status2',date:6}),
-(joe)-[:FRIEND{status:'CONFIRMED'}]->(bob),
-(alice)-[:FRIEND{status:'PENDING'}]->(joe),
-(bob)-[:FRIEND{status:'CONFIRMED'}]->(alice)
+(bob {name: 'Bob'})-[:STATUS]->(bob_s1 {name: 'bob_s1', text: 'bobs status1', date: 1})-[:NEXT]->(bob_s2 {name: 'bob_s2', text: 'bobs status2', date: 4}),
+(alice {name: 'Alice'})-[:STATUS]->(alice_s1 {name: 'alice_s1', text: 'Alices status1', date: 2})-[:NEXT]->(alice_s2 {name: 'alice_s2', text: 'Alices status2', date: 5}),
+(joe {name: 'Joe'})-[:STATUS]->(joe_s1 {name: 'joe_s1', text: 'Joe status1', date: 3})-[:NEXT]->(joe_s2 {name: 'joe_s2', text: 'Joe status2', date: 6}),
+(joe)-[:FRIEND {status: 'CONFIRMED'}]->(bob),
+(alice)-[:FRIEND {status: 'PENDING'}]->(joe),
+(bob)-[:FRIEND {status: 'CONFIRMED'}]->(alice)
 """)
 
   @Test def timelineSearch() {

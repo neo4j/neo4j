@@ -36,7 +36,7 @@ class LimitTest extends DocumentingTestBase with SoftReset {
       testQuery(
         title = "Return first part",
         text = "To return a subset of the result, starting from the top, use this syntax:",
-        queryText = "match (n) return n order by n.name limit 3",
+        queryText = "MATCH (n) RETURN n ORDER BY n.name LIMIT 3",
         optionalResultExplanation = "The top three items are returned by the example query.",
         assertions = (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
     }
@@ -45,7 +45,7 @@ class LimitTest extends DocumentingTestBase with SoftReset {
     testQuery(
       title = "Return first from expression",
       text = "Limit accepts any expression that evaluates to a positive integer as long as it is not referring to any external variables:",
-      queryText = "match (n) return n order by n.name limit toInt(3 * rand()) + 1",
+      queryText = "MATCH (n) RETURN n ORDER BY n.name LIMIT toInt(3 * rand()) + 1",
       parameters = Map("p" -> 12),
       optionalResultExplanation = "Returns one to three top items",
       assertions = (p) => assertTrue(p.columnAs[Node]("n").nonEmpty))

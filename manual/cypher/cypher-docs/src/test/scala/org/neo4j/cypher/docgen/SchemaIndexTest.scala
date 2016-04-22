@@ -52,9 +52,9 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   @Test def create_index_on_a_label() {
     testQuery(
       title = "Create an index",
-      text = "To create an index on a property for all nodes that have a label, use +CREATE+ +INDEX+ +ON+. " +
+      text = "To create an index on a property for all nodes that have a label, use `CREATE` `INDEX` `ON`. " +
         "Note that the index is not immediately available, but will be created in the background.",
-      queryText = "create index on :Person(name)",
+      queryText = "CREATE INDEX ON :Person(name)",
       optionalResultExplanation = "",
       assertions = (p) => assertIndexesOnLabels("Person", List(List("name")))
     )
@@ -63,9 +63,9 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   @Test def drop_index_on_a_label() {
     prepareAndTestQuery(
       title = "Drop an index",
-      text = "To drop an index on all nodes that have a label and property combination, use the +DROP+ +INDEX+ clause.",
-      prepare = _ => executePreparationQueries(List("create index on :Person(name)")),
-      queryText = "drop index on :Person(name)",
+      text = "To drop an index on all nodes that have a label and property combination, use the `DROP` `INDEX` clause.",
+      prepare = _ => executePreparationQueries(List("CREATE INDEX ON :Person(name)")),
+      queryText = "DROP INDEX ON :Person(name)",
       optionalResultExplanation = "",
       assertions = (p) => assertIndexesOnLabels("Person", List())
     )
@@ -77,7 +77,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       text = "There is usually no need to specify which indexes to use in a query, Cypher will figure that out by itself. " +
         "For example the query below will use the `Person(name)` index, if it exists. " +
         "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
-      queryText = "match (person:Person {name: 'Andres'}) return person",
+      queryText = "MATCH (person:Person {name: 'Andres'}) RETURN person",
       assertions = {
         (p) =>
           assertEquals(1, p.size)
@@ -90,9 +90,9 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
   @Test def use_index_with_where_using_equality() {
     profileQuery(
       title = "Use index with WHERE using equality",
-      text = "Indexes are also automatically used for equality comparisons of an indexed property in the WHERE clause. " +
+      text = "Indexes are also automatically used for equality comparisons of an indexed property in the `WHERE` clause. " +
         "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
-      queryText = "match (person:Person) WHERE person.name = 'Andres' return person",
+      queryText = "MATCH (person:Person) WHERE person.name = 'Andres' RETURN person",
       assertions = {
         (p) =>
           assertEquals(1, p.size)
@@ -109,9 +109,9 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     }.toList)
     profileQuery(
       title = "Use index with WHERE using inequality",
-      text = "Indexes are also automatically used for inequality (range) comparisons of an indexed property in the WHERE clause. " +
+      text = "Indexes are also automatically used for inequality (range) comparisons of an indexed property in the `WHERE` clause. " +
         "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
-      queryText = "match (person:Person) WHERE person.name > 'B' return person",
+      queryText = "MATCH (person:Person) WHERE person.name > 'B' RETURN person",
       assertions = {
         (p) =>
           assertEquals(1, p.size)
@@ -127,7 +127,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       text =
         "The IN predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. " +
         "If you want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
-      queryText = "match (person:Person) WHERE person.name IN ['Andres','Mark'] return person",
+      queryText = "MATCH (person:Person) WHERE person.name IN ['Andres','Mark'] RETURN person",
       assertions = {
         (p) =>
           assertEquals(2, p.size)
@@ -150,7 +150,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       title = "Use index with STARTS WITH",
       text =
         "The `STARTS WITH` predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. ",
-      queryText = "MATCH (person:Person) WHERE person.name STARTS WITH 'And' return person",
+      queryText = "MATCH (person:Person) WHERE person.name STARTS WITH 'And' RETURN person",
       assertions = {
         (p) =>
           assertEquals(1, p.size)

@@ -53,7 +53,7 @@ class MultirelationalSocialNetworkTest extends DocumentingTestBase {
       text = """This example shows a multi-relational network between persons and things they like.
         A multi-relational graph is a graph with more than one kind of relationship between nodes.""",
       queryText = "MATCH (me {name: 'Joe'})-[r1:FOLLOWS|:LOVES]->(other)-[r2]->(me) WHERE type(r1)=type(r2) RETURN other.name, type(r1)",
-      optionalResultExplanation = "The query returns people that +FOLLOWS+ or +LOVES+ +Joe+ back.",
+      optionalResultExplanation = "The query returns people that `FOLLOWS` or `LOVES` `Joe` back.",
       assertions = (p) => assertEquals(Set(Map("other.name" -> "Sara", "type(r1)" -> "FOLLOWS"),
           Map("other.name" -> "Maria", "type(r1)" -> "FOLLOWS"),
           Map("other.name" -> "Maria", "type(r1)" -> "LOVES")),p.toSet))

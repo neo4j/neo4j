@@ -12,8 +12,8 @@ Let's start by importing the data:
 //setup
 [source,cypher]
 ----
-LOAD CSV WITH HEADERS FROM "movies.csv" AS line
-MERGE (m:Movie {title:line.title})
+LOAD CSV WITH HEADERS FROM 'movies.csv' AS line
+MERGE (m:Movie {title: line.title})
 ON CREATE SET m.released = toInt(line.released), m.tagline = line.tagline
 ----
 
@@ -21,18 +21,18 @@ ON CREATE SET m.released = toInt(line.released), m.tagline = line.tagline
 [source,cypher]
 ----
 LOAD CSV WITH HEADERS FROM 'actors.csv' AS line
-MATCH (m:Movie {title:line.title})
-MERGE (p:Person {name:line.name})
+MATCH (m:Movie {title: line.title})
+MERGE (p:Person {name: line.name})
 ON CREATE SET p.born = toInt(line.born)
-MERGE (p)-[:ACTED_IN {roles:split(line.roles,";")}]->(m)
+MERGE (p)-[:ACTED_IN {roles:split(line.roles,';')}]->(m)
 ----
 
 //setup
 [source,cypher]
 ----
 LOAD CSV WITH HEADERS FROM 'directors.csv' AS line
-MATCH (m:Movie {title:line.title})
-MERGE (p:Person {name:line.name})
+MATCH (m:Movie {title: line.title})
+MERGE (p:Person {name: line.name})
 ON CREATE SET p.born = toInt(line.born)
 MERGE (p)-[:DIRECTED]->(m)
 ----
@@ -42,7 +42,7 @@ The naive way of doing this would be to write the following:
 
 [source,cypher]
 ----
-MATCH (p {name:"Tom Hanks"})
+MATCH (p {name: 'Tom Hanks'})
 RETURN p
 ----
 
@@ -53,7 +53,7 @@ You can learn more about the options for profiling queries in <<how-do-i-profile
 
 [source,cypher]
 ----
-PROFILE MATCH (p {name:"Tom Hanks"})
+PROFILE MATCH (p {name: 'Tom Hanks'})
 RETURN p
 ----
 
@@ -73,7 +73,7 @@ For this query we'd need to add a `Person` label.
 
 [source,cypher]
 ----
-MATCH (p:Person {name:"Tom Hanks"})
+MATCH (p:Person {name: 'Tom Hanks'})
 RETURN p
 ----
 
@@ -83,7 +83,7 @@ Again we can profile the query to work out why:
 
 [source,cypher]
 ----
-PROFILE MATCH (p:Person {name:"Tom Hanks"})
+PROFILE MATCH (p:Person {name: 'Tom Hanks'})
 RETURN p
 ----
 
@@ -105,7 +105,7 @@ Now if we run the query again it will run more quickly:
 
 [source,cypher]
 ----
-MATCH (p:Person {name:"Tom Hanks"})
+MATCH (p:Person {name: 'Tom Hanks'})
 RETURN p
 ----
 
@@ -113,7 +113,7 @@ Let's profile the query to see why that is:
 
 [source,cypher]
 ----
-PROFILE MATCH (p:Person {name:"Tom Hanks"})
+PROFILE MATCH (p:Person {name: 'Tom Hanks'})
 RETURN p
 ----
 

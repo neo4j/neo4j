@@ -26,9 +26,9 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class UnionTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
-  
+
   override val setupQueries = List("""
 create (ah:Actor{name: 'Anthony Hopkins'}),
   (hm:Actor {name: 'Helen Mirren'}),
@@ -44,11 +44,11 @@ create (ah:Actor{name: 'Anthony Hopkins'}),
   @Test def union_between_two_queries() {
     testQuery(
       title = "Combine two queries",
-      text = "Combining the results from two queries is done using +UNION ALL+.",
+      text = "Combining the results from two queries is done using `UNION ALL`.",
       queryText =
-        """match (n:Actor) return n.name as name
+        """MATCH (n:Actor) RETURN n.name AS name
            UNION ALL
-           match (n:Movie) return n.title as name""",
+           MATCH (n:Movie) RETURN n.title AS name""",
       optionalResultExplanation = "The combined result is returned, including duplicates.",
       assertions = (p) => {
         val result = p.toList
@@ -61,11 +61,11 @@ create (ah:Actor{name: 'Anthony Hopkins'}),
   @Test def union_between_two_queries_distinct() {
     testQuery(
       title = "Combine two queries and remove duplicates",
-      text = "By not including +ALL+ in the +UNION+, duplicates are removed from the combined result set",
+      text = "By not including `ALL` in the `UNION`, duplicates are removed from the combined result set",
       queryText =
-        """match (n:Actor) return n.name as name
+        """MATCH (n:Actor) RETURN n.name AS name
 UNION
-match (n:Movie) return n.title as name""",
+MATCH (n:Movie) RETURN n.title AS name""",
       optionalResultExplanation = "The combined result is returned, without duplicates.",
       assertions = (p) => {
         val result = p.toList

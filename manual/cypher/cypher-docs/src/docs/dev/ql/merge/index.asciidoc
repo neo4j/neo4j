@@ -20,8 +20,8 @@ If partial matches are needed, this can be accomplished by splitting a pattern u
 As with `MATCH`, `MERGE` can match multiple occurrences of a pattern.
 If there are multiple matches, they will all be passed on to later stages of the query.
 
-The last part of +MERGE+ is the +ON CREATE+ and +ON MATCH+.
-These allow a query to express additional changes to the properties of a node or relationship, depending on if the element was ++MATCH++ed in the database or if it was ++CREATE++d.
+The last part of `MERGE` is the `ON CREATE` and `ON MATCH`.
+These allow a query to express additional changes to the properties of a node or relationship, depending on if the element was `MATCH`ed in the database or if it was `CREATE`d.
 
 The rule planner (see <<how-are-queries-executed>>) expands a `MERGE` pattern from the end point that has the variable with the lowest lexicographical order.
 This means that it might choose a suboptimal expansion path, expanding from a node with a higher degree.
@@ -79,10 +79,10 @@ include::merge-on-a-relationship-between-an-existing-node-and-a-merged-node-deri
 
 == Using unique constraints with MERGE ==
 
-Cypher prevents getting conflicting results from +MERGE+ when using patterns that involve uniqueness constrains.
+Cypher prevents getting conflicting results from `MERGE` when using patterns that involve uniqueness constrains.
 In this case, there must be at most one node that matches that pattern.
 
-For example, given two uniqueness constraints on `:Person(id)` and +:Person(ssn)+: then a query such as `MERGE (n:Person {id: 12, ssn: 437})` will fail, if there are two different nodes (one with +id+ 12 and one with +ssn+ 437) or if there is only one node with only one of the properties.
+For example, given two uniqueness constraints on `:Person(id)` and `:Person(ssn)`: then a query such as `MERGE (n:Person {id: 12, ssn: 437})` will fail, if there are two different nodes (one with `id` 12 and one with `ssn` 437) or if there is only one node with only one of the properties.
 In other words, there must be exactly one node that matches the pattern, or no matching nodes.
 
 Note that the following examples assume the existence of uniqueness constraints that have been created using:

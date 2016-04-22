@@ -103,7 +103,7 @@ RETURN [x IN range(0,10) | x^3 ] AS result###
 From Cypher, you can also construct maps. Through REST you will get JSON objects; in Java they will be `java.util.Map<String,Object>`.
 
 ###
-RETURN { key : "Value", listKey: [ { inner: "Map1" }, { inner: "Map2" } ] } AS result###
+RETURN {key: "Value", listKey: [ {inner: "Map1"}, {inner: "Map2"} ] } AS result###
 """
 }
 

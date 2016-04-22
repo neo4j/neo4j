@@ -27,9 +27,9 @@ import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
 class GraphityTest extends DocumentingTestBase {
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
-  
+
   override def graphDescription = List(
     "Joe has Joe_s1",
     "Joe_s1 next Joe_s2",
@@ -60,7 +60,7 @@ See <<capabilities-capacity>> for the maximum number of relationship types.
 
 To find the activity stream for a person, just follow the linked list of the friend list, and retrieve the needed amount of activities form the respective activity list of the friends.""",
       queryText =
-        "MATCH p=(me {name: 'Jane'})-[:jane_knows*]->(friend), " +
+        "MATCH p = (me {name: 'Jane'})-[:jane_knows*]->(friend), " +
         "(friend)-[:has]->(status) " +
         "RETURN me.name, friend.name, status.name, length(p) " +
         "ORDER BY length(p)",

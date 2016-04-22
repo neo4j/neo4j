@@ -18,7 +18,7 @@ RETURN n
 
 [source,cypher]
 ----
-MATCH (n) WHERE n.property = "//This is NOT a comment" RETURN n
+MATCH (n) WHERE n.property = '//This is NOT a comment' RETURN n
 ----
 
 

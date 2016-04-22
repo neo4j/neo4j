@@ -69,7 +69,7 @@ class PrettyGraphsTest extends DocumentingTest with QueryStatisticsTestSupport {
       p(
         """To create this graph, we first create 6 nodes and label them with the Leaf label.
           |We then match all the unique pairs of nodes, and create a relationship between them.""".stripMargin)
-      query( """FOREACH (x IN range(1,6)| CREATE (leaf:Leaf { count : x }))
+      query( """FOREACH (x IN range(1,6)| CREATE (leaf:Leaf {count : x}))
                |WITH *
                |MATCH (leaf1:Leaf),(leaf2:Leaf)
                |WHERE leaf1.count < leaf2.count

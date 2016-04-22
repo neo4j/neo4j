@@ -30,7 +30,7 @@ class UsingTest extends DocumentingTest {
       "CREATE INDEX ON :Science(name)",
 
       """CREATE
-        |(liskov:Scientist {name:'Liskov', born: 1939})-[:KNOWS]->(wing:Scientist {name:'Wing', born: 1956})-[:RESEARCHED]->(cs:Science {name:'Computer Science'})<-[:RESEARCHED]-(conway:Scientist {name: 'Conway', born: 1938}),
+        |(liskov:Scientist {name: 'Liskov', born: 1939})-[:KNOWS]->(wing:Scientist {name: 'Wing', born: 1956})-[:RESEARCHED]->(cs:Science {name: 'Computer Science'})<-[:RESEARCHED]-(conway:Scientist {name: 'Conway', born: 1938}),
         |(liskov)-[:RESEARCHED]->(cs),
         |(wing)-[:RESEARCHED]->(:Science {name: 'Engineering'}),
         |(chemistry:Science {name: 'Chemistry'})<-[:RESEARCHED]-(:Scientist {name: 'Curie', born: 1867}),
@@ -134,7 +134,7 @@ class UsingTest extends DocumentingTest {
       }
       section("Hinting a join on multiple nodes") {
         p("The query planner can be made to produce a join between several specific points. This requires the query to expand from the same node from several directions.")
-        query(s"""MATCH (liskov:Scientist {name:'Liskov'})-[:KNOWS]->(wing:Scientist {name:'Wing'})-[:RESEARCHED]->(cs:Science {name:'Computer Science'})<-[:RESEARCHED]-(liskov)
+        query(s"""MATCH (liskov:Scientist {name: 'Liskov'})-[:KNOWS]->(wing:Scientist {name:'Wing'})-[:RESEARCHED]->(cs:Science {name: 'Computer Science'})<-[:RESEARCHED]-(liskov)
               |USING INDEX liskov:Scientist(name)
               |USING JOIN ON liskov, cs
               |RETURN wing.born AS $columnName""", assertIntegersReturnedAndUsingHashJoin(1956)) {
@@ -147,7 +147,7 @@ class UsingTest extends DocumentingTest {
 
   private def columnName = "column"
   private def matchString =
-    "MATCH (liskov:Scientist {name:'Liskov'})-[:KNOWS]->(wing:Scientist)-[:RESEARCHED]->(cs:Science {name:'Computer Science'})<-[:RESEARCHED]-(conway:Scientist {name: 'Conway'})"
+    "MATCH (liskov:Scientist {name: 'Liskov'})-[:KNOWS]->(wing:Scientist)-[:RESEARCHED]->(cs:Science {name: 'Computer Science'})<-[:RESEARCHED]-(conway:Scientist {name: 'Conway'})"
 
   private def assertIntegersReturned(values: Long*) = ResultAssertions(result => {
     result.columnAs[Long](columnName).toSet should equal(values.toSet)

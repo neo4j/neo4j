@@ -4,7 +4,7 @@
 [abstract]
 The `SET` clause is used to update labels on nodes and properties on nodes and relationships.
 
-+SET+ can also be used with maps from parameters to set properties.
+`SET` can also be used with maps from parameters to set properties.
 
 [NOTE]
 Setting labels on a node is an idempotent operations -- if you try to set a label on a node that already has that label on it, nothing happens.

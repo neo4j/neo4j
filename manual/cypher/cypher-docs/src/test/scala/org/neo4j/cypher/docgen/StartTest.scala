@@ -34,8 +34,8 @@ class StartTest extends DocumentingTestBase {
     testQuery(
       title = "Node by index seek",
       text = "When the starting point can be found by using index seeks, it can be done like this: `node:index-name(key = \"value\")`. In this example, there exists a node index named `nodes`.",
-      queryText = """start n=node:nodes(name = "A") return n""",
-      optionalResultExplanation = """The query returns the node indexed with the name "+A+".""",
+      queryText = """START n=node:nodes(name = 'A') RETURN n""",
+      optionalResultExplanation = """The query returns the node indexed with the name "A".""",
       assertions = (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }
 
@@ -53,8 +53,8 @@ class StartTest extends DocumentingTestBase {
     prepareAndTestQuery(
       title = "Relationship by index seek",
       text = "When the starting point can be found by using index seeks, it can be done like this: `relationship:index-name(key = \"value\")`.",
-      queryText = """start r=relationship:rels(name = "Andrés") return r""",
-      optionalResultExplanation = """The relationship indexed with the +name+ property set to "+Andrés+" is returned by the query.""",
+      queryText = """START r=relationship:rels(name = 'Andrés') RETURN r""",
+      optionalResultExplanation = """The relationship indexed with the `name` property set to "Andrés" is returned by the query.""",
       assertions = (p) => assertEquals(List(Map("r" -> rel(0))), p.toList),
       prepare = setPropertyAndUpdateLegacyIndex)
   }
@@ -65,7 +65,7 @@ class StartTest extends DocumentingTestBase {
       title = "Node by index query",
       text = "When the starting point can be found by more complex Lucene queries, this is the syntax to use: `node:index-name(\"query\")`." +
         "This allows you to write more advanced index queries.",
-      queryText = """start n=node:nodes("name:A") return n""",
+      queryText = """START n=node:nodes("name:A") RETURN n""",
       optionalResultExplanation = """The node indexed with name "A" is returned by the query.""",
       assertions = (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }

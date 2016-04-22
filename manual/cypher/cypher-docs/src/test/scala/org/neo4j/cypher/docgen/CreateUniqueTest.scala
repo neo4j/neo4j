@@ -41,9 +41,9 @@ class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSuppo
   @Test def create_relationship_when_missing() {
     testQuery(
       title = "Create relationship if it is missing",
-      text = "+CREATE UNIQUE+ is used to describe the pattern that should be found or created.",
-      queryText = "match (lft {name: 'A'}), (rgt) where rgt.name in ['B','C'] create unique (lft)-[r:KNOWS]->(rgt) return r",
-      optionalResultExplanation = "The left node is matched agains the two right nodes. One relationship already exists and can be " +
+      text = "`CREATE UNIQUE` is used to describe the pattern that should be found or created.",
+      queryText = "MATCH (lft {name: 'A'}), (rgt) WHERE rgt.name IN ['B','C'] CREATE UNIQUE (lft)-[r:KNOWS]->(rgt) RETURN r",
+      optionalResultExplanation = "The left node is matched against the two right nodes. One relationship already exists and can be " +
         "matched, and the other relationship is created before it is returned.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1))
   }
@@ -52,7 +52,7 @@ class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSuppo
     testQuery(
       title = "Create node if missing",
       text = "If the pattern described needs a node, and it can't be matched, a new node will be created.",
-      queryText = "match (root {name: 'root'}) create unique (root)-[:LOVES]-(someone) return someone",
+      queryText = "MATCH (root {name: 'root'}) CREATE UNIQUE (root)-[:LOVES]-(someone) RETURN someone",
       optionalResultExplanation = "The root node doesn't have any `LOVES` relationships, and so a node is created, and also a relationship " +
         "to that node.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1))
@@ -62,7 +62,7 @@ class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSuppo
     testQuery(
       title = "Create nodes with values",
       text = "The pattern described can also contain values on the node. These are given using the following syntax: `prop : <expression>`.",
-      queryText = "match (root {name: 'root'}) create unique (root)-[:X]-(leaf {name:'D'} ) return leaf",
+      queryText = "MATCH (root {name: 'root'}) CREATE UNIQUE (root)-[:X]-(leaf {name: 'D'} ) RETURN leaf",
       optionalResultExplanation = "No node connected with the root node has the name +D+, and so a new node is created to " +
         "match the pattern.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, propertiesWritten = 1))
@@ -72,7 +72,7 @@ class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSuppo
     testQuery(
       title = "Create relationship with values",
       text = "Relationships to be created can also be matched on values.",
-      queryText = "match (root {name: 'root'}) create unique (root)-[r:X {since:'forever'}]-() return r",
+      queryText = "MATCH (root {name: 'root'}) CREATE UNIQUE (root)-[r:X {since: 'forever'}]-() RETURN r",
       optionalResultExplanation = "In this example, we want the relationship to have a value, and since no such relationship can be found," +
         " a new node and relationship are created. Note that since we are not interested in the created node, we don't " +
         "name it.",
@@ -82,8 +82,8 @@ class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSuppo
   @Test def commad_separated_pattern() {
     testQuery(
       title = "Describe complex pattern",
-      text = "The pattern described by +CREATE UNIQUE+ can be separated by commas, just like in +MATCH+ and +CREATE+.",
-      queryText = "match (root {name: 'root'}) create unique (root)-[:FOO]->(x), (root)-[:BAR]->(x) return x",
+      text = "The pattern described by `CREATE UNIQUE` can be separated by commas, just like in `MATCH` and `CREATE`.",
+      queryText = "MATCH (root {name: 'root'}) CREATE UNIQUE (root)-[:FOO]->(x), (root)-[:BAR]->(x) RETURN x",
       optionalResultExplanation = "This example pattern uses two paths, separated by a comma.",
       assertions = (p) => assertStats(p, relationshipsCreated = 2, nodesCreated = 1))
   }
@@ -93,10 +93,10 @@ class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSuppo
       title = "Create labeled node if missing",
       text = "If the pattern described needs a labeled node and there is none with the given labels, " +
              "Cypher will create a new one.",
-      queryText = "match (a {name: 'A'}) create unique (a)-[:KNOWS]-(c:blue) return c",
-      optionalResultExplanation = "The A node is connected in a `KNOWS` relationship to the c node, but since C doesn't have " +
+      queryText = "MATCH (a {name: 'A'}) CREATE UNIQUE (a)-[:KNOWS]-(c:blue) RETURN c",
+      optionalResultExplanation = "The `A` node is connected with a `KNOWS` relationship to the `c` node, but since `C` doesn't have " +
                 "the `:blue` label, a new node labeled as `:blue` is created along with a `KNOWS` relationship "+
-                "from A to it.",
+                "from `A` to it.",
       assertions = (p) => assertStats(p, relationshipsCreated = 1, nodesCreated = 1, labelsAdded = 1))
   }
 }

@@ -46,10 +46,10 @@ David
 
 //table
 
-In this query, Cypher makes sure to not return matches where the pattern relationships +r1+ and +r2+ point to the same graph relationship.
+In this query, Cypher makes sure to not return matches where the pattern relationships `r1` and `r2` point to the same graph relationship.
 
 This is however not always desired.
-If the query should return the user, it is possible to spread the matching over multiple +MATCH+ clauses, like so:
+If the query should return the user, it is possible to spread the matching over multiple `MATCH` clauses, like so:
 
 [source,cypher]
 ----
@@ -76,7 +76,7 @@ MATCH (user:User {name: 'Adam'})-[r1:FRIEND]-(friend),
 RETURN friend_of_a_friend.name AS fofName
 ----
 
-Here, the +MATCH+ clause has a single pattern with two paths, while the previous query has two distinct patterns.
+Here, the `MATCH` clause has a single pattern with two paths, while the previous query has two distinct patterns.
 
 
 [source,querytest]

@@ -63,18 +63,18 @@ class HyperedgeCommonGroupsTest extends DocumentingTestBase {
         title = "Find common groups based on shared roles",
         text = """Assume a more complicated graph:
 
-1. Two user nodes +User1+, +User2+.
-2. +User1+ is in +Group1+, +Group2+, +Group3+.
-3. +User1+ has +Role1+, +Role2+ in +Group1+; +Role2+, +Role3+ in +Group2+; +Role3+, +Role4+ in +Group3+ (hyper edges).
-4. +User2+ is in +Group1+, +Group2+, +Group3+.
-5. +User2+ has +Role2+, +Role5+ in +Group1+; +Role3+, +Role4+ in +Group2+; +Role5+, +Role6+ in +Group3+ (hyper edges).
+1. Two user nodes `User1`, `User2`.
+2. `User1` is in `Group1`, `Group2`, `Group3`.
+3. `User1` has `Role1`, `Role2` in `Group1`; `Role2`, `Role3` in `Group2`; `Role3`, `Role4` in `Group3` (hyper edges).
+4. `User2` is in `Group1`, `Group2`, `Group3`.
+5. `User2` has `Role2`, `Role5` in `Group1`; `Role3`, `Role4` in `Group2`; `Role5`, `Role6` in `Group3` (hyper edges).
 
-The graph for this looks like the following (nodes like +U1G2R23+ representing the HyperEdges):
+The graph for this looks like the following (nodes like `U1G2R23` representing the HyperEdges):
 
 .Graph
 include::includes/cypher-hyperedgecommongroups-graph.asciidoc[]
 
-To return +Group1+ and +Group2+ as +User1+ and +User2+ share at least one common role in these two groups, the query looks like this:
+To return `Group1` and `Group2` as `User1` and `User2` share at least one common role in these two groups, the query looks like this:
                """,
         queryText =
           "match " +
@@ -85,9 +85,9 @@ To return +Group1+ and +Group2+ as +User1+ and +User2+ share at least one common
           "where u1.name = 'User1' and u2.name = 'User2' " +
           "return group.name, count(role) " +
           "order by group.name ASC",
-        optionalResultExplanation = "The groups where +User1+ and +User2+ share at least one common role:",
+        optionalResultExplanation = "The groups where `User1` and `User2` share at least one common role:",
         assertions = (p) => assertEquals(List(Map("group.name" -> "Group1", "count(role)" -> 1), Map("group.name" -> "Group2", "count(role)" -> 1)), p.toList))
     }
 
-  
+
 }

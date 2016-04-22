@@ -6,7 +6,7 @@ Create a node for the actor Tom Hanks:
 
 [source,cypher]
 ----
-CREATE (n:Actor {name:"Tom Hanks"});
+CREATE (n:Actor {name: 'Tom Hanks'});
 ----
 
 [source,querytest]
@@ -20,7 +20,7 @@ Let's find the node we created:
 
 [source,cypher]
 ----
-MATCH (actor:Actor {name: "Tom Hanks"})
+MATCH (actor:Actor {name: 'Tom Hanks'})
 RETURN actor;
 ----
 
@@ -35,8 +35,8 @@ Now let's create a movie and connect it to the Tom Hanks node with an `ACTED_IN`
 [source,cypher]
 ----
 MATCH (actor:Actor)
-WHERE actor.name = "Tom Hanks"
-CREATE (movie:Movie {title:'Sleepless in Seattle'})
+WHERE actor.name = 'Tom Hanks'
+CREATE (movie:Movie {title: 'Sleepless in Seattle'})
 CREATE (actor)-[:ACTED_IN]->(movie);
 ----
 
@@ -60,8 +60,8 @@ Using this: `[r:ACTED_IN]` lets us return the relationship.
 
 [source,cypher]
 ----
-MATCH (actor:Actor {name: "Tom Hanks"})
-CREATE UNIQUE (actor)-[r:ACTED_IN]->(movie:Movie {title:"Forrest Gump"})
+MATCH (actor:Actor {name: 'Tom Hanks'})
+CREATE UNIQUE (actor)-[r:ACTED_IN]->(movie:Movie {title: 'Forrest Gump'})
 RETURN r;
 ----
 
@@ -77,7 +77,7 @@ Set a property on a node:
 
 [source,cypher]
 ----
-MATCH (actor:Actor {name: "Tom Hanks"})
+MATCH (actor:Actor {name: 'Tom Hanks'})
 SET actor.DoB = 1944
 RETURN actor.name, actor.DoB;
 ----

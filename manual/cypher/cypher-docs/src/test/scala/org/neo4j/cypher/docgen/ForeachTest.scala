@@ -37,7 +37,7 @@ class ForeachTest extends DocumentingTestBase with QueryStatisticsTestSupport wi
     testQuery(
       title = "Mark all nodes along a path",
       text = "This query will set the property `marked` to true on all nodes along a path.",
-      queryText = "match p = (begin)-[*]->(end) where begin.name='A' and end.name='D' foreach(n in nodes(p) | set n.marked = true)",
+      queryText = "MATCH p = (begin)-[*]->(end) WHERE begin.name='A' AND end.name='D' FOREACH(n in nodes(p) | SET n.marked = true)",
       optionalResultExplanation = "Nothing is returned from this query, but four properties are set.",
       assertions = (p) => { assertStats(p, propertiesWritten = 4); assertEquals(p.toList.length, 0) })
   }

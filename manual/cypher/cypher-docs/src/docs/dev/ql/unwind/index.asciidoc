@@ -4,8 +4,8 @@
 [abstract]
 `UNWIND` expands a list into a sequence of rows.
 
-With +UNWIND+, you can transform any list back into individual rows.
-These lists can be parameters that were passed in, previously ++COLLECT++ed result or other list expressions.
+With `UNWIND`, you can transform any list back into individual rows.
+These lists can be parameters that were passed in, previously `COLLECT`ed result or other list expressions.
 
 One common usage of unwind is to create distinct lists.
 Another is to create data from parameter lists that are provided to the query.

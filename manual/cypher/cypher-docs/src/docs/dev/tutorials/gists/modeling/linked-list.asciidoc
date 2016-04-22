@@ -9,7 +9,7 @@ If the list is empty, the reference will point to itself.
 To make it clear what happens, we will show how the graph looks after each query.
 
 To initialize an empty linked list, we simply create a node, and make it link to itself.
-Unlike the actual list elements, it doesn't have a +value+ property.
+Unlike the actual list elements, it doesn't have a `value` property.
 
 [source,cypher]
 ----
@@ -29,8 +29,8 @@ Properties set: 1
 
 Adding values is done by finding the relationship where the new value should be placed in, and replacing it with
 a new node, and two relationships to it.
-We also have to handle the fact that the +before+ and +after+ nodes could be the same as the +root+ node.
-The case where +before+, +after+ and the +root+ node are all the same, makes it necessary to use `CREATE UNIQUE` to not create two new value nodes by mistake.
+We also have to handle the fact that the `before` and `after` nodes could be the same as the `root` node.
+The case where `before`, `after` and the `root` node are all the same, makes it necessary to use `CREATE UNIQUE` to not create two new value nodes by mistake.
 
 [source,cypher]
 ----
@@ -102,7 +102,7 @@ Relationships deleted: 2
 // graph
 
 Deleting the last value node is what requires us to use `CREATE UNIQUE` when replacing the relationships.
-Otherwise, we would end up with two relationships from the +root+ node to itself, as both +before+ and +after+ nodes are equal to the +root+ node, meaning the pattern would match twice.
+Otherwise, we would end up with two relationships from the `root` node to itself, as both `before` and `after` nodes are equal to the `root` node, meaning the pattern would match twice.
 
 [source,cypher]
 ----

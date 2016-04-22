@@ -40,8 +40,8 @@ class OrderByTest extends DocumentingTestBase with SoftReset {
   @Test def sortByName() {
     testQuery(
       title = "Order nodes by property",
-      text = "+ORDER BY+ is used to sort the output.",
-      queryText = """match (n) return n order by n.name""",
+      text = "`ORDER BY` is used to sort the output.",
+      queryText = """MATCH (n) RETURN n ORDER BY n.name""",
       optionalResultExplanation = """The nodes are returned, sorted by their name.""",
       assertions = (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
@@ -49,19 +49,19 @@ class OrderByTest extends DocumentingTestBase with SoftReset {
   @Test def sortByNameReverse() {
     testQuery(
       title = "Order nodes in descending order",
-      text = "By adding +DESC[ENDING]+ after the variable to sort on, the sort will be done in reverse order.",
-      queryText = """match (n) return n order by n.name DESC""",
-      optionalResultExplanation = """The example returns the nodes, sorted by their name reversely.""",
+      text = "By adding `DESC[ENDING]` after the variable to sort on, the sort will be done in reverse order.",
+      queryText = """MATCH (n) RETURN n ORDER BY n.name DESC""",
+      optionalResultExplanation = """The example returns the nodes, sorted by their name in reverse order.""",
       assertions = (p) => assertEquals(List(node("C"), node("B"), node("A")), p.columnAs[Node]("n").toList))
   }
 
   @Test def sortByMultipleColumns() {
     testQuery(
       title = "Order nodes by multiple properties",
-      text = "You can order by multiple properties by stating each variable in the +ORDER BY+" +
+      text = "You can order by multiple properties by stating each variable in the `ORDER BY`" +
         " clause. Cypher will sort the result by the first variable listed, and for equals values, " +
         "go to the next property in the `ORDER BY` clause, and so on.",
-      queryText = """match (n) return n order by n.age, n.name""",
+      queryText = """MATCH (n) RETURN n ORDER BY n.age, n.name""",
       optionalResultExplanation = """This returns the nodes, sorted first by their age, and then by their name.""",
       assertions = (p) => assertEquals(List(node("C"), node("A"), node("B")), p.columnAs[Node]("n").toList))
   }
@@ -69,9 +69,9 @@ class OrderByTest extends DocumentingTestBase with SoftReset {
   @Test def order_by_nullable_property() {
     testQuery(
       title = "Ordering NULL",
-      text = "When sorting the result set, +NULL+ will always come at the end of the result set for" +
+      text = "When sorting the result set, `NULL` will always come at the end of the result set for" +
         " ascending sorting, and first when doing descending sort.",
-      queryText = """match (n) return n.length, n order by n.length""",
+      queryText = """MATCH (n) RETURN n.length, n ORDER BY n.length""",
       optionalResultExplanation = """The nodes are returned sorted by the length property, with a node without that property last.""",
       assertions = (p) => assertEquals(List(node("A"), node("C"), node("B")), p.columnAs[Node]("n").toList))
   }

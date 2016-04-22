@@ -45,7 +45,7 @@ class WithTest extends DocumentingTestBase {
     testQuery(
       title = "Filter on aggregate function results",
       text = "Aggregated results have to pass through a `WITH` clause to be able to filter on.",
-      queryText = """match (david {name: "David"})--(otherPerson)-->() with otherPerson, count(*) as foaf where foaf > 1 return otherPerson""",
+      queryText = """MATCH (david {name: 'David'})--(otherPerson)-->() WITH otherPerson, count(*) AS foaf WHERE foaf > 1 RETURN otherPerson""",
       optionalResultExplanation = """The person connected to David with the at least more than one outgoing relationship will be returned by the query.""",
       assertions = (p) => assertEquals(List(node("A")), p.columnAs[Node]("otherPerson").toList)
     )
@@ -55,7 +55,7 @@ class WithTest extends DocumentingTestBase {
     testQuery(
       title = "Sort results before using collect on them",
       text = "You can sort your results before passing them to collect, thus sorting the resulting list.",
-      queryText = """match (n) with n order by n.name desc limit 3 return collect(n.name)""",
+      queryText = """MATCH (n) WITH n ORDER BY n.name DESC LIMIT 3 RETURN collect(n.name)""",
       optionalResultExplanation = """A list of the names of people in reverse order, limited to 3, in a list.""",
       assertions = (p) => assertEquals(List(List("Emil", "David", "Ceasar")), p.columnAs[Seq[String]]("collect(n.name)").toList))
   }
@@ -64,7 +64,7 @@ class WithTest extends DocumentingTestBase {
     testQuery(
       title = "Limit branching of your path search",
       text = "You can match paths, limit to a certain number, and then match again using those paths as a base As well as any number of similar limited searches.",
-      queryText = """match (n {name: "Anders"})--(m) with m order by m.name desc limit 1 match (m)--(o) return o.name""",
+      queryText = """MATCH (n {name: 'Anders'})--(m) WITH m ORDER BY m.name DESC LIMIT 1 MATCH (m)--(o) RETURN o.name""",
       optionalResultExplanation = """Starting at Anders, find all matching nodes, order by name descending and get the top result, then find all the nodes connected to that top result, and return their names.""",
       assertions = (p) => assertEquals(List("Bossman", "Anders"), p.columnAs[String]("o.name").toList))
   }

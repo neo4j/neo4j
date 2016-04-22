@@ -71,8 +71,8 @@ Here are some ASCII-art encodings for example Neo4j nodes, providing varying typ
 (matrix)
 (:Movie)
 (matrix:Movie)
-(matrix:Movie {title: "The Matrix"})
-(matrix:Movie {title: "The Matrix", released: 1997})
+(matrix:Movie {title: 'The Matrix'})
+(matrix:Movie {title: 'The Matrix', released: 1997})
 ----
 
 The simplest form, `()`, represents an anonymous, uncharacterized node.
@@ -101,7 +101,7 @@ This may include variables, properties, and/or type information, eg:
 -[role]->
 -[:ACTED_IN]->
 -[role:ACTED_IN]->
--[role:ACTED_IN {roles: ["Neo"]}]->
+-[role:ACTED_IN {roles: ['Neo']}]->
 ----
 
 The syntax and semantics found within a relationship's bracket pair are very similar to those used between a node's parentheses.
@@ -117,9 +117,9 @@ The following could be a simple pattern (or fact) in this domain:
 
 [source,cypher]
 ----
-(keanu:Person:Actor {name:  "Keanu Reeves"} )
--[role:ACTED_IN     {roles: ["Neo"] } ]->
-(matrix:Movie       {title: "The Matrix"} )
+(keanu:Person:Actor {name: 'Keanu Reeves'} )
+-[role:ACTED_IN     {roles: ['Neo']} ]->
+(matrix:Movie       {title: 'The Matrix'} )
 ----
 
 Like with node labels, the relationship type `ACTED_IN` is added as a symbol, prefixed with a colon: `:ACTED_IN`.

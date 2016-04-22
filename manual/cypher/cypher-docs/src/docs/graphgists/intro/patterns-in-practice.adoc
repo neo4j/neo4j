@@ -4,17 +4,17 @@
 
 We'll start by looking into the clauses that allow us to create data.
 
-To add data, we just use the patterns we already know. 
-By providing patterns we can specify what graph structures, labels and properties we would like to make part of our graph. 
+To add data, we just use the patterns we already know.
+By providing patterns we can specify what graph structures, labels and properties we would like to make part of our graph.
 
-Obviously the simplest clause is called `CREATE`. 
+Obviously the simplest clause is called `CREATE`.
 It will just go ahead and directly create the patterns that you specify.
 
 For the patterns we've looked at so far this could look like the following:
 
 [source,cypher]
 ----
-CREATE (:Movie {title:"The Matrix",released:1997})
+CREATE (:Movie {title: 'The Matrix', released: 1997})
 ----
 
 If we execute this statement, Cypher returns the number of changes, in this case adding 1 node, 1 label and 2 properties.
@@ -36,7 +36,7 @@ If case we also want to return the created data we can add a `RETURN` clause, wh
 
 [source,cypher]
 ----
-CREATE (p:Person {name:"Keanu Reeves", born:1964})
+CREATE (p:Person {name: 'Keanu Reeves', born: 1964})
 RETURN p
 ----
 
@@ -50,8 +50,8 @@ We can of course also create more complex structures, like an `ACTED_IN` relatio
 
 [source,cypher]
 ----
-CREATE (a:Person {name:"Tom Hanks", born:1956})-[r:ACTED_IN {roles:["Forrest"]}]->(m:Movie {title:"Forrest Gump",released:1994})
-CREATE (d:Person {name:"Robert Zemeckis", born:1951})-[:DIRECTED]->(m)
+CREATE (a:Person {name: 'Tom Hanks', born: 1956})-[r:ACTED_IN {roles:['Forrest']}]->(m:Movie {title: 'Forrest Gump', released: 1994})
+CREATE (d:Person {name: 'Robert Zemeckis', born: 1951})-[:DIRECTED]->(m)
 RETURN a,d,r,m
 ----
 
@@ -64,8 +64,8 @@ This requires that we know how to find existing patterns in our graph data, whic
 
 == Matching Patterns
 
-Matching patterns is a task for the `MATCH` statement. 
-We pass the same kind of patterns we've used so far to `MATCH` to describe what we're looking for. 
+Matching patterns is a task for the `MATCH` statement.
+We pass the same kind of patterns we've used so far to `MATCH` to describe what we're looking for.
 It is similar to _query by example_, only that our examples also include the structures.
 
 NOTE: A `MATCH` statement will search for the patterns we specify and return _one row per successful pattern match_.
@@ -94,7 +94,7 @@ We can also look for a specific person, like _Keanu Reeves_.
 
 [source,cypher]
 ----
-MATCH (p:Person {name:"Keanu Reeves"})
+MATCH (p:Person {name: 'Keanu Reeves'})
 RETURN p
 ----
 
@@ -108,14 +108,14 @@ Keanu Reeves
 1 row
 ----
 
-Note that we only provide enough information to find the nodes, not all properties are required. 
+Note that we only provide enough information to find the nodes, not all properties are required.
 In most cases you have key-properties like SSN, ISBN, emails, logins, geolocation or product codes to look for.
 
 We can also find more interesting connections, like for instance the movies titles that _Tom Hanks_ acted in and the roles he played.
 
 [source,cypher]
 ----
-MATCH (p:Person {name:"Tom Hanks"})-[r:ACTED_IN]->(m:Movie)
+MATCH (p:Person {name: 'Tom Hanks'})-[r:ACTED_IN]->(m:Movie)
 RETURN m.title, r.roles
 ----
 
@@ -127,8 +127,8 @@ Forrest Gump
 1 row
 ----
 
-In this case we only returned the properties of the nodes and relationships that we were interested in. 
-You can access them everywhere via a dot notation `identifer.property`. 
+In this case we only returned the properties of the nodes and relationships that we were interested in.
+You can access them everywhere via a dot notation `identifer.property`.
 
 Of course this only lists his role as _Forrest_ in _Forrest Gump_ because that's all data that we've added.
 
@@ -141,8 +141,8 @@ Adding _Cloud Atlas_ as a new movie for _Tom Hanks_ could be achieved like this:
 
 [source,cypher]
 ----
-MATCH (p:Person {name:"Tom Hanks"})
-CREATE (m:Movie {title:"Cloud Atlas",released:2012})
+MATCH (p:Person {name: 'Tom Hanks'})
+CREATE (m:Movie {title: 'Cloud Atlas', released: '2012})
 CREATE (p)-[r:ACTED_IN {roles:['Zachry']} ]->(m)
 RETURN p,r,m
 ----
@@ -176,9 +176,9 @@ If that's not intended, please move the `CREATE` statement before the `MATCH`, o
 == Completing Patterns
 
 Whenever we get data from external systems or are not sure if certain information already exists in the graph, we want to be able to express a repeatable (idempotent) update operation.
-In Cypher `MERGE` has this function. 
+In Cypher `MERGE` has this function.
 It acts like a combination of `MATCH` _or_ `CREATE`, which checks for the existence of data first before creating it.
-With `MERGE` you define a pattern to be found or created. 
+With `MERGE` you define a pattern to be found or created.
 Usually, as with `MATCH` you only want to include the key property to look for in your core pattern.
 `MERGE` allows you to provide additional properties you want to set `ON CREATE`.
 
@@ -186,7 +186,7 @@ If we wouldn't know if our graph already contained _Cloud Atlas_ we could merge 
 
 [source,cypher]
 ----
-MERGE (m:Movie {title:"Cloud Atlas"}) ON CREATE SET m.released = 2012
+MERGE (m:Movie {title: 'Cloud Atlas'}) ON CREATE SET m.released = 2012
 RETURN m
 ----
 
@@ -205,13 +205,13 @@ You can alleviate some of that by creating supporting indexes or constraints, wh
 But it's still not for free, so whenever you're sure to not create duplicate data use `CREATE` over `MERGE`.
 
 [TIP]
-`MERGE` can also assert that a relationship is only created once. 
+`MERGE` can also assert that a relationship is only created once.
 For that to work you _have to pass in_ both nodes from a previous pattern match.
 
 [source,cypher]
 ----
-MATCH (m:Movie {title:"Cloud Atlas"})
-MATCH (p:Person {name:"Tom Hanks"})
+MATCH (m:Movie {title: 'Cloud Atlas'})
+MATCH (p:Person {name: 'Tom Hanks'})
 MERGE (p)-[r:ACTED_IN]->(m) ON CREATE SET r.roles = ['Zachry']
 RETURN p,r,m
 ----
@@ -235,9 +235,9 @@ This can come in very handy for creating for example tree structures.
 
 [source,cypher]
 ----
-CREATE (y:Year {year:2014})
-MERGE (y)<-[:IN_YEAR]-(m10:Month {month:10})
-MERGE (y)<-[:IN_YEAR]-(m11:Month {month:11})
+CREATE (y:Year {year: 2014})
+MERGE (y)<-[:IN_YEAR]-(m10:Month {month: 10})
+MERGE (y)<-[:IN_YEAR]-(m11:Month {month: 11})
 RETURN y,m10,m11
 ----
 

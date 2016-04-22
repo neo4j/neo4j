@@ -27,21 +27,21 @@ class ShortestPathPlanningTest extends DocumentingTest {
   override def doc = new DocBuilder {
     doc("Shortest path planning", "query-shortestpath-planning")
     initQueries(
-      """CREATE (charlie:Person {name:'Charlie Sheen'}),
+      """CREATE (charlie:Person {name: 'Charlie Sheen'}),
         |       (martin:Person {name: 'Martin Sheen'}),
         |       (michael:Person {name: 'Michael Douglas'}),
         |       (oliver:Person {name: 'Oliver Stone'}),
         |       (rob:Person {name: 'Rob Reiner'}),
         |
         |       (wallStreet:Movie {title: 'Wall Street'}),
-        |       (charlie)-[:ACTED_IN {role: "Bud Fox"}]->(wallStreet),
-        |       (martin)-[:ACTED_IN {role: "Carl Fox"}]->(wallStreet),
-        |       (michael)-[:ACTED_IN {role: "Gordon Gekko"}]->(wallStreet),
+        |       (charlie)-[:ACTED_IN {role: 'Bud Fox'}]->(wallStreet),
+        |       (martin)-[:ACTED_IN {role: 'Carl Fox'}]->(wallStreet),
+        |       (michael)-[:ACTED_IN {role: 'Gordon Gekko'}]->(wallStreet),
         |       (oliver)-[:DIRECTED]->(wallStreet),
         |
         |       (thePresident:Movie {title: 'The American President'}),
-        |       (martin)-[:ACTED_IN {role: "A.J. MacInerney"}]->(thePresident),
-        |       (michael)-[:ACTED_IN {role: "President Andrew Shepherd"}]->(thePresident),
+        |       (martin)-[:ACTED_IN {role: 'A.J. MacInerney'}]->(thePresident),
+        |       (michael)-[:ACTED_IN {role: 'President Andrew Shepherd'}]->(thePresident),
         |       (rob)-[:DIRECTED]->(thePresident)""",
         "CREATE INDEX ON :Person(name)"
     )
@@ -57,10 +57,10 @@ class ShortestPathPlanningTest extends DocumentingTest {
         |path even though that could not be guaranteed at planning time.""")
     section("Shortest path with fast algorithm") {
       query(
-        """MATCH (ms:Person {name:"Martin Sheen"} ),
-          |      (cs:Person {name:"Charlie Sheen"}),
+        """MATCH (ms:Person {name: 'Martin Sheen'} ),
+          |      (cs:Person {name: 'Charlie Sheen'}),
           |      p = shortestPath( (ms)-[rels*]-(cs) )
-          |WHERE ALL(r in rels WHERE type(r) = "ACTED_IN")
+          |WHERE ALL(r in rels WHERE type(r) = 'ACTED_IN')
           |RETURN p""", assertShortestPathLength) {
         p(
           """This query can be evaluated with the fast algorithm -- there are no predicates that need to see the whole
@@ -72,8 +72,8 @@ class ShortestPathPlanningTest extends DocumentingTest {
       p("""Predicates used in the `WHERE` clause that apply to the shortest path pattern are evaluated before deciding
            |what the shortest matching path is. """)
       query(
-        """MATCH (cs:Person {name:"Charlie Sheen"}),
-          |      (ms:Person {name:"Martin Sheen"}),
+        """MATCH (cs:Person {name: 'Charlie Sheen'}),
+          |      (ms:Person {name: 'Martin Sheen'}),
           |      p = shortestPath( (cs)-[*]-(ms) )
           |WHERE length(p) > 1
           |RETURN p""", assertShortestPathLength) {
@@ -83,7 +83,7 @@ class ShortestPathPlanningTest extends DocumentingTest {
             |exhaustive search algorithm""")
         profileExecutionPlan()
       }
-      p("""The way the bigger exhaustive query plan works is by using +Apply+/+Optional+ to ensure that when the
+      p("""The way the bigger exhaustive query plan works is by using `Apply`/`Optional` to ensure that when the
           |fast algorithm does not find any results, a `NULL` result is generated instead of simply stopping the result
           |stream.
           |On top of this, the planner will issue an `AntiConditionalApply`, which will run the exhaustive search

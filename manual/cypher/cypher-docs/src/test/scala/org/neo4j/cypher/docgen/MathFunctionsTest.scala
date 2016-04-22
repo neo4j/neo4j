@@ -28,7 +28,7 @@ class MathFunctionsTest extends DocumentingTest {
   override def doc = new DocBuilder {
     doc("Math functions", "query-functions-mathematical")
     initQueries(
-      """CREATE (alice:A {name:'Alice', age: 38, eyes: 'brown'}),
+      """CREATE (alice:A {name: 'Alice', age: 38, eyes: 'brown'}),
         |       (bob:B {name: 'Bob', age: 25, eyes: 'blue'}),
         |       (charlie:C {name: 'Charlie', age: 53, eyes: 'green'}),
         |       (daniel:D {name: 'Daniel', age: 54, eyes: 'brown'}),

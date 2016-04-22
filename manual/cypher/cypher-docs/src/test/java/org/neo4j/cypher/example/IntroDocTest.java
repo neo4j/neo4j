@@ -82,7 +82,7 @@ public class IntroDocTest implements GraphHolder
             fw.append( "\nNext up we will add filtering to set more parts "
                     + "in motion:\n\nWe take a list of user names "
                     + "and find all nodes with names from this list, match their friends and return "
-                    + "only those followed users who have a +name+ property starting with +S+." );
+                    + "only those followed users who have a `name` property starting with `S`." );
             query = "MATCH (user)-[:friend]->(follower) WHERE "
                     + "user.name IN ['Joe', 'John', 'Sara', 'Maria', 'Steve'] AND follower.name =~ 'S.*' "
                             + "RETURN user.name, follower.name ";
@@ -102,11 +102,11 @@ public class IntroDocTest implements GraphHolder
         graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         cleanDatabaseContent( graphdb );
     }
-    
+
     @AfterClass
     public static void shutdown()
     {
-        try 
+        try
         {
             if ( graphdb != null ) graphdb.shutdown();
         }

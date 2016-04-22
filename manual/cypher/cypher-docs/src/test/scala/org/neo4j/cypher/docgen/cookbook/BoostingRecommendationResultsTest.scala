@@ -35,13 +35,13 @@ class BoostingRecommendationResultsTest extends DocumentingTestBase {
   }
 
   override val setupQueries = List("""create
-(clark {name: "Clark Kent"}),
-(lois {name:"Lois Lane"}),
-(jimmy {name:"Jimmy Olsen"}),
-(perry {name:"Perry White"}),
-(cooper {name:"Anderson Cooper"}),
-(dailyplanet {name:"Daily Planet"}),
-(cnn {name:"CNN"}),
+(clark {name: 'Clark Kent'}),
+(lois {name: 'Lois Lane'}),
+(jimmy {name: 'Jimmy Olsen'}),
+(perry {name: 'Perry White'}),
+(cooper {name: 'Anderson Cooper'}),
+(dailyplanet {name: 'Daily Planet'}),
+(cnn {name: 'CNN'}),
 (clark)-[:KNOWS {weight: 4}]->(lois),
 (clark)-[:KNOWS {weight: 4}]->(jimmy),
 (lois)-[:KNOWS {weight: 4}]->(perry),
@@ -62,7 +62,7 @@ class BoostingRecommendationResultsTest extends DocumentingTestBase {
 or know a person that the origin knows, also, the origin should not already know the target. This recommendation is
 weighted for the weight of the relationship `r2`, and boosted with a factor of 2, if there is an `activity`-property on that relationship""",
       queryText = """MATCH (origin)-[r1:KNOWS|WORKS_AT]-(c)-[r2:KNOWS|WORKS_AT]-(candidate)
-WHERE origin.name = "Clark Kent"
+WHERE origin.name = 'Clark Kent'
 AND type(r1)=type(r2) AND NOT (origin)-[:KNOWS]-(candidate)
 RETURN origin.name as origin, candidate.name as candidate,
     SUM(ROUND(r2.weight + (COALESCE(r2.activity, 0) * 2))) as boost

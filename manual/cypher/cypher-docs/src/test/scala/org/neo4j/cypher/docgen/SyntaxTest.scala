@@ -59,18 +59,18 @@ END""",
 
       arguments = List(
         "test" -> "A valid expression.",
-        "value" -> "An expression whose result will be compared to the +test+ expression.",
-        "result" -> "This is the result expression used if the value expression matches the +test+ expression.",
+        "value" -> "An expression whose result will be compared to the `test` expression.",
+        "result" -> "This is the result expression used if the value expression matches the `test` expression.",
         "default" -> "The expression to use if no match is found."
       ),
-      text = "The expression is calculated, and compared in order with the +WHEN+ clauses until a match is found. " +
-        "If no match is found the expression in the +ELSE+ clause is used, or +null+, if no +ELSE+ case exists.",
+      text = "The expression is calculated, and compared in order with the `WHEN` clauses until a match is found. " +
+        "If no match is found the expression in the `ELSE` clause is used, or `NULL`, if no `ELSE` case exists.",
       queryText =
-        """match (n) return CASE n.eyes
+        """MATCH (n) RETURN CASE n.eyes
     WHEN 'blue'  THEN 1
     WHEN 'brown' THEN 2
                  ELSE 3
-END as result""",
+END AS result""",
       returns = "",
       assertions = (p) => assert(Set(Map("result" -> 2), Map("result" -> 1), Map("result" -> 2), Map("result" -> 1), Map("result" -> 3)) === p.toSet)
     )
@@ -91,13 +91,13 @@ END""",
         "default" -> "The expression to use if no match is found."
       ),
       text = "The predicates are evaluated in order until a true value is found, and the result value is used. " +
-        "If no match is found the expression in the +ELSE+ clause is used, or +null+, if no +ELSE+ case exists.",
+        "If no match is found the expression in the `ELSE` clause is used, or `NULL`, if no `ELSE` case exists.",
       queryText =
-        """match (n) return CASE
+        """MATCH (n) RETURN CASE
     WHEN n.eyes = 'blue'  THEN 1
     WHEN n.age < 40       THEN 2
                           ELSE 3
-END as result""",
+END AS result""",
       returns = "",
       assertions = (p) => assert(Set(Map("result" -> 3), Map("result" -> 1), Map("result" -> 2), Map("result" -> 1), Map("result" -> 3)) === p.toSet)
     )

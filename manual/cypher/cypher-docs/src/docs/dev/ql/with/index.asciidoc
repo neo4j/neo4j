@@ -10,7 +10,7 @@ The manipulations can be of the shape and/or number of entries in the result set
 One common usage of `WITH` is to limit the number of entries that are then passed on to other `MATCH` clauses.
 By combining `ORDER BY` and `LIMIT`, it's possible to get the top X entries by some criteria, and then bring in additional data from the graph.
 
-Another use is to filter on aggregated values. +WITH+ is used to introduce aggregates which can then by used in predicates in `WHERE`.
+Another use is to filter on aggregated values. `WITH` is used to introduce aggregates which can then by used in predicates in `WHERE`.
 These aggregate expressions create new bindings in the results.
 `WITH` can also, like `RETURN`, alias expressions that are introduced into the results using the aliases as binding name.
 

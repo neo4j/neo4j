@@ -26,43 +26,43 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.IndexSeekByRange
 
 class QueryPlanTest extends DocumentingTestBase with SoftReset {
   override val setupQueries = List(
-    """CREATE (me:Person {name:'me'})
-       CREATE (andres:Person {name:'Andres'})
-       CREATE (andreas:Person {name:'Andreas'})
-       CREATE (mattias:Person {name:'Mattias'})
-       CREATE (lovis:Person {name:'Lovis'})
-       CREATE (pontus:Person {name:'Pontus'})
-       CREATE (max:Person {name:'Max'})
-       CREATE (konstantin:Person {name:'Konstantin'})
-       CREATE (stefan:Person {name:'Stefan'})
-       CREATE (mats:Person {name:'Mats'})
-       CREATE (petra:Person {name:'Petra'})
-       CREATE (craig:Person {name:'Craig'})
-       CREATE (steven:Person {name:'Steven'})
-       CREATE (chris:Person {name:'Chris'})
+    """CREATE (me:Person {name: 'me'})
+       CREATE (andres:Person {name: 'Andres'})
+       CREATE (andreas:Person {name: 'Andreas'})
+       CREATE (mattias:Person {name: 'Mattias'})
+       CREATE (lovis:Person {name: 'Lovis'})
+       CREATE (pontus:Person {name: 'Pontus'})
+       CREATE (max:Person {name: 'Max'})
+       CREATE (konstantin:Person {name: 'Konstantin'})
+       CREATE (stefan:Person {name: 'Stefan'})
+       CREATE (mats:Person {name: 'Mats'})
+       CREATE (petra:Person {name: 'Petra'})
+       CREATE (craig:Person {name: 'Craig'})
+       CREATE (steven:Person {name: 'Steven'})
+       CREATE (chris:Person {name: 'Chris'})
 
-       CREATE (london:Location {name:'London'})
-       CREATE (malmo:Location {name:'Malmo'})
-       CREATE (sf:Location {name:'San Francisco'})
-       CREATE (berlin:Location {name:'Berlin'})
-       CREATE (newyork:Location {name:'New York'})
-       CREATE (kuala:Location {name:'Kuala Lumpur'})
-       CREATE (stockholm:Location {name:'Stockholm'})
-       CREATE (paris:Location {name:'Paris'})
-       CREATE (madrid:Location {name:'Madrid'})
-       CREATE (rome:Location {name:'Rome'})
+       CREATE (london:Location {name: 'London'})
+       CREATE (malmo:Location {name: 'Malmo'})
+       CREATE (sf:Location {name: 'San Francisco'})
+       CREATE (berlin:Location {name: 'Berlin'})
+       CREATE (newyork:Location {name: 'New York'})
+       CREATE (kuala:Location {name: 'Kuala Lumpur'})
+       CREATE (stockholm:Location {name: 'Stockholm'})
+       CREATE (paris:Location {name: 'Paris'})
+       CREATE (madrid:Location {name: 'Madrid'})
+       CREATE (rome:Location {name: 'Rome'})
 
-       CREATE (england:Country {name:'England'})
-       CREATE (field:Team {name:'Field'})
-       CREATE (engineering:Team {name:'Engineering'})
-       CREATE (sales:Team {name:'Sales'})
-       CREATE (monads:Team {name:'Team Monads'})
-       CREATE (birds:Team {name:'Team Enlightened Birdmen'})
-       CREATE (quality:Team {name:'Team Quality'})
-       CREATE (rassilon:Team {name:'Team Rassilon'})
-       CREATE (executive:Team {name:'Team Executive'})
-       CREATE (remoting:Team {name:'Team Remoting'})
-       CREATE (other:Team {name:'Other'})
+       CREATE (england:Country {name: 'England'})
+       CREATE (field:Team {name: 'Field'})
+       CREATE (engineering:Team {name: 'Engineering'})
+       CREATE (sales:Team {name: 'Sales'})
+       CREATE (monads:Team {name: 'Team Monads'})
+       CREATE (birds:Team {name: 'Team Enlightened Birdmen'})
+       CREATE (quality:Team {name: 'Team Quality'})
+       CREATE (rassilon:Team {name: 'Team Rassilon'})
+       CREATE (executive:Team {name: 'Team Executive'})
+       CREATE (remoting:Team {name: 'Team Remoting'})
+       CREATE (other:Team {name: 'Other'})
 
        CREATE (me)-[:WORKS_IN {duration: 190}]->(london)
        CREATE (andreas)-[:WORKS_IN {duration: 187}]->(london)
@@ -87,7 +87,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
   override val setupConstraintQueries = List(
     "CREATE INDEX ON :Location(name)",
     "CREATE INDEX ON :Person(name)",
-    "CREATE CONSTRAINT ON (team:Team) ASSERT team.name is UNIQUE"
+    "CREATE CONSTRAINT ON (team:Team) ASSERT team.name IS UNIQUE"
   )
 
   def section = "Query Plan"
@@ -109,7 +109,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       text =
         """Creates a constraint on a (label,property) pair.
           |The following query will create a unique constraint on the `name` property of nodes with the `Country` label.""".stripMargin,
-      queryText = """CREATE CONSTRAINT ON (c:Country) ASSERT c.name is UNIQUE""",
+      queryText = """CREATE CONSTRAINT ON (c:Country) ASSERT c.name IS UNIQUE""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("CreateUniqueConstraint"))
     )
   }
@@ -179,7 +179,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Update Graph",
       text =
         """Applies updates to the graph.""".stripMargin,
-      queryText = """CYPHER planner=rule CREATE (:Person {name: "Alistair"})""",
+      queryText = """CYPHER planner=rule CREATE (:Person {name: 'Alistair'})""",
       assertions = (p) => {
         assertThat(p.executionPlanDescription().toString, containsString("CreateNode"))
         assertThat(p.executionPlanDescription().toString, containsString("UpdateGraph"))
@@ -192,7 +192,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Merge Into",
       text =
         """When both the start and end node have already been found, merge-into is used to find all connecting relationships or creating a new relationship between the two nodes.""".stripMargin,
-      queryText = """CYPHER planner=rule MATCH (p:Person {name: "me"}), (f:Person {name: "Andres"}) MERGE (p)-[:FRIENDS_WITH]->(f)""",
+      queryText = """CYPHER planner=rule MATCH (p:Person {name: 'me'}), (f:Person {name: 'Andres'}) MERGE (p)-[:FRIENDS_WITH]->(f)""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Merge(Into)"))
     )
   }
@@ -220,8 +220,8 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(
       title = "Node index seek",
       text = """Finds nodes using an index seek. The node variable and the index used is shown in the arguments of the operator.
-                |If the index is a unique index, the operator is called NodeUniqueIndexSeek instead.""".stripMargin,
-      queryText = """MATCH (location:Location {name: "Malmo"}) RETURN location""",
+                |If the index is a unique index, the operator is called `NodeUniqueIndexSeek` instead.""".stripMargin,
+      queryText = """MATCH (location:Location {name: 'Malmo'}) RETURN location""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
     )
   }
@@ -238,7 +238,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
     profileQuery(title = "Node index range seek",
                  text =
                    """Finds nodes using an index seek where the value of the property matches a given prefix string.
-                     |This operator can be used for +STARTS WITH+ and comparators such as `<`, `>`, `<=` and `>=`""".stripMargin,
+                     |This operator can be used for `STARTS WITH` and comparators such as `<`, `>`, `<=` and `>=`""".stripMargin,
                  queryText = "MATCH (l:Location) WHERE l.name STARTS WITH 'Lon' RETURN l",
                  assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString(IndexSeekByRange.name))
     )
@@ -286,7 +286,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Projection",
       text =
         """For each row from its input, projection evaluates a set of expressions and produces a row with the results of the expressions.""".stripMargin,
-      queryText = """RETURN "hello" AS greeting""",
+      queryText = """RETURN 'hello' AS greeting""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Projection"))
     )
   }
@@ -296,7 +296,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Filter",
       text =
         """Filters each row coming from the child operator, only passing through rows that evaluate the predicates to `TRUE`.""".stripMargin,
-      queryText = """MATCH (p:Person) WHERE p.name =~ "^a.*" RETURN p""",
+      queryText = """MATCH (p:Person) WHERE p.name =~ '^a.*' RETURN p""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Filter"))
     )
   }
@@ -361,7 +361,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Expand All",
       text =
         """Given a start node, expand-all will follow relationships coming in or out, depending on the pattern relationship. Can also handle variable length pattern relationships.""".stripMargin,
-      queryText = """MATCH (p:Person {name: "me"})-[:FRIENDS_WITH]->(fof) RETURN fof""",
+      queryText = """MATCH (p:Person {name: 'me'})-[:FRIENDS_WITH]->(fof) RETURN fof""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Expand(All)"))
     )
   }
@@ -371,7 +371,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Expand Into",
       text =
         """When both the start and end node have already been found, expand-into is used to find all connecting relationships between the two nodes.""".stripMargin,
-      queryText = """MATCH (p:Person {name: "me"})-[:FRIENDS_WITH]->(fof)-->(p) RETURN fof""",
+      queryText = """MATCH (p:Person {name: 'me'})-[:FRIENDS_WITH]->(fof)-->(p) RETURN fof""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Expand(Into)"))
     )
   }
@@ -442,7 +442,7 @@ class QueryPlanTest extends DocumentingTestBase with SoftReset {
       title = "Unwind",
       text =
         """Takes a list of values and returns one row per item in the list.""".stripMargin,
-      queryText = """UNWIND range(1,5) as value return value;""",
+      queryText = """UNWIND range(1,5) AS value RETURN value;""",
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Unwind"))
     )
   }
