@@ -76,7 +76,7 @@ public class BoltV1Dechunker
                 else
                 {
                     // Only one byte available, read that and wait for the second byte
-                    chunkSize = data.readByte() << 8;
+                    chunkSize = data.readUnsignedByte() << 8;
                     state = State.IN_HEADER;
                 }
                 break;
@@ -84,7 +84,7 @@ public class BoltV1Dechunker
             case IN_HEADER:
             {
                 // First header byte read, now we read the next one
-                chunkSize = (chunkSize | data.readByte()) & 0xFFFF;
+                chunkSize = chunkSize | data.readUnsignedByte();
                 handleHeader();
                 break;
             }
