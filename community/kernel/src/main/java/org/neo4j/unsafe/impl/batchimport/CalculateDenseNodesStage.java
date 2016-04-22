@@ -67,7 +67,7 @@ public class CalculateDenseNodesStage extends Stage
     /*
      * @see RelationshipTypeCheckerStep#getRelationshipTypes(int)
      */
-    public Object[] getRelationshipTypes( int belowOrEqualToThreshold )
+    public Object[] getRelationshipTypes( long belowOrEqualToThreshold )
     {
         return typer.getRelationshipTypes( belowOrEqualToThreshold );
     }

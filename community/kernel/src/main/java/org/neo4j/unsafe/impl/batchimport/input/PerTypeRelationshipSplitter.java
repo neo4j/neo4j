@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.IOException;
+import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -34,18 +35,21 @@ import static java.lang.Integer.max;
  */
 public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterator<InputRelationship>>
 {
+    private static final String MINORITY_TYPE = "minority";
     private final Object[] allRelationshipTypes;
     private final InputIterator<InputRelationship> actual;
+    private final Predicate<Object> minorityRelationshipTypes;
     private final ToIntFunction<Object> typeToId;
     private final InputCache inputCache;
 
     private int typeCursor;
 
     public PerTypeRelationshipSplitter( InputIterator<InputRelationship> actual, Object[] allRelationshipTypes,
-            ToIntFunction<Object> typeToId, InputCache inputCache )
+            Predicate<Object> minorityRelationshipTypes, ToIntFunction<Object> typeToId, InputCache inputCache )
     {
         this.actual = actual;
         this.allRelationshipTypes = allRelationshipTypes;
+        this.minorityRelationshipTypes = minorityRelationshipTypes;
         this.typeToId = typeToId;
         this.inputCache = inputCache;
     }
@@ -53,24 +57,26 @@ public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterat
     @Override
     protected InputIterator<InputRelationship> fetchNextOrNull()
     {
-        if ( typeCursor == allRelationshipTypes.length )
+        while ( typeCursor < allRelationshipTypes.length )
         {
-            return null;
-        }
+            Object type = allRelationshipTypes[typeCursor++];
+            if ( typeCursor == 1 )
+            {
+                // This is the first relationship type. If we're lucky and this is a new import
+                // then this type will also represent the type the most relationship are of.
+                // We'll basically return the actual iterator, but with a filter to only return
+                // this type. The other relationships will be cached by type.
+                return new FilteringAndPerTypeCachingInputIterator( actual, type );
+            }
 
-        Object type = allRelationshipTypes[typeCursor++];
-        if ( typeCursor == 1 )
-        {
-            // This is the first relationship type. If we're lucky and this is a new import
-            // then this type will also represent the type the most relationship are of.
-            // We'll basically return the actual iterator, but with a filter to only return
-            // this type. The other relationships will be cached by type.
-            return new FilteringAndPerTypeCachingInputIterator( actual, type );
+            // This isn't the first relationship type. The first pass cached relationships
+            // per type on disk into InputCache. Simply get the correct one and return.
+            if ( !minorityRelationshipTypes.test( type ) )
+            {
+                return inputCache.relationships( cacheSubType( type ), true/*delete after use*/ ).iterator();
+            }
         }
-
-        // This isn't the first relationship type. The first pass cached relationships
-        // per type on disk into InputCache. Simply get the correct one and return.
-        return inputCache.relationships( cacheSubType( type ), true/*delete after use*/ ).iterator();
+        return null;
     }
 
     String cacheSubType( Object type )
@@ -97,11 +103,17 @@ public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterat
         return highest;
     }
 
+    public InputIterator<InputRelationship> getMinorityRelationships()
+    {
+        return inputCache.relationships( MINORITY_TYPE, true ).iterator();
+    }
+
     public class FilteringAndPerTypeCachingInputIterator extends InputIterator.Delegate<InputRelationship>
     {
         private final Object currentType;
-        // index into this array is actual typeId, which may be 0 - 2^16-1
+        // index into this array is actual typeId, which may be 0 - 2^16-1.
         private final Receiver<InputRelationship[],IOException>[] receivers;
+        private final Receiver<InputRelationship[],IOException> minorityReceiver;
         private final InputRelationship[] transport = new InputRelationship[1];
 
         @SuppressWarnings( "unchecked" )
@@ -110,24 +122,30 @@ public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterat
             super( actual );
             this.currentType = currentType;
             this.receivers = new Receiver[highestTypeId()+1];
-            for ( Object type : allRelationshipTypes )
-            {
-                if ( type.equals( currentType ) )
-                {
-                    // We're iterating over this type, let's not cache it. Also accounted for in the
-                    // receivers array above, which is 1 less than number of types in total.
-                    continue;
-                }
 
-                try
+            try
+            {
+                for ( Object type : allRelationshipTypes )
                 {
-                    int typeId = typeToId.applyAsInt( type );
-                    receivers[typeId] = inputCache.cacheRelationships( cacheSubType( type ) );
+                    if ( type.equals( currentType ) )
+                    {
+                        // We're iterating over this type, let's not cache it. Also accounted for in the
+                        // receivers array above, which is 1 less than number of types in total.
+                        continue;
+                    }
+
+                    // Collect all types that are consider a minority into one set of relationships
+                    if ( !minorityRelationshipTypes.test( type ) )
+                    {
+                        int typeId = typeToId.applyAsInt( type );
+                        receivers[typeId] = inputCache.cacheRelationships( cacheSubType( type ) );
+                    }
                 }
-                catch ( IOException e )
-                {
-                    throw new InputException( "Error creating a cacher", e );
-                }
+                minorityReceiver = inputCache.cacheRelationships( MINORITY_TYPE );
+            }
+            catch ( IOException e )
+            {
+                throw new InputException( "Error creating a cacher", e );
             }
         }
 
@@ -143,18 +161,20 @@ public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterat
                     return null;
                 }
 
-                if ( candidate.typeAsObject().equals( currentType ) )
+                Object type = candidate.typeAsObject();
+                if ( type.equals( currentType ) )
                 {
                     // This is a relationship of the requested type
                     return candidate;
                 }
 
                 // This is a relationships of a different type, cache it
-                transport[0] = candidate;
                 try
                 {
-                    int typeId = typeToId.applyAsInt( candidate.typeAsObject() );
-                    receivers[typeId].receive( transport );
+                    Receiver<InputRelationship[],IOException> receiver = minorityRelationshipTypes.test( type ) ?
+                            minorityReceiver : receivers[typeToId.applyAsInt( type )];
+                    transport[0] = candidate;
+                    receiver.receive( transport );
                 }
                 catch ( IOException e )
                 {
@@ -166,19 +186,20 @@ public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterat
         @Override
         public void close()
         {
-            for ( Receiver<InputRelationship[],IOException> receiver : receivers )
+            try
             {
-                if ( receiver != null )
+                for ( Receiver<InputRelationship[],IOException> receiver : receivers )
                 {
-                    try
+                    if ( receiver != null )
                     {
                         receiver.close();
                     }
-                    catch ( IOException e )
-                    {
-                        throw new InputException( "Error closing cacher", e );
-                    }
                 }
+                minorityReceiver.close();
+            }
+            catch ( IOException e )
+            {
+                throw new InputException( "Error closing cacher", e );
             }
 
             // This will delegate to the actual iterator and so close the external input iterator

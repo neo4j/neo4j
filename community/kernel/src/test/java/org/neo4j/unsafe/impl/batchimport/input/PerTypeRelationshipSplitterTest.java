@@ -54,7 +54,7 @@ public class PerTypeRelationshipSplitterTest
         InputIterable<InputRelationship> relationships = wrap( "test", expected );
         InputCache inputCache = new InputCache( new DefaultFileSystemAbstraction(), directory.directory() );
         PerTypeRelationshipSplitter perType = new PerTypeRelationshipSplitter( relationships.iterator(),
-                types( expected ), type -> Integer.parseInt( type.toString() ), inputCache );
+                types( expected ), type -> false, type -> Integer.parseInt( type.toString() ), inputCache );
 
         // WHEN
         Set<Object> all = new HashSet<>();

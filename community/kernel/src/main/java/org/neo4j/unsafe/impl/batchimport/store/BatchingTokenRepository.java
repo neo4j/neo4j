@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.TokenStore;
@@ -43,6 +44,7 @@ import static java.lang.Math.max;
  * to call {@link #getOrCreateId(String)} methods on.
  */
 public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN extends Token>
+        implements ToIntFunction<Object>
 {
     private final Map<String,Integer> tokens = new HashMap<>();
     private final TokenStore<RECORD, TOKEN> store;
@@ -102,6 +104,12 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
         }
         throw new IllegalArgumentException( "Expected either a String or Integer for property key, but was '" +
                 key + "'" + ", " + key.getClass() );
+    }
+
+    @Override
+    public int applyAsInt( Object key )
+    {
+        return getOrCreateId( key );
     }
 
     /**

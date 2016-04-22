@@ -109,11 +109,10 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
     }
 
     /**
-     * Returns relationship types which have percentage of relationships out of the total or less than that.
-     * E.g. a value of {@code 20} would return types which have got 20% of relationships of less.
+     * Returns relationship types which have number of relationships equal to or lower than the given threshold.
      *
-     * @param belowOrEqualToPercentage threshold where relationship types which have this percentage
-     * out of all relationships or less will be returned.
+     * @param belowOrEqualToThreshold threshold where relationship types which have this amount of relationhips
+     * or less will be returned.
      * @return the order of which to order {@link InputRelationship} when importing relationships.
      * The order in which these relationships are returned will be the reverse order of relationship type ids.
      * There are two modes of relationship types here, one is user defined String where this step
@@ -121,22 +120,17 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
      * is where types are given as ids straight away (as Integer) where the order is already set and so
      * the types will not be sorted by size (which is simply an optimization anyway).
      */
-    public Object[] getRelationshipTypes( int belowOrEqualToPercentage )
+    public Object[] getRelationshipTypes( long belowOrEqualToThreshold )
     {
         List<Object> result = new ArrayList<>();
         for ( Map.Entry<Object,AtomicLong> candidate : sortedTypes )
         {
-            if ( percentage( totalCount, candidate.getValue().get() ) <= belowOrEqualToPercentage )
+            if ( candidate.getValue().get() <= belowOrEqualToThreshold )
             {
                 result.add( candidate.getKey() );
             }
         }
 
         return result.toArray();
-    }
-
-    private int percentage( long total, long count )
-    {
-        return (int) Math.round( (count*100D)/total );
     }
 }

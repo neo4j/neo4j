@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
@@ -50,6 +52,7 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
 
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
@@ -174,8 +177,10 @@ public class ParallelBatchImporter implements BatchImporter
             }
 
             importRelationships( nodeRelationshipCache, storeUpdateMonitor, neoStore, writeMonitor,
-                    idMapper, cachedRelationships,
-                    inputCache, calculateDenseNodesStage.getRelationshipTypes( 100 ) );
+                    idMapper, cachedRelationships, inputCache,
+                    calculateDenseNodesStage.getRelationshipTypes( Long.MAX_VALUE ),
+                    // Is batch size a good measure for considering a group of relationships a minority?
+                    calculateDenseNodesStage.getRelationshipTypes( config.batchSize() ) );
 
             // Release this potentially really big piece of cached data
             nodeRelationshipCache.close();
@@ -227,7 +232,7 @@ public class ParallelBatchImporter implements BatchImporter
     private void importRelationships( NodeRelationshipCache nodeRelationshipCache,
             CountingStoreUpdateMonitor storeUpdateMonitor, BatchingNeoStores neoStore,
             IoMonitor writeMonitor, IdMapper idMapper, InputIterable<InputRelationship> relationships,
-            InputCache inputCache, Object[] allRelationshipTypes )
+            InputCache inputCache, Object[] allRelationshipTypes, Object[] minorityRelationshipTypes )
     {
         // Imports the relationships from the Input. This isn't a straight forward as importing nodes,
         // since keeping track of and updating heads of relationship chains in scenarios where most nodes
@@ -241,10 +246,13 @@ public class ParallelBatchImporter implements BatchImporter
         // finally there will be one Node --> Relationship and Relationship --> Relationship stage linking
         // all sparse relationship chains together.
 
-        PerTypeRelationshipSplitter perTypeIterator =
-                new PerTypeRelationshipSplitter( relationships.iterator(), allRelationshipTypes,
-                        type -> neoStore.getRelationshipTypeRepository().getOrCreateId( type ), inputCache );
-        RelationshipStore relationshipStore = neoStore.getRelationshipStore();
+        Set<Object> minorityRelationshipTypeSet = asSet( minorityRelationshipTypes );
+        PerTypeRelationshipSplitter perTypeIterator = new PerTypeRelationshipSplitter(
+                relationships.iterator(),
+                allRelationshipTypes,
+                type -> minorityRelationshipTypeSet.contains( type ),
+                neoStore.getRelationshipTypeRepository(),
+                inputCache );
 
         long nextRelationshipId = 0;
         for ( int i = 0; perTypeIterator.hasNext(); i++ )
@@ -253,8 +261,6 @@ public class ParallelBatchImporter implements BatchImporter
             nodeRelationshipCache.setForwardScan( true );
             Object currentType = perTypeIterator.currentType();
             int currentTypeId = neoStore.getRelationshipTypeRepository().getOrCreateId( currentType );
-
-            System.out.println( "------------- " + currentType + "(" + currentTypeId + ")" );
 
             InputIterator<InputRelationship> perType = perTypeIterator.next();
             String topic = " [:" + currentType + "] (" +
@@ -275,7 +281,7 @@ public class ParallelBatchImporter implements BatchImporter
             nodeRelationshipCache.clearChangedChunks( true/*dense*/ ); // cheap higher level clearing
         }
 
-        String topic = " Sparse/final";
+        String topic = " Sparse";
         nodeRelationshipCache.setForwardScan( true );
         // Stage 4b -- set node nextRel fields for sparse nodes
         executeStages( new NodeFirstRelationshipStage( topic, config, neoStore.getNodeStore(),
@@ -285,6 +291,13 @@ public class ParallelBatchImporter implements BatchImporter
         nodeRelationshipCache.setForwardScan( false );
         executeStages( new RelationshipLinkbackStage( topic, config, neoStore.getRelationshipStore(),
                 nodeRelationshipCache, 0, false/*sparse*/ ) );
+
+        if ( minorityRelationshipTypes.length > 0 )
+        {
+            // Do some batch insertion style random-access insertions for super small minority types
+            executeStages( new BatchInsertRelationshipsStage( config, idMapper,
+                    perTypeIterator.getMinorityRelationships(), neoStore ) );
+        }
     }
 
     private void executeStages( Stage... stages )
