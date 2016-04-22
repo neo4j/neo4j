@@ -1,8 +1,6 @@
 [[bolt]]
 = Neo4j Bolt Protocol, Version 1
 
-WARNING: This component is in active development and *will* change.
-
 NOTE: Byte values within this document are represented in http://en.wikipedia.org/wiki/Hexadecimal[hexadecimal] notation unless otherwise specified.
 
 NOTE: Integers and floating point values are transmitted and stored using http://en.wikipedia.org/wiki/Endianness[big-endian] byte order unless otherwise specified.
