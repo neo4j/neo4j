@@ -31,5 +31,5 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
-  The Netty Project
+  Netty
 
