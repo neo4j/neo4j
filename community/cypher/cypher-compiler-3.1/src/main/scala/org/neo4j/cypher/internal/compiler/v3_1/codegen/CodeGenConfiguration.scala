@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen
 
-import java.time.Clock
+import org.neo4j.helpers.Clock
 
 /**
   * Configuration modes for code generation
@@ -39,6 +39,7 @@ case object ByteCodeMode extends CodeGenMode
 
 /**
   * Configuration class for code generation
+ *
   * @param mode The mode of code generation
   * @param saveSource if `true` source code is stored and returned
   * @param clock Clock used for keeping track of time
@@ -46,6 +47,6 @@ case object ByteCodeMode extends CodeGenMode
   */
 case class CodeGenConfiguration(mode: CodeGenMode = ByteCodeMode,
                                 saveSource: Boolean = false,
-                                clock: Clock = Clock.systemUTC(),
+                                clock: Clock = Clock.SYSTEM_CLOCK,
                                 packageName: String = "org.neo4j.cypher.internal.compiler.v3_1.generated"
                                )

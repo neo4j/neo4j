@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure, Variable}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 abstract class ElementProperty(token: Option[Int], propName: String, elementIdVar: String, propKeyVar: String)
   extends CodeGenExpression {
@@ -50,7 +49,7 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
 
   override def propertyByName[E](body: MethodStructure[E], localName: String) =
     if (nodeIdVar.nullable)
-      body.ifStatement(body.notNull(nodeIdVar.name, nodeIdVar.cypherType)) {ifBody =>
+      body.ifNotStatement(body.isNull(nodeIdVar.name, CodeGenType.primitiveNode)) {ifBody =>
         ifBody.nodeGetPropertyForVar(nodeIdVar.name, propKeyVar, localName)
       }
     else
@@ -58,13 +57,13 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
 
   override def propertyById[E](body: MethodStructure[E], localName: String) =
     if (nodeIdVar.nullable)
-      body.ifStatement(body.notNull(nodeIdVar.name, nodeIdVar.cypherType)) {ifBody =>
+      body.ifNotStatement(body.isNull(nodeIdVar.name, CodeGenType.primitiveNode)) {ifBody =>
         ifBody.nodeGetPropertyById(nodeIdVar.name, token.get, localName)
       }
     else
       body.nodeGetPropertyById(nodeIdVar.name, token.get, localName)
 
-  override def cypherType(implicit context: CodeGenContext) = CTAny
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
 }
 
 case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable, propKeyVar: String)
@@ -72,7 +71,7 @@ case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable,
 
   override def propertyByName[E](body: MethodStructure[E], localName: String) =
     if (relIdVar.nullable)
-      body.ifStatement(body.notNull(relIdVar.name, relIdVar.cypherType)) { ifBody =>
+      body.ifNotStatement(body.isNull(relIdVar.name, CodeGenType.primitiveRel)) { ifBody =>
         ifBody.relationshipGetPropertyForVar(relIdVar.name, propKeyVar, localName)
       }
     else
@@ -80,11 +79,11 @@ case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable,
 
   override def propertyById[E](body: MethodStructure[E], localName: String) =
   if (relIdVar.nullable)
-    body.ifStatement(body.notNull(relIdVar.name, relIdVar.cypherType)) { ifBody =>
+    body.ifNotStatement(body.isNull(relIdVar.name, CodeGenType.primitiveRel)) { ifBody =>
       ifBody.relationshipGetPropertyById(relIdVar.name, token.get, localName)
     }
     else
       body.relationshipGetPropertyById(relIdVar.name, token.get, localName)
 
-  override def cypherType(implicit context: CodeGenContext) = CTAny
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
 }

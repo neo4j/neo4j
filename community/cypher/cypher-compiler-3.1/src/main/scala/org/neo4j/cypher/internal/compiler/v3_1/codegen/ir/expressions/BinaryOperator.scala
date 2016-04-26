@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodSt
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-trait NumericBinaryOperator {
+trait BinaryOperator {
   self: CodeGenExpression =>
 
   def lhs: CodeGenExpression
@@ -37,18 +37,18 @@ trait NumericBinaryOperator {
   }
 
   override final def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    (lhs.cypherType, rhs.cypherType) match {
-      case (CTBoolean, _) => throw new CypherTypeException(s"Cannot $name a boolean and ${rhs.cypherType}")
-      case (_, CTBoolean) => throw new CypherTypeException(s"Cannot $name a ${rhs.cypherType} and a boolean")
+    (lhs.codeGenType, rhs.codeGenType) match {
+      case (CodeGenType(CTBoolean, _), _) => throw new CypherTypeException(s"Cannot $name a boolean and ${rhs.codeGenType.ct}")
+      case (_, CodeGenType(CTBoolean, _)) => throw new CypherTypeException(s"Cannot $name a ${rhs.codeGenType.ct} and a boolean")
 
-      case (Number(t1), Number(t2)) =>
+      case (t1, t2) if t1.isPrimitive && t2.isPrimitive =>
         generator(structure)(context)(structure.box(lhs.generateExpression(structure), t1),
                                       structure.box(rhs.generateExpression(structure), t2))
 
-      case (Number(t), _) =>
+      case (t, _) if t.isPrimitive =>
         generator(structure)(context)(structure.box(lhs.generateExpression(structure), t),
                                       rhs.generateExpression(structure))
-      case (_, Number(t)) =>
+      case (_, t) if t.isPrimitive =>
         generator(structure)(context)(lhs.generateExpression(structure),
                                                            structure.box(rhs.generateExpression(structure), t))
 
@@ -56,7 +56,14 @@ trait NumericBinaryOperator {
                                               rhs.generateExpression(structure))
     }
 
-  override def cypherType(implicit context: CodeGenContext) = CTAny
+  override def codeGenType(implicit context: CodeGenContext) =
+    (lhs.codeGenType.ct, rhs.codeGenType.ct) match {
+      case (CTInteger, CTInteger) => CodeGenType(CTInteger, ReferenceType)
+      case (Number(_), Number(_)) => CodeGenType(CTFloat, ReferenceType)
+      // Runtime we'll figure it out - can't store it in a primitive field unless we are 100% of the type
+      case _ => CodeGenType.Any
+    }
+
   protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext): (E, E) => E
 }
 

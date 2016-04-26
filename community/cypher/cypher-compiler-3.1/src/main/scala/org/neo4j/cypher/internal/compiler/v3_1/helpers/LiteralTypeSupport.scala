@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.helpers
 
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 object LiteralTypeSupport {
-  def deriveType(obj: Any): CypherType = obj match {
+  def deriveCypherType(obj: Any): CypherType = obj match {
     case _: String                          => CTString
     case _: Char                            => CTString
     case _: Integer|_:Long|_:Short|_:Byte   => CTInteger
@@ -30,7 +32,18 @@ object LiteralTypeSupport {
     case _: Boolean                         => CTBoolean
     case IsMap(_)                           => CTMap
     case IsCollection(coll) if coll.isEmpty => CTList(CTAny)
-    case IsCollection(coll)                 => CTList(coll.map(deriveType).reduce(_ leastUpperBound _))
+    case IsCollection(coll)                 => CTList(coll.map(deriveCypherType).reduce(_ leastUpperBound _))
     case _                                  => CTAny
+  }
+
+  def deriveCodeGenType(obj: Any): CodeGenType = deriveCodeGenType(deriveCypherType(obj))
+
+  def deriveCodeGenType(ct: CypherType): CodeGenType = ct match {
+    case CTInteger => CodeGenType(CTInteger, IntType)
+    case CTFloat => CodeGenType(CTFloat, expressions.FloatType)
+    case CTBoolean => CodeGenType(CTBoolean, BoolType)
+    case CTNode => CodeGenType(CTNode, IntType)
+    case CTRelationship => CodeGenType(CTRelationship, IntType)
+    case _ => CodeGenType(ct, ReferenceType)
   }
 }

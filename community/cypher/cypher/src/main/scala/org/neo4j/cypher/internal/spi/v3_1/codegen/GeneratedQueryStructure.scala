@@ -31,20 +31,19 @@ import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, _}
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{CodeGenType, FloatType, IntType, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherExecutionException, symbols}
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.NodeManager
-
 
 object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
@@ -186,18 +185,19 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     }
   }
 
-  def lowerType(cType: CypherType): TypeReference = cType match {
-    case symbols.CTNode => typeRef[Long]
-    case symbols.CTRelationship => typeRef[Long]
-    case symbols.CTString => typeRef[String]
-    case symbols.CTAny => typeRef[Object]
+  def lowerType(cType: CodeGenType): TypeReference = cType match {
+    case CodeGenType(symbols.CTNode, IntType) => typeRef[Long]
+    case CodeGenType(symbols.CTRelationship, IntType) => typeRef[Long]
+    case CodeGenType(symbols.CTInteger, IntType) => typeRef[Long]
+    case CodeGenType(symbols.CTFloat, FloatType) => typeRef[Double]
+    case CodeGenType(symbols.CTString, ReferenceType) => typeRef[String]
+    case _ => typeRef[Object]
   }
 
-  def nullValue(cType: CypherType) = cType match {
-    case symbols.CTNode => constant(-1L)
-    case symbols.CTRelationship => constant(-1L)
-    case symbols.CTString => constant(null)
-    case symbols.CTAny => constant(null)
+  def nullValue(cType: CodeGenType) = cType match {
+    case CodeGenType(symbols.CTNode, IntType) => constant(-1L)
+    case CodeGenType(symbols.CTRelationship, IntType) => constant(-1L)
+    case _ => constant(null)
   }
 }
 
@@ -205,8 +205,11 @@ object Templates {
 
   import GeneratedQueryStructure.{method, param, staticField, typeRef}
 
-  def newInstance(valueType: TypeReference, args: Expression*): Expression = {
-    Expression.invoke(Expression.newInstance(valueType), MethodReference.constructorReference(valueType), args: _*)
+  def newInstance(valueType: TypeReference, args: (TypeReference,Expression)*): Expression = {
+    val types: Seq[TypeReference] = args.map(_._1)
+    val exprs: Seq[Expression] = args.map(_._2)
+    Expression.invoke(Expression.newInstance(valueType),
+                      MethodReference.constructorReference(valueType, types: _*), exprs:_*)
   }
 
   val newLongObjectMap = Expression.invoke(method[Primitive, PrimitiveLongObjectMap[_]]("longObjectMap"))

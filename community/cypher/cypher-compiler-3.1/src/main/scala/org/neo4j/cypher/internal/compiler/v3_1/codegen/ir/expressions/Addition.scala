@@ -20,12 +20,34 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with NumericBinaryOperator {
+case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with BinaryOperator {
 
   override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.add
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
   override def name: String = "add"
+
+  override def codeGenType(implicit context: CodeGenContext) = (lhs.codeGenType.ct, rhs.codeGenType.ct) match {
+
+    // Collections
+    case (ListType(left), ListType(right)) =>
+      CodeGenType(ListType(left leastUpperBound right), ReferenceType)
+    case (ListType(innerType), singleElement) =>
+      CodeGenType(ListType(innerType leastUpperBound singleElement), ReferenceType)
+    case (singleElement, ListType(innerType)) => CodeGenType(ListType(innerType leastUpperBound singleElement), ReferenceType)
+
+    // Strings
+    case (CTString, _) => CodeGenType(CTString, ReferenceType)
+    case (_, CTString) => CodeGenType(CTString, ReferenceType)
+
+    // Numbers
+    case (CTInteger, CTInteger) => CodeGenType(CTInteger, ReferenceType)
+    case (Number(_), Number(_)) => CodeGenType(CTFloat, ReferenceType)
+
+    // Runtime we'll figure it out
+    case _ => CodeGenType.Any
+  }
 }

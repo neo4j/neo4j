@@ -19,11 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
+/**
+  * Type representation of a CodeGenExpression
+  */
+sealed trait RepresentationType
 
-trait CodeGenExpression {
-  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
-  def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E
-  def nullable(implicit context: CodeGenContext): Boolean
-  def codeGenType(implicit context: CodeGenContext): CodeGenType
-}
+case object IntType extends RepresentationType
+
+case object BoolType extends RepresentationType
+
+case object FloatType extends RepresentationType
+
+case object ReferenceType extends RepresentationType
+

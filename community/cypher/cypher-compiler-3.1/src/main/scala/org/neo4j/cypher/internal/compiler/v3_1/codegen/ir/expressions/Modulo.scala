@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
-case class Modulo(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with NumericBinaryOperator {
+case class Modulo(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression with BinaryOperator {
 
   override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.mod
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  override def cypherType(implicit context: CodeGenContext) = CTAny
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTFloat, ReferenceType)
 
   override def name: String = "modulo"
 }

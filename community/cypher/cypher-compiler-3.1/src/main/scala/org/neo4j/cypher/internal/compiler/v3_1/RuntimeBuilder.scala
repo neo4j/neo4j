@@ -23,8 +23,8 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase._
 import org.neo4j.cypher.internal.compiler.v3_1.CompiledPlanBuilder.createTracer
+import org.neo4j.cypher.internal.compiler.v3_1.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenerator, CodeStructure}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InterpretedExecutionPlanBuilder.interpretedToExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
@@ -124,7 +124,7 @@ case class InterpretedPlanBuilder(clock: Clock, monitors: Monitors, publicTypeCo
 
 case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQuery]) {
 
-  private val codeGen = new CodeGenerator(structure)
+  private val codeGen = new CodeGenerator(structure, CodeGenConfiguration(mode = ByteCodeMode, clock = clock))
 
   def apply(logicalPlan: LogicalPlan, semanticTable: SemanticTable, planContext: PlanContext,
             monitor: NewRuntimeSuccessRateMonitor, tracer: CompilationPhaseTracer,

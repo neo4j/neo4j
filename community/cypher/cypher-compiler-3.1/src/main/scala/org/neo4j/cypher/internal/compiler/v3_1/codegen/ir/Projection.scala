@@ -38,7 +38,7 @@ case class Projection(projectionOpName: String, variables: Map[Variable, CodeGen
       variables.foreach {
         case (variable, expr) => body.projectVariable(variable.name,
                                                       generator.box(expr.generateExpression(body),
-                                                                    expr.cypherType))
+                                                                    expr.codeGenType))
       }
       action.body(body)
     }

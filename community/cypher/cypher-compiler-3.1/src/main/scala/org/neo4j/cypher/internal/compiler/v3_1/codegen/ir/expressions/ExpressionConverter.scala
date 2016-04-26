@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.functions.functionConverter
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CTNode, CTRelationship}
-import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, ast, symbols}
+import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CTBoolean, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, ast}
 
 object ExpressionConverter {
 
@@ -41,7 +41,9 @@ object ExpressionConverter {
 
       override def nullable(implicit context: CodeGenContext) = false
 
-      override def cypherType(implicit context: CodeGenContext) = symbols.CTBoolean
+      override def codeGenType(implicit context: CodeGenContext) =
+        if (nullable) CodeGenType(CTBoolean, ReferenceType)
+        else CodeGenType(CTBoolean, BoolType)
     }
   }
 

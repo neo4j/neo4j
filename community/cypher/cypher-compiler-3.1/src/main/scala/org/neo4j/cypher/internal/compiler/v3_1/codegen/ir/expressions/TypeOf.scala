@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure, Variable}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 case class TypeOf(relId: Variable)
   extends CodeGenExpression {
@@ -29,9 +29,9 @@ case class TypeOf(relId: Variable)
 
   def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     val typeName = context.namer.newVarName()
-    structure.declare(typeName, CTString)
+    structure.declare(typeName, CodeGenType(CTString, ReferenceType))
     if (nullable) {
-      structure.ifStatement(structure.notNull(relId.name, relId.cypherType)) { body =>
+      structure.ifNotStatement(structure.isNull(relId.name, CodeGenType.primitiveRel)) { body =>
         body.relType(relId.name, typeName)
       }
       structure.load(typeName)
@@ -44,5 +44,5 @@ case class TypeOf(relId: Variable)
 
   override def nullable(implicit context: CodeGenContext) = relId.nullable
 
-  override def cypherType(implicit context: CodeGenContext): CypherType = CTBoolean
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTString, ReferenceType)
 }

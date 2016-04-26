@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen
 
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 
 /**
  * This constitutes the SPI for code generation.
@@ -42,8 +42,8 @@ sealed trait RecordingJoinTableType extends JoinTableType
 
 case object LongToCountTable extends CountingJoinTableType
 case object LongsToCountTable extends CountingJoinTableType
-case class LongToListTable(structure: Map[String, CypherType], localMap: Map[String, String]) extends RecordingJoinTableType
-case class LongsToListTable(structure: Map[String, CypherType], localMap: Map[String, String]) extends RecordingJoinTableType
+case class LongToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
+case class LongsToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
 
 trait MethodStructure[E] {
 
@@ -52,11 +52,11 @@ trait MethodStructure[E] {
   def declareFlag(name: String, initialValue: Boolean)
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
-  def declare(varName: String, cypherType: CypherType): Unit
+  def declare(varName: String, codeGenType: CodeGenType): Unit
   def declareProperty(name: String): Unit
   def declareCounter(name: String, initialValue: E): Unit
-  def putField(structure: Map[String, CypherType], value: E, fieldType: CypherType, fieldName: String, localVar: String): Unit
-  def updateProbeTable(structure: Map[String, CypherType], tableVar: String, tableType: RecordingJoinTableType, keyVars: Seq[String], element: E): Unit
+  def putField(structure: Map[String, CodeGenType], value: E, fieldType: CodeGenType, fieldName: String, localVar: String): Unit
+  def updateProbeTable(structure: Map[String, CodeGenType], tableVar: String, tableType: RecordingJoinTableType, keyVars: Seq[String], element: E): Unit
   def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])(block: MethodStructure[E]=>Unit): Unit
   def updateProbeTableCount(tableVar: String, tableType: CountingJoinTableType, keyVar: Seq[String]): Unit
   def allocateProbeTable(tableVar: String, tableType: JoinTableType): Unit
@@ -66,7 +66,7 @@ trait MethodStructure[E] {
   // expressions
   def decreaseCounterAndCheckForZero(name: String): E
   def counterEqualsZero(variableName: String): E
-  def newTableValue(targetVar: String, structure: Map[String, CypherType]): E
+  def newTableValue(targetVar: String, structure: Map[String, CodeGenType]): E
   def constant(value: Object): E
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
@@ -88,16 +88,17 @@ trait MethodStructure[E] {
   def threeValuedNot(value: E): E
   def not(value: E): E
   def threeValuedEquals(lhs: E, rhs: E): E
-  def eq(lhs: E, rhs: E, cypherType: CypherType): E
+  def eq(lhs: E, rhs: E, codeGenType: CodeGenType): E
   def or(lhs: E, rhs: E): E
   def threeValuedOr(lhs: E, rhs: E): E
 
   // object handling
-  def markAsNull(varName: String, cypherType: CypherType): Unit
-  def nullablePrimitive(varName: String, cypherType: CypherType, onSuccess: E): E
-  def nullableReference(varName: String, cypherType: CypherType, onSuccess: E): E
-  def notNull(name: String, cypherType: CypherType): E
-  def box(expression:E, cypherType: CypherType): E
+  def markAsNull(varName: String, codeGenType: CodeGenType): Unit
+  def nullablePrimitive(varName: String, codegenType: CodeGenType, onSuccess: E): E
+  def nullableReference(varName: String, codeGenType: CodeGenType, onSuccess: E): E
+  def isNull(name: String, codeGenType: CodeGenType): E
+  def notNull(name: String, codeGenType: CodeGenType): E
+  def box(expression:E, codeGenType: CodeGenType): E
   def toFloat(expression:E): E
 
   // parameters
@@ -137,7 +138,7 @@ trait MethodStructure[E] {
 
   // code structure
   def whileLoop(test: E)(block: MethodStructure[E] => Unit): Unit
-  def forEach(varName: String, cypherType: CypherType, iterable: E)(block: MethodStructure[E] => Unit): Unit
+  def forEach(varName: String, codeGenType: CodeGenType, iterable: E)(block: MethodStructure[E] => Unit): Unit
   def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ifNotStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ternaryOperator(test:E, onSuccess:E, onError: E): E

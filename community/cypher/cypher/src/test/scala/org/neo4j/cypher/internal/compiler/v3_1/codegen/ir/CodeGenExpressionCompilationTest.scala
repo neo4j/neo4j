@@ -27,7 +27,6 @@ import org.scalatest._
 
 class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with CodeGenSugar {
 
-  //TODO redo
   private val traceIds = Map("id" -> null)
 
   case class Operation(name: String,
@@ -50,9 +49,9 @@ class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with
   )
 
   val subOperation = Operation("Subtraction", Subtraction.apply, Seq(
-//    (9, 7, Left(2)),
-//    (Long.MaxValue, Int.MaxValue, Left(Long.MaxValue - Int.MaxValue)),
-   // (3.25, 3, Left(0.25)),
+    (9, 7, Left(2)),
+    (Long.MaxValue, Int.MaxValue, Left(Long.MaxValue - Int.MaxValue)),
+    (3.25, 3, Left(0.25)),
     (3.21, 1.23, Left(1.98)),
     (-1, -2, Left(1)),
     (-1.25, -2.5, Left(1.25)),

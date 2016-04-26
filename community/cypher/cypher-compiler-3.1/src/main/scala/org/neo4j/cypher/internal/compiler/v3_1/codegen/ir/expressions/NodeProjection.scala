@@ -30,12 +30,12 @@ case class NodeProjection(nodeIdVar: Variable) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) ={
     if (nodeIdVar.nullable)
-      structure.nullableReference(nodeIdVar.name, nodeIdVar.cypherType, structure.materializeNode(nodeIdVar.name))
+      structure.nullableReference(nodeIdVar.name, CodeGenType.primitiveNode, structure.materializeNode(nodeIdVar.name))
     else
       structure.materializeNode(nodeIdVar.name)
   }
 
   override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
 
-  override def cypherType(implicit context: CodeGenContext) = CTAny
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTNode, ReferenceType)
 }

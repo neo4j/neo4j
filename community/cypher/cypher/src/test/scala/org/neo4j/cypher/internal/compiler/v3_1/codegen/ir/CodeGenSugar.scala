@@ -105,7 +105,7 @@ trait CodeGenSugar extends MockitoSugar {
     rows
   }
 
-  def codeGenConfiguration = CodeGenConfiguration(mode = SourceCodeMode)
+  def codeGenConfiguration = CodeGenConfiguration(mode = ByteCodeMode)
 
   def compile(instructions: Seq[Instruction], columns: Seq[String], operatorIds: Map[String, Id] = Map.empty): GeneratedQuery = {
     //In reality the same namer should be used for construction Instruction as in generating code

@@ -31,6 +31,5 @@ case class Literal(value: Object) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = value == null
 
-  override def cypherType(implicit context: CodeGenContext) =
-    LiteralTypeSupport.deriveType(value)
+  override def codeGenType(implicit context: CodeGenContext) = LiteralTypeSupport.deriveCodeGenType(value)
 }

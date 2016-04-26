@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols
+import org.neo4j.cypher.internal.frontend.v3_1.symbols.CTBoolean
 
 case class Not(inner: CodeGenExpression) extends CodeGenExpression {
 
@@ -29,12 +29,12 @@ case class Not(inner: CodeGenExpression) extends CodeGenExpression {
   }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    if (!nullable && inner.cypherType == symbols.CTBoolean) structure.not(inner.generateExpression(structure))
-    else structure.threeValuedNot(structure.box(inner.generateExpression(structure), inner.cypherType))
+    if (!nullable && inner.codeGenType.ct == CTBoolean) structure.not(inner.generateExpression(structure))
+    else structure.threeValuedNot(structure.box(inner.generateExpression(structure), inner.codeGenType))
 
   override def nullable(implicit context: CodeGenContext) = inner.nullable
 
-  override def cypherType(implicit context: CodeGenContext) =
-    if (!nullable && inner.cypherType == symbols.CTBoolean) symbols.CTBoolean
-    else symbols.CTAny
+  override def codeGenType(implicit context: CodeGenContext) =
+    if (!nullable && inner.codeGenType.ct == CTBoolean) CodeGenType(CTBoolean, BoolType)
+    else  CodeGenType(CTBoolean, ReferenceType)
 }

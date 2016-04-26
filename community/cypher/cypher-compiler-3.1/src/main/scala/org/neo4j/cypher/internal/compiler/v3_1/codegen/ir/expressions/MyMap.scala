@@ -35,5 +35,5 @@ case class MyMap(instructions: Map[String, CodeGenExpression]) extends CodeGenEx
 
   override def nullable(implicit context: CodeGenContext) = false
 
-  override def cypherType(implicit context: CodeGenContext) = CTMap
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType(CTMap, ReferenceType)
 }

@@ -30,12 +30,12 @@ case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     if (nodeIdVar.nullable)
-      structure.nullablePrimitive(nodeIdVar.name, nodeIdVar.cypherType, structure.node(nodeIdVar.name))
+      structure.nullablePrimitive(nodeIdVar.name, CodeGenType.primitiveNode, structure.node(nodeIdVar.name))
     else
       structure.node(nodeIdVar.name)
   }
 
   override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
 
-  override def cypherType(implicit context: CodeGenContext) = CTNode
+  override def codeGenType(implicit context: CodeGenContext) = if (nullable) CodeGenType(CTNode, ReferenceType) else CodeGenType.primitiveNode
 }

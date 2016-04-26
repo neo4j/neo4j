@@ -20,15 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols
+import org.neo4j.cypher.internal.frontend.v3_1.symbols.CTBoolean
 
 case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  override def cypherType(implicit context: CodeGenContext) =
-    if (!nullable && lhs.cypherType == symbols.CTBoolean && rhs.cypherType == symbols.CTBoolean) symbols.CTBoolean
-    else symbols.CTAny
+  override def codeGenType(implicit context: CodeGenContext) =
+    if (!nullable && lhs.codeGenType.ct == CTBoolean && rhs.codeGenType.ct == CTBoolean)
+      CodeGenType(CTBoolean, BoolType)
+    else CodeGenType(CTBoolean, ReferenceType)
 
   override final def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     lhs.init(generator)
@@ -36,8 +37,8 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
   }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
-    if (!nullable && lhs.cypherType == symbols.CTBoolean && rhs.cypherType == symbols.CTBoolean)
+    if (!nullable && lhs.codeGenType.ct == CTBoolean && rhs.codeGenType.ct == CTBoolean)
       structure.or(lhs.generateExpression(structure), rhs.generateExpression(structure))
-    else structure.threeValuedOr(structure.box(lhs.generateExpression(structure), lhs.cypherType),
-                                 structure.box(rhs.generateExpression(structure), rhs.cypherType))
+    else structure.threeValuedOr(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
+                                 structure.box(rhs.generateExpression(structure), rhs.codeGenType))
 }

@@ -51,7 +51,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], conf: CodeGenC
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
-            Some(PlanFingerprint(conf.clock.millis(), planContext.txIdProvider(), igs.snapshot.freeze))
+            Some(PlanFingerprint(conf.clock.currentTimeMillis(), planContext.txIdProvider(), igs.snapshot.freeze))
           case _ =>
             None
         }
