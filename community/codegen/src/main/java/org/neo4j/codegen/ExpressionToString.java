@@ -135,7 +135,7 @@ class ExpressionToString implements ExpressionVisitor
     @Override
     public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
     {
-        ternary( Expression.eq( test, Expression.constant( null ), TypeReference.OBJECT ),
+        ternary( Expression.equal( test, Expression.constant( null ), TypeReference.OBJECT ),
                 onTrue, onFalse );
     }
 
@@ -143,14 +143,14 @@ class ExpressionToString implements ExpressionVisitor
     public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
     {
         ternary( Expression.not(
-                Expression.eq( test, Expression.constant( null ), TypeReference.OBJECT )),
+                Expression.equal( test, Expression.constant( null ), TypeReference.OBJECT )),
                 onTrue, onFalse );
     }
 
     @Override
-    public void eq( Expression lhs, Expression rhs, TypeReference ignored )
+    public void equal( Expression lhs, Expression rhs, TypeReference ignored )
     {
-        result.append( "eq(" );
+        result.append( "equal(" );
         lhs.accept( this );
         result.append( ", " );
         rhs.accept( this );

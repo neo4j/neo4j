@@ -316,7 +316,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
         return declaration.isConstructor() && !calledSuper;
     }
 
-
     private boolean loadsSuper( Expression expression )
     {
         final boolean[] loadsSuper = new boolean[]{false};

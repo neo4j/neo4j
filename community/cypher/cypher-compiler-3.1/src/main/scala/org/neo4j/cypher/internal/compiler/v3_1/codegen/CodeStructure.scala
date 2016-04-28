@@ -45,6 +45,20 @@ case object LongsToCountTable extends CountingJoinTableType
 case class LongToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
 case class LongsToListTable(structure: Map[String, CodeGenType], localMap: Map[String, String]) extends RecordingJoinTableType
 
+/**
+  * Describes the SPI for generating a method.
+  *
+  * In principle you can think of it as you have a method, e.g.
+  *
+  * {{{
+  *   public void foo
+  *   {
+  *   ...
+  *   }
+  * }}}
+  *
+  * This SPI describes the operations that can be put in that method.
+  */
 trait MethodStructure[E] {
 
   // misc
@@ -60,14 +74,14 @@ trait MethodStructure[E] {
   def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])(block: MethodStructure[E]=>Unit): Unit
   def updateProbeTableCount(tableVar: String, tableType: CountingJoinTableType, keyVar: Seq[String]): Unit
   def allocateProbeTable(tableVar: String, tableType: JoinTableType): Unit
-  def method(resultType: JoinTableType, resultVar: String, methodName: String)(block: MethodStructure[E]=>Unit): Unit
+  def invokeMethod(resultType: JoinTableType, resultVar: String, methodName: String)(block: MethodStructure[E]=>Unit): Unit
   def coerceToBoolean(propertyExpression: E): E
 
   // expressions
   def decreaseCounterAndCheckForZero(name: String): E
   def counterEqualsZero(variableName: String): E
   def newTableValue(targetVar: String, structure: Map[String, CodeGenType]): E
-  def constant(value: Object): E
+  def constantExpression(value: Object): E
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
 
@@ -75,22 +89,22 @@ trait MethodStructure[E] {
 
   def castToCollection(value: E): E
 
-  def load(varName: String): E
+  def loadVariable(varName: String): E
 
   // arithmetic
   def add(lhs: E, rhs: E): E
   def subtract(lhs: E, rhs: E): E
   def multiply(lhs: E, rhs: E): E
   def divide(lhs: E, rhs: E): E
-  def mod(lhs: E, rhs: E): E
+  def modulus(lhs: E, rhs: E): E
 
   // predicates
-  def threeValuedNot(value: E): E
-  def not(value: E): E
-  def threeValuedEquals(lhs: E, rhs: E): E
-  def eq(lhs: E, rhs: E, codeGenType: CodeGenType): E
-  def or(lhs: E, rhs: E): E
-  def threeValuedOr(lhs: E, rhs: E): E
+  def threeValuedNotExpression(value: E): E
+  def notExpression(value: E): E
+  def threeValuedEqualsExpression(lhs: E, rhs: E): E
+  def equalityExpression(lhs: E, rhs: E, codeGenType: CodeGenType): E
+  def orExpression(lhs: E, rhs: E): E
+  def threeValuedOrExpression(lhs: E, rhs: E): E
 
   // object handling
   def markAsNull(varName: String, codeGenType: CodeGenType): Unit

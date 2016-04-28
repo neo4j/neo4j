@@ -27,7 +27,7 @@ case class LoadVariable(variable: Variable) extends CodeGenExpression {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.load(variable.name)
+    structure.loadVariable(variable.name)
 
   override def nullable(implicit context: CodeGenContext): Boolean = variable.nullable
 

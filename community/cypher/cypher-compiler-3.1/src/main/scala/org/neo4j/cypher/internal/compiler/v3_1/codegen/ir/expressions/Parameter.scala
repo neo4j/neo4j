@@ -27,7 +27,7 @@ case class Parameter(key: String, variableName: String) extends CodeGenExpressio
     generator.expectParameter(key, variableName)
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
-    structure.load(variableName)
+    structure.loadVariable(variableName)
 
   override def nullable(implicit context: CodeGenContext) = true
 

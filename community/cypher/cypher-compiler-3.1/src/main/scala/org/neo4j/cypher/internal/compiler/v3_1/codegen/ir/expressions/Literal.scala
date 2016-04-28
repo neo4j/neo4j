@@ -27,7 +27,7 @@ case class Literal(value: Object) extends CodeGenExpression {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.constant(value)
+    structure.constantExpression(value)
 
   override def nullable(implicit context: CodeGenContext) = value == null
 

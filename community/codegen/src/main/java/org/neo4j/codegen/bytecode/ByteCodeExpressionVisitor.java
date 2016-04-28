@@ -215,7 +215,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor, Opcodes
     }
 
     @Override
-    public void eq( Expression lhs, Expression rhs, TypeReference type )
+    public void equal( Expression lhs, Expression rhs, TypeReference type )
     {
         switch ( type.simpleName() )
         {

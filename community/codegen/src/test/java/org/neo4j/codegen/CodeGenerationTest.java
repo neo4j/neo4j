@@ -384,7 +384,6 @@ public class CodeGenerationTest
         assertEquals( Arrays.asList( "FOO", "BAR", "BAZ" ), foo );
     }
 
-
     public interface Thrower<E extends Exception>
     {
         void doThrow() throws E;
@@ -544,7 +543,6 @@ public class CodeGenerationTest
                     try ( CodeBlock inner = loop.whileLoop( invoke( callEach.load( "targets" ),
                             methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
                     {
-
 
                         inner.expression( invoke(
                                 Expression.cast( Runnable.class,
@@ -1005,7 +1003,6 @@ public class CodeGenerationTest
         assertTrue( checker1.ranOnTrue );
         assertFalse( checker1.ranOnFalse );
 
-
         TernaryChecker checker2 = new TernaryChecker();
         assertThat( ternary.invoke( false, checker2 ), equalTo( "on false" ) );
         assertFalse( checker2.ranOnTrue );
@@ -1042,7 +1039,6 @@ public class CodeGenerationTest
         assertThat( ternary.invoke( null, checker1 ), equalTo( "on true" ) );
         assertTrue( checker1.ranOnTrue );
         assertFalse( checker1.ranOnFalse );
-
 
         TernaryChecker checker2 = new TernaryChecker();
         assertThat( ternary.invoke( new Object(), checker2 ), equalTo( "on false" ) );
@@ -1081,7 +1077,6 @@ public class CodeGenerationTest
         assertTrue( checker1.ranOnTrue );
         assertFalse( checker1.ranOnFalse );
 
-
         TernaryChecker checker2 = new TernaryChecker();
         assertThat( ternary.invoke( null, checker2 ), equalTo( "on false" ) );
         assertFalse( checker2.ranOnTrue );
@@ -1093,79 +1088,79 @@ public class CodeGenerationTest
     {
         // boolean
         assertTrue( compareForType( boolean.class, true, true,
-                ( a, b ) -> Expression.eq( a, b, typeReference( boolean.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( boolean.class ) ) ) );
         assertTrue( compareForType( boolean.class, false, false,
-                ( a, b ) -> Expression.eq( a, b, typeReference( boolean.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( boolean.class ) ) ) );
         assertFalse( compareForType( boolean.class, true, false,
-                ( a, b ) -> Expression.eq( a, b, typeReference( boolean.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( boolean.class ) ) ) );
         assertFalse( compareForType( boolean.class, false, true,
-                ( a, b ) -> Expression.eq( a, b, typeReference( boolean.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( boolean.class ) ) ) );
 
         // byte
         assertTrue( compareForType( byte.class, (byte) 42, (byte) 42,
-                ( a, b ) -> Expression.eq( a, b, typeReference( byte.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( byte.class ) ) ) );
         assertFalse( compareForType( byte.class, (byte) 43, (byte) 42,
-                ( a, b ) -> Expression.eq( a, b, typeReference( byte.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( byte.class ) ) ) );
         assertFalse( compareForType( byte.class, (byte) 42, (byte) 43,
-                ( a, b ) -> Expression.eq( a, b, typeReference( byte.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( byte.class ) ) ) );
 
         // short
         assertTrue( compareForType( short.class, (short) 42, (short) 42,
-                ( a, b ) -> Expression.eq( a, b, typeReference( short.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( short.class ) ) ) );
         assertFalse( compareForType( short.class, (short) 43, (short) 42,
-                ( a, b ) -> Expression.eq( a, b, typeReference( short.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( short.class ) ) ) );
         assertFalse( compareForType( short.class, (short) 42, (short) 43,
-                ( a, b ) -> Expression.eq( a, b, typeReference( short.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( short.class ) ) ) );
 
         // char
         assertTrue( compareForType( char.class, (char) 42, (char) 42,
-                ( a, b ) -> Expression.eq( a, b, typeReference( char.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( char.class ) ) ) );
         assertFalse( compareForType( char.class, (char) 43, (char) 42,
-                ( a, b ) -> Expression.eq( a, b, typeReference( char.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( char.class ) ) ) );
         assertFalse( compareForType( char.class, (char) 42, (char) 43,
-                ( a, b ) -> Expression.eq( a, b, typeReference( char.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( char.class ) ) ) );
 
         //int
         assertTrue( compareForType( int.class, 42, 42,
-                ( a, b ) -> Expression.eq( a, b, typeReference( int.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( int.class ) ) ) );
         assertFalse( compareForType( int.class, 43, 42,
-                ( a, b ) -> Expression.eq( a, b, typeReference( int.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( int.class ) ) ) );
         assertFalse( compareForType( int.class, 42, 43,
-                ( a, b ) -> Expression.eq( a, b, typeReference( int.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( int.class ) ) ) );
 
         //long
         assertTrue( compareForType( long.class, 42L, 42L,
-                ( a, b ) -> Expression.eq( a, b, typeReference( long.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( long.class ) ) ) );
         assertFalse( compareForType( long.class, 43L, 42L,
-                ( a, b ) -> Expression.eq( a, b, typeReference( long.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( long.class ) ) ) );
         assertFalse( compareForType( long.class, 42L, 43L,
-                ( a, b ) -> Expression.eq( a, b, typeReference( long.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( long.class ) ) ) );
 
         //float
         assertTrue( compareForType( float.class, 42F, 42F,
-                ( a, b ) -> Expression.eq( a, b, typeReference( float.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( float.class ) ) ) );
         assertFalse( compareForType( float.class, 43F, 42F,
-                ( a, b ) -> Expression.eq( a, b, typeReference( float.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( float.class ) ) ) );
         assertFalse( compareForType( float.class, 42F, 43F,
-                ( a, b ) -> Expression.eq( a, b, typeReference( float.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( float.class ) ) ) );
 
         //double
         assertTrue( compareForType( double.class, 42D, 42D,
-                ( a, b ) -> Expression.eq( a, b, typeReference( double.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( double.class ) ) ) );
         assertFalse( compareForType( double.class, 43D, 42D,
-                ( a, b ) -> Expression.eq( a, b, typeReference( double.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( double.class ) ) ) );
         assertFalse( compareForType( double.class, 42D, 43D,
-                ( a, b ) -> Expression.eq( a, b, typeReference( double.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( double.class ) ) ) );
 
         //reference
         Object obj1 = new Object();
         Object obj2 = new Object();
         assertTrue( compareForType( Object.class, obj1, obj1,
-                ( a, b ) -> Expression.eq( a, b, typeReference( Object.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( Object.class ) ) ) );
         assertFalse( compareForType( Object.class, obj1, obj2,
-                ( a, b ) -> Expression.eq( a, b, typeReference( Object.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( Object.class ) ) ) );
         assertFalse( compareForType( Object.class, obj2, obj1,
-                ( a, b ) -> Expression.eq( a, b, typeReference( Object.class ) ) ) );
+                ( a, b ) -> Expression.equal( a, b, typeReference( Object.class ) ) ) );
     }
 
     @Test
@@ -1410,7 +1405,6 @@ public class CodeGenerationTest
         doThrow( theFailure ).when( failBody ).run();
         MethodHandle run = instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class );
 
-
         //success
         run.invoke( successBody, successCatch );
         verify( successBody ).run();
@@ -1454,7 +1448,6 @@ public class CodeGenerationTest
         Runnable runnable = mock( Runnable.class );
         MethodHandle run = instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class, boolean.class );
 
-
         // then
         run.invoke( runnable, mock( Runnable.class ), false );
         verify( runnable, never() ).run();
@@ -1489,7 +1482,6 @@ public class CodeGenerationTest
         }
 
         // when
-
         Runnable body1 = mock( Runnable.class ), body2 = mock( Runnable.class ),
                 catcher11 = mock( Runnable.class ), catcher12 = mock( Runnable.class ),
                 catcher21 = mock( Runnable.class ), catcher22 = mock( Runnable.class );
@@ -1499,19 +1491,16 @@ public class CodeGenerationTest
         MethodHandle run =
                 instanceMethod( handle.newInstance(), "run", Runnable.class, Runnable.class, Runnable.class );
 
-
         run.invoke( body1, catcher11, catcher12 );
         verify( body1 ).run();
         verify( catcher11 ).run();
         verify( catcher12, never() ).run();
-
 
         run.invoke( body2, catcher21, catcher22 );
         verify( body2 ).run();
         verify( catcher22 ).run();
         verify( catcher21, never() ).run();
     }
-
 
     @Test
     public void shouldThrowException() throws Throwable

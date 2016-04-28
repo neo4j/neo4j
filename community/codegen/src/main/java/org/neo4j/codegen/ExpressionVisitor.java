@@ -45,7 +45,7 @@ public interface ExpressionVisitor
 
     void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse );
 
-    void eq( Expression lhs, Expression rhs, TypeReference type );
+    void equal( Expression lhs, Expression rhs, TypeReference type );
 
     void or( Expression lhs, Expression rhs );
 

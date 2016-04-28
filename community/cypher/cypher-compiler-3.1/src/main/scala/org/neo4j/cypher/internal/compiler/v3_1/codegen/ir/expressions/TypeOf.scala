@@ -34,11 +34,11 @@ case class TypeOf(relId: Variable)
       structure.ifNotStatement(structure.isNull(relId.name, CodeGenType.primitiveRel)) { body =>
         body.relType(relId.name, typeName)
       }
-      structure.load(typeName)
+      structure.loadVariable(typeName)
     }
     else {
       structure.relType(relId.name, typeName)
-      structure.load(typeName)
+      structure.loadVariable(typeName)
     }
   }
 

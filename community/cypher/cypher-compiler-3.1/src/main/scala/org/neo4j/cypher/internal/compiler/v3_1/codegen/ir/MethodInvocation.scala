@@ -29,7 +29,7 @@ case class MethodInvocation(override val operatorId: Set[String],
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.method(symbol.tableType, symbol.name, methodName) { body =>
+    generator.invokeMethod(symbol.tableType, symbol.name, methodName) { body =>
       statements.foreach(_.init(body))
       statements.foreach(_.body(body))
     }

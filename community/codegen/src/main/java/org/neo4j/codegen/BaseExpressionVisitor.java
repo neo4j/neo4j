@@ -97,7 +97,7 @@ public abstract class BaseExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void eq( Expression lhs, Expression rhs, TypeReference type )
+    public void equal( Expression lhs, Expression rhs, TypeReference type )
     {
 
     }

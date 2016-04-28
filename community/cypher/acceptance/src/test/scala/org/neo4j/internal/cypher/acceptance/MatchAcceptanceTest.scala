@@ -28,10 +28,6 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  test("foo") {
-    println(executeWithAllPlanners("EXPLAIN RETURN 1 + 2").executionPlanDescription())
-    println(executeWithAllPlannersAndRuntimesAndCompatibilityMode("RETURN 1 + 2").dumpToString())
-  }
   test("make sure non-existing nodes are not returned") {
     executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 10 return n") should be(empty)
     executeWithAllPlannersAndCompatibilityMode("match ()-[r]->() where id(r) = 10 return r") should be(empty)

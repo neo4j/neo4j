@@ -38,7 +38,7 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
     if (!nullable && lhs.codeGenType.ct == CTBoolean && rhs.codeGenType.ct == CTBoolean)
-      structure.or(lhs.generateExpression(structure), rhs.generateExpression(structure))
-    else structure.threeValuedOr(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
-                                 structure.box(rhs.generateExpression(structure), rhs.codeGenType))
+      structure.orExpression(lhs.generateExpression(structure), rhs.generateExpression(structure))
+    else structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
+                                           structure.box(rhs.generateExpression(structure), rhs.codeGenType))
 }

@@ -39,7 +39,7 @@ case object IdCodeGenFunction extends CodeGenFunction1 {
     override def generateExpression[E](structure: MethodStructure[E])
                                       (implicit
                                        context: CodeGenContext): E =
-      structure.load(variable)
+      structure.loadVariable(variable)
 
     override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 

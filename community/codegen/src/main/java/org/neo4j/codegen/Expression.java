@@ -58,14 +58,14 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression eq( final Expression lhs, final Expression rhs, TypeReference type )
+    public static Expression equal( final Expression lhs, final Expression rhs, TypeReference type )
     {
         return new Expression()
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.eq( lhs, rhs, type );
+                visitor.equal( lhs, rhs, type );
             }
         };
     }

@@ -60,7 +60,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         Operation("nullable node", m => {
           m.declare("foo", CodeGenType.primitiveNode)
           m.generator.assign(typeRef[Long], "bar",
-                             m.nullablePrimitive("foo", CodeGenType.primitiveNode, m.load("foo")))
+                             m.nullablePrimitive("foo", CodeGenType.primitiveNode, m.loadVariable("foo")))
 
         }),
         Operation("mark variables as null", m => {
@@ -111,7 +111,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
          }
        }),
         Operation("Method invocation", m => {
-          m.method(LongToCountTable, "v1", "inner") {inner => {
+          m.invokeMethod(LongToCountTable, "v1", "inner") { inner => {
             inner.allocateProbeTable("v1", LongToCountTable)
           }}
         }),

@@ -21,33 +21,27 @@ package org.neo4j.cypher.internal.spi.v3_1.codegen
 
 import java.lang.reflect.Modifier
 import java.util
-import java.util.function.Consumer
 
 import org.neo4j.codegen.CodeGeneratorOption._
-import org.neo4j.codegen.ExpressionTemplate._
-import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, _}
-import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{CodeGenType, FloatType, IntType, ReferenceType}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_1.{CypherExecutionException, symbols}
-import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
-import org.neo4j.kernel.impl.api.RelationshipDataExtractor
+import org.neo4j.cypher.internal.frontend.v3_1.symbols
+import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
 
 object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
   import Expression.{constant, invoke, newInstance}
+  import MethodReference.constructorReference
 
   case class GeneratedQueryStructureResult(query: GeneratedQuery, source: Option[(String, String)])
     extends CodeStructureResult[GeneratedQuery]
@@ -66,7 +60,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     }
 
     try {
-      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, option, SourceCode.PRINT_SOURCE)
+      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, option)
     } catch {
       case e: Exception => throw new CantCompileQueryException(e.getMessage, e)
     }
@@ -138,14 +132,16 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
                                  param[Provider[InternalPlanDescription]]("description"),
                                  param[QueryExecutionTracer]("tracer"),
                                  param[util.Map[String, Object]]("params"))) { execute =>
-        execute.returns(Expression
-                          .invoke(newInstance(execution), MethodReference.constructorReference(execution,
-                                                                                               typeRef[TaskCloser],
-                                                                                               typeRef[QueryContext],
-                                                                                               typeRef[ExecutionMode],
-                                                                                               typeRef[Provider[InternalPlanDescription]],
-                                                                                               typeRef[QueryExecutionTracer],
-                                                                                               typeRef[util.Map[String, Object]]),
+        execute.returns(
+          invoke(
+            newInstance(execution),
+            constructorReference(execution,
+                                 typeRef[TaskCloser],
+                                 typeRef[QueryContext],
+                                 typeRef[ExecutionMode],
+                                 typeRef[Provider[InternalPlanDescription]],
+                                 typeRef[QueryExecutionTracer],
+                                 typeRef[util.Map[String, Object]]),
                                   execute.load("closer"),
                                   execute.load("queryContext"),
                                   execute.load("executionMode"),
@@ -199,115 +195,4 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     case CodeGenType(symbols.CTRelationship, IntType) => constant(-1L)
     case _ => constant(null)
   }
-}
-
-object Templates {
-
-  import GeneratedQueryStructure.{method, param, staticField, typeRef}
-
-  def newInstance(valueType: TypeReference, args: (TypeReference,Expression)*): Expression = {
-    val types: Seq[TypeReference] = args.map(_._1)
-    val exprs: Seq[Expression] = args.map(_._2)
-    Expression.invoke(Expression.newInstance(valueType),
-                      MethodReference.constructorReference(valueType, types: _*), exprs:_*)
-  }
-
-  val newLongObjectMap = Expression.invoke(method[Primitive, PrimitiveLongObjectMap[_]]("longObjectMap"))
-  val newCountingMap = Expression.invoke(method[Primitive, PrimitiveLongIntMap]("longIntMap"))
-
-  def asList[T](values: Seq[Expression])(implicit manifest: Manifest[T]): Expression = Expression.invoke(
-    methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
-    Expression.newArray(typeRef[T], values: _*))
-
-  def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, close: MethodReference)
-                         (block: CodeBlock => V): V = {
-    var result = null.asInstanceOf[V]
-
-    generate.tryCatch(new Consumer[CodeBlock] {
-      override def accept(body: CodeBlock) = {
-        result = block(body)
-      }
-    }, new Consumer[CodeBlock]() {
-      override def accept(handle: CodeBlock) = {
-        handle.expression(Expression.invoke(handle.self(), close))
-        handle.throwException(Expression.invoke(
-          Expression.newInstance(typeRef[CypherExecutionException]),
-          MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
-          Expression
-            .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
-                    Expression.invoke(
-                      Expression.newInstance(typeRef[StatementTokenNameLookup]),
-                      MethodReference
-                        .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-                      Expression.get(handle.self(), ro))), handle.load("e")
-        ))
-      }
-    }, param[KernelException]("e"))
-
-    result
-  }
-
-  def tryCatch(generate: CodeBlock)(tryBlock :CodeBlock => Unit)(exception: Parameter)(catchBlock :CodeBlock => Unit): Unit = {
-    generate.tryCatch(new Consumer[CodeBlock] {
-      override def accept(body: CodeBlock) = tryBlock(body)
-    }, new Consumer[CodeBlock]() {
-      override def accept(handle: CodeBlock) = catchBlock(handle)
-    }, exception)
-  }
-
-  val incoming = Expression.get(staticField[Direction, Direction](Direction.INCOMING.name()))
-  val outgoing = Expression.get(staticField[Direction, Direction](Direction.OUTGOING.name()))
-  val both = Expression.get(staticField[Direction, Direction](Direction.BOTH.name()))
-  val newResultRow = Expression
-    .invoke(Expression.newInstance(typeRef[ResultRowImpl]),
-            MethodReference.constructorReference(typeRef[ResultRowImpl]))
-  val newRelationshipDataExtractor = Expression
-    .invoke(Expression.newInstance(typeRef[RelationshipDataExtractor]),
-            MethodReference.constructorReference(typeRef[RelationshipDataExtractor]))
-
-  val CONSTRUCTOR = MethodTemplate.constructor(
-    param[TaskCloser]("closer"),
-    param[QueryContext]("queryContext"),
-    param[ExecutionMode]("executionMode"),
-    param[Provider[InternalPlanDescription]]("description"),
-    param[QueryExecutionTracer]("tracer"),
-
-    param[util.Map[String, Object]]("params")).
-    put(self(), typeRef[TaskCloser], "closer", load("closer")).
-    put(self(), typeRef[ReadOperations], "ro",
-        cast(classOf[ReadOperations], invoke(
-          invoke(load("queryContext"), method[QueryContext, QueryTransactionalContext]("transactionalContext")),
-          method[QueryTransactionalContext, Object]("readOperations")))).
-    put(self(), typeRef[ExecutionMode], "executionMode", load("executionMode")).
-    put(self(), typeRef[Provider[InternalPlanDescription]], "description", load("description")).
-    put(self(), typeRef[QueryExecutionTracer], "tracer", load("tracer")).
-    put(self(), typeRef[util.Map[String, Object]], "params", load("params")).
-    put(self(), typeRef[NodeManager], "nodeManager",
-        cast(typeRef[NodeManager],
-             invoke(load("queryContext"), method[QueryContext, Object]("entityAccessor")))).
-    build()
-
-  val SET_SUCCESSFUL_CLOSEABLE = MethodTemplate.method(typeRef[Unit], "setSuccessfulCloseable",
-                                                       param[SuccessfulCloseable]("closeable")).
-    put(self(), typeRef[SuccessfulCloseable], "closeable", load("closeable")).
-    build()
-  val SUCCESS = MethodTemplate.method(typeRef[Unit], "success").
-    expression(
-      invoke(get(self(), typeRef[SuccessfulCloseable], "closeable"), method[SuccessfulCloseable, Unit]("success"))).
-    build()
-  val CLOSE = MethodTemplate.method(typeRef[Unit], "close").
-    expression(
-      invoke(get(self(), typeRef[SuccessfulCloseable], "closeable"), method[SuccessfulCloseable, Unit]("close"))).
-    build()
-  val EXECUTION_MODE = MethodTemplate.method(typeRef[ExecutionMode], "executionMode").
-    returns(get(self(), typeRef[ExecutionMode], "executionMode")).
-    build()
-  val EXECUTION_PLAN_DESCRIPTION = MethodTemplate.method(typeRef[InternalPlanDescription], "executionPlanDescription").
-    returns(cast( typeRef[InternalPlanDescription],
-      invoke(get(self(), typeRef[Provider[InternalPlanDescription]], "description"),
-                   method[Provider[InternalPlanDescription], Object]("get")))).
-    build()
-  val JAVA_COLUMNS = MethodTemplate.method(typeRef[util.List[String]], "javaColumns").
-    returns(get(typeRef[util.List[String]], "COLUMNS")).
-    build()
 }

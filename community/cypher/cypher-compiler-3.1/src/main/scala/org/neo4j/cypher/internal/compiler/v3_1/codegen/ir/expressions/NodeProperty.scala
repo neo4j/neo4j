@@ -34,7 +34,7 @@ abstract class ElementProperty(token: Option[Int], propName: String, elementIdVa
     else
       propertyById(structure, localName)
     structure.incrementDbHits()
-    structure.load(localName)
+    structure.loadVariable(localName)
   }
 
   def propertyByName[E](body: MethodStructure[E], localName: String): Unit
