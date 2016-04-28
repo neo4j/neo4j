@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.spi.v3_1.{GeneratedQueryStructure, TransactionB
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
-import org.neo4j.helpers.Clock
+import java.time.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}

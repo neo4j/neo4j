@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{CachedMetricsFac
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
-import org.neo4j.helpers.Clock
+import java.time.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 
 object CypherCompilerFactory {

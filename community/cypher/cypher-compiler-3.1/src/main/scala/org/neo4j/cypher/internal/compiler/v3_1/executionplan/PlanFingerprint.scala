@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.executionplan
 
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, GraphStatisticsSnapshot}
-import org.neo4j.helpers.Clock
+import java.time.Clock
 
 case class PlanFingerprint(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
 
@@ -29,7 +29,7 @@ case class PlanFingerprintReference(clock: Clock, ttl: Long, statsDivergenceThre
 {
   def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): Boolean = {
     fingerprint.fold(false) { f =>
-      lazy val currentTimeMillis = clock.currentTimeMillis()
+      lazy val currentTimeMillis = clock.millis()
       lazy val currentTxId = lastCommittedTxId()
 
       check(f.creationTimeMillis + ttl <= currentTimeMillis, {}) &&
