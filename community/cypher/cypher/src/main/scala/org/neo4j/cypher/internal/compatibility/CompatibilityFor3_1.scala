@@ -151,7 +151,7 @@ trait CompatibilityFor3_1 {
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_1.CypherCompiler
+  protected val compiler: v3_1.CompilationOrchestrator
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
