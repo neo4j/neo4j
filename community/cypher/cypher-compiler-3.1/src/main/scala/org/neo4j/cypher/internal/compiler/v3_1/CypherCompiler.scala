@@ -117,7 +117,7 @@ case class CypherCompiler(parser: CypherParser,
     context.getOrCreateFromSchemaState(cacheAccessor, {
       monitor.cacheFlushDetected(cacheAccessor)
       val lRUCache = planCacheFactory()
-      new QueryCache(cacheAccessor, lRUCache)
+      new QueryCacheManager(cacheAccessor, lRUCache)
     })
 }
 

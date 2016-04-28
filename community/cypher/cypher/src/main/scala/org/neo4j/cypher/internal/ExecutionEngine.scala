@@ -152,7 +152,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
           val cache = getOrCreateFromSchemaState(tc.readOperations, {
             cacheMonitor.cacheFlushDetected(tc.statement)
             val lruCache = new LRUCachev3_1[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
-            new QueryCache(cacheAccessor, lruCache)
+            new QueryCacheManager(cacheAccessor, lruCache)
           })
 
           def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
