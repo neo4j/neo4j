@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -146,48 +145,18 @@ public abstract class StoreAbstractNodeCursor extends NodeItem.NodeItemHelper im
         return singleLabelCursor.get().init( parseLabelsField( nodeRecord ).get( nodeStore ), labelId );
     }
 
-    private Lock shortLivedReadLock()
-    {
-        Lock lock = lockService.acquireNodeLock( nodeRecord.getId(), LockService.LockType.READ_LOCK );
-        if ( lockService != NO_LOCK_SERVICE )
-        {
-            boolean success = false;
-            try
-            {
-                // It's safer to re-read the node record here, specifically nextProp, after acquiring the lock
-                nodeStore.loadRecord( nodeRecord.getId(), nodeRecord );
-                if ( !nodeRecord.inUse() )
-                {
-                    // So it looks like the node has been deleted. The current behavior of NodeStore#loadRecord
-                    // is to only set the inUse field on loading an unused record. This should (and will)
-                    // change to be more of a centralized behavior by the stores. Anyway, setting this pointer
-                    // to the primitive equivalent of null the property cursor will just look empty from the
-                    // outside and the releasing of the lock will be done as usual.
-                    nodeRecord.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
-                }
-                success = true;
-            }
-            finally
-            {
-                if ( !success )
-                {
-                    lock.release();
-                }
-            }
-        }
-        return lock;
-    }
-
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return allPropertyCursor.get().init( nodeRecord.getNextProp(), shortLivedReadLock() );
+        Lock lock = PrimitiveRecordLocker.shortLivedReadLock( lockService, nodeRecord, nodeStore );
+        return allPropertyCursor.get().init( nodeRecord.getNextProp(), lock );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
+        Lock lock = PrimitiveRecordLocker.shortLivedReadLock( lockService, nodeRecord, nodeStore );
+        return singlePropertyCursor.get().init( nodeRecord.getNextProp(), propertyKeyId, lock );
     }
 
     @Override
