@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * A {@link PageCursor} implementation that delegates all calls to a given delegate PageCursor.
  */
-public class DelegatingPageCursor implements PageCursor
+public class DelegatingPageCursor extends PageCursor
 {
     private final PageCursor delegate;
 

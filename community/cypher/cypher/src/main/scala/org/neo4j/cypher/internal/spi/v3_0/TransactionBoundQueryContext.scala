@@ -65,7 +65,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   val nodeOps = new NodeOperations
   val relationshipOps = new RelationshipOperations
 
-  override def entityAccessor = transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+  override lazy val entityAccessor = transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (transactionalContext.statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count

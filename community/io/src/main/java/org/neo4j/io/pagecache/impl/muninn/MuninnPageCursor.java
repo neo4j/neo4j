@@ -32,7 +32,7 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
-abstract class MuninnPageCursor implements PageCursor
+abstract class MuninnPageCursor extends PageCursor
 {
     private static final boolean tracePinnedCachePageId =
             flag( MuninnPageCursor.class, "tracePinnedCachePageId", false );
@@ -53,7 +53,7 @@ abstract class MuninnPageCursor implements PageCursor
     protected int pf_flags;
     protected long currentPageId;
     protected long nextPageId;
-    protected PageCursor linkedCursor;
+    protected MuninnPageCursor linkedCursor;
     private long pointer;
     private int pageSize;
     private int filePageSize;
@@ -102,6 +102,10 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public final boolean next( long pageId ) throws IOException
     {
+        if ( currentPageId == nextPageId )
+        {
+            return true;
+        }
         nextPageId = pageId;
         return next();
     }
@@ -109,12 +113,24 @@ abstract class MuninnPageCursor implements PageCursor
     @Override
     public final void close()
     {
-        unpinCurrentPage();
-        releaseCursor();
-        closeLinkedCursorIfAny();
-        // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
-        // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
-        pagedFile = null;
+        MuninnPageCursor cursor = this;
+        do
+        {
+            cursor.unpinCurrentPage();
+            cursor.releaseCursor();
+            // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
+            // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
+            cursor.pagedFile = null;
+
+        }
+        while ( (cursor = cursor.getAndClearLinkedCursor()) != null );
+    }
+
+    private MuninnPageCursor getAndClearLinkedCursor()
+    {
+        MuninnPageCursor cursor = linkedCursor;
+        linkedCursor = null;
+        return cursor;
     }
 
     private void closeLinkedCursorIfAny()
@@ -130,7 +146,7 @@ abstract class MuninnPageCursor implements PageCursor
     public PageCursor openLinkedCursor( long pageId )
     {
         closeLinkedCursorIfAny();
-        linkedCursor =  pagedFile.io( pageId, pf_flags );
+        linkedCursor = (MuninnPageCursor) pagedFile.io( pageId, pf_flags );
         return linkedCursor;
     }
 

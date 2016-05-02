@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.impl.ByteBufferPage;
 /**
  * Utility for testing code that depends on page cursors.
  */
-public class StubPageCursor implements PageCursor
+public class StubPageCursor extends PageCursor
 {
     private long pageId;
     private int pageSize;

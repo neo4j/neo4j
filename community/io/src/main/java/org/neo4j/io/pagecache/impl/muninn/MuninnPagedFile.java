@@ -230,7 +230,8 @@ final class MuninnPagedFile implements PagedFile
         MuninnPage[] pages = new MuninnPage[translationTableChunkSize];
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
         long limiterStamp = IOLimiter.INITIAL_STAMP;
-        for ( Object[] chunk : translationTable )
+        Object[][] tt = this.translationTable;
+        for ( Object[] chunk : tt )
         {
             // TODO Look into if we can tolerate flushing a few clean pages if it means we can use larger vectors.
             // TODO The clean pages in question must still be loaded, though. Otherwise we'll end up writing
