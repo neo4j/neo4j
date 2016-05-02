@@ -97,7 +97,7 @@ For readability, only excerpts from the Maven _pom.xml_ file are shown here, the
  <description>A template project for building a Neo4j Procedure</description>
 
  <properties>
-   <neo4j.version>3.0.0-SNAPSHOT</neo4j.version>
+   <neo4j.version>3.0.1</neo4j.version>
  </properties>
 ----
 
@@ -187,23 +187,6 @@ Once the procedure has been deployed to the _plugins_ directory of each Neo4j in
    </plugins>
   </build>
 ----
-
-Until the GA release of Neo4j 3.0, the dependency on Neo4j requires that a _snapshot repository_ is configured.
-This repository is where Maven will find the latest build of Neo4j to use as a dependency.
-
-[source, xml]
-----
-  <repositories>
-   <repository>
-     <id>neo4j-snapshot-repository</id>
-     <name>Maven 2 snapshot repository for Neo4j</name>
-     <url>http://m2.neo4j.org/content/repositories/snapshots</url>
-     <snapshots><enabled>true</enabled></snapshots>
-     <releases><enabled>false</enabled></releases>
-   </repository>
-  </repositories>
-----
-
 
 === Writing integration tests
 
