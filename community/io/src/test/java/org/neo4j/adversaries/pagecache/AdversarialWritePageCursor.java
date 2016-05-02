@@ -38,7 +38,7 @@ import org.neo4j.io.pagecache.PageCursor;
  * See {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_WRITE_LOCK} flag.
  */
 @SuppressWarnings( "unchecked" )
-class AdversarialWritePageCursor implements PageCursor
+class AdversarialWritePageCursor extends PageCursor
 {
     private final PageCursor delegate;
     private final Adversary adversary;

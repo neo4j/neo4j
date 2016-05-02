@@ -99,7 +99,7 @@ public class RecordBoundaryCheckingPagedFile implements PagedFile
         ioCalls = unusedBytes = nextCalls = 0;
     }
 
-    class RecordBoundaryCheckingPageCursor implements PageCursor
+    class RecordBoundaryCheckingPageCursor extends PageCursor
     {
         private final PageCursor actual;
         private int start = -10_000;

@@ -183,8 +183,9 @@ trait CompatibilityFor3_1 {
 
   class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1) extends ExecutionPlan {
 
+    private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
+
     private def queryContext(transactionalContext: TransactionalContextWrapperv3_1) = {
-      val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
       val ctx = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
       new ExceptionTranslatingQueryContextFor3_1(ctx)
     }
