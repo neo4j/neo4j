@@ -84,8 +84,8 @@ public class StorePropertyPayloadCursorTest
             // Given
             StorePropertyPayloadCursor cursor = newCursor( 1, 2, 3L );
 
-            cursor.next();
-            cursor.next();
+            assertTrue( cursor.next() );
+            assertTrue( cursor.next() );
 
             // When
             cursor.clear();
@@ -100,9 +100,9 @@ public class StorePropertyPayloadCursorTest
             // Given
             StorePropertyPayloadCursor cursor = newCursor( 1, 2, 3 );
 
-            cursor.next();
-            cursor.next();
-            cursor.next();
+            assertTrue( cursor.next() );
+            assertTrue( cursor.next() );
+            assertTrue( cursor.next() );
 
             // When
             cursor.clear();
@@ -131,7 +131,7 @@ public class StorePropertyPayloadCursorTest
             StorePropertyPayloadCursor cursor = newCursor();
 
             // When
-            cursor.next();
+            assertFalse( cursor.next() );
 
             // Then
             // next() on an empty cursor works just fine
@@ -161,6 +161,18 @@ public class StorePropertyPayloadCursorTest
             verify( dynamicStringStore ).newDynamicRecordCursor();
             verify( dynamicArrayStore ).newDynamicRecordCursor();
         }
+
+        @Test
+        public void nextMultipleInvocations()
+        {
+            StorePropertyPayloadCursor cursor = newCursor();
+
+            assertFalse( cursor.next() );
+            assertFalse( cursor.next() );
+            assertFalse( cursor.next() );
+            assertFalse( cursor.next() );
+        }
+
     }
 
     @RunWith( Parameterized.class )
