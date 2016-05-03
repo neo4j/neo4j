@@ -135,7 +135,7 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
         // Compile time errors
         if (e.getMessage.matches("Invalid input .+ is not a valid value, must be a positive integer[\\s.\\S]+"))
-          detail should equal("LiteralMustBePositiveInteger")
+          detail should equal("NegativeIntegerArgument")
         else if (e.getMessage.matches("Can't use aggregate functions inside of aggregate functions\\."))
           detail should equal("NestedAggregation")
 
