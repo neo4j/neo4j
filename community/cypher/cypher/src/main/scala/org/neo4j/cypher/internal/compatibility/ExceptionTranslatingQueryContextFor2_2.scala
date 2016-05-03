@@ -129,8 +129,8 @@ class ExceptionTranslatingQueryContextFor2_2(inner: QueryContext) extends Delega
   override def getRelTypeName(id: Int) =
     translateException(super.getRelTypeName(id))
 
-  override def exactUniqueIndexSearch(index: IndexDescriptor, value: Any) =
-    translateException(super.exactUniqueIndexSearch(index, value))
+  override def lockingExactUniqueIndexSearch(index: IndexDescriptor, value: Any) =
+    translateException(super.lockingExactUniqueIndexSearch(index, value))
 
   override def commitAndRestartTx() =
     translateException(super.commitAndRestartTx())
