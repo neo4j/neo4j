@@ -22,38 +22,43 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher._
 
 class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+
+  // TCK'd
   test("should be able to delete nodes") {
     createNode()
 
     val result = updateWithBothPlannersAndCompatibilityMode(
-      s"match (n) delete n"
+      "MATCH (n) DELETE n"
     )
 
     assertStats(result, nodesDeleted = 1)
   }
 
+  // TCK'd
   test("should be able to delete relationships") {
     relate(createNode(), createNode())
     relate(createNode(), createNode())
     relate(createNode(), createNode())
 
     val result = updateWithBothPlannersAndCompatibilityMode(
-      s"match ()-[r]-() delete r"
+      "MATCH ()-[r]-() DELETE r"
     )
 
     assertStats(result, relationshipsDeleted = 3)
   }
 
+  // TCK'd
   test("should be able to detach delete node") {
-    createNode("foo" -> "bar")
+    createNode()
 
     val result = updateWithBothPlannersAndCompatibilityMode(
-      s"match (n) detach delete n"
+      "MATCH (n) DETACH DELETE n"
     )
 
     assertStats(result, nodesDeleted = 1)
   }
 
+  // TCK'd
   test("should not be able to delete nodes when connected") {
     val x = createLabeledNode("X")
 
@@ -62,9 +67,10 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(x, createNode())
 
     a [ConstraintValidationException] should be thrownBy
-      executeWithCostPlannerOnly(s"match (n:X) delete n")
+      updateWithBothPlannersAndCompatibilityMode("MATCH (n:X) DELETE n")
   }
 
+  // TCK'd
   test("should be able to detach delete nodes and their relationships") {
     val x = createLabeledNode("X")
 
@@ -73,12 +79,13 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(x, createNode())
 
     val result = updateWithBothPlannersAndCompatibilityMode(
-      s"match (n:X) detach delete n"
+      "MATCH (n:X) DETACH DELETE n"
     )
 
     assertStats(result, nodesDeleted = 1, relationshipsDeleted = 3)
   }
 
+  // TCK'd
   test("should handle detach delete paths") {
     val x = createLabeledNode("X")
     val n1 = createNode()
@@ -89,22 +96,25 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(n2, n3)
 
     val result = updateWithBothPlannersAndCompatibilityMode(
-      s"match p = (:X)-->()-->()-->() detach delete p"
+      "MATCH p = (:X)-->()-->()-->() DETACH DELETE p"
     )
 
     assertStats(result, nodesDeleted = 4, relationshipsDeleted = 3)
   }
 
+  // TCK'd
   test("undirected expand followed by delete and count") {
     relate(createNode(), createNode())
 
-    val result = updateWithBothPlanners(s"MATCH (a)-[r]-(b) DELETE r,a,b RETURN count(*) AS c")
+    val result = updateWithBothPlannersAndCompatibilityMode(
+      "MATCH (a)-[r]-(b) DELETE r,a,b RETURN count(*) AS c"
+    )
 
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 1)
-
     result.toList should equal(List(Map("c" -> 2)))
   }
 
+  // TCK'd
   test("undirected variable length expand followed by delete and count") {
     val node1 = createNode()
     val node2 = createNode()
@@ -112,13 +122,16 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     relate(node1, node2)
     relate(node2, node3)
 
-    val result = executeWithCostPlannerOnly(s"MATCH (a)-[*]-(b) DETACH DELETE a,b RETURN count(*) AS c")
-    assertStats(result, nodesDeleted = 3, relationshipsDeleted = 2)
+    val result = updateWithBothPlannersAndCompatibilityMode(
+      "MATCH (a)-[*]-(b) DETACH DELETE a,b RETURN count(*) AS c"
+    )
 
+    assertStats(result, nodesDeleted = 3, relationshipsDeleted = 2)
     //(1)-->(2), (2)<--(1), (2)-->(3), (3)<--(2), (1)-*->(3), (3)<-*-(1)
     result.toList should equal(List(Map("c" -> 6)))
   }
 
+  // TCK'd
   test("should be possible to create and delete in one statement") {
     createNode()
 
@@ -127,6 +140,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesCreated = 1, nodesDeleted = 1)
   }
 
+  // TCK'd
   test("should be able to delete on optional match relationship") {
     createNode()
 
@@ -136,6 +150,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 1)
   }
 
+  // TCK'd
   test("should be able to handle detach deleting null node") {
     val query = "OPTIONAL MATCH (n) DETACH DELETE n"
     val result = updateWithBothPlannersAndCompatibilityMode(query)
@@ -143,6 +158,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 0)
   }
 
+  // TCK'd
   test("should be able to handle deleting null node") {
     val query = "OPTIONAL MATCH (n) DELETE n"
     val result = updateWithBothPlannersAndCompatibilityMode(query)
@@ -150,14 +166,16 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 0)
   }
 
+  // TCK'd
   test("should be able to handle deleting null path") {
-    val query = "OPTIONAL MATCH p = (n)-->() DETACH DELETE p"
+    val query = "OPTIONAL MATCH p = ()-->() DETACH DELETE p"
     val result = updateWithBothPlannersAndCompatibilityMode(query)
 
     assertStats(result, nodesDeleted = 0)
   }
 
-  test("should be able to delete a node from a collection") {
+  // TCK'd
+  test("should be able to delete a node from a list") {
     // Given
     val user = createLabeledNode("User")
     (0 to 3).foreach(_ => relate(user, createNode(), "FRIEND"))
@@ -173,7 +191,8 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 1, relationshipsDeleted = 1)
   }
 
-  test("should be able to delete a relationship from a collection") {
+  // TCK'd
+  test("should be able to delete a relationship from a list") {
     // Given
     val user = createLabeledNode("User")
     (0 to 3).foreach(_ => relate(user, createNode(), "FRIEND"))
@@ -189,6 +208,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 0, relationshipsDeleted = 1)
   }
 
+  // TCK'd
   test("should be able to delete nodes from a map") {
     // Given
     createLabeledNode("User")
@@ -204,6 +224,7 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 0)
   }
 
+  // TCK'd
   test("should be able to delete relationships from a map") {
     // Given
     val a = createLabeledNode("User")
@@ -221,7 +242,8 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 0, relationshipsDeleted = 2)
   }
 
-  test("should be able to detach delete nodes from a nested map/collection") {
+  // TCK'd
+  test("should be able to detach delete nodes from a nested map/list") {
     // Given
     val a = createLabeledNode("User")
     val b = createLabeledNode("User")
@@ -238,7 +260,8 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 1, relationshipsDeleted = 2)
   }
 
-  test("should be able to delete relationships from a nested map/collection") {
+  // TCK'd
+  test("should be able to delete relationships from a nested map/list") {
     // Given
     val a = createLabeledNode("User")
     val b = createLabeledNode("User")
@@ -255,7 +278,8 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 0, relationshipsDeleted = 1)
   }
 
-  test("should be able to delete paths from a nested map/collection") {
+  // TCK'd
+  test("should be able to delete paths from a nested map/list") {
     // Given
     val a = createLabeledNode("User")
     val b = createLabeledNode("User")

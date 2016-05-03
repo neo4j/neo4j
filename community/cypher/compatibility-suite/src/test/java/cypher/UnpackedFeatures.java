@@ -35,6 +35,8 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.runners.model.RunnerBuilder;
 import org.opencypher.tools.tck.TCKCucumberTemplate;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 public class UnpackedFeatures extends Enclosed
 {
     public UnpackedFeatures( Class<?> klass, RunnerBuilder builder ) throws Throwable
@@ -70,7 +72,7 @@ public class UnpackedFeatures extends Enclosed
                 if ( matcher.matches( next ) )
                 {
                     File target = new File( directory, next.toString() );
-                    Files.copy( next, target.toPath() );
+                    Files.copy( next, target.toPath(), REPLACE_EXISTING );
                     System.out.println( "Unpacked " + target.getName() );
                 }
             }

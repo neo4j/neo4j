@@ -19,8 +19,6 @@
  */
 package cypher.feature.steps
 
-import java.io.File
-import java.nio.file.{Files, Path}
 import java.util
 
 import _root_.cucumber.api.DataTable
@@ -31,8 +29,9 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.tools.tck.TCKCucumberTemplate
-import org.opencypher.tools.tck.constants.TCKErrorPhases
+import org.opencypher.tools.tck.constants.TCKErrorDetails._
 import org.opencypher.tools.tck.constants.TCKStepDefinitions._
+import org.opencypher.tools.tck.constants.{TCKErrorPhases, TCKErrorTypes}
 import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.util.{Failure, Success, Try}
@@ -42,15 +41,9 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   // Stateful
   var graph: GraphDatabaseService = null
   var result: Try[Result] = null
-  var tx: Transaction = null
   var params: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
 
-  Before() { _ =>
-    initEmpty()
-  }
-
   After() { _ =>
-    if (tx != null) tx.close()
     // TODO: postpone this till the last scenario
     graph.shutdown()
   }
@@ -90,14 +83,12 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   When(EXECUTING_QUERY) { (query: String) =>
     result = Try {
-      tx = graph.beginTx()
       graph.execute(query, params)
     }
   }
 
   When(EXECUTING_LONG_QUERY) { (query: String) =>
     result = Try {
-      tx = graph.beginTx()
       graph.execute(query, params)
     }
   }
@@ -105,7 +96,9 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
     val matcher = constructResultMatcher(expectedTable)
 
-    matcher should accept(successful(result))
+    inTx {
+      matcher should accept(successful(result))
+    }
   }
 
   Then(EXPECT_ERROR) { (typ: String, phase: String, detail: String) =>
@@ -128,33 +121,35 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   private def checkError(result: Try[Result], typ: String, phase: String, detail: String) = {
-    val statusType = if (typ == "ConstraintValidationFailed") "Schema" else "Statement"
+    val statusType = if (typ == TCKErrorTypes.CONSTRAINT_VALIDATION_FAILED) "Schema" else "Statement"
     result match {
       case Failure(e: QueryExecutionException) =>
         s"Neo.ClientError.$statusType.$typ" should equal(e.getStatusCode)
 
         // Compile time errors
         if (e.getMessage.matches("Invalid input .+ is not a valid value, must be a positive integer[\\s.\\S]+"))
-          detail should equal("NegativeIntegerArgument")
+          detail should equal(NEGATIVE_INTEGER_ARGUMENT)
         else if (e.getMessage.matches("Can't use aggregate functions inside of aggregate functions\\."))
-          detail should equal("NestedAggregation")
+          detail should equal(NESTED_AGGREGATION)
 
         // Runtime errors
         else if (e.getMessage.matches("Expected .+ to be a java.lang.String, but it was a .+"))
-          detail should equal("MapElementAccessByNonString")
+          detail should equal(MAP_ELEMENT_ACCESS_BY_NON_STRING)
         else if (e.getMessage.matches("Expected .+ to be a java.lang.Number, but it was a .+"))
-          detail should equal("ListElementAccessByNonInteger")
+          detail should equal(LIST_ELEMENT_ACCESS_BY_NON_INTEGER)
         else if (e.getMessage.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+"))
-          detail should equal("InvalidElementAccess")
+          detail should equal(INVALID_ELEMENT_ACCESS)
         else if (e.getMessage.matches(".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*"))
-          detail should equal("CreateBlockedByConstraint")
+          detail should equal(CREATE_BLOCKED_BY_CONSTRAINT)
         else if (e.getMessage.matches("Node [0-9]+ already exists with label .+ and property \".+\"=\\[.+\\]"))
-          detail should equal("CreateBlockedByConstraint")
+          detail should equal(CREATE_BLOCKED_BY_CONSTRAINT)
+        else if (e.getMessage.matches("Cannot delete node\\<\\d+\\>, because it still has relationships. To delete this node, you must first delete its relationships."))
+          detail should equal(DELETE_CONNECTED_NODE)
 
-        else fail(s"Unknown $phase error: $e")
+        else fail(s"Unknown $phase error: $e", e)
 
       case Failure(e) =>
-        fail(s"Unknown $phase error: $e")
+        fail(s"Unknown $phase error: $e", e)
 
       case _: Success[_] =>
         fail(s"No $phase error was raised")
@@ -164,7 +159,9 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   Then(EXPECT_SORTED_RESULT) { (expectedTable: DataTable) =>
     val matcher = constructResultMatcher(expectedTable)
 
-    matcher should acceptOrdered(successful(result))
+    inTx {
+      matcher should acceptOrdered(successful(result))
+    }
   }
 
   Then(EXPECT_EMPTY_RESULT) {
@@ -188,6 +185,13 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     case Failure(e) => fail(s"Expected successful result, but got error: $e")
   }
 
+  private def inTx(f: => Unit) = {
+    val tx = graph.beginTx()
+    f
+    tx.success()
+    tx.close()
+  }
+
   private def initEmpty() =
     if (graph == null || !graph.isAvailable(1L)) {
       val builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
@@ -195,7 +199,6 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     }
 
   private def loadConfig(builder: GraphDatabaseBuilder): GraphDatabaseBuilder = {
-    val directory: Path = Files.createTempDirectory("tls")
     builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8M")
     cypherConfig().map { case (s, v) => builder.setConfig(s, v) }
     builder
