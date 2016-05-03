@@ -416,6 +416,10 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     @Override
     public long nextId()
     {
+        if ( idGenerator == null )
+        {
+            throw new IllegalStateException( "IdGenerator is not initialized" );
+        }
         return idGenerator.nextId();
     }
 
@@ -707,6 +711,10 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     /** @return The total number of ids in use. */
     public long getNumberOfIdsInUse()
     {
+        if ( idGenerator == null )
+        {
+            throw new IllegalStateException( "IdGenerator is not initialized" );
+        }
         return idGenerator.getNumberOfIdsInUse();
     }
 
@@ -758,6 +766,8 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * can't trust that to be true. If we happen to have id generators open during recovery we delegate
      * {@link #freeId(long)} calls to {@link IdGenerator#freeId(long)} and since the id generator is most likely
      * out of date w/ regards to high id, it may very well blow up.
+     *
+     * This also marks the store as not OK. A call to {@link #makeStoreOk()} is needed once recovery is complete.
      */
     final void deleteIdGenerator()
     {
@@ -765,6 +775,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         {
             idGenerator.delete();
             idGenerator = null;
+            setStoreNotOk( new IllegalStateException( "IdGenerator is not initialized" ) );
         }
     }
 
