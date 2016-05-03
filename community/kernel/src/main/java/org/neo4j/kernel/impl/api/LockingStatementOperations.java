@@ -54,11 +54,11 @@ import static java.lang.Math.min;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 
 public class LockingStatementOperations implements
-    EntityWriteOperations,
-    SchemaReadOperations,
-    SchemaWriteOperations,
-    SchemaStateOperations,
-    LockOperations
+        EntityWriteOperations,
+        SchemaReadOperations,
+        SchemaWriteOperations,
+        SchemaStateOperations,
+        LockOperations
 {
     private final EntityReadOperations entityReadDelegate;
     private final EntityWriteOperations entityWriteDelegate;
@@ -131,7 +131,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K,V> creator )
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaStateDelegate.schemaStateGetOrCreate( state, key, creator );
@@ -173,21 +173,24 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.indexGetState( state, descriptor );
     }
 
     @Override
-    public double indexUniqueValuesPercentage( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( KernelStatement state, IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.indexUniqueValuesPercentage( state, descriptor );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
+            throws SchemaRuleNotFoundException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, index );
@@ -248,11 +251,12 @@ public class LockingStatementOperations implements
                 {
                     lockRelationshipNodes( state, startNode, endNode );
                 }
-            });
+            } );
         }
         catch ( EntityNotFoundException e )
         {
-            throw new IllegalStateException( "Unable to delete relationship[" + relationshipId+ "] since it is already deleted." );
+            throw new IllegalStateException(
+                    "Unable to delete relationship[" + relationshipId + "] since it is already deleted." );
         }
         state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         entityWriteDelegate.relationshipDelete( state, relationshipId );
@@ -277,7 +281,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId, int propertyKeyId )
+    public Iterator<UniquenessConstraint> constraintsGetForLabelAndPropertyKey( KernelStatement state, int labelId,
+            int propertyKeyId )
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         return schemaReadDelegate.constraintsGetForLabelAndPropertyKey( state, labelId, propertyKeyId );
@@ -371,7 +376,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void acquireShared(KernelStatement state, Locks.ResourceType resourceType, long[] resourceId )
+    public void acquireShared( KernelStatement state, Locks.ResourceType resourceType, long[] resourceId )
     {
         state.locks().acquireShared( resourceType, resourceId );
     }
