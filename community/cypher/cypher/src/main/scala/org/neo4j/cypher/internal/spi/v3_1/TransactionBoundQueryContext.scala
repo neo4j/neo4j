@@ -291,7 +291,19 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   class NodeOperations extends BaseOperations[Node] {
     override def delete(obj: Node) {
-      transactionalContext.statement.dataWriteOperations().nodeDelete(obj.getId)
+      try {
+        transactionalContext.statement.dataWriteOperations().nodeDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+      }
+    }
+
+    override def detachDelete(obj: Node): Int = {
+      try {
+        transactionalContext.statement.dataWriteOperations().nodeDetachDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
+      }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] =
@@ -348,8 +360,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   class RelationshipOperations extends BaseOperations[Relationship] {
 
     override def delete(obj: Relationship) {
-      transactionalContext.statement.dataWriteOperations().relationshipDelete(obj.getId)
+      try {
+        transactionalContext.statement.dataWriteOperations().relationshipDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+      }
     }
+
+    override def detachDelete(obj: Relationship): Int = ???
 
     override def propertyKeyIds(id: Long): Iterator[Int] =
       asScala(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(id))

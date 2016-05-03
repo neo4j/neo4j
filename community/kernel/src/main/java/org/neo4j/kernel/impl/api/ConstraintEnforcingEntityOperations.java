@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -192,6 +193,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
         entityWriteOperations.nodeDelete( state, nodeId );
+    }
+
+    @Override
+    public int nodeDetachDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException,
+            AutoIndexingKernelException, InvalidTransactionTypeKernelException, KernelException
+    {
+        return entityWriteOperations.nodeDetachDelete( state, nodeId );
     }
 
     @Override

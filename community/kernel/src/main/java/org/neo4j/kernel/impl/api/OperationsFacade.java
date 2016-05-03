@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -947,6 +948,14 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         dataWrite().nodeDelete( statement, nodeId );
+    }
+
+    @Override
+    public int nodeDetachDelete( long nodeId ) throws EntityNotFoundException, InvalidTransactionTypeKernelException,
+            AutoIndexingKernelException, KernelException
+    {
+        statement.assertOpen();
+        return dataWrite().nodeDetachDelete( statement, nodeId );
     }
 
     @Override

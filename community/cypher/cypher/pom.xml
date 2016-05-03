@@ -211,14 +211,6 @@
           <groupId>org.scala-lang</groupId>
           <artifactId>scala-library</artifactId>
         </exclusion>
-        <exclusion>
-          <groupId>org.parboiled</groupId>
-          <artifactId>parboiled-scala_2.10</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.sf.opencsv</groupId>
-          <artifactId>opencsv</artifactId>
-        </exclusion>
       </exclusions>
     </dependency>
     <dependency>

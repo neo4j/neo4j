@@ -170,6 +170,8 @@ trait QueryContext extends TokenContext {
 trait Operations[T <: PropertyContainer] {
   def delete(obj: T)
 
+  def detachDelete(obj: T): Int
+
   def setProperty(obj: Long, propertyKeyId: Int, value: Any)
 
   def removeProperty(obj: Long, propertyKeyId: Int)

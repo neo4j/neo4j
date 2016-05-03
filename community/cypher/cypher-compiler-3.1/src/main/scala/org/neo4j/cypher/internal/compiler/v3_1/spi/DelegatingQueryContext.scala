@@ -197,8 +197,11 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
+  protected def manyDbHits(count: Int): Int = count
 
   override def delete(obj: T): Unit = singleDbHit(inner.delete(obj))
+
+  override def detachDelete(obj: T) = manyDbHits(inner.detachDelete(obj))
 
   override def setProperty(obj: Long, propertyKey: Int, value: Any): Unit =
     singleDbHit(inner.setProperty(obj, propertyKey, value))
