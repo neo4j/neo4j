@@ -22,9 +22,10 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -45,10 +46,9 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
             (e1,e2) -> Long.compare( e2.getValue().get(), e1.getValue().get() );
     private static final Comparator<Map.Entry<Object,AtomicLong>> SORT_BY_ID_DESC =
             (e1,e2) -> Integer.compare( (Integer)e2.getKey(), (Integer)e1.getKey() );
-    private final Map<Object,AtomicLong> allTypes = new HashMap<>();
+    private final ConcurrentMap<Object,AtomicLong> allTypes = new ConcurrentHashMap<>();
     private final BatchingRelationshipTypeTokenRepository typeTokenRepository;
     private Map.Entry<Object,AtomicLong>[] sortedTypes;
-    private long totalCount;
 
     public RelationshipTypeCheckerStep( StageControl control, Configuration config,
             BatchingRelationshipTypeTokenRepository typeTokenRepository )
@@ -64,20 +64,13 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
         {
             Object type = relationship.typeAsObject();
             AtomicLong count = allTypes.get( type );
-            // Check w/o synchronized, it's fine
             if ( count == null )
             {
-                synchronized ( allTypes )
-                {
-                    if ( (count = allTypes.get( type )) == null )
-                    {
-                        allTypes.put( type, count = new AtomicLong() );
-                    }
-                }
+                AtomicLong existing = allTypes.putIfAbsent( type, count = new AtomicLong() );
+                count = existing != null ? existing : count;
             }
             count.incrementAndGet();
         }
-        totalCount += batch.input.length;
         sender.send( batch );
     }
 
@@ -111,7 +104,7 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
     /**
      * Returns relationship types which have number of relationships equal to or lower than the given threshold.
      *
-     * @param belowOrEqualToThreshold threshold where relationship types which have this amount of relationhips
+     * @param belowOrEqualToThreshold threshold where relationship types which have this amount of relationships
      * or less will be returned.
      * @return the order of which to order {@link InputRelationship} when importing relationships.
      * The order in which these relationships are returned will be the reverse order of relationship type ids.
