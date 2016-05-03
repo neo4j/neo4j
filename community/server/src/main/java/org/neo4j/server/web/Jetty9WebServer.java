@@ -115,7 +115,7 @@ public class Jetty9WebServer implements WebServer
             new HashMap<>();
     private final List<FilterDefinition> filters = new ArrayList<>();
 
-    private int jettyMaxThreads;
+    private int jettyMaxThreads = 1;
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory;
     private final HttpConnectorFactory connectorFactory;
