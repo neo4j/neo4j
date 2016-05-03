@@ -28,6 +28,7 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.ActsAsMap;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -70,6 +71,10 @@ public class Neo4jJsonCodec extends ObjectMapper
         else if ( value instanceof Map )
         {
             writeMap(out, (Map) value );
+        }
+        else if( value instanceof ActsAsMap )
+        {
+            writeMap( out, ((ActsAsMap) value).asMap() );
         }
         else
         {

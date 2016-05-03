@@ -42,6 +42,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.CRS;
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.CartesianPoint;
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.GeographicPoint;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Node;
@@ -387,6 +390,28 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
                       "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]," +
                       "\"meta\":[[{\"id\":1,\"type\":\"node\",\"deleted\":false},{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}]," +
                       "\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldSerializePointsAsListOfMapsOfProperties() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = getSerializerWith( output );
+
+        Result executionResult = mockExecutionResult(
+                map( "point", new GeographicPoint( 12.3, 45.6, CRS.WGS84() ) ),
+                map( "point", new CartesianPoint( 123, 456 ) ) );
+
+        // when
+        serializer.statementResult( executionResult, false );
+        serializer.finish();
+
+        // then
+        String result = output.toString( UTF_8.name() );
+        assertEquals( "{\"results\":[{\"columns\":[\"point\"]," +
+                "\"data\":[{\"row\":[{\"type\":\"point\",\"coordinates\":[12.3,45.6],\"crs\":{\"name\":\"WGS-84\",\"id\":4326}}],\"meta\":[null]}," +
+                "{\"row\":[{\"type\":\"point\",\"coordinates\":[123.0,456.0],\"crs\":{\"name\":\"cartesian\",\"id\":7203}}],\"meta\":[null]}]}],\"errors\":[]}", result );
     }
 
     @Test

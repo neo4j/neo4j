@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import scala.collection.JavaConverters._
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
 
@@ -56,7 +57,9 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
   override def toString = "Point(" + data + ")"
 }
 
-case class CRS(name: String, id: Int)
+case class CRS(name: String, id: Int) extends ActsAsMap {
+  def asMap = Map("name" -> name, "id" -> id).asJava
+}
 
 object CRS {
   val Cartesian = CRS("cartesian", 7203) // See http://spatialreference.org/ref/sr-org/7203/
@@ -75,7 +78,11 @@ object CRS {
   }
 }
 
-trait Geometry {
+trait ActsAsMap {
+  def asMap: java.util.Map[String,Any]
+}
+
+trait Geometry extends ActsAsMap {
   def coordinates: Seq[Double]
   def crs: CRS
 }
@@ -84,6 +91,8 @@ trait Point extends Geometry {
   def x: Double
   def y: Double
   def coordinates: Seq[Double] = Seq(x, y)
+
+  def asMap = Map[String, Any]("type" -> "point", "coordinates" -> coordinates.asJava, "crs" -> crs).asJava
 }
 
 case class CartesianPoint(x: Double, y: Double) extends Point {
