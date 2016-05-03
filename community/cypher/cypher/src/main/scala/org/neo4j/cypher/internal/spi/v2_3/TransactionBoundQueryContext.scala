@@ -312,7 +312,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
-      statement.dataWriteOperations().nodeDelete(obj.getId)
+      try {
+        statement.dataWriteOperations().nodeDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+      }
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =
@@ -355,7 +359,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   class RelationshipOperations extends BaseOperations[Relationship] {
     def delete(obj: Relationship) {
-      statement.dataWriteOperations().relationshipDelete(obj.getId)
+      try {
+        statement.dataWriteOperations().relationshipDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+      }
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =

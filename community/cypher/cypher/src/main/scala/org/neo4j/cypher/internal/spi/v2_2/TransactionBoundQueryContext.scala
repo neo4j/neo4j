@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.security.URLAccessValidationError
@@ -160,7 +160,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
-      statement.dataWriteOperations().nodeDelete(obj.getId)
+      try {
+        statement.dataWriteOperations().nodeDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+      }
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =
@@ -201,7 +205,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   class RelationshipOperations extends BaseOperations[Relationship] {
     def delete(obj: Relationship) {
-      statement.dataWriteOperations().relationshipDelete(obj.getId)
+      try {
+        statement.dataWriteOperations().relationshipDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // relationship has been deleted by another transaction, oh well...
+      }
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =

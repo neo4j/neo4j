@@ -148,7 +148,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K,V> creator )
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
@@ -196,8 +196,8 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public InternalIndexState indexGetState( KernelStatement state,
-            IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor )
+            throws IndexNotFoundKernelException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
@@ -222,8 +222,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state,
-            IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
@@ -284,15 +283,22 @@ public class LockingStatementOperations implements
     @Override
     public void relationshipDelete( final KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
-        entityReadDelegate.relationshipVisit( state, relationshipId,
-                new RelationshipVisitor<RuntimeException>()
+        try
+        {
+            entityReadDelegate.relationshipVisit( state, relationshipId, new RelationshipVisitor<RuntimeException>()
+            {
+                @Override
+                public void visit( long relId, int type, long startNode, long endNode )
                 {
-                    @Override
-                    public void visit( long relId, int type, long startNode, long endNode )
-                    {
-                        lockRelationshipNodes( state, startNode, endNode );
-                    }
-                } );
+                    lockRelationshipNodes( state, startNode, endNode );
+                }
+            });
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException(
+                    "Unable to delete relationship[" + relationshipId+ "] since it is already deleted." );
+        }
         state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         state.assertOpen();
         entityWriteDelegate.relationshipDelete( state, relationshipId );
@@ -505,7 +511,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void acquireShared( KernelStatement state, Locks.ResourceType resourceType, long resourceId )
+    public void acquireShared(KernelStatement state, Locks.ResourceType resourceType, long resourceId )
     {
         state.locks().acquireShared( resourceType, resourceId );
         state.assertOpen();
