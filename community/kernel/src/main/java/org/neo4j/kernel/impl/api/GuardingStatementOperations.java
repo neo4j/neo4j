@@ -24,6 +24,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
@@ -87,6 +88,14 @@ public class GuardingStatementOperations implements
     {
         guard.check();
         entityWriteDelegate.relationshipDelete( state, relationshipId );
+    }
+
+    @Override
+    public int nodeDetachDelete( KernelStatement state, long nodeId ) throws EntityNotFoundException,
+            AutoIndexingKernelException, InvalidTransactionTypeKernelException, KernelException
+    {
+        guard.check();
+        return entityWriteDelegate.nodeDetachDelete( state, nodeId );
     }
 
     @Override

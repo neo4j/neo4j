@@ -44,10 +44,10 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.{NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.core.NodeManager
 
 import scala.collection.JavaConverters._
@@ -275,7 +275,11 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
-      tc.statement.dataWriteOperations().nodeDelete(obj.getId)
+      try {
+        tc.statement.dataWriteOperations().nodeDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+      }
     }
 
     def propertyKeyIds(id: Long): Iterator[Int] =
@@ -318,12 +322,17 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
-    override def delete(obj: Relationship) {
-      tc.statement.dataWriteOperations().relationshipDelete(obj.getId)
-    }
 
     override def propertyKeyIds(id: Long): Iterator[Int] =
       asScala(tc.statement.readOperations().relationshipGetPropertyKeys(id))
+
+    override def delete(obj: Relationship) {
+      try {
+        tc.statement.dataWriteOperations().relationshipDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+      }
+    }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any =
       tc.statement.readOperations().relationshipGetProperty(id, propertyKeyId)

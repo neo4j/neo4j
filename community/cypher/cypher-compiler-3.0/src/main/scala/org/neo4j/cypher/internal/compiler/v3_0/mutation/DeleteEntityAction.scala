@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{ContainerIn
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_0.{SemanticDirection, CypherTypeException}
+import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 import org.neo4j.graphdb
 
@@ -46,19 +46,15 @@ case class DeleteEntityAction(elementToDelete: Expression, forced: Boolean)
 
   private def delete(x: graphdb.PropertyContainer, state: QueryState, forced: Boolean) {
     x match {
-      case n: graphdb.Node if !state.query.nodeOps.isDeletedInThisTx(n) && forced =>
-        val rels = state.query.getRelationshipsForIds(n, SemanticDirection.BOTH, None)
-        rels.foreach(r => delete(r, state, forced))
-        state.query.nodeOps.delete(n)
-
       case n: graphdb.Node if !state.query.nodeOps.isDeletedInThisTx(n) =>
-        state.query.nodeOps.delete(n)
+        if (forced) state.query.nodeOps.detachDelete(n)
+        else state.query.nodeOps.delete(n)
 
       case r: graphdb.Relationship if !state.query.relationshipOps.isDeletedInThisTx(r) =>
         state.query.relationshipOps.delete(r)
 
       case _ =>
-        // Entity is already deleted. No need to do anything
+      // Entity is already deleted. No need to do anything
     }
   }
 

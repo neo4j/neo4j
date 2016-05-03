@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.api.operations;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationKernelException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -44,6 +44,10 @@ public interface EntityWriteOperations
 
     void relationshipDelete( KernelStatement state, long relationshipId )
             throws EntityNotFoundException, InvalidTransactionTypeKernelException, AutoIndexingKernelException;
+
+    int nodeDetachDelete( KernelStatement state, long nodeId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException,
+            KernelException;
 
     /**
      * Labels a node with the label corresponding to the given label id.

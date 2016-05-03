@@ -20,9 +20,12 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.constraints.NodePropertyConstraint;
 import org.neo4j.kernel.api.constraints.NodePropertyExistenceConstraint;
@@ -32,6 +35,7 @@ import org.neo4j.kernel.api.constraints.RelationshipPropertyExistenceConstraint;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -144,7 +148,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator )
+    public <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K,V> creator )
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
@@ -227,8 +231,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state,
-            IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
     {
         state.locks().acquireShared( ResourceTypes.SCHEMA, schemaResource() );
         state.assertOpen();
@@ -270,6 +273,31 @@ public class LockingStatementOperations implements
     }
 
     @Override
+    public int nodeDetachDelete( final KernelStatement state, final long nodeId )
+            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException, KernelException
+    {
+        final AtomicInteger count = new AtomicInteger();
+        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( entityReadDelegate,
+                relId -> {
+                    state.assertOpen();
+                    try
+                    {
+                        entityWriteDelegate.relationshipDelete( state, relId );
+                        count.incrementAndGet();
+                    }
+                    catch ( EntityNotFoundException e )
+                    {
+                        // it doesn't matter...
+                    }
+                } );
+
+        locking.lockAllNodesAndConsumeRelationships( nodeId, state );
+        state.assertOpen();
+        entityWriteDelegate.nodeDetachDelete( state, nodeId );
+        return count.get();
+    }
+
+    @Override
     public long nodeCreate( KernelStatement statement )
     {
         return entityWriteDelegate.nodeCreate( statement );
@@ -291,15 +319,22 @@ public class LockingStatementOperations implements
     public void relationshipDelete( final KernelStatement state, long relationshipId )
             throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
     {
-        entityReadDelegate.relationshipVisit( state, relationshipId,
-                new RelationshipVisitor<RuntimeException>()
+        try
+        {
+            entityReadDelegate.relationshipVisit( state, relationshipId, new RelationshipVisitor<RuntimeException>()
+            {
+                @Override
+                public void visit( long relId, int type, long startNode, long endNode )
                 {
-                    @Override
-                    public void visit( long relId, int type, long startNode, long endNode )
-                    {
-                        lockRelationshipNodes( state, startNode, endNode );
-                    }
-                } );
+                    lockRelationshipNodes( state, startNode, endNode );
+                }
+            });
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException(
+                    "Unable to delete relationship[" + relationshipId+ "] since it is already deleted." );
+        }
         state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         state.assertOpen();
         entityWriteDelegate.relationshipDelete( state, relationshipId );
