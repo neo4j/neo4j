@@ -349,9 +349,9 @@ class TypeSpecTest extends CypherFunSuite {
 
   test("should format to string for indefinite sized set") {
     TypeSpec.all.mkString(", ") should equal("T")
-    CTList(CTAny).covariant.mkString(", ") should equal("Collection<T>")
-    (CTList(CTAny).covariant | CTBoolean).mkString(", ") should equal("Boolean, Collection<T>")
-    (CTList(CTList(CTAny)).covariant | CTBoolean | CTList(CTString)).mkString(", ") should equal("Boolean, Collection<String>, Collection<Collection<T>>")
+    CTList(CTAny).covariant.mkString(", ") should equal("List<T>")
+    (CTList(CTAny).covariant | CTBoolean).mkString(", ") should equal("Boolean, List<T>")
+    (CTList(CTList(CTAny)).covariant | CTBoolean | CTList(CTString)).mkString(", ") should equal("Boolean, List<String>, List<List<T>>")
   }
 
   test("should format to string for definite sized set") {
@@ -360,9 +360,9 @@ class TypeSpecTest extends CypherFunSuite {
     CTNumber.covariant.mkString(", ") should equal("Float, Integer, Number")
     (CTNumber.covariant | CTBoolean.covariant).mkString(", ") should equal("Boolean, Float, Integer, Number")
     CTNumber.contravariant.mkString(", ") should equal("Any, Number")
-    (CTBoolean.covariant | CTString.covariant | CTList(CTBoolean).covariant | CTList(CTString).covariant).mkString(", ") should equal("Boolean, String, Collection<Boolean>, Collection<String>")
-    (CTBoolean.covariant | CTString.covariant | CTList(CTBoolean).covariant | CTList(CTList(CTString)).covariant).mkString(", ") should equal("Boolean, String, Collection<Boolean>, Collection<Collection<String>>")
-    CTList(CTAny).contravariant.mkString(", ") should equal("Any, Collection<Any>")
+    (CTBoolean.covariant | CTString.covariant | CTList(CTBoolean).covariant | CTList(CTString).covariant).mkString(", ") should equal("Boolean, String, List<Boolean>, List<String>")
+    (CTBoolean.covariant | CTString.covariant | CTList(CTBoolean).covariant | CTList(CTList(CTString)).covariant).mkString(", ") should equal("Boolean, String, List<Boolean>, List<List<String>>")
+    CTList(CTAny).contravariant.mkString(", ") should equal("Any, List<Any>")
   }
 
   test("should iterate over definite sized set") {

@@ -30,7 +30,7 @@ class DistanceTest extends FunctionTestBase("distance")  {
 
   test("should fail type check for incompatible arguments") {
     testInvalidApplication(CTList(CTAny), CTList(CTAny))(
-      "Type mismatch: expected Point but was Collection<Any>"
+      "Type mismatch: expected Point but was List<Any>"
     )
     testInvalidApplication(CTString, CTString)(
       "Type mismatch: expected Point but was String"
