@@ -25,6 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.cursor.NodeItem;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -33,10 +34,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 class TwoPhaseNodeForRelationshipLocking
 {
-    private boolean retry = true;
-    private long firstRelId = -1;
     private final PrimitiveLongSet nodeIds = Primitive.longSet();
-
     private final EntityReadOperations reads;
     private final Consumer<Long> relIdAction;
 
@@ -55,7 +53,6 @@ class TwoPhaseNodeForRelationshipLocking
                 }
             };
 
-    private boolean first = true;
     private final RelationshipVisitor<RuntimeException> relationshipConsumingVisitor =
             new RelationshipVisitor<RuntimeException>()
             {
@@ -78,6 +75,10 @@ class TwoPhaseNodeForRelationshipLocking
                 }
             };
 
+    private boolean retry = true;
+    private long firstRelId;
+    private boolean first;
+
     TwoPhaseNodeForRelationshipLocking( EntityReadOperations reads, Consumer<Long> relIdAction )
     {
         this.reads = reads;
@@ -89,6 +90,8 @@ class TwoPhaseNodeForRelationshipLocking
         while ( retry )
         {
             retry = false;
+            first = true;
+            firstRelId = -1;
 
             // lock all the nodes involved by following the node id ordering
             try ( Cursor<NodeItem> cursor = reads.nodeCursorById( state, nodeId ) )
