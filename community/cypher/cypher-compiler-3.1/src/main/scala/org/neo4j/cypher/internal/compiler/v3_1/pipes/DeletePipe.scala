@@ -52,11 +52,8 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)(val es
   }
 
   private def deleteNode(n: Node)(implicit state: QueryState) = if (!state.query.nodeOps.isDeletedInThisTx(n)) {
-    if (forced) {
-      val relationships = state.query.getRelationshipsForIds(n, SemanticDirection.BOTH, None)
-      relationships.foreach(deleteRelationship)
-    }
-    state.query.nodeOps.delete(n)
+    if (forced) state.query.nodeOps.detachDelete(n)
+    else state.query.nodeOps.delete(n)
   }
 
   private def deleteRelationship(r: Relationship)(implicit state: QueryState) =
