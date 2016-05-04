@@ -43,6 +43,7 @@ public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterat
     private final InputCache inputCache;
 
     private int typeCursor;
+    private boolean allMinority;
 
     public PerTypeRelationshipSplitter( InputIterator<InputRelationship> actual, Object[] allRelationshipTypes,
             Predicate<Object> minorityRelationshipTypes, ToIntFunction<Object> typeToId, InputCache inputCache )
@@ -62,6 +63,12 @@ public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterat
             Object type = allRelationshipTypes[typeCursor++];
             if ( typeCursor == 1 )
             {
+                if ( minorityRelationshipTypes.test( type ) )
+                {
+                    allMinority = true;
+                    return null;
+                }
+
                 // This is the first relationship type. If we're lucky and this is a new import
                 // then this type will also represent the type the most relationship are of.
                 // We'll basically return the actual iterator, but with a filter to only return
@@ -105,7 +112,7 @@ public class PerTypeRelationshipSplitter extends PrefetchingIterator<InputIterat
 
     public InputIterator<InputRelationship> getMinorityRelationships()
     {
-        return inputCache.relationships( MINORITY_TYPE, true ).iterator();
+        return allMinority ? actual : inputCache.relationships( MINORITY_TYPE, true ).iterator();
     }
 
     public class FilteringAndPerTypeCachingInputIterator extends InputIterator.Delegate<InputRelationship>
