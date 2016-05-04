@@ -71,7 +71,6 @@ public class DarwinInstallation extends UnixInstallation
         }
     }
 
-    @Override
     public Environment getEnvironment()
     {
         return new DarwinEnvironment();
