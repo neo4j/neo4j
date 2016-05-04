@@ -66,6 +66,7 @@ public class DesktopConfigurator
     public void setDatabaseDirectory( File directory )
     {
         dbDir = directory;
+        refresh();
     }
 
     public String getDatabaseDirectory()

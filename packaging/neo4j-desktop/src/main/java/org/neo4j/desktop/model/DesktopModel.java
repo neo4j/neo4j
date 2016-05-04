@@ -33,6 +33,7 @@ import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DesktopConfigurator;
 import org.neo4j.desktop.ui.DesktopModelListener;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.Version;
@@ -191,7 +192,7 @@ public class DesktopModel
 
     public File getPluginsDirectory()
     {
-        return installation.getPluginsDirectory();
+        return serverConfigurator.configuration().get( GraphDatabaseSettings.plugin_dir );
     }
 
     public void openDirectory( File directory ) throws IOException

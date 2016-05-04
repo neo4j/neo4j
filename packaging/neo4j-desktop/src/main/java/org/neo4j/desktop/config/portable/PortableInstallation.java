@@ -93,20 +93,6 @@ public abstract class PortableInstallation implements Installation
     }
 
     @Override
-    public File getPluginsDirectory()
-    {
-        try
-        {
-            File installationDirectory = getInstallationDirectory();
-            return new File( installationDirectory, "plugins" );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new CannotFindInstallationDirectory( e );
-        }
-    }
-
-    @Override
     public File getInstallationDirectory() throws URISyntaxException
     {
         return getInstallationBinDirectory().getParentFile();
