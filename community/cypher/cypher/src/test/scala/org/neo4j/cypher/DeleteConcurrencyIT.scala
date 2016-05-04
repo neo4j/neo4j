@@ -116,7 +116,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
     val threads: List[MyThread] = ids.map { id =>
       new MyThread(() => {
-        execute(s"MATCH (root)-[:name]->(b:person_name) WHERE ID(root) = $id DETACH DELETE b").toList
+        execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
       })
     }
 
