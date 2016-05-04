@@ -42,6 +42,7 @@ import org.neo4j.function.Consumers;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.cursor.PropertyItem;
+import org.neo4j.kernel.impl.store.AbstractRecordStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -49,6 +50,8 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.LogProvider;
@@ -57,6 +60,8 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.apache.commons.lang3.RandomUtils.nextBytes;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -592,6 +597,156 @@ public class StorePropertyCursorTest
                 assertEquals( Collections.emptyList(), valuesFromCursor );
             }
         }
+
+        @Test
+        public void readPropertyChainWithLongStringDynamicRecordsNotInUse()
+        {
+            int chainStartId = 1;
+            int keyId = 42;
+            Object[] values = {randomAscii( 255 ), randomAscii( 255 ), randomAscii( 255 )};
+            List<PropertyRecord> propertyChain = createPropertyChain( propertyStore, chainStartId, keyId, values );
+
+            markDynamicRecordNotInUse( 2, keyId, propertyChain.get( 1 ), propertyStore );
+
+            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            {
+                cursor.init( chainStartId, NO_LOCK );
+
+                List<Object> valuesFromCursor = asPropertyValuesList( cursor );
+                assertEquals( asList( values ), valuesFromCursor );
+            }
+        }
+
+        @Test
+        public void readPropertyValueWhenFirstLongStringDynamicRecordIsNotInUse()
+        {
+            int recordId = 1;
+            int keyId = 1;
+            String value = randomAscii( 255 );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
+            markDynamicRecordNotInUse( 0, keyId, record, propertyStore );
+
+            verifyPropertyValue( value, recordId );
+        }
+
+        @Test
+        public void readPropertyValueWhenSomeLongStringDynamicRecordsAreNotInUse()
+        {
+            int recordId = 1;
+            int keyId = 1;
+            String value = randomAscii( 1000 );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
+
+            markDynamicRecordNotInUse( 1, keyId, record, propertyStore );
+            markDynamicRecordNotInUse( 3, keyId, record, propertyStore );
+            markDynamicRecordNotInUse( 5, keyId, record, propertyStore );
+            markDynamicRecordNotInUse( 7, keyId, record, propertyStore );
+
+            verifyPropertyValue( value, recordId );
+        }
+
+        @Test
+        public void readPropertyValueWhenAllLongStringDynamicRecordsAreNotInUse()
+        {
+            int recordId = 1;
+            int keyId = 1;
+            String value = randomAscii( 255 );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
+
+            markDynamicRecordNotInUse( 0, keyId, record, propertyStore );
+            markDynamicRecordNotInUse( 1, keyId, record, propertyStore );
+            markDynamicRecordNotInUse( 2, keyId, record, propertyStore );
+
+            verifyPropertyValue( value, recordId );
+        }
+
+        @Test
+        public void readPropertyValueWhenAllLongArrayDynamicRecordsAreNotInUse()
+        {
+            int recordId = 1;
+            int keyId = 1;
+            byte[] value = nextBytes( 320 );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
+
+            markDynamicRecordNotInUse( 0, keyId, record, propertyStore );
+            markDynamicRecordNotInUse( 1, keyId, record, propertyStore );
+            markDynamicRecordNotInUse( 2, keyId, record, propertyStore );
+
+            verifyPropertyValue( value, recordId );
+        }
+
+        @Test
+        public void readPropertyChainWithLongArrayDynamicRecordsNotInUse()
+        {
+            int chainStartId = 1;
+            int keyId = 42;
+            Object[] values = {nextBytes( 1024 ), nextBytes( 1024 ), nextBytes( 1024 )};
+            List<PropertyRecord> propertyChain = createPropertyChain( propertyStore, chainStartId, keyId, values );
+
+            markDynamicRecordNotInUse( 2, keyId, propertyChain.get( 1 ), propertyStore );
+
+            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            {
+                cursor.init( chainStartId, NO_LOCK );
+
+                List<Object> valuesFromCursor = asPropertyValuesList( cursor );
+                for ( int i = 0; i < valuesFromCursor.size(); i++ )
+                {
+                    Object value = valuesFromCursor.get( i );
+                    assertArrayEquals( (byte[]) values[i], (byte[]) value );
+                }
+            }
+        }
+
+        @Test
+        public void readPropertyValueWhenFirstLongArrayDynamicRecordIsNotInUse()
+        {
+            int recordId = 1;
+            int keyId = 1;
+            byte[] value = nextBytes( 1024 );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
+            markDynamicRecordNotInUse( 0, keyId, record, propertyStore );
+
+            verifyPropertyValue( value, recordId );
+        }
+
+        @Test
+        public void readPropertyValueWhenSomeLongArrayDynamicRecordsAreNotInUse()
+        {
+            int recordId = 1;
+            int keyId = 1;
+            byte[] value = nextBytes( 1024 );
+            PropertyRecord record = createSinglePropertyValue( propertyStore, recordId, keyId, value );
+
+            markDynamicRecordNotInUse( 1, keyId, record, propertyStore );
+            markDynamicRecordNotInUse( 3, keyId, record, propertyStore );
+            markDynamicRecordNotInUse( 5, keyId, record, propertyStore );
+            markDynamicRecordNotInUse( 7, keyId, record, propertyStore );
+
+            verifyPropertyValue( value, recordId );
+        }
+
+        private void verifyPropertyValue( String expectedValue, int recordId )
+        {
+            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            {
+                cursor.init( recordId, NO_LOCK );
+                assertTrue( cursor.next() );
+                assertEquals( expectedValue, cursor.value() );
+                assertFalse( cursor.next() );
+            }
+        }
+
+        private void verifyPropertyValue( byte[] expectedValue, int recordId )
+        {
+            try ( StorePropertyCursor cursor = newStorePropertyCursor( propertyStore ) )
+            {
+                cursor.init( recordId, NO_LOCK );
+                assertTrue( cursor.next() );
+                assertArrayEquals( expectedValue, (byte[]) cursor.value() );
+                assertFalse( cursor.next() );
+            }
+        }
     }
 
     private static void assertEqualValues( Object expectedValue, PropertyItem item )
@@ -620,24 +775,30 @@ public class StorePropertyCursorTest
         return new StorePropertyCursor( propertyStore, cache );
     }
 
-    private static void createPropertyChain( PropertyStore store, int firstRecordId, int keyId, Object... values )
+    private static List<PropertyRecord> createPropertyChain( PropertyStore store, int firstRecordId, int keyId,
+            Object... values )
     {
+        List<PropertyRecord> records = new ArrayList<>();
+
         int nextRecordId = firstRecordId;
-        PropertyRecord previousRecord = null;
         for ( Object value : values )
         {
             PropertyRecord record = createSinglePropertyValue( store, nextRecordId, keyId, value );
-            if ( previousRecord != null )
+            if ( !records.isEmpty() )
             {
+                PropertyRecord previousRecord = records.get( records.size() - 1 );
+
                 record.setPrevProp( previousRecord.getId() );
                 store.updateRecord( record );
 
                 previousRecord.setNextProp( record.getId() );
                 store.updateRecord( previousRecord );
             }
-            previousRecord = record;
+            records.add( record );
             nextRecordId++;
         }
+
+        return records;
     }
 
     private static void markPropertyRecordsNoInUse( PropertyStore store, int... recordIds )
@@ -672,8 +833,7 @@ public class StorePropertyCursorTest
         PropertyRecord record = new PropertyRecord( recordId );
         record.addPropertyBlock( block );
         record.setInUse( true );
-        store.updateRecord( record );
-        store.setHighestPossibleIdInUse( recordId );
+        updateRecord( store, record );
 
         return record;
     }
@@ -702,13 +862,22 @@ public class StorePropertyCursorTest
             nextRecord.addPropertyBlock( block2 );
             nextRecord.setPrevProp( record.getId() );
             nextRecord.setInUse( true );
-            store.updateRecord( nextRecord );
-            store.setHighestPossibleIdInUse( nextRecord.getId() );
+            updateRecord( store, nextRecord );
         }
 
         record.setInUse( true );
-        store.updateRecord( record );
-        store.setHighestPossibleIdInUse( record.getId() );
+        updateRecord( store, record );
+    }
+
+    private static void markDynamicRecordNotInUse( int dynamicRecordIndex, int keyId, PropertyRecord record,
+            PropertyStore store )
+    {
+        PropertyBlock propertyBlock = record.getPropertyBlock( keyId );
+        store.ensureHeavy( propertyBlock );
+        List<DynamicRecord> valueRecords = propertyBlock.getValueRecords();
+        DynamicRecord dynamicRecord = valueRecords.get( dynamicRecordIndex );
+        dynamicRecord.setInUse( false );
+        updateRecord( store, record );
     }
 
     private static List<Object> asPropertyValuesList( StorePropertyCursor cursor )
@@ -719,5 +888,11 @@ public class StorePropertyCursorTest
             values.add( cursor.value() );
         }
         return values;
+    }
+
+    private static <T extends Abstract64BitRecord> void updateRecord( AbstractRecordStore<T> store, T record )
+    {
+        store.forceUpdateRecord( record );
+        store.setHighestPossibleIdInUse( record.getLongId() );
     }
 }

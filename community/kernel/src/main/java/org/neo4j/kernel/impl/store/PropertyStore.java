@@ -265,38 +265,33 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord>
     {
         if ( block.getType() == PropertyType.STRING )
         {
-            if ( block.isLight() )
-            {
-                try ( GenericCursor<DynamicRecord> stringRecords = stringPropertyStore.getRecordsCursor(
-                        block.getSingleValueLong(), false ) )
-                {
-                    while ( stringRecords.next() )
-                    {
-                        stringRecords.get().setType( PropertyType.STRING.intValue() );
-                        block.addValueRecord( stringRecords.get().clone() );
-                    }
-                }
-            }
-            for ( DynamicRecord stringRecord : block.getValueRecords() )
-            {
-                stringPropertyStore.ensureHeavy( stringRecord );
-            }
+            loadPropertyBlock( block, stringPropertyStore );
         }
         else if ( block.getType() == PropertyType.ARRAY )
         {
-            if ( block.isLight() )
+            loadPropertyBlock( block, arrayPropertyStore );
+        }
+    }
+
+    private static void loadPropertyBlock( PropertyBlock block, AbstractDynamicStore dynamicStore )
+    {
+        if ( block.isLight() )
+        {
+            long startBlockId = block.getSingleValueLong();
+            try ( GenericCursor<DynamicRecord> cursor = dynamicStore.getRecordsCursor( startBlockId ) )
             {
-                Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords(
-                        block.getSingleValueLong() );
-                for ( DynamicRecord arrayRecord : arrayRecords )
+                while ( cursor.next() )
                 {
-                    arrayRecord.setType( PropertyType.ARRAY.intValue() );
-                    block.addValueRecord( arrayRecord );
+                    cursor.get().setType( block.getType().intValue() );
+                    block.addValueRecord( cursor.get().clone() );
                 }
             }
-            for ( DynamicRecord arrayRecord : block.getValueRecords() )
+        }
+        else
+        {
+            for ( DynamicRecord dynamicRecord : block.getValueRecords() )
             {
-                arrayPropertyStore.ensureHeavy( arrayRecord );
+                dynamicStore.ensureHeavy( dynamicRecord );
             }
         }
     }

@@ -278,7 +278,7 @@ class StorePropertyPayloadCursor
     {
         buffer.clear();
         long startBlockId = PropertyBlock.fetchLong( currentHeader() );
-        try ( GenericCursor<DynamicRecord> records = store.getRecordsCursor( startBlockId, true, cursor ) )
+        try ( GenericCursor<DynamicRecord> records = store.getRecordsCursor( startBlockId, cursor ) )
         {
             while ( records.next() )
             {
