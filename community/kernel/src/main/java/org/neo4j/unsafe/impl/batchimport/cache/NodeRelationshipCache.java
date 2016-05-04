@@ -38,6 +38,15 @@ import static java.lang.Math.toIntExact;
  *   RelationshipGroupCache array:
  *   [NEXT,OUT_ID,OUT_DEGREE,IN_ID,IN_DEGREE,LOOP_ID,LOOP_DEGREE]
  * - DEGREE < THRESHOLD: last seen relationship id for this node
+ * </pre>
+ *
+ * This class is designed to be thread safe if callers are coordinated such that different threads owns different
+ * parts of the main cache array, with the constraint that a thread which accesses item N must continue doing
+ * so in order to make further changes to N, if another thread accesses N the semantics will no longer hold.
+ *
+ * Since multiple threads are making changes external memory synchronization is also required in between
+ * a phase of making changes using {@link #getAndPutRelationship(long, Direction, long, boolean)} and e.g
+ * {@link #visitChangedNodes(NodeChangeVisitor, boolean)}.
  */
 public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 {
@@ -64,7 +73,10 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
     private final int denseNodeThreshold;
     private final RelGroupCache relGroupCache;
     private long highId;
-    private volatile boolean oneMeansChanged = true;
+    // This cache participates in scans backwards and forwards, marking entities as changed in the process.
+    // When going forward (forward==true) changes are marked with a set bit, a cleared bit when going bachwards.
+    // This way there won't have to be a clearing of the change bits in between the scans.
+    private volatile boolean forward = true;
     private final int chunkSize;
 
     public NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold )
@@ -242,20 +254,20 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 
     private boolean markAsChanged( ByteArray array, long nodeId, long mask )
     {
-        long bits = array.getInt( nodeId, SPARSE_COUNT_OFFSET ) & 0xFFFFFFFF;
+        int bits = array.getInt( nodeId, SPARSE_COUNT_OFFSET );
         boolean changeBitIsSet = (bits & mask) != 0;
-        boolean changeBitWasFlipped = changeBitIsSet != oneMeansChanged;
+        boolean changeBitWasFlipped = changeBitIsSet != forward;
         if ( changeBitWasFlipped )
         {
             bits ^= mask; // flip the mask bit
-            array.setInt( nodeId, SPARSE_COUNT_OFFSET, (int) bits );
+            array.setInt( nodeId, SPARSE_COUNT_OFFSET, bits );
         }
         return changeBitWasFlipped;
     }
 
     private static boolean nodeIsChanged( ByteArray array, long nodeId, long mask )
     {
-        long bits = array.getInt( nodeId, SPARSE_COUNT_OFFSET ) & 0xFFFFFFFF;
+        int bits = array.getInt( nodeId, SPARSE_COUNT_OFFSET );
 
         // The values in the cache are initialized with -1, i.e. all bits set, i.e. also the
         // change bits set. For nodes that gets at least one call to incrementCount these will be
@@ -302,7 +314,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
      */
     public long getFirstRel( long nodeId, GroupVisitor visitor )
     {
-        assert oneMeansChanged : "This should only be done at forward scan";
+        assert forward : "This should only be done at forward scan";
 
         ByteArray array = this.array.at( nodeId );
         long id = getRelationshipId( array, nodeId );
@@ -334,7 +346,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
      */
     public void setForwardScan( boolean forward )
     {
-        oneMeansChanged = forward;
+        this.forward = forward;
     }
 
     /**
@@ -374,14 +386,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         long visit( long nodeId, long next, long out, long in, long loop );
     }
 
-    public static final GroupVisitor NO_GROUP_VISITOR = new GroupVisitor()
-    {
-        @Override
-        public long visit( long nodeId, long next, long out, long in, long loop )
-        {
-            return -1;
-        }
-    };
+    public static final GroupVisitor NO_GROUP_VISITOR = (nodeId, next, out, in, loop) -> -1;
 
     private static class RelGroupCache implements AutoCloseable, MemoryStatsVisitor.Visitable
     {
