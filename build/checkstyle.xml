@@ -39,4 +39,8 @@
     <property name="message" value="Two or more consecutive empty lines"/>
   </module>
 
+  <module name="TreeWalker">
+    <module name="PackageDeclaration"/>
+  </module>
+
 </module>

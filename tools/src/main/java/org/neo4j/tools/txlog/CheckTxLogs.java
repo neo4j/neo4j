@@ -73,7 +73,7 @@ public class CheckTxLogs
         {
             printUsageAndExit();
         }
-        CheckType[] checkTypes = parseChecks( arguments );
+        CheckType<?,?>[] checkTypes = parseChecks( arguments );
         File dir = parseDir( arguments );
 
         File[] logs = txLogsIn( dir );
@@ -176,7 +176,7 @@ public class CheckTxLogs
         state.put( after, txCommand.logVersion, txId );
     }
 
-    private static CheckType[] parseChecks( Args arguments )
+    private static CheckType<?,?>[] parseChecks( Args arguments )
     {
         String checks = arguments.get( CHECKS );
         if ( checks == null )
@@ -186,7 +186,7 @@ public class CheckTxLogs
 
         return Stream.of( checks.split( SEPARATOR ) )
                 .map( CheckTypes::fromName )
-                .toArray( CheckType<?,?>[]::new );
+                .toArray( CheckType[]::new );
     }
 
     private static File parseDir( Args args )
