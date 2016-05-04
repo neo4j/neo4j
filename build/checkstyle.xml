@@ -43,6 +43,7 @@
 
     <module name="PackageDeclaration"/>
     <module name="UpperEll"/>
+    <module name="ArrayTypeStyle"/>
 
   </module>
 

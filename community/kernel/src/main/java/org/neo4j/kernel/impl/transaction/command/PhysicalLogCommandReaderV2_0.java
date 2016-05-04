@@ -324,7 +324,7 @@ public class PhysicalLogCommandReaderV2_0 extends BaseCommandReader
                     || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
                             + " is not valid for a next record field of " + "a dynamic record";
             record.setNextBlock( nextBlock );
-            byte data[] = new byte[nrOfBytes];
+            byte[] data = new byte[nrOfBytes];
             channel.get( data, nrOfBytes );
             record.setData( data );
         }

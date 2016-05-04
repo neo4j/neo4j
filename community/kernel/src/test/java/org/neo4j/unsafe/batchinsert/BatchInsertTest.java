@@ -528,7 +528,7 @@ public class BatchInsertTest
     {
         BatchInserter graphDb = newBatchInserter();
         long startNode = graphDb.createNode( properties );
-        long endNodes[] = new long[25];
+        long[] endNodes = new long[25];
         Set<Long> rels = new HashSet<>();
         for ( int i = 0; i < 25; i++ )
         {

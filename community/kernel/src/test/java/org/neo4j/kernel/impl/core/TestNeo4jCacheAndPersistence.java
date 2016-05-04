@@ -197,9 +197,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     public void testDirectedRelationship1()
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
-        Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST,
-            Direction.BOTH );
-        Node nodes[] = rel.getNodes();
+        Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST, Direction.BOTH );
+        Node[] nodes = rel.getNodes();
         assertEquals( 2, nodes.length );
 
         Node node2 = getGraphDb().getNodeById( node2Id );
@@ -207,8 +206,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( node1, rel.getStartNode() );
         assertEquals( node2, rel.getEndNode() );
 
-        Relationship relArray[] = getRelationshipArray( node1.getRelationships(
-            MyRelTypes.TEST, Direction.OUTGOING ) );
+        Relationship[] relArray = getRelationshipArray( node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
         assertEquals( 1, relArray.length );
         assertEquals( rel, relArray[0] );
         relArray = getRelationshipArray( node2.getRelationships(
@@ -357,7 +355,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
-        Relationship rels[] = new Relationship[100];
+        Relationship[] rels = new Relationship[100];
         for ( int i = 0; i < rels.length; i++ )
         {
             if ( i < 50 )
@@ -405,8 +403,8 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
 
         try ( Transaction tx = graphDb.beginTx() )
         {
-            RelationshipType types[] = new RelationshipType[] {
-                MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL };
+            RelationshipType[] types = new RelationshipType[]{
+                    MyRelTypes.TEST, MyRelTypes.TEST2, MyRelTypes.TEST_TRAVERSAL};
 
             assertEquals( 3, Iterables.count( node1.getRelationships( types ) ) );
 

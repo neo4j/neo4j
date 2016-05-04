@@ -47,7 +47,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class TestDynamicStore
@@ -172,7 +171,7 @@ public class TestDynamicStore
             }
             else
             {
-                byte bytes[] = createRandomBytes( random );
+                byte[] bytes = createRandomBytes( random );
                 Collection<DynamicRecord> records = new ArrayList<>();
                 store.allocateRecords( records, bytes, Iterators.<DynamicRecord>emptyIterator() );
                 for ( DynamicRecord record : records )
@@ -204,7 +203,7 @@ public class TestDynamicStore
         return new byte[r.nextInt( 1024 )];
     }
 
-    private void validateData( byte data1[], byte data2[] )
+    private void validateData( byte[] data1, byte[] data2 )
     {
         assertEquals( data1.length, data2.length );
         for ( int i = 0; i < data1.length; i++ )

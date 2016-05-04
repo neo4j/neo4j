@@ -84,7 +84,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     }
 
     public static void allocateRecordsFromBytes(
-            Collection<DynamicRecord> recordList, byte src[], Iterator<DynamicRecord> recordsToUseFirst,
+            Collection<DynamicRecord> recordList, byte[] src, Iterator<DynamicRecord> recordsToUseFirst,
             DynamicRecordAllocator dynamicRecordAllocator )
     {
         assert src != null : "Null src argument";
@@ -97,7 +97,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             record.setStartRecord( srcOffset == 0 );
             if ( src.length - srcOffset > dataSize )
             {
-                byte data[] = new byte[dataSize];
+                byte[] data = new byte[dataSize];
                 System.arraycopy( src, srcOffset, data, 0, dataSize );
                 record.setData( data );
                 nextRecord = dynamicRecordAllocator.nextUsedRecordOrNew( recordsToUseFirst );
@@ -106,7 +106,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             }
             else
             {
-                byte data[] = new byte[src.length - srcOffset];
+                byte[] data = new byte[src.length - srcOffset];
                 System.arraycopy( src, srcOffset, data, 0, data.length );
                 record.setData( data );
                 nextRecord = null;
@@ -200,7 +200,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
         return record;
     }
 
-    public void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte src[] )
+    public void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte[] src )
     {
         allocateRecordsFromBytes( target, src, Iterators.<DynamicRecord>emptyIterator(), this );
     }

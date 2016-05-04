@@ -265,7 +265,7 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
         {
             StressThread.resources[i] = i;
         }
-        StressThread stressThreads[] = new StressThread[50];
+        StressThread[] stressThreads = new StressThread[50];
         CountDownLatch startSignal = new CountDownLatch( 1 );
         for ( int i = 0; i < stressThreads.length; i++ )
         {

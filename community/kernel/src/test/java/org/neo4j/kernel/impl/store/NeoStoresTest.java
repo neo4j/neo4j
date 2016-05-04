@@ -251,7 +251,7 @@ public class NeoStoresTest
         assertFalse( nodeExists( node1 ) );
         assertFalse( nodeExists( node2 ) );
         testGetRels( new long[]{rel1, rel2} );
-        long nodeIds[] = new long[10];
+        long[] nodeIds = new long[10];
         for ( int i = 0; i < 3; i++ )
         {
             nodeIds[i] = nextId( Node.class );
@@ -321,7 +321,7 @@ public class NeoStoresTest
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
         transaction.relationshipTypeDoCreateForName( typeName, relType1 );
-        long nodeIds[] = new long[3];
+        long[] nodeIds = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
             nodeIds[i] = nextId( Node.class );
@@ -379,7 +379,7 @@ public class NeoStoresTest
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
         transaction.relationshipTypeDoCreateForName( typeName, relType1 );
-        long nodeIds[] = new long[3];
+        long[] nodeIds = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
             nodeIds[i] = nextId( Node.class );
@@ -423,7 +423,7 @@ public class NeoStoresTest
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         transaction.relationshipTypeDoCreateForName( "relationshiptype1", relType1 );
-        long nodeIds[] = new long[8];
+        long[] nodeIds = new long[8];
         for ( int i = 0; i < nodeIds.length; i++ )
         {
             nodeIds[i] = nextId( Node.class );
@@ -1357,7 +1357,7 @@ public class NeoStoresTest
         transaction.nodeDoDelete( node );
     }
 
-    private void testGetRels( long relIds[] )
+    private void testGetRels( long[] relIds )
     {
         try ( StorageStatement statement = storeLayer.newStatement() )
         {

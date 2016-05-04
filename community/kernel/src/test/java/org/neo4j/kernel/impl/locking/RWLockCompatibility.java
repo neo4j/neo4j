@@ -306,7 +306,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
     public void testStressMultipleThreads() throws Exception
     {
         long r1 = 1L;
-        StressThread stressThreads[] = new StressThread[100];
+        StressThread[] stressThreads = new StressThread[100];
         CountDownLatch startSignal = new CountDownLatch( 1 );
         for ( int i = 0; i < 100; i++ )
         {
