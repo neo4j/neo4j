@@ -45,7 +45,7 @@ public class StoreUtil
         }
 
         return storeDir.listFiles(file -> {
-            for ( String directory : new String[] {"metrics", "certificates"} )
+            for ( String directory : new String[] {"metrics", "logs", "certificates"} )
             {
                 if ( file.getName().startsWith( directory ) )
                 {
