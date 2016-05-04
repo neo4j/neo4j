@@ -19,15 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Arrays;
-import java.util.function.Consumer;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -37,12 +33,13 @@ import org.neo4j.storageengine.api.NodeItem;
 
 class TwoPhaseNodeForRelationshipLocking
 {
-    private boolean retry = true;
-    private long firstRelId = -1;
     private final PrimitiveLongSet nodeIds = Primitive.longSet();
-
     private final EntityReadOperations reads;
     private final ThrowingConsumer<Long,KernelException> relIdAction;
+
+    private boolean retry = true;
+    private long firstRelId;
+    private boolean first;
 
     private final RelationshipVisitor<RuntimeException> collectNodeIdVisitor =
             (relId, type, startNode, endNode) -> {
@@ -54,7 +51,6 @@ class TwoPhaseNodeForRelationshipLocking
                 nodeIds.add( endNode );
             };
 
-    private boolean first = true;
     private final RelationshipVisitor<KernelException> relationshipConsumingVisitor =
             new RelationshipVisitor<KernelException>()
             {
@@ -77,6 +73,7 @@ class TwoPhaseNodeForRelationshipLocking
                 }
             };
 
+
     TwoPhaseNodeForRelationshipLocking( EntityReadOperations reads, ThrowingConsumer<Long,KernelException> relIdAction )
     {
         this.reads = reads;
@@ -88,6 +85,8 @@ class TwoPhaseNodeForRelationshipLocking
         while ( retry )
         {
             retry = false;
+            first = true;
+            firstRelId = -1;
 
             // lock all the nodes involved by following the node id ordering
             try ( Cursor<NodeItem> cursor = reads.nodeCursorById( state, nodeId ) )
