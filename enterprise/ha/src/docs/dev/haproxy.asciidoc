@@ -80,6 +80,18 @@ Note that the servers in the `slave` backend are configured the same way as in t
 
 Then by putting all the above configurations into one file, we get a basic workable HAProxy configuration to perform load balancing for applications using the Bolt Protocol.
 
+By default, encryption is enabled between servers and drivers. With encryption turned on, the HAProxy configuration constructed above needs no change to work directly in TLS/SSL passthrough layout for HAProxy.
+However depending on the driver authentication strategy adopted, some special requirements might apply to the server certificates.
+
+For drivers using trust-on-first-use authentication strategy, each driver would register the HAProxy port it connects to with the first certificate received from the cluster.
+Then for all subsequent connections, the driver would only establish connections with the server whose certificate is the same as the one registered.
+Therefore, in order to make it possible for a driver to establish connections with all instances in the cluster, this mode requires all the instances in the cluster sharing the same certificate.
+
+If drivers are configured to run in trusted-certificate mode, then the certificate known to the drivers should be a root certificate to all the certificates installed on the servers in the cluster.
+Alternatively, for the drivers such as Java driver who supports registering multiple certificates as trusted certificates, the drivers also work well with a cluster if server certificates used in the cluster are all registered as trusted certificates.
+
+To use HAProxy with other encryption layout, please refer to their full documentation at their website.
+
 [[ha-haproxy-rest]]
 == Configuring HAProxy for the REST API ==
 
