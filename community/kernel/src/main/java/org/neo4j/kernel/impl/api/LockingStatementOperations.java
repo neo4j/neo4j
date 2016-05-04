@@ -314,25 +314,15 @@ public class LockingStatementOperations implements
     @Override
     public void relationshipDelete( final KernelStatement state, long relationshipId ) throws EntityNotFoundException
     {
-        try
-        {
-            entityReadDelegate.relationshipVisit( state, relationshipId, new RelationshipVisitor<RuntimeException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
-                {
-                    lockRelationshipNodes( state, startNode, endNode );
-                }
-            });
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new IllegalStateException(
-                    "Unable to delete relationship[" + relationshipId+ "] since it is already deleted." );
-        }
-        state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
+        entityReadDelegate.relationshipVisit(state, relationshipId, new RelationshipVisitor<RuntimeException>() {
+            @Override
+            public void visit(long relId, int type, long startNode, long endNode) {
+                lockRelationshipNodes(state, startNode, endNode);
+            }
+        });
+        state.locks().acquireExclusive(ResourceTypes.RELATIONSHIP, relationshipId);
         state.assertOpen();
-        entityWriteDelegate.relationshipDelete( state, relationshipId );
+        entityWriteDelegate.relationshipDelete(state, relationshipId);
     }
 
     private void lockRelationshipNodes( KernelStatement state, long startNodeId, long endNodeId )
