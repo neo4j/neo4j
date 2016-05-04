@@ -68,7 +68,7 @@ public class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, Consistenc
     }
 
     @SafeVarargs
-	NodeRecordCheck( RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>... fields )
+    NodeRecordCheck( RecordField<NodeRecord, ConsistencyReport.NodeConsistencyReport>... fields )
     {
         super( fields );
     }

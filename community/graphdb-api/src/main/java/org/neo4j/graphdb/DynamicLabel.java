@@ -24,7 +24,7 @@ package org.neo4j.graphdb;
  * a convenience implementation of <code>Label</code> that is
  * typically used when labels are created and named after a
  * condition that can only be detected at runtime.
- * 
+ *
  * For statically known labels please consider the enum approach as described
  * in {@link Label} documentation.
  *

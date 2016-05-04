@@ -60,7 +60,6 @@ public abstract class PluginPoint
             ParameterList params ) throws BadInputException, BadPluginInvocationException,
             PluginInvocationFailureException;
 
-
     protected void describeParameters( ParameterDescriptionConsumer consumer )
     {
     }

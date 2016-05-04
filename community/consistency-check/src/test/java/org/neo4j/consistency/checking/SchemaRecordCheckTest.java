@@ -388,7 +388,6 @@ public class SchemaRecordCheckTest
         verify( report ).duplicateRuleContent( record1 );
     }
 
-
     private DynamicRecord dynamicRecord( long id )
     {
         DynamicRecord record = new DynamicRecord( id );

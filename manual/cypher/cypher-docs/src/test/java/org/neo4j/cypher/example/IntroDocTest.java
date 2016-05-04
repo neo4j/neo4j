@@ -102,11 +102,11 @@ public class IntroDocTest implements GraphHolder
         graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         cleanDatabaseContent( graphdb );
     }
-    
+
     @AfterClass
     public static void shutdown()
     {
-        try 
+        try
         {
             if ( graphdb != null ) graphdb.shutdown();
         }

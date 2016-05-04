@@ -79,7 +79,6 @@ public class InMemoryCountsStoreTest
         countStore.get( null );
     }
 
-
     @Test
     public void emptyUpdate()
     {

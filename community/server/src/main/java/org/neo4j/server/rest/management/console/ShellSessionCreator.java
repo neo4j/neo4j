@@ -28,7 +28,7 @@ import org.neo4j.server.database.Database;
 public class ShellSessionCreator implements ConsoleSessionCreator
 {
     public static final String NAME = "SHELL";
-    
+
     @Override
     public String name()
     {

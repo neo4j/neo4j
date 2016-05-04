@@ -105,7 +105,6 @@ public abstract class BatchOperations
         return baseUri.resolve("." + requestedPath);
     }
 
-
     private final static Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d{1,10})\\}");
 
     protected String replaceLocationPlaceholders( String str,
@@ -210,7 +209,6 @@ public abstract class BatchOperations
         InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res, outerReq );
         req.setScheme( targetUri.getScheme() );
         addHeaders( req, httpHeaders );
-
 
         invoke( method, path, body, id, targetUri, req, res );
     }

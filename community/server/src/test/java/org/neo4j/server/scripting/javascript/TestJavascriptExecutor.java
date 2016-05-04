@@ -89,7 +89,6 @@ public class TestJavascriptExecutor
                 "  this['theVar']; " +
                 "}" );
 
-
         Map<String, Object> ctx = new HashMap<String, Object>();
 
         // When

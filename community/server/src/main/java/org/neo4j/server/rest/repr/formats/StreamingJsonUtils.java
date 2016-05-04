@@ -26,11 +26,11 @@ import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
 
 public class StreamingJsonUtils {
-    
+
     public static String readCurrentValueAsString(JsonParser jp, JsonToken token) throws JsonParseException, IOException {
         return readCurrentValueInto(jp, token, new StringBuilder()).toString();
     }
-    
+
     private static StringBuilder readCurrentValueInto(JsonParser jp, JsonToken token, StringBuilder b) throws JsonParseException, IOException {
         if( token == JsonToken.START_OBJECT ) {
             boolean first = true;
@@ -40,12 +40,12 @@ public class StreamingJsonUtils {
                     b.append(',');
                 else
                     first = false;
-                
+
                 b.append('"');
                 b.append(jp.getText());
                 b.append('"');
                 b.append(':');
-                
+
                 readCurrentValueInto(jp, jp.nextToken(), b);
             }
             b.append('}');
@@ -57,7 +57,7 @@ public class StreamingJsonUtils {
                     b.append(',');
                 else
                     first = false;
-                
+
                 readCurrentValueInto(jp, token, b);
             }
             b.append(']');
@@ -76,5 +76,5 @@ public class StreamingJsonUtils {
         }
         return b;
     }
-    
+
 }

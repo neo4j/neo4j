@@ -96,7 +96,7 @@ public class PathRepresentationTest
      * This contains two forward relationships and one backward relationship
      * which is represented in the "directions" value of the output. We should
      * therefore see something like the following:
-     * 
+     *
      * {
      *     "length" : 3,
      *     "start" : "http://neo4j.org/node/0",
@@ -128,7 +128,6 @@ public class PathRepresentationTest
         return new PathRepresentation<Path>(
                 path( a, link( ab, b ), link( cb, c ), link( cd, d ) ));
     }
-
 
     public static void verifySerialisation( Map<String, Object> pathrep )
     {

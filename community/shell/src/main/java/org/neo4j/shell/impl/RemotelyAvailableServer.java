@@ -34,7 +34,7 @@ import org.neo4j.shell.Welcome;
 
 /**
  * The remote aspect of a {@link ShellServer}.
- * 
+ *
  * @author Mattias Persson
  */
 class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
@@ -78,7 +78,7 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
     {
         return actual.welcome( initialSession );
     }
-    
+
     @Override
     public void leave( Serializable clientID ) throws RemoteException
     {
@@ -103,7 +103,7 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
     {
         makeRemotelyAvailable( "localhost", port, name );
     }
-    
+
     @Override
     public void makeRemotelyAvailable( String host, int port, String name ) throws RemoteException
     {

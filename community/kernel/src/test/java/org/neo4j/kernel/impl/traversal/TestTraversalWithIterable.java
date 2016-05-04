@@ -42,7 +42,7 @@ public class TestTraversalWithIterable extends TraversalTestBase
          * (d)-->(e)-->(f)
          *
          */
-        
+
         createGraph( "a TO b", "b TO c", "d TO e", "e TO f" );
 
         try (Transaction tx = beginTx())
@@ -54,7 +54,6 @@ public class TestTraversalWithIterable extends TraversalTestBase
             startNodes.add( getNodeWithName( "d" ) );
 
             Iterable<Node> iterableStartNodes = startNodes;
-
 
             expectPaths( basicTraverser.traverse( iterableStartNodes ), "a,b,c", "d,e,f");
             tx.success();

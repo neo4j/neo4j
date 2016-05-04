@@ -61,7 +61,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
  * node.{@link Node#createRelationshipTo(Node, RelationshipType) createRelationshipTo}( anotherNode, {@link RelationshipType MyRelationshipTypes.KNOWS} );
  * for ( {@link Relationship} rel : node.{@link Node#getRelationships(RelationshipType...) getRelationships}( MyRelationshipTypes.KNOWS ) )
  * {
- * 	// ...
+ *     // ...
  * }
  * </code>
  * </pre>

@@ -26,9 +26,9 @@ import java.util.concurrent.TimeUnit;
 public interface LegacyDatabase extends Remote
 {
     int stop() throws RemoteException;
-    
+
     String getStoreDir() throws RemoteException;
-    
+
     void awaitStarted( long time, TimeUnit unit ) throws RemoteException;
 
     long initialize() throws RemoteException;
@@ -38,7 +38,7 @@ public interface LegacyDatabase extends Remote
     public void doComplexLoad( long center ) throws RemoteException;
 
     void verifyNodeExists( long id ) throws RemoteException;
-    
+
     boolean isMaster() throws RemoteException;
 
     void verifyComplexLoad( long centralNode ) throws RemoteException;

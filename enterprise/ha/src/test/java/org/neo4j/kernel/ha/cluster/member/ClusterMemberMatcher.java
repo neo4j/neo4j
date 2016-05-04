@@ -126,12 +126,12 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         }
         return true;
     }
-    
+
     public static ClusterMemberMatch member( URI member )
     {
         return new ClusterMemberMatch( member );
     }
-    
+
     public static ClusterMemberMatcher containsMembers( ClusterMemberMatch... expected )
     {
         return new ClusterMemberMatcher( false, expected );
@@ -141,7 +141,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
     {
         return new ClusterMemberMatcher( true, expected );
     }
-    
+
     public static class ClusterMemberMatch
     {
         private URI member;
@@ -154,19 +154,19 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
         {
             this.member = member;
         }
-        
+
         public ClusterMemberMatch available( boolean available )
         {
             this.available = available;
             return this;
         }
-        
+
         public ClusterMemberMatch alive( boolean alive )
         {
             this.alive = alive;
             return this;
         }
-        
+
         private boolean match( ClusterMemberInfo toMatch )
         {
             if ( !member.toString().equals( toMatch.getInstanceId() ) )
@@ -181,7 +181,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
                 return false;
             return true;
         }
-        
+
         @Override
         public String toString()
         {
@@ -210,7 +210,7 @@ public class ClusterMemberMatcher extends BaseMatcher<Iterable<ClusterMemberInfo
             this.haRole = role;
             return this;
         }
-        
+
         public ClusterMemberMatch uris( URI... uris )
         {
             this.uris = new HashSet<>();

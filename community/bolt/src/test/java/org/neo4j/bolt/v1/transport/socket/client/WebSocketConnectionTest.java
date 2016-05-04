@@ -53,7 +53,6 @@ public class WebSocketConnectionTest
         // no exception
     }
 
-
     @Test
     public void shouldThrowIOExceptionWhenNotEnoughDataReceivedBeforeClose() throws Throwable
     {

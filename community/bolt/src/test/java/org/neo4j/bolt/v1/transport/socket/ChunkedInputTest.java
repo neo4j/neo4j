@@ -69,13 +69,11 @@ public class ChunkedInputTest
         // Then
         assertThat( bytes, equalTo( new byte[]{1, 2, 3} ) );
 
-
         // When I read {4,5,6}
         ch.readBytes( bytes, 0, 3 );
 
         // Then
         assertThat( bytes, equalTo( new byte[]{4, 5, 6} ) );
-
 
         // When I read {7}
         Arrays.fill( bytes, (byte) 0 );
@@ -140,7 +138,6 @@ public class ChunkedInputTest
         assertThat( value, equalTo( (short)0x5aa5 ) );
     }
 
-
     @Test
     public void shouldReadIntCorrectly() throws Throwable
     {
@@ -149,7 +146,6 @@ public class ChunkedInputTest
 
         byte[] chunk0 = new byte[] {(byte) 0x5a, (byte) 0xff, (byte) 0xa5};
         byte[] chunk1 = new byte[] {(byte) 0xa5};
-
 
         ch.append( wrappedBuffer( chunk0 ) );
         ch.append( wrappedBuffer( chunk1 ) );
@@ -170,7 +166,6 @@ public class ChunkedInputTest
         byte[] chunk0 = new byte[] {(byte) 0x5a, (byte) 0xff, (byte) 0xa5};
         byte[] chunk1 = new byte[] {(byte) 0xa5};
         byte[] chunk2 = new byte[] {(byte) 0xa5, 0x00, 0x00, 0x00};
-
 
         ch.append( wrappedBuffer( chunk0 ) );
         ch.append( wrappedBuffer( chunk1 ) );

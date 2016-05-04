@@ -106,7 +106,6 @@ public class BatchOperationDocIT extends AbstractRestFunctionalDocTestBase
                 .endObject()
             .endArray().toString();
 
-
         String entity = gen.get()
         .description( startGraph( "execute multiple operations in batch" ) )
         .payload(jsonString)
@@ -140,7 +139,6 @@ public class BatchOperationDocIT extends AbstractRestFunctionalDocTestBase
         // Should have created by the first PUT request
         Map<String, Object> body = (Map<String, Object>) getResult.get("body");
         assertEquals(1, ((Map<String, Object>) body.get("data")).get("age"));
-
 
     }
 
@@ -387,7 +385,7 @@ public class BatchOperationDocIT extends AbstractRestFunctionalDocTestBase
     public void shouldHandleEscapedStrings() throws ClientHandlerException,
             UniformInterfaceException, JSONException, JsonParseException
     {
-    	String string = "Jazz";
+        String string = "Jazz";
         Node gnode = getNode( string );
         assertThat( gnode, inTx(graphdb(), hasProperty( "name" ).withValue(string)) );
 

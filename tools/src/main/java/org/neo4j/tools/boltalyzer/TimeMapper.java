@@ -19,7 +19,6 @@
  */
 package org.neo4j.tools.boltalyzer;
 
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -117,6 +116,5 @@ public class TimeMapper
             return packet;
         }
     }
-
 
 }

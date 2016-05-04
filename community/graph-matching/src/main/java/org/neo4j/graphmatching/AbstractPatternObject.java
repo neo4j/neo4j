@@ -92,7 +92,7 @@ public abstract class AbstractPatternObject<T extends PropertyContainer>
 
     /**
      * Get all the constraints on the properties of this pattern object.
-     * 
+     *
      * @return an iterable of all constrained properties with all constraints
      *         for each of them.
      */

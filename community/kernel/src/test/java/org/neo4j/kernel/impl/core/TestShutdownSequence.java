@@ -36,7 +36,7 @@ import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
 public class TestShutdownSequence
 {
     private GraphDatabaseService graphDb;
-    
+
     @Before
     public void createGraphDb()
     {

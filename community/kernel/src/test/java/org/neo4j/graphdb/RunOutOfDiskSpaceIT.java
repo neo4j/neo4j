@@ -98,7 +98,6 @@ public class RunOutOfDiskSpaceIT
         File storeDir = testDirectory.absolutePath();
         LimitedFileSystemGraphDatabase db = cleanup.add( new LimitedFileSystemGraphDatabase( storeDir ) );
 
-
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();

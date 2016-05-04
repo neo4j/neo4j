@@ -40,7 +40,6 @@ public class ErrorReporterTest
         ErrorReporter reporter =
                 new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
 
-
         Status.Code code = mock( Status.Code.class );
         Neo4jError error = new Neo4jError( () -> code, "Should not be logged" );
         when( code.classification() ).thenReturn( Status.Classification.ClientError );
@@ -63,7 +62,6 @@ public class ErrorReporterTest
         ErrorReporter reporter =
                 new ErrorReporter( userLog.getLog( "userLog" ), internalLog.getLog( "internalLog" ) );
 
-
         Status.Code code = mock( Status.Code.class );
         Neo4jError error = new Neo4jError( () -> code, "Should not be logged" );
         when( code.classification() ).thenReturn( Status.Classification.ClientNotification );
@@ -76,7 +74,6 @@ public class ErrorReporterTest
         userLog.assertNoLoggingOccurred();
         internalLog.assertNoLoggingOccurred();
     }
-
 
     @Test
     public void databaseErrorShouldLogFullMessageInDebugLogAndHelpfulPointerInUserLog() throws Exception

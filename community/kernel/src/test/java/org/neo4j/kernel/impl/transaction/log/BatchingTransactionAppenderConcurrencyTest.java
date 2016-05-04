@@ -74,7 +74,6 @@ public class BatchingTransactionAppenderConcurrencyTest
         executor = null;
     }
 
-
     @Rule
     public final LifeRule life = new LifeRule();
 

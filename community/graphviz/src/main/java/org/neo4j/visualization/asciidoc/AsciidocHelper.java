@@ -119,7 +119,7 @@ public class AsciidocHelper
      * Create graphviz output using a {@link GraphStyle}.
      * {@link GraphStyle} is implemented by {@link AsciiDocSimpleStyle} and {@link AsciiDocStyle}.
      * {@link AsciiDocSimpleStyle} provides different customization options for coloring.
-     * 
+     *
      * @param title the title of the visualization
      * @param graph the database to use
      * @param identifier the identifier to include in the filename

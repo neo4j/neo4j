@@ -59,7 +59,6 @@ public class PhysicalRaftLogFileTest
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0, 0, 0 );
 
-
     @Test
     public void shouldOpenInFreshDirectoryAndFinallyAddHeader() throws Exception
     {

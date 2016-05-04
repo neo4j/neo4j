@@ -36,23 +36,23 @@ public class GenerateConfigDocumentation
         Args arguments = Args.parse( argv );
 
         File output = arguments.has( "o" ) ? new File(arguments.get("o")) : null;
-    	List<String> settingsClasses = arguments.orphans();
+        List<String> settingsClasses = arguments.orphans();
         if(settingsClasses.size() == 0)
         {
-        	System.out.println("Usage: GenerateConfigDocumentation [-o output file] SETTINGS_CLASS..");
-        	System.exit(0);
+            System.out.println("Usage: GenerateConfigDocumentation [-o output file] SETTINGS_CLASS..");
+            System.exit(0);
         }
 
         String doc = new SettingsDocumenter()
                 .document( settingsClasses.stream().map( classFromString ) );
-        
+
         if(output != null)
         {
-        	System.out.println("Saving docs in '" + output.getAbsolutePath() + "'.");
-        	FileUtils.writeToFile(output, doc, false);
-        } else 
+            System.out.println("Saving docs in '" + output.getAbsolutePath() + "'.");
+            FileUtils.writeToFile(output, doc, false);
+        } else
         {
-        	System.out.println(doc);
+            System.out.println(doc);
         }
     }
 

@@ -250,7 +250,6 @@ public class PhysicalRaftLogFile implements LogFile, Lifecycle
         return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
     }
 
-
     public static PhysicalLogVersionedStoreChannel tryOpenForVersion( PhysicalRaftLogFiles logFiles,
             FileSystemAbstraction fileSystem, long version )
     {

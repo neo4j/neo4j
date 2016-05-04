@@ -258,7 +258,6 @@ public class MultiPaxosServerFactory
                         internal( SnapshotMessage.leave ),
                         internal( ProposerMessage.leave ) );
 
-
         stateMachines.addStateTransitionListener( rules );
 
         return server;

@@ -342,7 +342,7 @@ public class TestTransactionEvents
             }
             catch ( TransactionFailureException e )
             {
-            	Throwable currentEx = e;
+                Throwable currentEx = e;
                 do
                 {
                     currentEx = currentEx.getCause();
@@ -406,7 +406,7 @@ public class TestTransactionEvents
         Map<String,Object> relProps = new HashMap<>();
 
         @Override
-		public void afterCommit( TransactionData data, Object state )
+        public void afterCommit( TransactionData data, Object state )
         {
             for ( PropertyEntry<Node> entry : data.removedNodeProperties() )
             {
@@ -421,12 +421,12 @@ public class TestTransactionEvents
         }
 
         @Override
-		public void afterRollback( TransactionData data, Object state )
+        public void afterRollback( TransactionData data, Object state )
         {
         }
 
         @Override
-		public Object beforeCommit( TransactionData data )
+        public Object beforeCommit( TransactionData data )
                 throws Exception
         {
             return null;
@@ -475,19 +475,19 @@ public class TestTransactionEvents
         }
 
         @Override
-		public void afterCommit( TransactionData data, T state )
+        public void afterCommit( TransactionData data, T state )
         {
             source.afterCommit( data, state );
         }
 
         @Override
-		public void afterRollback( TransactionData data, T state )
+        public void afterRollback( TransactionData data, T state )
         {
             source.afterRollback( data, state );
         }
 
         @Override
-		public T beforeCommit( TransactionData data ) throws Exception
+        public T beforeCommit( TransactionData data ) throws Exception
         {
             if ( willFail )
             {
@@ -499,9 +499,9 @@ public class TestTransactionEvents
 
     private static class ExceptionThrowingEventHandler implements TransactionEventHandler<Object>
     {
-    	private final Exception beforeCommitException;
-    	private final Exception afterCommitException;
-    	private final Exception afterRollbackException;
+        private final Exception beforeCommitException;
+        private final Exception afterCommitException;
+        private final Exception afterRollbackException;
 
         public ExceptionThrowingEventHandler( Exception exceptionForAll )
         {
@@ -560,7 +560,7 @@ public class TestTransactionEvents
         }
 
         @Override
-		public void afterCommit( TransactionData data, T state )
+        public void afterCommit( TransactionData data, T state )
         {
             assertNotNull( data );
             this.receivedState = state;
@@ -568,7 +568,7 @@ public class TestTransactionEvents
         }
 
         @Override
-		public void afterRollback( TransactionData data, T state )
+        public void afterRollback( TransactionData data, T state )
         {
             assertNotNull( data );
             this.receivedState = state;
@@ -576,7 +576,7 @@ public class TestTransactionEvents
         }
 
         @Override
-		public T beforeCommit( TransactionData data ) throws Exception
+        public T beforeCommit( TransactionData data ) throws Exception
         {
             assertNotNull( data );
             this.receivedTransactionData = data;
@@ -1193,7 +1193,6 @@ public class TestTransactionEvents
             active = false;
         }
     }
-
 
     private static class RelationshipData
     {

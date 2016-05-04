@@ -92,7 +92,7 @@ public interface ClusterContext
     void joinDenied( ConfigurationResponseState configurationResponseState );
 
     boolean hasJoinBeenDenied();
-    
+
     ConfigurationResponseState getJoinDeniedConfigurationResponseState();
 
     Iterable<InstanceId> getOtherInstances();

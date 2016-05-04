@@ -71,8 +71,6 @@ public class LuceneIndexAccessorTest
     private final Object value = "value", value2 = 40;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
 
-
-
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
     {

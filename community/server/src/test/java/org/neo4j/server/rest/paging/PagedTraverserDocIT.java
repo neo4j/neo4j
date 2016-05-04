@@ -295,14 +295,13 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
         assertEquals( 400, response.getStatus() );
     }
 
-
     @Test
     public void shouldRespondWith400OnScriptErrors()
     {
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
 
         theStartNode = createLinkedList( 1, server.getDatabase() );
-        
+
         JaxRsResponse response = RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize=50",
                 "{"
@@ -339,7 +338,6 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
 
         // when
         JaxRsResponse pagedTraverserResponse = createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( 60, 1 );
-
 
         System.out.println( pagedTraverserResponse.getHeaders().getFirst( "Content-Type" ) );
 

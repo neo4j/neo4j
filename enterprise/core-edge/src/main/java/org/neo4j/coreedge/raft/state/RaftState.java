@@ -133,7 +133,6 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
         return commitIndex;
     }
 
-
     public void update( Outcome<MEMBER> outcome ) throws IOException, RaftLogCompactedException
     {
         if ( termState.update( outcome.getTerm() ) )

@@ -295,7 +295,6 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
         });
     }
 
-
     @Override
     public Set<String> getAutoIndexedProperties()
     {

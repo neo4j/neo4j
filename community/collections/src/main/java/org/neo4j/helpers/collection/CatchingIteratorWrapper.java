@@ -64,7 +64,7 @@ public abstract class CatchingIteratorWrapper<T, U> extends PrefetchingIterator<
         }
         return null;
     }
-    
+
     protected U fetchNextOrNullFromSource( Iterator<U> source )
     {
         return source.next();

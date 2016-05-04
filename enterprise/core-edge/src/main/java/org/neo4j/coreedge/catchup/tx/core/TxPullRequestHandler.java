@@ -47,7 +47,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     public TxPullRequestHandler( CatchupServerProtocol protocol,
                                  Supplier<StoreId> storeIdSupplier,
                                  Supplier<TransactionIdStore> transactionIdStoreSupplier,
-                                 Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier, 
+                                 Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                                  Monitors monitors )
     {
         this.protocol = protocol;

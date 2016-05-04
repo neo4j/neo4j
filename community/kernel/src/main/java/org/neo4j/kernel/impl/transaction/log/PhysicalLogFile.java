@@ -231,7 +231,6 @@ public class PhysicalLogFile implements LogFile, Lifecycle
         return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
     }
 
-
     public static PhysicalLogVersionedStoreChannel tryOpenForVersion( PhysicalLogFiles logFiles,
             FileSystemAbstraction fileSystem, long version )
     {

@@ -24,7 +24,7 @@ package org.neo4j.graphdb.traversal;
  * can tell the traversal whether or not to continue down that
  * {@link TraversalBranch} and whether or not to include a
  * {@link TraversalBranch} in the result of a traversal.
- * 
+ *
  * @author Mattias Persson
  * @see Evaluator
  */
@@ -34,7 +34,7 @@ public enum Evaluation
     INCLUDE_AND_PRUNE( true, false ),
     EXCLUDE_AND_CONTINUE( false, true ),
     EXCLUDE_AND_PRUNE( false, false );
-    
+
     private final boolean includes;
     private final boolean continues;
 
@@ -52,20 +52,20 @@ public enum Evaluation
     {
         return this.includes;
     }
-    
+
     /**
      * @return whether or not the traversal should continue down the
-     * {@link TraversalBranch} this outcome was generator for. 
+     * {@link TraversalBranch} this outcome was generator for.
      */
     public boolean continues()
     {
         return continues;
     }
-    
+
     /**
      * Returns an {@link Evaluation} for the given {@code includes} and
      * {@code continues}.
-     * 
+     *
      * @param includes whether or not to include the {@link TraversalBranch}
      * in the traversal result.
      * @param continues whether or not to continue down the
@@ -78,13 +78,13 @@ public enum Evaluation
         return includes?(continues?INCLUDE_AND_CONTINUE:INCLUDE_AND_PRUNE):
                         (continues?EXCLUDE_AND_CONTINUE:EXCLUDE_AND_PRUNE);
     }
-    
+
     /**
      * Returns an {@link Evaluation} for the given {@code includes}, meaning
      * whether or not to include a {@link TraversalBranch} in the traversal
      * result or not. The returned evaluation will always return true
      * for {@link Evaluation#continues()}.
-     * 
+     *
      * @param includes whether or not to include a {@link TraversalBranch}
      * in the traversal result.
      * @return an {@link Evaluation} representing whether or not to include
@@ -94,13 +94,13 @@ public enum Evaluation
     {
         return includes?INCLUDE_AND_CONTINUE:EXCLUDE_AND_CONTINUE;
     }
-    
+
     /**
      * Returns an {@link Evaluation} for the given {@code continues}, meaning
      * whether or not to continue further down a {@link TraversalBranch} in the
      * traversal. The returned evaluation will always return true for
      * {@link Evaluation#includes()}.
-     * 
+     *
      * @param continues whether or not to continue further down a
      *            {@link TraversalBranch} in the traversal.
      * @return an {@link Evaluation} representing whether or not to continue

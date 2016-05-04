@@ -255,7 +255,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction ) );
     }
 
-
     @Test
     public void begin_and_execute_periodic_commit_and_commit() throws Exception
     {
@@ -892,7 +891,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 jsonURIString.asText().matches( scheme + "://" + hostname + ":\\d+/db/data" + path ) );
     }
 
-
     private HTTP.RawPayload singleStatement( String statement )
     {
         return rawPayload( "{\"statements\":[{\"statement\":\"" + statement + "\"}]}" );
@@ -921,7 +919,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             return count;
         }
     }
-
 
     private void assertHasTxLocation( Response begin )
     {

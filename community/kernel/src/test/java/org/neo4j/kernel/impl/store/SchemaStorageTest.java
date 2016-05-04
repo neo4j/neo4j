@@ -304,7 +304,6 @@ public class SchemaStorageTest
                 .relPropertyExistenceConstraintRule( id, typeId( type ), propId( property ) );
     }
 
-
     private void createIndex( String labelName, String propertyName )
     {
         try ( Transaction tx = db.beginTx() )

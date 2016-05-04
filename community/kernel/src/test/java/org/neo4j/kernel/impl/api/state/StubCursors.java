@@ -285,7 +285,6 @@ public class StubCursors
         };
     }
 
-
     public static Cursor<RelationshipItem> asRelationshipCursor( final long relId, final int type,
             final long startNode, final long endNode, final Cursor<PropertyItem> propertyCursor )
     {

@@ -53,7 +53,6 @@ public class DumpPhysicalRaftLog
     private static final String TO_FILE = "tofile";
     private ChannelMarshal<ReplicatedContent> marshal = new CoreReplicatedContentMarshal();
 
-
     public DumpPhysicalRaftLog( FileSystemAbstraction fileSystem, ChannelMarshal<ReplicatedContent> marshal )
     {
         this.fileSystem = fileSystem;
@@ -118,7 +117,6 @@ public class DumpPhysicalRaftLog
             return new String[]{filenameOrDirectory};
         }
     }
-
 
     private static Comparator<? super String> sequentialComparator()
 

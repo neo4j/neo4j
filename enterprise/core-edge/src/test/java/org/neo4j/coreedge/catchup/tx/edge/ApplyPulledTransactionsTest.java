@@ -54,7 +54,6 @@ public class ApplyPulledTransactionsTest
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn( 2L );
 
-
         CommittedTransactionRepresentation tx = mock( CommittedTransactionRepresentation.class );
         LogEntryCommit commitEntry = mock(LogEntryCommit.class);
         when( commitEntry.getTxId() ).thenReturn( 3L );
@@ -84,13 +83,11 @@ public class ApplyPulledTransactionsTest
         Log log = mock( Log.class );
         when( logProvider.getLog( ApplyPulledTransactions.class ) ).thenReturn( log );
 
-
         CommittedTransactionRepresentation tx = mock( CommittedTransactionRepresentation.class );
         LogEntryCommit commitEntry = mock(LogEntryCommit.class);
         when( commitEntry.getTxId() ).thenReturn( 3L );
         when( tx.getCommitEntry() ).thenReturn( commitEntry );
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn( 2L );
-
 
         // when
         ApplyPulledTransactions handler = new ApplyPulledTransactions(

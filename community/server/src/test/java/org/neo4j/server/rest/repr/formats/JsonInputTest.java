@@ -65,7 +65,7 @@ public class JsonInputTest
         @SuppressWarnings( "unchecked" ) Map<String, String> nestedMap = (Map<String, String>) nested;
         assertThat( nestedMap, hasEntry( "key", "valuable" ) );
     }
-    
+
     @Test
     public void canReadStringWithLineBreaks() throws Exception
     {

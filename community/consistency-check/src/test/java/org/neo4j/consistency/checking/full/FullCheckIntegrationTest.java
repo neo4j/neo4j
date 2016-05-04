@@ -199,7 +199,6 @@ public class FullCheckIntegrationTest
         }
     }
 
-
     private final GraphStoreFixture fixture = new GraphStoreFixture( getRecordFormatName() )
     {
         @Override
@@ -1093,7 +1092,6 @@ public class FullCheckIntegrationTest
                 IndexRule rule1 = IndexRule.constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, (long) ruleId2 );
                 UniquePropertyConstraintRule rule2 = UniquePropertyConstraintRule
                         .uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
-
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
@@ -2156,7 +2154,6 @@ public class FullCheckIntegrationTest
                 UniquePropertyConstraintRule rule2 = UniquePropertyConstraintRule.uniquenessConstraintRule( ruleId2,
                         labelId, propertyKeyId, ruleId1 );
 
-
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
 
@@ -2239,7 +2236,6 @@ public class FullCheckIntegrationTest
         {
             return new ConsistencySummaryVerifier( stats );
         }
-
 
         private ConsistencySummaryVerifier( ConsistencySummaryStatistics stats )
         {

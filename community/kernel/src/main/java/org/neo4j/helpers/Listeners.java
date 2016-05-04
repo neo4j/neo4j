@@ -33,12 +33,12 @@ public class Listeners
     {
         void notify(T listener);
     }
-    
+
     public static <T> Iterable<T> newListeners()
     {
         return new LinkedList<T>();
     }
-    
+
     public static <T> Iterable<T> addListener(T listener, Iterable<T> listeners)
     {
         List<T> newListeners = new LinkedList<T>( (Collection<T>) listeners );
@@ -52,7 +52,7 @@ public class Listeners
         newListeners.remove( listener );
         return newListeners;
     }
-    
+
     public static <T> void notifyListeners(Iterable<T> listeners, Notification<T> notification)
     {
         for( T listener : listeners )

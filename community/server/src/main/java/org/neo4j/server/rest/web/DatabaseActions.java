@@ -103,7 +103,6 @@ import org.neo4j.server.rest.repr.ScoredRelationshipRepresentation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.rest.repr.WeightedPathRepresentation;
 
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -311,7 +310,6 @@ public class DatabaseActions
             throw new BadInputException( "Unable to add label, see nested exception.", e );
         }
     }
-
 
     public void setLabelsOnNode( long nodeId, Collection<String> labels ) throws NodeNotFoundException,
             BadInputException
@@ -856,7 +854,6 @@ public class DatabaseActions
         };
         return new ListRepresentation( RepresentationType.RELATIONSHIP, results );
     }
-
 
     public Pair<IndexedEntityRepresentation,Boolean> getOrCreateIndexedNode(
             String indexName, String key, String value, Long nodeOrNull, Map<String,Object> properties )
@@ -1446,7 +1443,6 @@ public class DatabaseActions
                 return ValueRepresentation.string( label.name() );
             }
         }, labels ) );
-
 
         return new ListRepresentation( RepresentationType.STRING, labelNames );
     }

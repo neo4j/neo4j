@@ -24,7 +24,7 @@ import org.neo4j.graphdb.index.IndexManager;
 
 /**
  * Definition for an index
- * 
+ *
  * NOTE: This is part of the index API introduced in Neo4j 2.0.
  * The legacy index API lives in {@link IndexManager}.
  */
@@ -34,12 +34,12 @@ public interface IndexDefinition
      * @return the {@link Label label} this index definition is associated with.
      */
     Label getLabel();
-    
+
     /**
      * @return the property keys this index was created on.
      */
     Iterable<String> getPropertyKeys();
-    
+
     /**
      * Drops this index. {@link Schema#getIndexes(Label)} will no longer include this index
      * and any related background jobs and files will be stopped and removed.

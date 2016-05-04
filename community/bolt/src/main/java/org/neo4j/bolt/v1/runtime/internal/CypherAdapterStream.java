@@ -105,7 +105,6 @@ public class CypherAdapterStream implements RecordStream
         return result;
     }
 
-
     private void addIfNonZero( Map<String, Integer> map, String name, int count )
     {
         if ( count > 0 )

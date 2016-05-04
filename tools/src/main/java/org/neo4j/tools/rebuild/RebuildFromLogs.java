@@ -182,7 +182,6 @@ class RebuildFromLogs
         }
     }
 
-
     private long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion ) throws IOException
     {
         ReadableLogChannel logChannel = new ReadAheadLogChannel(

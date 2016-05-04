@@ -30,10 +30,10 @@ import org.neo4j.graphmatching.PatternNode;
 public class RegexPattern extends AbstractFilterExpression
 {
     private final Pattern pattern;
-    
+
     /**
      * Constructs a new regex pattern for filtering.
-     * 
+     *
      * @param label the {@link PatternNode} label.
      * @param property the property key to filter in.
      * @param pattern the pattern which the value should match.
@@ -61,7 +61,7 @@ public class RegexPattern extends AbstractFilterExpression
         }
         return false;
     }
-    
+
     private static boolean hasOption( String options, char option )
     {
         return options != null && options.indexOf( option ) > -1;

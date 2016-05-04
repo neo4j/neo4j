@@ -58,7 +58,6 @@ public class ExecutionEngineTests
         GraphDatabaseQueryService graph = new GraphDatabaseCypherService( this.database.getGraphDatabaseAPI() );
         ExecutionEngine executionEngine = new ExecutionEngine( graph, NullLogProvider.getInstance() );
 
-
         Result result;
         try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.FULL ) )
         {

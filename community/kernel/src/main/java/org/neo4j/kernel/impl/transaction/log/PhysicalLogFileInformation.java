@@ -28,7 +28,6 @@ public class PhysicalLogFileInformation implements LogFileInformation
         long getTimestampForVersion( long version ) throws IOException;
     }
 
-
     public interface LastEntryInLog
     {
         long getLastEntryId(  );

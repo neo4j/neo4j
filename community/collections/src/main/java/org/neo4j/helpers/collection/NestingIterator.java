@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 /**
  * Concatenates sub-iterators of an iterator.
- * 
+ *
  * Iterates through each item in an iterator. For each item, the
  * {@link #createNestedIterator(Object)} is invoked to create a sub-iterator.
  * The resulting iterator iterates over each item in each sub-iterator. In
@@ -34,46 +34,46 @@ import java.util.Iterator;
  */
 public abstract class NestingIterator<T, U> extends PrefetchingIterator<T>
 {
-	private final Iterator<U> source;
-	private Iterator<T> currentNestedIterator;
-	private U currentSurfaceItem;
+    private final Iterator<U> source;
+    private Iterator<T> currentNestedIterator;
+    private U currentSurfaceItem;
 
-	public NestingIterator( Iterator<U> source )
-	{
-		this.source = source;
-	}
+    public NestingIterator( Iterator<U> source )
+    {
+        this.source = source;
+    }
 
-	protected abstract Iterator<T> createNestedIterator( U item );
+    protected abstract Iterator<T> createNestedIterator( U item );
 
-	public U getCurrentSurfaceItem()
-	{
-		if ( this.currentSurfaceItem == null )
-		{
-			throw new IllegalStateException( "Has no surface item right now," +
-				" you must do at least one next() first" );
-		}
-		return this.currentSurfaceItem;
-	}
+    public U getCurrentSurfaceItem()
+    {
+        if ( this.currentSurfaceItem == null )
+        {
+            throw new IllegalStateException( "Has no surface item right now," +
+                " you must do at least one next() first" );
+        }
+        return this.currentSurfaceItem;
+    }
 
-	@Override
-	protected T fetchNextOrNull()
-	{
-		if ( currentNestedIterator == null ||
-			!currentNestedIterator.hasNext() )
-		{
-			while ( source.hasNext() )
-			{
-				currentSurfaceItem = source.next();
-				currentNestedIterator =
-					createNestedIterator( currentSurfaceItem );
-				if ( currentNestedIterator.hasNext() )
-				{
-					break;
-				}
-			}
-		}
-		return currentNestedIterator != null &&
-			currentNestedIterator.hasNext() ?
-			currentNestedIterator.next() : null;
-	}
+    @Override
+    protected T fetchNextOrNull()
+    {
+        if ( currentNestedIterator == null ||
+            !currentNestedIterator.hasNext() )
+        {
+            while ( source.hasNext() )
+            {
+                currentSurfaceItem = source.next();
+                currentNestedIterator =
+                    createNestedIterator( currentSurfaceItem );
+                if ( currentNestedIterator.hasNext() )
+                {
+                    break;
+                }
+            }
+        }
+        return currentNestedIterator != null &&
+            currentNestedIterator.hasNext() ?
+            currentNestedIterator.next() : null;
+    }
 }

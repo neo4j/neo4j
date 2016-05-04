@@ -87,7 +87,6 @@ public class ReadOnlySlaveTest
         {
             Node slaveNode = readOnlySlave.getNodeById( node.getId() );
 
-
             // Then
             slaveNode.setProperty( "foo", "bar" );
             tx.success();
@@ -118,7 +117,6 @@ public class ReadOnlySlaveTest
         try ( Transaction tx = readOnlySlave.beginTx() )
         {
             Node slaveNode = readOnlySlave.getNodeById( node.getId() );
-
 
             // Then
             slaveNode.addLabel( Label.label( "FOO" ) );
@@ -153,7 +151,6 @@ public class ReadOnlySlaveTest
         {
             Node slaveNode = readOnlySlave.getNodeById( node.getId() );
             Node slaveNode2 = readOnlySlave.getNodeById( node2.getId() );
-
 
             // Then
             slaveNode.createRelationshipTo( slaveNode2, RelationshipType.withName( "KNOWS" ) );

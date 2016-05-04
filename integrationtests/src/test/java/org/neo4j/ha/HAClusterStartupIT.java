@@ -91,7 +91,6 @@ public class HAClusterStartupIT
     {
         // GIVEN a cluster with some data and entry in log files
 
-
         // WHEN removing all the files in graphdb on the slave and restarting the cluster
         deleteAllFilesOn( slave1 );
 
@@ -115,7 +114,6 @@ public class HAClusterStartupIT
     public void bothSlavesWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
     {
         // GIVEN a cluster with some data and entry in log files
-
 
         // WHEN removing all the files in graphdb on both slaves and restarting the cluster
         deleteAllFilesOn( slave1 );
@@ -141,7 +139,6 @@ public class HAClusterStartupIT
     public void theMasterWithoutAnyGraphDBFilesShouldBeAbleToJoinACluster() throws Throwable
     {
         // GIVEN a cluster with some data and entry in log files
-
 
         // WHEN removing all the files in graphdb on the db that was master and restarting the cluster
         deleteAllFilesOn( master );

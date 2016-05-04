@@ -31,7 +31,6 @@ public class PhysicalRaftLogFileInformation implements LogFileInformation
         long getTimestampForVersion( long version ) throws IOException;
     }
 
-
     public interface LastEntryInLog
     {
         long getLastEntryId();

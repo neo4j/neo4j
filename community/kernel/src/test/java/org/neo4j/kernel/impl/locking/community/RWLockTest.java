@@ -360,7 +360,6 @@ public class RWLockTest
         readerCompletedLatch.await();
         writerCompletedLatch.await();
 
-
         // expect only main write lock counters and elements present
         // all the rest should be cleaned up
         assertEquals( 0, lock.getWaitingThreadsCount() );

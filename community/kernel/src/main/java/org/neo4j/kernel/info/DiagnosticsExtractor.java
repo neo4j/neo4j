@@ -24,9 +24,9 @@ import org.neo4j.logging.Logger;
 /**
  * An object that can extract diagnostics information from a source of a
  * specific type.
- * 
+ *
  * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
- * 
+ *
  * @param <T> the type of the source to extract diagnostics information from.
  */
 public interface DiagnosticsExtractor<T>
@@ -35,9 +35,9 @@ public interface DiagnosticsExtractor<T>
      * A {@link DiagnosticsExtractor} capable of
      * {@link DiagnosticsProvider#acceptDiagnosticsVisitor(Object) accepting
      * visitors}.
-     * 
+     *
      * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
-     * 
+     *
      * @param <T> the type of the source to extract diagnostics information
      *            from.
      */
@@ -46,7 +46,7 @@ public interface DiagnosticsExtractor<T>
         /**
          * Accept a visitor that may or may not be capable of visiting this
          * object.
-         * 
+         *
          * @see DiagnosticsProvider#acceptDiagnosticsVisitor(Object)
          * @param source the source to get diagnostics information from.
          * @param visitor the visitor visiting the diagnostics information.
@@ -57,7 +57,7 @@ public interface DiagnosticsExtractor<T>
     /**
      * Dump the diagnostic information of the specified source for the specified
      * {@link DiagnosticsPhase phase} to the provided {@link Logger logger}.
-     * 
+     *
      * @see DiagnosticsProvider#dump(DiagnosticsPhase, Logger)
      * @param source the source to get diagnostics information from.
      * @param phase the {@link DiagnosticsPhase phase} to dump information for.

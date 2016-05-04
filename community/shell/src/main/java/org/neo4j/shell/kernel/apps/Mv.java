@@ -50,7 +50,7 @@ public class Mv extends TransactionProvidingApp
     public String getDescription()
     {
         return "Renames a property on a node or relationship. " +
-        	"Usage: mv <key> <new-key>";
+            "Usage: mv <key> <new-key>";
     }
 
     @Override

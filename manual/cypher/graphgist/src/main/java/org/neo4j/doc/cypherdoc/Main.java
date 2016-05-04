@@ -41,7 +41,7 @@ public class Main
      * .asciidoc or .adoc files). The output file name is based on the input
      * file name (and the relative path if a directory got searched). The first
      * argument is the base destination directory.
-     * 
+     *
      * @param args base destination directory, followed by files/directories to parse.
      */
     public static void main( String[] args ) throws Exception

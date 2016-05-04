@@ -36,15 +36,15 @@ public abstract class PrefetchingIterator<T> implements Iterator<T>
     boolean hasFetchedNext;
     T nextObject;
 
-	/**
-	 * @return {@code true} if there is a next item to be returned from the next
-	 * call to {@link #next()}.
-	 */
-	@Override
+    /**
+     * @return {@code true} if there is a next item to be returned from the next
+     * call to {@link #next()}.
+     */
+    @Override
     public boolean hasNext()
-	{
-		return peek() != null;
-	}
+    {
+        return peek() != null;
+    }
 
     /**
      * @return the next element that will be returned from {@link #next()} without
@@ -63,30 +63,30 @@ public abstract class PrefetchingIterator<T> implements Iterator<T>
     }
 
     /**
-	 * Uses {@link #hasNext()} to try to fetch the next item and returns it
-	 * if found, otherwise it throws a {@link NoSuchElementException}.
-	 *
-	 * @return the next item in the iteration, or throws
-	 * {@link NoSuchElementException} if there's no more items to return.
-	 */
-	@Override
+     * Uses {@link #hasNext()} to try to fetch the next item and returns it
+     * if found, otherwise it throws a {@link NoSuchElementException}.
+     *
+     * @return the next item in the iteration, or throws
+     * {@link NoSuchElementException} if there's no more items to return.
+     */
+    @Override
     public T next()
-	{
-		if ( !hasNext() )
-		{
-			throw new NoSuchElementException();
-		}
-		T result = nextObject;
-		nextObject = null;
-		hasFetchedNext = false;
-		return result;
-	}
+    {
+        if ( !hasNext() )
+        {
+            throw new NoSuchElementException();
+        }
+        T result = nextObject;
+        nextObject = null;
+        hasFetchedNext = false;
+        return result;
+    }
 
-	protected abstract T fetchNextOrNull();
+    protected abstract T fetchNextOrNull();
 
-	@Override
+    @Override
     public void remove()
-	{
-		throw new UnsupportedOperationException();
-	}
+    {
+        throw new UnsupportedOperationException();
+    }
 }

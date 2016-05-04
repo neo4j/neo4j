@@ -191,8 +191,6 @@ public class LabelsAcceptanceTest
         assertThat( "Label should have been added to node", myNode, inTx( graphDatabase, hasLabel( Labels.MY_LABEL ) ) );
     }
 
-
-
     @Test
     public void oversteppingMaxNumberOfLabelsShouldFailGracefully() throws Exception
     {
@@ -508,7 +506,6 @@ public class LabelsAcceptanceTest
         }
     }
 
-
     @Test
     public void shouldCreateNodeWithLotsOfLabelsAndThenRemoveMostOfThem() throws Exception
     {
@@ -602,7 +599,6 @@ public class LabelsAcceptanceTest
 
         // then
         // No exceptions from the above
-
 
     }
 

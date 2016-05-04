@@ -115,7 +115,7 @@ public class CreateRelationshipDocTest extends AbstractRestFunctionalDocTestBase
     public void creating_a_loop_relationship()
             throws Exception
     {
-        
+
         Node joe = getNode( "Joe" );
         String jsonString = "{\"to\" : \"" + getNodeUri( joe )
                             + "\", \"type\" : \"LOVES\"}";

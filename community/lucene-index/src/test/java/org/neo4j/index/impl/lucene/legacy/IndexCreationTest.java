@@ -174,7 +174,6 @@ public class IndexCreationTest
             }
         }
 
-
         assertTrue( "Didn't find any commit record in log " + version, success.get() );
     }
 }

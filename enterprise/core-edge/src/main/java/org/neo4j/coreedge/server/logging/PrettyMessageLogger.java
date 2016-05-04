@@ -72,7 +72,6 @@ public class PrettyMessageLogger<MEMBER> implements MessageLogger<MEMBER>
         }
     }
 
-
     private void log( MEMBER from, MEMBER to, Object message )
     {
         String prettyFrom = pretty( from );
@@ -84,7 +83,6 @@ public class PrettyMessageLogger<MEMBER> implements MessageLogger<MEMBER>
 
         String note = String.format( "Note over %s,%s: %s", prettyFrom, prettyTo, wrapString( String.valueOf( message ),
                 100 ) );
-
 
         printWriter.println( note );
         printWriter.println( prettyFrom + "->" + prettyTo + ": " + message.getClass().getSimpleName() );

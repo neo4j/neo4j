@@ -60,7 +60,6 @@ public interface SchemaWriteOperations
     RelationshipPropertyExistenceConstraint relationshipPropertyExistenceConstraintCreate( KernelStatement state,
             int relTypeId, int propertyKeyId ) throws AlreadyConstrainedException, CreateConstraintFailureException;
 
-
     void constraintDrop( KernelStatement state, NodePropertyConstraint constraint ) throws DropConstraintFailureException;
 
     void constraintDrop( KernelStatement state, RelationshipPropertyConstraint constraint ) throws DropConstraintFailureException;

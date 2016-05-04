@@ -61,7 +61,6 @@ public class Neo4jWithSocket implements TestRule
         return AuthUtils.uniqueIdentifier( storeId );
     }
 
-
     @Override
     public Statement apply( final Statement statement, Description description )
     {

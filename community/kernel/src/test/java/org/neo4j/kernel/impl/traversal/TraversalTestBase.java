@@ -282,7 +282,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
             assertEquals( expectedItems[i], itr.next() );
         }
     }
-    
+
     public static <T> void assertContainsInOrder( Iterable<T> collection,
             T... expectedItems )
     {

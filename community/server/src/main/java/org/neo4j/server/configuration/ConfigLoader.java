@@ -74,7 +74,6 @@ public class ConfigLoader
         return config;
     }
 
-
     private Map<String, String> calculateSettings( Optional<File> config, Log log,
                                                    Pair<String, String>[] configOverrides,
                                                    Consumer<Map<String, String>> customizer )

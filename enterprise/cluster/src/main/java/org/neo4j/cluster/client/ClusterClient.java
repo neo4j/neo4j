@@ -65,8 +65,6 @@ public class ClusterClient
     private LifeSupport life;
     private ProtocolServer protocolServer;
 
-
-
     public ClusterClient( LifeSupport life, ProtocolServer protocolServer )
     {
         this.life = life;

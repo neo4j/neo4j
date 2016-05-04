@@ -39,7 +39,7 @@ public class ExtendedPath implements Path
         this.lastRelationship = lastRelationship;
         this.endNode = lastRelationship.getOtherNode( start.endNode() );
     }
-    
+
     @Override
     public Node startNode()
     {
@@ -70,7 +70,7 @@ public class ExtendedPath implements Path
                 {
                     final Iterator<Relationship> startRelationships = start.relationships().iterator();
                     boolean lastReturned;
-                    
+
                     @Override
                     protected Relationship fetchNextOrNull()
                     {
@@ -86,7 +86,7 @@ public class ExtendedPath implements Path
             }
         };
     }
-    
+
     @Override
     public Iterable<Relationship> reverseRelationships()
     {
@@ -99,7 +99,7 @@ public class ExtendedPath implements Path
                 {
                     final Iterator<Relationship> startRelationships = start.reverseRelationships().iterator();
                     boolean endReturned;
-                    
+
                     @Override
                     protected Relationship fetchNextOrNull()
                     {
@@ -114,7 +114,7 @@ public class ExtendedPath implements Path
             }
         };
     }
-    
+
     @Override
     public Iterable<Node> nodes()
     {
@@ -127,7 +127,7 @@ public class ExtendedPath implements Path
                 {
                     final Iterator<Node> startNodes = start.nodes().iterator();
                     boolean lastReturned;
-                    
+
                     @Override
                     protected Node fetchNextOrNull()
                     {
@@ -143,7 +143,7 @@ public class ExtendedPath implements Path
             }
         };
     }
-    
+
     @Override
     public Iterable<Node> reverseNodes()
     {
@@ -156,7 +156,7 @@ public class ExtendedPath implements Path
                 {
                     final Iterator<Node> startNodes = start.reverseNodes().iterator();
                     boolean endReturned;
-                    
+
                     @Override
                     protected Node fetchNextOrNull()
                     {
@@ -185,7 +185,7 @@ public class ExtendedPath implements Path
         {
             final Iterator<PropertyContainer> startEntities = start.iterator();
             int lastReturned = 2;
-            
+
             @Override
             protected PropertyContainer fetchNextOrNull()
             {

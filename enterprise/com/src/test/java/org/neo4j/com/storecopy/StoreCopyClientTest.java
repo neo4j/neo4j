@@ -113,7 +113,6 @@ public class StoreCopyClientTest
 
         StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( originalDir, original );
 
-
         // when
         copier.copyStore( storeCopyRequest, cancellationRequest );
 
@@ -223,7 +222,6 @@ public class StoreCopyClientTest
         }
 
         StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( originalDir, original );
-
 
         // when
         copier.copyStore( storeCopyRequest, cancellationRequest );
@@ -342,7 +340,6 @@ public class StoreCopyClientTest
 
                     ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
                             transactionIdStore, () -> storeId );
-
 
                     response = spy(responsePacker.packTransactionStreamResponse( requestContext, null ));
                     return response;

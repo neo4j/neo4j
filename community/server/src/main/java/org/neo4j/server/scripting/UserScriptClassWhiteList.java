@@ -80,7 +80,6 @@ public class UserScriptClassWhiteList
         safe.add( Double.class.getName() );
         safe.add( Boolean.class.getName() );
 
-
         // This is a work-around, since these are not supposed to be publicly available.
         // The reason we need to add it here is, most likely, that some methods in the API
         // returns these rather than the corresponding interfaces, which means our white list
@@ -89,7 +88,6 @@ public class UserScriptClassWhiteList
         safe.add( "org.neo4j.kernel.impl.traversal.StartNodeTraversalBranch" );
         safe.add( "org.neo4j.kernel.impl.traversal.TraversalBranchImpl" );
         safe.add( "org.neo4j.kernel.impl.core.NodeProxy" );
-
 
         return safe;
     }

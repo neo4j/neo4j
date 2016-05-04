@@ -112,7 +112,6 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
                     .ANY_LABEL, count );
         }
 
-
         for ( int labelId = 0; labelId < anyLabel; labelId++ )
         {
             for ( int typeId = 0; typeId <= anyRelationshipType; typeId++ )

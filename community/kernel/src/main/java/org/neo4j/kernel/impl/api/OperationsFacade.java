@@ -916,7 +916,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
                 relationshipTypeName, id );
     }
 
-
     // </TokenWrite>
 
     // <SchemaState>
@@ -925,7 +924,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         return schemaState().schemaStateGetOrCreate( statement, key, creator );
     }
-
 
     @Override
     public void schemaStateFlush()

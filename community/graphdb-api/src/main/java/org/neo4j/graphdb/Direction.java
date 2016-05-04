@@ -50,7 +50,7 @@ public enum Direction
      * Reverses the direction returning {@link #INCOMING} if this equals
      * {@link #OUTGOING}, {@link #OUTGOING} if this equals {@link #INCOMING} or
      * {@link #BOTH} if this equals {@link #BOTH}.
-     * 
+     *
      * @return The reversed direction.
      */
     public Direction reverse()

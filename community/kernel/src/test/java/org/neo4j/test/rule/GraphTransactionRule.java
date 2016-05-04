@@ -78,8 +78,6 @@ public class GraphTransactionRule extends ExternalResource
         }
     }
 
-
-
     public void failure()
     {
         try

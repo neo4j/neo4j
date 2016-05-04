@@ -54,7 +54,7 @@ public interface PropertyEntry<T extends PropertyContainer>
      * @return the key of the modified property.
      */
     String key();
-    
+
     /**
      * Get the value of the modified property as it was before the transaction
      * (which modified it) started. If this {@link PropertyEntry} was returned
@@ -63,13 +63,13 @@ public interface PropertyEntry<T extends PropertyContainer>
      * returned from this method is the value that was set for {@code key} on
      * {@code entity} before the transaction started, or {@code null} if such a
      * property wasn't set.
-     * 
+     *
      * If this {@link PropertyEntry} was returned from
      * {@link TransactionData#removedNodeProperties()} or
      * {@link TransactionData#removedRelationshipProperties()} the value
      * returned from this method is the value that was stored at this property
      * before the transaction started.
-     * 
+     *
      * @return The value of the property as it was before the transaction
      * started.
      */
@@ -85,7 +85,7 @@ public interface PropertyEntry<T extends PropertyContainer>
      * {@link TransactionData#removedNodeProperties()} or
      * {@link TransactionData#removedRelationshipProperties()} an
      * {@link IllegalStateException} will be thrown.
-     * 
+     *
      * @return The value of the modified property.
      * @throws IllegalStateException if this method is called where this
      * instance represents a removed property.

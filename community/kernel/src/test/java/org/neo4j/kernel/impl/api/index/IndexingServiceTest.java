@@ -486,7 +486,6 @@ public class IndexingServiceTest
         // given
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
-
         // when
         indexingService.activateIndex( 0 );
 

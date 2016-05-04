@@ -54,7 +54,7 @@ public class TestEvaluators extends TraversalTestBase
          *      v
          *      (f)--[C]-->(g)
          */
-        
+
         createGraph( "a A b", "b B c", "c B d", "d C e", "e A j", "b C h", "h B i", "i C k",
                 "a B f", "f C g" );
 
@@ -66,7 +66,7 @@ public class TestEvaluators extends TraversalTestBase
     {
         tx.close();
     }
-    
+
     @Test
     public void lastRelationshipTypeEvaluator() throws Exception
     {
@@ -79,7 +79,7 @@ public class TestEvaluators extends TraversalTestBase
                 INCLUDE_AND_CONTINUE, EXCLUDE_AND_CONTINUE, Types.C ) ).traverse( a ),
                 "a,b,c,d,e", "a,f,g", "a,b,h", "a,b,h,i,k" );
     }
-    
+
     @Test
     public void endNodeIs()
     {
@@ -87,12 +87,12 @@ public class TestEvaluators extends TraversalTestBase
         Node c = getNodeWithName( "c" );
         Node h = getNodeWithName( "h" );
         Node g = getNodeWithName( "g" );
-        
+
         expectPaths( getGraphDb().traversalDescription().evaluator( includeWhereEndNodeIs( c, h, g ) ).traverse( a ),
                 "a,b,c", "a,b,h", "a,f,g" );
         expectPaths( getGraphDb().traversalDescription().evaluator( includeWhereEndNodeIs( g ) ).traverse( a ), "a,f,g" );
     }
-    
+
     @Test
     public void depths() throws Exception
     {

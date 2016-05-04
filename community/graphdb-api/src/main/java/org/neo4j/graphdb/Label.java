@@ -39,7 +39,7 @@ package org.neo4j.graphdb;
  * However, you usually want to check whether a specific node
  * <i>instance</i> has a certain label. That is best achieved with the
  * {@link Node#hasLabel(Label)} method.
- * 
+ *
  * For labels that your application know up front you should specify using an enum,
  * and since the name is accessed using the {@link #name()} method it fits nicely.
  * <code>
@@ -49,7 +49,7 @@ package org.neo4j.graphdb;
  *     RESTAURANT;
  * }
  * </code>
- * 
+ *
  * For labels that your application don't know up front you can make use of
  * {@link #label(String)}, or your own implementation of this interface,
  * as it's just the name that matters.

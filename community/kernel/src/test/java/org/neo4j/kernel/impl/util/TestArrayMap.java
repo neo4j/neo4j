@@ -35,61 +35,61 @@ import org.junit.Test;
 public class TestArrayMap
 {
     @Test
-	public void testArrayMap()
-	{
-		ArrayMap<String,Integer> map = new ArrayMap<String,Integer>();
+    public void testArrayMap()
+    {
+        ArrayMap<String,Integer> map = new ArrayMap<String,Integer>();
 
-		assertTrue( map.get( "key1" ) == null );
-		map.put( "key1", 0 );
-		assertEquals( new Integer(0), map.get( "key1" ) );
-		assertEquals( new Integer(0), map.get( "key1" ) );
-		map.put( "key1", 1 );
-		assertEquals( new Integer(1), map.get( "key1" ) );
-		map.put( "key2", 0 );
-		assertEquals( new Integer(0), map.get( "key2" ) );
-		map.put( "key2", 2 );
-		assertEquals( new Integer(2), map.get( "key2" ) );
-		assertEquals( new Integer(2), map.remove( "key2" ) );
-		assertTrue( map.get( "key2" ) == null );
-		assertEquals( new Integer(1), map.get( "key1" ) );
-		assertEquals( new Integer(1), map.remove( "key1" ) );
-		assertTrue( map.get( "key1" ) == null );
+        assertTrue( map.get( "key1" ) == null );
+        map.put( "key1", 0 );
+        assertEquals( new Integer(0), map.get( "key1" ) );
+        assertEquals( new Integer(0), map.get( "key1" ) );
+        map.put( "key1", 1 );
+        assertEquals( new Integer(1), map.get( "key1" ) );
+        map.put( "key2", 0 );
+        assertEquals( new Integer(0), map.get( "key2" ) );
+        map.put( "key2", 2 );
+        assertEquals( new Integer(2), map.get( "key2" ) );
+        assertEquals( new Integer(2), map.remove( "key2" ) );
+        assertTrue( map.get( "key2" ) == null );
+        assertEquals( new Integer(1), map.get( "key1" ) );
+        assertEquals( new Integer(1), map.remove( "key1" ) );
+        assertTrue( map.get( "key1" ) == null );
 
-		map.put( "key1", 1 );
-		map.put( "key2", 2 );
-		map.put( "key3", 3 );
-		map.put( "key4", 4 );
-		map.put( "key5", 5 );
-		assertEquals( new Integer(5), map.get( "key5" ) );
-		assertEquals( new Integer(4), map.get( "key4" ) );
-		assertEquals( new Integer(3), map.get( "key3" ) );
-		assertEquals( new Integer(2), map.get( "key2" ) );
-		assertEquals( new Integer(1), map.get( "key1" ) );
-		assertEquals( new Integer(5), map.remove( "key5" ) );
-		assertEquals( new Integer(1), map.get( "key1" ) );
-		assertEquals( new Integer(4), map.get( "key4" ) );
-		assertEquals( new Integer(3), map.get( "key3" ) );
-		assertEquals( new Integer(2), map.get( "key2" ) );
-		assertEquals( new Integer(3), map.remove( "key3" ) );
-		assertEquals( new Integer(1), map.remove( "key1" ) );
-		assertEquals( new Integer(2), map.remove( "key2" ) );
+        map.put( "key1", 1 );
+        map.put( "key2", 2 );
+        map.put( "key3", 3 );
+        map.put( "key4", 4 );
+        map.put( "key5", 5 );
+        assertEquals( new Integer(5), map.get( "key5" ) );
+        assertEquals( new Integer(4), map.get( "key4" ) );
+        assertEquals( new Integer(3), map.get( "key3" ) );
+        assertEquals( new Integer(2), map.get( "key2" ) );
+        assertEquals( new Integer(1), map.get( "key1" ) );
+        assertEquals( new Integer(5), map.remove( "key5" ) );
+        assertEquals( new Integer(1), map.get( "key1" ) );
+        assertEquals( new Integer(4), map.get( "key4" ) );
+        assertEquals( new Integer(3), map.get( "key3" ) );
+        assertEquals( new Integer(2), map.get( "key2" ) );
+        assertEquals( new Integer(3), map.remove( "key3" ) );
+        assertEquals( new Integer(1), map.remove( "key1" ) );
+        assertEquals( new Integer(2), map.remove( "key2" ) );
 
-		for ( int i = 0; i < 100; i++ )
-		{
-			map.put( "key" + i, i );
-		}
-		for ( int i = 0; i < 100; i++ )
-		{
-			assertEquals( new Integer(i), map.get( "key" + i) );
-		}
-		for ( int i = 0; i < 100; i++ )
-		{
-			assertEquals( new Integer(i), map.remove( "key" + i) );
-		}
-		for ( int i = 0; i < 100; i++ )
-		{
-			assertTrue( map.get( "key" + i ) == null );
-		}
+        for ( int i = 0; i < 100; i++ )
+        {
+            map.put( "key" + i, i );
+        }
+        for ( int i = 0; i < 100; i++ )
+        {
+            assertEquals( new Integer(i), map.get( "key" + i) );
+        }
+        for ( int i = 0; i < 100; i++ )
+        {
+            assertEquals( new Integer(i), map.remove( "key" + i) );
+        }
+        for ( int i = 0; i < 100; i++ )
+        {
+            assertTrue( map.get( "key" + i ) == null );
+        }
     }
 
     @Test
@@ -133,7 +133,7 @@ public class TestArrayMap
         Field dataField = ArrayMap.class.getDeclaredField( "data" );
         dataField.setAccessible( true );
         assertTrue( dataField.get( map ) instanceof Object[] );
-        
+
         for ( int i = 0; i < arraySize; i++ )
         {
             map.put( "key" + i, i );
@@ -178,7 +178,7 @@ public class TestArrayMap
         map.remove( "key2" );
         assertNull( "removed element still found", map.get( "key1" ) );
         map.remove( "key3" );
-        
+
         assertNull( "removed element still found", map.get( "key1" ) );
         map.remove( "key4" );
         assertNull( "removed element still found", map.get( "key1" ) );
@@ -209,22 +209,22 @@ public class TestArrayMap
             assertTrue( "Synchronized ArrayMap concurrent size invoke failed: " + thread.getCause(), thread.wasSuccessful() );
         }
     }
-    
+
     private static class WorkerThread extends Thread
     {
         private final ArrayMap<Integer,Object> map;
-        
+
         private volatile boolean success = false;
         private volatile Throwable t = null;
 
         private final CountDownLatch done;
-        
+
         WorkerThread( ArrayMap<Integer,Object> map, CountDownLatch done )
         {
             this.map = map;
             this.done = done;
         }
-        
+
         @Override
         public void run()
         {
@@ -260,12 +260,12 @@ public class TestArrayMap
                 done.countDown();
             }
         }
-        
+
         boolean wasSuccessful()
         {
             return success;
         }
-        
+
         Throwable getCause()
         {
             return t;

@@ -32,7 +32,7 @@ class NotUnique extends AbstractUniquenessFilter
     {
         return true;
     }
-    
+
     @Override
     public boolean checkFull( Path path )
     {

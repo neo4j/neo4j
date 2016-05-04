@@ -31,18 +31,18 @@ class LockWorkerState
     volatile boolean deadlockOnLastWait;
     final List<String> completedOperations = new ArrayList<String>();
     String doing;
-    
+
     public LockWorkerState( Locks locks )
     {
         this.grabber = locks;
         this.client = locks.newClient();
     }
-    
+
     public void doing( String doing )
     {
         this.doing = doing;
     }
-    
+
     public void done()
     {
         this.completedOperations.add( this.doing );

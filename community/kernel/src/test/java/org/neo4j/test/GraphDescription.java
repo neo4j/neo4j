@@ -59,9 +59,9 @@ public class GraphDescription implements GraphDefinition
         NODE[] nodes() default {};
 
         REL[] relationships() default {};
-        
+
         boolean autoIndexNodes() default false;
-        
+
         boolean autoIndexRelationships() default false;
     }
 
@@ -71,7 +71,7 @@ public class GraphDescription implements GraphDefinition
         String name();
 
         PROP[] properties() default {};
-        
+
         LABEL[] labels() default {};
 
         boolean setNameProperty() default false;
@@ -104,7 +104,7 @@ public class GraphDescription implements GraphDefinition
 
         PropType componentType() default ERROR;
     }
-    
+
     @Target( {} )
     public @interface LABEL
     {
@@ -271,7 +271,7 @@ public class GraphDescription implements GraphDefinition
             }
             entity.setProperty( "name", name );
         }
-        
+
         return entity;
     }
 
@@ -575,6 +575,5 @@ public class GraphDescription implements GraphDefinition
             return name;
         }
     }
-
 
 }

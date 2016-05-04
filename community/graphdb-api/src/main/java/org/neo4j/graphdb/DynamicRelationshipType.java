@@ -40,7 +40,7 @@ package org.neo4j.graphdb;
  * However, you usually want to check whether a specific relationship
  * <i>instance</i> is of a certain type. That is best achieved with the
  * {@link Relationship#isType Relationship.isType} method, such as:
- * 
+ *
  * <pre>
  * <code>
  * {@link RelationshipType} type = DynamicRelationshipType.{@link #withName(String) withName}( "myname" );
@@ -89,7 +89,7 @@ public final class DynamicRelationshipType implements RelationshipType
      * different object identifiers (and possibly even different classes) are
      * semantically equivalent if they have {@link String#equals(Object) equal}
      * names.
-     * 
+     *
      * @return the name of the relationship type
      */
     public String name()
@@ -99,7 +99,7 @@ public final class DynamicRelationshipType implements RelationshipType
 
     /**
      * Returns a string representation of this dynamic relationship type.
-     * 
+     *
      * @return a string representation of this dynamic relationship type
      * @see java.lang.Object#toString()
      */
@@ -117,7 +117,7 @@ public final class DynamicRelationshipType implements RelationshipType
      * RelationshipType}, the proper way to check for equivalence between two
      * relationship types is to compare their {@link RelationshipType#name()
      * names}.
-     * 
+     *
      * @return <code>true</code> if <code>other</code> is the same instance as
      *         this dynamic relationship type, <code>false</code> otherwise
      * @see java.lang.Object#equals(java.lang.Object)
@@ -135,7 +135,7 @@ public final class DynamicRelationshipType implements RelationshipType
      * you expect. Please see the documentation of {@link #equals(Object)
      * equals} and the {@link DynamicRelationshipType class documentation} for
      * more details.
-     * 
+     *
      * @return a hash code value for this dynamic relationship type instance
      * @see java.lang.Object#hashCode()
      */

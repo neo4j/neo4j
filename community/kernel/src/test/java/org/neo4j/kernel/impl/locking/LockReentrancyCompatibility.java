@@ -211,7 +211,6 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
         clientA.acquireShared( NODE, 1L );
         clientB.acquireShared( NODE, 1L );
 
-
         LockIdentityExplorer sharedLockExplorer = new LockIdentityExplorer( NODE, 1L );
         locks.accept( sharedLockExplorer );
 

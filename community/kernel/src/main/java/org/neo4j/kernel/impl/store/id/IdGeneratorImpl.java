@@ -381,7 +381,6 @@ public class IdGeneratorImpl implements IdGenerator
             ByteBuffer buffer = readHeader();
             markAsSticky( fileChannel, buffer );
 
-
             fileChannel.position( HEADER_SIZE );
             this.keeper = new FreeIdKeeper( fileChannel, grabSize, aggressiveReuse );
         }

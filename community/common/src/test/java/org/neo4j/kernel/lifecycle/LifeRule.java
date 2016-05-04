@@ -83,7 +83,6 @@ public class LifeRule implements TestRule
         return life.add(instance);
     }
 
-
     public void init()
     {
         life.init();

@@ -244,7 +244,6 @@ public class NetworkSender
         this.paused = paused;
     }
 
-
     private URI getURI( InetSocketAddress address ) throws URISyntaxException
     {
         return new URI( CLUSTER_SCHEME + ":/" + address ); // Socket.toString() already prepends a /
@@ -379,7 +378,6 @@ public class NetworkSender
         connections.remove( to );
 
         final URI uri = to;
-
 
         Listeners.notifyListeners( listeners, new Listeners.Notification<NetworkChannelsListener>()
         {

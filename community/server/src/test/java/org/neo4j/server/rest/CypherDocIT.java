@@ -160,7 +160,6 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
                         + ".name = {name} RETURN TYPE(r)";
         String response = cypherRestCall( script, Status.OK, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
-
         assertEquals( 2, ( jsonToMap( response ) ).size() );
         assertTrue( response.contains( "know" ) );
         assertTrue( response.contains( "data" ) );
@@ -258,7 +257,6 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         String script = "START x  = node:node_auto_index(name={startName}) MATC path = (x-[r]-friend) WHERE friend"
                         + ".name = {name} RETURN TYPE(r)";
         String response = cypherRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
-
 
         Map<String, Object> output = jsonToMap( response );
         assertTrue( output.containsKey( "message" ) );

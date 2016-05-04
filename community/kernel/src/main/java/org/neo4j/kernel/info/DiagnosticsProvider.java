@@ -28,27 +28,27 @@ public interface DiagnosticsProvider
      * this method must be stable, i.e. invoking this method multiple times on
      * the same object should return {@link Object#equals(Object) equal}
      * {@link String strings}.
-     * 
+     *
      * For {@link DiagnosticsProvider}s where there is only one instance of that
      * {@link DiagnosticsProvider}, an implementation like this is would be a
      * sane default, given that the implementing class has a sensible name:
-     * 
+     *
      * <code><pre>
      * public String getDiagnosticsIdentifier()
      * {
      *     return getClass().getName();
      * }
      * </pre></code>
-     * 
+     *
      * @return the identifier of this diagnostics provider.
      */
     String getDiagnosticsIdentifier();
 
     /**
      * Accept a visitor that may or may not be capable of visiting this object.
-     * 
+     *
      * Typical example:
-     * 
+     *
      * <code><pre>
      * class OperationalStatistics implements {@link DiagnosticsProvider}
      * {
@@ -60,13 +60,13 @@ public interface DiagnosticsProvider
      *         }
      *     }
      * }
-     * 
+     *
      * interface OperationalStatisticsVisitor
      * {
      *     void visitOperationalStatistics( OperationalStatistics statistics );
      * }
      * </pre></code>
-     * 
+     *
      * @param visitor the visitor visiting this {@link DiagnosticsProvider}.
      */
     void acceptDiagnosticsVisitor( Object visitor );
@@ -75,7 +75,7 @@ public interface DiagnosticsProvider
      * Dump the diagnostic information of this {@link DiagnosticsProvider} for
      * the specified {@link DiagnosticsPhase phase} to the provided
      * {@link Logger logger}.
-     * 
+     *
      * @param phase the {@link DiagnosticsPhase phase} to dump information for.
      * @param logger the {@link Logger logger} to dump information to.
      */

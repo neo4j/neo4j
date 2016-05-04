@@ -27,18 +27,18 @@ public class Response implements Serializable
 
     private String prompt;
     private Continuation continuation;
-    
+
     public Response( String prompt, Continuation continuation )
     {
         this.prompt = prompt;
         this.continuation = continuation;
     }
-    
+
     public String getPrompt()
     {
         return prompt;
     }
-    
+
     public Continuation getContinuation()
     {
         return continuation;

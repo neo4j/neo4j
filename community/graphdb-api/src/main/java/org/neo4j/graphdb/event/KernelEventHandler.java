@@ -23,7 +23,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 /**
  * Event handler interface for Neo4j Kernel life cycle events.
- * 
+ *
  */
 public interface KernelEventHandler
 {
@@ -74,9 +74,9 @@ public interface KernelEventHandler
      * handler should be executed {@link ExecutionOrder#BEFORE},
      * {@link ExecutionOrder#AFTER} another handler, or if it
      * {@link ExecutionOrder#DOESNT_MATTER}.
-     * 
+     *
      * @author mattias
-     * 
+     *
      */
     enum ExecutionOrder
     {

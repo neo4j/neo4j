@@ -258,7 +258,6 @@ public class SecurityRulesDocIT extends ExclusiveServerTestBase
         assertEquals( 401, clientResponse.getStatus() );
     }
 
-
     @Test
     public void should403WhenAuthenticatedButForbidden()
             throws Exception

@@ -131,7 +131,6 @@ public class TestCommunication
         MadeUpClient client = builder.client();
         addToLifeAndStart( server, client );
 
-
         client.fetchDataStream( new ToAssertionWriter(), FRAME_LENGTH * 3 );
     }
 

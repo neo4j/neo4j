@@ -51,7 +51,6 @@ public class StateMachineProxyFactory
 
     private final Map<String, ResponseFuture> responseFutureMap = new ConcurrentHashMap<String, ResponseFuture>();
 
-
     public StateMachineProxyFactory( StateMachines stateMachines, StateMachineConversations conversations, InstanceId me )
     {
         this.stateMachines = stateMachines;

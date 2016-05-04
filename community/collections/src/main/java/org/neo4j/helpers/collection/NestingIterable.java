@@ -25,30 +25,30 @@ import java.util.Iterator;
  * Concatenates sub-iterables of an iterable.
  *
  * @see NestingIterator
- * 
+ *
  * @param <T> the type of items.
  * @param <U> the type of items in the surface item iterator
  */
 public abstract class NestingIterable<T, U> implements Iterable<T>
 {
-	private final Iterable<U> source;
+    private final Iterable<U> source;
 
-	public NestingIterable( Iterable<U> source )
-	{
-		this.source = source;
-	}
+    public NestingIterable( Iterable<U> source )
+    {
+        this.source = source;
+    }
 
-	public Iterator<T> iterator()
-	{
-		return new NestingIterator<T, U>( source.iterator() )
-		{
-			@Override
-			protected Iterator<T> createNestedIterator( U item )
-			{
-				return NestingIterable.this.createNestedIterator( item );
-			}
-		};
-	}
+    public Iterator<T> iterator()
+    {
+        return new NestingIterator<T, U>( source.iterator() )
+        {
+            @Override
+            protected Iterator<T> createNestedIterator( U item )
+            {
+                return NestingIterable.this.createNestedIterator( item );
+            }
+        };
+    }
 
-	protected abstract Iterator<T> createNestedIterator( U item );
+    protected abstract Iterator<T> createNestedIterator( U item );
 }

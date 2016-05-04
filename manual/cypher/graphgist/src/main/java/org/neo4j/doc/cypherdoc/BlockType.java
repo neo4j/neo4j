@@ -316,7 +316,6 @@ enum BlockType
                 }
             }
 
-
             state.parameters.clear();
             String cypher = StringUtils.join( prettifiedStatements, CypherDoc.EOL );
             return AsciidocHelper.createCypherSnippetFromPreformattedQuery( cypher, exec ) + CypherDoc.EOL
@@ -330,7 +329,6 @@ enum BlockType
         {
             return isCodeBlock( "sql", block );
         }
-
 
         @Override
         String process( Block block, State state )

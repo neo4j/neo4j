@@ -81,7 +81,6 @@ public class RelationshipIT extends KernelIntegrationTest
             assertRels( statement.nodeGetRelationships( refNode, BOTH, relType1, relType2 ),
                     fromRefToOther1, fromRefToOther2, fromRefToRef, fromRefToThird, fromOtherToRef);
 
-
             assertRels( statement.nodeGetRelationships( refNode, INCOMING ), fromOtherToRef );
 
             assertRels( statement.nodeGetRelationships( refNode, INCOMING, relType1 ) /* none */);

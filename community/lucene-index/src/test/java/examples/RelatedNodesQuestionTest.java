@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * Trying out code from: http://stackoverflow.com/questions/5346011
- * 
+ *
  * @author Anders Nawroth
  */
 public class RelatedNodesQuestionTest

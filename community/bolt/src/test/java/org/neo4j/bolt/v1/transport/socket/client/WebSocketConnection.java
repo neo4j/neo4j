@@ -162,7 +162,6 @@ public class WebSocketConnection implements Connection, WebSocketListener
         }
     }
 
-
     @Override
     public void onWebSocketBinary( byte[] bytes, int i, int i2 )
     {

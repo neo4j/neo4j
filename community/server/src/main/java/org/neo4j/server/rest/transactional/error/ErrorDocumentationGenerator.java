@@ -150,7 +150,6 @@ public class ErrorDocumentationGenerator
         return sortedStatuses;
     }
 
-
     public static class Table
     {
         private String cols;

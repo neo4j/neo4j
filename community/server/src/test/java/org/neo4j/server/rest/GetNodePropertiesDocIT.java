@@ -80,7 +80,6 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalDocTestBase
 
         String complicatedString = asianText + germanText;
 
-
         String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", complicatedString ));
         final RestRequest request = req;
         JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);

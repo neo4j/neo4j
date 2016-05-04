@@ -56,7 +56,6 @@ public class AuthenticationIT
     public Neo4jWithSocket server = new Neo4jWithSocket( settings ->
             settings.put( GraphDatabaseSettings.auth_enabled, "true" ) );
 
-
     @Parameterized.Parameter( 0 )
     public Factory<Connection> cf;
 
@@ -97,7 +96,6 @@ public class AuthenticationIT
                         init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
-
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
@@ -112,7 +110,6 @@ public class AuthenticationIT
                 .send( TransportTestUtil.chunk(
                         init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "wrong", "scheme", "basic" ) ) ) );
-
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
@@ -166,7 +163,6 @@ public class AuthenticationIT
                         init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
-
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
@@ -211,7 +207,6 @@ public class AuthenticationIT
                         init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
-
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
@@ -236,7 +231,6 @@ public class AuthenticationIT
                         init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
-
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyRecieves( msgSuccess( Collections.singletonMap( "credentials_expired", true )) ) );
@@ -260,7 +254,6 @@ public class AuthenticationIT
                 .send( TransportTestUtil.chunk(
                         init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
-
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );

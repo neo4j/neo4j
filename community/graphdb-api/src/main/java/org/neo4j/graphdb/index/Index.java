@@ -106,7 +106,7 @@ public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
     /**
      * Add the entity to this index for the given key/value pair if this particular
      * key/value pair doesn't already exist.
-     * 
+     *
      * This ensures that only one entity will be associated with the key/value pair
      * even if multiple transactions are trying to add it at the same time. One of those
      * transactions will win and add it while the others will block, waiting for the

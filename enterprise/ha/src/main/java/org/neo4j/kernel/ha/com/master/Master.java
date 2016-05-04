@@ -81,5 +81,4 @@ public interface Master
 
     Response<LockResult> acquireSharedLock( RequestContext context, ResourceType type, long... resourceIds );
 
-
 }

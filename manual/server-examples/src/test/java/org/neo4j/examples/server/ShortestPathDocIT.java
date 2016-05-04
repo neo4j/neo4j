@@ -61,9 +61,9 @@ public class ShortestPathDocIT extends AbstractPluginTestBase
     {
         Node source = data.get().get( "C" );
         String sourceUri = functionalTestHelper.nodeUri( source.getId() );
-        Node target = data.get().get( "A" );        
+        Node target = data.get().get( "A" );
         String targetUri = functionalTestHelper.nodeUri( target.getId() );
-        
+
         String uri = (String) getNodeLevelPluginMetadata( ShortestPath.class, source.getId() ).get( SHORTEST_PATHS );
         String body = "{\"target\":\"" + targetUri + "\"}";
 
@@ -84,9 +84,9 @@ public class ShortestPathDocIT extends AbstractPluginTestBase
     {
         Node source = data.get().get( "C" );
         String sourceUri = functionalTestHelper.nodeUri( source.getId() );
-        Node target = data.get().get( "A" );        
+        Node target = data.get().get( "A" );
         String targetUri = functionalTestHelper.nodeUri( target.getId() );
-        
+
         String uri = (String) getNodeLevelPluginMetadata( ShortestPath.class, source.getId() ).get( SHORTEST_PATHS );
 
         String body = "{\"target\":\"" + targetUri + "\",\"types\":[\"knows\"]}";

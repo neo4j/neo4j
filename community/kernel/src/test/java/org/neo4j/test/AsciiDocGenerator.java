@@ -36,9 +36,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
  * The status and media type of all responses is checked as well as the
  * existence of any expected headers.
- * 
+ *
  * The filename of the resulting ASCIIDOC test file is derived from the title.
- * 
+ *
  * The title is determined by either a JavaDoc period terminated first title
  * line, the @Title annotation or the method name, where "_" is replaced by " ".
  */
@@ -65,12 +65,12 @@ public abstract class AsciiDocGenerator
         this.graph = graph;
         return this;
     }
-    
+
     public String getTitle()
     {
         return title;
     }
-    
+
     public AsciiDocGenerator setSection(final String section)
     {
         this.section = section;
@@ -80,7 +80,7 @@ public abstract class AsciiDocGenerator
     /**
      * Add a description to the test (in asciidoc format). Adding multiple
      * descriptions will yield one paragraph per description.
-     * 
+     *
      * @param description the description
      */
     public AsciiDocGenerator description( final String description )
@@ -160,7 +160,7 @@ public abstract class AsciiDocGenerator
             throw new RuntimeException( e );
         }
     }
-    
+
     public static String dumpToSeparateFile( File dir, String testId,
             String content )
     {
@@ -227,7 +227,7 @@ public abstract class AsciiDocGenerator
     {
         return new PrintWriter( getFW( dir, title ) );
     }
-    
+
     public static String getPath( Class<?> source )
     {
         return source.getPackage()
@@ -266,11 +266,11 @@ public abstract class AsciiDocGenerator
 
     /**
      * Add snippets that will be replaced into corresponding.
-     * 
+     *
      * A snippet needs to be on its own line, terminated by "\n".
-     * 
+     *
      * @@snippetname placeholders in the content of the description.
-     * 
+     *
      * @param key the snippet key, without @@
      * @param content the content to be inserted
      */
@@ -282,9 +282,9 @@ public abstract class AsciiDocGenerator
     /**
      * Added one or more source snippets from test sources, available from
      * javadoc using
-     * 
+     *
      * @@tagName.
-     * 
+     *
      * @param source the class where the snippet is found
      * @param tagNames the tag names which should be included
      */
@@ -298,9 +298,9 @@ public abstract class AsciiDocGenerator
 
     /**
      * Added one or more source snippets, available from javadoc using
-     * 
+     *
      * @@tagName.
-     * 
+     *
      * @param source the class where the snippet is found
      * @param tagNames the tag names which should be included
      */

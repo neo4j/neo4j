@@ -170,7 +170,7 @@ public final class PathImpl implements Path
     {
         return nodeIterator( start, relationships() );
     }
-    
+
     @Override
     public Iterable<Node> reverseNodes()
     {
@@ -241,7 +241,7 @@ public final class PathImpl implements Path
             }
         };
     }
-    
+
     @Override
     public Iterable<Relationship> reverseRelationships()
     {

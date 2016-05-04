@@ -70,7 +70,6 @@ public class IndexUpdaterMapTest
         updaterMap = new IndexUpdaterMap( indexMap, IndexUpdateMode.ONLINE );
     }
 
-
     @Test
     public void shouldRetrieveUpdaterFromIndexMapForExistingIndex() throws Exception
     {
@@ -84,7 +83,6 @@ public class IndexUpdaterMapTest
         assertEquals( indexUpdater1, updater );
         assertEquals( 1, updaterMap.size() );
     }
-
 
     @Test
     public void shouldRetrieveSameUpdaterFromIndexMapForExistingIndexWhenCalledTwice() throws Exception

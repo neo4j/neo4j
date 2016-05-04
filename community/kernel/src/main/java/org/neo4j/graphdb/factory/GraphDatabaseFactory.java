@@ -65,7 +65,6 @@ public class GraphDatabaseFactory
         return newEmbeddedDatabaseBuilder( storeDir ).newGraphDatabase();
     }
 
-
     public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File storeDir )
     {
         final GraphDatabaseFactoryState state = getStateCopy();

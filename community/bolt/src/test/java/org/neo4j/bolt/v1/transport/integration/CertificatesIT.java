@@ -60,7 +60,6 @@ public class CertificatesIT
         // GIVEN
         SecureSocketConnection connection = new SecureSocketConnection();
 
-
         // WHEN
         connection.connect( new HostnamePort( "localhost:7687" ) )
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
@@ -69,7 +68,6 @@ public class CertificatesIT
         Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
         assertThat(certificatesSeen, contains(loadCertificateFromDisk()));
     }
-
 
     private X509Certificate loadCertificateFromDisk() throws CertificateException, IOException
     {

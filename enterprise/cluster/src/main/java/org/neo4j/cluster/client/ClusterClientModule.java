@@ -218,8 +218,6 @@ public class ClusterClientModule
             }
         }, server, logService ) );
 
-
-
         clusterClient =  dependencies.satisfyDependency(new ClusterClient( life, server ));
     }
 

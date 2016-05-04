@@ -68,7 +68,6 @@ public class Outcome<MEMBER> implements Message
     private boolean electedLeader;
     private boolean steppingDown;
 
-
     public Outcome( Role currentRole, ReadableRaftState<MEMBER> ctx )
     {
         defaults( currentRole, ctx );

@@ -34,7 +34,7 @@ public class VerifyingTransactionEventHandler implements
     {
         this.expectedData = expectedData;
     }
-    
+
     @Override
     public void afterCommit( TransactionData data, Object state )
     {
@@ -51,7 +51,7 @@ public class VerifyingTransactionEventHandler implements
     {
         return verify( data );
     }
-    
+
     private Object verify( TransactionData data )
     {
         // TODO Hmm, makes me think... should we really call transaction event handlers
@@ -60,7 +60,7 @@ public class VerifyingTransactionEventHandler implements
         {
             return null;
         }
-        
+
         try
         {
             this.expectedData.compareTo( data );
@@ -78,7 +78,7 @@ public class VerifyingTransactionEventHandler implements
     {
         return this.hasBeenCalled;
     }
-    
+
     Throwable failure()
     {
         return this.failure;

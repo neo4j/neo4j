@@ -43,7 +43,6 @@ public class AuthenticationException extends IOException implements Status.HasSt
         this.status = status;
     }
 
-
     @Override
     public Status status()
     {

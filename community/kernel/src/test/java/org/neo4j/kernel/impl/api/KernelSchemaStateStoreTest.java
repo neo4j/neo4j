@@ -42,7 +42,6 @@ public class KernelSchemaStateStoreTest
         assertEquals( "created_value", result );
     }
 
-
     @Test
     public void should_flush()
     {

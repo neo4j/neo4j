@@ -34,7 +34,7 @@ public class DataProducer implements ReadableByteChannel
     {
         this.bytesLeftToProduce = size;
     }
-    
+
     @Override
     public boolean isOpen()
     {
@@ -55,7 +55,7 @@ public class DataProducer implements ReadableByteChannel
         int toFill = min( dst.remaining(), bytesLeftToProduce ), leftToFill = toFill;
         if ( toFill <= 0 )
             return -1;
-        
+
         while ( leftToFill-- > 0 )
             dst.put( (byte) 5 );
         bytesLeftToProduce -= toFill;

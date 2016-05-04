@@ -303,7 +303,6 @@ public class CountsRotationTest
         return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.RIGHT );
     }
 
-
     private Collection<Pair<? extends CountsKey, Long>> allRecords( CountsVisitor.Visitable store )
     {
         final Collection<Pair<? extends CountsKey, Long>> records = new ArrayList<>();

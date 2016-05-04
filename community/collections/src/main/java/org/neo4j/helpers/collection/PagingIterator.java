@@ -25,7 +25,7 @@ import java.util.Iterator;
  * A {@link CachingIterator} which can more easily divide the items
  * into pages, where optionally each page can be seen as its own
  * {@link Iterator} instance for convenience using {@link #nextPage()}.
- * 
+ *
  * @author Mattias Persson
  *
  * @param <T> the type of items in this iterator.
@@ -37,7 +37,7 @@ public class PagingIterator<T> extends CachingIterator<T>
     /**
      * Creates a new paging iterator with {@code source} as its underlying
      * {@link Iterator} to lazily get items from.
-     * 
+     *
      * @param source the underlying {@link Iterator} to lazily get items from.
      * @param pageSize the max number of items in each page.
      */
@@ -46,7 +46,7 @@ public class PagingIterator<T> extends CachingIterator<T>
         super( source );
         this.pageSize = pageSize;
     }
-    
+
     /**
      * @return the page the iterator is currently at, starting a {@code 0}.
      * This value is based on the {@link #position()} and the page size.
@@ -55,7 +55,7 @@ public class PagingIterator<T> extends CachingIterator<T>
     {
         return position()/pageSize;
     }
-    
+
     /**
      * Sets the current page of the iterator. {@code 0} means the first page.
      * @param newPage the current page to set for the iterator, must be
@@ -69,7 +69,7 @@ public class PagingIterator<T> extends CachingIterator<T>
         position( newPage*pageSize );
         return previousPage;
     }
-    
+
     /**
      * Returns a new {@link Iterator} instance which exposes the current page
      * as its own iterator, which fetches items lazily from the underlying
@@ -78,7 +78,7 @@ public class PagingIterator<T> extends CachingIterator<T>
      * {@link #previous()}, where the results may be unpredictable. So either
      * use only {@link #nextPage()} (in conjunction with {@link #page(int)} if
      * necessary) or go with regular {@link #next()}/{@link #previous()}.
-     * 
+     *
      * @return the next page as an {@link Iterator}.
      */
     public Iterator<T> nextPage()
@@ -87,7 +87,7 @@ public class PagingIterator<T> extends CachingIterator<T>
         return new PrefetchingIterator<T>()
         {
             private final int end = position()+pageSize;
-            
+
             @Override
             protected T fetchNextOrNull()
             {

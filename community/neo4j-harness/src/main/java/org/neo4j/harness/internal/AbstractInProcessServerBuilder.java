@@ -106,7 +106,6 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         return this;
     }
 
-
     @Override
     public ServerControls newServer()
     {

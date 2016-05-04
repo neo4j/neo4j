@@ -55,19 +55,19 @@ public class LazySingleReferenceTest
         };
         Future<Integer> t1Evaluate = t1.executeDontWait( evaluate( ref ) );
         t1.waitUntilWaiting();
-        
+
         // WHEN
         Future<Integer> t2Evaluate = t2.executeDontWait( evaluate( ref ) );
         t2.waitUntilBlocked();
         latch.countDown();
         int e1 = t1Evaluate.get();
         int e2 = t2Evaluate.get();
-        
+
         // THEN
         assertEquals( "T1 evaluation", 1, e1 );
         assertEquals( "T2 evaluation", 1, e2 );
     }
-    
+
     @Test
     public void shouldMutexAccessBetweenInvalidateAndinstance() throws Exception
     {
@@ -85,18 +85,18 @@ public class LazySingleReferenceTest
         };
         Future<Integer> t1Evaluate = t1.executeDontWait( evaluate( ref ) );
         t1.waitUntilWaiting();
-        
+
         // WHEN
         Future<Void> t2Invalidate = t2.executeDontWait( invalidate( ref ) );
         t2.waitUntilBlocked();
         latch.countDown();
         int e = t1Evaluate.get();
         t2Invalidate.get();
-        
+
         // THEN
         assertEquals( "Evaluation", 1, e );
     }
-    
+
     @Test
     public void shouldInitializeAgainAfterInvalidated() throws Exception
     {
@@ -111,15 +111,15 @@ public class LazySingleReferenceTest
             }
         };
         assertEquals( "First evaluation", 1, ref.get().intValue() );
-        
+
         // WHEN
         ref.invalidate();
         int e2 = ref.get();
-        
+
         // THEN
         assertEquals( "Second evaluation", 2, e2 );
     }
-    
+
     @Test
     public void shouldRespondToIsInitialized() throws Exception
     {
@@ -132,7 +132,7 @@ public class LazySingleReferenceTest
                 return 1;
             }
         };
-        
+
         // WHEN
         boolean firstResult = ref.isCreated();
         ref.get();
@@ -141,16 +141,16 @@ public class LazySingleReferenceTest
         boolean thirdResult = ref.isCreated();
         ref.get();
         boolean fourthResult = ref.isCreated();
-        
+
         // THEN
         assertFalse( "Should not start off as initialized", firstResult );
         assertTrue( "Should be initialized after an evaluation", secondResult );
         assertFalse( "Should not be initialized after invalidated", thirdResult );
         assertTrue( "Should be initialized after a re-evaluation", fourthResult );
     }
-    
+
     private OtherThreadExecutor<Void> t1, t2;
-    
+
     @Before
     public void before()
     {
@@ -176,7 +176,7 @@ public class LazySingleReferenceTest
             }
         };
     }
-    
+
     private WorkerCommand<Void,Void> invalidate( final LazySingleReference<Integer> ref )
     {
         return new WorkerCommand<Void,Void>()

@@ -24,7 +24,7 @@ import java.util.Iterator;
 /**
  * Limits the amount of items returned by an {@link Iterable}, or rather
  * {@link Iterator}s spawned from it.
- * 
+ *
  * @author Mattias Persson
  *
  * @param <T> the type of items in this {@link Iterable}.
@@ -38,7 +38,7 @@ public class LimitingIterable<T> implements Iterable<T>
     /**
      * Instantiates a new limiting {@link Iterable} which can limit the number
      * of items returned from iterators it spawns.
-     * 
+     *
      * @param source the source of items.
      * @param limit the limit, i.e. the max number of items to return.
      */
@@ -47,7 +47,7 @@ public class LimitingIterable<T> implements Iterable<T>
         this.source = source;
         this.limit = limit;
     }
-    
+
     @Override
     public Iterator<T> iterator()
     {

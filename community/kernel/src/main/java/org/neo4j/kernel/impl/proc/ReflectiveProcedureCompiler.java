@@ -164,7 +164,6 @@ public class ReflectiveProcedureCompiler
         private final OutputMapper outputMapper;
         private final List<FieldInjections.FieldSetter> fieldSetters;
 
-
         public ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
                                     MethodHandle procedureMethod, OutputMapper outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )

@@ -39,7 +39,7 @@ public class TestIdReuse
     {
         makeSureIdsGetsReused( "neostore.propertystore.db", 10, 200 );
     }
-    
+
     @Test
     public void makeSureIdsGetsReusedForArrayStore() throws Exception
     {
@@ -50,7 +50,7 @@ public class TestIdReuse
         }
         makeSureIdsGetsReused( "neostore.propertystore.db.arrays", array, 20 );
     }
-    
+
     @Test
     public void makeSureIdsGetsReusedForStringStore() throws Exception
     {
@@ -61,9 +61,9 @@ public class TestIdReuse
         }
         makeSureIdsGetsReused( "neostore.propertystore.db.strings", string, 20 );
     }
-    
+
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    
+
     private void makeSureIdsGetsReused( String fileName, Object value, int iterations ) throws Exception
     {
         File storeDir = new File( "target/var/idreuse" );
@@ -85,7 +85,7 @@ public class TestIdReuse
         db.shutdown();
         assertEquals( sizeBefore, file.length() );
     }
-    
+
     private void setAndRemoveSomeProperties( GraphDatabaseService graphDatabaseService, Object value )
     {
         Node commonNode;

@@ -57,7 +57,7 @@ public class PathExplosionIT
     private static final int MAX_PATH_WIDTH = 6;
     private static final int WARMUP_RUNS = 2;
     private static final long TOLERATED_DURATION = 10000;
-    
+
     @Test
     public void aStarShouldFinishWithinToleratedDuration() throws IOException
     {
@@ -132,7 +132,7 @@ public class PathExplosionIT
     long runPathOnce( Node startNode, Node endNode, GraphDatabaseService db, PathFinder<? extends Path> pathFinder )
     {
         long startTime = currentTimeMillis();
-        
+
         Path path = FIND_MULTIPLE_PATHS ?
                     // call findAllPaths, but just grab the first one
                     asList( pathFinder.findAllPaths( startNode, endNode ) ).get( 0 ) :
@@ -141,7 +141,7 @@ public class PathExplosionIT
 
         // iterate through the path
         count( path );
-        
+
         return currentTimeMillis() - startTime;
     }
 
@@ -173,7 +173,7 @@ public class PathExplosionIT
     {
         SomeRelType
     }
-    
+
     private final PathExpander<?> expander = PathExpanders.forDirection(Direction.BOTH );
     private final CostEvaluator<Double> constantEvaluator = new CostEvaluator<Double>()
     {

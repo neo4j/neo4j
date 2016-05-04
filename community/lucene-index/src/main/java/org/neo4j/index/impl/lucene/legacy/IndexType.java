@@ -229,9 +229,9 @@ public abstract class IndexType
             if ( customAnalyzer == null )
             {
                 throw new IllegalArgumentException( "No 'type' was given (which can point out " +
-                		"built-in analyzers, such as 'exact' and 'fulltext')" +
-                		" and no 'analyzer' was given either (which can point out a custom " +
-                		Analyzer.class.getName() + " to use)" );
+                        "built-in analyzers, such as 'exact' and 'fulltext')" +
+                        " and no 'analyzer' was given either (which can point out a custom " +
+                        Analyzer.class.getName() + " to use)" );
             }
             result = new CustomType( customAnalyzer, toLowerCase, similarity );
         }

@@ -27,7 +27,7 @@ class PathUnique extends AbstractUniquenessFilter
     {
         super( type );
     }
-    
+
     public boolean check( TraversalBranch source )
     {
         long idToCompare = type.getId( source );
@@ -41,7 +41,7 @@ class PathUnique extends AbstractUniquenessFilter
         }
         return true;
     }
-    
+
     @Override
     public boolean checkFull( Path path )
     {

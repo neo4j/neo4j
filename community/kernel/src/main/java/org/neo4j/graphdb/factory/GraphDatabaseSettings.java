@@ -428,7 +428,7 @@ public abstract class GraphDatabaseSettings
             "0", min( 0 ) );
 
     @Description("Specifies the block size for storing labels exceeding in-lined space in node record. " +
-    		"This parameter is only honored when the store is created, otherwise it is ignored. " +
+            "This parameter is only honored when the store is created, otherwise it is ignored. " +
             "Also note that each block carries a ~10B of overhead so record size on disk will be slightly larger " +
             "than the configured block size" )
     @Internal

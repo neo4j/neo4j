@@ -597,7 +597,6 @@ public class ManageNodeDocIT extends AbstractRestFunctionalDocTestBase
             Response response = consoleService.exec( new JsonFormat(),
                     "{ \"command\" : \"create (n) return n;\", \"engine\":\"shell\" }" );
 
-
             assertEquals( 200, response.getStatus() );
             String result = decode( response ).get( 0 );
 

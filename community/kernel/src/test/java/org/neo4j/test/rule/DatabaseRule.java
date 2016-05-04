@@ -399,7 +399,6 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         return database.getAllLabels();
     }
 
-
     @Override
     public ResourceIterable<RelationshipType> getAllRelationshipTypes()
     {
@@ -429,7 +428,6 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
         return database.findNodes( label );
     }
-
 
     @Override
     public boolean isAvailable( long timeout )

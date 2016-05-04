@@ -22,6 +22,6 @@ package org.neo4j.test.randomized;
 public interface LinePrinter
 {
     void println( String line );
-    
+
     LinePrinter indent();
 }

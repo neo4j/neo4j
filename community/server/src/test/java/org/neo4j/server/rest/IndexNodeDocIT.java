@@ -778,7 +778,6 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         assertEquals( 1, data.get( "sequence" ) );
     }
 
-
     @Documented( "Create a unique node or return fail (fail).\n" +
                  "\n" +
                  "Here, in case\n" +
@@ -812,8 +811,6 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                           + "\", \"properties\": {\"" + key + "\": \"" + value
                                                        + "\", \"sequence\": 2}}" )
                                     .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=create_or_fail" );
-
-
 
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
         Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );

@@ -49,7 +49,6 @@ public class CypherQueriesIT extends AbstractRestFunctionalTestBase
         assertNoErrors( result );
     }
 
-
     private void assertNoErrors( Map<String, Object> response )
     {
         @SuppressWarnings("unchecked")

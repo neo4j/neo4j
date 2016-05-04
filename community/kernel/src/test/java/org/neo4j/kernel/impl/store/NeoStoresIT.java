@@ -83,7 +83,6 @@ public class NeoStoresIT
             +
             "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALONG!!";
 
-
     @Test
     public void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
             throws InterruptedException

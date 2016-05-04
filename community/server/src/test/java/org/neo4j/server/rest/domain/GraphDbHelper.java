@@ -93,7 +93,6 @@ public class GraphDbHelper
         }
     }
 
-
     public Map<String, Object> getNodeProperties( long nodeId )
     {
         try (Transaction tx = database.getGraph().beginTransaction( KernelTransaction.Type.implicit, AccessMode.Static.READ))

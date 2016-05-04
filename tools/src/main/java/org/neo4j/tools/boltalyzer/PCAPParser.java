@@ -19,7 +19,6 @@
  */
 package org.neo4j.tools.boltalyzer;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -47,10 +46,8 @@ public class PCAPParser
     public static final int TCP_SRC_PORT_OFFSET = 0;
     public static final int TCP_DST_PORT_OFFSET = 2;
 
-
     private static final Map<Integer,PhysicalFormat> physicalFormats = new HashMap<>();
     private static final byte[] IP_BUFFER = new byte[4];
-
 
     /** tcpdump supports lots of network types. We implement them as a lambda that takes a tcpdump raw frame strips off the physical transport frame */
     interface PhysicalFormat
@@ -72,7 +69,6 @@ public class PCAPParser
             return in.read( length - 4 );
         } );
     }
-
 
     public Stream<Dict> parse( InputStream rawStream ) throws IOException
     {

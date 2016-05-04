@@ -50,7 +50,6 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         this( new byte[bufferSize] );
     }
 
-
     public void reset()
     {
         asWriter.clear();

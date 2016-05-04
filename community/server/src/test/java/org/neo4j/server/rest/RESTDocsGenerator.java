@@ -124,8 +124,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         super( title, "rest-api" );
     }
 
-
-
     /**
      * Set the expected status of the response. The test will fail if the
      * response has a different status. Defaults to HTTP 200 OK.

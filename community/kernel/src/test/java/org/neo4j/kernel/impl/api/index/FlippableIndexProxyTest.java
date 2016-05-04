@@ -122,7 +122,6 @@ public class FlippableIndexProxyTest
         OtherThreadExecutor<Void> flippingThread = cleanup.add( new OtherThreadExecutor<Void>( "Flipping thread", null ) );
         OtherThreadExecutor<Void> dropIndexThread = cleanup.add( new OtherThreadExecutor<Void>( "Drop index thread", null ) );
 
-
         // WHEN one thread starts flipping to another context
         Future<Void> flipContextFuture = flippingThread.executeDontWait( startFlipAndWaitForLatchBeforeFinishing(
                 flippable,
@@ -141,7 +140,6 @@ public class FlippableIndexProxyTest
         // And both threads get to finish up and return
         dropIndexFuture.get( 10, SECONDS );
         flipContextFuture.get( 10, SECONDS );
-
 
         // THEN the thread wanting to drop the index should not have interacted with the original context
         // eg. it should have waited for the flip to finish

@@ -69,7 +69,7 @@ public class CappedLogger
             delegate.debug( msg, cause );
         }
     }
-    
+
     public void info( @Nonnull String msg )
     {
         if ( filter.accept( msg, null ) )
@@ -85,7 +85,7 @@ public class CappedLogger
             delegate.info( msg, cause );
         }
     }
-    
+
     public void warn( @Nonnull String msg )
     {
         if ( filter.accept( msg, null ) )
@@ -101,7 +101,7 @@ public class CappedLogger
             delegate.warn( msg, cause );
         }
     }
-    
+
     public void error( @Nonnull String msg )
     {
         if ( filter.accept( msg, null ) )

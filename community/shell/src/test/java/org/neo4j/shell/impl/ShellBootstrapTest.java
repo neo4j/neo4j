@@ -44,10 +44,10 @@ public class ShellBootstrapTest
                 ShellSettings.remote_shell_name.name(), name,
                 ShellSettings.remote_shell_enabled.name(), TRUE.toString() ) );
         GraphDatabaseShellServer server = mock( GraphDatabaseShellServer.class );
-        
+
         // WHEN
         server = new ShellBootstrap( config ).enable( server );
-        
+
         // THEN
         verify( server ).makeRemotelyAvailable( host, port, name );
     }

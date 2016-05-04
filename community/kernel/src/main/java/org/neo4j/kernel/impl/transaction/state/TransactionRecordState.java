@@ -104,7 +104,6 @@ public class TransactionRecordState implements RecordState
     private RecordChanges<Long,NeoStoreRecord, Void> neoStoreRecord;
     private boolean prepared;
 
-
     public TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator,
             RecordChangeSet recordChangeSet, long lastCommittedTxWhenTransactionStarted,
             ResourceLocker locks,
@@ -140,7 +139,7 @@ public class TransactionRecordState implements RecordState
     @Override
     public void extractCommands( Collection<StorageCommand> commands ) throws TransactionFailureException
     {
-    	assert !prepared : "Transaction has already been prepared";
+        assert !prepared : "Transaction has already been prepared";
 
         integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
 

@@ -31,7 +31,7 @@ public enum ErrorState
      * database data is stored is full and cannot be written to.
      */
     STORAGE_MEDIA_FULL,
-    
+
     /**
      * Not more transactions can be started or committed during this session
      * and the database needs to be shut down, possible for maintenance before

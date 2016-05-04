@@ -94,7 +94,6 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
         Path d = graph.makePathWithRelProperty( length, "d1-3-d2-0-d3" );             // 3
         Path e = graph.makePathWithRelProperty( length, "e1-0-e2-0-e3-0-e4-1-e5" );   // 1
 
-
         List<Path> list = Arrays.asList(
                 new Path[]{
                         a,b,c,d,e

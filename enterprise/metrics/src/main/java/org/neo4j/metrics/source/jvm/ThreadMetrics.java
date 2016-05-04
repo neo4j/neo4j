@@ -55,4 +55,3 @@ public class ThreadMetrics extends JvmMetrics
     }
 }
 
-

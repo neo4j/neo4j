@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * A color mapper matching keys to colors, producing string representations of
  * the colors.
- * 
+ *
  * The mapper uses the colors from {@link Color}, in the order they are defined
  * there. When running out of colors, it's starts over from the first one again.
  */
@@ -49,10 +49,10 @@ public class DefaultColorMapping<E>
 
     /**
      * Map colors from {@link Color} while excluding the reserved colors.
-     * 
+     *
      * Both the dark and light variation of the colors are excluded, even though
      * only the dark variation will be used by the reserved mapping.
-     * 
+     *
      * @param reservedColors colors this mapper shouldn't use
      */
     public DefaultColorMapping( Collection<Color> reservedColors )
@@ -77,7 +77,7 @@ public class DefaultColorMapping<E>
 
     /**
      * Get the color for a key as a string.
-     * 
+     *
      * @param key the key
      * @return the color as a String
      */
@@ -96,7 +96,7 @@ public class DefaultColorMapping<E>
 
     /**
      * Get the color string value for a reserved color.
-     * 
+     *
      * @param color
      * @return
      */

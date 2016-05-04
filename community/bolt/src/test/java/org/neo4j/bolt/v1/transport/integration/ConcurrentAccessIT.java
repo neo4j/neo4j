@@ -61,7 +61,6 @@ public class ConcurrentAccessIT
     public Neo4jWithSocket server = new Neo4jWithSocket(settings ->
             settings.put( GraphDatabaseSettings.auth_enabled, "false"  ));
 
-
     @Parameterized.Parameter(0)
     public Factory<Connection> cf;
 

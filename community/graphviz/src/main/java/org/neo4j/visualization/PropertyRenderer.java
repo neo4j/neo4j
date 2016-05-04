@@ -28,21 +28,21 @@ package org.neo4j.visualization;
  */
 public interface PropertyRenderer<E extends Throwable>
 {
-	/**
-	 * Renders a property.
-	 * @param propertyKey
-	 *            the key of the property.
-	 * @param propertyValue
-	 *            the value of the property.
-	 * @throws E
-	 *             if an error occurs when rendering the property.
-	 */
-	void renderProperty( String propertyKey, Object propertyValue ) throws E;
+    /**
+     * Renders a property.
+     * @param propertyKey
+     *            the key of the property.
+     * @param propertyValue
+     *            the value of the property.
+     * @throws E
+     *             if an error occurs when rendering the property.
+     */
+    void renderProperty( String propertyKey, Object propertyValue ) throws E;
 
-	/**
-	 * Invoked when all properties have been rendered.
-	 * @throws E
-	 *             if an error occurs.
-	 */
-	void done() throws E;
+    /**
+     * Invoked when all properties have been rendered.
+     * @throws E
+     *             if an error occurs.
+     */
+    void done() throws E;
 }

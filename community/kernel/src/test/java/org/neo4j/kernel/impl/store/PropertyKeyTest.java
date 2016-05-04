@@ -53,7 +53,7 @@ public class PropertyKeyTest
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
-        
+
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( dir );
 
         // When

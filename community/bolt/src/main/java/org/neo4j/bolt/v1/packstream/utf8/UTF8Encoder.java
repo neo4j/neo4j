@@ -63,5 +63,4 @@ public interface UTF8Encoder
         }
     }
 
-
 }

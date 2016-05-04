@@ -45,7 +45,7 @@ public class Rm extends TransactionProvidingApp
         addOptionDefinition( "l", new OptionDefinition( OptionValueType.MUST,
                 "Removes one or more labels" ) );
     }
-    
+
     @Override
     public String getDescription()
     {
@@ -70,7 +70,7 @@ public class Rm extends TransactionProvidingApp
                 throw new ShellException( "Must supply the property key or label name to " +
                     "remove, like: rm title" );
             }
-            
+
             String key = parser.arguments().get( 0 );
             if ( thing.removeProperty( key ) == null )
             {

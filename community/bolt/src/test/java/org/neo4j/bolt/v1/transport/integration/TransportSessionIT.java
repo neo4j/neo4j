@@ -207,7 +207,6 @@ public class TransportSessionIT
         return bytes;
     }
 
-
     @Test
     public void shouldNotLeakStatsToNextStatement() throws Throwable
     {
@@ -247,7 +246,6 @@ public class TransportSessionIT
                         init( "TestClient/1.1", emptyMap() ),
                         run( "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)" ),
                         pullAll() ) );
-
 
         // Then
         assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );

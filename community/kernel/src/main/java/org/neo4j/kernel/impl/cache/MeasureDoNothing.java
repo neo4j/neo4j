@@ -24,11 +24,11 @@ import org.neo4j.logging.Log;
 public class MeasureDoNothing extends Thread
 {
     private volatile boolean measure = true;
-    
+
     private final long TIME_TO_WAIT;
     private final long NOTIFICATION_THRESHOLD;
     private final Log log;
-    
+
     public MeasureDoNothing( String threadName, Log log, long timeToWait, long pauseNotificationThreshold )
     {
         super( threadName );
@@ -41,7 +41,7 @@ public class MeasureDoNothing extends Thread
         this.NOTIFICATION_THRESHOLD = pauseNotificationThreshold + timeToWait;
         setDaemon( true );
     }
-    
+
     @Override
     public synchronized void run()
     {
@@ -66,7 +66,7 @@ public class MeasureDoNothing extends Thread
         }
         log.debug( "GC Monitor stopped. " );
     }
-    
+
     public synchronized void stopMeasuring()
     {
         measure = false;

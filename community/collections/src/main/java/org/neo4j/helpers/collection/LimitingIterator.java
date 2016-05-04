@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 /**
  * Limits the amount of items returned by an {@link Iterator}.
- * 
+ *
  * @author Mattias Persson
  *
  * @param <T> the type of items in this {@link Iterator}.
@@ -33,12 +33,12 @@ public class LimitingIterator<T> extends PrefetchingIterator<T>
     private int returned;
     private final Iterator<T> source;
     private final int limit;
-    
+
     /**
      * Instantiates a new limiting iterator which iterates over {@code source}
      * and if {@code limit} items have been returned the next {@link #hasNext()}
      * will return {@code false}.
-     * 
+     *
      * @param source the source of items.
      * @param limit the limit, i.e. the max number of items to return.
      */
@@ -47,7 +47,7 @@ public class LimitingIterator<T> extends PrefetchingIterator<T>
         this.source = source;
         this.limit = limit;
     }
-    
+
     @Override
     protected T fetchNextOrNull()
     {
@@ -62,7 +62,7 @@ public class LimitingIterator<T> extends PrefetchingIterator<T>
             returned++;
         }
     }
-    
+
     /**
      * @return {@code true} if the number of items returned up to this point
      * is equal to the limit given in the constructor, otherwise {@code false}.

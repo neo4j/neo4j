@@ -133,7 +133,6 @@ public class PlatformModule
 
         this.storeDir = providedStoreDir.getAbsoluteFile();
 
-
         fileSystem = dependencies.satisfyDependency( createFileSystemAbstraction() );
 
         // Component monitoring

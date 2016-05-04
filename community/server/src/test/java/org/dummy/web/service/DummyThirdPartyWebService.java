@@ -49,7 +49,6 @@ public class DummyThirdPartyWebService
                 .build();
     }
 
-
     @GET
     @Path("/{something}/{somethingElse}")
     @Produces( MediaType.TEXT_PLAIN )

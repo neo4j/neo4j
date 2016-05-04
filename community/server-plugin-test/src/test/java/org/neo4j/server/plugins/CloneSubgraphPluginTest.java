@@ -64,7 +64,7 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
         server = ServerHelper.createNonPersistentServer();
         functionalTestHelper = new FunctionalTestHelper( server );
     }
-    
+
     @AfterClass
     public static void shutdownServer()
     {

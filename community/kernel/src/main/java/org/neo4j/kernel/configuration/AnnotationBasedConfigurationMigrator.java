@@ -26,12 +26,11 @@ import java.util.Map;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.logging.Log;
 
-
 public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrator {
 
     private ArrayList<ConfigurationMigrator> migrators = new ArrayList<>();
     private AnnotatedFieldHarvester fieldHarvester = new AnnotatedFieldHarvester();
-    
+
     public AnnotationBasedConfigurationMigrator(
             Iterable<Class<?>> settingsClasses)
     {

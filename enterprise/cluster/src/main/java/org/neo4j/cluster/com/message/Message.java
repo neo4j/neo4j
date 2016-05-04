@@ -83,7 +83,6 @@ public class Message<MESSAGETYPE extends MessageType>
         return timeout;
     }
 
-
     // Standard headers
     public static final String CONVERSATION_ID = "conversation-id";
     public static final String CREATED_BY = "created-by";

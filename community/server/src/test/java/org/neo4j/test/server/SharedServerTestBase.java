@@ -43,8 +43,8 @@ public class SharedServerTestBase
 
     private static NeoServer server;
 
-	@Rule
-	public SuppressOutput suppressOutput = suppressAll();
+    @Rule
+    public SuppressOutput suppressOutput = suppressAll();
 
     @BeforeClass
     public static void allocateServer() throws Throwable

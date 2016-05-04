@@ -92,7 +92,6 @@ public class RelationshipCountsProcessorTest
         countsProcessor.process( 1, 0, 3 );
         countsProcessor.process( 2, 1, 4 );
 
-
         countsProcessor.done();
 
         // wildcard counts

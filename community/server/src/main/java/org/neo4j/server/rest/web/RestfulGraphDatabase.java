@@ -1965,12 +1965,12 @@ public class RestfulGraphDatabase
     {
         try
         {
-        	ListRepresentation constraints = actions.getPropertyUniquenessConstraint( labelName, propertyKeys );
-    		return output.ok( constraints );
+            ListRepresentation constraints = actions.getPropertyUniquenessConstraint( labelName, propertyKeys );
+            return output.ok( constraints );
         }
         catch ( IllegalArgumentException e )
         {
-        	return output.notFound( e );
+            return output.notFound( e );
         }
     }
 

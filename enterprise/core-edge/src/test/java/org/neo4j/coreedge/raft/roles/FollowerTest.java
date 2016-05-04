@@ -73,7 +73,6 @@ public class FollowerTest
                 .votingMembers( asSet( myself, member1, member2 ) )
                 .build();
 
-
         // when
         Outcome<RaftTestMember> outcome = new Follower().handle( new Election<>( myself ), state,
                 log() );
@@ -152,7 +151,6 @@ public class FollowerTest
                         new RaftLogEntry( 2, ContentGenerator.content() ),
                 },
                 -1 ), state, log() ) );
-
 
         RaftLogEntry[] entries = {
                 new RaftLogEntry( 1, new ReplicatedString( "commit this!" ) ),

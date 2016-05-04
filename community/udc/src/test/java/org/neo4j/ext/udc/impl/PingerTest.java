@@ -103,7 +103,6 @@ public class PingerTest
         private final Map<String, String> params;
         private boolean crashed;
 
-
         TestUdcCollector( Map<String, String> params )
         {
             this.params = params;

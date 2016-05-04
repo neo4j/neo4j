@@ -275,7 +275,6 @@ class ClusterInstance
                         new MemberInfoProvider() )
         );
 
-
         List<StateMachine> snapshotMachines = new ArrayList<>();
         for ( StateMachine stateMachine : server.getStateMachines().getStateMachines() )
         {

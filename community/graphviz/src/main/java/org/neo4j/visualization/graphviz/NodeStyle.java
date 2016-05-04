@@ -25,14 +25,14 @@ import org.neo4j.graphdb.Node;
 
 interface NodeStyle extends PropertyContainerStyle
 {
-	/**
-	 * Emit the start of a node.
-	 * @param stream
-	 *            the stream to emit the node to.
-	 * @param node
-	 *            the node to emit.
-	 * @throws IOException
-	 *             if there is an error on the stream.
-	 */
-	void emitNodeStart( Appendable stream, Node node ) throws IOException;
+    /**
+     * Emit the start of a node.
+     * @param stream
+     *            the stream to emit the node to.
+     * @param node
+     *            the node to emit.
+     * @throws IOException
+     *             if there is an error on the stream.
+     */
+    void emitNodeStart( Appendable stream, Node node ) throws IOException;
 }

@@ -149,7 +149,6 @@ public class TestNeo4jApiExceptions
         rollback();
     }
 
-
     @Test
     public void shouldGiveNiceErrorWhenShutdownKernelApi()
     {
@@ -196,7 +195,6 @@ public class TestNeo4jApiExceptions
 
     private Transaction tx;
     private GraphDatabaseService graph;
-
 
     private void newTransaction()
     {

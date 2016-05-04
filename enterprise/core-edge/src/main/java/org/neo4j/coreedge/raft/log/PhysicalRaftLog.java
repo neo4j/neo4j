@@ -184,7 +184,6 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
         entryCache.clear();
         metadataCache.removeUpwardsFrom( fromIndex );
 
-
         appendIndex.set( newAppendIndex );
         logRotation.rotateLogFile();
 

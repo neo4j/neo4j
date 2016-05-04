@@ -30,7 +30,7 @@ public class AsciiDocListGenerator
     private String listId;
     private String title;
     private boolean shortenDescription;
-    
+
     public AsciiDocListGenerator( String listId, String title, boolean shortenDescription )
     {
         this.listId = listId;

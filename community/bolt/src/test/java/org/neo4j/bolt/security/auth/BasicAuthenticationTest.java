@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.security.auth;
 
-
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;

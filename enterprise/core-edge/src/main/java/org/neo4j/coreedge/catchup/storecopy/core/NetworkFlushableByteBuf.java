@@ -35,7 +35,6 @@ public class NetworkFlushableByteBuf implements FlushableChannel
         this.delegate = byteBuf;
     }
 
-
     @Override
     public FlushableChannel put( byte value ) throws IOException
     {

@@ -192,7 +192,6 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         PrimitiveLongIterator results( IndexReader reader );
     }
 
-
     protected void updateAndCommit( List<NodePropertyUpdate> updates )
             throws IOException, IndexEntryConflictException
     {

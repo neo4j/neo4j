@@ -147,7 +147,6 @@ public class TestReadOnlyNeo4j
         { // good
         }
 
-
         Transaction transaction = db.beginTx();
         assertEquals( node1, db.getNodeById( node1.getId() ) );
         assertEquals( node2, db.getNodeById( node2.getId() ) );

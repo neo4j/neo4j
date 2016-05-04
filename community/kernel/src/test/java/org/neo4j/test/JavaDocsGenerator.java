@@ -31,7 +31,7 @@ public class JavaDocsGenerator extends AsciiDocGenerator
     {
         super( title, section );
     }
-    
+
     public void saveToFile( String identifier, String text )
     {
         Writer fw = getFW( DIRECTORY + File.separator + this.section,

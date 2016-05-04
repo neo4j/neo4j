@@ -32,8 +32,8 @@ import org.neo4j.function.Predicates;
  */
 public class FilteringIterable<T> implements Iterable<T>
 {
-	private final Iterable<T> source;
-	private final Predicate<T> predicate;
+    private final Iterable<T> source;
+    private final Predicate<T> predicate;
 
     public FilteringIterable( Iterable<T> source, Predicate<T> predicate )
     {
@@ -41,10 +41,10 @@ public class FilteringIterable<T> implements Iterable<T>
         this.predicate = predicate;
     }
 
-	public Iterator<T> iterator()
-	{
-		return new FilteringIterator<T>( source.iterator(), predicate );
-	}
+    public Iterator<T> iterator()
+    {
+        return new FilteringIterator<T>( source.iterator(), predicate );
+    }
 
     public static <T> Iterable<T> notNull( Iterable<T> source )
     {

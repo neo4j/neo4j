@@ -389,7 +389,6 @@ public class DbStructureCollector implements DbStructureVisitor
                 );
             }
 
-
             if ( backward.containsKey( name ) )
             {
                 throw new IllegalArgumentException(

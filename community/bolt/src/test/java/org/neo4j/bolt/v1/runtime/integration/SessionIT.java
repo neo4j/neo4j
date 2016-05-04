@@ -87,7 +87,6 @@ public class SessionIT
         // Then
         assertThat( responses.next(), success() );
 
-
         // When
         session.pullAll( null, pulling );
 

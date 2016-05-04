@@ -33,7 +33,7 @@ import org.neo4j.shell.Output;
  */
 public class SystemOutput implements Output
 {
-	private PrintWriter out;
+    private PrintWriter out;
 
     public SystemOutput()
     {
@@ -46,37 +46,37 @@ public class SystemOutput implements Output
     }
 
     public void print( Serializable object )
-	{
-		out.print(object);
-	}
+    {
+        out.print(object);
+    }
 
-	public void println()
-	{
-		out.println();
+    public void println()
+    {
+        out.println();
         out.flush();
-	}
+    }
 
-	public void println( Serializable object )
-	{
-		out.println( object );
+    public void println( Serializable object )
+    {
+        out.println( object );
         out.flush();
-	}
+    }
 
-	public Appendable append( char ch )
-	{
-		this.print( ch );
-		return this;
-	}
+    public Appendable append( char ch )
+    {
+        this.print( ch );
+        return this;
+    }
 
-	public Appendable append( CharSequence sequence )
-	{
-		this.println( RemoteOutput.asString( sequence ) );
-		return this;
-	}
+    public Appendable append( CharSequence sequence )
+    {
+        this.println( RemoteOutput.asString( sequence ) );
+        return this;
+    }
 
-	public Appendable append( CharSequence sequence, int start, int end )
-	{
-		this.print( RemoteOutput.asString( sequence ).substring( start, end ) );
-		return this;
-	}
+    public Appendable append( CharSequence sequence, int start, int end )
+    {
+        this.print( RemoteOutput.asString( sequence ).substring( start, end ) );
+        return this;
+    }
 }

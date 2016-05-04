@@ -1059,7 +1059,6 @@ public class Settings
                 throw new InvalidSettingException( name(), value, e.getMessage() );
             }
 
-
             return result;
         }
 

@@ -40,23 +40,23 @@ public class BashVariableInterpreterTest
     {
         // WHEN
         String interpreted = interpreter.interpret( "Date:\\d", server, session );
-        
+
         // THEN
         String datePart = interpreted.substring( "Date:".length() );
         assertNotNull( new SimpleDateFormat( "EEE MMM dd" ).parse( datePart ) );
     }
-    
+
     @Test
     public void shouldInterpretTime() throws Exception
     {
         // WHEN
         String interpreted = interpreter.interpret( "Time:\\t", server, session );
-        
+
         // THEN
         String datePart = interpreted.substring( "Time:".length() );
         assertNotNull( new SimpleDateFormat( "HH:mm:ss" ).parse( datePart ) );
     }
-    
+
     @Test
     public void customInterpreter() throws Exception
     {
@@ -69,18 +69,18 @@ public class BashVariableInterpreterTest
                 return "Hello";
             }
         } );
-        
+
         // WHEN
         String interpreted = interpreter.interpret( "\\test world", server, session );
-        
+
         // THEN
         assertEquals( "Hello world", interpreted );
     }
-    
+
     private final BashVariableInterpreter interpreter = new BashVariableInterpreter();
     private final Session session = new Session( 0 );
     private ShellServer server;
-    
+
     @Before
     public void before() throws Exception
     {

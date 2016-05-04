@@ -52,7 +52,7 @@ public class ThirdPartyJAXRSModuleTest
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
         when( neoServer.getDatabase() ).thenReturn( mock(Database.class));
-        
+
         Config config = mock( Config.class );
         List<ThirdPartyJaxRsPackage> jaxRsPackages = new ArrayList<ThirdPartyJaxRsPackage>();
         String path = "/third/party/package";

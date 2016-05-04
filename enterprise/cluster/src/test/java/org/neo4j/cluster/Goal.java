@@ -28,36 +28,36 @@ public class Goal
     {
         boolean met();
     }
-    
+
     private final List<SubGoal> subGoals = new ArrayList<SubGoal>();
     private final int maxMillisToWait;
     private final int waitAfterAllFulfilled;
-    
+
     public Goal( int maxMillisToWait, int waitAfterAllFulfilled )
     {
         this.maxMillisToWait = maxMillisToWait;
         this.waitAfterAllFulfilled = waitAfterAllFulfilled;
     }
-    
+
     public Goal add( SubGoal subGoal )
     {
         subGoals.add( subGoal );
         return this;
     }
-    
+
     public void await() throws GoalNotMetException
     {
         long endTime = System.currentTimeMillis() + maxMillisToWait;
         while ( !goalsAreMet() && System.currentTimeMillis() < endTime )
             sleep( 100 );
-        
+
         if ( !goalsAreMet() )
             throw new GoalNotMetException( subGoals, "timed out awaiting goals" );
-        
+
         // Wait a while to see if something makes a goal not valid shortly after it has
         // been fulfilled, for example some unexpected state transition.
         sleep( waitAfterAllFulfilled );
-        
+
         if ( !goalsAreMet() )
             throw new GoalNotMetException( subGoals, "goals became unfulfilled after first being fulfilled" );
     }
@@ -81,7 +81,7 @@ public class Goal
                 return false;
         return true;
     }
-    
+
     public static class GoalNotMetException extends Exception
     {
         public GoalNotMetException( List<SubGoal> subGoals, String additionalMessage )

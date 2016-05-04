@@ -200,12 +200,10 @@ public class SchemaIndexHaIT
             createIndex( master );
             dbFactory.awaitPopulationStarted( master );
 
-
             // WHEN the slave comes online before population has finished on the master
             slave = slaveDown.repair();
             cluster.await( allSeesAllAsAvailable(), 180 );
             cluster.sync();
-
 
             // THEN, population should finish successfully on both master and slave
             dbFactory.triggerFinish( master );
@@ -274,12 +272,10 @@ public class SchemaIndexHaIT
             tx.success();
         }
 
-
         // WHEN the slave comes online after population has finished on the master
         slave = slaveDown.repair();
         cluster.await( allSeesAllAsAvailable() );
         cluster.sync();
-
 
         // THEN the index should work on the slave
         dbFactory.triggerFinish( slave );
@@ -485,7 +481,6 @@ public class SchemaIndexHaIT
 
     public static final SchemaIndexProvider.Descriptor CONTROLLED_PROVIDER_DESCRIPTOR =
             new SchemaIndexProvider.Descriptor( "controlled", "1.0" );
-
 
     private static class ControlledSchemaIndexProvider extends SchemaIndexProvider
     {

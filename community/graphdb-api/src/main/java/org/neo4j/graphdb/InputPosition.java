@@ -28,7 +28,6 @@ public final class InputPosition
     private final int line;
     private final int column;
 
-
     /**
      * The empty position
      */

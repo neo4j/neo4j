@@ -549,7 +549,6 @@ public class IndexStatisticsTest
         return internalExecuteCreationsDeletionsAndUpdates( nodes, index, numberOfCreations, false, true );
     }
 
-
     private UpdatesTracker executeCreationsDeletionsAndUpdates( long[] nodes,
                                                                 IndexDescriptor index,
                                                                 int numberOfCreations ) throws KernelException

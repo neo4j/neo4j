@@ -32,14 +32,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.logging.NullLogProvider;
 
-
 public class DumpProcessInformationRule extends ExternalResource
 {
     public interface Dump
     {
         void dump() throws Exception;
     }
-    
+
     public static Dump localVm( final PrintStream out )
     {
         return new Dump()
@@ -51,7 +50,7 @@ public class DumpProcessInformationRule extends ExternalResource
             }
         };
     }
-    
+
     public static Dump otherVm( final Matcher<String> processFilter, final File baseDir )
     {
         return new Dump()
@@ -63,7 +62,7 @@ public class DumpProcessInformationRule extends ExternalResource
             }
         };
     }
-    
+
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool( 2 );
     private final long duration;
     private final TimeUnit timeUnit;
@@ -79,7 +78,7 @@ public class DumpProcessInformationRule extends ExternalResource
         this.timeUnit = timeUnit;
         this.dumps = dumps;
     }
-    
+
     @Override
     protected synchronized void before() throws Throwable
     {

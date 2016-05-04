@@ -68,7 +68,6 @@ public class TestWhiteListJavaWrapper
         Set<String> whiteList = new HashSet<String>(  );
         whiteList.add( Object.class.getName() );
 
-
         WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ));
 
         Context cx = Context.enter();
@@ -91,7 +90,6 @@ public class TestWhiteListJavaWrapper
         // Given
         Set<String> whiteList = new HashSet<String>(  );
         whiteList.add( Object.class.getName() );
-
 
         WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ));
 

@@ -72,7 +72,6 @@ public class NetworkReceiver
         void processedMessage( Message message );
     }
 
-
     public interface Configuration
     {
         HostnamePort clusterServer();

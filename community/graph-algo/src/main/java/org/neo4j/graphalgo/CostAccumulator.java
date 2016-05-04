@@ -29,7 +29,7 @@ package org.neo4j.graphalgo;
  * CostEvaluator is used to get the cost for a single relationship. These costs
  * are then added through a CostAccumulator. Costs for alternative paths are
  * compared with a common java.util.Comparator.
- * 
+ *
  * @author Patrik Larsson
  * @param <T> The data type the edge weights are represented by.
  */

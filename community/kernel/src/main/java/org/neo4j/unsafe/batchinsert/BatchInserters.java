@@ -66,12 +66,10 @@ public final class BatchInserters
         return inserter( storeDir, new DefaultFileSystemAbstraction(), config, (Iterable) Service.load( KernelExtensionFactory.class ) );
     }
 
-
     public static BatchInserter inserter( File storeDir, FileSystemAbstraction fs, Map<String,String> config ) throws IOException
     {
         return inserter( storeDir, fs, config, (Iterable) Service.load( KernelExtensionFactory.class )  );
     }
-
 
     public static BatchInserter inserter( File storeDir,
                                           Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException

@@ -44,7 +44,6 @@ public class SchemaIndexMigratorTest
     private final File storeDir = new File( "store" );
     private final File migrationDir = new File( "migrationDir" );
 
-
     private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
 
     @Test

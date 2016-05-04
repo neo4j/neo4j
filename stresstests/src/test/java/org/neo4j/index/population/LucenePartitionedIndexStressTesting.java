@@ -191,7 +191,6 @@ public class LucenePartitionedIndexStressTesting
     {
         AtomicLong nodesCounter = new AtomicLong();
 
-
         List<Future<Long>> futures = new ArrayList<>( NUMBER_OF_POPULATORS );
         for ( int i = 0; i < NUMBER_OF_POPULATORS; i++ )
         {

@@ -103,7 +103,7 @@ public class UniquenessOfPathsDocTest extends ImpermanentGraphJavaDocTestBase
                 return Evaluation.of( endNodeIsTarget, !endNodeIsTarget );
             }
         } );
-        
+
         Traverser results = td.traverse( start );
         // END SNIPPET: traverser
         String output = "";

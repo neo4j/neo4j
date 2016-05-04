@@ -63,7 +63,6 @@ import java.util.Date;
 import java.util.LinkedList;
 import javax.crypto.NoSuchPaddingException;
 
-
 public class Certificates
 {
     /** Generating SSL certificates takes a long time. This non-official setting allows us to use a fast source of randomness when running tests */
@@ -87,7 +86,6 @@ public class Certificates
         random = useInsecureCertificateGeneration ? new InsecureRandom() : new SecureRandom();
     }
 
-
     public void createSelfSignedCertificate(File certificatePath, File privateKeyPath, String hostName)
             throws GeneralSecurityException, IOException, OperatorCreationException
     {
@@ -107,7 +105,6 @@ public class Certificates
 
         //check so that cert is valid
         cert.verify( keypair.getPublic() );
-
 
         //write to disk
         writePem( "CERTIFICATE", cert.getEncoded(), certificatePath );

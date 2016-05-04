@@ -155,10 +155,10 @@ public class Set extends TransactionProvidingApp
     public String getDescription()
     {
         return "Sets a property on the current node or relationship or label on the current node.\n" +
-        		"Usage:\n" +
-        		"  set <key> <value>\n" +
-        		"  set -p <key> <value>\n" +
-        		"  set -l PERSON";
+                "Usage:\n" +
+                "  set <key> <value>\n" +
+                "  set -p <key> <value>\n" +
+                "  set -l PERSON";
     }
 
     protected static String getValueTypeName( Class<?> cls )
@@ -195,7 +195,7 @@ public class Set extends TransactionProvidingApp
                 node.addLabel( label );
             }
         }
-        
+
         return Continuation.INPUT_COMPLETE;
     }
 

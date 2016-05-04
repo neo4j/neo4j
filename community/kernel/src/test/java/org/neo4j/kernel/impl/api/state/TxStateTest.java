@@ -1605,7 +1605,6 @@ public class TxStateTest
         };
     }
 
-
     //endregion
 
     abstract class VisitationOrder extends TxStateVisitor.Adapter

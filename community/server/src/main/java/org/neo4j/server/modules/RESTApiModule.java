@@ -143,7 +143,7 @@ public class RESTApiModule implements ServerModule
     private void setupRequestTimeLimit()
     {
         Long limit = config.get( ServerSettings.webserver_limit_execution_time );
-        
+
         if ( limit != null )
         {
             try

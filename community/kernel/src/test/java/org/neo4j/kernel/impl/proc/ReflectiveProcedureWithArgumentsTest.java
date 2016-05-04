@@ -110,7 +110,6 @@ public class ReflectiveProcedureWithArgumentsTest
         compile( ClassWithProcedureWithoutAnnotatedArgs.class );
     }
 
-
     public static class MyOutputRecord
     {
         public String name;

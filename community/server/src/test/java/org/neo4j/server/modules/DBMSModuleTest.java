@@ -41,7 +41,7 @@ public class DBMSModuleTest
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.err,
             SuppressOutput.System.out );
-    
+
     @SuppressWarnings( "unchecked" )
     @Test
     public void shouldRegisterAtRootByDefault() throws Exception

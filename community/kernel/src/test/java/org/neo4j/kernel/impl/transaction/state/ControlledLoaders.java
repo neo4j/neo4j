@@ -58,12 +58,10 @@ public class ControlledLoaders
         return properties.data;
     }
 
-
     public Map<Long,RelationshipRecord> getRelationships()
     {
         return relationships.data;
     }
-
 
     public Map<Long,RelationshipGroupRecord> getRelationshipGroups()
     {

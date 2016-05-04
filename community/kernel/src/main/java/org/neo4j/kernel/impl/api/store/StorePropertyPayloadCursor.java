@@ -251,7 +251,6 @@ class StorePropertyPayloadCursor
         }
     }
 
-
     private long currentHeader()
     {
         return data[position];

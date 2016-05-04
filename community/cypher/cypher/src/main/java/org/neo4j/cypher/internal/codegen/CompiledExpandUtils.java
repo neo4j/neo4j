@@ -65,7 +65,6 @@ public abstract class CompiledExpandUtils
         return connectingRelationshipsIterator( allRelationships, startNode, endNode );
     }
 
-
     public static RelationshipIterator connectingRelationships( ReadOperations readOperations,
             long fromNode, Direction direction, long toNode, int... relTypes ) throws EntityNotFoundException
     {

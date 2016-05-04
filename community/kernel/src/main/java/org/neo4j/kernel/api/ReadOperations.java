@@ -96,7 +96,6 @@ public interface ReadOperations
     /** Returns the relationship types currently stored in the database */
     Iterator<Token> relationshipTypesGetAllTokens();
 
-
     int labelCount();
 
     int propertyKeyCount();

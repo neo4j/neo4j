@@ -174,7 +174,6 @@ public class ImportToolDocIT
         verifyData();
     }
 
-
     @Test
     public void separateHeadersCsvImport() throws Exception
     {

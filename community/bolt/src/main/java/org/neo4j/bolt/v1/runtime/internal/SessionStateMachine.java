@@ -341,7 +341,6 @@ public class SessionStateMachine implements Session, SessionState
                         return IDLE;
                     }
 
-
                     @Override
                     public State interrupt( SessionStateMachine ctx )
                     {

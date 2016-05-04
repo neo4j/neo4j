@@ -47,15 +47,15 @@ public class PathShellApp extends NonTransactionProvidingApp
         addOptionDefinition( "q", new OptionDefinition( OptionValueType.NONE, "More quiet, print less verbose paths" ) );
         addOptionDefinition( "s", new OptionDefinition( OptionValueType.NONE, "Find max one path" ) );
     }
-    
+
     @Override
     public String getDescription()
     {
         return "Displays paths from current (or any node) to another node using supplied algorithm. Usage:\n" +
                 "\n# Find shortest paths from current to node 241 at max depth 10" +
-        		"\npaths -m 10 -a shortestPath -f KNOWS:out,LOVES:in 241"; 
+                "\npaths -m 10 -a shortestPath -f KNOWS:out,LOVES:in 241";
     }
-    
+
     @Override
     public String getName()
     {
@@ -72,10 +72,10 @@ public class PathShellApp extends NonTransactionProvidingApp
         boolean quietPrint = parser.options().containsKey( "q" );
         boolean caseInsensitiveFilters = parser.options().containsKey( "i" );
         boolean looseFilters = parser.options().containsKey( "l" );
-        
+
         int maxDepth = maxDepthString != null ? Integer.parseInt( maxDepthString ) : Integer.MAX_VALUE;
         fromString = fromString != null ? fromString : String.valueOf( this.getCurrent( session ).getId() );
-        
+
         Map<String, Object> filter = parseFilter( parser.options().get( "f" ), out );
         PathExpander expander = toExpander( getServer().getDb(), Direction.BOTH, filter,
                 caseInsensitiveFilters, looseFilters );
@@ -92,7 +92,7 @@ public class PathShellApp extends NonTransactionProvidingApp
                 printPath( path, quietPrint, session, out );
             }
         }
-        
+
         return Continuation.INPUT_COMPLETE;
     }
 

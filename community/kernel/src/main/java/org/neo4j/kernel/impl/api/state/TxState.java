@@ -1146,7 +1146,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     {
         constraintsChangesDiffSets().remove( constraint );
 
-
         if ( constraint instanceof UniquenessConstraint )
         {
             constraintIndexDoDrop( new IndexDescriptor( constraint.label(), constraint.propertyKey() ) );

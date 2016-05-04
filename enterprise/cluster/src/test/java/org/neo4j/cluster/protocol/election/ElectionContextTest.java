@@ -305,7 +305,6 @@ public class ElectionContextTest
         assertEquals( 1, electionContext.getVoteCount( role2 ) );
     }
 
-
     @Test
     public void failedElectorRejoiningMustHaveItsVersionFromVoteRequestsSetTheElectorVersion() throws Throwable
     {

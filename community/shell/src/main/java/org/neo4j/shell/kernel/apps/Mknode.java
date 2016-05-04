@@ -48,7 +48,7 @@ public class Mknode extends TransactionProvidingApp
     public String getDescription()
     {
         return "Creates a new node, f.ex:\n" +
-        		"mknode --cd --np \"{'name':'Neo'}\" -l PERSON";
+                "mknode --cd --np \"{'name':'Neo'}\" -l PERSON";
     }
 
     @Override

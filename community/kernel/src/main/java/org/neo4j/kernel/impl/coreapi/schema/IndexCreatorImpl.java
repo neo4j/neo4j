@@ -49,7 +49,7 @@ public class IndexCreatorImpl implements IndexCreator
 
         assertInUnterminatedTransaction();
     }
-    
+
     @Override
     public IndexCreator on( String propertyKey )
     {

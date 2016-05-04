@@ -118,7 +118,6 @@ public class BadCollectorTest
         }
     }
 
-
     @Test
     public void shouldNotCollectBadRelationshipsIfWeShouldOnlyBeCollectingNodes() throws IOException
     {

@@ -145,8 +145,6 @@ public class IndexRestartIT
         assertEquals( 2, provider.populatorCallCount.get() );
     }
 
-
-
     private IndexDefinition createIndex()
     {
         try (Transaction tx = db.beginTx())

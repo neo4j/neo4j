@@ -98,12 +98,10 @@ import java.util.*;
  */
 public class JSONArray {
 
-
     /**
      * The arrayList where the JSONArray's properties are kept.
      */
     private ArrayList<Object> myArrayList;
-
 
     /**
      * Construct an empty JSONArray.
@@ -166,7 +164,6 @@ public class JSONArray {
         }
     }
 
-
     /**
      * Construct a JSONArray from a source JSON text.
      * @param source     A string that begins with
@@ -177,7 +174,6 @@ public class JSONArray {
     public JSONArray(String source) throws JSONException {
         this(new JSONTokener(source));
     }
-
 
     /**
      * Construct a JSONArray from a Collection.
@@ -192,27 +188,26 @@ public class JSONArray {
     /**
      * Construct a JSONArray from a collection of beans.
      * The collection should have Java Beans.
-     * 
+     *
      */
 
     public JSONArray(Collection collection, boolean includeSuperClass) {
-		this.myArrayList = new ArrayList<Object>();
-		if (collection != null) {
-			Iterator iter = collection.iterator();;
-			while (iter.hasNext()) {
-			    Object o = iter.next();
-			    if (o instanceof Map) {
-			    	this.myArrayList.add(new JSONObject((Map)o, includeSuperClass));
-			    } else if (!JSONObject.isStandardProperty(o.getClass())) {
-			    	this.myArrayList.add(new JSONObject(o, includeSuperClass));
-			    } else {
-                    this.myArrayList.add(o);  
-				}
-			}
-		}
+        this.myArrayList = new ArrayList<Object>();
+        if (collection != null) {
+            Iterator iter = collection.iterator();;
+            while (iter.hasNext()) {
+                Object o = iter.next();
+                if (o instanceof Map) {
+                    this.myArrayList.add(new JSONObject((Map)o, includeSuperClass));
+                } else if (!JSONObject.isStandardProperty(o.getClass())) {
+                    this.myArrayList.add(new JSONObject(o, includeSuperClass));
+                } else {
+                    this.myArrayList.add(o);
+                }
+            }
+        }
     }
 
-    
     /**
      * Construct a JSONArray from an array
      * @throws JSONException If not an array.
@@ -232,7 +227,7 @@ public class JSONArray {
     /**
      * Construct a JSONArray from an array with a bean.
      * The array should have Java Beans.
-     * 
+     *
      * @throws JSONException If not an array.
      */
     public JSONArray(Object array,boolean includeSuperClass) throws JSONException {
@@ -242,9 +237,9 @@ public class JSONArray {
             for (int i = 0; i < length; i += 1) {
                 Object o = Array.get(array, i);
                 if (JSONObject.isStandardProperty(o.getClass())) {
-                    this.myArrayList.add(o);  
+                    this.myArrayList.add(o);
                 } else {
-                    this.myArrayList.add(new JSONObject(o,includeSuperClass));  
+                    this.myArrayList.add(new JSONObject(o,includeSuperClass));
                 }
             }
         } else {
@@ -252,8 +247,6 @@ public class JSONArray {
         }
     }
 
-    
-    
     /**
      * Get the object value associated with an index.
      * @param index
@@ -268,7 +261,6 @@ public class JSONArray {
         }
         return o;
     }
-
 
     /**
      * Get the boolean value associated with an index.
@@ -293,7 +285,6 @@ public class JSONArray {
         throw new JSONException("JSONArray[" + index + "] is not a Boolean.");
     }
 
-
     /**
      * Get the double value associated with an index.
      *
@@ -314,7 +305,6 @@ public class JSONArray {
         }
     }
 
-
     /**
      * Get the int value associated with an index.
      *
@@ -329,7 +319,6 @@ public class JSONArray {
         return o instanceof Number ?
                 ((Number)o).intValue() : (int)getDouble(index);
     }
-
 
     /**
      * Get the JSONArray associated with an index.
@@ -347,7 +336,6 @@ public class JSONArray {
                 "] is not a JSONArray.");
     }
 
-
     /**
      * Get the JSONObject associated with an index.
      * @param index subscript
@@ -364,7 +352,6 @@ public class JSONArray {
             "] is not a JSONObject.");
     }
 
-
     /**
      * Get the long value associated with an index.
      *
@@ -379,7 +366,6 @@ public class JSONArray {
                 ((Number)o).longValue() : (long)getDouble(index);
     }
 
-
     /**
      * Get the string associated with an index.
      * @param index The index must be between 0 and length() - 1.
@@ -390,7 +376,6 @@ public class JSONArray {
         return get(index).toString();
     }
 
-
     /**
      * Determine if the value is null.
      * @param index The index must be between 0 and length() - 1.
@@ -399,7 +384,6 @@ public class JSONArray {
     public boolean isNull(int index) {
         return JSONObject.NULL.equals(opt(index));
     }
-
 
     /**
      * Make a string from the contents of this JSONArray. The
@@ -422,7 +406,6 @@ public class JSONArray {
         return sb.toString();
     }
 
-
     /**
      * Get the number of elements in the JSONArray, included nulls.
      *
@@ -431,7 +414,6 @@ public class JSONArray {
     public int length() {
         return this.myArrayList.size();
     }
-
 
     /**
      * Get the optional object value associated with an index.
@@ -444,7 +426,6 @@ public class JSONArray {
             null : this.myArrayList.get(index);
     }
 
-
     /**
      * Get the optional boolean value associated with an index.
      * It returns false if there is no value at that index,
@@ -456,7 +437,6 @@ public class JSONArray {
     public boolean optBoolean(int index)  {
         return optBoolean(index, false);
     }
-
 
     /**
      * Get the optional boolean value associated with an index.
@@ -475,7 +455,6 @@ public class JSONArray {
         }
     }
 
-
     /**
      * Get the optional double value associated with an index.
      * NaN is returned if there is no value for the index,
@@ -487,7 +466,6 @@ public class JSONArray {
     public double optDouble(int index) {
         return optDouble(index, Double.NaN);
     }
-
 
     /**
      * Get the optional double value associated with an index.
@@ -506,7 +484,6 @@ public class JSONArray {
         }
     }
 
-
     /**
      * Get the optional int value associated with an index.
      * Zero is returned if there is no value for the index,
@@ -518,7 +495,6 @@ public class JSONArray {
     public int optInt(int index) {
         return optInt(index, 0);
     }
-
 
     /**
      * Get the optional int value associated with an index.
@@ -536,7 +512,6 @@ public class JSONArray {
         }
     }
 
-
     /**
      * Get the optional JSONArray associated with an index.
      * @param index subscript
@@ -547,7 +522,6 @@ public class JSONArray {
         Object o = opt(index);
         return o instanceof JSONArray ? (JSONArray)o : null;
     }
-
 
     /**
      * Get the optional JSONObject associated with an index.
@@ -562,7 +536,6 @@ public class JSONArray {
         return o instanceof JSONObject ? (JSONObject)o : null;
     }
 
-
     /**
      * Get the optional long value associated with an index.
      * Zero is returned if there is no value for the index,
@@ -574,7 +547,6 @@ public class JSONArray {
     public long optLong(int index) {
         return optLong(index, 0);
     }
-
 
     /**
      * Get the optional long value associated with an index.
@@ -592,7 +564,6 @@ public class JSONArray {
         }
     }
 
-
     /**
      * Get the optional string value associated with an index. It returns an
      * empty string if there is no value at that index. If the value
@@ -604,7 +575,6 @@ public class JSONArray {
     public String optString(int index) {
         return optString(index, "");
     }
-
 
     /**
      * Get the optional string associated with an index.
@@ -619,7 +589,6 @@ public class JSONArray {
         return o != null ? o.toString() : defaultValue;
     }
 
-
     /**
      * Append a boolean value. This increases the array's length by one.
      *
@@ -631,7 +600,6 @@ public class JSONArray {
         return this;
     }
 
-
     /**
      * Put a value in the JSONArray, where the value will be a
      * JSONArray which is produced from a Collection.
@@ -642,7 +610,6 @@ public class JSONArray {
         put(new JSONArray(value));
         return this;
     }
-
 
     /**
      * Append a double value. This increases the array's length by one.
@@ -658,7 +625,6 @@ public class JSONArray {
         return this;
     }
 
-
     /**
      * Append an int value. This increases the array's length by one.
      *
@@ -669,7 +635,6 @@ public class JSONArray {
         put(new Integer(value));
         return this;
     }
-
 
     /**
      * Append an long value. This increases the array's length by one.
@@ -682,7 +647,6 @@ public class JSONArray {
         return this;
     }
 
-
     /**
      * Put a value in the JSONArray, where the value will be a
      * JSONObject which is produced from a Map.
@@ -693,7 +657,6 @@ public class JSONArray {
         put(new JSONObject(value));
         return this;
     }
-
 
     /**
      * Append an object value. This increases the array's length by one.
@@ -706,7 +669,6 @@ public class JSONArray {
         this.myArrayList.add(value);
         return this;
     }
-
 
     /**
      * Put or replace a boolean value in the JSONArray. If the index is greater
@@ -722,7 +684,6 @@ public class JSONArray {
         return this;
     }
 
-
     /**
      * Put a value in the JSONArray, where the value will be a
      * JSONArray which is produced from a Collection.
@@ -736,7 +697,6 @@ public class JSONArray {
         put(index, new JSONArray(value));
         return this;
     }
-
 
     /**
      * Put or replace a double value. If the index is greater than the length of
@@ -753,7 +713,6 @@ public class JSONArray {
         return this;
     }
 
-
     /**
      * Put or replace an int value. If the index is greater than the length of
      *  the JSONArray, then null elements will be added as necessary to pad
@@ -767,7 +726,6 @@ public class JSONArray {
         put(index, new Integer(value));
         return this;
     }
-
 
     /**
      * Put or replace a long value. If the index is greater than the length of
@@ -783,7 +741,6 @@ public class JSONArray {
         return this;
     }
 
-
     /**
      * Put a value in the JSONArray, where the value will be a
      * JSONObject which is produced from a Map.
@@ -797,7 +754,6 @@ public class JSONArray {
         put(index, new JSONObject(value));
         return this;
     }
-
 
     /**
      * Put or replace an object value in the JSONArray. If the index is greater
@@ -826,8 +782,7 @@ public class JSONArray {
         }
         return this;
     }
-    
-    
+
     /**
      * Remove a index and close the hole.
      * @param index The index of the element to be removed.
@@ -835,11 +790,10 @@ public class JSONArray {
      * or null if there was no value.
      */
     public Object remove(int index) {
-    	Object o = opt(index);
+        Object o = opt(index);
         this.myArrayList.remove(index);
         return o;
     }
-
 
     /**
      * Produce a JSONObject by combining a JSONArray of names with the values
@@ -861,7 +815,6 @@ public class JSONArray {
         return jo;
     }
 
-
     /**
      * Make a JSON text of this JSONArray. For compactness, no
      * unnecessary whitespace is added. If it is not possible to produce a
@@ -882,7 +835,6 @@ public class JSONArray {
         }
     }
 
-
     /**
      * Make a prettyprinted JSON text of this JSONArray.
      * Warning: This method assumes that the data structure is acyclical.
@@ -897,7 +849,6 @@ public class JSONArray {
     public String toString(int indentFactor) throws JSONException {
         return toString(indentFactor, 0);
     }
-
 
     /**
      * Make a prettyprinted JSON text of this JSONArray.
@@ -940,7 +891,6 @@ public class JSONArray {
         sb.append(']');
         return sb.toString();
     }
-
 
     /**
      * Write the contents of the JSONArray as JSON text to a writer.

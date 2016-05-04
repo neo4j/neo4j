@@ -64,7 +64,6 @@ public class NetworkMock
     protected final Log log;
     private final List<Pair<Future<?>, Runnable>> futureWaiter;
 
-
     public NetworkMock( LogService logService, Monitors monitors, long tickDuration, MultipleFailureLatencyStrategy strategy,
                         MessageTimeoutStrategy timeoutStrategy )
     {

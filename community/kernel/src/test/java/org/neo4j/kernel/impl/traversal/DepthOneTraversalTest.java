@@ -45,13 +45,13 @@ public class DepthOneTraversalTest extends TraversalTestBase
     {
         tx.close();
     }
-    
+
     private void shouldGetBothNodesOnDepthOne( TraversalDescription description )
     {
         description = description.evaluator( atDepth( 1 ) );
         expectNodes( description.traverse( getNodeWithName( "3" ) ), "1", "2" );
     }
-    
+
     @Test
     public void shouldGetBothNodesOnDepthOneForDepthFirst()
     {

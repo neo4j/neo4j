@@ -45,7 +45,7 @@ public interface ReadableIndex<T extends PropertyContainer>
      * Returns exact matches from this index, given the key/value pair. Matches
      * will be for key/value pairs just as they were added by the
      * {@link Index#add(PropertyContainer, String, Object)} method.
-     * 
+     *
      * @param key the key in the key/value pair to match.
      * @param value the value in the key/value pair to match.
      * @return the result wrapped in an {@link IndexHits} object. If the entire
@@ -82,7 +82,7 @@ public interface ReadableIndex<T extends PropertyContainer>
      * A ReadableIndex is possible to support mutating operations as well. This
      * method returns true iff such operations are supported by the
      * implementation.
-     * 
+     *
      * @return true iff mutating operations are supported.
      */
     boolean isWriteable();

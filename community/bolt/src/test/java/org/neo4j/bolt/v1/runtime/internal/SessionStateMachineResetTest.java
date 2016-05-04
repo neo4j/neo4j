@@ -43,7 +43,7 @@ public class SessionStateMachineResetTest
 
         // When
         ssm.interrupt();
-        
+
         // Then
         ssm.run( "hello", map(), null, recorder );
         ssm.reset( null, recorder );

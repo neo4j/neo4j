@@ -130,7 +130,6 @@ public class GraphDatabaseFacadeFactoryTest
                     }
                 } ).when( lifeMock ).add( any( Lifecycle.class ) );
 
-
                 return new PlatformModule( storeDir, params, databaseInfo(), dependencies, graphDatabaseFacade )
                 {
                     @Override

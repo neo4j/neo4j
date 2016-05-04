@@ -274,7 +274,6 @@ public class HighAvailabilityModeSwitcherTest
         verify( switchToSlave ).switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri1 ),
                 any( CancellationRequest.class ) );
 
-
         // masterIsAvailable for instance 2
         URI uri2 = URI.create( "ha://server2" );
         modeSwitcher.masterIsAvailable(

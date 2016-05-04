@@ -62,7 +62,6 @@ public class ConfigurableIOLimiterTest
     {
         createIOLimiter( Config.defaults() );
 
-
         // Do 100*100 = 10000 IOs real quick, when we're limited to 1000 IOPS.
         long stamp = IOLimiter.INITIAL_STAMP;
         repeatedlyCallMaybeLimitIO( limiter, stamp, 100 );

@@ -273,7 +273,6 @@ public class KeyValueStoreFileFormatTest
             headers.put( "one", new byte[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,} );
             headers.put( "two", new byte[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,} );
 
-
             Data data = data( // two full pages (and nothing more)
                     // page 0
                     entry( bytes( 12 ), bytes( 'v', 'a', 'l', 1 ) ),
@@ -288,7 +287,6 @@ public class KeyValueStoreFileFormatTest
             {
             }
         }
-
 
         {
             // when failing on creating the next version of that file
@@ -342,7 +340,6 @@ public class KeyValueStoreFileFormatTest
             read = stream.read( readEntry );
             assertEquals( size, read );
             assertArrayEquals( new byte[]{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, readEntry );
-
 
             for ( int i = 0; i < headers.size(); i++ )
             {

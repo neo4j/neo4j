@@ -249,7 +249,6 @@ public class DatabaseActionsTest
             tx.success();
         }
 
-
         int nodeCount = graphdbHelper.getNumberOfNodes();
         actions.deleteNode( nodeId );
         assertEquals( nodeCount - 1, graphdbHelper.getNumberOfNodes() );
@@ -879,7 +878,6 @@ public class DatabaseActionsTest
     {
         long startNode = createBasicTraversableGraph();
 
-
         try ( Transaction transaction = graph.beginTx() )
         {
             assertEquals( 3, serialize( actions.traverse( startNode, MapUtil.map( "max_depth", 2 ),
@@ -970,7 +968,6 @@ public class DatabaseActionsTest
                     TraverserReturnType.path ) );
         }
 
-
         for ( Object hit : hits )
         {
             @SuppressWarnings("unchecked")
@@ -992,7 +989,6 @@ public class DatabaseActionsTest
             hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
                     TraverserReturnType.fullpath ) );
         }
-
 
         for ( Object hit : hits )
         {
@@ -1201,7 +1197,6 @@ public class DatabaseActionsTest
         actions.getNodesWithLabel( "Person", map( "name", "bob", "age", 12 ) );
     }
 
-
     private void assertPaths( int numPaths, long[] nodes, int length, List<Object> result )
     {
         assertEquals( numPaths, result.size() );
@@ -1268,7 +1263,6 @@ public class DatabaseActionsTest
         {
             serialized = serialize( actions.getSchemaIndexes( labelName ) );
         }
-
 
         // THEN
         assertEquals( 1, serialized.size() );

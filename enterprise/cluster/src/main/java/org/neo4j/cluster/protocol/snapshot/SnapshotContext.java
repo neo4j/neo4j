@@ -52,8 +52,6 @@ public class SnapshotContext
         return learnerContext;
     }
 
-
-
     public SnapshotProvider getSnapshotProvider()
     {
         return snapshotProvider;

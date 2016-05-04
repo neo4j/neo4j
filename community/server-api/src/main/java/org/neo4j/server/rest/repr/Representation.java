@@ -73,11 +73,11 @@ public abstract class Representation
         this.type = new RepresentationType( type );
     }
 
-	public RepresentationType getRepresentationType() 
-	{
-		return this.type;
-	}
-	
+    public RepresentationType getRepresentationType()
+    {
+        return this.type;
+    }
+
     abstract String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions );
 
     abstract void addTo( ListSerializer serializer );

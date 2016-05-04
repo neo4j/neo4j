@@ -28,7 +28,7 @@ public class FilterBinaryNode implements FilterExpression
     private FilterExpression e1;
     private FilterExpression e2;
     private boolean trueForAnd;
-    
+
     /**
      * Constructs a new binary node which has two expressions, grouped together
      * as one.
@@ -43,14 +43,14 @@ public class FilterBinaryNode implements FilterExpression
         this.e2 = expression2;
         this.trueForAnd = trueForAnd;
     }
-    
+
     public boolean matches( FilterValueGetter valueGetter )
     {
         return this.trueForAnd ?
             this.e1.matches( valueGetter ) && this.e2.matches( valueGetter ) :
             this.e1.matches( valueGetter ) || this.e2.matches( valueGetter );
     }
-    
+
     /**
      * @return the first expression of the two.
      */
@@ -58,7 +58,7 @@ public class FilterBinaryNode implements FilterExpression
     {
         return this.e1;
     }
-    
+
     /**
      * @return the second expression of the two.
      */

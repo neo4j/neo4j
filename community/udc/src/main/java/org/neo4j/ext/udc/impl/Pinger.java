@@ -46,7 +46,6 @@ public class Pinger
         }
     }
 
-
     public void ping() throws IOException
     {
         pingCount++;

@@ -28,7 +28,7 @@ import javax.management.MBeanOperationInfo;
 
 /**
  * Used to provide JMX documentation to management beans.
- * 
+ *
  * Annotate the M(X)Bean interface and its methods to provide documentation.
  */
 @Target( { ElementType.METHOD, ElementType.TYPE, ElementType.FIELD } )

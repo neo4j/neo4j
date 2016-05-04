@@ -103,7 +103,6 @@ public class JmxQueryProcedureTest
                 } ) ) );
     }
 
-
     @Test
     public void shouldHandleCompositeAttributes() throws Throwable
     {

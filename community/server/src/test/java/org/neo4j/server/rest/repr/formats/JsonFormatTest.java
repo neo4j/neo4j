@@ -137,7 +137,7 @@ public class JsonFormatTest
                 JsonHelper.createJsonFrom( Collections.singletonMap( "nested",
                         Collections.singletonMap( "data", "expected data" ) ) ), entity );
     }
-    
+
     @Test
     public void canFormatNestedMapsAndLists() throws Exception
     {

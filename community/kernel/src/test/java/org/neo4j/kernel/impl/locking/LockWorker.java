@@ -34,7 +34,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
     {
         super( name, new LockWorkerState( locks ) );
     }
-    
+
     private Future<Void> perform( AcquireLockCommand acquireLockCommand, boolean wait ) throws Exception
     {
         Future<Void> future = executeDontWait( acquireLockCommand );
@@ -44,7 +44,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             waitUntilWaiting();
         return future;
     }
-    
+
     public Future<Void> getReadLock( final long resource, final boolean wait ) throws Exception
     {
         return perform( new AcquireLockCommand()
@@ -72,7 +72,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             }
         }, wait );
     }
-    
+
     public void releaseReadLock( final long resource ) throws Exception
     {
         perform( new AcquireLockCommand()
@@ -86,7 +86,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             }
         }, true );
     }
-    
+
     public void releaseWriteLock( final long resource ) throws Exception
     {
         perform( new AcquireLockCommand()
@@ -105,7 +105,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
     {
         return state.deadlockOnLastWait;
     }
-    
+
     @Override
     public void dump( Logger logger )
     {
@@ -116,7 +116,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
         logger.log( "Doing right now:" );
         logger.log( state.doing );
     }
-    
+
     public static ResourceObject newResourceObject( String name )
     {
         return new ResourceObject( name );
@@ -137,7 +137,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
             return this.name;
         }
     }
-    
+
     private abstract static class AcquireLockCommand implements WorkerCommand<LockWorkerState, Void>
     {
         @Override

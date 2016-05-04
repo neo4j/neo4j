@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Relationship;
  * A place to access {@link BatchInserterIndex}s from a certain index provider.
  * Use together with {@link BatchInserter} to create indexes which later can be
  * accessed through {@link GraphDatabaseService#index()}.
- * 
+ *
  * @author Mattias Persson
  *
  */
@@ -40,7 +40,7 @@ public interface BatchInserterIndexProvider
      * {@code indexName} with the given {@code config}. The {@code config}
      * {@link Map} can contain any provider-implementation-specific data that
      * can control how an index behaves.
-     * 
+     *
      * @param indexName the name of the index. It will be created if it doesn't
      *            exist.
      * @param config a {@link Map} of configuration parameters to use with the
@@ -50,13 +50,13 @@ public interface BatchInserterIndexProvider
      *         {@code indexName}.
      */
     BatchInserterIndex nodeIndex( String indexName, Map<String, String> config );
-    
+
     /**
      * Returns a {@link BatchInserterIndex} for {@link Relationship}s for the
      * name {@code indexName} with the given {@code config}. The {@code config}
      * {@link Map} can contain any provider-implementation-specific data that
      * can control how an index behaves.
-     * 
+     *
      * @param indexName the name of the index. It will be created if it doesn't
      *            exist.
      * @param config a {@link Map} of configuration parameters to use with the

@@ -288,7 +288,6 @@ public class SocnetTest
             e = personRepository.createPerson( "e" );
             f = personRepository.createPerson( "f" );
 
-
             // A is friends with B,C and D
             a.addFriend( b );
             a.addFriend( c );

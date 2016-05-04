@@ -31,7 +31,7 @@ public class ClusterEntryDeniedException extends IllegalStateException
         super( "I was denied entry. I am " + me + ", configuration response:" + configurationResponseState );
         this.configurationResponseState = configurationResponseState;
     }
-    
+
     public ConfigurationResponseState getConfigurationResponseState()
     {
         return configurationResponseState;

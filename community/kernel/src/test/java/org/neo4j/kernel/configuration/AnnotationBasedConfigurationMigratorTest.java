@@ -56,7 +56,6 @@ public class AnnotationBasedConfigurationMigratorTest
         // Given
         AnnotationBasedConfigurationMigrator migrator = new AnnotationBasedConfigurationMigrator( Arrays.asList( new Class<?>[]{SomeSettings.class} ) );
 
-
         // When
         migrator.apply( new HashMap<String,String>(), null );
 
@@ -64,7 +63,5 @@ public class AnnotationBasedConfigurationMigratorTest
         assertThat(wasCalled.get(), is(true));
 
     }
-
-
 
 }

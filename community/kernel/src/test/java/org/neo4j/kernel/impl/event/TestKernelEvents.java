@@ -34,10 +34,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 public class TestKernelEvents
 {
     private static final String PATH = "target/var/neodb";
-    
+
     private static final Object RESOURCE1 = new Object();
     private static final Object RESOURCE2 = new Object();
-    
+
     @BeforeClass
     public static void doBefore()
     {

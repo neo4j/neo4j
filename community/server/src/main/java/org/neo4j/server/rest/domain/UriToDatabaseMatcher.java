@@ -53,7 +53,7 @@ public class UriToDatabaseMatcher
     /**
      * Adds a mapping the given database using the default URI
      * (/{database_name})
-     * 
+     *
      * @param databaseName
      */
     public void add( GraphDatabaseName databaseName )

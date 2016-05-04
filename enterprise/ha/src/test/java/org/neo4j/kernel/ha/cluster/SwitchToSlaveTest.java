@@ -223,7 +223,6 @@ public class SwitchToSlaveTest
         assertNull( uri );
     }
 
-
     @Test
     public void updatesPulledAndPullingScheduledOnSwitchToSlave() throws Throwable
     {
@@ -247,7 +246,6 @@ public class SwitchToSlaveTest
                 return null;
             }
         } ).when( communicationLife ).start();
-
 
         switchToSlave.switchToSlave( communicationLife, localhost, localhost, mock( CancellationRequest.class ) );
 

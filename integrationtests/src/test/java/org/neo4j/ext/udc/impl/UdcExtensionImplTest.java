@@ -250,7 +250,6 @@ public class UdcExtensionImplTest
             }
         } );
 
-
         t.run();
 
         assertTrue( latch.await( 1000, TimeUnit.MILLISECONDS ) );
@@ -601,7 +600,6 @@ public class UdcExtensionImplTest
             FileUtils.deleteDirectory( new File( db.getStoreDir() ) );
         }
     }
-
 
     private static class PointerTo<T>
     {

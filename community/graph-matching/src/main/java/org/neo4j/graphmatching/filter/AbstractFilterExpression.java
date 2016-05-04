@@ -30,7 +30,7 @@ public abstract class AbstractFilterExpression implements FilterExpression
 {
     private final String label;
     private final String property;
-    
+
     /**
      * Constructs a new filter expression.
      * @param label the {@link PatternNode} label.
@@ -41,7 +41,7 @@ public abstract class AbstractFilterExpression implements FilterExpression
         this.label = label;
         this.property = property;
     }
-    
+
     /**
      * @return The {@link PatternNode} label.
      */
@@ -49,7 +49,7 @@ public abstract class AbstractFilterExpression implements FilterExpression
     {
         return this.label;
     }
-    
+
     /**
      * @return the property key.
      */

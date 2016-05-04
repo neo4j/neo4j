@@ -259,7 +259,6 @@ public class DocValuesCollector extends SimpleCollector
         }
     }
 
-
     private TopDocs getTopDocs( Sort sort, int size ) throws IOException
     {
         TopDocs topDocs;

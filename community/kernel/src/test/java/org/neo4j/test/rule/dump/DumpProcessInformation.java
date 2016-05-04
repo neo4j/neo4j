@@ -51,16 +51,16 @@ public class DumpProcessInformation
         new DumpProcessInformation( FormattedLogProvider.toOutputStream( System.out ), new File( dumpDir ) ).dumpRunningProcesses(
                 doHeapDump, containing );
     }
-    
+
     private final Log log;
     private final File outputDirectory;
-    
+
     public DumpProcessInformation( LogProvider logProvider, File outputDirectory )
     {
         this.log = logProvider.getLog( getClass() );
         this.outputDirectory = outputDirectory;
     }
-    
+
     public void dumpRunningProcesses( boolean includeHeapDump, String... javaPidsContainingClassNames )
             throws Exception
     {
@@ -92,7 +92,7 @@ public class DumpProcessInformation
         String[] cmdarray = new String[] {"jmap", "-dump:file=" + outputFile.getAbsolutePath(), "" + pid.first() };
         Runtime.getRuntime().exec( cmdarray ).waitFor();
     }
-    
+
     public void doThreadDump( Matcher<String> processFilter ) throws Exception
     {
         for ( Pair<Long,String> pid : getJPids( processFilter ) )
@@ -100,7 +100,7 @@ public class DumpProcessInformation
             doThreadDump( pid );
         }
     }
-    
+
     public Collection<Pair<Long, String>> getJPids( Matcher<String> filter ) throws Exception
     {
         Process process = Runtime.getRuntime().exec( new String[] { "jps", "-l" } );
@@ -120,7 +120,7 @@ public class DumpProcessInformation
                 String pid = line.substring( 0, spaceIndex );
                 name = pid;
             }
-            
+
             Pair<Long, String> pid = Pair.of( Long.parseLong( line.substring( 0, spaceIndex ) ), name );
             if ( name.contains( DumpProcessInformation.class.getSimpleName() ) ||
                     name.contains( "Jps" ) ||
@@ -133,9 +133,9 @@ public class DumpProcessInformation
             jPids.add( pid );
         }
         process.waitFor();
-        
+
         log.info( "Found jPids:" + jPids + ", excluded:" + excludedJPids );
-        
+
         return jPids;
     }
 
@@ -152,7 +152,7 @@ public class DumpProcessInformation
         }
         process.waitFor();
     }
-    
+
     private static String fileName( String category, Pair<Long,String> pid )
     {
         return time().replace( ':', '_' ).replace( '.', '_' ) +

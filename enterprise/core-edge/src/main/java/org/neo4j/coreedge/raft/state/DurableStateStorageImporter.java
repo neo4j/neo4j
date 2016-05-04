@@ -41,7 +41,6 @@ public class DurableStateStorageImporter<STATE> extends DurableStateStorage<STAT
                 logProvider );
     }
 
-
     public void persist( STATE state ) throws IOException
     {
         super.persistStoreData( state );
