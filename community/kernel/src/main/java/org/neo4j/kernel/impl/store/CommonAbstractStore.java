@@ -727,7 +727,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                             {
                                 // We've found the highest id in use
                                 found = true;
-                                highestId = recordId + 1; /*+1 since we return the high id*/;
+                                highestId = recordId + 1; /*+1 since we return the high id*/
                                 break;
                             }
                         }

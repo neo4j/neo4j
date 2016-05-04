@@ -156,11 +156,15 @@ public class Utils
 
             if ( first[f] < other[o] )
             {
-                while ( ++f < firstLength && first[f] < other[o] );
+                while ( ++f < firstLength && first[f] < other[o] )
+                {
+                }
             }
             else
             {
-                while ( ++o < otherLength && first[f] > other[o] );
+                while ( ++o < otherLength && first[f] > other[o] )
+                {
+                }
             }
         }
 

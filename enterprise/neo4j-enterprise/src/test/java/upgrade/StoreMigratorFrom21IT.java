@@ -138,7 +138,7 @@ public class StoreMigratorFrom21IT
                     Pair.of( "keyA", new Object[]{"actual","actual","actual"}));
             verifyProperties( database.getRelationshipById( 1 ),
                     Pair.of( "keyA", new Object[]{"real1", "real1", "real1"} ),
-                    Pair.of( "keyD", new Object[]{"real2", "real2", "real2"} ));;
+                    Pair.of( "keyD", new Object[]{"real2", "real2", "real2"} ));
             verifyProperties( database.getRelationshipById( 2 ),
                     Pair.of( "keyA", new Object[]{"actual"}),
                     Pair.of( "keyB", new Object[]{"actual"}),

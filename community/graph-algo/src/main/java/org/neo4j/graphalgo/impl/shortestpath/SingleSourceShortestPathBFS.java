@@ -86,7 +86,7 @@ public class SingleSourceShortestPathBFS implements
     {
         distances = new HashMap<Node,Integer>();
         predecessors = new HashMap<Node,List<Relationship>>();
-        currentLayer = new LinkedList<Node>();;
+        currentLayer = new LinkedList<Node>();
         nextLayer = new LinkedList<Node>();
         currentLayer.add( startNode );
         depth = 0;

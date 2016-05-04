@@ -55,7 +55,6 @@ public enum BitmapFormat
             //noinspection StatementWithEmptyBody
             while ( (bitmap & (1L << ++offset)) == 0 )
             {
-                ;
             }
             result[i] = (range << shift) | offset;
         }

@@ -104,7 +104,6 @@ public class ResponsePacker
         {
             while ( cursor.next() && !visitor.visit( cursor.get() ) )
             {
-                ;
             }
         }
     }

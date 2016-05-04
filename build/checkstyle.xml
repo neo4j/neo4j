@@ -45,6 +45,7 @@
     <module name="UpperEll"/>
     <module name="ArrayTypeStyle"/>
     <module name="MissingOverride"/>
+    <module name="EmptyStatement"/>
 
   </module>
 
