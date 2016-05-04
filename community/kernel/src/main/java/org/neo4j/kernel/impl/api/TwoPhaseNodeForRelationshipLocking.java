@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -44,18 +45,13 @@ class TwoPhaseNodeForRelationshipLocking
     private final ThrowingConsumer<Long,KernelException> relIdAction;
 
     private final RelationshipVisitor<RuntimeException> collectNodeIdVisitor =
-            new RelationshipVisitor<RuntimeException>()
-            {
-                @Override
-                public void visit( long relId, int type, long startNode, long endNode )
+            (relId, type, startNode, endNode) -> {
+                if ( firstRelId == -1 )
                 {
-                    if ( firstRelId == -1 )
-                    {
-                        firstRelId = relId;
-                    }
-                    nodeIds.add( startNode );
-                    nodeIds.add( endNode );
+                    firstRelId = relId;
                 }
+                nodeIds.add( startNode );
+                nodeIds.add( endNode );
             };
 
     private boolean first = true;
