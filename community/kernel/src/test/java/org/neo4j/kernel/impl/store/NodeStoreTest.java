@@ -94,9 +94,9 @@ public class NodeStoreTest
     public void shouldReadFirstFromSingleRecordDynamicLongArray() throws Exception
     {
         // GIVEN
-        Long expectedId = 12l;
-        long[] ids = new long[]{expectedId, 23l, 42l};
-        DynamicRecord firstRecord = new DynamicRecord( 0l );
+        Long expectedId = 12L;
+        long[] ids = new long[]{expectedId, 23L, 42L};
+        DynamicRecord firstRecord = new DynamicRecord( 0L );
         List<DynamicRecord> dynamicRecords = asList( firstRecord );
         allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(),
                 new PreAllocatedRecords( 60 ) );
@@ -114,7 +114,7 @@ public class NodeStoreTest
         // GIVEN
         Long expectedId = null;
         long[] ids = new long[]{};
-        DynamicRecord firstRecord = new DynamicRecord( 0l );
+        DynamicRecord firstRecord = new DynamicRecord( 0L );
         List<DynamicRecord> dynamicRecords = asList( firstRecord );
         allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(),
                 new PreAllocatedRecords( 60 ) );
@@ -130,10 +130,10 @@ public class NodeStoreTest
     public void shouldReadFirstFromTwoRecordDynamicLongArray() throws Exception
     {
         // GIVEN
-        Long expectedId = 12l;
-        long[] ids = new long[]{expectedId, 1l, 2l, 3l, 4l, 5l, 6l, 7l, 8l, 9l, 10l, 11l};
-        DynamicRecord firstRecord = new DynamicRecord( 0l );
-        List<DynamicRecord> dynamicRecords = asList( firstRecord, new DynamicRecord( 1l ) );
+        Long expectedId = 12L;
+        long[] ids = new long[]{expectedId, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L};
+        DynamicRecord firstRecord = new DynamicRecord( 0L );
+        List<DynamicRecord> dynamicRecords = asList( firstRecord, new DynamicRecord( 1L ) );
         allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(),
                 new PreAllocatedRecords( 8 ) );
 

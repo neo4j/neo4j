@@ -56,18 +56,18 @@ public class LearnerStateTest
         org.neo4j.cluster.InstanceId upToDateClusterMember = new org.neo4j.cluster.InstanceId( 1 );
 
         // What we know
-        when( ctx.getLastLearnedInstanceId() ).thenReturn( 0l );
-        when( ctx.getPaxosInstance( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1l ) ) )
+        when( ctx.getLastLearnedInstanceId() ).thenReturn( 0L );
+        when( ctx.getPaxosInstance( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1L ) ) )
                 .thenReturn( new PaxosInstance( null, new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos
-                        .InstanceId( 1l ) ) );
+                        .InstanceId( 1L ) ) );
         when( ctx.getLastKnownAliveUpToDateInstance() ).thenReturn( upToDateClusterMember );
         when( ctx.getUriForId( upToDateClusterMember ) ).thenReturn( new URI( "c:/1" ) );
 
         // What we know the cluster knows
-        when( ctx.getLastKnownLearnedInstanceInCluster() ).thenReturn( 1l );
+        when( ctx.getLastKnownLearnedInstanceInCluster() ).thenReturn( 1L );
 
         // When
-        Message<LearnerMessage> message = Message.to( LearnerMessage.catchUp, new URI( "c:/2" ), 2l )
+        Message<LearnerMessage> message = Message.to( LearnerMessage.catchUp, new URI( "c:/2" ), 2L )
                 .setHeader( Message.FROM, "c:/2" ).setHeader( Message.INSTANCE_ID, "2" );
         State newState = state.handle( ctx, message, outgoing );
 
@@ -77,7 +77,7 @@ public class LearnerStateTest
         verify( outgoing ).offer( Message.to( LearnerMessage.learnRequest, new URI( "c:/1" ),
                 new LearnerMessage.LearnRequestState() ).setHeader(
                 org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.INSTANCE,
-                Long.toString( 1l ) ) );
+                Long.toString( 1L ) ) );
         verify( ctx ).setTimeout( "learn", Message.timeout( LearnerMessage.learnTimedout, message ) );
     }
 
@@ -159,8 +159,8 @@ public class LearnerStateTest
         MessageHolder outgoing = mock( MessageHolder.class );
         InstanceId paxosInstanceIdIAskedFor = new InstanceId( 4 );
 
-        when( ctx.getLastDeliveredInstanceId() ).thenReturn( 3l );
-        when( ctx.getLastKnownLearnedInstanceInCluster() ).thenReturn( 5l );
+        when( ctx.getLastDeliveredInstanceId() ).thenReturn( 3L );
+        when( ctx.getLastKnownLearnedInstanceInCluster() ).thenReturn( 5L );
         when( ctx.getMemberURIs() ).thenReturn( allMembers );
         when( ctx.getAlive() ).thenReturn( aliveInstanceIds );
         when( ctx.getUriForId( id2 ) ).thenReturn( instance2 );
@@ -191,11 +191,11 @@ public class LearnerStateTest
         // Given
         LearnerState learner = LearnerState.learner;
         org.neo4j.cluster.InstanceId instanceId = new org.neo4j.cluster.InstanceId( 42 );
-        long payload = 12l;
+        long payload = 12L;
 
         LearnerContext context = mock( LearnerContext.class );
         when( context.getMyId() ).thenReturn( instanceId );
-        when( context.getLastKnownLearnedInstanceInCluster() ).thenReturn( 11l );
+        when( context.getLastKnownLearnedInstanceInCluster() ).thenReturn( 11L );
         when( context.getLastLearnedInstanceId() ).thenReturn( payload );
 
         @SuppressWarnings( "unchecked" )

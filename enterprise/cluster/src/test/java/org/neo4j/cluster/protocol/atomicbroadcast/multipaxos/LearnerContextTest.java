@@ -50,7 +50,7 @@ public class LearnerContextTest
         state.setLastKnownLearnedInstanceInCluster( 0, new InstanceId( 3 ) );
 
         // Then
-        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( 1l ) );
+        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( 1L ) );
     }
 
     @Test
@@ -67,7 +67,7 @@ public class LearnerContextTest
         state.setLastKnownLearnedInstanceInCluster( 0, new InstanceId( 4 ) );
 
         // Then
-        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( 1l ) );
+        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( 1L ) );
         assertThat( state.getLastKnownAliveUpToDateInstance(), equalTo( new InstanceId( 3 ) ));
     }
 
@@ -84,7 +84,7 @@ public class LearnerContextTest
         state.setLastKnownLearnedInstanceInCluster( -1, null );
 
         // Then
-        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( -1l ) );
+        assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( -1L ) );
         assertThat( state.getLastKnownAliveUpToDateInstance(), equalTo( new org.neo4j.cluster.InstanceId( 2 ) ));
     }
 }

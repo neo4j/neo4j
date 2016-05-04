@@ -293,8 +293,8 @@ public class IndexingAcceptanceTest
         tx.close();
 
         // THEN
-        assertThat( sizeBeforeDelete, equalTo(1l) );
-        assertThat( sizeAfterDelete, equalTo(0l) );
+        assertThat( sizeBeforeDelete, equalTo(1L) );
+        assertThat( sizeAfterDelete, equalTo(0L) );
     }
 
     @Test
@@ -315,8 +315,8 @@ public class IndexingAcceptanceTest
         tx.close();
 
         // THEN
-        assertThat( sizeBeforeDelete, equalTo(1l) );
-        assertThat( sizeAfterDelete, equalTo(0l) );
+        assertThat( sizeBeforeDelete, equalTo(1L) );
+        assertThat( sizeAfterDelete, equalTo(0L) );
     }
 
     @Test
@@ -337,8 +337,8 @@ public class IndexingAcceptanceTest
         tx.close();
 
         // THEN
-        assertThat( sizeBeforeDelete, equalTo(1l) );
-        assertThat( sizeAfterDelete, equalTo(2l) );
+        assertThat( sizeBeforeDelete, equalTo(1L) );
+        assertThat( sizeAfterDelete, equalTo(2L) );
     }
 
     @Test
@@ -357,7 +357,7 @@ public class IndexingAcceptanceTest
         assertCanCreateAndFind( db, LABEL1, property, 'z' );
         assertCanCreateAndFind( db, LABEL1, property, (short)12 );
         assertCanCreateAndFind( db, LABEL1, property, 12 );
-        assertCanCreateAndFind( db, LABEL1, property, 12l );
+        assertCanCreateAndFind( db, LABEL1, property, 12L );
         assertCanCreateAndFind( db, LABEL1, property, (float)12. );
         assertCanCreateAndFind( db, LABEL1, property, 12. );
 
@@ -372,8 +372,8 @@ public class IndexingAcceptanceTest
         assertCanCreateAndFind( db, LABEL1, property, new Short[]{13} );
         assertCanCreateAndFind( db, LABEL1, property, new int[]{14} );
         assertCanCreateAndFind( db, LABEL1, property, new Integer[]{15} );
-        assertCanCreateAndFind( db, LABEL1, property, new long[]{16l} );
-        assertCanCreateAndFind( db, LABEL1, property, new Long[]{17l} );
+        assertCanCreateAndFind( db, LABEL1, property, new long[]{16L} );
+        assertCanCreateAndFind( db, LABEL1, property, new Long[]{17L} );
         assertCanCreateAndFind( db, LABEL1, property, new float[]{(float)18.} );
         assertCanCreateAndFind( db, LABEL1, property, new Float[]{(float)19.} );
         assertCanCreateAndFind( db, LABEL1, property, new double[]{20.} );

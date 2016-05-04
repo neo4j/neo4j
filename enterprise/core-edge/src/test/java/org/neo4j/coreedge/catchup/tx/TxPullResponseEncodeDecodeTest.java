@@ -38,8 +38,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
-import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
+import static org.neo4j.coreedge.catchup.CatchupClientProtocol.NextMessage;
 
 public class TxPullResponseEncodeDecodeTest
 {
@@ -68,7 +68,7 @@ public class TxPullResponseEncodeDecodeTest
 
     private CommittedTransactionRepresentation newCommittedTransactionRepresentation()
     {
-        final long arbitraryRecordId = 27l;
+        final long arbitraryRecordId = 27L;
         Command.NodeCommand command =
                 new Command.NodeCommand( new NodeRecord( arbitraryRecordId ), new NodeRecord( arbitraryRecordId ) );
 
@@ -76,7 +76,7 @@ public class TxPullResponseEncodeDecodeTest
                 new PhysicalTransactionRepresentation( asList( new LogEntryCommand( command ).getXaCommand() ) );
         physicalTransactionRepresentation.setHeader( new byte[]{}, 0, 0, 0, 0, 0, 0 );
 
-        LogEntryStart startEntry = new LogEntryStart( 0, 0, 0l, 0l, new byte[]{}, LogPosition.UNSPECIFIED );
+        LogEntryStart startEntry = new LogEntryStart( 0, 0, 0L, 0L, new byte[]{}, LogPosition.UNSPECIFIED );
         OnePhaseCommit commitEntry = new OnePhaseCommit( 42, 0 );
 
         return new CommittedTransactionRepresentation( startEntry, physicalTransactionRepresentation, commitEntry );

@@ -33,9 +33,9 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -49,7 +49,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
@@ -68,7 +67,7 @@ public class LegacyLogEntryWriterTest
         // given
         final LegacyLogEntryWriter writer = new LegacyLogEntryWriter( fs );
         final File output = new File( getLegacyLogFilename( 3 ) );
-        final LogHeader header = new LogHeader( CURRENT_LOG_VERSION, 1, 42l );
+        final LogHeader header = new LogHeader( CURRENT_LOG_VERSION, 1, 42L );
 
         // when
         try ( LogVersionedStoreChannel channel = writer.openWritableChannel( output ) )
@@ -87,20 +86,20 @@ public class LegacyLogEntryWriterTest
         final LogVersionedStoreChannel channel = mock( LogVersionedStoreChannel.class );
         final LogEntryWriter logEntryWriter = mock( LogEntryWriter.class );
         final LegacyLogEntryWriter writer = new LegacyLogEntryWriter( fs, liftToFactory( logEntryWriter ) );
-        final LogEntryStart start = new LogEntryStart( 0, 1, 2l, 3l, EMPTY_ADDITIONAL_ARRAY, UNSPECIFIED );
+        final LogEntryStart start = new LogEntryStart( 0, 1, 2L, 3L, EMPTY_ADDITIONAL_ARRAY, UNSPECIFIED );
         final LogEntryCommand command = new LogEntryCommand( new Command.NodeCommand( nodeRecord, nodeRecord ) );
-        final LogEntryCommit commit = new OnePhaseCommit( 42l, 43l );
+        final LogEntryCommit commit = new OnePhaseCommit( 42L, 43L );
 
         // when
         final IOCursor<LogEntry> cursor = mockCursor( start, command, commit );
         writer.writeAllLogEntries( channel, cursor );
 
         // then
-        verify( logEntryWriter, times( 1 ) ).writeStartEntry( 0, 1, 2l, 3l, EMPTY_ADDITIONAL_ARRAY );
+        verify( logEntryWriter, times( 1 ) ).writeStartEntry( 0, 1, 2L, 3L, EMPTY_ADDITIONAL_ARRAY );
         final TransactionRepresentation expected =
                 new PhysicalTransactionRepresentation( Arrays.asList( command.getXaCommand() ) );
         verify( logEntryWriter, times( 1 ) ).serialize( eq( expected ) );
-        verify( logEntryWriter, times( 1 ) ).writeCommitEntry( 42l, 43l );
+        verify( logEntryWriter, times( 1 ) ).writeCommitEntry( 42L, 43L );
     }
 
     @Test
@@ -110,28 +109,28 @@ public class LegacyLogEntryWriterTest
         final LogVersionedStoreChannel channel = mock( LogVersionedStoreChannel.class );
         final LogEntryWriter logEntryWriter = mock( LogEntryWriter.class );
         final LegacyLogEntryWriter writer = new LegacyLogEntryWriter( fs, liftToFactory( logEntryWriter ) );
-        final LogEntryStart start1 = new LogEntryStart( 0, 1, 2l, 3l, EMPTY_ADDITIONAL_ARRAY, UNSPECIFIED );
+        final LogEntryStart start1 = new LogEntryStart( 0, 1, 2L, 3L, EMPTY_ADDITIONAL_ARRAY, UNSPECIFIED );
         final LogEntryCommand command1 = new LogEntryCommand( new Command.NodeCommand( nodeRecord, nodeRecord ) );
-        final LogEntryCommit commit1 = new OnePhaseCommit( 42l, 43l );
-        final LogEntryStart start2 = new LogEntryStart( 9, 8, 7l, 6l, EMPTY_ADDITIONAL_ARRAY, UNSPECIFIED );
+        final LogEntryCommit commit1 = new OnePhaseCommit( 42L, 43L );
+        final LogEntryStart start2 = new LogEntryStart( 9, 8, 7L, 6L, EMPTY_ADDITIONAL_ARRAY, UNSPECIFIED );
         final LogEntryCommand command2 = new LogEntryCommand( new Command.RelationshipCommand( relRecord, relRecord ) );
-        final LogEntryCommit commit2 = new OnePhaseCommit( 84l, 85l );
+        final LogEntryCommit commit2 = new OnePhaseCommit( 84L, 85L );
 
         // when
         IOCursor<LogEntry> cursor = mockCursor( start1, command1, commit1, start2, command2, commit2 );
         writer.writeAllLogEntries( channel, cursor );
 
         // then
-        verify( logEntryWriter, times( 1 ) ).writeStartEntry( 0, 1, 2l, 3l, EMPTY_ADDITIONAL_ARRAY );
+        verify( logEntryWriter, times( 1 ) ).writeStartEntry( 0, 1, 2L, 3L, EMPTY_ADDITIONAL_ARRAY );
         final TransactionRepresentation expected1 =
                 new PhysicalTransactionRepresentation( Arrays.asList( command1.getXaCommand() ) );
         verify( logEntryWriter, times( 1 ) ).serialize( eq( expected1 ) );
-        verify( logEntryWriter, times( 1 ) ).writeCommitEntry( 42l, 43l );
-        verify( logEntryWriter, times( 1 ) ).writeStartEntry( 9, 8, 7l, 6l, EMPTY_ADDITIONAL_ARRAY );
+        verify( logEntryWriter, times( 1 ) ).writeCommitEntry( 42L, 43L );
+        verify( logEntryWriter, times( 1 ) ).writeStartEntry( 9, 8, 7L, 6L, EMPTY_ADDITIONAL_ARRAY );
         final TransactionRepresentation expected2 =
                 new PhysicalTransactionRepresentation( Arrays.asList( command2.getXaCommand() ) );
         verify( logEntryWriter, times( 1 ) ).serialize( eq( expected2 ) );
-        verify( logEntryWriter, times( 1 ) ).writeCommitEntry( 84l, 85l );
+        verify( logEntryWriter, times( 1 ) ).writeCommitEntry( 84L, 85L );
     }
 
     private Function<FlushableChannel, LogEntryWriter> liftToFactory( final LogEntryWriter logEntryWriter )

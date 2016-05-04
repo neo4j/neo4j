@@ -271,7 +271,7 @@ public class RaftInstanceTest
         raft.handle( voteResponse().from( member2 ).term( 2 ).grant().build() );
 
         assertThat( raft.isLeader(), is( false ) );
-        assertEquals( raft.term(), 2l );
+        assertEquals( raft.term(), 2L );
     }
 
     @Test

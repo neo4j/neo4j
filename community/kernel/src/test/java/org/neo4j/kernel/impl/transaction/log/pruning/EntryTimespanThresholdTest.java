@@ -46,11 +46,11 @@ public class EntryTimespanThresholdTest
     public void shouldReturnFalseWhenTimeIsEqualOrAfterTheLowerLimit() throws IOException
     {
         // given
-        FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
+        FrozenClock clock = new FrozenClock( 1000L, TimeUnit.MILLISECONDS );
         final EntryTimespanThreshold threshold =
                 new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 200 );
 
-        when( source.getFirstStartRecordTimestamp( version ) ).thenReturn( 800l );
+        when( source.getFirstStartRecordTimestamp( version ) ).thenReturn( 800L );
 
         // when
         threshold.init();
@@ -64,11 +64,11 @@ public class EntryTimespanThresholdTest
     public void shouldReturnReturnWhenTimeIsBeforeTheLowerLimit() throws IOException
     {
         // given
-        FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
+        FrozenClock clock = new FrozenClock( 1000L, TimeUnit.MILLISECONDS );
         final EntryTimespanThreshold threshold =
                 new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
-        when( source.getFirstStartRecordTimestamp( version ) ).thenReturn( 800l );
+        when( source.getFirstStartRecordTimestamp( version ) ).thenReturn( 800L );
 
         // when
         threshold.init();
@@ -82,7 +82,7 @@ public class EntryTimespanThresholdTest
     public void shouldReturnTrueIfTheLogHasAnOlderVersion() throws IOException
     {
         // given
-        FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
+        FrozenClock clock = new FrozenClock( 1000L, TimeUnit.MILLISECONDS );
         final EntryTimespanThreshold threshold =
                 new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
@@ -100,7 +100,7 @@ public class EntryTimespanThresholdTest
     public void shouldThrowIfTheLogHasANewerVersion() throws IOException
     {
         // given
-        FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
+        FrozenClock clock = new FrozenClock( 1000L, TimeUnit.MILLISECONDS );
         final EntryTimespanThreshold threshold =
                 new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 
@@ -122,7 +122,7 @@ public class EntryTimespanThresholdTest
     public void shouldThrowIfTheLogCannotBeRead() throws IOException
     {
         // given
-        FrozenClock clock = new FrozenClock( 1000l, TimeUnit.MILLISECONDS );
+        FrozenClock clock = new FrozenClock( 1000L, TimeUnit.MILLISECONDS );
         final EntryTimespanThreshold threshold =
                 new EntryTimespanThreshold( clock, TimeUnit.MILLISECONDS, 100 );
 

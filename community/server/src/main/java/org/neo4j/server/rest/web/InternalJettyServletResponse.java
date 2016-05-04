@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.server.Response;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -32,9 +35,6 @@ import java.util.Map;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.Cookie;
-
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.server.Response;
 
 public class InternalJettyServletResponse extends Response
 {
@@ -314,7 +314,7 @@ public class InternalJettyServletResponse extends Response
     @Override
     public long getContentCount()
     {
-        return 1l;
+        return 1L;
     }
 
     public void complete() throws IOException

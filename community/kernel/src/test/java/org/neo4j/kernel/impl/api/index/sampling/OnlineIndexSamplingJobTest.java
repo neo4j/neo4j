@@ -78,8 +78,8 @@ public class OnlineIndexSamplingJobTest
     private final IndexReader indexReader = mock( IndexReader.class );
     private final IndexSampler indexSampler = mock( IndexSampler.class );
 
-    private final long indexUniqueValues = 21l;
-    private final long indexSize = 23l;
+    private final long indexUniqueValues = 21L;
+    private final long indexSize = 23L;
 
     @Before
     public void setup() throws IndexNotFoundKernelException

@@ -1248,7 +1248,7 @@ public class BatchInsertTest
         BatchInserter inserter = newBatchInserter();
 
         Map<String, Object> properties = new HashMap<>();
-        properties.put("id", 1099511659993l);
+        properties.put("id", 1099511659993L);
         properties.put("firstName", "Edward");
         properties.put("lastName", "Shevchenko");
         properties.put("gender", "male");
@@ -1370,7 +1370,7 @@ public class BatchInsertTest
         BatchInserter inserter = newBatchInserter();
 
         // WHEN
-        long nodeId = inserter.createNode( map( "itemId", 1000l ), label( "Item" ),
+        long nodeId = inserter.createNode( map( "itemId", 1000L ), label( "Item" ),
                 label( "Item" ) );
 
         // THEN
@@ -1395,7 +1395,7 @@ public class BatchInsertTest
         BatchInserter inserter = newBatchInserter();
 
         // WHEN
-        long nodeId = inserter.createNode( map( "Item", 123456789123l ), label( "AA" ),
+        long nodeId = inserter.createNode( map( "Item", 123456789123L ), label( "AA" ),
                 label( "BB" ), label( "CC" ), label( "DD" ) );
         inserter.setNodeLabels( nodeId, label( "CC" ), label( "AA" ),
                 label( "DD" ), label( "EE" ), label( "FF" ) );

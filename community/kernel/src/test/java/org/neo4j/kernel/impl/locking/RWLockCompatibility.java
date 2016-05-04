@@ -52,7 +52,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
     {
         try
         {
-            clientA.releaseExclusive( NODE, 1l );
+            clientA.releaseExclusive( NODE, 1L );
             fail( "Invalid release should throw exception" );
         }
         catch ( Exception e )
@@ -61,7 +61,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
         try
         {
-            clientA.releaseShared( NODE, 1l );
+            clientA.releaseShared( NODE, 1L );
             fail( "Invalid release should throw exception" );
         }
         catch ( Exception e )
@@ -69,10 +69,10 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
             // good
         }
 
-        clientA.acquireShared( NODE, 1l );
+        clientA.acquireShared( NODE, 1L );
         try
         {
-            clientA.releaseExclusive( NODE, 1l );
+            clientA.releaseExclusive( NODE, 1L );
             fail( "Invalid release should throw exception" );
         }
         catch ( Exception e )
@@ -80,49 +80,49 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
             // good
         }
 
-        clientA.releaseShared( NODE, 1l );
-        clientA.acquireExclusive( NODE, 1l );
+        clientA.releaseShared( NODE, 1L );
+        clientA.acquireExclusive( NODE, 1L );
         try
         {
-            clientA.releaseShared( NODE, 1l );
+            clientA.releaseShared( NODE, 1L );
             fail( "Invalid release should throw exception" );
         }
         catch ( Exception e )
         {
             // good
         }
-        clientA.releaseExclusive( NODE, 1l );
+        clientA.releaseExclusive( NODE, 1L );
 
-        clientA.acquireShared( NODE, 1l );
-        clientA.acquireExclusive( NODE, 1l );
-        clientA.releaseExclusive( NODE, 1l );
-        clientA.releaseShared( NODE, 1l );
+        clientA.acquireShared( NODE, 1L );
+        clientA.acquireExclusive( NODE, 1L );
+        clientA.releaseExclusive( NODE, 1L );
+        clientA.releaseShared( NODE, 1L );
 
-        clientA.acquireExclusive( NODE, 1l );
-        clientA.acquireShared( NODE, 1l );
-        clientA.releaseShared( NODE, 1l );
-        clientA.releaseExclusive( NODE, 1l );
+        clientA.acquireExclusive( NODE, 1L );
+        clientA.acquireShared( NODE, 1L );
+        clientA.releaseShared( NODE, 1L );
+        clientA.releaseExclusive( NODE, 1L );
 
         for ( int i = 0; i < 10; i++ )
         {
             if ( (i % 2) == 0 )
             {
-                clientA.acquireExclusive( NODE, 1l );
+                clientA.acquireExclusive( NODE, 1L );
             }
             else
             {
-                clientA.acquireShared( NODE, 1l );
+                clientA.acquireShared( NODE, 1L );
             }
         }
         for ( int i = 9; i >= 0; i-- )
         {
             if ( (i % 2) == 0 )
             {
-                clientA.releaseExclusive( NODE, 1l );
+                clientA.releaseExclusive( NODE, 1L );
             }
             else
             {
-                clientA.releaseShared( NODE, 1l );
+                clientA.releaseShared( NODE, 1L );
             }
         }
     }
@@ -134,7 +134,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         LockWorker t2 = new LockWorker( "T2", locks );
         LockWorker t3 = new LockWorker( "T3", locks );
         LockWorker t4 = new LockWorker( "T4", locks );
-        long r1 = 1l;
+        long r1 = 1L;
         try
         {
             t1.getReadLock( r1, true );
@@ -305,7 +305,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
     @Test
     public void testStressMultipleThreads() throws Exception
     {
-        long r1 = 1l;
+        long r1 = 1L;
         StressThread stressThreads[] = new StressThread[100];
         CountDownLatch startSignal = new CountDownLatch( 1 );
         for ( int i = 0; i < 100; i++ )

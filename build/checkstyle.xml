@@ -40,7 +40,10 @@
   </module>
 
   <module name="TreeWalker">
+
     <module name="PackageDeclaration"/>
+    <module name="UpperEll"/>
+
   </module>
 
 </module>

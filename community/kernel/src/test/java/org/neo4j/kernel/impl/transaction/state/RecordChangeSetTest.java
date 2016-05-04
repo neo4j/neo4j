@@ -69,11 +69,11 @@ public class RecordChangeSetTest
          * We need to make sure some stuff is stored in the sets being managed. That is why forChangingLinkage() is
          * called - otherwise, no changes will be stored and changeSize() would return 0 anyway.
          */
-        changeSet.getNodeRecords().create( 1l, null ).forChangingLinkage();
-        changeSet.getPropertyRecords().create( 1l, null ).forChangingLinkage();
-        changeSet.getRelRecords().create( 1l, null ).forChangingLinkage();
-        changeSet.getSchemaRuleChanges().create( 1l, null ).forChangingLinkage();
-        changeSet.getRelGroupRecords().create( 1l, 1 ).forChangingLinkage();
+        changeSet.getNodeRecords().create( 1L, null ).forChangingLinkage();
+        changeSet.getPropertyRecords().create( 1L, null ).forChangingLinkage();
+        changeSet.getRelRecords().create( 1L, null ).forChangingLinkage();
+        changeSet.getSchemaRuleChanges().create( 1L, null ).forChangingLinkage();
+        changeSet.getRelGroupRecords().create( 1L, 1 ).forChangingLinkage();
 
         changeSet.close();
 

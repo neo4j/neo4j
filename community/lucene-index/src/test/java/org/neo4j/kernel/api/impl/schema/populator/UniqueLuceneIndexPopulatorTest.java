@@ -119,9 +119,9 @@ public class UniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( getDirectory(), "value1" ) );
-        assertEquals( asList( 2l ), getAllNodes( getDirectory(), "value2" ) );
-        assertEquals( asList( 3l ), getAllNodes( getDirectory(), "value3" ) );
+        assertEquals( asList( 1L ), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( asList( 2L ), getAllNodes( getDirectory(), "value2" ) );
+        assertEquals( asList( 3L ), getAllNodes( getDirectory(), "value3" ) );
     }
 
     private Directory getDirectory() throws IOException
@@ -147,7 +147,7 @@ public class UniqueLuceneIndexPopulatorTest
 
         // then
         assertEquals( Collections.EMPTY_LIST, getAllNodes( getDirectory(), "value1" ) );
-        assertEquals( asList( 1l ), getAllNodes( getDirectory(), "value2" ) );
+        assertEquals( asList( 1L ), getAllNodes( getDirectory(), "value2" ) );
     }
 
     @Test
@@ -167,7 +167,7 @@ public class UniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList(1l), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( asList(1L), getAllNodes( getDirectory(), "value1" ) );
     }
 
     @Test
@@ -207,8 +207,8 @@ public class UniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 2l ), getAllNodes( getDirectory(), "value1" ) );
-        assertEquals( asList( 1l ), getAllNodes( getDirectory(), "value2" ) );
+        assertEquals( asList( 2L ), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( asList( 1L ), getAllNodes( getDirectory(), "value2" ) );
     }
 
     @Test
@@ -357,9 +357,9 @@ public class UniqueLuceneIndexPopulatorTest
         populator.close( true );
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( getDirectory(), "value1" ) );
-        assertEquals( asList( 2l ), getAllNodes( getDirectory(), "value2" ) );
-        assertEquals( asList( 3l ), getAllNodes( getDirectory(), "value3" ) );
+        assertEquals( asList( 1L ), getAllNodes( getDirectory(), "value1" ) );
+        assertEquals( asList( 2L ), getAllNodes( getDirectory(), "value2" ) );
+        assertEquals( asList( 3L ), getAllNodes( getDirectory(), "value3" ) );
     }
 
     @Test

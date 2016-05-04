@@ -113,7 +113,7 @@ public class SwitchToSlaveTest
 
         PageCache pageCacheMock = mock( PageCache.class );
         PagedFile pagedFileMock = mock( PagedFile.class );
-        when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
+        when( pagedFileMock.getLastPageId() ).thenReturn( 1L );
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenThrow( new IOException() )
                 .thenThrow( new IOException() ).thenReturn( pagedFileMock );
 
@@ -233,7 +233,7 @@ public class SwitchToSlaveTest
         LifeSupport communicationLife = mock( LifeSupport.class );
         URI localhost = getLocalhostUri();
         final UpdatePullerScheduler pullerScheduler =
-                new UpdatePullerScheduler( jobScheduler, NullLogProvider.getInstance(), updatePuller, 10l );
+                new UpdatePullerScheduler( jobScheduler, NullLogProvider.getInstance(), updatePuller, 10L );
 
         when( pullerFactory.createUpdatePullerScheduler( updatePuller ) ).thenReturn( pullerScheduler );
         // emulate lifecycle start call on scheduler
@@ -252,7 +252,7 @@ public class SwitchToSlaveTest
         verify( updatePuller ).tryPullUpdates();
         verify( communicationLife ).add( pullerScheduler );
         verify( jobScheduler ).scheduleRecurring( eq( JobScheduler.Groups.pullUpdates ), any( Runnable.class ),
-                eq( 10l ), eq( 10l ), eq( TimeUnit.MILLISECONDS ) );
+                eq( 10L ), eq( 10L ), eq( TimeUnit.MILLISECONDS ) );
     }
 
     private URI getLocalhostUri() throws URISyntaxException
@@ -264,7 +264,7 @@ public class SwitchToSlaveTest
     {
         PageCache pageCacheMock = mock( PageCache.class );
         PagedFile pagedFileMock = mock( PagedFile.class );
-        when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
+        when( pagedFileMock.getLastPageId() ).thenReturn( 1L );
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
 
         return newSwitchToSlaveSpy( pageCacheMock, mock( StoreCopyClient.class) );
@@ -296,7 +296,7 @@ public class SwitchToSlaveTest
         when( dataSource.getStoreId() ).thenReturn( storeId );
 
         TransactionStats transactionCounters = mock( TransactionStats.class );
-        when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0l );
+        when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );
 
         Response<HandshakeResult> response = mock( Response.class );
         when( response.response() ).thenReturn( new HandshakeResult( 42, 2 ) );

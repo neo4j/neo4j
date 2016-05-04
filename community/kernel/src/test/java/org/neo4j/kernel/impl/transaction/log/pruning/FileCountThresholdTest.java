@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.io.File;
-
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.pruning.FileCountThreshold;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -33,7 +32,7 @@ import static org.mockito.Mockito.mock;
 public class FileCountThresholdTest
 {
     private final File file = mock( File.class );
-    private final long version = 1l;
+    private final long version = 1L;
     private final LogFileInformation source = mock( LogFileInformation.class );
 
     @Test

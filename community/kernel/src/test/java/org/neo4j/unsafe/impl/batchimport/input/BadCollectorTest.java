@@ -214,7 +214,7 @@ public class BadCollectorTest
         private final int lineNumber = 1;
         private final int position = 1;
         private final Object[] properties = new Object[]{};
-        private final long firstPropertyId = -1l;
+        private final long firstPropertyId = -1L;
         private final Object startNode = null;
         private final Object endNode = null;
         private final String friend = "FRIEND";

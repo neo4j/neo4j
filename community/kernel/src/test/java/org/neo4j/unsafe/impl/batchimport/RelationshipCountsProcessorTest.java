@@ -81,10 +81,10 @@ public class RelationshipCountsProcessorTest
 
         NodeLabelsCache.Client client = mock( NodeLabelsCache.Client.class );
         when( nodeLabelCache.newClient() ).thenReturn( client );
-        when( nodeLabelCache.get( eq( client ), eq( 1l ), any( int[].class ) ) ).thenReturn( new int[]{0, 2} );
-        when( nodeLabelCache.get( eq( client ), eq( 2l ), any( int[].class ) ) ).thenReturn( new int[]{1} );
-        when( nodeLabelCache.get( eq( client ), eq( 3l ), any( int[].class ) ) ).thenReturn( new int[]{1, 2} );
-        when( nodeLabelCache.get( eq( client ), eq( 4l ), any( int[].class ) ) ).thenReturn( new int[]{} );
+        when( nodeLabelCache.get( eq( client ), eq( 1L ), any( int[].class ) ) ).thenReturn( new int[]{0, 2} );
+        when( nodeLabelCache.get( eq( client ), eq( 2L ), any( int[].class ) ) ).thenReturn( new int[]{1} );
+        when( nodeLabelCache.get( eq( client ), eq( 3L ), any( int[].class ) ) ).thenReturn( new int[]{1, 2} );
+        when( nodeLabelCache.get( eq( client ), eq( 4L ), any( int[].class ) ) ).thenReturn( new int[]{} );
 
         RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels,
                 relationTypes, countsUpdater, NumberArrayFactory.AUTO );
@@ -95,17 +95,17 @@ public class RelationshipCountsProcessorTest
         countsProcessor.done();
 
         // wildcard counts
-        verify( countsUpdater ).incrementRelationshipCount( ANY, ANY, ANY, 2l );
-        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, ANY, 1l );
-        verify( countsUpdater ).incrementRelationshipCount( ANY, 1, ANY, 1l );
+        verify( countsUpdater ).incrementRelationshipCount( ANY, ANY, ANY, 2L );
+        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, ANY, 1L );
+        verify( countsUpdater ).incrementRelationshipCount( ANY, 1, ANY, 1L );
 
         // start labels counts
-        verify( countsUpdater ).incrementRelationshipCount( 0, 0, ANY, 1l );
-        verify( countsUpdater ).incrementRelationshipCount( 2, 0, ANY, 1l );
+        verify( countsUpdater ).incrementRelationshipCount( 0, 0, ANY, 1L );
+        verify( countsUpdater ).incrementRelationshipCount( 2, 0, ANY, 1L );
 
         // end labels counts
-        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, 1, 1l );
-        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, 2, 1l );
+        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, 1, 1L );
+        verify( countsUpdater ).incrementRelationshipCount( ANY, 0, 2, 1L );
     }
 
     private class IsNonNegativeLong extends ArgumentMatcher<Long>

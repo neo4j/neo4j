@@ -189,7 +189,7 @@ public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.C
         clientA.acquireShared( NODE, 1L );
 
         // Then shared locks should wait
-        Future<Object> clientBLock = acquireShared( clientB, NODE, 1l ).callAndAssertWaiting();
+        Future<Object> clientBLock = acquireShared( clientB, NODE, 1L ).callAndAssertWaiting();
 
         // And when
         clientA.releaseShared( NODE, 1L );

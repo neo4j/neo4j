@@ -376,7 +376,7 @@ public class IndexingServiceTest
         when(mockLookup.labelGetName( 2 )).thenReturn( "LabelTwo" );
         when(mockLookup.propertyKeyGetName( 1 )).thenReturn( "propertyOne" );
         when(mockLookup.propertyKeyGetName( 2 )).thenReturn( "propertyTwo" );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32l, 32l ) );
+        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
 
         logProvider.clear();
 
@@ -436,7 +436,7 @@ public class IndexingServiceTest
         when( indexProvider.getInitialState( indexId ) ).thenReturn( ONLINE );
         when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
         when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
-                .thenReturn( newDoubleLongRegister( 32l, 32l ) );
+                .thenReturn( newDoubleLongRegister( 32L, 32L ) );
 
         life.start();
 
@@ -467,7 +467,7 @@ public class IndexingServiceTest
         when( indexAccessor.snapshotFiles() ).thenAnswer( newResourceIterator( theFile ) );
         when( indexProvider.getInitialState( indexId ) ).thenReturn( POPULATING );
         when( indexProvider.getInitialState( indexId2 ) ).thenReturn( ONLINE );
-        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32l, 32l ) );
+        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32L, 32L ) );
         life.start();
 
         // WHEN
@@ -827,11 +827,11 @@ public class IndexingServiceTest
         indexing.createIndexes( indexRule1, indexRule2, indexRule3 );
 
         // THEN
-        verify( indexProvider ).getPopulator( eq( 0l ), eq( new IndexDescriptor( 0, 0 ) ),
+        verify( indexProvider ).getPopulator( eq( 0L ), eq( new IndexDescriptor( 0, 0 ) ),
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
-        verify( indexProvider ).getPopulator( eq( 1l ), eq( new IndexDescriptor( 0, 1 ) ),
+        verify( indexProvider ).getPopulator( eq( 1L ), eq( new IndexDescriptor( 0, 1 ) ),
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
-        verify( indexProvider ).getPopulator( eq( 2l ), eq( new IndexDescriptor( 1, 0 ) ),
+        verify( indexProvider ).getPopulator( eq( 2L ), eq( new IndexDescriptor( 1, 0 ) ),
                 eq( IndexConfiguration.NON_UNIQUE ), any( IndexSamplingConfig.class ) );
 
         waitForIndexesToComeOnline( indexing, 0, 1, 2 );

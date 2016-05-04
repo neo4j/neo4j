@@ -89,11 +89,11 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     public void shouldReportOwningNodeRecordNotInUse() throws Exception
     {
         // given
-        NodeRecord nodeRecord = notInUse( new NodeRecord( 12l, false, -1, -1 ) );
+        NodeRecord nodeRecord = notInUse( new NodeRecord( 12L, false, -1, -1 ) );
         add( nodeRecord );
 
         DynamicRecord nodeDynamicLabelRecord = inUse( new DynamicRecord( 0 ) );
-        allocateFromNumbers( new ArrayList<DynamicRecord>(), new long[]{12l}, iterator( nodeDynamicLabelRecord ),
+        allocateFromNumbers( new ArrayList<DynamicRecord>(), new long[]{12L}, iterator( nodeDynamicLabelRecord ),
                 RECORD_ALLOCATOR );
 
         // when
@@ -107,7 +107,7 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
     public void shouldReportOwningNodeRecordNotPointingBack() throws Exception
     {
         // given
-        long nodeId = 12l;
+        long nodeId = 12L;
 
         Collection<DynamicRecord> validLabelRecords = new ArrayList<>();
         allocateFromNumbers( validLabelRecords, new long[] {nodeId}, iterator( inUse( new DynamicRecord( 0 ) ) ),

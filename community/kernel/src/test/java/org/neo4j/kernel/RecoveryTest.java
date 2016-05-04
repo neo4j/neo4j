@@ -108,10 +108,10 @@ public class RecoveryTest
                 // last committed tx
                 consumer.accept( marker );
                 LogPosition lastCommittedTxPosition = marker.newPosition();
-                writer.writeStartEntry( 0, 1, 2l, 3l, new byte[0] );
-                lastCommittedTxStartEntry = new LogEntryStart( 0, 1, 2l, 3l, new byte[0], lastCommittedTxPosition );
-                writer.writeCommitEntry( 4l, 5l );
-                lastCommittedTxCommitEntry = new OnePhaseCommit( 4l, 5l );
+                writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
+                lastCommittedTxStartEntry = new LogEntryStart( 0, 1, 2L, 3L, new byte[0], lastCommittedTxPosition );
+                writer.writeCommitEntry( 4L, 5L );
+                lastCommittedTxCommitEntry = new OnePhaseCommit( 4L, 5L );
 
                 // check point
                 writer.writeCheckPointEntry( lastCommittedTxPosition );
@@ -119,11 +119,11 @@ public class RecoveryTest
 
                 // tx committed after checkpoint
                 consumer.accept( marker );
-                writer.writeStartEntry( 0, 1, 6l, 4l, new byte[0] );
-                expectedStartEntry = new LogEntryStart( 0, 1, 6l, 4l, new byte[0], marker.newPosition() );
+                writer.writeStartEntry( 0, 1, 6L, 4L, new byte[0] );
+                expectedStartEntry = new LogEntryStart( 0, 1, 6L, 4L, new byte[0], marker.newPosition() );
 
-                writer.writeCommitEntry( 5l, 7l );
-                expectedCommitEntry = new OnePhaseCommit( 5l, 7l );
+                writer.writeCommitEntry( 5L, 7L );
+                expectedCommitEntry = new OnePhaseCommit( 5L, 7L );
 
                 return true;
             }
@@ -207,8 +207,8 @@ public class RecoveryTest
 
                 // last committed tx
                 consumer.accept( marker );
-                writer.writeStartEntry( 0, 1, 2l, 3l, new byte[0] );
-                writer.writeCommitEntry( 4l, 5l );
+                writer.writeStartEntry( 0, 1, 2L, 3L, new byte[0] );
+                writer.writeCommitEntry( 4L, 5L );
 
                 // check point
                 consumer.accept( marker );
@@ -262,7 +262,7 @@ public class RecoveryTest
                        new PhysicalLogVersionedStoreChannel( fs.open( file, "rw" ), logVersion, CURRENT_LOG_VERSION );
               final PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel ) )
         {
-            writeLogHeader( writableLogChannel, logVersion, 2l );
+            writeLogHeader( writableLogChannel, logVersion, 2L );
 
             Consumer<LogPositionMarker> consumer = marker -> {
                 try

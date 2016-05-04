@@ -477,7 +477,7 @@ public class StoreUpgradeIntegrationTest
                     }
                     else
                     {
-                        counts.put( label, 1l );
+                        counts.put( label, 1L );
                     }
                 }
             }

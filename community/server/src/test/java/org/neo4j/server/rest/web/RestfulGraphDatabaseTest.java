@@ -1031,7 +1031,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToGetRootWhenNoReferenceNodePresent() throws Exception
     {
-        helper.deleteNode( 0l );
+        helper.deleteNode( 0L );
 
         Response response = service.getRoot();
         assertEquals( 200, response.getStatus() );

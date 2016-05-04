@@ -51,10 +51,10 @@ public class LegacyDeadlockCompatibility extends LockingCompatibilityTestSuite.C
     // this test is to be dismantled, and it's individual assertions moved into DeadlockTest
     public void testDeadlockDetection() throws Exception
     {
-        long r1 = 1l;
-        long r2 = 2l;
-        long r3 = 3l;
-        long r4 = 4l;
+        long r1 = 1L;
+        long r2 = 2L;
+        long r3 = 3L;
+        long r4 = 4L;
 
         LockWorker t1 = new LockWorker( "T1", locks );
         LockWorker t2 = new LockWorker( "T2", locks );

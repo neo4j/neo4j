@@ -29,11 +29,10 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.state.RecordState;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.util.Objects.requireNonNull;
-
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
@@ -56,7 +55,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     @Override
     public void incrementNodeCount( int labelId, long delta )
     {
-        counts( nodeKey( labelId ) ).increment( 0l, delta );
+        counts( nodeKey( labelId ) ).increment( 0L, delta );
     }
 
     @Override
@@ -79,7 +78,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     {
         if ( delta != 0 )
         {
-            counts( relationshipKey( startLabelId, typeId, endLabelId ) ).increment( 0l, delta );
+            counts( relationshipKey( startLabelId, typeId, endLabelId ) ).increment( 0L, delta );
         }
     }
 
@@ -99,7 +98,7 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     @Override
     public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
     {
-        counts( indexStatisticsKey( labelId, propertyKeyId ) ).increment( delta, 0l );
+        counts( indexStatisticsKey( labelId, propertyKeyId ) ).increment( delta, 0L );
     }
 
     @Override

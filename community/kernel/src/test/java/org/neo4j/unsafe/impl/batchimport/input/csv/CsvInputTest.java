@@ -801,9 +801,9 @@ public class CsvInputTest
             assertNode( nodes.next(), 2L, properties( "one", "test" ), labels() );
             assertFalse( nodes.hasNext() );
         }
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 1l ), eq( (String)null ) );
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2l ), eq( (String)null ) );
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2l ), eq( "additional" ) );
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 1L ), eq( (String)null ) );
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2L ), eq( (String)null ) );
+        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2L ), eq( "additional" ) );
     }
 
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )

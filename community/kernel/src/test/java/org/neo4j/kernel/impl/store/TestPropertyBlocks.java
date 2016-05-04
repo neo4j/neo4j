@@ -30,8 +30,8 @@ import java.util.List;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -688,7 +688,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         List<Long> theYoyoData = new ArrayList<Long>();
         for ( int i = 0; i < PropertyType.getPayloadSizeLongs() - 1; i++ )
         {
-            theYoyoData.add( 1l << 63 );
+            theYoyoData.add( 1L << 63 );
             Long[] value = theYoyoData.toArray( new Long[] {} );
             rel.setProperty( "yoyo", value );
             if ( withNewTx )
@@ -699,7 +699,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
             }
         }
 
-        theYoyoData.add( 1l << 63 );
+        theYoyoData.add( 1L << 63 );
         Long[] value = theYoyoData.toArray( new Long[] {} );
         rel.setProperty( "yoyo", value );
 

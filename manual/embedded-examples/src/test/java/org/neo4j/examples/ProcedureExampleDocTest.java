@@ -71,7 +71,7 @@ public class ProcedureExampleDocTest
             Result res = db.execute( "CALL org.neo4j.examples.findDenseNodes(2)" );
 
             // Then
-            assertEquals( map( "degree", 3l, "nodeId", node1.getId() ), res.next() );
+            assertEquals( map( "degree", 3L, "nodeId", node1.getId() ), res.next() );
             assertFalse( res.hasNext() );
         }
 

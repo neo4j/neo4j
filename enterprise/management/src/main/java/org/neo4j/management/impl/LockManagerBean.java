@@ -21,7 +21,6 @@ package org.neo4j.management.impl;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
@@ -86,7 +85,7 @@ public final class LockManagerBean extends ManagementBeanProvider
         @Override
         public long getNumberOfAvertedDeadlocks()
         {
-            return -1l;
+            return -1L;
         }
 
         @Override

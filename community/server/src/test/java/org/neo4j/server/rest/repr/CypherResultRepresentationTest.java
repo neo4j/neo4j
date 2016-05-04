@@ -63,8 +63,8 @@ public class CypherResultRepresentationTest
         when( plan.hasProfilerStatistics() ).thenReturn( true );
 
         ExecutionPlanDescription.ProfilerStatistics stats = mock( ExecutionPlanDescription.ProfilerStatistics.class );
-        when( stats.getDbHits() ).thenReturn( 13l );
-        when( stats.getRows() ).thenReturn( 25l );
+        when( stats.getDbHits() ).thenReturn( 13L );
+        when( stats.getRows() ).thenReturn( 25L );
 
         when( plan.getProfilerStatistics() ).thenReturn( stats );
 

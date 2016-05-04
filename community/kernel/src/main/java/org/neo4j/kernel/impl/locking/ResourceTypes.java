@@ -107,12 +107,12 @@ public enum ResourceTypes implements ResourceType
 
     public static long graphPropertyResource()
     {
-        return 0l;
+        return 0L;
     }
 
     public static long schemaResource()
     {
-        return 0l;
+        return 0L;
     }
 
     public static ResourceType fromId( int typeId )

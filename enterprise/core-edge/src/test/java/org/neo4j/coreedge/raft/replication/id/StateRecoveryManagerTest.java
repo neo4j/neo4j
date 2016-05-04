@@ -122,7 +122,7 @@ public class StateRecoveryManagerTest
         final StateRecoveryManager.RecoveryStatus recoveryStatus = manager.recover( fileA, fileB );
 
         // then
-        assertEquals( 999l, recoveryStatus.recoveredState() );
+        assertEquals( 999L, recoveryStatus.recoveredState() );
         assertEquals( fileB, recoveryStatus.activeFile() );
     }
 

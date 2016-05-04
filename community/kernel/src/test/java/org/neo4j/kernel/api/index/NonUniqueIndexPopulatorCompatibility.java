@@ -67,7 +67,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.seek( "value1" );
-            assertEquals( asSet( 1l, 2l ), PrimitiveLongCollections.toSet( nodes ) );
+            assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
         }
         accessor.close();
     }
@@ -156,7 +156,7 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         try ( IndexReader reader = accessor.newReader() )
         {
             PrimitiveLongIterator nodes = reader.seek( propertyValue );
-            assertEquals( asSet( 1l ), PrimitiveLongCollections.toSet( nodes ) );
+            assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
         }
         accessor.close();
     }

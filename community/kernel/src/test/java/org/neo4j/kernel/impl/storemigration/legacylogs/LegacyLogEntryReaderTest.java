@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Function;
-
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -48,7 +48,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -64,7 +63,7 @@ public class LegacyLogEntryReaderTest
     @Before
     public void setup() throws IOException
     {
-        writeLogHeader( fs, input, 3l, -1 );
+        writeLogHeader( fs, input, 3L, -1 );
     }
 
     @Test
@@ -78,7 +77,7 @@ public class LegacyLogEntryReaderTest
 
         // then
         pair.other().close(); // not null cursor
-        assertEquals( new LogHeader( CURRENT_LOG_VERSION, 3l, BASE_TX_ID ), pair.first() );
+        assertEquals( new LogHeader( CURRENT_LOG_VERSION, 3L, BASE_TX_ID ), pair.first() );
     }
 
     @Test

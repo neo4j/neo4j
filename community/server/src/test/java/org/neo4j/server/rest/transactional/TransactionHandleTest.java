@@ -84,7 +84,7 @@ public class TransactionHandleTest
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( executionEngine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
         TransactionRegistry registry = mock( TransactionRegistry.class );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, true, FULL,
                 NullLogProvider.getInstance() );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
@@ -121,7 +121,7 @@ public class TransactionHandleTest
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         Result executionResult = mock( Result.class );
         when( executionEngine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, true, FULL,
                 NullLogProvider.getInstance() );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
@@ -133,7 +133,7 @@ public class TransactionHandleTest
         // then
         InOrder transactionOrder = inOrder( transactionContext, registry );
         transactionOrder.verify( transactionContext ).suspendSinceTransactionsAreStillThreadBound();
-        transactionOrder.verify( registry ).release( 1337l, handle );
+        transactionOrder.verify( registry ).release( 1337L, handle );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
@@ -157,7 +157,7 @@ public class TransactionHandleTest
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, true, FULL,
                 NullLogProvider.getInstance() );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
@@ -177,7 +177,7 @@ public class TransactionHandleTest
         order.verify( transactionContext ).resumeSinceTransactionsAreStillThreadBound();
         order.verify( executionEngine ).executeQuery( "query", map(), querySession );
         order.verify( transactionContext ).suspendSinceTransactionsAreStillThreadBound();
-        order.verify( registry ).release( 1337l, handle );
+        order.verify( registry ).release( 1337L, handle );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
@@ -206,7 +206,7 @@ public class TransactionHandleTest
                 .thenReturn( executionResult );
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, true, FULL,
                 NullLogProvider.getInstance() );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
@@ -242,7 +242,7 @@ public class TransactionHandleTest
 
         Result result = mock( Result.class );
         when( engine.executeQuery( "query", map(), querySession ) ).thenReturn( result );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = new TransactionHandle( kernel, engine, registry, uriScheme, false, FULL,
                 NullLogProvider.getInstance() );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
@@ -254,7 +254,7 @@ public class TransactionHandleTest
         // then
         InOrder transactionOrder = inOrder( transactionContext, registry );
         transactionOrder.verify( transactionContext ).commit();
-        transactionOrder.verify( registry ).forget( 1337l );
+        transactionOrder.verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( result, false, (ResultDataContent[])null );
@@ -272,7 +272,7 @@ public class TransactionHandleTest
         TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction( explicit, FULL );
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = new TransactionHandle( kernel, mock( QueryExecutionEngine.class ), registry,
                 uriScheme, true, FULL, NullLogProvider.getInstance() );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
@@ -283,7 +283,7 @@ public class TransactionHandleTest
         // then
         InOrder transactionOrder = inOrder( transactionContext, registry );
         transactionOrder.verify( transactionContext ).rollback();
-        transactionOrder.verify( registry ).forget( 1337l );
+        transactionOrder.verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
@@ -306,7 +306,7 @@ public class TransactionHandleTest
         when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( engine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = new TransactionHandle( kernel, engine, registry, uriScheme, true, FULL,
                 NullLogProvider.getInstance() );
 
@@ -345,7 +345,7 @@ public class TransactionHandleTest
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( executionEngine.executeQuery( "query", map(), querySession ) ).thenThrow( new NullPointerException() );
 
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, true, FULL,
                 NullLogProvider.getInstance() );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
@@ -356,7 +356,7 @@ public class TransactionHandleTest
 
         // then
         verify( transactionContext ).rollback();
-        verify( registry ).forget( 1337l );
+        verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
@@ -385,7 +385,7 @@ public class TransactionHandleTest
         when( kernel.create( any( GraphDatabaseQueryService.class ), any( Type.class ), any( AccessMode.class ),
                 any( HttpServletRequest.class )) ).thenReturn( querySession );
         when( engine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle =
                 new TransactionHandle( kernel, engine, registry, uriScheme, false, FULL, logProvider );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
@@ -396,7 +396,7 @@ public class TransactionHandleTest
 
         // then
         verify( log ).error( eq( "Failed to commit transaction." ), any( NullPointerException.class ) );
-        verify( registry ).forget( 1337l );
+        verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
@@ -420,7 +420,7 @@ public class TransactionHandleTest
                 .thenThrow( new QueryExecutionKernelException( new SyntaxException( "did you mean MATCH?" ) ) );
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, false, FULL,
                 NullLogProvider.getInstance() );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
@@ -430,7 +430,7 @@ public class TransactionHandleTest
         handle.commit( statements( statement ), output, mock( HttpServletRequest.class ) );
 
         // then
-        verify( registry ).forget( 1337l );
+        verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.SyntaxError ) ) );
@@ -447,7 +447,7 @@ public class TransactionHandleTest
                 invocationOnMock -> { throw new Exception("BOO"); } );
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         TransactionHandle handle = new TransactionHandle( mockKernel(), executionEngine, registry, uriScheme, false, FULL,
                 NullLogProvider.getInstance() );
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
@@ -457,7 +457,7 @@ public class TransactionHandleTest
         handle.commit( statements( statement ), output, mock( HttpServletRequest.class ) );
 
         // then
-        verify( registry ).forget( 1337l );
+        verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailed ) ) );
@@ -473,7 +473,7 @@ public class TransactionHandleTest
         TransitionalTxManagementKernelTransaction tx = mock( TransitionalTxManagementKernelTransaction.class );
         when( kernel.newTransaction( any( Type.class ), any( AccessMode.class ) ) ).thenReturn( tx );
         TransactionRegistry registry = mock( TransactionRegistry.class );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
+        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337L );
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, true, FULL,
                 NullLogProvider.getInstance() );

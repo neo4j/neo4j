@@ -122,10 +122,10 @@ public class StoreCopyClientTest
         try ( Transaction tx = copy.beginTx() )
         {
             long nodesCount = Iterators.count( copy.findNodes( label( "BeforeCopyBegins" ) ) );
-            assertThat( nodesCount, equalTo( 1l ) );
+            assertThat( nodesCount, equalTo( 1L ) );
 
             assertThat( Iterators.single( copy.findNodes( label( "BeforeCopyBegins" ) ) ).getId(),
-                    equalTo( 0l ) );
+                    equalTo( 0L ) );
 
             tx.success();
         }
@@ -232,7 +232,7 @@ public class StoreCopyClientTest
         try ( Transaction tx = copy.beginTx() )
         {
             long nodesCount = Iterators.count( copy.findNodes( label( "BeforeCopyBegins" ) ) );
-            assertThat( nodesCount, equalTo( 0l ) );
+            assertThat( nodesCount, equalTo( 0L ) );
 
             tx.success();
         }

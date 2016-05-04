@@ -572,13 +572,13 @@ public class NeoStoresTest
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // then the default is 0
-        assertEquals( 0l, metaDataStore.getLatestConstraintIntroducingTx() );
+        assertEquals( 0L, metaDataStore.getLatestConstraintIntroducingTx() );
 
         // when
-        metaDataStore.setLatestConstraintIntroducingTx( 10l );
+        metaDataStore.setLatestConstraintIntroducingTx( 10L );
 
         // then
-        assertEquals( 10l, metaDataStore.getLatestConstraintIntroducingTx() );
+        assertEquals( 10L, metaDataStore.getLatestConstraintIntroducingTx() );
 
         // when
         neoStores.flush( IOLimiter.unlimited() );
@@ -586,7 +586,7 @@ public class NeoStoresTest
         neoStores = sf.openAllNeoStores();
 
         // then the value should have been stored
-        assertEquals( 10l, neoStores.getMetaDataStore().getLatestConstraintIntroducingTx() );
+        assertEquals( 10L, neoStores.getMetaDataStore().getLatestConstraintIntroducingTx() );
         neoStores.close();
     }
 

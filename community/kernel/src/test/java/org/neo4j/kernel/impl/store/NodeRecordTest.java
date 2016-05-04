@@ -46,12 +46,12 @@ public class NodeRecordTest
     public void cloneShouldProduceExactCopy() throws Exception
     {
         // Given
-        long relId = 1337l;
-        long propId = 1338l;
-        long inlinedLabels = 12l;
+        long relId = 1337L;
+        long propId = 1338L;
+        long inlinedLabels = 12L;
 
-        NodeRecord node = new NodeRecord( 1l, false, relId, propId );
-        node.setLabelField( inlinedLabels, asList( new DynamicRecord( 1l ), new DynamicRecord( 2l ) ) );
+        NodeRecord node = new NodeRecord( 1L, false, relId, propId );
+        node.setLabelField( inlinedLabels, asList( new DynamicRecord( 1L ), new DynamicRecord( 2L ) ) );
         node.setInUse( true );
 
         // When
@@ -71,10 +71,10 @@ public class NodeRecordTest
     {
         // Given
         NodeRecord node = new NodeRecord( 1, false, -1, -1 );
-        long inlinedLabels = 12l;
-        DynamicRecord dynamic1 = dynamicRecord( 1l, true );
-        DynamicRecord dynamic2 = dynamicRecord( 2l, true );
-        DynamicRecord dynamic3 = dynamicRecord( 3l, true );
+        long inlinedLabels = 12L;
+        DynamicRecord dynamic1 = dynamicRecord( 1L, true );
+        DynamicRecord dynamic2 = dynamicRecord( 2L, true );
+        DynamicRecord dynamic3 = dynamicRecord( 3L, true );
 
         node.setLabelField( inlinedLabels, asList( dynamic1, dynamic2, dynamic3 ) );
 

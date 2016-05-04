@@ -922,7 +922,7 @@ public class TxStateTest
         // Given
 
         // When
-        long nodeId = 1337l;
+        long nodeId = 1337L;
         state.nodeDoDelete( nodeId );
 
         // Then

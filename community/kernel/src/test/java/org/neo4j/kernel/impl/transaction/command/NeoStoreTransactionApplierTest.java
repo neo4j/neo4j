@@ -610,7 +610,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final IndexRule rule =
-                IndexRule.constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42l );
+                IndexRule.constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -633,7 +633,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final IndexRule rule =
-                IndexRule.constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42l );
+                IndexRule.constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -661,7 +661,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final IndexRule rule =
-                IndexRule.constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42l );
+                IndexRule.constraintIndexRule( 0, 1, 2, new SchemaIndexProvider.Descriptor( "K", "X.Y" ), 42L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -736,7 +736,7 @@ public class NeoStoreTransactionApplierTest
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final UniquePropertyConstraintRule
-                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -760,7 +760,7 @@ public class NeoStoreTransactionApplierTest
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final UniquePropertyConstraintRule
-                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -784,7 +784,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final UniquePropertyConstraintRule
-                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -807,7 +807,7 @@ public class NeoStoreTransactionApplierTest
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final UniquePropertyConstraintRule
-                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -832,7 +832,7 @@ public class NeoStoreTransactionApplierTest
         record.setInUse( false );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final UniquePropertyConstraintRule
-                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 
@@ -856,7 +856,7 @@ public class NeoStoreTransactionApplierTest
         record.setInUse( false );
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
         final UniquePropertyConstraintRule
-                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0l, 1, 2, 3l );
+                rule = UniquePropertyConstraintRule.uniquenessConstraintRule( 0L, 1, 2, 3L );
         final Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand( Collections.<DynamicRecord>emptyList(), recordsAfter, rule );
 

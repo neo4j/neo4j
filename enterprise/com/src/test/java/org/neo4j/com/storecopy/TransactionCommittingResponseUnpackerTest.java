@@ -73,7 +73,7 @@ public class TransactionCommittingResponseUnpackerTest
         unpacker.unpackResponse( new DummyObligationResponse( 4 ), NO_OP_TX_HANDLER );
 
         // THEN
-        verify( fulfiller, times( 1 ) ).fulfill( 4l );
+        verify( fulfiller, times( 1 ) ).fulfill( 4L );
     }
 
     @Test

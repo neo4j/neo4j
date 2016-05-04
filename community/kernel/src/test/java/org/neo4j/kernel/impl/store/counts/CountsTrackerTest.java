@@ -364,8 +364,8 @@ public class CountsTrackerTest
         oracle.relationship( n1, 1, n3 );
         oracle.relationship( n1, 1, n2 );
         oracle.relationship( n0, 1, n3 );
-        oracle.indexUpdatesAndSize( 1, 2, 0l, 50l );
-        oracle.indexSampling( 1, 2, 25l, 50l );
+        oracle.indexUpdatesAndSize( 1, 2, 0L, 50L );
+        oracle.indexSampling( 1, 2, 25L, 50L );
         return oracle;
     }
 

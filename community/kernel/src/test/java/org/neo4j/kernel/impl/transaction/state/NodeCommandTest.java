@@ -48,11 +48,9 @@ import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-
-import static java.util.Collections.singletonList;
-
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
@@ -176,12 +174,12 @@ public class NodeCommandTest
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         before.setInUse( true );
         List<DynamicRecord> beforeDyn = singletonList( dynamicRecord(
-                0, true, true, -1l, LONG.intValue(), new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ) );
+                0, true, true, -1L, LONG.intValue(), new byte[]{1, 2, 3, 4, 5, 6, 7, 8} ) );
         before.setLabelField( dynamicPointer( beforeDyn ), beforeDyn );
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         List<DynamicRecord> dynamicRecords = singletonList( dynamicRecord(
-                0, false, true, -1l, LONG.intValue(), new byte[]{ 1, 2, 3, 4, 5, 6, 7, 8} ) );
+                0, false, true, -1L, LONG.intValue(), new byte[]{ 1, 2, 3, 4, 5, 6, 7, 8} ) );
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
         // When
         Command.NodeCommand cmd = new Command.NodeCommand( before, after );

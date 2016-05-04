@@ -465,7 +465,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     public void testLongArray()
     {
         long[] array1 = new long[] { 1, 2, 3, 4, 5 };
-        Long[] array2 = new Long[] { 6l, 7l, 8l };
+        Long[] array2 = new Long[] { 6L, 7L, 8L };
         String key = "testlongarray";
         node1.setProperty( key, array1 );
         newTransaction();

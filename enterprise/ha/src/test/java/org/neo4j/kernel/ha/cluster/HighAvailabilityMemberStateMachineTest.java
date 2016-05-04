@@ -450,11 +450,11 @@ public class HighAvailabilityMemberStateMachineTest
         Config config = new Config( Collections.singletonMap( ClusterSettings.server_id.name(), me.toString() ) );
 
         TransactionStats transactionCounters = mock( TransactionStats.class );
-        when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0l );
+        when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );
 
         PageCache pageCacheMock = mock( PageCache.class );
         PagedFile pagedFileMock = mock( PagedFile.class );
-        when( pagedFileMock.getLastPageId() ).thenReturn( 1l );
+        when( pagedFileMock.getLastPageId() ).thenReturn( 1L );
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );

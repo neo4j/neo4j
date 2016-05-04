@@ -72,7 +72,7 @@ public class SchemaRuleCommandTest
     private final int labelId = 2;
     private final int propertyKey = 8;
     private final long id = 0;
-    private final long txId = 1337l;
+    private final long txId = 1337L;
     private final NeoStores neoStores = mock( NeoStores.class );
     private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     private final SchemaStore schemaStore = mock( SchemaStore.class );

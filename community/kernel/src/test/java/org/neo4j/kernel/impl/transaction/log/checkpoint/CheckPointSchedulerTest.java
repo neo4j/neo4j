@@ -52,7 +52,7 @@ public class CheckPointSchedulerTest
     public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20l );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
 
         assertNull( jobScheduler.getJob() );
 
@@ -62,14 +62,14 @@ public class CheckPointSchedulerTest
         // then
         assertNotNull( jobScheduler.getJob() );
         verify( jobScheduler, times( 1 ) ).schedule( eq( checkPoint ), any( Runnable.class ),
-                eq( 20l ), eq( TimeUnit.MILLISECONDS ) );
+                eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
     }
 
     @Test
     public void shouldRescheduleTheJobAfterARun() throws Throwable
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20l );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
 
         assertNull( jobScheduler.getJob() );
 
@@ -83,7 +83,7 @@ public class CheckPointSchedulerTest
 
         // then
         verify( jobScheduler, times( 2 ) ).schedule( eq( checkPoint ), any( Runnable.class ),
-                eq( 20l ), eq( TimeUnit.MILLISECONDS ) );
+                eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
         verify( checkPointer, times( 1 ) ).checkPointIfNeeded( any( TriggerInfo.class ) );
         assertEquals( scheduledJob, jobScheduler.getJob() );
     }
@@ -92,7 +92,7 @@ public class CheckPointSchedulerTest
     public void shouldNotRescheduleAJobWhenStopped() throws Throwable
     {
         // given
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20l );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
 
         assertNull( jobScheduler.getJob() );
 
@@ -110,7 +110,7 @@ public class CheckPointSchedulerTest
     @Test
     public void stoppedJobCantBeInvoked() throws Throwable
     {
-        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 10l );
+        CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 10L );
         scheduler.start();
         jobScheduler.runJob();
 
@@ -156,7 +156,7 @@ public class CheckPointSchedulerTest
             }
         };
 
-        final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20l );
+        final CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, jobScheduler, 20L );
 
         // when
         scheduler.start();

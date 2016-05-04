@@ -23,7 +23,7 @@ import java.util.function.BiFunction;
 
 public class Registers
 {
-    public static Register.DoubleLongRegister newDoubleLongRegister() { return newDoubleLongRegister( -1l, -1l ); }
+    public static Register.DoubleLongRegister newDoubleLongRegister() { return newDoubleLongRegister( -1L, -1L ); }
     public static Register.DoubleLongRegister newDoubleLongRegister( final long initialFirst, final long initialSecond )
     {
         return new Register.DoubleLongRegister()

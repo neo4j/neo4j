@@ -54,7 +54,7 @@ public class ConversationManagerTest
     public void testStart() throws Exception
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1l );
+        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1L );
         when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         conversationManager = getConversationManager();
@@ -70,7 +70,7 @@ public class ConversationManagerTest
     public void testStop() throws Exception
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1l );
+        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1L );
         when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         conversationManager = getConversationManager();
@@ -86,7 +86,7 @@ public class ConversationManagerTest
     public void testConversationWorkflow() throws Exception
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1l );
+        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( 1L );
         when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
                 any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         RequestContext requestContext = getRequestContext();
@@ -127,7 +127,7 @@ public class ConversationManagerTest
 
     private RequestContext getRequestContext()
     {
-        return new RequestContext( 1l, 1, 1, 1l, 1l );
+        return new RequestContext( 1L, 1, 1, 1L, 1L );
     }
 
     private ConversationManager getConversationManager()
