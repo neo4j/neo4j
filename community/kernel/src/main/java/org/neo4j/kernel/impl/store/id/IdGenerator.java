@@ -44,4 +44,74 @@ public interface IdGenerator extends IdSequence
      * middle will still leave the file marked as dirty so it will be deleted on the next open call.
      */
     void delete();
+
+    class Delegate implements IdGenerator
+    {
+        private final IdGenerator delegate;
+
+        public Delegate( IdGenerator delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public long nextId()
+        {
+            return delegate.nextId();
+        }
+
+        @Override
+        public IdRange nextIdBatch( int size )
+        {
+            return delegate.nextIdBatch( size );
+        }
+
+        @Override
+        public void setHighId( long id )
+        {
+            delegate.setHighId( id );
+        }
+
+        @Override
+        public long getHighId()
+        {
+            return delegate.getHighId();
+        }
+
+        @Override
+        public long getHighestPossibleIdInUse()
+        {
+            return delegate.getHighestPossibleIdInUse();
+        }
+
+        @Override
+        public void freeId( long id )
+        {
+            delegate.freeId( id );
+        }
+
+        @Override
+        public void close()
+        {
+            delegate.close();
+        }
+
+        @Override
+        public long getNumberOfIdsInUse()
+        {
+            return delegate.getNumberOfIdsInUse();
+        }
+
+        @Override
+        public long getDefragCount()
+        {
+            return delegate.getDefragCount();
+        }
+
+        @Override
+        public void delete()
+        {
+            delegate.delete();
+        }
+    }
 }

@@ -107,6 +107,7 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -161,6 +162,7 @@ import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.JobScheduler.JobHandle;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -178,11 +180,14 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -382,6 +387,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final IndexConfigStore indexConfigStore;
     private final ConstraintSemantics constraintSemantics;
+    private final IdGeneratorFactory idGeneratorFactory;
 
     private Dependencies dependencies;
     private LifeSupport life;
@@ -430,7 +436,8 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             PageCache pageCache,
             ConstraintSemantics constraintSemantics,
             Monitors monitors,
-            Tracers tracers )
+            Tracers tracers,
+            IdGeneratorFactory idGeneratorFactory )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -458,6 +465,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
         this.constraintSemantics = constraintSemantics;
         this.monitors = monitors;
         this.tracers = tracers;
+        this.idGeneratorFactory = idGeneratorFactory;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -532,6 +540,17 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             LegacyIndexApplierLookup legacyIndexApplierLookup =
                     dependencies.satisfyDependency( new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup ) );
 
+            BufferingIdGeneratorFactory bufferingIdGeneratorFactory = null;
+            boolean safeIdBuffering = FeatureToggles.flag( getClass(), "safeIdBuffering", true );
+            if ( safeIdBuffering )
+            {
+                // This buffering id generator factory will have properly buffering id generators injected into
+                // the stores. The buffering depends on knowledge about active transactions,
+                // so we'll initialize it below when all those components have been instantiated.
+                bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory );
+                storeFactory.setIdGeneratorFactory( bufferingIdGeneratorFactory );
+            }
+
             final NeoStoreModule neoStoreModule =
                     buildNeoStore( storeFactory, labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
             // TODO The only reason this is here is because of the provider-stuff for DiskLayer. Remove when possible:
@@ -559,7 +578,7 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                     transactionLogModule.logFiles(), transactionLogModule.storeFlusher(), startupStatistics,
                     legacyIndexApplierLookup );
 
-            KernelModule kernelModule = buildKernel( indexingModule.integrityValidator(),
+            final KernelModule kernelModule = buildKernel( indexingModule.integrityValidator(),
                     transactionLogModule.transactionAppender(), neoStoreModule.neoStores(),
                     transactionLogModule.storeApplier(), indexingModule.indexingService(),
                     indexingModule.indexUpdatesValidator(),
@@ -567,6 +586,13 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
                     cacheModule.updateableSchemaState(), indexingModule.labelScanStore(),
                     indexingModule.schemaIndexProviderMap(), cacheModule.procedureCache() );
 
+            if ( safeIdBuffering )
+            {
+                // Now that we've instantiated the component which can keep track of transaction boundaries
+                // we let the id generator know about it.
+                bufferingIdGeneratorFactory.initialize( kernelModule.kernelTransactions() );
+                life.add( freeIdMaintenance( bufferingIdGeneratorFactory ) );
+            }
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
             this.cacheModule = cacheModule;
@@ -622,6 +648,33 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
          * kernel panics.
          */
         kernelHealth.healed();
+    }
+
+    private Lifecycle freeIdMaintenance( final BufferingIdGeneratorFactory bufferingIdGeneratorFactory )
+    {
+        return new LifecycleAdapter()
+        {
+            private JobHandle jobHandle;
+
+            @Override
+            public void start() throws Throwable
+            {
+                jobHandle = scheduler.scheduleRecurring( JobScheduler.Groups.storageMaintenance, new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        bufferingIdGeneratorFactory.maintenance();
+                    }
+                }, 1, SECONDS );
+            }
+
+            @Override
+            public void stop() throws Throwable
+            {
+                jobHandle.cancel( false );
+            }
+        };
     }
 
     // Startup sequence
@@ -693,11 +746,6 @@ public class NeoStoreDataSource implements NeoStoresSupplier, Lifecycle, IndexPr
             public void start() throws Throwable
             {
                 loadSchemaCache();
-            }
-
-            @Override
-            public void stop() throws Throwable
-            {
             }
         } );
 

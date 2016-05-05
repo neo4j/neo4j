@@ -29,7 +29,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.TestShortString;
 import org.neo4j.test.DatabaseRule;
@@ -228,19 +228,12 @@ public class TestShortStringProperties extends TestShortString
 
     private long propertyRecordsInUse()
     {
-        return propertyStore().getNumberOfIdsInUse();
+        return AbstractNeo4jTestCase.numberOfRecordsInUse( propertyStore() );
     }
 
     private long dynamicRecordsInUse()
     {
-        try
-        {
-            return ( (AbstractDynamicStore) storeField.get( propertyStore() ) ).getNumberOfIdsInUse();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        return AbstractNeo4jTestCase.numberOfRecordsInUse( propertyStore().getStringStore() );
     }
 
     private PropertyStore propertyStore()

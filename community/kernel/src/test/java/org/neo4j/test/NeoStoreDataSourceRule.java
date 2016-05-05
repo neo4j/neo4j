@@ -78,7 +78,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
         final Config config = new Config( stringMap( additionalConfig ),
                 GraphDatabaseSettings.class );
 
-        StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
+        StoreFactory sf = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
 
         Locks locks = mock( Locks.class );
@@ -93,7 +94,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null, null,
                 new CommunityCommitProcessFactory(), mock( PageCache.class ),
-                mock( ConstraintSemantics.class), new Monitors(), new Tracers( "null", NullLog.getInstance() ) );
+                mock( ConstraintSemantics.class), new Monitors(), new Tracers( "null", NullLog.getInstance() ),
+                idGeneratorFactory );
 
         return dataSource;
     }

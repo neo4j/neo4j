@@ -181,6 +181,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TransactionEvent transactionEvent;
     private CloseListener closeListener;
     private final NeoStoreTransactionContext context;
+    private volatile int reuseCount;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
@@ -247,6 +248,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storeStatement = storeLayer.acquireStatement();
         this.closeListener = null;
         return this;
+    }
+
+    int getReuseCount()
+    {
+        return reuseCount;
     }
 
     @Override
@@ -670,13 +676,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private void release()
     {
-        locks.close();
-        locks = null;
-        pool.release( this );
-        if ( storeStatement != null )
+        try
         {
-            storeStatement.close();
-            storeStatement = null;
+            locks.close();
+            locks = null;
+            pool.release( this );
+            if ( storeStatement != null )
+            {
+                storeStatement.close();
+                storeStatement = null;
+            }
+        }
+        finally
+        {
+            reuseCount++;
         }
     }
 
