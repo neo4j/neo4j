@@ -29,7 +29,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
 public class BatchInsertRelationshipsStage extends Stage
 {
     public BatchInsertRelationshipsStage( Configuration config, IdMapper idMapper,
-            InputIterator<InputRelationship> relationships, BatchingNeoStores store )
+            InputIterator<InputRelationship> relationships, BatchingNeoStores store, long nextRelationshipId )
     {
         super( "Minority relationships", config, ORDER_SEND_DOWNSTREAM );
         add( new InputIteratorBatcherStep<>( control(), config, relationships, InputRelationship.class ) );
@@ -37,6 +37,6 @@ public class BatchInsertRelationshipsStage extends Stage
         add( new PropertyEncoderStep<>( control(), config, store.getPropertyKeyRepository(),
                 store.getPropertyStore() ) );
         add( new BatchInsertRelationshipsStep( control(), config, store.getNeoStores(),
-                store.getRelationshipTypeRepository() ) );
+                store.getRelationshipTypeRepository(), nextRelationshipId ) );
     }
 }
