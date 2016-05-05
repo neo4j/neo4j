@@ -74,6 +74,22 @@ class Segments
         }
     }
 
+    /*
+     * Simple chart demonstrating valid and invalid value combinations for the following three calls. All three
+     * result in the same action, but they demand different invariants. Whether we choose to fail hard when they are
+     * invalidated or to simply log a warning, we should still make some sort of check against them.
+     *
+     * Valid truncate: prevFileLast = 100, prevIndex = 80
+     * Invalid truncate: prevFileLast = 100, prevIndex = 101
+     *
+     * Valid rotate: prevFileLast = 100, prevIndex = 100
+     * Invalid rotate: prevFileLast = 100, prevIndex = 80
+     * Invalid rotate: prevFileLast = 100, prevIndex = 101
+     *
+     * Valid skip: prevFileLast = 100, prevIndex = 101
+     * Invalid skip: prevFileLast = 100, prevIndex = 80
+     */
+
     SegmentFile truncate( long prevFileLastIndex, long prevIndex, long prevTerm ) throws IOException
     {
         if ( prevFileLastIndex < prevIndex )
@@ -90,10 +106,25 @@ class Segments
 
     SegmentFile rotate( long prevFileLastIndex, long prevIndex, long prevTerm ) throws IOException
     {
-        if( prevFileLastIndex > prevIndex )
+        if( prevFileLastIndex != prevIndex )
         {
             throw new IllegalArgumentException( format( "Cannot rotate file and have append index go from %d " +
-                    "to %d. Going backwards is a truncation operation", prevFileLastIndex, prevIndex ) );
+                    "to %d. Going backwards is a truncation operation, going forwards is a skip operation.",
+                    prevFileLastIndex, prevIndex ) );
+        }
+        return createNext( prevFileLastIndex, prevIndex, prevTerm );
+    }
+
+    SegmentFile skip( long prevFileLastIndex, long prevIndex, long prevTerm ) throws IOException
+    {
+        if( prevFileLastIndex > prevIndex )
+        {
+            throw new IllegalArgumentException( format( "Cannot skip from index %d backwards to index %d",
+                    prevFileLastIndex, prevIndex ) );
+        }
+        if ( prevFileLastIndex == prevIndex )
+        {
+            log.warn( format( "Skipping at current log append index %d", prevIndex ) );
         }
         return createNext( prevFileLastIndex, prevIndex, prevTerm );
     }

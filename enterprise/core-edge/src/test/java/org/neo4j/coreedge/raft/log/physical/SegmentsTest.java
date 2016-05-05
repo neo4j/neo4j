@@ -49,13 +49,13 @@ public class SegmentsTest
         Segments segments = new Segments( fsa, fileNames, Collections.emptyList(), contentMarshal, logProvider, -1 );
 
         // When
-        segments.rotate( 10, 11, 12 );
+        segments.rotate( 10, 10, 12 );
         segments.last().closeWriter();
         SegmentFile last = segments.last();
 
         // Then
         assertEquals( 10, last.header().prevFileLastIndex() );
-        assertEquals( 11, last.header().prevIndex() );
+        assertEquals( 10, last.header().prevIndex() );
         assertEquals( 12, last.header().prevTerm() );
     }
 
