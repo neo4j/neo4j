@@ -25,8 +25,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 
 import static org.junit.Assert.assertEquals;
@@ -59,7 +59,8 @@ public class DesktopConfiguratorTest
         File storeDir = new File( "graph.db" ).getAbsoluteFile(); // will not create any file
 
         // When
-        DesktopConfigurator config = new DesktopConfigurator( installation, storeDir );
+        DesktopConfigurator config = new DesktopConfigurator(
+                installation, new Parameters( new String[] {} ), storeDir );
 
         // Then
         assertEquals( storeDir.getAbsolutePath(), config.getDatabaseDirectory() );
