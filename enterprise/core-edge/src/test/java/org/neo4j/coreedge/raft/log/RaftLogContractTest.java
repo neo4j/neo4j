@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.raft.ReplicatedString;
 
-import static jdk.nashorn.internal.runtime.regexp.joni.Config.log;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -129,6 +128,7 @@ public abstract class RaftLogContractTest
     @Test
     public void shouldHaveNoEffectWhenTruncatingNonExistingEntries() throws Exception
     {
+        // Given
         RaftLog log = createRaftLog();
 
         RaftLogEntry logEntryA = new RaftLogEntry( 1, valueOf( 1 ) );
@@ -137,8 +137,19 @@ public abstract class RaftLogContractTest
         log.append( logEntryA );
         log.append( logEntryB );
 
-        log.truncate( 5 );
+        try
+        {
+            // When
+            log.truncate( 5 );
+            fail("Truncate at index after append index should never be attempted");
+        }
+        catch( IllegalArgumentException e )
+        {
+            // Then
+            // an exception should be thrown
+        }
 
+        // Then, assert that the state is unchanged
         assertThat( log.appendIndex(), is( 1L ) );
         assertThat( readLogEntry( log, 0 ), equalTo( logEntryA ) );
         assertThat( readLogEntry( log, 1 ), equalTo( logEntryB ) );

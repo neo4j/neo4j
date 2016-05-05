@@ -41,13 +41,9 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class PhysicalRaftLogContractTest extends RaftLogContractTest
 {

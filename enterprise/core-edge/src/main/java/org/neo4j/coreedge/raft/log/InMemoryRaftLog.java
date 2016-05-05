@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.cursor.IOCursor;
-
 public class InMemoryRaftLog implements RaftLog
 {
     private final Map<Long, RaftLogEntry> raftLog = new HashMap<>();
@@ -124,6 +122,10 @@ public class InMemoryRaftLog implements RaftLog
         if ( fromIndex <= commitIndex )
         {
             throw new IllegalArgumentException( "cannot truncate before the commit index" );
+        }
+        else if ( fromIndex > appendIndex )
+        {
+            throw new IllegalArgumentException( "Cannot truncate at index " + fromIndex + " when append index is " + appendIndex );
         }
         else if( fromIndex <= prevIndex )
         {
