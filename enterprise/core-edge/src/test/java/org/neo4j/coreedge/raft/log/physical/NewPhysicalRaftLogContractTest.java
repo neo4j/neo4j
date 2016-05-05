@@ -23,13 +23,21 @@ import java.io.File;
 import java.io.IOException;
 
 import org.junit.After;
+import org.junit.Test;
+
+import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogContractTest;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
 // TODO: Separate into small-cache and no-cache tests. Perhaps parameterize this one (0, 5, 1024) cache sizes.
 public class NewPhysicalRaftLogContractTest extends RaftLogContractTest
@@ -70,112 +78,112 @@ public class NewPhysicalRaftLogContractTest extends RaftLogContractTest
         return newRaftLog;
     }
 
-//    @Test
-//    public void shouldReadBackInCachedEntry() throws Throwable
-//    {
-//        // Given
-//        NewPhysicalRaftLog raftLog = (NewPhysicalRaftLog) createRaftLog();
-//        int term = 0;
-//        ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
-//
-//        // When
-//        long entryIndex = raftLog.append( new RaftLogEntry( term, content ) );
-//
-//        // Then
-//        assertEquals( entryIndex, raftLog.appendIndex() );
-//        assertEquals( content, readLogEntry( raftLog, entryIndex ).content() );
-//        assertEquals( term, raftLog.readEntryTerm( entryIndex ) );
-//    }
-//
-//    @Test
-//    public void shouldReadBackNonCachedEntry() throws Exception
-//    {
-//        // Given
-//        int cacheSize = 1;
-//        NewPhysicalRaftLog raftLog = createRaftLog( cacheSize );
-//        int term = 0;
-//        ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
-//        ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
-//
-//        // When
-//        long entryIndex1 = raftLog.append( new RaftLogEntry( term, content1 ) );
-//        long entryIndex2 = raftLog.append( new RaftLogEntry( term, content2 ) ); // this will push the first entry out of cache
-//
-//        // Then
-//        // entry 1 should be there
-//        assertEquals( content1, readLogEntry( raftLog, entryIndex1 ).content() );
-//        assertEquals( term, raftLog.readEntryTerm( entryIndex1 ) );
-//
-//        // entry 2 should be there also
-//        assertEquals( content2, readLogEntry( raftLog, entryIndex2 ).content() );
-//        assertEquals( term, raftLog.readEntryTerm( entryIndex2 ) );
-//    }
-//
-//    @Test
-//    public void shouldRestoreCommitIndexOnStartup() throws Throwable
-//    {
-//        // Given
-//        NewPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
-//        int term = 0;
-//        ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
-//        ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
-//        raftLog.append( new RaftLogEntry( term, content1 ) );
-//        long entryIndex2 = raftLog.append( new RaftLogEntry( term, content2 ) );
-//
-//        // When
-//        // we restart the raft log
-//        life.remove( raftLog ); // stops the removed instance
-//        raftLog = createRaftLog( 100 );
-//
-//        // Then
-//        assertEquals( entryIndex2, raftLog.appendIndex() );
-//    }
-//
-//    @Test
-//    public void shouldRestoreCorrectCommitAndAppendIndexOnStartupAfterTruncation() throws Exception
-//    {
-//        // Given
-//        NewPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
-//        int term = 0;
-//        ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
-//        raftLog.append( new RaftLogEntry( term, content ) );
-//        raftLog.append( new RaftLogEntry( term, content ) );
-//        long entryIndex3 = raftLog.append( new RaftLogEntry( term, content ) );
-//        long entryIndex4 = raftLog.append( new RaftLogEntry( term, content ) );
-//
-//        raftLog.truncate( entryIndex4 );
-//
-//        // When
-//        // we restart the raft log
-//        life.remove( raftLog ); // stops the removed instance
-//        raftLog = createRaftLog( 100 );
-//
-//        // Then
-//        assertEquals( entryIndex3, raftLog.appendIndex() );
-//    }
-//
-//    @Test
-//    public void shouldRestoreCorrectCommitAndAppendIndexWithTruncationRecordsAndAppendedRecordsAfterThat() throws Exception
-//    {
-//        // Given
-//        NewPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
-//        int term = 0;
-//        ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
-//        raftLog.append( new RaftLogEntry( term, content ) );
-//        raftLog.append( new RaftLogEntry( term, content ) );
-//        raftLog.append( new RaftLogEntry( term, content ) );
-//        long entryIndex4 = raftLog.append( new RaftLogEntry( term, content ) );
-//
-//        raftLog.truncate( entryIndex4 );
-//
-//        long entryIndex5 = raftLog.append( new RaftLogEntry( term, content ) );
-//
-//        // When
-//        // we restart the raft log
-//        life.remove( raftLog ); // stops the removed instance
-//        raftLog = createRaftLog( 100 );
-//
-//        // Then
-//        assertEquals( entryIndex5, raftLog.appendIndex() );
-//    }
+    @Test
+    public void shouldReadBackInCachedEntry() throws Throwable
+    {
+        // Given
+        NewPhysicalRaftLog raftLog = (NewPhysicalRaftLog) createRaftLog();
+        int term = 0;
+        ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
+
+        // When
+        long entryIndex = raftLog.append( new RaftLogEntry( term, content ) );
+
+        // Then
+        assertEquals( entryIndex, raftLog.appendIndex() );
+        assertEquals( content, readLogEntry( raftLog, entryIndex ).content() );
+        assertEquals( term, raftLog.readEntryTerm( entryIndex ) );
+    }
+
+    @Test
+    public void shouldReadBackNonCachedEntry() throws Exception
+    {
+        // Given
+        int cacheSize = 1;
+        NewPhysicalRaftLog raftLog = createRaftLog( cacheSize );
+        int term = 0;
+        ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
+        ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
+
+        // When
+        long entryIndex1 = raftLog.append( new RaftLogEntry( term, content1 ) );
+        long entryIndex2 = raftLog.append( new RaftLogEntry( term, content2 ) ); // this will push the first entry out of cache
+
+        // Then
+        // entry 1 should be there
+        assertEquals( content1, readLogEntry( raftLog, entryIndex1 ).content() );
+        assertEquals( term, raftLog.readEntryTerm( entryIndex1 ) );
+
+        // entry 2 should be there also
+        assertEquals( content2, readLogEntry( raftLog, entryIndex2 ).content() );
+        assertEquals( term, raftLog.readEntryTerm( entryIndex2 ) );
+    }
+
+    @Test
+    public void shouldRestoreCommitIndexOnStartup() throws Throwable
+    {
+        // Given
+        NewPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        int term = 0;
+        ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
+        ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
+        raftLog.append( new RaftLogEntry( term, content1 ) );
+        long entryIndex2 = raftLog.append( new RaftLogEntry( term, content2 ) );
+
+        // When
+        // we restart the raft log
+        life.remove( raftLog ); // stops the removed instance
+        raftLog = createRaftLog( 100 );
+
+        // Then
+        assertEquals( entryIndex2, raftLog.appendIndex() );
+    }
+
+    @Test
+    public void shouldRestoreCorrectCommitAndAppendIndexOnStartupAfterTruncation() throws Exception
+    {
+        // Given
+        NewPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        int term = 0;
+        ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
+        raftLog.append( new RaftLogEntry( term, content ) );
+        raftLog.append( new RaftLogEntry( term, content ) );
+        long entryIndex3 = raftLog.append( new RaftLogEntry( term, content ) );
+        long entryIndex4 = raftLog.append( new RaftLogEntry( term, content ) );
+
+        raftLog.truncate( entryIndex4 );
+
+        // When
+        // we restart the raft log
+        life.remove( raftLog ); // stops the removed instance
+        raftLog = createRaftLog( 100 );
+
+        // Then
+        assertEquals( entryIndex3, raftLog.appendIndex() );
+    }
+
+    @Test
+    public void shouldRestoreCorrectCommitAndAppendIndexWithTruncationRecordsAndAppendedRecordsAfterThat() throws Exception
+    {
+        // Given
+        NewPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        int term = 0;
+        ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
+        raftLog.append( new RaftLogEntry( term, content ) );
+        raftLog.append( new RaftLogEntry( term, content ) );
+        raftLog.append( new RaftLogEntry( term, content ) );
+        long entryIndex4 = raftLog.append( new RaftLogEntry( term, content ) );
+
+        raftLog.truncate( entryIndex4 );
+
+        long entryIndex5 = raftLog.append( new RaftLogEntry( term, content ) );
+
+        // When
+        // we restart the raft log
+        life.remove( raftLog ); // stops the removed instance
+        raftLog = createRaftLog( 100 );
+
+        // Then
+        assertEquals( entryIndex5, raftLog.appendIndex() );
+    }
 }
