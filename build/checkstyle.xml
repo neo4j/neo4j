@@ -46,6 +46,7 @@
     <module name="ArrayTypeStyle"/>
     <module name="MissingOverride"/>
     <module name="EmptyStatement"/>
+    <module name="SuperFinalize"/>
 
   </module>
 
