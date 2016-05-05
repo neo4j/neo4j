@@ -48,7 +48,7 @@ public abstract class EditFileActionListener implements ActionListener
     @Override
     public void actionPerformed( ActionEvent event )
     {
-        File file = getFile();
+        File file = getFile().getAbsoluteFile();
         if ( null == file )
         {
             showMessageDialog( parentComponent,
@@ -66,8 +66,7 @@ public abstract class EditFileActionListener implements ActionListener
         {
             e.printStackTrace( System.out );
             showWrappedMessageDialog( parentComponent,
-                    format( "Couldn't openDirectory %s, please openDirectory the file manually",
-                            file.getAbsolutePath() ),
+                    format( "Couldn't openDirectory %s, please openDirectory the file manually", file ),
                     "Error",
                     ERROR_MESSAGE );
         }

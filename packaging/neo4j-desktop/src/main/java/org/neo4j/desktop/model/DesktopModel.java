@@ -29,6 +29,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.model.exceptions.UnsuitableDirectoryException;
 import org.neo4j.desktop.runtime.DesktopConfigurator;
@@ -45,10 +46,11 @@ public class DesktopModel
     private final DesktopConfigurator serverConfigurator;
     private final List<DesktopModelListener> listeners = new ArrayList<>();
 
-    public DesktopModel( Installation installation )
+    public DesktopModel( Installation installation, Parameters parameters )
     {
         this.installation = installation;
-        this.serverConfigurator = new DesktopConfigurator( installation, installation.getDatabaseDirectory() );
+        this.serverConfigurator = new DesktopConfigurator( installation, parameters,
+                installation.getDatabaseDirectory() );
     }
 
     public Config getConfig()
@@ -92,7 +94,7 @@ public class DesktopModel
 
     public File getDatabaseConfigurationFile()
     {
-        return installation.getConfigurationsFile();
+        return serverConfigurator.getConfigurationsFile();
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
