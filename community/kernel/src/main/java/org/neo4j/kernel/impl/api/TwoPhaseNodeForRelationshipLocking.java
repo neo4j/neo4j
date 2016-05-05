@@ -73,7 +73,6 @@ class TwoPhaseNodeForRelationshipLocking
                 }
             };
 
-
     TwoPhaseNodeForRelationshipLocking( EntityReadOperations reads, ThrowingConsumer<Long,KernelException> relIdAction )
     {
         this.reads = reads;

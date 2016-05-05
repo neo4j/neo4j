@@ -175,7 +175,7 @@ public class PhysicalRaftLog implements RaftLog, Lifecycle
 
         if ( appendIndex.get() < fromIndex )
         {
-            return;
+            throw new IllegalArgumentException( "Cannot truncate at index " + fromIndex + " when append index is " + appendIndex );
         }
 
         long newAppendIndex = fromIndex - 1;

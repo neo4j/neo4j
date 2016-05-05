@@ -17,44 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.log;
+package org.neo4j.coreedge.raft.log.physical;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Stack;
 
 import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
-import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
+import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
+import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogContractTest;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogVersions;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
 
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
-public class PhysicalRaftLogContractTest extends RaftLogContractTest
+// TODO: Separate into small-cache and no-cache tests. Perhaps parameterize this one (0, 5, 1024) cache sizes.
+public class SegmentedPhysicalRaftLogContractTest extends RaftLogContractTest
 {
-    private PhysicalRaftLog raftLog;
+    private SegmentedPhysicalRaftLog raftLog;
     private LifeSupport life = new LifeSupport();
     private FileSystemAbstraction fileSystem;
 
     @Override
     public RaftLog createRaftLog() throws IOException
     {
-        this.raftLog = createRaftLog( 100 );
+        this.raftLog = createRaftLog( 0 );
         return raftLog;
     }
 
@@ -65,7 +60,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         life.shutdown();
     }
 
-    private PhysicalRaftLog createRaftLog( int cacheSize )
+    private SegmentedPhysicalRaftLog createRaftLog( int cacheSize )
     {
         if ( fileSystem == null )
         {
@@ -74,9 +69,9 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, 10 * 1024, "1 files", cacheSize, 10,
-                new PhysicalRaftLogFile.Monitor.Adapter(), new DummyRaftableContentSerializer(),
-                () -> mock( DatabaseHealth.class ), NullLogProvider.getInstance(), new RaftLogMetadataCache( 10 ) );
+        SegmentedPhysicalRaftLog newRaftLog = new SegmentedPhysicalRaftLog( fileSystem, directory, 10 * 1024,
+                new DummyRaftableContentSerializer(),
+                NullLogProvider.getInstance(), cacheSize );
         life.add( newRaftLog );
         life.init();
         life.start();
@@ -87,7 +82,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
     public void shouldReadBackInCachedEntry() throws Throwable
     {
         // Given
-        PhysicalRaftLog raftLog = (PhysicalRaftLog) createRaftLog();
+        SegmentedPhysicalRaftLog raftLog = (SegmentedPhysicalRaftLog) createRaftLog();
         int term = 0;
         ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
 
@@ -105,7 +100,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
     {
         // Given
         int cacheSize = 1;
-        PhysicalRaftLog raftLog = createRaftLog( cacheSize );
+        SegmentedPhysicalRaftLog raftLog = createRaftLog( cacheSize );
         int term = 0;
         ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
         ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
@@ -128,7 +123,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
     public void shouldRestoreCommitIndexOnStartup() throws Throwable
     {
         // Given
-        PhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        SegmentedPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
         int term = 0;
         ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
         ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
@@ -148,7 +143,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
     public void shouldRestoreCorrectCommitAndAppendIndexOnStartupAfterTruncation() throws Exception
     {
         // Given
-        PhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        SegmentedPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
         int term = 0;
         ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
         raftLog.append( new RaftLogEntry( term, content ) );
@@ -171,7 +166,7 @@ public class PhysicalRaftLogContractTest extends RaftLogContractTest
     public void shouldRestoreCorrectCommitAndAppendIndexWithTruncationRecordsAndAppendedRecordsAfterThat() throws Exception
     {
         // Given
-        PhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        SegmentedPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
         int term = 0;
         ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
         raftLog.append( new RaftLogEntry( term, content ) );

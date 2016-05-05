@@ -193,6 +193,10 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
 
             appendIndex = fromIndex - 1;
         }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot truncate at index " + fromIndex + " when append index is " + appendIndex );
+        }
         term = readEntryTerm( appendIndex );
     }
 
