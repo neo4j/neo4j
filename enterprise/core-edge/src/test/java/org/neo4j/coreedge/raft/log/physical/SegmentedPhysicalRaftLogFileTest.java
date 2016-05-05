@@ -51,7 +51,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.rule.TargetDirectory;
 import org.neo4j.test.rule.TargetDirectory.TestDirectory;
 
-public class NewPhysicalRaftLogFileTest
+public class SegmentedPhysicalRaftLogFileTest
 {
     public final @Rule
     TestDirectory directory = TargetDirectory.testDirForTest( getClass() );

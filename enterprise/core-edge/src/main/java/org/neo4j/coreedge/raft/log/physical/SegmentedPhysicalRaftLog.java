@@ -57,7 +57,7 @@ import org.neo4j.logging.LogProvider;
  * by switching to the next segment file, called the next version. A new segment file is also started
  * when the threshold for a particular file has been reached.
  */
-public class NewPhysicalRaftLog extends LifecycleAdapter implements RaftLog
+public class SegmentedPhysicalRaftLog extends LifecycleAdapter implements RaftLog
 {
     private final Log log;
 
@@ -75,7 +75,7 @@ public class NewPhysicalRaftLog extends LifecycleAdapter implements RaftLog
 
     private State state;
 
-    public NewPhysicalRaftLog(
+    public SegmentedPhysicalRaftLog(
             FileSystemAbstraction fileSystem,
             File directory,
             long rotateAtSize,

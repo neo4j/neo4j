@@ -27,7 +27,7 @@ import org.neo4j.coreedge.raft.log.RaftLogVerificationIT;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
-public class NewPhysicalRaftLogVerificationIT extends RaftLogVerificationIT
+public class SegmentedPhysicalRaftLogVerificationIT extends RaftLogVerificationIT
 {
     @Override
     protected RaftLog createRaftLog() throws Throwable
@@ -40,7 +40,7 @@ public class NewPhysicalRaftLogVerificationIT extends RaftLogVerificationIT
         long rotateAtSizeBytes = 128;
         int entryCacheSize = 4;
 
-        NewPhysicalRaftLog newRaftLog = new NewPhysicalRaftLog( fsa, directory, rotateAtSizeBytes,
+        SegmentedPhysicalRaftLog newRaftLog = new SegmentedPhysicalRaftLog( fsa, directory, rotateAtSizeBytes,
                 new DummyRaftableContentSerializer(), NullLogProvider.getInstance(), entryCacheSize );
 
         newRaftLog.init();

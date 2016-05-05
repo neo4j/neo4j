@@ -54,7 +54,7 @@ import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogMetadataCache;
-import org.neo4j.coreedge.raft.log.physical.NewPhysicalRaftLog;
+import org.neo4j.coreedge.raft.log.physical.SegmentedPhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
@@ -198,7 +198,8 @@ public class EnterpriseCoreEditionModule
     {
         NAIVE,
         IN_MEMORY,
-        PHYSICAL;
+        PHYSICAL,
+        SEGMENTED;
 
         public static RaftLogImplementation fromString( String value )
         {
@@ -505,32 +506,34 @@ public class EnterpriseCoreEditionModule
         {
             case IN_MEMORY:
                 return new InMemoryRaftLog();
-//            case PHYSICAL:
-//                long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
-//                String pruneConf = config.get( CoreEdgeClusterSettings.raft_log_pruning );
-//                int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_entry_cache_size );
-//                int metaDataCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
-//                int headerCacheSize = config.get( CoreEdgeClusterSettings.raft_log_header_cache_size );
-//
-//                return life.add( new PhysicalRaftLog(
-//                        fileSystem,
-//                        new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
-//                        rotateAtSize, pruneConf, entryCacheSize, headerCacheSize,
-//                        new PhysicalRaftLogFile.Monitor.Adapter(), marshal, databaseHealthSupplier, logProvider, new RaftLogMetadataCache( metaDataCacheSize ) ) );
-
             case PHYSICAL:
+            {
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
                 String pruneConf = config.get( CoreEdgeClusterSettings.raft_log_pruning );
                 int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_entry_cache_size );
                 int metaDataCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
                 int headerCacheSize = config.get( CoreEdgeClusterSettings.raft_log_header_cache_size );
 
-                return life.add( new NewPhysicalRaftLog(
+                return life.add( new PhysicalRaftLog(
+                        fileSystem,
+                        new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
+                        rotateAtSize, pruneConf, entryCacheSize, headerCacheSize,
+                        new PhysicalRaftLogFile.Monitor.Adapter(), marshal, databaseHealthSupplier, logProvider, new RaftLogMetadataCache( metaDataCacheSize ) ) );
+
+            }
+
+            case SEGMENTED:
+            {
+                long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
+                int metaDataCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
+
+                return life.add( new SegmentedPhysicalRaftLog(
                         fileSystem,
                         new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
                         rotateAtSize,
                         marshal, logProvider,
-                        metaDataCacheSize )  );
+                        metaDataCacheSize ) );
+            }
 
             case NAIVE:
             default:

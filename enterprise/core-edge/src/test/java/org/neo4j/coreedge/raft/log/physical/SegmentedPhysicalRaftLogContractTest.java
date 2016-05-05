@@ -40,9 +40,9 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
 // TODO: Separate into small-cache and no-cache tests. Perhaps parameterize this one (0, 5, 1024) cache sizes.
-public class NewPhysicalRaftLogContractTest extends RaftLogContractTest
+public class SegmentedPhysicalRaftLogContractTest extends RaftLogContractTest
 {
-    private NewPhysicalRaftLog raftLog;
+    private SegmentedPhysicalRaftLog raftLog;
     private LifeSupport life = new LifeSupport();
     private FileSystemAbstraction fileSystem;
 
@@ -60,7 +60,7 @@ public class NewPhysicalRaftLogContractTest extends RaftLogContractTest
         life.shutdown();
     }
 
-    private NewPhysicalRaftLog createRaftLog( int cacheSize )
+    private SegmentedPhysicalRaftLog createRaftLog( int cacheSize )
     {
         if ( fileSystem == null )
         {
@@ -69,7 +69,7 @@ public class NewPhysicalRaftLogContractTest extends RaftLogContractTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        NewPhysicalRaftLog newRaftLog = new NewPhysicalRaftLog( fileSystem, directory, 10 * 1024,
+        SegmentedPhysicalRaftLog newRaftLog = new SegmentedPhysicalRaftLog( fileSystem, directory, 10 * 1024,
                 new DummyRaftableContentSerializer(),
                 NullLogProvider.getInstance(), cacheSize );
         life.add( newRaftLog );
@@ -82,7 +82,7 @@ public class NewPhysicalRaftLogContractTest extends RaftLogContractTest
     public void shouldReadBackInCachedEntry() throws Throwable
     {
         // Given
-        NewPhysicalRaftLog raftLog = (NewPhysicalRaftLog) createRaftLog();
+        SegmentedPhysicalRaftLog raftLog = (SegmentedPhysicalRaftLog) createRaftLog();
         int term = 0;
         ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
 
@@ -100,7 +100,7 @@ public class NewPhysicalRaftLogContractTest extends RaftLogContractTest
     {
         // Given
         int cacheSize = 1;
-        NewPhysicalRaftLog raftLog = createRaftLog( cacheSize );
+        SegmentedPhysicalRaftLog raftLog = createRaftLog( cacheSize );
         int term = 0;
         ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
         ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
@@ -123,7 +123,7 @@ public class NewPhysicalRaftLogContractTest extends RaftLogContractTest
     public void shouldRestoreCommitIndexOnStartup() throws Throwable
     {
         // Given
-        NewPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        SegmentedPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
         int term = 0;
         ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
         ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
@@ -143,7 +143,7 @@ public class NewPhysicalRaftLogContractTest extends RaftLogContractTest
     public void shouldRestoreCorrectCommitAndAppendIndexOnStartupAfterTruncation() throws Exception
     {
         // Given
-        NewPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        SegmentedPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
         int term = 0;
         ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
         raftLog.append( new RaftLogEntry( term, content ) );
@@ -166,7 +166,7 @@ public class NewPhysicalRaftLogContractTest extends RaftLogContractTest
     public void shouldRestoreCorrectCommitAndAppendIndexWithTruncationRecordsAndAppendedRecordsAfterThat() throws Exception
     {
         // Given
-        NewPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        SegmentedPhysicalRaftLog raftLog = createRaftLog( 100 /* cache size */  );
         int term = 0;
         ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
         raftLog.append( new RaftLogEntry( term, content ) );

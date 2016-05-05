@@ -36,7 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 
-public class NewPhysicalRaftLogRotationTest
+public class SegmentedPhysicalRaftLogRotationTest
 {
     private LifeSupport life = new LifeSupport();
     private FileSystemAbstraction fileSystem;
@@ -48,7 +48,7 @@ public class NewPhysicalRaftLogRotationTest
         life.shutdown();
     }
 
-    private NewPhysicalRaftLog createRaftLog( long rotateAtSize )
+    private SegmentedPhysicalRaftLog createRaftLog( long rotateAtSize )
     {
         if ( fileSystem == null )
         {
@@ -57,7 +57,7 @@ public class NewPhysicalRaftLogRotationTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        NewPhysicalRaftLog newRaftLog = new NewPhysicalRaftLog( fileSystem, directory, rotateAtSize,
+        SegmentedPhysicalRaftLog newRaftLog = new SegmentedPhysicalRaftLog( fileSystem, directory, rotateAtSize,
                 new DummyRaftableContentSerializer(),
                 NullLogProvider.getInstance(), 1000 );
         life.add( newRaftLog );
@@ -72,7 +72,7 @@ public class NewPhysicalRaftLogRotationTest
         // Given
         AtomicLong currentVersion = new AtomicLong();
         int rotateAtSize = 100;
-        NewPhysicalRaftLog log = createRaftLog( rotateAtSize );
+        SegmentedPhysicalRaftLog log = createRaftLog( rotateAtSize );
 
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < rotateAtSize; i++ )
@@ -92,7 +92,7 @@ public class NewPhysicalRaftLogRotationTest
     public void shouldBeAbleToRecoverToLatestStateAfterRotation() throws Throwable
     {
         int rotateAtSize = 100;
-        NewPhysicalRaftLog log = createRaftLog( rotateAtSize );
+        SegmentedPhysicalRaftLog log = createRaftLog( rotateAtSize );
 
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < rotateAtSize - 40; i++ )
