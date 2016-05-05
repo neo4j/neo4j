@@ -420,6 +420,8 @@ public interface Status
                 "needs to be dropped and recreated manually." ),
         SchemaCorruptionDetected( DatabaseError,
                 "A malformed schema rule was encountered. Please contact your support representative." ),
+        StorageDamageDetected( DatabaseError,
+                "Expected set of files not found on disk. Please restore from backup." ),
         UnknownError( DatabaseError,
                 "An unknown error occurred." ),
         OutOfMemoryError( TransientError,

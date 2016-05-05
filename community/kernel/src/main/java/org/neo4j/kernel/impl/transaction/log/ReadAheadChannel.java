@@ -54,6 +54,11 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
         this.readAheadSize = readAheadSize;
     }
 
+    public long position() throws IOException
+    {
+        return channel.position();
+    }
+
     @Override
     public byte get() throws IOException
     {
