@@ -78,11 +78,6 @@ public interface Installation
     InputStream getDefaultVmOptions();
 
     /**
-     * Get the directory where jar-files with plugins and extensions are located.
-     */
-    File getPluginsDirectory();
-
-    /**
      * Get the directory into which Neo4j Desktop has been installed.
      */
     File getInstallationDirectory() throws URISyntaxException;
