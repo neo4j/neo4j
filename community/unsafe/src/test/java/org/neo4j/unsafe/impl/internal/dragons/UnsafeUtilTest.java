@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.internal.dragons;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
@@ -50,17 +51,30 @@ public class UnsafeUtilTest
         @Override
         public boolean equals( Object o )
         {
+            if ( this == o )
+            {
+                return true;
+            }
             if ( o == null || getClass() != o.getClass() )
             {
                 return false;
             }
-
             Obj obj = (Obj) o;
-
-            return aByte == obj.aByte && aShort == obj.aShort && Float.compare( obj.aFloat, aFloat ) == 0 &&
-                   aChar == obj.aChar && anInt == obj.anInt && aLong == obj.aLong &&
+            return aBoolean == obj.aBoolean &&
+                   aByte == obj.aByte &&
+                   aShort == obj.aShort &&
+                   Float.compare( obj.aFloat, aFloat ) == 0 &&
+                   aChar == obj.aChar &&
+                   anInt == obj.anInt &&
+                   aLong == obj.aLong &&
                    Double.compare( obj.aDouble, aDouble ) == 0 &&
-                   !(object != null ? !object.equals( obj.object ) : obj.object != null);
+                   Objects.equals( object, obj.object );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( aBoolean, aByte, aShort, aFloat, aChar, anInt, aLong, aDouble, object );
         }
     }
 

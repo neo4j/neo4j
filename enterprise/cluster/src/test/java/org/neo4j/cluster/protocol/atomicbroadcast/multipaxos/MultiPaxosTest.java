@@ -39,51 +39,8 @@ import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 
-/**
- * TODO
- */
 public class MultiPaxosTest
 {
-    /*
-    private NetworkMock network = new NetworkMock( 50,
-            new MultipleFailureLatencyStrategy( new FixedNetworkLatencyStrategy( 0 ) ),
-            new MessageTimeoutStrategy( new FixedTimeoutStrategy( 1000 ) ) );
-
-    @Rule
-    public ClusterRule cluster = new ClusterRule( network, 3 );
-
-    @Test
-    public void testDecision()
-            throws ExecutionException, InterruptedException, URISyntaxException
-    {
-
-        Map<String, String> map1 = new AtomicBroadcastMap<String, String>( cluster.getNodes().get( 0 ).newClient(
-                AtomicBroadcast.class ), cluster.getNodes().get( 0 ).newClient( Snapshot.class ) );
-        Map<String, String> map2 = new AtomicBroadcastMap<String, String>( cluster.getNodes().get( 1 ).newClient(
-                AtomicBroadcast.class ), cluster.getNodes().get( 1 ).newClient( Snapshot.class ) );
-
-        map1.put( "foo", "bar" );
-
-        network.tick( 30 );
-        Object foo = map1.get( "foo" );
-        Assert.assertThat( foo.toString(), equalTo( "bar" ) );
-
-        map1.put( "bar", "foo" );
-        network.tick( 30 );
-        Object bar = map2.get( "bar" );
-        Assert.assertThat( bar.toString(), equalTo( "foo" ) );
-
-        map1.put( "foo", "bar2" );
-        network.tick( 30 );
-        foo = map2.get( "foo" );
-        Assert.assertThat( foo.toString(), equalTo( "bar2" ) );
-
-        map1.clear();
-        network.tick( 30 );
-        foo = map2.get( "foo" );
-        Assert.assertThat( foo, CoreMatchers.nullValue() );
-    }
-*/
     @Test
     public void testFailure() throws Exception
     {
