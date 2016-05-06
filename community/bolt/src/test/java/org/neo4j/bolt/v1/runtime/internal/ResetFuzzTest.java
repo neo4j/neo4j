@@ -43,11 +43,11 @@ import org.neo4j.bolt.v1.runtime.integration.RecordingCallback;
 import org.neo4j.bolt.v1.runtime.internal.concurrent.ThreadedSessions;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -58,7 +58,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.recorded;
 import static org.neo4j.bolt.v1.runtime.integration.SessionMatchers.success;
-import static org.neo4j.bolt.v1.runtime.internal.SessionStateMachine.State.IDLE;
+import static org.neo4j.bolt.v1.runtime.internal.SessionStateMachine.State.ERROR;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class ResetFuzzTest
@@ -122,7 +122,7 @@ public class ResetFuzzTest
         try
         {
             assertThat( recorder, recorded( success() ) );
-            assertThat( ssm.state(), equalTo( IDLE ) );
+            assertThat( ssm.state(), equalTo( ERROR ) );
             assertThat( liveTransactions.get(), equalTo( 0L ));
         }
         catch( AssertionError e )
