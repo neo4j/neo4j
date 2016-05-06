@@ -28,6 +28,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.model.DesktopModel;
 import org.neo4j.test.rule.TargetDirectory;
@@ -53,7 +54,7 @@ public class DatabaseActionsTest
         when( installation.getDatabaseDirectory() ).thenReturn( storeDir );
         when( installation.getConfigurationsFile() ).thenReturn( configFile );
 
-        DesktopModel model = new DesktopModel( installation );
+        DesktopModel model = new DesktopModel( installation, new Parameters( new String[] {} ) );
         DatabaseActions databaseActions = new DatabaseActions( model );
 
         try
