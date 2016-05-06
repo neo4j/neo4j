@@ -47,18 +47,6 @@ public final class Neo4jDesktop
     {
         preStartInitialize();
 
-        for ( String arg : args )
-        {
-            try
-            {
-                Files.write( new File("logloglog.txt").toPath(), arg.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND );
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-            }
-        }
-
         Neo4jDesktop app = new Neo4jDesktop();
         app.start();
     }
