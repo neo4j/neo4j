@@ -25,90 +25,99 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
 
   val anyNull: AnyRef = null.asInstanceOf[AnyRef]
 
+  // TCK'd
   test("null nodes should be silently ignored when setting property") {
     // Given empty database
 
     // When
-    val result = updateWithBothPlannersAndCompatibilityMode("optional match (a:DoesNotExist) set a.prop = 42 return a")
+    val result = updateWithBothPlannersAndCompatibilityMode("OPTIONAL MATCH (a:DoesNotExist) SET a.prop = 42 RETURN a")
 
     // Then doesn't throw
     result.toList
   }
 
+  // TCK'd
   test("null nodes should be silently ignored when remove property") {
     // Given empty database
 
     // When
-    val result = updateWithBothPlannersAndCompatibilityMode("optional match (a:DoesNotExist) remove a.prop return a")
+    val result = updateWithBothPlannersAndCompatibilityMode("OPTIONAL MATCH (a:DoesNotExist) REMOVE a.prop RETURN a")
 
     // Then doesn't throw
     result.toList
   }
 
+  // TCK'd
   test("null nodes should be silently ignored when setting property with +=") {
     // Given empty database
 
     // When
-    val result = updateWithBothPlanners("optional match (a:DoesNotExist) set a += {prop: 42} return a")
+    val result = updateWithBothPlanners("OPTIONAL MATCH (a:DoesNotExist) SET a += {prop: 42} RETURN a")
 
     // Then doesn't throw
     result.toList
   }
 
+  // TCK'd
   test("null nodes should be silently ignored when setting property with =") {
     // Given empty database
 
     // When
-    val result = updateWithBothPlanners("optional match (a:DoesNotExist) set a = {prop: 42} return a")
+    val result = updateWithBothPlanners("OPTIONAL MATCH (a:DoesNotExist) SET a = {prop: 42} RETURN a")
 
     // Then doesn't throw
     result.toList
   }
 
+  // TCK'd
   test("null nodes should be silently ignored when setting label") {
     // Given empty database
 
     // When
-    val result = updateWithBothPlanners("optional match (a:DoesNotExist) set a:L return a")
+    val result = updateWithBothPlanners("OPTIONAL MATCH (a:DoesNotExist) SET a:L RETURN a")
 
     // Then doesn't throw
     result.toList
   }
 
+  // TCK'd
   test("null nodes should be silently ignored when removing label") {
     // Given empty database
 
     // When
-    val result = updateWithBothPlanners("optional match (a:DoesNotExist) remove a:L return a")
+    val result = updateWithBothPlanners("OPTIONAL MATCH (a:DoesNotExist) REMOVE a:L RETURN a")
 
     // Then doesn't throw
     result.toList
   }
 
+  // TCK'd
   test("null nodes should be silently ignored when deleting nodes") {
     // Given empty database
 
     // When
-    val result = updateWithBothPlannersAndCompatibilityMode("optional match (a:DoesNotExist) delete a return a")
+    val result = updateWithBothPlannersAndCompatibilityMode("OPTIONAL MATCH (a:DoesNotExist) DELETE a RETURN a")
 
     // Then doesn't throw
     result.toList
   }
 
-  test("null nodes should be silently ignored when deleting relationships") {
+  // TCK'd
+  test("null relationships should be silently ignored when deleting relationships") {
     // Given empty database
 
     // When
-    val result = updateWithBothPlannersAndCompatibilityMode("optional match ()-[r: DoesNotExist]-() delete r return r")
+    val result = updateWithBothPlannersAndCompatibilityMode("OPTIONAL MATCH ()-[r:DoesNotExist]-() DELETE r RETURN r")
 
     // Then doesn't throw
     result.toList
   }
+
+  // Below are null-in-null-out functions. These are left un-TCK'd for now (due to being functions).
 
   test("round(null) returns null") {
     executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN round(null)") should equal(anyNull)
   }
-
 
   test("floor(null) returns null") {
     executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN floor(null)") should equal(anyNull)
@@ -123,7 +132,7 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("acos(null) returns null") {
-    executeScalar[Any]("RETURN acos(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN acos(null)") should equal(anyNull)
   }
 
   test("asin(null) returns null") {
@@ -143,7 +152,7 @@ class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("degrees(null) returns null") {
-    executeScalar[Any]("RETURN degrees(null)") should equal(anyNull)
+    executeScalarWithAllPlannersAndCompatibilityMode[Any]("RETURN degrees(null)") should equal(anyNull)
   }
 
   test("exp(null) returns null") {
