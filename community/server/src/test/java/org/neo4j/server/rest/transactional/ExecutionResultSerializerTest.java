@@ -410,8 +410,8 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"point\"]," +
-                "\"data\":[{\"row\":[{\"type\":\"point\",\"coordinates\":[12.3,45.6],\"crs\":{\"name\":\"WGS-84\",\"id\":4326}}],\"meta\":[null]}," +
-                "{\"row\":[{\"type\":\"point\",\"coordinates\":[123.0,456.0],\"crs\":{\"name\":\"cartesian\",\"id\":7203}}],\"meta\":[null]}]}],\"errors\":[]}", result );
+                "\"data\":[{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6],\"crs\":{\"name\":\"WGS-84\",\"type\":\"link\",\"properties\":{\"href\":\"http://spatialreference.org/ref/epsg/4326/ogcwkt/\",\"type\":\"ogcwkt\"}}}],\"meta\":[null]}," +
+                "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0],\"crs\":{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}}}],\"meta\":[null]}]}],\"errors\":[]}", result );
     }
 
     @Test

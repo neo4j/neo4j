@@ -21,6 +21,11 @@ package org.neo4j.desktop;
 
 import org.apache.commons.lang3.SystemUtils;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.config.osx.DarwinInstallation;
 import org.neo4j.desktop.config.unix.UnixInstallation;
@@ -41,6 +46,18 @@ public final class Neo4jDesktop
     public static void main( String[] args )
     {
         preStartInitialize();
+
+        for ( String arg : args )
+        {
+            try
+            {
+                Files.write( new File("logloglog.txt").toPath(), arg.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND );
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+        }
 
         Neo4jDesktop app = new Neo4jDesktop();
         app.start();

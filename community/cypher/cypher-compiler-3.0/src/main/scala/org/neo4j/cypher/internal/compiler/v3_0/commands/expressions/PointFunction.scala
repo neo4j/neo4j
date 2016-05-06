@@ -57,13 +57,13 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
   override def toString = "Point(" + data + ")"
 }
 
-case class CRS(name: String, id: Int) extends ActsAsMap {
-  def asMap = Map("name" -> name, "id" -> id).asJava
+case class CRS(name: String, id: Int, link:String) extends ActsAsMap {
+  def asMap = Map[String, Object]("name" -> name, "type" -> "link", "properties" -> Map( "href" -> s"${link}ogcwkt/", "type" -> "ogcwkt" ).asJava).asJava
 }
 
 object CRS {
-  val Cartesian = CRS("cartesian", 7203) // See http://spatialreference.org/ref/sr-org/7203/
-  val WGS84 = CRS("WGS-84", 4326)       // See http://spatialreference.org/ref/epsg/4326/
+  val Cartesian = CRS("cartesian", 7203, "http://spatialreference.org/ref/sr-org/7203/")
+  val WGS84 = CRS("WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/")
 
   def fromName(name: String) = name match {
     case Cartesian.name => Cartesian
@@ -79,7 +79,7 @@ object CRS {
 }
 
 trait ActsAsMap {
-  def asMap: java.util.Map[String,Any]
+  def asMap: java.util.Map[String,Object]
 }
 
 trait Geometry extends ActsAsMap {
@@ -92,7 +92,7 @@ trait Point extends Geometry {
   def y: Double
   def coordinates: Seq[Double] = Seq(x, y)
 
-  def asMap = Map[String, Any]("type" -> "point", "coordinates" -> coordinates.asJava, "crs" -> crs).asJava
+  def asMap = Map[String, Object]("type" -> "Point", "coordinates" -> coordinates.asJava, "crs" -> crs).asJava
 }
 
 case class CartesianPoint(x: Double, y: Double) extends Point {

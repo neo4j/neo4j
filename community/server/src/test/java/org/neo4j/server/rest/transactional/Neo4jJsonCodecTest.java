@@ -232,7 +232,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         jsonCodec.writeValue( jsonGenerator, value );
 
         //Then
-        verify( jsonGenerator, times( 2 ) ).writeEndObject();
+        verify( jsonGenerator, times( 3 ) ).writeEndObject();
     }
 
     @Test
@@ -245,7 +245,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         jsonCodec.writeValue( jsonGenerator, value );
 
         //Then
-        verify( jsonGenerator, times( 2 ) ).writeEndObject();
+        verify( jsonGenerator, times( 3 ) ).writeEndObject();
     }
 
 }
