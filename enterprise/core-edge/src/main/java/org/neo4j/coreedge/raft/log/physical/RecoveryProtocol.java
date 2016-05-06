@@ -128,7 +128,7 @@ class RecoveryProtocol
 
         SegmentFile last = segmentFiles.get( segmentFiles.size() - 1 );
 
-        state.segments = new Segments( fileSystem, fileNames, segmentFiles, contentMarshal, logProvider, firstVersion - 1 );
+        state.segments = new Segments( fileSystem, fileNames, segmentFiles, contentMarshal, logProvider, files.lastKey() );
         state.appendIndex = last.header().prevIndex();
         state.currentTerm = last.header().prevTerm();
 

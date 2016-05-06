@@ -90,7 +90,7 @@ public class RecoveryProtocolTest
     }
 
     @Test
-    public void shouldFailifTheVersionNumberInTheHeaderAndFileNameDiffers() throws Exception
+    public void shouldFailIfTheVersionNumberInTheHeaderAndFileNameDiffer() throws Exception
     {
         // given
         createLogFile( fsa, -1, 0, 1, -1, -1 );
@@ -145,6 +145,69 @@ public class RecoveryProtocolTest
 
         // then
         assertNotEquals( 0, fsa.getFileSize( fileNames.getForVersion( 1 ) ) );
+    }
+
+    @Test
+    public void shouldRecoverAndBeAbleToRotate() throws Exception
+    {
+        // given
+        createLogFile( fsa, -1, 0, 0, -1, -1 );
+        createLogFile( fsa, 10, 1, 1, 10,  0 );
+        createLogFile( fsa, 20, 2, 2, 20,  1 );
+
+        RecoveryProtocol protocol = new RecoveryProtocol( fsa, fileNames, contentMarshal, NullLogProvider.getInstance() );
+
+        // when
+        State state = protocol.run();
+        SegmentFile newFile = state.segments.rotate( 20, 20, 1 );
+
+        // then
+        assertEquals( 20, newFile.header().prevFileLastIndex() );
+        assertEquals(  3, newFile.header().version() );
+        assertEquals( 20, newFile.header().prevIndex() );
+        assertEquals(  1, newFile.header().prevTerm() );
+    }
+
+    @Test
+    public void shouldRecoverAndBeAbleToTruncate() throws Exception
+    {
+        // given
+        createLogFile( fsa, -1, 0, 0, -1, -1 );
+        createLogFile( fsa, 10, 1, 1, 10,  0 );
+        createLogFile( fsa, 20, 2, 2, 20,  1 );
+
+        RecoveryProtocol protocol = new RecoveryProtocol( fsa, fileNames, contentMarshal, NullLogProvider.getInstance() );
+
+        // when
+        State state = protocol.run();
+        SegmentFile newFile = state.segments.truncate( 20, 15, 0 );
+
+        // then
+        assertEquals( 20, newFile.header().prevFileLastIndex() );
+        assertEquals(  3, newFile.header().version() );
+        assertEquals( 15, newFile.header().prevIndex() );
+        assertEquals(  0, newFile.header().prevTerm() );
+    }
+
+    @Test
+    public void shouldRecoverAndBeAbleToSkip() throws Exception
+    {
+        // given
+        createLogFile( fsa, -1, 0, 0, -1, -1 );
+        createLogFile( fsa, 10, 1, 1, 10,  0 );
+        createLogFile( fsa, 20, 2, 2, 20,  1 );
+
+        RecoveryProtocol protocol = new RecoveryProtocol( fsa, fileNames, contentMarshal, NullLogProvider.getInstance() );
+
+        // when
+        State state = protocol.run();
+        SegmentFile newFile = state.segments.skip( 20, 40, 2 );
+
+        // then
+        assertEquals( 20, newFile.header().prevFileLastIndex() );
+        assertEquals(  3, newFile.header().version() );
+        assertEquals( 40, newFile.header().prevIndex() );
+        assertEquals(  2, newFile.header().prevTerm() );
     }
 
     private void createLogFile( EphemeralFileSystemAbstraction fsa, long prevFileLastIndex, long fileNameVersion, long headerVersion, long prevIndex, long prevTerm ) throws IOException
