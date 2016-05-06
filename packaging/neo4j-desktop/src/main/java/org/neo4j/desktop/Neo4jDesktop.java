@@ -21,17 +21,12 @@ package org.neo4j.desktop;
 
 import org.apache.commons.lang3.SystemUtils;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
-
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.config.osx.DarwinInstallation;
 import org.neo4j.desktop.config.unix.UnixInstallation;
 import org.neo4j.desktop.config.windows.WindowsInstallation;
-import org.neo4j.desktop.runtime.DatabaseActions;
 import org.neo4j.desktop.model.DesktopModel;
+import org.neo4j.desktop.runtime.DatabaseActions;
 import org.neo4j.desktop.ui.MainWindow;
 import org.neo4j.desktop.ui.PlatformUI;
 
