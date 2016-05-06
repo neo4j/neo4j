@@ -518,8 +518,8 @@ public class EnterpriseCoreEditionModule
                         fileSystem,
                         new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
                         rotateAtSize, pruneConf, entryCacheSize, headerCacheSize,
-                        new PhysicalRaftLogFile.Monitor.Adapter(), marshal, databaseHealthSupplier, logProvider, new RaftLogMetadataCache( metaDataCacheSize ) ) );
-
+                        new PhysicalRaftLogFile.Monitor.Adapter(), marshal, databaseHealthSupplier, logProvider,
+                        new RaftLogMetadataCache( metaDataCacheSize ) ) );
             }
 
             case SEGMENTED:
