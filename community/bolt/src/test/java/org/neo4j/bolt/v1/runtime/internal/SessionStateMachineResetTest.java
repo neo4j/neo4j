@@ -47,6 +47,7 @@ public class SessionStateMachineResetTest
         // Then
         ssm.run( "hello", map(), null, recorder );
         ssm.reset( null, recorder );
+        ssm.ackFailure( noOp(), noOp() );
         ssm.run( "hello", map(), null, recorder );
         assertThat( recorder, recorded(
             ignored(),
@@ -70,6 +71,7 @@ public class SessionStateMachineResetTest
         // Then
         ssm.run( "hello", map(), null, recorder );
         ssm.reset( null, recorder );
+        ssm.ackFailure( noOp(), noOp() );
         ssm.run( "hello", map(), null, recorder );
         assertThat( recorder, recorded(
                 ignored(),
@@ -81,7 +83,7 @@ public class SessionStateMachineResetTest
 
         // But when
         ssm.reset( null, recorder );
-
+        ssm.ackFailure( noOp(), noOp() );
         // Then
         ssm.run( "hello", map(), null, recorder );
         assertThat( recorder, recorded(

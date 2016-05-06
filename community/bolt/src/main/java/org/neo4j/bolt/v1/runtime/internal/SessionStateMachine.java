@@ -338,7 +338,17 @@ public class SessionStateMachine implements Session, SessionState
                                 return INTERRUPTED;
                             }
                         }
-                        return IDLE;
+                        //if we have reported an error the client will want to acknowledge that error
+                        //and thus we must put ourselves in state ERROR and wait for the `ACK_FAILURE`
+                        //to come in
+                        if (ctx.reportedError)
+                        {
+                            return ERROR;
+                        }
+                        else
+                        {
+                            return IDLE;
+                        }
                     }
 
 
@@ -484,6 +494,7 @@ public class SessionStateMachine implements Session, SessionState
         State error( SessionStateMachine ctx, Neo4jError err )
         {
             ctx.spi.reportError( err );
+            ctx.reportedError = true;
             State outcome = ERROR;
             if ( ctx.hasTransaction() )
             {
@@ -567,6 +578,15 @@ public class SessionStateMachine implements Session, SessionState
      * credentials or is upgraded. As it is now, a new session needs to be created.
      */
     private boolean credentialsExpired;
+
+    /**
+     * If an error has been reported we need to remember that because if we get an
+     * interrupt and later a RESET we must know if we should go back to IDLE
+     * or ERROR state. If we have reported an error the client will answer with
+     * an ACK_FAILURE so in that case going back to state IDLE will lead to subsequent
+     * errors when the ACK_FAILURE comes in.
+     */
+    private boolean reportedError = false;
 
     /** These are the "external" actions the state machine can take */
     private final SPI spi;
