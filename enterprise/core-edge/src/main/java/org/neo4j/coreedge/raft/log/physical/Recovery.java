@@ -22,8 +22,6 @@ package org.neo4j.coreedge.raft.log.physical;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.coreedge.raft.log.EntryReader;
-import org.neo4j.coreedge.raft.log.RaftLogAppendRecord;
 import org.neo4j.cursor.IOCursor;
 
 /**

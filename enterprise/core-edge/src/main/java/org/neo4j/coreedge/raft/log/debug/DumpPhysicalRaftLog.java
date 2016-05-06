@@ -28,7 +28,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.TreeSet;
 
-import org.neo4j.coreedge.raft.log.RaftLogAppendRecord;
+import org.neo4j.coreedge.raft.log.physical.RaftLogAppendRecord;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFiles;
 import org.neo4j.coreedge.raft.log.physical.SingleVersionReader;
 import org.neo4j.coreedge.raft.log.physical.VersionIndexRanges;

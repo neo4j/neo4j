@@ -23,8 +23,6 @@ import java.io.File;
 
 import org.junit.Test;
 
-import org.neo4j.coreedge.raft.log.EntryReader;
-import org.neo4j.coreedge.raft.log.RaftLogAppendRecord;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 
 import static java.util.Arrays.asList;

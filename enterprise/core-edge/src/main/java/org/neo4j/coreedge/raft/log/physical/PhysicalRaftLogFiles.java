@@ -26,10 +26,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
-import org.neo4j.coreedge.raft.log.PhysicalRaftLog;
-import org.neo4j.coreedge.raft.log.RaftLogAppendRecord;
-import org.neo4j.coreedge.raft.log.RaftLogRecord;
-import org.neo4j.coreedge.raft.log.RaftRecordCursor;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.io.fs.FileSystemAbstraction;

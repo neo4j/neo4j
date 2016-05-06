@@ -26,8 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.coreedge.raft.log.RaftAppendRecordCursor;
-import org.neo4j.coreedge.raft.log.RaftLogAppendRecord;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;

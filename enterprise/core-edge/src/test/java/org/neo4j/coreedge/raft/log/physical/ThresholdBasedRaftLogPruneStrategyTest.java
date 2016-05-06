@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 import org.mockito.Matchers;
+import org.neo4j.coreedge.raft.log.physical.pruning.RaftLogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.pruning.Threshold;
 
