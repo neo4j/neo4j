@@ -139,37 +139,36 @@ the relevant Commercial Agreement.
           </groups>
         </configuration>
       </plugin>
-      <!-- TODO: reenable clirr plugin after 3.0.0 release -->
-      <!--<plugin>-->
-        <!--<groupId>org.neo4j.build.plugins</groupId>-->
-        <!--<artifactId>clirr-maven-plugin</artifactId>-->
-        <!--<executions>-->
-          <!--<execution>-->
-            <!--<id>default</id>-->
-            <!--<phase>${clirr-check-phase}</phase>-->
-            <!--<goals>-->
-              <!--<goal>check</goal>-->
-            <!--</goals>-->
-          <!--</execution>-->
-        <!--</executions>-->
-        <!--<configuration>-->
-          <!--<failOnError>true</failOnError>-->
-          <!--<logResults>true</logResults>-->
-          <!--&lt;!&ndash; This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll-->
-           <!--need to fix that.-->
-           <!--OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4-->
-            <!--&ndash;&gt;-->
-          <!--<comparisonVersion>3.0.0</comparisonVersion>-->
-          <!--<ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>-->
-          <!--<includes>-->
-            <!--<include>org/neo4j/graphdb/**</include>-->
-          <!--</includes>-->
-          <!--<excludeMessageCodes>-->
-            <!--<param>6006</param>&lt;!&ndash; Field was made final. &ndash;&gt;-->
-            <!--<param>7012</param>&lt;!&ndash; Method added to interface &ndash;&gt;-->
-          <!--</excludeMessageCodes>-->
-        <!--</configuration>-->
-      <!--</plugin>-->
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default</id>
+            <phase>${clirr-check-phase}</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <failOnError>true</failOnError>
+          <logResults>true</logResults>
+          <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
+           need to fix that.
+           OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4
+            -->
+          <comparisonVersion>3.0.1</comparisonVersion>
+          <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+          <includes>
+            <include>org/neo4j/graphdb/**</include>
+          </includes>
+          <excludeMessageCodes>
+            <param>6006</param><!-- Field was made final. -->
+            <param>7012</param><!-- Method added to interface -->
+          </excludeMessageCodes>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
