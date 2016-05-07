@@ -393,14 +393,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null, storesToDeleteFromMigratedDirectory,
                     true, null, StoreFileType.values() );
         }
-
-        // The batch importer will create a whole store. so
-        // disregard the new and empty ".id" files, i.e. reuse the existing id files
-        StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null,
-                StoreFile.currentStoreFiles(),
-                true, // allow to skip non existent source files
-                null,
-                StoreFileType.ID );
     }
 
     private NeoStores instantiateLegacyStore( RecordFormats format, File storeDir )
