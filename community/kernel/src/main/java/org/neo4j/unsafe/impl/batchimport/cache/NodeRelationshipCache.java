@@ -63,10 +63,10 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
     private static final int SPARSE_COUNT_OFFSET = ID_SIZE;
 
     // Masking for tracking changes per node
-    private static final long DENSE_NODE_CHANGED_MASK = 0x80000000;
-    private static final long SPARSE_NODE_CHANGED_MASK = 0x40000000;
-    private static final long NODE_CHANGED_MASKS = DENSE_NODE_CHANGED_MASK | SPARSE_NODE_CHANGED_MASK;
-    private static final long COUNT_MASK = ~NODE_CHANGED_MASKS;
+    private static final int DENSE_NODE_CHANGED_MASK = 0x80000000;
+    private static final int SPARSE_NODE_CHANGED_MASK = 0x40000000;
+    private static final int NODE_CHANGED_MASKS = DENSE_NODE_CHANGED_MASK | SPARSE_NODE_CHANGED_MASK;
+    private static final int COUNT_MASK = ~NODE_CHANGED_MASKS;
 
     private final ByteArray array;
     private byte[] chunkChangedArray;
@@ -252,7 +252,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         return (byte) (1 << (dense ? 1 : 0));
     }
 
-    private boolean markAsChanged( ByteArray array, long nodeId, long mask )
+    private boolean markAsChanged( ByteArray array, long nodeId, int mask )
     {
         int bits = array.getInt( nodeId, SPARSE_COUNT_OFFSET );
         boolean changeBitIsSet = (bits & mask) != 0;
@@ -520,7 +520,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         relGroupCache.acceptMemoryStatsVisitor( visitor );
     }
 
-    private static long changeMask( boolean dense )
+    private static int changeMask( boolean dense )
     {
         return dense ? DENSE_NODE_CHANGED_MASK : SPARSE_NODE_CHANGED_MASK;
     }
