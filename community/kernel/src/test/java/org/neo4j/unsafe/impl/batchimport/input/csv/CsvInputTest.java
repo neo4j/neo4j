@@ -966,6 +966,7 @@ public class CsvInputTest
         }
     }
 
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final Extractors extractors = new Extractors( ',' );
 }

@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.example;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Map;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -48,11 +48,10 @@ import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultS
 public class IntroDocTest implements GraphHolder
 {
     private static final String DOCS_TARGET = "target/docs/dev/general/";
-    public @Rule
-    TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
-            this, true ) );
+    @Rule
+    public TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
+    @Rule
+    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
     private static GraphDatabaseService graphdb;
 
     @Test

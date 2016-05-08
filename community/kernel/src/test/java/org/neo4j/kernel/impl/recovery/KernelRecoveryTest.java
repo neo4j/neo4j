@@ -45,7 +45,8 @@ import static org.neo4j.test.mockito.matcher.LogMatchers.startEntry;
 
 public class KernelRecoveryTest
 {
-    @Rule public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Test

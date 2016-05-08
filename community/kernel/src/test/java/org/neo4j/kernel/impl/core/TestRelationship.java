@@ -244,7 +244,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     private void countRelationships( int expectedCount, Iterable<Relationship> rels )
     {
         int count = 0;
-        for ( @SuppressWarnings( "unused" ) Relationship ignored : rels )
+        for ( Relationship ignored : rels )
         {
             count++;
         }
@@ -809,7 +809,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         hub = graphDB.getNodeById( hub.getId() );
 
         int count = 0;
-        for ( @SuppressWarnings( "unused" ) Relationship r1 : hub.getRelationships() )
+        for ( Relationship ignore : hub.getRelationships() )
         {
             count += Iterables.count( hub.getRelationships() );
         }

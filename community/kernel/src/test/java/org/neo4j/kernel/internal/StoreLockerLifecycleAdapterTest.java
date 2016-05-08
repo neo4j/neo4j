@@ -40,7 +40,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreLockerLifecycleAdapterTest
 {
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldAllowDatabasesToUseFilesetsSequentially() throws Exception

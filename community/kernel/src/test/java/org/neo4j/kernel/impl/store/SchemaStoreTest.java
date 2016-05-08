@@ -51,7 +51,8 @@ public class SchemaStoreTest
 {
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private Config config;
     private SchemaStore store;
     private NeoStores neoStores;

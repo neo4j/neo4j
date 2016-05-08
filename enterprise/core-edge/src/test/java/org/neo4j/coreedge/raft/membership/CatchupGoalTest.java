@@ -21,17 +21,16 @@ package org.neo4j.coreedge.raft.membership;
 
 import org.junit.Test;
 
+import java.io.IOException;
+
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
 import org.neo4j.helpers.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
 
 public class CatchupGoalTest
 {
@@ -79,7 +78,8 @@ public class CatchupGoalTest
             return 0;
         }
 
-        @Override public long readEntryTerm( long logIndex ) throws IOException
+        @Override
+        public long readEntryTerm( long logIndex ) throws IOException
         {
             return 0;
         }

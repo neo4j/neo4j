@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest.security;
 
-import java.io.IOException;
-import javax.ws.rs.core.HttpHeaders;
-
 import com.sun.jersey.core.util.Base64;
 import org.codehaus.jackson.JsonNode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
+import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -47,7 +47,8 @@ import static org.junit.Assert.assertThat;
 
 public class UsersDocIT extends ExclusiveServerTestBase
 {
-    public @Rule TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+    @Rule
+    public TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
     private CommunityNeoServer server;
 
     @Before

@@ -313,9 +313,6 @@ public class ImdbDocTest
         assertEquals( "Keanu Reeves", reeves.getProperty( "name" ) );
     }
 
-    // @Test
-    // public void getSameFromDifferentValuesO
-
     @Test
     public void doGetForRelationships()
     {
@@ -330,7 +327,7 @@ public class ImdbDocTest
         assertEquals( "Monica Bellucci", actor.getProperty( "name" ) );
         assertEquals( "The Matrix Reloaded", movie.getProperty( "title" ) );
 
-        @SuppressWarnings("serial") List<String> expectedActors = new ArrayList<String>()
+        List<String> expectedActors = new ArrayList<String>()
         {
             {
                 add( "Keanu Reeves" );
@@ -360,14 +357,14 @@ public class ImdbDocTest
         Index<Node> actors = index.forNodes( "actors" );
         Index<Node> movies = index.forNodes( "movies" );
         Set<String> found = new HashSet<>();
-        @SuppressWarnings("serial") Set<String> expectedActors = new HashSet<String>()
+        Set<String> expectedActors = new HashSet<String>()
         {
             {
                 add( "Monica Bellucci" );
                 add( "Keanu Reeves" );
             }
         };
-        @SuppressWarnings("serial") Set<String> expectedMovies = new HashSet<String>()
+        Set<String> expectedMovies = new HashSet<String>()
         {
             {
                 add( "The Matrix" );
@@ -469,7 +466,7 @@ public class ImdbDocTest
                         .sortNumeric( "year-numeric", false ) );
         // END SNIPPET: sortedNumericRange
         List<String> sortedMovies = new ArrayList<>();
-        @SuppressWarnings("serial") List<String> expectedSortedMovies = new ArrayList<String>()
+        List<String> expectedSortedMovies = new ArrayList<String>()
         {
             {
                 add( "The Matrix" );

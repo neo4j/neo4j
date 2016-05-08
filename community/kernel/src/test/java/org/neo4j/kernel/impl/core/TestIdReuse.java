@@ -62,7 +62,8 @@ public class TestIdReuse
         makeSureIdsGetsReused( "neostore.propertystore.db.strings", string, 20 );
     }
 
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private void makeSureIdsGetsReused( String fileName, Object value, int iterations ) throws Exception
     {

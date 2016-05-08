@@ -44,7 +44,8 @@ public class CoreMemberSet implements RaftGroup<CoreMember>
         return members;
     }
 
-    @Override public boolean equals( Object o )
+    @Override
+    public boolean equals( Object o )
     {
         if ( this == o )
         {
@@ -61,7 +62,8 @@ public class CoreMemberSet implements RaftGroup<CoreMember>
 
     }
 
-    @Override public int hashCode()
+    @Override
+    public int hashCode()
     {
         return members != null ? members.hashCode() : 0;
     }

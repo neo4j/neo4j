@@ -42,7 +42,8 @@ public class EnterpriseInProcessServerBuilderTest
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( EnterpriseInProcessServerBuilderTest.class );
 
-    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldLaunchAServerInSpecifiedDirectory() throws Exception

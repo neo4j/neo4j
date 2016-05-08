@@ -661,8 +661,8 @@ public class IndexingAcceptanceTest
 
     public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
 
-    public @Rule
-    ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     private Label LABEL1 = Label.label( "LABEL1" );
     private Label LABEL2 = Label.label( "LABEL2" );

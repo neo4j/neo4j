@@ -51,9 +51,12 @@ import static org.neo4j.test.rule.ResourceRule.testPath;
 
 public class KeyValueStoreFileFormatTest
 {
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    public final @Rule PageCacheRule pages = new PageCacheRule();
-    public final @Rule ResourceRule<File> storeFile = testPath();
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pages = new PageCacheRule();
+    @Rule
+    public final ResourceRule<File> storeFile = testPath();
 
     @Before
     public void existingStoreDirectory()

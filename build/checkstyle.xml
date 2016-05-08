@@ -51,6 +51,11 @@
     <module name="EmptyCatchBlock">
       <property name="exceptionVariableName" value="ignore|ignored"/>
     </module>
+    <module name="AnnotationLocation">
+      <property name="allowSamelineMultipleAnnotations" value="false"/>
+      <property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
+      <property name="allowSamelineParameterizedAnnotation" value="false"/>
+    </module>
 
   </module>
 

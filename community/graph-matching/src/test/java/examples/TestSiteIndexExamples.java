@@ -253,7 +253,7 @@ public class TestSiteIndexExamples
     private int count( Iterable<?> objects )
     {
         int count = 0;
-        for ( @SuppressWarnings( "unused" ) Object object : objects )
+        for ( Object ignore : objects )
         {
             count++;
         }

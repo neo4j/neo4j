@@ -309,5 +309,6 @@ public class ReadablesTest
         assertArrayEquals( text.toCharArray(), copyOfRange( readText.array(), readText.pivot(), readText.front() ) );
     }
 
-    public final @Rule TestDirectory directory = new TestDirectory();
+    @Rule
+    public final TestDirectory directory = new TestDirectory();
 }

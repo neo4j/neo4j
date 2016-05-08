@@ -19,13 +19,13 @@
  */
 package org.neo4j.metrics;
 
-import java.io.File;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.messaging.message.Messages;
 import org.neo4j.bolt.v1.transport.socket.client.Connection;
@@ -38,7 +38,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
@@ -49,7 +48,8 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class BoltMetricsIT
 {
-    @Rule public TemporaryFolder tmpDir = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder tmpDir = new TemporaryFolder();
 
     private GraphDatabaseAPI db;
     private Connection conn;

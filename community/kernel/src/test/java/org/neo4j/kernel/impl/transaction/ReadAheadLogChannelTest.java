@@ -159,7 +159,8 @@ public class ReadAheadLogChannelTest
     }
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    public final @Rule TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     private File file( int index )
     {

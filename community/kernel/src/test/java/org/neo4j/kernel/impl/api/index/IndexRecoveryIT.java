@@ -245,8 +245,9 @@ public class IndexRecoveryIT
                         any( IndexSamplingConfig.class ) );
     }
 
-    @SuppressWarnings("deprecation") private GraphDatabaseAPI db;
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private GraphDatabaseAPI db;
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
             singleInstanceSchemaIndexProviderFactory( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR.getKey(),

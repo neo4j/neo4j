@@ -278,9 +278,10 @@ public class TestRecoveryScenarios
         abstract void flush( GraphDatabaseAPI db ) throws IOException;
     }
 
-    public final @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final Label label = label( "label" );
-    @SuppressWarnings("deprecation") private GraphDatabaseAPI db;
+    private GraphDatabaseAPI db;
     private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
 
     private final FlushStrategy flush;

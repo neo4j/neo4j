@@ -272,8 +272,10 @@ public class InputCacheTest
 
     private static final String[] TOKENS = new String[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    public final @Rule TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-    public final @Rule RandomRule randomRule = new RandomRule();
+    @Rule
+    public final TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final RandomRule randomRule = new RandomRule();
 
     private String[] previousLabels;
     private final Group[] previousGroups = new Group[] { Group.GLOBAL, Group.GLOBAL };

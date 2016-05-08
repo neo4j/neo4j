@@ -31,7 +31,8 @@ import static org.junit.Assert.fail;
 
 public class ValidatorsTest
 {
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldFindFilesByRegex() throws Exception

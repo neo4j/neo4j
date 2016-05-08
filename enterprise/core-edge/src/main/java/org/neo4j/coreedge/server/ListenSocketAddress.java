@@ -31,7 +31,8 @@ public class ListenSocketAddress
         this.address = address;
     }
 
-    @Override public boolean equals( Object o )
+    @Override
+    public boolean equals( Object o )
     {
         if ( this == o )
         {
@@ -45,7 +46,8 @@ public class ListenSocketAddress
         return Objects.equals( address, that.address );
     }
 
-    @Override public int hashCode()
+    @Override
+    public int hashCode()
     {
         return Objects.hash( address );
     }

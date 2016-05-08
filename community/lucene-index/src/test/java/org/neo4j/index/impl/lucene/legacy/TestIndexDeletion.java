@@ -283,7 +283,7 @@ public class TestIndexDeletion
         restartTx();
 
         // iterate over all nodes indexed with the key to discover abandoned
-        for ( @SuppressWarnings( "unused" ) Node hit : nodeIndex.get( "key", "value" ) )
+        for ( Node ignore : nodeIndex.get( "key", "value" ) )
         {
         }
 

@@ -70,7 +70,8 @@ public class TestCrashWithRebuildSlow
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     // for dumping data about failing build
-    public final @Rule TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception

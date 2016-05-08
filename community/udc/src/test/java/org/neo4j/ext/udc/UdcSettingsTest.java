@@ -19,21 +19,19 @@
  */
 package org.neo4j.ext.udc;
 
-import java.util.Arrays;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.Arrays;
+
 import org.neo4j.helpers.Configuration;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Collections.singletonMap;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.ext.udc.UdcSettings.udc_enabled;
 import static org.neo4j.helpers.Configuration.DEFAULT;
 
@@ -41,7 +39,8 @@ import static org.neo4j.helpers.Configuration.DEFAULT;
 public class UdcSettingsTest
 {
     public static final String UDC_DISABLE = "dbms.udc.disable";
-    public final @Rule Configuration configuration = new Configuration();
+    @Rule
+    public final Configuration configuration = new Configuration();
 
     @Parameterized.Parameters(name="{0}")
     public static Iterable<Object[]> variations()

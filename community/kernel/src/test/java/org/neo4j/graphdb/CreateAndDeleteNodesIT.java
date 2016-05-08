@@ -26,8 +26,8 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 public class CreateAndDeleteNodesIT
 {
-
-    public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     enum RelTypes implements RelationshipType
     {

@@ -49,8 +49,10 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 
 public class PropertyEncoderStepTest
 {
-    public final @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     private NeoStores neoStores;
     private PageCache pageCache;
 

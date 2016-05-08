@@ -79,7 +79,7 @@ public class NodeProxySingleRelationshipTest
             node.getSingleRelationship( loves, Direction.OUTGOING );
             fail("expected exception");
         }
-        catch ( NotFoundException expected )
+        catch ( NotFoundException ignored )
         {
         }
     }
@@ -96,7 +96,7 @@ public class NodeProxySingleRelationshipTest
             node.getSingleRelationship( loves, Direction.OUTGOING );
             fail();
         }
-        catch ( NotFoundException expected )
+        catch ( NotFoundException ignored )
         {
         }
     }

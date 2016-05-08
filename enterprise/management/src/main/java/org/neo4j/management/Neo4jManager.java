@@ -325,7 +325,7 @@ public final class Neo4jManager extends KernelProxy implements Kernel
     public List<Object> allBeans()
     {
         List<Object> beans = super.allBeans();
-        @SuppressWarnings("hiding") Kernel kernel = null;
+        Kernel kernel = null;
         for ( Object bean : beans )
         {
             if ( bean instanceof Kernel )

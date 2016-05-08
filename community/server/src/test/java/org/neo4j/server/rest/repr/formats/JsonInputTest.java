@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
+import org.junit.Test;
+
+import java.util.Map;
+
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
@@ -26,10 +30,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
-import java.util.Map;
-
-import org.junit.Test;
 
 public class JsonInputTest
 {
@@ -62,7 +62,8 @@ public class JsonInputTest
         assertTrue( "map contained extra values", map.size() == 1 );
         Object nested = map.get( "nested" );
         assertThat( nested, instanceOf( Map.class ) );
-        @SuppressWarnings( "unchecked" ) Map<String, String> nestedMap = (Map<String, String>) nested;
+        @SuppressWarnings( "unchecked" )
+        Map<String, String> nestedMap = (Map<String, String>) nested;
         assertThat( nestedMap, hasEntry( "key", "valuable" ) );
     }
 

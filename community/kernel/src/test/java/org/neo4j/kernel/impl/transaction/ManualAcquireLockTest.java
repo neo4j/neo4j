@@ -45,7 +45,8 @@ public class ManualAcquireLockTest
     public DatabaseRule db = new ImpermanentDatabaseRule(  );
     public GraphTransactionRule tx = new GraphTransactionRule( db );
 
-    @Rule public TestRule chain = RuleChain.outerRule( db ).around( tx );
+    @Rule
+    public TestRule chain = RuleChain.outerRule( db ).around( tx );
 
     private Worker worker;
 

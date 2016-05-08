@@ -33,7 +33,8 @@ import static org.neo4j.kernel.impl.util.Converters.regexFiles;
 
 public class ConvertersTest
 {
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldSortFilesByNumberCleverly() throws Exception

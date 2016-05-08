@@ -374,7 +374,8 @@ public class FullCheckIntegrationTest
         assertTrue( "should be consistent", stats.isConsistent() );
     }
 
-    @Test @Ignore("2013-07-17 Revisit once we store sorted label ids")
+    @Test
+    @Ignore("2013-07-17 Revisit once we store sorted label ids")
     public void shouldReportOrphanNodeDynamicLabelAsInconsistency() throws Exception
     {
         // given

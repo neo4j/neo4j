@@ -331,7 +331,8 @@ public class MasterImplTest
         verifyNoMoreInteractions( conversationManager );
     }
 
-    public final @Rule OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
+    @Rule
+    public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     private Config config( int lockReadTimeout )
     {

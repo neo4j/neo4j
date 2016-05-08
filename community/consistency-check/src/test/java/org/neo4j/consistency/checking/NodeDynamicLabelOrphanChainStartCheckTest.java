@@ -47,7 +47,8 @@ public class NodeDynamicLabelOrphanChainStartCheckTest
         super( new NodeDynamicLabelOrphanChainStartCheck(), DynamicLabelConsistencyReport.class, new int[0] );
     }
 
-    @Test @Ignore("2013-07-17 Revisit once we store sorted label ids")
+    @Test
+    @Ignore("2013-07-17 Revisit once we store sorted label ids")
     public void shouldReportOrphanRecordsThatAreNotFirst() throws Exception
     {
         // given

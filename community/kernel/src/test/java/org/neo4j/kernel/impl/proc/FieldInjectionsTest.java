@@ -32,7 +32,8 @@ import static junit.framework.TestCase.assertEquals;
 
 public class FieldInjectionsTest
 {
-    @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void shouldNotAllowClassesWithNonInjectedFields() throws Throwable

@@ -39,7 +39,8 @@ import static org.neo4j.unsafe.impl.batchimport.input.BadCollectorTest.InputRela
 
 public class BadCollectorTest
 {
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void shouldCollectBadRelationshipsEvenIfThresholdNeverReached() throws IOException

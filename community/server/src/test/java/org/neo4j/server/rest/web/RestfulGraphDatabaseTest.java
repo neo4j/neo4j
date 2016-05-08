@@ -241,7 +241,8 @@ public class RestfulGraphDatabaseTest
 
         assertTrue( map.containsKey( "self" ) );
 
-        @SuppressWarnings("unchecked") Map<String, Object> data = (Map<String, Object>) map.get( "data" );
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
         assertEquals( "bar", data.get( "foo" ) );
     }
@@ -527,7 +528,8 @@ public class RestfulGraphDatabaseTest
 
         checkContentTypeCharsetUtf8( response );
 
-        @SuppressWarnings("unchecked") Map<String, Object> data = (Map<String, Object>) map.get( "data" );
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) map.get( "data" );
 
         assertEquals( "bar", data.get( "foo" ) );
     }

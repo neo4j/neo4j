@@ -48,7 +48,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.Iterators.set;
 
 public class TwoPhaseNodeForRelationshipLockingTest
@@ -128,7 +127,8 @@ public class TwoPhaseNodeForRelationshipLockingTest
             @Override
             public Void answer( InvocationOnMock invocation ) throws Throwable
             {
-                @SuppressWarnings( "unchecked" ) RelationshipVisitor<RuntimeException> visitor =
+                @SuppressWarnings( "unchecked" )
+                RelationshipVisitor<RuntimeException> visitor =
                         (RelationshipVisitor<RuntimeException>) invocation.getArguments()[2];
                 visitor.visit( relId, 6, startNodeId, endNodeId );
                 return null;
