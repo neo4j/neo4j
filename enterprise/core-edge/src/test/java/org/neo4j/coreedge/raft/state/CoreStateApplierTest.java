@@ -46,6 +46,7 @@ public class CoreStateApplierTest
                 }
                 catch ( InterruptedException e )
                 {
+                    Thread.currentThread().interrupt();
                 }
             }
 

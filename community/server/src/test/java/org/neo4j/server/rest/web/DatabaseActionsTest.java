@@ -483,7 +483,7 @@ public class DatabaseActionsTest
             graphdbHelper.getRelationship( relationshipId );
             fail();
         }
-        catch ( NotFoundException e )
+        catch ( NotFoundException ignored )
         {
         }
     }

@@ -375,8 +375,8 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             fail( "Shouldn't validate" );
         }
         catch ( Exception e )
-        {
-        } // good
+        { // good
+        }
         setTransaction( getGraphDb().beginTx() );
         try
         {

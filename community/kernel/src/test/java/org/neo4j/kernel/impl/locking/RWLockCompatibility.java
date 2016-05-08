@@ -269,9 +269,8 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
                             }
                         }
                     }
-                    catch ( DeadlockDetectedException e )
+                    catch ( DeadlockDetectedException ignored )
                     {
-
                     }
                     finally
                     {

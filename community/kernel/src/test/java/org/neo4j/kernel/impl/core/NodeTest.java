@@ -96,7 +96,7 @@ public class NodeTest
             getGraphDb().getNodeById( nodeId );
             fail( "Node[" + nodeId + "] should be deleted." );
         }
-        catch ( NotFoundException e )
+        catch ( NotFoundException ignored )
         {
         }
     }
@@ -127,7 +127,7 @@ public class NodeTest
             node1.setProperty( null, null );
             fail( "Null argument should result in exception." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IllegalArgumentException ignored )
         {
         }
         String key1 = "key1";
@@ -177,7 +177,7 @@ public class NodeTest
                 fail( "Remove of non existing property should return null" );
             }
         }
-        catch ( NotFoundException e )
+        catch ( NotFoundException ignored )
         {
         }
         try
@@ -185,7 +185,7 @@ public class NodeTest
             node1.removeProperty( null );
             fail( "Remove null property should throw exception." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IllegalArgumentException ignored )
         {
         }
 
@@ -198,7 +198,7 @@ public class NodeTest
             node1.removeProperty( null );
             fail( "Null argument should result in exception." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IllegalArgumentException ignored )
         {
         }
 
@@ -245,7 +245,7 @@ public class NodeTest
             node1.setProperty( null, null );
             fail( "Null argument should result in exception." );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IllegalArgumentException ignored )
         {
         }
         catch ( NotFoundException e )
@@ -306,7 +306,7 @@ public class NodeTest
             node1.getProperty( key1 );
             fail( "get non existing property din't throw exception" );
         }
-        catch ( NotFoundException e )
+        catch ( NotFoundException ignored )
         {
         }
         try
@@ -314,7 +314,7 @@ public class NodeTest
             node1.getProperty( null );
             fail( "get of null key din't throw exception" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( IllegalArgumentException ignored )
         {
         }
         assertTrue( !node1.hasProperty( key1 ) );

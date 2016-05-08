@@ -134,7 +134,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         {
             jsonCodec.writeValue( jsonGenerator, path );
         }
-        catch ( Exception e )
+        catch ( Exception ignored )
         {
 
         }
@@ -155,7 +155,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         {
             jsonCodec.writeValue( jsonGenerator, Arrays.asList( propertyContainer ) );
         }
-        catch ( Exception e )
+        catch ( Exception ignored )
         {
 
         }
@@ -176,7 +176,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         {
             jsonCodec.writeValue( jsonGenerator, byteArray );
         }
-        catch ( Exception e )
+        catch ( Exception ignored )
         {
 
         }
@@ -196,7 +196,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         {
             jsonCodec.writeValue( jsonGenerator, new HashMap<String, String>() );
         }
-        catch ( Exception e )
+        catch ( Exception ignored )
         {
 
         }

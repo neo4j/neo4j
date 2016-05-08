@@ -48,6 +48,9 @@
     <module name="EmptyStatement"/>
     <module name="SuperFinalize"/>
     <module name="EqualsHashCode"/>
+    <module name="EmptyCatchBlock">
+      <property name="exceptionVariableName" value="ignore|ignored"/>
+    </module>
 
   </module>
 

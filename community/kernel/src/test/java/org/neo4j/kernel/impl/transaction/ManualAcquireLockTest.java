@@ -76,7 +76,7 @@ public class ManualAcquireLockTest
             worker.setProperty( node, key, "ksjd" );
             fail( "Shouldn't be able to grab it" );
         }
-        catch ( Exception e )
+        catch ( Exception ignored )
         {
         }
         nodeLock.release();
