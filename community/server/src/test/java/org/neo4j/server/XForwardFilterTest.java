@@ -144,7 +144,7 @@ public class XForwardFilterTest
 
     //Mocking WebApplication leads to flakyness on ibm-jdk, hence
     //we use a manual mock instead
-    private final static WebApplication WEB_APPLICATION = new WebApplication()
+    private static final WebApplication WEB_APPLICATION = new WebApplication()
     {
         @Override
         public boolean isInitiated()
@@ -267,7 +267,7 @@ public class XForwardFilterTest
 
     //Using mockito to mock arguments to ContainerRequest leads to flakyness
     //on ibm jdk, hence the manual mocks
-    private final static InputStream INPUT_STREAM = new InputStream()
+    private static final InputStream INPUT_STREAM = new InputStream()
     {
         @Override
         public int read() throws IOException

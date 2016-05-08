@@ -69,8 +69,8 @@ public class Plugin extends ServerPlugin
     }
 
     @PluginTarget( Node.class )
-    public Iterable<Relationship> getRelationshipsBetween( final @Source Node start,
-            final @Parameter( name = "other" ) Node end )
+    public Iterable<Relationship> getRelationshipsBetween( @Source final Node start,
+            @Parameter( name = "other" ) final Node end )
     {
         return new FilteringIterable<>( start.getRelationships(), item -> item.getOtherNode( start ).equals( end ) );
     }

@@ -466,7 +466,7 @@ public class Neo4jMatchers
      *
      * @param <T> The type of objects the collection will contain
      */
-    public static abstract class Deferred<T>
+    public abstract static class Deferred<T>
     {
 
         private final GraphDatabaseService db;

@@ -51,7 +51,7 @@ public abstract class StandardExpander implements PathExpander
     {
     }
 
-    static abstract class StandardExpansion<T> implements Iterable<T>
+    abstract static class StandardExpansion<T> implements Iterable<T>
     {
         final StandardExpander expander;
         final Path path;
@@ -687,7 +687,7 @@ public abstract class StandardExpander implements PathExpander
         }
     }
 
-    private static abstract class Filter
+    private abstract static class Filter
     {
         abstract boolean exclude( Path path );
     }

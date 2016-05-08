@@ -234,7 +234,7 @@ public class Extractors
         return doubleArray;
     }
 
-    private static abstract class AbstractExtractor<T> implements Extractor<T>
+    private abstract static class AbstractExtractor<T> implements Extractor<T>
     {
         private final String toString;
 
@@ -250,7 +250,7 @@ public class Extractors
         }
     }
 
-    private static abstract class AbstractSingleValueExtractor<T> extends AbstractExtractor<T>
+    private abstract static class AbstractSingleValueExtractor<T> extends AbstractExtractor<T>
     {
         AbstractSingleValueExtractor( String toString )
         {
@@ -632,7 +632,7 @@ public class Extractors
         }
     }
 
-    private static abstract class ArrayExtractor<T> extends AbstractExtractor<T>
+    private abstract static class ArrayExtractor<T> extends AbstractExtractor<T>
     {
         protected final char arrayDelimiter;
         protected T value;

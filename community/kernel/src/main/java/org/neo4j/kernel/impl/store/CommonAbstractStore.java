@@ -1272,7 +1272,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return ((IntStoreHeader) storeHeader).value();
     }
 
-    public static abstract class Configuration
+    public abstract static class Configuration
     {
         public static final Setting<Boolean> rebuild_idgenerators_fast =
                 GraphDatabaseSettings.rebuild_idgenerators_fast;

@@ -60,7 +60,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
     {
         private final File storeDir;
         private static String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";
-        final private SimpleDateFormat dateFormat;
+        private final SimpleDateFormat dateFormat;
 
         public StoreFiles( File storeDir )
         {

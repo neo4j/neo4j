@@ -55,7 +55,7 @@ import static org.neo4j.graphdb.traversal.Evaluators.toDepth;
 
 public class TestMatchingOfCircularPattern
 {
-    static private final boolean STATIC_PATTERN = false;
+    private static final boolean STATIC_PATTERN = false;
 
     private static class VisibleMessagesByFollowedUsers implements
             Iterable<Node>

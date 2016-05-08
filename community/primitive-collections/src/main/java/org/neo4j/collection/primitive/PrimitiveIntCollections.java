@@ -45,7 +45,7 @@ public class PrimitiveIntCollections
     /**
      * Base iterator for simpler implementations of {@link PrimitiveIntIterator}s.
      */
-    public static abstract class PrimitiveIntBaseIterator implements PrimitiveIntIterator
+    public abstract static class PrimitiveIntBaseIterator implements PrimitiveIntIterator
     {
         private boolean hasNext;
         private int next;
@@ -298,7 +298,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static abstract class PrimitiveIntFilteringIterator extends PrimitiveIntBaseIterator implements IntPredicate
+    public abstract static class PrimitiveIntFilteringIterator extends PrimitiveIntBaseIterator implements IntPredicate
     {
         private final PrimitiveIntIterator source;
 

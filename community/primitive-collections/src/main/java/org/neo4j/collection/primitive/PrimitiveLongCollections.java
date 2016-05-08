@@ -49,7 +49,7 @@ public class PrimitiveLongCollections
     /**
      * Base iterator for simpler implementations of {@link PrimitiveLongIterator}s.
      */
-    public static abstract class PrimitiveLongBaseIterator implements PrimitiveLongIterator
+    public abstract static class PrimitiveLongBaseIterator implements PrimitiveLongIterator
     {
         private boolean hasNext;
         protected long next;
@@ -307,7 +307,7 @@ public class PrimitiveLongCollections
         };
     }
 
-    public static abstract class PrimitiveLongFilteringIterator extends PrimitiveLongBaseIterator
+    public abstract static class PrimitiveLongFilteringIterator extends PrimitiveLongBaseIterator
             implements LongPredicate
     {
         private final PrimitiveLongIterator source;

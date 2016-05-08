@@ -1037,7 +1037,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     @SuppressWarnings( "deprecation" )
-    public static abstract class Configuration
+    public abstract static class Configuration
     {
         public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;

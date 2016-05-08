@@ -53,7 +53,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         this.log = logProvider.getLog( getClass() );
     }
 
-    private static abstract class TransactionMarker
+    private abstract static class TransactionMarker
     {
         abstract ActiveTransaction getActiveTransaction();
 

@@ -28,7 +28,7 @@ import static java.lang.String.format;
 public class IndexBelongsToConstraintException extends SchemaKernelException
 {
     private final IndexDescriptor index;
-    private final static String message = "Index belongs to constraint: %s";
+    private static final String message = "Index belongs to constraint: %s";
 
     public IndexBelongsToConstraintException( IndexDescriptor index )
     {

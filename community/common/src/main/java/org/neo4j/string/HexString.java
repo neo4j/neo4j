@@ -24,7 +24,7 @@ package org.neo4j.string;
  */
 public class HexString
 {
-    final private static char[] hexArray = "0123456789ABCDEF".toCharArray();
+    private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     /**
      * Converts a byte array to a hexadecimal string.

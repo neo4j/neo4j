@@ -39,7 +39,7 @@ public abstract class ParameterList
         this.data = data;
     }
 
-    private static abstract class Converter<T>
+    private abstract static class Converter<T>
     {
         abstract T convert( GraphDatabaseAPI graphDb, Object value )
                 throws BadInputException;

@@ -68,7 +68,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         }
     }
 
-    private static abstract class UpdateWorker implements Callable<UpdateResult>
+    private abstract static class UpdateWorker implements Callable<UpdateResult>
     {
         final int threadId;
         final int filePages;

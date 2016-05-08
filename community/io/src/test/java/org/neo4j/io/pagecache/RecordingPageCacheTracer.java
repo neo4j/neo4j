@@ -284,7 +284,7 @@ public class RecordingPageCacheTracer implements PageCacheTracer
         }
     }
 
-    public static abstract class Event
+    public abstract static class Event
     {
         public final PageSwapper io;
         public final long pageId;

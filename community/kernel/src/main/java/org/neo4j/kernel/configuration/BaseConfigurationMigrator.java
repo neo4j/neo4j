@@ -49,7 +49,7 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator
      * if the specified property key has been set by the user. Override {@link #appliesTo(Map)} if you want to
      * trigger on more specific reasons than that.
      */
-    public static abstract class SpecificPropertyMigration implements Migration
+    public abstract static class SpecificPropertyMigration implements Migration
     {
         private final String propertyKey;
         private final String deprecationMessage;

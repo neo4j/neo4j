@@ -46,7 +46,7 @@ import org.neo4j.graphdb.traversal.UniquenessFactory;
 
 public final class MonoDirectionalTraversalDescription implements TraversalDescription
 {
-    final static Supplier<Resource> NO_STATEMENT = () -> Resource.EMPTY;
+    static final Supplier<Resource> NO_STATEMENT = () -> Resource.EMPTY;
 
     final PathExpander expander;
     final InitialBranchState initialState;

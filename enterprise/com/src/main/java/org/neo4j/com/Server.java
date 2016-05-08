@@ -63,7 +63,6 @@ import org.neo4j.logging.LogProvider;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
-
 import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
 import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
@@ -107,7 +106,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     // It's ok if there are more transactions, since these worker threads doesn't
     // do any actual work themselves, but spawn off other worker threads doing the
     // actual work. So this is more like a core Netty I/O pool worker size.
-    public final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
+    public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
     static final byte INTERNAL_PROTOCOL_VERSION = 2;
     private final T requestTarget;
     private final IdleChannelReaper connectedSlaveChannels;

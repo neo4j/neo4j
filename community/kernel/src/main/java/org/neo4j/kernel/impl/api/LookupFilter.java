@@ -84,7 +84,7 @@ public class LookupFilter
         return value instanceof Number || value.getClass().isArray();
     }
 
-    private static abstract class BaseExactMatchPredicate implements LongPredicate
+    private abstract static class BaseExactMatchPredicate implements LongPredicate
     {
         private final int propertyKeyId;
         private final Object value;

@@ -25,7 +25,7 @@ import java.io.Writer;
 
 public class JavaDocsGenerator extends AsciiDocGenerator
 {
-    private final static String DIRECTORY = "target" + File.separator + "docs";
+    private static final String DIRECTORY = "target" + File.separator + "docs";
 
     public JavaDocsGenerator( String title, String section )
     {

@@ -47,7 +47,7 @@ public class ManyMergesStressTest
 
     private String[] SYLLABLES = new String[] { "Om", "Pa", "So", "Hu", "Ma", "Ni", "Ru", "Gu", "Ha", "Ta" };
 
-    private final static int TRIES = 8000;
+    private static final int TRIES = 8000;
 
     @Rule
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();

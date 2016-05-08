@@ -25,6 +25,7 @@ import java.util.Iterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
+
 import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
 
 /**
@@ -110,7 +111,7 @@ public abstract class Sorting
     /**
      * Comparator for {@link Path#endNode() end nodes} of two {@link Path paths}
      */
-    private static abstract class EndNodeComparator implements Comparator<Path>
+    private abstract static class EndNodeComparator implements Comparator<Path>
     {
         @Override
         public int compare( Path p1, Path p2 )

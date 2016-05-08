@@ -90,7 +90,7 @@ public class DumpRecordsCommand implements Command
         return airlineHelp( cli );
     }
 
-    static abstract class DumpPropertyChain implements Action
+    abstract static class DumpPropertyChain implements Action
     {
         @Arguments( title = "id", description = "Entity id", required = true )
         public long id;

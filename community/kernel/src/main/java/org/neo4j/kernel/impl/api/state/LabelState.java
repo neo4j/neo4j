@@ -126,7 +126,7 @@ public abstract class LabelState
         }
     }
 
-    static abstract class Defaults extends StateDefaults<Integer, LabelState, Mutable>
+    abstract static class Defaults extends StateDefaults<Integer, LabelState, Mutable>
     {
         @Override
         Mutable createValue( Integer key, TxState state )

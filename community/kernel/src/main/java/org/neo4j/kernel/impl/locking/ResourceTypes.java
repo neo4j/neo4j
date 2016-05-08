@@ -41,7 +41,7 @@ public enum ResourceTypes implements ResourceType
     LEGACY_INDEX(5, LockWaitStrategies.INCREMENTAL_BACKOFF),
     ;
 
-    private final static Map<Integer, ResourceType> idToType = new HashMap<>();
+    private static final Map<Integer, ResourceType> idToType = new HashMap<>();
     static
     {
         for ( ResourceTypes resourceTypes : ResourceTypes.values() )

@@ -53,7 +53,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  */
 public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHeader>
 {
-    public static abstract class Configuration extends CommonAbstractStore.Configuration
+    public abstract static class Configuration extends CommonAbstractStore.Configuration
     {
     }
 

@@ -70,7 +70,7 @@ public abstract class MethodDeclaration
         return unmodifiableList( asList( exceptions ) );
     }
 
-    public static abstract class Builder
+    public abstract static class Builder
     {
         private LinkedHashMap<String,TypeReference.Bound> typeParameters;
 

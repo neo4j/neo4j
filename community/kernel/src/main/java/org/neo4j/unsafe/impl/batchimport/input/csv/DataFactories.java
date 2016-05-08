@@ -195,7 +195,7 @@ public class DataFactories
         }
     };
 
-    private static abstract class SeparateHeaderReaderFactory implements HeaderCharSeekerFactory
+    private abstract static class SeparateHeaderReaderFactory implements HeaderCharSeekerFactory
     {
         @Override
         public void close( CharSeeker seeker )
@@ -227,7 +227,7 @@ public class DataFactories
         }
     }
 
-    private static abstract class AbstractDefaultFileHeaderParser implements Header.Factory
+    private abstract static class AbstractDefaultFileHeaderParser implements Header.Factory
     {
         private final Type[] mandatoryTypes;
         private final HeaderCharSeekerFactory headerCharSeekerFactory;

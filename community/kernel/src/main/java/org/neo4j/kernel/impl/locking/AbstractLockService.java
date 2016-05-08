@@ -67,7 +67,7 @@ abstract class AbstractLockService<HANDLE> implements LockService
 
     protected abstract void release( LockedEntity key, HANDLE handle );
 
-    protected static abstract class LockedEntity
+    protected abstract static class LockedEntity
     {
         private LockedEntity()
         {

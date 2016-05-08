@@ -62,7 +62,7 @@ public class LogTestUtils
         void done( File file );
     }
 
-    public static abstract class LogHookAdapter<RECORD> implements LogHook<RECORD>
+    public abstract static class LogHookAdapter<RECORD> implements LogHook<RECORD>
     {
         @Override
         public void file( File file )

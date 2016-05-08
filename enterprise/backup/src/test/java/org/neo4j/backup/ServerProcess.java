@@ -28,7 +28,7 @@ import org.neo4j.test.subprocess.SubProcess;
 
 public class ServerProcess extends SubProcess<ServerInterface, Pair<File, String>> implements ServerInterface
 {
-    private volatile transient GraphDatabaseService db;
+    private transient volatile GraphDatabaseService db;
 
     @Override
     public void startup( Pair<File, String> config ) throws Throwable

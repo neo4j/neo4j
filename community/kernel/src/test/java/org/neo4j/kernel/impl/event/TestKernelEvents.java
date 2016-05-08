@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 public class TestKernelEvents
 {
@@ -141,7 +142,7 @@ public class TestKernelEvents
         assertEquals( Integer.valueOf( 1 ), handler1.beforeShutdown );
     }
 
-    private static abstract class DummyKernelEventHandler implements KernelEventHandler
+    private abstract static class DummyKernelEventHandler implements KernelEventHandler
     {
         private static int counter;
         private Integer beforeShutdown, kernelPanic;

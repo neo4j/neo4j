@@ -230,7 +230,7 @@ public final class SuppressOutput implements TestRule
         Voice suppress();
     }
 
-    public static abstract class Voice
+    public abstract static class Voice
     {
         private Suppressible suppressible;
         private ByteArrayOutputStream voiceStream;

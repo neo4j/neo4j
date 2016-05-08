@@ -23,6 +23,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 public class TestSchemaIndexProviderDescriptor
 {
-    public final static SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
+    public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
             new SchemaIndexProvider.Descriptor( "quantum-dex", "25.0" );
 }

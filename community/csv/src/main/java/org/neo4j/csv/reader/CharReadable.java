@@ -56,7 +56,7 @@ public interface CharReadable extends Closeable, SourceTraceability
      */
     SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException;
 
-    public static abstract class Adapter extends SourceTraceability.Adapter implements CharReadable
+    abstract class Adapter extends SourceTraceability.Adapter implements CharReadable
     {
         @Override
         public void close() throws IOException

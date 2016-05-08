@@ -49,7 +49,7 @@ public interface SourceTraceability
      */
     long position();
 
-    public static abstract class Adapter implements SourceTraceability
+    abstract class Adapter implements SourceTraceability
     {
         @Override
         public long lineNumber()

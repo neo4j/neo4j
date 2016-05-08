@@ -204,7 +204,7 @@ public class KeyValueStoreFileTest
         }
     }
 
-    private static abstract class DataPage extends StubPageCursor
+    private abstract static class DataPage extends StubPageCursor
     {
         private final int headerRecords;
         private final int dataRecords;

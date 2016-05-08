@@ -320,7 +320,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
         }
     }
 
-    private static abstract class Rotation<Key, State extends ProgressiveState<Key>> extends RotationState<Key>
+    private abstract static class Rotation<Key, State extends ProgressiveState<Key>> extends RotationState<Key>
     {
         final State state;
 

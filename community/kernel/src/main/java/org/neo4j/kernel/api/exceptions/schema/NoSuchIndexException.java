@@ -28,7 +28,7 @@ import static java.lang.String.format;
 public class NoSuchIndexException extends SchemaKernelException
 {
     private final IndexDescriptor descriptor;
-    private final static String message = "No such INDEX ON %s.";
+    private static final String message = "No such INDEX ON %s.";
 
     public NoSuchIndexException( IndexDescriptor descriptor )
     {

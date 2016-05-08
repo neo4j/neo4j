@@ -58,7 +58,7 @@ public class LuceneIndexRecoveryIT
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private final String NUM_BANANAS_KEY = "number_of_bananas_owned";
-    private final static Label myLabel = label( "MyLabel" );
+    private static final Label myLabel = label( "MyLabel" );
     private GraphDatabaseAPI db;
     private DirectoryFactory directoryFactory;
 

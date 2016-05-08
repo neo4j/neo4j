@@ -661,7 +661,7 @@ public class DocValuesCollector extends SimpleCollector
         }
     }
 
-    private static abstract class ScoreDocsIterator extends PrefetchingIterator<ScoreDoc>
+    private abstract static class ScoreDocsIterator extends PrefetchingIterator<ScoreDoc>
     {
         private final Iterator<ScoreDoc> iterator;
         private final int[] docStarts;

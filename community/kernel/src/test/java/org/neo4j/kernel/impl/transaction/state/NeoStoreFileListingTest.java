@@ -53,7 +53,7 @@ public class NeoStoreFileListingTest
     private File storeDir;
     private LegacyIndexProviderLookup legacyIndexes;
 
-    private final static String[] STANDARD_STORE_DIR_FILES = new String[]{
+    private static final String[] STANDARD_STORE_DIR_FILES = new String[]{
             "lock",
             "debug.log",
             "neostore",
@@ -92,7 +92,7 @@ public class NeoStoreFileListingTest
             PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "2",
             "store_lock"};
 
-    private final static String[] STANDARD_STORE_DIR_DIRECTORIES = new String[]{"schema", "index", "branched"};
+    private static final String[] STANDARD_STORE_DIR_DIRECTORIES = new String[]{"schema", "index", "branched"};
 
     @Before
     public void setUp() throws IOException

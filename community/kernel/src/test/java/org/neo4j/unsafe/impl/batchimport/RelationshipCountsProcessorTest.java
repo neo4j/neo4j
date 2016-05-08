@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 public class RelationshipCountsProcessorTest
 {
 
-    private final static int ANY = -1;
+    private static final int ANY = -1;
     private NodeLabelsCache nodeLabelCache = mock( NodeLabelsCache.class );
     private CountsAccessor.Updater countsUpdater = mock( CountsAccessor.Updater.class );
 

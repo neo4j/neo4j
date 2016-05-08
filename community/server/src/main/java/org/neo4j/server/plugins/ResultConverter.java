@@ -117,7 +117,7 @@ abstract class ResultConverter
 
     abstract RepresentationType type();
 
-    private static abstract class ValueResult extends ResultConverter
+    private abstract static class ValueResult extends ResultConverter
     {
         private final RepresentationType type;
 

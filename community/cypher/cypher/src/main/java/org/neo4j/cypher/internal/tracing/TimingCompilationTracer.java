@@ -82,7 +82,7 @@ public class TimingCompilationTracer implements CompilationTracer
         return new Query( clock, query, listener );
     }
 
-    private static abstract class Event implements AutoCloseable
+    private abstract static class Event implements AutoCloseable
     {
         private Clock clock;
         private long time;
