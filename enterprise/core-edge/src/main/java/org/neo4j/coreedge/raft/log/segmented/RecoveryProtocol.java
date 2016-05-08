@@ -181,7 +181,6 @@ class RecoveryProtocol
         {
             throw new DamagedLogStorageException( "File versions not strictly monotonic. Expected: %d but found: %d", expectedVersion, fileNameVersion );
         }
-
     }
 
     private void checkVersionMatches( long headerVersion, long fileNameVersion ) throws DamagedLogStorageException
