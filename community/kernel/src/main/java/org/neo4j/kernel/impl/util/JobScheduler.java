@@ -142,6 +142,11 @@ public interface JobScheduler extends Lifecycle
         public static final Group checkPoint = new Group( "CheckPoint", POOLED );
 
         /**
+         * Raft Log pruning
+         */
+        public static final Group raftLogPruning = new Group( "RaftLogPruning", POOLED );
+
+        /**
          * Network IO threads for the Bolt protocol.
          */
         public static final Group boltNetworkIO = new Group( "BoltNetworkIO", NEW_THREAD );

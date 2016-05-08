@@ -26,8 +26,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
 
-import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
+import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
 
 public class LogPruneStrategyFactory
 {
@@ -77,64 +78,39 @@ public class LogPruneStrategyFactory
                                                     PhysicalLogFiles files,
                                                     String configValue )
     {
-        String[] tokens = configValue.split( " " );
-        if ( tokens.length == 0 )
+        ThresholdConfigValue value = parse( configValue );
+
+        if ( value == ThresholdConfigValue.NO_PRUNING )
         {
-            throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue + "'" );
+            return NO_PRUNING;
         }
 
-        final String boolOrNumber = tokens[0];
-
-        if ( tokens.length == 1 )
-        {
-            switch ( boolOrNumber )
-            {
-                case "true":
-                    return NO_PRUNING;
-                case "false":
-                    final EntryCountThreshold thresholdToUse = new EntryCountThreshold( 1 );
-                    return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, thresholdToUse );
-                default:
-                    throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
-                            "'. The form is 'all' or '<number><unit> <type>' for example '100k txs' " +
-                            "for the latest 100 000 transactions" );
-            }
-        }
-
-        Threshold thresholdToUse = getThresholdByType( fileSystem, tokens[1], boolOrNumber, configValue );
+        Threshold thresholdToUse = getThresholdByType( fileSystem, value, configValue );
         return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, thresholdToUse );
     }
 
     // visible for testing
-    static Threshold getThresholdByType( FileSystemAbstraction fileSystem, String type, String thresholdValueString,
+    static Threshold getThresholdByType( FileSystemAbstraction fileSystem, ThresholdConfigValue value,
             String originalConfigValue )
     {
-        long thresholdValue = parseLongWithUnit( thresholdValueString );
+        long thresholdValue = value.value;
 
-        Threshold thresholdToUse;
-        switch ( type )
+        switch ( value.type )
         {
             case "files":
-                thresholdToUse = new FileCountThreshold( thresholdValue );
-                break;
+                return new FileCountThreshold( thresholdValue );
             case "size":
-                thresholdToUse = new FileSizeThreshold( fileSystem, thresholdValue );
-                break;
+                return new FileSizeThreshold( fileSystem, thresholdValue );
             case "txs":
             case "entries": // txs and entries are synonyms
-                thresholdToUse = new EntryCountThreshold( thresholdValue );
-                break;
+                return new EntryCountThreshold( thresholdValue );
             case "hours":
-                thresholdToUse = new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.HOURS, thresholdValue );
-                break;
+                return new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.HOURS, thresholdValue );
             case "days":
-                thresholdToUse = new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.DAYS, thresholdValue );
-                break;
+                return new EntryTimespanThreshold( Clock.SYSTEM_CLOCK, TimeUnit.DAYS, thresholdValue );
             default:
                 throw new IllegalArgumentException( "Invalid log pruning configuration value '" + originalConfigValue +
-                        "'. Invalid type '" + type + "', valid are files, size, txs, entries, hours, days." );
+                        "'. Invalid type '" + value.type + "', valid are files, size, txs, entries, hours, days." );
         }
-        return thresholdToUse;
     }
-
 }
