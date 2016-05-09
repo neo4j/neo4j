@@ -28,6 +28,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_LABEL_CH
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.HAS_LABEL_FIELD;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_ADDITION;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_REMOVAL;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
@@ -36,11 +37,12 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
  */
 public class InputNodeReader extends InputEntityReader<InputNode>
 {
-    private String[] previousLabels = InputNode.NO_LABELS;
+    private String[] previousLabels = InputEntity.NO_LABELS;
 
-    public InputNodeReader( StoreChannel channel, StoreChannel header, int bufferSize ) throws IOException
+    public InputNodeReader( StoreChannel channel, StoreChannel header, int bufferSize, Runnable closeAction )
+            throws IOException
     {
-        super( channel, header, bufferSize, 1 );
+        super( channel, header, bufferSize, 1, closeAction );
     }
 
     @Override
@@ -71,9 +73,10 @@ public class InputNodeReader extends InputEntityReader<InputNode>
             {
                 switch ( labelsMode )
                 {
-                case LABEL_REMOVAL: remove( readToken(), newLabels, cursor-- ); break;
+                case LABEL_REMOVAL: remove( (String) readToken( LABEL_TOKEN ), newLabels, cursor-- ); break;
                 case LABEL_ADDITION:
-                    (newLabels = ensureRoomForOneMore( newLabels, cursor ))[cursor++] = readToken(); break;
+                    (newLabels = ensureRoomForOneMore( newLabels, cursor ))[cursor++] =
+                    (String) readToken( LABEL_TOKEN ); break;
                 default: throw new IllegalArgumentException( "Unrecognized label mode " + labelsMode );
                 }
                 labelsMode = channel.get();

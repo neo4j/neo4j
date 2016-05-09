@@ -35,13 +35,13 @@ import org.neo4j.test.Randoms;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-
 import static java.lang.Math.abs;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 
@@ -57,7 +57,7 @@ public class InputCacheTest
         {
             List<InputNode> nodes = new ArrayList<>();
             Randoms random = new Randoms( randomRule.random(), Randoms.DEFAULT );
-            try ( Receiver<InputNode[],IOException> cacher = cache.cacheNodes() )
+            try ( Receiver<InputNode[],IOException> cacher = cache.cacheNodes( MAIN ) )
             {
                 InputNode[] batch = new InputNode[BATCH_SIZE];
                 for ( int b = 0; b < BATCHES; b++ )
@@ -73,7 +73,7 @@ public class InputCacheTest
             }
 
             // WHEN/THEN
-            try ( InputIterator<InputNode> reader = cache.nodes().iterator() )
+            try ( InputIterator<InputNode> reader = cache.nodes( MAIN, true ).iterator() )
             {
                 Iterator<InputNode> expected = nodes.iterator();
                 while ( expected.hasNext() )
@@ -97,7 +97,7 @@ public class InputCacheTest
         {
             List<InputRelationship> relationships = new ArrayList<>();
             Randoms random = new Randoms( randomRule.random(), Randoms.DEFAULT );
-            try ( Receiver<InputRelationship[],IOException> cacher = cache.cacheRelationships() )
+            try ( Receiver<InputRelationship[],IOException> cacher = cache.cacheRelationships( MAIN ) )
             {
                 InputRelationship[] batch = new InputRelationship[BATCH_SIZE];
                 for ( int b = 0; b < BATCHES; b++ )
@@ -113,7 +113,7 @@ public class InputCacheTest
             }
 
             // WHEN/THEN
-            try ( InputIterator<InputRelationship> reader = cache.relationships().iterator() )
+            try ( InputIterator<InputRelationship> reader = cache.relationships( MAIN, true ).iterator() )
             {
                 Iterator<InputRelationship> expected = relationships.iterator();
                 while ( expected.hasNext() )
@@ -136,10 +136,6 @@ public class InputCacheTest
 
     private void assertRelationshipsEquals( InputRelationship expectedRelationship, InputRelationship relationship )
     {
-        if ( expectedRelationship.hasSpecificId() )
-        {
-            assertEquals( expectedRelationship.specificId(), relationship.specificId() );
-        }
         assertProperties( expectedRelationship, relationship );
         assertEquals( expectedRelationship.startNode(), relationship.startNode() );
         assertEquals( expectedRelationship.startNodeGroup(), relationship.startNodeGroup() );
@@ -259,7 +255,7 @@ public class InputCacheTest
         Object[] properties = new Object[length*2];
         for ( int i = 0; i < properties.length; i++ )
         {
-            properties[i++] = random.among( TOKENS );
+            properties[i++] = random.random().nextFloat() < 0.2f ? random.intBetween( 0, 10 ) : random.among( TOKENS );
             properties[i] = random.propertyValue();
         }
         return properties;

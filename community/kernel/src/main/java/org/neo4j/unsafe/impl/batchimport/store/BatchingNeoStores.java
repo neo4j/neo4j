@@ -284,4 +284,9 @@ public class BatchingNeoStores implements AutoCloseable
     {
         return labelScanStore;
     }
+
+    public NeoStores getNeoStores()
+    {
+        return neoStores;
+    }
 }

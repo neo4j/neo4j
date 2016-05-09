@@ -26,6 +26,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.allIn;
+
 /**
  * Reads from {@link RelationshipStore} and produces batches of startNode,type,endNode values for
  * others to process. The result is one long[] with all values in.
@@ -37,7 +39,7 @@ public class ReadRelationshipCountsDataStep extends ReadRecordsStep<Relationship
 
     public ReadRelationshipCountsDataStep( StageControl control, Configuration config, RelationshipStore store )
     {
-        super( control, config, store );
+        super( control, config, store, allIn( store ) );
         this.highestId = highId - 1;
     }
 

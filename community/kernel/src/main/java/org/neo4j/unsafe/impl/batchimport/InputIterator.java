@@ -65,6 +65,46 @@ public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceabilit
         }
     }
 
+    public static class Delegate<T> extends PrefetchingIterator<T> implements InputIterator<T>
+    {
+        protected final InputIterator<T> actual;
+
+        public Delegate( InputIterator<T> actual )
+        {
+            this.actual = actual;
+        }
+
+        @Override
+        public void close()
+        {
+            actual.close();
+        }
+
+        @Override
+        protected T fetchNextOrNull()
+        {
+            return actual.hasNext() ? actual.next() : null;
+        }
+
+        @Override
+        public String sourceDescription()
+        {
+            return actual.sourceDescription();
+        }
+
+        @Override
+        public long lineNumber()
+        {
+            return actual.lineNumber();
+        }
+
+        @Override
+        public long position()
+        {
+            return actual.position();
+        }
+    }
+
     public static class Empty<T> extends Adapter<T>
     {
         @Override

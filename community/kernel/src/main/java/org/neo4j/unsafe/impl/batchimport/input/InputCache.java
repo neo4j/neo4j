@@ -22,7 +22,8 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-
+import java.util.HashSet;
+import java.util.Set;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -89,6 +90,8 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
  */
 public class InputCache implements Closeable
 {
+    public static final String MAIN = "main";
+
     private static final String HEADER = "-header";
     private static final String NODES = "nodes";
     private static final String RELATIONSHIPS = "relationships";
@@ -97,14 +100,16 @@ public class InputCache implements Closeable
 
     static final byte SAME_GROUP = 0;
     static final byte NEW_GROUP = 1;
-    static final byte TOKEN = 1;
+    static final byte PROPERTY_KEY_TOKEN = 1;
+    static final byte LABEL_TOKEN = 2;
+    static final byte RELATIONSHIP_TYPE_TOKEN = 3;
+    static final byte GROUP_TOKEN = 4;
+    static final byte HIGH_TOKEN_TYPE = 5;
     static final short HAS_FIRST_PROPERTY_ID = -1;
     static final byte HAS_LABEL_FIELD = 3;
     static final byte LABEL_REMOVAL = 1;
     static final byte LABEL_ADDITION = 2;
     static final byte END_OF_LABEL_CHANGES = 0;
-    static final byte SPECIFIC_ID = 1;
-    static final byte UNSPECIFIED_ID = 0;
     static final byte HAS_TYPE_ID = 2;
     static final byte SAME_TYPE = 0;
     static final byte NEW_TYPE = 1;
@@ -114,6 +119,7 @@ public class InputCache implements Closeable
     private final FileSystemAbstraction fs;
     private final File cacheDirectory;
     private final int bufferSize;
+    private final Set<String> subTypes = new HashSet<>();
 
     public InputCache( FileSystemAbstraction fs, File cacheDirectory )
     {
@@ -127,50 +133,69 @@ public class InputCache implements Closeable
         this.bufferSize = bufferSize;
     }
 
-    public Receiver<InputNode[],IOException> cacheNodes() throws IOException
+    public Receiver<InputNode[],IOException> cacheNodes( String subType ) throws IOException
     {
-        return new InputNodeCacher( channel( NODES, "rw" ), channel( NODES_HEADER, "rw" ), bufferSize );
+        return new InputNodeCacher( channel( NODES, subType, "rw" ), channel( NODES_HEADER, subType, "rw" ),
+                bufferSize );
     }
 
-    public Receiver<InputRelationship[],IOException> cacheRelationships() throws IOException
+    public Receiver<InputRelationship[],IOException> cacheRelationships( String subType ) throws IOException
     {
-        return new InputRelationshipCacher( channel( RELATIONSHIPS, "rw" ),
-                channel( RELATIONSHIPS_HEADER, "rw" ), bufferSize );
+        return new InputRelationshipCacher( channel( RELATIONSHIPS, subType, "rw" ),
+                channel( RELATIONSHIPS_HEADER, subType, "rw" ), bufferSize );
     }
 
-    private StoreChannel channel( String type, String mode ) throws IOException
+    private StoreChannel channel( String type, String subType, String mode ) throws IOException
     {
-        return fs.open( file( type ), mode );
+        return fs.open( file( type, subType ), mode );
     }
 
-    private File file( String type )
+    private File file( String type, String subType )
     {
-        return new File( cacheDirectory, "input-" + type );
+        subTypes.add( subType );
+        return new File( cacheDirectory, "input-" + type + "-" + subType );
     }
 
-    public InputIterable<InputNode> nodes()
+    public InputIterable<InputNode> nodes( String subType, boolean deleteAfterUse )
     {
         return entities( new ThrowingSupplier<InputIterator<InputNode>, IOException>()
         {
             @Override
             public InputIterator<InputNode> get() throws IOException
             {
-                return new InputNodeReader( channel( NODES, "r" ), channel( NODES_HEADER, "r" ), bufferSize );
+                return new InputNodeReader( channel( NODES, subType, "r" ), channel( NODES_HEADER, subType, "r" ),
+                        bufferSize, deleteAction( deleteAfterUse, NODES, NODES_HEADER, subType ) );
             }
         } );
     }
 
-    public InputIterable<InputRelationship> relationships()
+    public InputIterable<InputRelationship> relationships( String subType, boolean deleteAfterUse )
     {
         return entities( new ThrowingSupplier<InputIterator<InputRelationship>, IOException>()
         {
             @Override
             public InputIterator<InputRelationship> get() throws IOException
             {
-                return new InputRelationshipReader( channel( RELATIONSHIPS, "r" ),
-                        channel( RELATIONSHIPS_HEADER, "r" ), bufferSize );
+                return new InputRelationshipReader( channel( RELATIONSHIPS, subType, "r" ),
+                        channel( RELATIONSHIPS_HEADER, subType, "r" ), bufferSize,
+                        deleteAction( deleteAfterUse, RELATIONSHIPS, RELATIONSHIPS_HEADER, subType ) );
             }
         } );
+    }
+
+    protected Runnable deleteAction( boolean deleteAfterUse, String type, String header, String subType )
+    {
+        if ( !deleteAfterUse )
+        {
+            return () -> {};
+        }
+
+        return () ->
+        {
+            fs.deleteFile( file( type, subType ) );
+            fs.deleteFile( file( header, subType ) );
+            subTypes.remove( subType );
+        };
     }
 
     private <T extends InputEntity> InputIterable<T> entities(
@@ -202,9 +227,12 @@ public class InputCache implements Closeable
     @Override
     public void close() throws IOException
     {
-        fs.deleteFile( file( NODES ) );
-        fs.deleteFile( file( RELATIONSHIPS ) );
-        fs.deleteFile( file( NODES_HEADER ) );
-        fs.deleteFile( file( RELATIONSHIPS_HEADER ) );
+        for ( String subType : subTypes )
+        {
+            fs.deleteFile( file( NODES, subType ) );
+            fs.deleteFile( file( RELATIONSHIPS, subType ) );
+            fs.deleteFile( file( NODES_HEADER, subType ) );
+            fs.deleteFile( file( RELATIONSHIPS_HEADER, subType ) );
+        }
     }
 }

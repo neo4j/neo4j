@@ -87,7 +87,7 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
      * Called once and signals the start of this step. Responsible for calling {@link #progress(long)}
      * at least now and then.
      */
-    protected abstract void process();
+    protected abstract void process() throws Throwable;
 
     /**
      * Called from {@link #process()}, reports progress so that statistics are updated appropriately.

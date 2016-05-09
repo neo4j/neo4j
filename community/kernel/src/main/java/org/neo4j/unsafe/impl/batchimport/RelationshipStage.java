@@ -37,22 +37,29 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
  */
 public class RelationshipStage extends Stage
 {
-    public RelationshipStage( Configuration config, IoMonitor writeMonitor,
-            InputIterable<InputRelationship> relationships, IdMapper idMapper,
-            BatchingNeoStores neoStore, NodeRelationshipCache cache, boolean specificIds,
-            EntityStoreUpdaterStep.Monitor storeUpdateMonitor )
+    private ParallelizeByNodeIdStep parallelizer;
+
+    public RelationshipStage( String topic, Configuration config, IoMonitor writeMonitor,
+            InputIterator<InputRelationship> relationships, IdMapper idMapper, BatchingNeoStores neoStore,
+            NodeRelationshipCache cache, EntityStoreUpdaterStep.Monitor storeUpdateMonitor,
+            long firstRelationshipId )
     {
-        super( "Relationships", config, ORDER_SEND_DOWNSTREAM | ORDER_PROCESS );
-        add( new InputIteratorBatcherStep<>( control(), config, relationships.iterator(), InputRelationship.class ) );
+        super( "Relationships" + topic, config, ORDER_SEND_DOWNSTREAM | ORDER_PROCESS );
+        add( new InputIteratorBatcherStep<>( control(), config, relationships, InputRelationship.class ) );
 
         RelationshipStore relationshipStore = neoStore.getRelationshipStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
         add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
-        add( new ParallelizeByNodeIdStep( control(), config ) );
+        add( parallelizer = new ParallelizeByNodeIdStep( control(), config, firstRelationshipId ) );
         add( new RelationshipEncoderStep( control(), config,
-                neoStore.getRelationshipTypeRepository(), cache, specificIds ) );
+                neoStore.getRelationshipTypeRepository(), cache ) );
         add( new EntityStoreUpdaterStep<>( control(), config,
                 relationshipStore, propertyStore, writeMonitor, storeUpdateMonitor ) );
+    }
+
+    public long getNextRelationshipId()
+    {
+        return parallelizer.getNextRelationshipId();
     }
 }
