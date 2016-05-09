@@ -42,8 +42,7 @@ public class Inputs
 {
     public static Input input(
             final InputIterable<InputNode> nodes, final InputIterable<InputRelationship> relationships,
-            final IdMapper idMapper, final IdGenerator idGenerator, final boolean specificRelationshipIds,
-            final Collector badCollector )
+            final IdMapper idMapper, final IdGenerator idGenerator, final Collector badCollector )
     {
         return new Input()
         {
@@ -69,12 +68,6 @@ public class Inputs
             public IdGenerator idGenerator()
             {
                 return idGenerator;
-            }
-
-            @Override
-            public boolean specificRelationshipIds()
-            {
-                return specificRelationshipIds;
             }
 
             @Override

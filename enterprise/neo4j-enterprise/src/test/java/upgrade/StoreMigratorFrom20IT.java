@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -166,11 +168,29 @@ public class StoreMigratorFrom20IT
     {
         DatabaseContentVerifier verifier = new DatabaseContentVerifier( database, 2 );
         verifyNumberOfNodesAndRelationships( verifier );
-        verifier.verifyNodeIdsReused();
-        verifier.verifyRelationshipIdsReused();
+        createNewNode( database );
+        createNewRelationship( database );
         verifier.verifyLegacyIndex();
         verifier.verifyIndex();
         verifier.verifyJohnnyLabels();
+    }
+
+    private static void createNewNode( GraphDatabaseService database )
+    {
+        try ( Transaction tx = database.beginTx() )
+        {
+            database.createNode();
+            tx.success();
+        }
+    }
+
+    private static void createNewRelationship( GraphDatabaseService database )
+    {
+        try ( Transaction tx = database.beginTx() )
+        {
+            database.createNode().createRelationshipTo( database.createNode(), MyRelTypes.TEST );
+            tx.success();
+        }
     }
 
     private static void verifySlaveContents( HighlyAvailableGraphDatabase haDb )

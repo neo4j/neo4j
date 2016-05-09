@@ -373,12 +373,6 @@ public class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public boolean specificRelationshipIds()
-        {
-            return false;
-        }
-
-        @Override
         public InputIterable<InputRelationship> relationships()
         {
             return SimpleInputIteratorWrapper.wrap( "Empty", Collections.emptyList() );

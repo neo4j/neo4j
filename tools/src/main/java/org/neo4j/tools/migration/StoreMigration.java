@@ -38,7 +38,6 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
@@ -90,13 +89,15 @@ public class StoreMigration
     public void run( final FileSystemAbstraction fs, final File storeDirectory, Config config,
             LogProvider userLogProvider ) throws IOException
     {
-        LogService logService =
+        StoreLogService logService =
                 StoreLogService.withUserLogProvider( userLogProvider ).inLogsDirectory( fs, storeDirectory );
 
         VisibleMigrationProgressMonitor progressMonitor =
                 new VisibleMigrationProgressMonitor( logService.getUserLog( StoreMigration.class ) );
 
         LifeSupport life = new LifeSupport();
+
+        life.add( logService );
 
         // Add participants from kernel extensions...
         LegacyIndexProvider legacyIndexProvider = new LegacyIndexProvider();

@@ -19,47 +19,84 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.graphdb.Direction;
+
+import static java.lang.Math.toIntExact;
 
 /**
  * Caches of parts of node store and relationship group store. A crucial part of batch import where
  * any random access must be covered by this cache. All I/O, both read and write must be sequential.
+ *
+ * <pre>
+ * Main array (index into array is nodeId):
+ * [ID,DEGREE]
+ *
+ * ID means:
+ * - DEGREE >= THRESHOLD: pointer into RelationshipGroupCache array
+ *   RelationshipGroupCache array:
+ *   [NEXT,OUT_ID,OUT_DEGREE,IN_ID,IN_DEGREE,LOOP_ID,LOOP_DEGREE]
+ * - DEGREE < THRESHOLD: last seen relationship id for this node
+ * </pre>
+ *
+ * This class is designed to be thread safe if callers are coordinated such that different threads owns different
+ * parts of the main cache array, with the constraint that a thread which accesses item N must continue doing
+ * so in order to make further changes to N, if another thread accesses N the semantics will no longer hold.
+ *
+ * Since multiple threads are making changes external memory synchronization is also required in between
+ * a phase of making changes using {@link #getAndPutRelationship(long, Direction, long, boolean)} and e.g
+ * {@link #visitChangedNodes(NodeChangeVisitor, boolean)}.
  */
 public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 {
+    private static final int CHUNK_SIZE = 1_000_000;
     private static final long EMPTY = -1;
-    private static final byte[] DEFAULT_VALUE = new byte[10];
     private static final long MAX_RELATIONSHIP_ID = (1L << 48/*6B*/) - 2/*reserving -1 as legal default value*/;
+    static final int MAX_COUNT = (1 << 30/*2 change bits*/) - 2/*reserving -1 as legal default value*/;
+
+    // Sizes and offsets of values in each sparse node ByteArray item
     private static final int ID_SIZE = 6;
     private static final int COUNT_SIZE = 4;
     private static final int ID_AND_COUNT_SIZE = ID_SIZE + COUNT_SIZE;
     private static final int SPARSE_ID_OFFSET = 0;
     private static final int SPARSE_COUNT_OFFSET = ID_SIZE;
-    static
-    {
-        // This looks odd, but we're using the array itself to create a default byte[] for another
-        ByteArray array = NumberArrayFactory.HEAP.newByteArray( 1, DEFAULT_VALUE.clone() );
-        array.set6ByteLong( 0, SPARSE_ID_OFFSET, EMPTY );
-        array.setInt( 0, SPARSE_COUNT_OFFSET, 0 );
-        array.get( 0, DEFAULT_VALUE );
-    }
+
+    // Masking for tracking changes per node
+    private static final int DENSE_NODE_CHANGED_MASK = 0x80000000;
+    private static final int SPARSE_NODE_CHANGED_MASK = 0x40000000;
+    private static final int NODE_CHANGED_MASKS = DENSE_NODE_CHANGED_MASK | SPARSE_NODE_CHANGED_MASK;
+    private static final int COUNT_MASK = ~NODE_CHANGED_MASKS;
 
     private final ByteArray array;
+    private byte[] chunkChangedArray;
     private final int denseNodeThreshold;
     private final RelGroupCache relGroupCache;
+    private long highId;
+    // This cache participates in scans backwards and forwards, marking entities as changed in the process.
+    // When going forward (forward==true) changes are marked with a set bit, a cleared bit when going bachwards.
+    // This way there won't have to be a clearing of the change bits in between the scans.
+    private volatile boolean forward = true;
+    private final int chunkSize;
 
     public NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold )
     {
-        this( arrayFactory, denseNodeThreshold, 1_000_000, 0 );
+        this( arrayFactory, denseNodeThreshold, CHUNK_SIZE, 0 );
     }
 
     NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold, int chunkSize, long base )
     {
-        this.array = arrayFactory.newDynamicByteArray( chunkSize, DEFAULT_VALUE );
+        this.chunkSize = chunkSize;
+        this.array = arrayFactory.newDynamicByteArray( chunkSize, minusOneBytes( ID_AND_COUNT_SIZE ) );
         this.denseNodeThreshold = denseNodeThreshold;
         this.relGroupCache = new RelGroupCache( arrayFactory, chunkSize, base );
+    }
+
+    private static byte[] minusOneBytes( int length )
+    {
+        byte[] bytes = new byte[length];
+        Arrays.fill( bytes, (byte) -1 );
+        return bytes;
     }
 
     /**
@@ -69,22 +106,62 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
      */
     public int incrementCount( long nodeId )
     {
-        ByteArray array = this.array.at( nodeId );
-        int count = getCount( array, nodeId ) + 1;
-        setCount( array, nodeId, count );
-        return count;
+        return incrementCount( array, nodeId, SPARSE_COUNT_OFFSET );
     }
 
-    private void setCount( ByteArray array, long nodeId, int count )
+    void setCount( long nodeId, int count )
     {
+        assertValidCount( nodeId, count );
         array.setInt( nodeId, SPARSE_COUNT_OFFSET, count );
     }
 
-    private static int getCount( ByteArray array, long nodeId )
+    private static void assertValidCount( long nodeId, int count )
     {
-        return array.getInt( nodeId, SPARSE_COUNT_OFFSET );
+        if ( count > MAX_COUNT )
+        {
+            // Meaning there are bits outside of this mask, meaning this value is too big
+            throw new IllegalStateException( "Tried to increment count of " + nodeId + " to " + count +
+                    ", which is too big in one single import" );
+        }
     }
 
+    /**
+     * Called by the one calling {@link #incrementCount(long)} after all nodes have been added.
+     * Done like this since currently it's just overhead trying to maintain a high id in the face
+     * of current updates, whereas it's much simpler to do this from the code incrementing the counts.
+     *
+     * @param nodeId high node id in the store, e.g. the highest node id + 1
+     */
+    public void setHighNodeId( long nodeId )
+    {
+        this.highId = nodeId;
+        this.chunkChangedArray = new byte[chunkOf( nodeId ) + 1];
+    }
+
+    private static int getCount( ByteArray array, long index, int offset )
+    {
+        long rawCount = array.getInt( index, offset ) & COUNT_MASK;
+        if ( rawCount == COUNT_MASK )
+        {
+            return 0;
+        }
+        return (int) rawCount;
+    }
+
+    private static int incrementCount( ByteArray array, long index, int offset )
+    {
+        array = array.at( index );
+        int count = getCount( array, index, offset ) + 1;
+        assertValidCount( index, count );
+        array.setInt( index, offset, count );
+        return count;
+    }
+
+    /**
+     * @param nodeId node to check whether dense or not.
+     * @return whether or not the given {@code nodeId} is dense. A node is sparse if it has less relationships,
+     * e.g. has had less calls to {@link #incrementCount(long)}, then the given dense node threshold.
+     */
     public boolean isDense( long nodeId )
     {
         return isDense( array, nodeId );
@@ -97,10 +174,21 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             return false;
         }
 
-        return getCount( array, nodeId ) >= denseNodeThreshold;
+        return getCount( array, nodeId, SPARSE_COUNT_OFFSET ) >= denseNodeThreshold;
     }
 
-    public long getAndPutRelationship( long nodeId, int type, Direction direction, long firstRelId,
+    /**
+     * Puts a relationship id to be the head of a relationship chain. If the node is sparse then
+     * the head is set directly in the cache, else if dense which head to update will depend on
+     * the {@code direction}.
+     *
+     * @param nodeId node to update relationship head for.
+     * @param direction {@link Direction} this node represents for this relationship.
+     * @param firstRelId the relationship id which is now the head of this chain.
+     * @param incrementCount as side-effect also increment count for this chain.
+     * @return the previous head of the updated relationship chain.
+     */
+    public long getAndPutRelationship( long nodeId, Direction direction, long firstRelId,
             boolean incrementCount )
     {
         if ( firstRelId > MAX_RELATIONSHIP_ID )
@@ -117,20 +205,81 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 
         ByteArray array = this.array.at( nodeId );
         long existingId = all48Bits( array, nodeId, SPARSE_ID_OFFSET );
-        if ( isDense( array, nodeId ) )
+        boolean dense = isDense( array, nodeId );
+        boolean wasChanged = markAsChanged( array, nodeId, changeMask( dense ) );
+        markChunkAsChanged( nodeId, dense );
+        if ( dense )
         {
             if ( existingId == EMPTY )
             {
-                existingId = relGroupCache.allocate( type, direction, firstRelId, incrementCount );
+                existingId = relGroupCache.allocate();
                 setRelationshipId( array, nodeId, existingId );
-                return EMPTY;
+                wasChanged = false; // no need to clear when we just allocated it
             }
-            return relGroupCache.putRelationship( existingId, type, direction, firstRelId, incrementCount );
+            return relGroupCache.putRelationship( existingId, direction, firstRelId, incrementCount, wasChanged );
         }
 
         // Don't increment count for sparse node since that has already been done in a previous pass
         setRelationshipId( array, nodeId, firstRelId );
-        return existingId;
+        return wasChanged ? EMPTY : existingId;
+    }
+
+    private void markChunkAsChanged( long nodeId, boolean dense )
+    {
+        byte mask = chunkChangeMask( dense );
+        if ( !chunkHasChange( nodeId, mask ) )
+        {
+            int chunk = chunkOf( nodeId );
+            if ( (chunkChangedArray[chunk] & mask) == 0 )
+            {
+                // Multiple threads may update this chunk array, synchronized performance-wise is fine on change since
+                // it'll only happen at most a couple of times for each chunk (1M).
+                synchronized ( chunkChangedArray )
+                {
+                    chunkChangedArray[chunk] |= mask;
+                }
+            }
+        }
+    }
+
+    private int chunkOf( long nodeId )
+    {
+        return toIntExact( nodeId / chunkSize );
+    }
+
+    private static byte chunkChangeMask( boolean dense )
+    {
+        return (byte) (1 << (dense ? 1 : 0));
+    }
+
+    private boolean markAsChanged( ByteArray array, long nodeId, int mask )
+    {
+        int bits = array.getInt( nodeId, SPARSE_COUNT_OFFSET );
+        boolean changeBitIsSet = (bits & mask) != 0;
+        boolean changeBitWasFlipped = changeBitIsSet != forward;
+        if ( changeBitWasFlipped )
+        {
+            bits ^= mask; // flip the mask bit
+            array.setInt( nodeId, SPARSE_COUNT_OFFSET, bits );
+        }
+        return changeBitWasFlipped;
+    }
+
+    private static boolean nodeIsChanged( ByteArray array, long nodeId, long mask )
+    {
+        int bits = array.getInt( nodeId, SPARSE_COUNT_OFFSET );
+
+        // The values in the cache are initialized with -1, i.e. all bits set, i.e. also the
+        // change bits set. For nodes that gets at least one call to incrementCount these will be
+        // set properly to reflect the count, e.g. 1, 2, 3, a.s.o. Nodes that won't get any call
+        // to incrementCount will not see any changes to them either, so for this matter we check
+        // if the count field is -1 as a whole and if so we can tell we've just run into such a node
+        // and we can safely say it hasn't been changed.
+        if ( bits == 0xFFFFFFFF )
+        {
+            return false;
+        }
+        return (bits & mask) != 0;
     }
 
     private void setRelationshipId( ByteArray array, long nodeId, long firstRelId )
@@ -138,7 +287,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         array.set6ByteLong( nodeId, SPARSE_ID_OFFSET, firstRelId );
     }
 
-    private long getRelationshipId( ByteArray array, long nodeId )
+    private static long getRelationshipId( ByteArray array, long nodeId )
     {
         return array.get6ByteLong( nodeId, SPARSE_ID_OFFSET );
     }
@@ -155,91 +304,94 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 
     /**
      * Used when setting node nextRel fields. Gets the first relationship for this node,
-     * or the first relationship group id (where it it first visits all the groups before returning the first one).
+     * or the relationship group id. As a side effect this method also creates a relationship group
+     * if this node is dense, and returns that relationship group record id.
+     *
+     * @param nodeId id to get first relationship for.
+     * @param visitor {@link GroupVisitor} which will be notified with data about group to be created.
+     * This visitor is expected to create the group.
+     * @return the first relationship if node is sparse, or the result of {@link GroupVisitor} if dense.
      */
     public long getFirstRel( long nodeId, GroupVisitor visitor )
     {
+        assert forward : "This should only be done at forward scan";
+
         ByteArray array = this.array.at( nodeId );
         long id = getRelationshipId( array, nodeId );
-        if ( isDense( array, nodeId ) )
+        if ( id != EMPTY && isDense( array, nodeId ) )
         {   // Indirection into rel group cache
-            return relGroupCache.visitGroups( nodeId, id, visitor );
+            return relGroupCache.visitGroup( nodeId, id, visitor );
         }
 
         return id;
     }
 
-    public void clearRelationships()
+    /**
+     * First a note about tracking which nodes have been updated with new relationships by calls to
+     * {@link #getAndPutRelationship(long, Direction, long, boolean)}:
+     *
+     * We use two high bits of the count field in the "main" array to mark whether or not a change
+     * have been made to a node. One bit for a sparse node and one for a dense. Sparse and dense nodes
+     * now have different import cycles. When importing the relationships, all relationships are imported,
+     * one type at a time, but only dense nodes and relationship chains for dense nodes are updated
+     * for every type. After all types have been imported the sparse chains and nodes are updated in one pass.
+     *
+     * Tells this cache which direction it's about to observe changes for. If {@code true} then changes
+     * marked as the change-bit set and an unset change-bit means a change is the first one for that node.
+     * {@code false} is the opposite. This is so that there won't need to be any clearing of the cache
+     * in between forward and backward linking, since the cache can be rather large.
+     *
+     * @param forward {@code true} if going forward and having change marked as a set bit, otherwise
+     * change is marked with an unset bit.
+     */
+    public void setForwardScan( boolean forward )
     {
-        long length = array.length();
-        for ( long nodeId = 0; nodeId < length; nodeId++ )
-        {
-            if ( !isDense( nodeId ) )
-            {
-                setRelationshipId( array, nodeId, -1 );
-            }
-        }
-        relGroupCache.clearRelationships();
+        this.forward = forward;
     }
 
-    public int getCount( long nodeId, int type, Direction direction )
+    /**
+     * Returns the count (degree) of the requested relationship chain. If node is sparse then the single count
+     * for this node is returned, otherwise if the node is dense the count for the chain for the specific
+     * direction is returned.
+     *
+     * @param nodeId node to get count for.
+     * @param direction {@link Direction} to get count for.
+     * @return count (degree) of the requested relationship chain.
+     */
+    public int getCount( long nodeId, Direction direction )
     {
         ByteArray array = this.array.at( nodeId );
         if ( isDense( array, nodeId ) )
         {   // Indirection into rel group cache
             long id = getRelationshipId( array, nodeId );
-            return id == EMPTY ? 0 : relGroupCache.getCount( id, type, direction );
+            return id == EMPTY ? 0 : relGroupCache.getCount( id, direction );
         }
 
-        return getCount( array, nodeId );
+        return getCount( array, nodeId, SPARSE_COUNT_OFFSET );
     }
 
     public interface GroupVisitor
     {
         /**
          * Visits with data required to create a relationship group.
+         * Type can be decided on the outside since there'll be only one type per node.
          *
          * @param nodeId node id.
-         * @param type relationship type.
          * @param next next relationship group.
          * @param out first outgoing relationship id.
          * @param in first incoming relationship id.
          * @param loop first loop relationship id.
          * @return the created relationship group id.
          */
-        long visit( long nodeId, int type, long next, long out, long in, long loop );
+        long visit( long nodeId, long next, long out, long in, long loop );
     }
 
-    public static final GroupVisitor NO_GROUP_VISITOR = new GroupVisitor()
-    {
-        @Override
-        public long visit( long nodeId, int type, long next, long out, long in, long loop )
-        {
-            return -1;
-        }
-    };
+    public static final GroupVisitor NO_GROUP_VISITOR = (nodeId, next, out, in, loop) -> -1;
 
     private static class RelGroupCache implements AutoCloseable, MemoryStatsVisitor.Visitable
     {
-        private static final int TYPE_SIZE = 2;
         private static final int NEXT_OFFSET = 0;
-        private static final int TYPE_OFFSET = 6;
-        private static final int BASE_IDS_OFFSET = ID_SIZE + TYPE_SIZE;
-        private static final byte[] DEFAULT_VALUE =
-                new byte[ID_SIZE/*next*/ + TYPE_SIZE + (ID_SIZE + COUNT_SIZE) * Direction.values().length];
-        static
-        {
-            ByteArray defaultArray = NumberArrayFactory.HEAP.newByteArray( 1, DEFAULT_VALUE.clone() );
-            defaultArray.set6ByteLong( 0, NEXT_OFFSET, EMPTY );
-            defaultArray.setShort( 0, TYPE_OFFSET, (short) EMPTY );
-            for ( int i = 0, offsetBase = BASE_IDS_OFFSET; i < Direction.values().length;
-                    i++, offsetBase += ID_AND_COUNT_SIZE )
-            {
-                defaultArray.set6ByteLong( 0, offsetBase, EMPTY );
-                defaultArray.setInt( 0, offsetBase + ID_SIZE, 0 );
-            }
-            defaultArray.get( 0, DEFAULT_VALUE );
-        }
+        private static final int BASE_IDS_OFFSET = ID_SIZE;
 
         // Used for testing high id values. Should always be zero in production
         private final long base;
@@ -250,35 +402,21 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
         {
             this.base = base;
             assert chunkSize > 0;
-            // We can use this array to have "entries" accommodating one entire group, e.g:
-            // - next
-            // - type
-            // - out
-            // - out degree
-            // - in
-            // - in degree
-            // - loop
-            // - loop degree
-            this.array = arrayFactory.newDynamicByteArray( chunkSize, DEFAULT_VALUE );
+            this.array = arrayFactory.newDynamicByteArray( chunkSize,
+                    minusOneBytes( ID_SIZE/*next*/ + (ID_SIZE + COUNT_SIZE) * Direction.values().length ) );
             this.nextFreeId = new AtomicLong( base );
         }
 
-        public int getCount( long id, int type, Direction direction )
+        private void clearRelationships( ByteArray array, long relGroupId )
         {
-            id = findGroupIndexForType( id, type );
-            return id == EMPTY ? 0 : array.getInt( rebase( id ), countOffset( direction ) );
+            array.set6ByteLong( relGroupId, directionOffset( Direction.OUTGOING ), EMPTY );
+            array.set6ByteLong( relGroupId, directionOffset( Direction.INCOMING ), EMPTY );
+            array.set6ByteLong( relGroupId, directionOffset( Direction.BOTH ), EMPTY );
         }
 
-        private void clearRelationships()
+        int getCount( long id, Direction direction )
         {
-            long length = array.length();
-            for ( long i = 0; i < length; i++ )
-            {
-                ByteArray array = this.array.at( i );
-                array.set6ByteLong( i, directionOffset( Direction.OUTGOING ), EMPTY );
-                array.set6ByteLong( i, directionOffset( Direction.INCOMING ), EMPTY );
-                array.set6ByteLong( i, directionOffset( Direction.BOTH ), EMPTY );
-            }
+            return id == EMPTY ? 0 : NodeRelationshipCache.getCount( array, rebase( id ), countOffset( direction ) );
         }
 
         /**
@@ -294,139 +432,60 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             return nextFreeId.getAndIncrement();
         }
 
-        private void initializeGroup( ByteArray array, long relGroupIndex, int type )
+        private long visitGroup( long nodeId, long relGroupIndex, GroupVisitor visitor )
         {
-            array.setShort( rebase( relGroupIndex ), TYPE_OFFSET, (short) type );
-            // All other values are set to defaults automatically
+            long index = rebase( relGroupIndex );
+            ByteArray array = this.array.at( index );
+            long out = all48Bits( array, index, directionOffset( Direction.OUTGOING ) );
+            long in = all48Bits( array, index, directionOffset( Direction.INCOMING ) );
+            long loop = all48Bits( array, index, directionOffset( Direction.BOTH ) );
+            long next = all48Bits( array, index, NEXT_OFFSET );
+            long nextId = out == EMPTY && in == EMPTY && loop == EMPTY ? EMPTY :
+                visitor.visit( nodeId, next, out, in, loop );
+
+            // Save the returned next id for later, when the next group for this node is created
+            // then we know what to point this group's next to.
+            array.set6ByteLong( index, NEXT_OFFSET, nextId );
+            return nextId;
         }
 
-        private long visitGroups( long nodeId, long relGroupIndex, GroupVisitor visitor )
-        {
-            long currentIndex = relGroupIndex;
-            long first = -1;
-            while ( currentIndex != EMPTY )
-            {
-                long index = rebase( currentIndex );
-                ByteArray array = this.array.at( index );
-                int type = array.getShort( index, TYPE_OFFSET );
-                long out = all48Bits( array, index, directionOffset( Direction.OUTGOING ) );
-                long in = all48Bits( array, index, directionOffset( Direction.INCOMING ) );
-                long loop = all48Bits( array, index, directionOffset( Direction.BOTH ) );
-                long next = all48Bits( array, index, NEXT_OFFSET );
-                long id = visitor.visit( nodeId, type, next, out, in, loop );
-                if ( first == -1 )
-                {   // This is the one we return
-                    first = id;
-                }
-
-                currentIndex = next;
-            }
-            return first;
-        }
-
-        private int directionOffset( Direction direction )
+        private static int directionOffset( Direction direction )
         {
             return BASE_IDS_OFFSET + (direction.ordinal() * ID_AND_COUNT_SIZE);
         }
 
-        private int countOffset( Direction direction )
+        private static int countOffset( Direction direction )
         {
             return directionOffset( direction ) + ID_SIZE;
         }
 
-        public long allocate( int type, Direction direction, long relId, boolean incrementCount )
+        long allocate()
         {
-            long index = nextFreeId();
-            ByteArray array = this.array.at( rebase( index ) );
-            initializeGroup( array, index, type );
-            putRelField( array, index, direction, relId, incrementCount );
-            return index;
+            return nextFreeId();
         }
 
-        private long putRelField( ByteArray array, long relGroupIndex, Direction direction,
-                long relId, boolean increment )
+        long putRelationship( long relGroupIndex, Direction direction,
+                long relId, boolean increment, boolean clear )
         {
             long index = rebase( relGroupIndex );
+            ByteArray array = this.array.at( index );
             int directionOffset = directionOffset( direction );
-            long previousId = all48Bits( array, index, directionOffset );
+            long previousId;
+            if ( clear )
+            {
+                clearRelationships( array, index );
+                previousId = EMPTY;
+            }
+            else
+            {
+                previousId = all48Bits( array, index, directionOffset );
+            }
             array.set6ByteLong( index, directionOffset, relId );
             if ( increment )
             {
-                int countOffset = countOffset( direction );
-                array.setInt( index, countOffset, array.getInt( index, countOffset ) + 1 );
+                incrementCount( array, index, countOffset( direction ) );
             }
             return previousId;
-        }
-
-        public long putRelationship( long relGroupIndex, int type, Direction direction, long relId,
-                boolean trueForIncrement )
-        {
-            long currentIndex = relGroupIndex;
-            long previousIndex = EMPTY;
-            while ( currentIndex != EMPTY )
-            {
-                long currentIndexRebased = rebase( currentIndex );
-                ByteArray array = this.array.at( currentIndexRebased );
-                long foundType = array.getShort( currentIndexRebased, TYPE_OFFSET );
-                if ( foundType == type )
-                {   // Found it
-                    return putRelField( array, currentIndex, direction, relId, trueForIncrement );
-                }
-                else if ( foundType > type )
-                {   // We came too far, create room for it
-                    break;
-                }
-                previousIndex = currentIndex;
-                currentIndex = all48Bits( array, currentIndexRebased, NEXT_OFFSET );
-            }
-
-            long newIndex = nextFreeId();
-            if ( previousIndex == EMPTY )
-            {   // We are at the start
-                array.swap( rebase( currentIndex ), rebase( newIndex ), 1 );
-                long swap = newIndex;
-                newIndex = currentIndex;
-                currentIndex = swap;
-            }
-
-            ByteArray array = this.array.at( rebase( newIndex ) );
-            initializeGroup( array, newIndex, type );
-            if ( currentIndex != EMPTY )
-            {   // We are NOT at the end
-                setNextField( array, newIndex, currentIndex );
-            }
-
-            if ( previousIndex != EMPTY )
-            {   // We are NOT at the start
-                setNextField( this.array, previousIndex, newIndex );
-            }
-
-            return putRelField( array, newIndex, direction, relId, trueForIncrement );
-        }
-
-        private void setNextField( ByteArray array, long relGroupIndex, long next )
-        {
-            array.set6ByteLong( rebase( relGroupIndex ), NEXT_OFFSET, next );
-        }
-
-        private long findGroupIndexForType( long relGroupIndex, int type )
-        {
-            long currentIndex = relGroupIndex;
-            while ( currentIndex != EMPTY )
-            {
-                long index = rebase( currentIndex );
-                int foundType = array.getShort( index, TYPE_OFFSET );
-                if ( foundType == type )
-                {   // Found it
-                    return currentIndex;
-                }
-                else if ( foundType > type )
-                {   // We came too far, create room for it
-                    break;
-                }
-                currentIndex = all48Bits( array, index, NEXT_OFFSET );
-            }
-            return EMPTY;
         }
 
         @Override
@@ -459,5 +518,68 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
     {
         array.acceptMemoryStatsVisitor( visitor );
         relGroupCache.acceptMemoryStatsVisitor( visitor );
+    }
+
+    private static int changeMask( boolean dense )
+    {
+        return dense ? DENSE_NODE_CHANGED_MASK : SPARSE_NODE_CHANGED_MASK;
+    }
+
+    @FunctionalInterface
+    public interface NodeChangeVisitor
+    {
+        void change( long nodeId, ByteArray array );
+    }
+
+    /**
+     * Efficiently visits changed nodes, e.g. nodes that have had any relationship chain updated by
+     * {@link #getAndPutRelationship(long, Direction, long, boolean)}.
+     *
+     * @param visitor {@link NodeChangeVisitor} which will be notified about all changes.
+     * @param denseNodes {@code true} for visiting changed dense nodes, {@code false} for visiting
+     * changed sparse nodes.
+     */
+    public void visitChangedNodes( NodeChangeVisitor visitor, boolean denseNodes )
+    {
+        long mask = changeMask( denseNodes );
+        byte chunkMask = chunkChangeMask( denseNodes );
+        for ( long nodeId = 0; nodeId < highId; )
+        {
+            if ( !chunkHasChange( nodeId, chunkMask ) )
+            {
+                nodeId += chunkSize;
+                continue;
+            }
+
+            ByteArray chunk = array.at( nodeId );
+            for ( int i = 0; i < chunkSize && nodeId < highId; i++, nodeId++ )
+            {
+                if ( isDense( chunk, nodeId ) == denseNodes && nodeIsChanged( chunk, nodeId, mask ) )
+                {
+                    visitor.change( nodeId, chunk );
+                }
+            }
+        }
+    }
+
+    /**
+     * Clears the high-level change marks.
+     *
+     * @param denseNodes {@code true} for clearing marked dense nodes, {@code false} for clearing marked sparse nodes.
+     */
+    public void clearChangedChunks( boolean denseNodes )
+    {
+        // Executed by a single thread, so no synchronized required
+        byte chunkMask = chunkChangeMask( denseNodes );
+        for ( int i = 0; i < chunkChangedArray.length; i++ )
+        {
+            chunkChangedArray[i] &= ~chunkMask;
+        }
+    }
+
+    private boolean chunkHasChange( long nodeId, byte chunkMask )
+    {
+        int chunkId = chunkOf( nodeId );
+        return (chunkChangedArray[chunkId] & chunkMask) != 0;
     }
 }

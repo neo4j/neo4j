@@ -115,12 +115,6 @@ public class NodeCountInputs implements Input
     }
 
     @Override
-    public boolean specificRelationshipIds()
-    {
-        return true;
-    }
-
-    @Override
     public Collector badCollector()
     {
         return bad;

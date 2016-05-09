@@ -871,7 +871,6 @@ public class CsvInputTest
             Group endNodeGroup, Object endNode,
             String type, Object[] properties )
     {
-        assertFalse( relationship.hasSpecificId() );
         assertEquals( startNodeGroup, relationship.startNodeGroup() );
         assertEquals( startNode, relationship.startNode() );
         assertEquals( endNodeGroup.id(), relationship.endNodeGroup().id() );

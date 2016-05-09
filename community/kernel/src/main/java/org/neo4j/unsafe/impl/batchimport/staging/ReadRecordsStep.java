@@ -20,13 +20,15 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
@@ -36,17 +38,34 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}
  */
-public abstract class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProducerStep
+public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends IoProducerStep
 {
     protected final RecordStore<RECORD> store;
     protected final RECORD record;
     protected final RecordCursor<RECORD> cursor;
     protected final long highId;
+    private final PrimitiveLongIterator ids;
+    private final Class<RECORD> klass;
+    private final int recordSize;
+    private final Predicate<RECORD> filter;
+    private long count;
 
-    public ReadRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store )
+    public ReadRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
+            PrimitiveLongIterator ids )
+    {
+        this( control, config, store, ids, all -> true );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public ReadRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store,
+            PrimitiveLongIterator ids, Predicate<RECORD> filter )
     {
         super( control, config );
         this.store = store;
+        this.ids = ids;
+        this.filter = filter;
+        this.klass = (Class<RECORD>) store.newRecord().getClass();
+        this.recordSize = store.getRecordSize();
         this.cursor = store.newRecordCursor( record = store.newRecord() );
         this.highId = store.getHighId();
     }
@@ -58,11 +77,51 @@ public abstract class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends
         super.start( orderingGuarantees );
     }
 
+    @SuppressWarnings( "unchecked" )
+    @Override
+    protected Object nextBatchOrNull( long ticket, int batchSize )
+    {
+        if ( !ids.hasNext() )
+        {
+            return null;
+        }
+
+        RECORD[] batch = (RECORD[]) Array.newInstance( klass, batchSize );
+        boolean seenReservedId = false;
+
+        int i = 0;
+        while ( i < batchSize && ids.hasNext() )
+        {
+            cursor.next( ids.next() );
+            if ( !filter.test( record ) )
+            {
+                continue;
+            }
+
+            RECORD newRecord = (RECORD) record.clone();
+            batch[i] = newRecord;
+            seenReservedId |= IdValidator.isReservedId( newRecord.getId() );
+            i++;
+            count++;
+        }
+
+        batch = i == batchSize ? batch : Arrays.copyOf( batch, i );
+        batch = removeRecordWithReservedId( batch, seenReservedId );
+
+        return batch.length > 0 ? batch : null;
+    }
+
     @Override
     public void close() throws Exception
     {
         super.close();
         cursor.close();
+    }
+
+    @Override
+    protected long position()
+    {
+        return count * recordSize;
     }
 
     protected RECORD[] removeRecordWithReservedId( RECORD[] records, boolean seenReservedId )

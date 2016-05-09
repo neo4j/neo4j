@@ -22,7 +22,10 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.backwards;
 
 /**
  * Sets {@link RelationshipRecord#setFirstPrevRel(long)} and {@link RelationshipRecord#setSecondPrevRel(long)}
@@ -30,12 +33,13 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
  */
 public class RelationshipLinkbackStage extends Stage
 {
-    public RelationshipLinkbackStage( Configuration config, RelationshipStore store, NodeRelationshipCache cache )
+    public RelationshipLinkbackStage( String topic, Configuration config, RelationshipStore store,
+            NodeRelationshipCache cache, long firstRelationshipId, boolean denseNodes )
     {
-        super( "Relationship --> Relationship", config );
-        add( new ReadRelationshipRecordsBackwardsStep( control(), config, store ) );
+        super( "Relationship --> Relationship" + topic, config );
+        add( new ReadRecordsStep<>( control(), config, store, backwards( store.getHighId(), firstRelationshipId ) ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
-                new RelationshipLinkbackProcessor( cache ), false ) );
+                new RelationshipLinkbackProcessor( cache, denseNodes ), false ) );
         add( new UpdateRecordsStep<>( control(), config, store ) );
     }
 }

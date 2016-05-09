@@ -45,23 +45,14 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
     private final NodeRelationshipCache cache;
     private final ParallelizationCoordinator parallelization = new ParallelizationCoordinator();
 
-    // There are two "modes" in generating relationship ids
-    // - ids are decided by InputRelationship#id() (f.ex. store migration, where ids should be kept intact).
-    //   nextRelationshipId will not be used, and all InputRelationships will have to specify ids
-    // - ids are incremented for each one, starting at a specific id (0 on empty db)
-    //   nextRelationshipId is used and _no_ id from InputRelationship is used, rather no id is allowed to be specified.
-    private final boolean specificIds;
-
     public RelationshipEncoderStep( StageControl control,
             Configuration config,
             BatchingTokenRepository<?, ?> relationshipTypeRepository,
-            NodeRelationshipCache cache,
-            boolean specificIds )
+            NodeRelationshipCache cache )
     {
         super( control, "RELATIONSHIP", config, 0 );
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.cache = cache;
-        this.specificIds = specificIds;
     }
 
     @Override
@@ -80,12 +71,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
         for ( int i = 0; i < input.length; i++ )
         {
             InputRelationship batchRelationship = input[i];
-            if ( specificIds != batchRelationship.hasSpecificId() )
-            {
-                throw new IllegalStateException( "Input was declared to have specificRelationshipIds=" +
-                        specificIds + ", but " + batchRelationship + " didn't honor that" );
-            }
-            long relationshipId = specificIds ? batchRelationship.specificId() : nextRelationshipId++;
+            long relationshipId = nextRelationshipId++;
             // Ids have been verified to exist in CalculateDenseNodeStep
             long startNodeId = ids[i*2];
             long endNodeId = ids[i*2+1];
@@ -107,7 +93,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
             // Set first/second next rel
             boolean loop = startNodeId == endNodeId;
             long firstNextRel = cache.getAndPutRelationship(
-                    startNodeId, typeId, loop ? BOTH : OUTGOING, relationshipId, true );
+                    startNodeId, loop ? BOTH : OUTGOING, relationshipId, true );
             relationshipRecord.setFirstNextRel( firstNextRel );
             if ( loop )
             {
@@ -116,7 +102,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
             else
             {
                 relationshipRecord.setSecondNextRel( cache.getAndPutRelationship(
-                        endNodeId, typeId, INCOMING, relationshipId, true ) );
+                        endNodeId, INCOMING, relationshipId, true ) );
             }
 
             // Most rels will not be first in chain

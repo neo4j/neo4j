@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.staging;
 
 import org.junit.Test;
 
@@ -25,9 +25,11 @@ import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.unsafe.impl.batchimport.StoreWithReservedId;
+import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static org.junit.Assert.assertFalse;
@@ -35,29 +37,32 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ReadRelationshipRecordsBackwardsStepTest
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.allIn;
+
+public class ReadRecordsStepTest
 {
     @Test
     public void reservedIdIsSkipped()
     {
         long highId = 5;
         int batchSize = (int) highId;
-        RelationshipStore store = StoreWithReservedId.newRelationshipStoreMock( highId );
+        NodeStore store = StoreWithReservedId.newNodeStoreMock( highId );
         when( store.getHighId() ).thenReturn( highId );
 
-        ReadRelationshipRecordsBackwardsStep step = new ReadRelationshipRecordsBackwardsStep(
-                mock( StageControl.class ), Configuration.DEFAULT, store );
+        ReadRecordsStep<NodeRecord> step = new ReadRecordsStep<>( mock( StageControl.class ), DEFAULT,
+                store, allIn( store ) );
 
         Object batch = step.nextBatchOrNull( 0, batchSize );
 
         assertNotNull( batch );
 
-        RelationshipRecord[] records = (RelationshipRecord[]) batch;
+        NodeRecord[] records = (NodeRecord[]) batch;
         boolean hasRecordWithReservedId = Stream.of( records ).anyMatch( recordWithReservedId() );
         assertFalse( "Batch contains record with reserved id " + Arrays.toString( records ), hasRecordWithReservedId );
     }
 
-    private static Predicate<RelationshipRecord> recordWithReservedId()
+    private static Predicate<NodeRecord> recordWithReservedId()
     {
         return record -> record.getId() == IdGeneratorImpl.INTEGER_MINUS_ONE;
     }

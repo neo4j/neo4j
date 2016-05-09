@@ -68,7 +68,7 @@ public class CalculateDenseNodesStepTest
         // THEN
         for ( long id : ids )
         {
-            assertEquals( numberOfBatches, cache.getCount( id, 0, null /*shouldn't be used here anyway*/ ) );
+            assertEquals( numberOfBatches, cache.getCount( id, null /*shouldn't be used here anyway*/ ) );
         }
     }
 

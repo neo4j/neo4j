@@ -21,13 +21,16 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
+
+import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 
 /**
  * Counts number of relationships per node that is going to be imported by {@link RelationshipStage} later.
@@ -36,20 +39,45 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
  */
 public class CalculateDenseNodesStage extends Stage
 {
+    private RelationshipTypeCheckerStep typer;
+    private final NodeStore nodeStore;
+    private final NodeRelationshipCache cache;
+
     public CalculateDenseNodesStage( Configuration config, InputIterable<InputRelationship> relationships,
-            RelationshipStore relationshipStore, NodeRelationshipCache cache, IdMapper idMapper,
-            Collector badCollector, InputCache inputCache ) throws IOException
+            NodeRelationshipCache cache, IdMapper idMapper,
+            Collector badCollector, InputCache inputCache,
+            BatchingNeoStores neoStores ) throws IOException
     {
         super( "Calculate dense nodes", config );
+        this.cache = cache;
         add( new InputIteratorBatcherStep<>( control(), config,
                 relationships.iterator(), InputRelationship.class ) );
         if ( !relationships.supportsMultiplePasses() )
         {
-            add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships() ) );
+            add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships( MAIN ) ) );
         }
+        add( typer = new RelationshipTypeCheckerStep( control(), config, neoStores.getRelationshipTypeRepository() ) );
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
-        add( new CalculateRelationshipsStep( control(), config, relationshipStore ) );
+        add( new CalculateRelationshipsStep( control(), config, neoStores.getRelationshipStore() ) );
         add( new CalculateDenseNodePrepareStep( control(), config, badCollector ) );
         add( new CalculateDenseNodesStep( control(), config, cache ) );
+        nodeStore = neoStores.getNodeStore();
+    }
+
+    /*
+     * @see RelationshipTypeCheckerStep#getRelationshipTypes(int)
+     */
+    public Object[] getRelationshipTypes( long belowOrEqualToThreshold )
+    {
+        return typer.getRelationshipTypes( belowOrEqualToThreshold );
+    }
+
+    @Override
+    public void close()
+    {
+        // At this point we know how many nodes we have, so we tell the cache that instead of having the
+        // cache keeping track of that in a the face of concurrent updates.
+        cache.setHighNodeId( nodeStore.getHighId() );
+        super.close();
     }
 }

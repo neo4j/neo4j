@@ -21,14 +21,16 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
+import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
+import static org.neo4j.unsafe.impl.batchimport.RecordIdIteration.allIn;
+
 /**
- * Reads all records from {@link RelationshipStore} and process the counts in them. Uses a {@link NodeLabelsCache}
- * previously populated by f.ex {@link ProcessNodeCountsDataStep}.
+ * Reads all records from {@link NodeStore} and process the counts in them, populating {@link NodeLabelsCache}
+ * for later use of {@link RelationshipCountsStage}.
  */
 public class NodeCountsStage extends Stage
 {
@@ -36,7 +38,7 @@ public class NodeCountsStage extends Stage
             int highLabelId, CountsAccessor.Updater countsUpdater, StatsProvider... additionalStatsProviders )
     {
         super( "Node counts", config );
-        add( new ReadNodeRecordsStep( control(), config, nodeStore ) );
+        add( new ReadRecordsStep<>( control(), config, nodeStore, allIn( nodeStore ) ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config, new NodeCountsProcessor(
                 nodeStore, cache, highLabelId, countsUpdater ), true, additionalStatsProviders ) );
     }

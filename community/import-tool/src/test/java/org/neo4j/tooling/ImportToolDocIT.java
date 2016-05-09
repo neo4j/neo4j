@@ -574,6 +574,7 @@ public class ImportToolDocIT
             assertEquals( asSet( "Keanu Reeves", "Laurence Fishburne", "Carrie-Anne Moss" ), namesOf( nodes ) );
             tx.success();
         }
+        db.shutdown();
     }
 
     @Test
