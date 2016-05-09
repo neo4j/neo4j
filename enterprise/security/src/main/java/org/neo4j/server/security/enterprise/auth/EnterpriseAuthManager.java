@@ -21,10 +21,9 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.time.Clock;
 
-import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.UserRepository;
 
-public class EnterpriseAuthManager extends BasicAuthManager
+public class EnterpriseAuthManager extends ShiroAuthManager
 {
     public EnterpriseAuthManager( UserRepository users, Clock clock, boolean authEnabled )
     {

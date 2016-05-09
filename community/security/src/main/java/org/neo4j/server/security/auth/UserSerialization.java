@@ -91,7 +91,7 @@ public class UserSerialization
         }
         return new User.Builder()
                 .withName( parts[0] )
-                .withGroup( offset > 0 ? parts[1] : ShiroAuthManager.DEFAULT_GROUP )
+                .withGroup( offset > 0 ? parts[1] : BasicAuthManager.DEFAULT_GROUP )
                 .withCredentials( deserializeCredentials( parts[1 + offset], lineNumber ) )
                 .withRequiredPasswordChange( parts[2 + offset].equals( "password_change_required" ) )
                 .build();

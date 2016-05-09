@@ -39,7 +39,7 @@ public class UserSerializationTest
 
         List<User> users = asList(
                 new User( "Steve", "admin", Credential.forPassword( "1234321" ), false ),
-                new User( "Bob", ShiroAuthManager.DEFAULT_GROUP, Credential.forPassword( "0987654" ), false ) );
+                new User( "Bob", BasicAuthManager.DEFAULT_GROUP, Credential.forPassword( "0987654" ), false ) );
 
         // When
         byte[] serialized = serialization.serialize( users );
@@ -69,7 +69,7 @@ public class UserSerializationTest
 
         // Then
         assertThat( deserialized, equalTo( asList(
-                new User( "Steve", ShiroAuthManager.DEFAULT_GROUP, new Credential( salt1, hash1 ), false ),
+                new User( "Steve", BasicAuthManager.DEFAULT_GROUP, new Credential( salt1, hash1 ), false ),
                 new User( "Bob", "admin", new Credential( salt2, hash2 ), true ) ) ) );
     }
 }

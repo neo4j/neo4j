@@ -5,19 +5,19 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth;
+package org.neo4j.server.security.enterprise.auth;
 
 import org.apache.shiro.subject.Subject;
 
@@ -30,6 +30,10 @@ import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 
 public class ShiroAuthSubject implements AuthSubject
 {
+    static final String SCHEMA_READ_WRITE = "schema_read_write";
+    static final String READ_WRITE = "read_write";
+    static final String READ = "read";
+
     private final ShiroAuthManager authManager;
     private final Subject subject;
     private final AuthenticationResult authenticationResult;
@@ -84,15 +88,15 @@ public class ShiroAuthSubject implements AuthSubject
     {
         if ( subject.isAuthenticated() )
         {
-            if ( subject.hasRole( "schema" ) )
+            if ( subject.hasRole( SCHEMA_READ_WRITE ) )
             {
                 return AccessMode.Static.FULL;
             }
-            else if ( subject.hasRole( "write" ) )
+            else if ( subject.hasRole( READ_WRITE ) )
             {
                 return AccessMode.Static.WRITE;
             }
-            else if ( subject.hasRole( "read" ) )
+            else if ( subject.hasRole( READ ) )
             {
                 return AccessMode.Static.READ;
             }

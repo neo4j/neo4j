@@ -70,11 +70,6 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-graphdb-api</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.apache.shiro</groupId>
-      <artifactId>shiro-core</artifactId>
-      <version>1.2.4</version>
-    </dependency>
 
     <!-- Test dependencies -->
     <dependency>
