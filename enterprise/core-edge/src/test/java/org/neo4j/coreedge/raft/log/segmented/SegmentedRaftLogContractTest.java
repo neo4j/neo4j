@@ -20,10 +20,13 @@
 package org.neo4j.coreedge.raft.log.segmented;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.junit.After;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
@@ -39,18 +42,29 @@ import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
-// TODO: Separate into small-cache and no-cache tests. Perhaps parameterize this one (0, 5, 1024) cache sizes.
+@RunWith(Parameterized.class)
 public class SegmentedRaftLogContractTest extends RaftLogContractTest
 {
     private SegmentedRaftLog raftLog;
     private LifeSupport life = new LifeSupport();
     private FileSystemAbstraction fileSystem;
 
-    @Override
-    public RaftLog createRaftLog() throws IOException
+    // parameter
+    private int cacheSize;
+
+    @Parameterized.Parameters(name = "cacheSize:{0}")
+    public static Collection<Object[]> data()
     {
-        this.raftLog = createRaftLog( 0 );
-        return raftLog;
+        return Arrays.asList(new Object[][]{
+            {0},
+            {5},
+            {1024},
+        });
+    }
+
+    public SegmentedRaftLogContractTest( int cacheSize )
+    {
+        this.cacheSize = cacheSize;
     }
 
     @After
@@ -60,7 +74,8 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
         life.shutdown();
     }
 
-    private SegmentedRaftLog createRaftLog( int cacheSize )
+    @Override
+    public RaftLog createRaftLog()
     {
         if ( fileSystem == null )
         {
@@ -69,7 +84,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 10 * 1024,
+        SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 1024,
                 new DummyRaftableContentSerializer(),
                 NullLogProvider.getInstance(), cacheSize );
         life.add( newRaftLog );
@@ -99,8 +114,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
     public void shouldReadBackNonCachedEntry() throws Exception
     {
         // Given
-        int cacheSize = 1;
-        SegmentedRaftLog raftLog = createRaftLog( cacheSize );
+        RaftLog raftLog = createRaftLog();
         int term = 0;
         ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
         ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
@@ -123,7 +137,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
     public void shouldRestoreCommitIndexOnStartup() throws Throwable
     {
         // Given
-        SegmentedRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        RaftLog raftLog = createRaftLog();
         int term = 0;
         ReplicatedInteger content1 = ReplicatedInteger.valueOf( 4 );
         ReplicatedInteger content2 = ReplicatedInteger.valueOf( 5 );
@@ -133,7 +147,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
         // When
         // we restart the raft log
         life.remove( raftLog ); // stops the removed instance
-        raftLog = createRaftLog( 100 );
+        raftLog = createRaftLog();
 
         // Then
         assertEquals( entryIndex2, raftLog.appendIndex() );
@@ -143,7 +157,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
     public void shouldRestoreCorrectCommitAndAppendIndexOnStartupAfterTruncation() throws Exception
     {
         // Given
-        SegmentedRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        RaftLog raftLog = createRaftLog();
         int term = 0;
         ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
         raftLog.append( new RaftLogEntry( term, content ) );
@@ -156,7 +170,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
         // When
         // we restart the raft log
         life.remove( raftLog ); // stops the removed instance
-        raftLog = createRaftLog( 100 );
+        raftLog = createRaftLog();
 
         // Then
         assertEquals( entryIndex3, raftLog.appendIndex() );
@@ -166,7 +180,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
     public void shouldRestoreCorrectCommitAndAppendIndexWithTruncationRecordsAndAppendedRecordsAfterThat() throws Exception
     {
         // Given
-        SegmentedRaftLog raftLog = createRaftLog( 100 /* cache size */  );
+        RaftLog raftLog = createRaftLog();
         int term = 0;
         ReplicatedInteger content = ReplicatedInteger.valueOf( 4 );
         raftLog.append( new RaftLogEntry( term, content ) );
@@ -181,7 +195,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
         // When
         // we restart the raft log
         life.remove( raftLog ); // stops the removed instance
-        raftLog = createRaftLog( 100 );
+        raftLog = createRaftLog();
 
         // Then
         assertEquals( entryIndex5, raftLog.appendIndex() );

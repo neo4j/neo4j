@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import org.neo4j.coreedge.raft.log.segmented.Segments;
-
 /**
  * Collects all the state that must be recovered after a restart.
  */
