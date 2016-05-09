@@ -36,7 +36,7 @@ public class InMemoryRaftLog implements RaftLog
     private long term = -1;
 
     @Override
-    public long append( RaftLogEntry logEntry ) throws IOException
+    public synchronized long append( RaftLogEntry logEntry ) throws IOException
     {
         Objects.requireNonNull( logEntry );
         if ( logEntry.term() >= term )
@@ -55,7 +55,7 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public long prune( long safeIndex ) throws RaftLogCompactedException
+    public synchronized long prune( long safeIndex ) throws RaftLogCompactedException
     {
         if( safeIndex > prevIndex )
         {
@@ -75,13 +75,13 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public long appendIndex()
+    public synchronized long appendIndex()
     {
         return appendIndex;
     }
 
     @Override
-    public long prevIndex()
+    public synchronized long prevIndex()
     {
         return prevIndex;
     }
@@ -103,7 +103,7 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public long readEntryTerm( long logIndex ) throws RaftLogCompactedException
+    public synchronized long readEntryTerm( long logIndex ) throws RaftLogCompactedException
     {
         if( logIndex == prevIndex )
         {
@@ -146,7 +146,7 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
+    public synchronized RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
     {
         return new RaftLogCursor()
         {
@@ -157,21 +157,26 @@ public class InMemoryRaftLog implements RaftLog
             public boolean next() throws IOException
             {
                 currentIndex++;
-                boolean hasNext = currentIndex <= appendIndex;
-                if( hasNext )
+                boolean hasNext;
+
+                synchronized ( InMemoryRaftLog.this )
                 {
-                    try
+                    hasNext = currentIndex <= appendIndex;
+                    if ( hasNext )
                     {
-                        current = readLogEntry( currentIndex );
+                        try
+                        {
+                            current = readLogEntry( currentIndex );
+                        }
+                        catch ( RaftLogCompactedException e )
+                        {
+                            throw new IOException( e );
+                        }
                     }
-                    catch ( RaftLogCompactedException e )
+                    else
                     {
-                        throw new IOException( e );
+                        current = null;
                     }
-                }
-                else
-                {
-                    current = null;
                 }
                 return hasNext;
             }
@@ -196,7 +201,7 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public long skip( long index, long term )
+    public synchronized long skip( long index, long term )
     {
         if( index > appendIndex )
         {
