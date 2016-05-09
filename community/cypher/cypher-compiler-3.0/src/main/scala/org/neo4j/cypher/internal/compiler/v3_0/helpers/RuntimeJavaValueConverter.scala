@@ -40,8 +40,8 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
   def asDeepJavaValue(value: Any): Any = value match {
     case anything if skip(anything) => anything
     case map: Map[_, _] => immutableMapValues(map, asDeepJavaValue).asJava: JavaMap[_, _]
-    case iterable: Iterable[_] => iterable.map(asDeepJavaValue).toSeq.asJava: JavaList[_]
-    case traversable: TraversableOnce[_] => traversable.map(asDeepJavaValue).toSeq.asJava: JavaList[_]
+    case iterable: Iterable[_] => iterable.map(asDeepJavaValue).toVector.asJava: JavaList[_]
+    case traversable: TraversableOnce[_] => traversable.map(asDeepJavaValue).toVector.asJava: JavaList[_]
     case anything => anything
   }
 
