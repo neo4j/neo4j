@@ -438,6 +438,7 @@ public class ImportTool
     private static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
             Collection<Option<File[]>> relationshipsFiles )
     {
+        System.out.println( "Neo4j version: " + Version.getKernel().getReleaseVersion() );
         System.out.println( "Importing the contents of these files into " + storeDir + ":" );
         printInputFiles( "Nodes", nodesFiles );
         printInputFiles( "Relationships", relationshipsFiles );
