@@ -27,7 +27,6 @@ import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 /**
@@ -39,7 +38,7 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
  *       so the given UserRepository should not be added to another LifeSupport.
  * </p>
  */
-public class BasicAuthManager implements Lifecycle, AuthManager, UserManager
+public class BasicAuthManager implements AuthManager, UserManager
 {
     private final AuthenticationStrategy authStrategy;
     private final UserRepository users;
@@ -145,7 +144,8 @@ public class BasicAuthManager implements Lifecycle, AuthManager, UserManager
         return users.findByName( username );
     }
 
-    public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException
+    public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
+            IllegalCredentialsException
     {
         if ( !(authSubject instanceof BasicAuthSubject) )
         {
@@ -157,25 +157,23 @@ public class BasicAuthManager implements Lifecycle, AuthManager, UserManager
         {
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
-        if ( setUserPassword( username, password ) == null )
-        {
-            throw new IllegalArgumentException( "User " + username + " does not exist" );
-        }
+        setUserPassword( username, password );
     }
 
     @Override
-    public User setUserPassword( String username, String password ) throws IOException
+    public void setUserPassword( String username, String password ) throws IOException,
+            IllegalCredentialsException
     {
         assertAuthEnabled();
         User existingUser = users.findByName( username );
         if ( existingUser == null )
         {
-            return null;
+            throw new IllegalCredentialsException( "User " + username + " does not exist" );
         }
 
         if ( existingUser.credentials().matchesPassword( password ) )
         {
-            return existingUser;
+            return;
         }
 
         try
@@ -185,11 +183,10 @@ public class BasicAuthManager implements Lifecycle, AuthManager, UserManager
                     .withRequiredPasswordChange( false )
                     .build();
             users.update( existingUser, updatedUser );
-            return updatedUser;
         } catch ( ConcurrentModificationException e )
         {
             // try again
-            return setUserPassword( username, password );
+            setUserPassword( username, password );
         }
     }
 

@@ -150,7 +150,6 @@ public class UserServiceTest
 
         BasicAuthManager authManager = mock( BasicAuthManager.class );
         when( authManager.getUser( "neo4j" ) ).thenReturn( NEO4J_USER );
-        when( authManager.setUserPassword( "neo4j", "test" ) ).thenReturn( NEO4J_USER );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( authManager, new JsonFormat(), outputFormat );

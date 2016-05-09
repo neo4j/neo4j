@@ -22,6 +22,7 @@ package org.neo4j.server.security.auth;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
@@ -194,9 +195,10 @@ public class BasicAuthManagerTest
         manager.start();
 
         // When
-        User user = manager.setUserPassword( "jake", "hello, world!" );
+        manager.setUserPassword( "jake", "hello, world!" );
 
         // Then
+        User user = manager.getUser( "jake" );
         assertTrue( user.credentials().matchesPassword( "hello, world!" ) );
         assertThat( users.findByName( "jake" ), equalTo( user ) );
     }
@@ -210,10 +212,15 @@ public class BasicAuthManagerTest
         manager.start();
 
         // When
-        User user = manager.setUserPassword( "unknown", "hello, world!" );
-
-        // Then
-        assertNull( user );
+        try
+        {
+            manager.setUserPassword( "unknown", "hello, world!" );
+            fail( "exception expected" );
+        }
+        catch ( IllegalCredentialsException e )
+        {
+            // expected
+        }
     }
 
     @Test

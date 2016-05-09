@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExceptionRepresentation;
@@ -134,14 +135,16 @@ public class UserService
 
         try
         {
-            if ( userManager.setUserPassword( username, newPassword ) == null )
-            {
-                return output.notFound();
-            }
+            userManager.setUserPassword( username, newPassword );
         }
         catch ( IOException e )
         {
             return output.serverErrorWithoutLegacyStacktrace( e );
+        }
+        catch ( IllegalCredentialsException e )
+        {
+            return output.response( UNPROCESSABLE, new ExceptionRepresentation(
+                    new Neo4jError( e.status(), e.getMessage() ) ) );
         }
         return output.ok();
     }

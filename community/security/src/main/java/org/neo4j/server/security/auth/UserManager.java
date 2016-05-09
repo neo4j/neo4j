@@ -32,5 +32,5 @@ public interface UserManager
 
     User getUser( String username );
 
-    User setUserPassword( String username, String password ) throws IOException;
+    void setUserPassword( String username, String password ) throws IOException, IllegalCredentialsException;
 }
