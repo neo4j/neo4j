@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.spi.v3_1._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.graphdb.{InputPosition, Node, Path, QueryExecutionType, Relationship, ResourceIterator}
-import org.neo4j.helpers.Clock
+import java.time.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
@@ -151,7 +151,7 @@ trait CompatibilityFor3_1 {
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  protected val compiler: v3_1.CypherCompiler
+  protected val compiler: v3_1.CompilationOrchestrator
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 

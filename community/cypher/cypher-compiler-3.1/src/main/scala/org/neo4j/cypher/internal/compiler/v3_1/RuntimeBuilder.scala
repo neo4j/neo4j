@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{InternalNotification, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, InvalidArgumentException, SemanticTable}
-import org.neo4j.helpers.Clock
+import java.time.Clock
 
 object RuntimeBuilder {
   def create(runtimeName: Option[RuntimeName], interpretedProducer: InterpretedPlanBuilder,
@@ -170,7 +170,7 @@ case class CompiledPlanBuilder(clock: Clock, structure:CodeStructure[GeneratedQu
 
 object CompiledPlanBuilder {
 
-  def createTracer( mode: ExecutionMode ) : DescriptionProvider = mode match {
+  def createTracer(mode: ExecutionMode): DescriptionProvider = mode match {
     case ProfileMode =>
       val tracer = new ProfilingTracer()
       (description: InternalPlanDescription) => (new Provider[InternalPlanDescription] {

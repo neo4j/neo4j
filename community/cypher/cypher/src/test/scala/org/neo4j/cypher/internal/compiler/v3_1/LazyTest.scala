@@ -233,10 +233,10 @@ class LazyTest extends ExecutionEngineFunSuite {
 
     val lruCache: LRUCache[String, (ExecutionPlan, Map[String, Any])] = new LRUCache[String, (ExecutionPlan, Map[String, Any])](1)
     val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](mock[CypherCacheHitMonitor[String]])
-    val cache = new QueryCache[String, (ExecutionPlan, Map[String, Any])](cacheAccessor, lruCache)
+    val cache = new QueryCacheManager[String, (ExecutionPlan, Map[String, Any])](cacheAccessor, lruCache)
 
     when(fakeReadStatement.schemaStateGetOrCreate(any(), any())).thenAnswer(
-      new Answer[QueryCache[String, (ExecutionPlan, Map[String, Any])]]() {
+      new Answer[QueryCacheManager[String, (ExecutionPlan, Map[String, Any])]]() {
         def answer(invocation: InvocationOnMock) = { cache }
     })
 

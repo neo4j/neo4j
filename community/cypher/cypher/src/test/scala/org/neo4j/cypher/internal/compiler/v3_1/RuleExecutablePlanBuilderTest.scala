@@ -45,7 +45,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, Rewriter, Sco
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v3_1.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.Label.label
-import org.neo4j.helpers.Clock
+import java.time.Clock
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker

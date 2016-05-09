@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, ProfileMode, _}
 import org.neo4j.cypher.internal.frontend.v3_1.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_1.notification.InternalNotification
-import org.neo4j.helpers.Clock
+import java.time.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 
 import scala.annotation.tailrec

@@ -19,30 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
-trait CacheAccessor[K, T] {
-  def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T): T
-  def remove(cache: LRUCache[K, T])(key: K, userKey: String)
-}
+/*
+Manages the query cache, removing stale queries from it
+ */
+class QueryCacheManager[K, T](cacheAccessor: CacheAccessor[K, T], cache: LRUCache[K, T]) {
+  def getOrElseUpdate(key: K, userKey: String, isStale: T => Boolean, produce: => T): (T, Boolean) = {
+    if (cache.size == 0)
+      (produce, false)
+    else {
+      var planned = false
+      var isStalePlan = false
+      var x: T = null.asInstanceOf[T]
 
-class MonitoringCacheAccessor[K, T](monitor: CypherCacheHitMonitor[K]) extends CacheAccessor[K, T] {
+      do {
+        x = cacheAccessor.getOrElseUpdate(cache)(key, {
+          planned = true
+          produce
+        })
 
-  override def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T) = {
-    var updated = false
-    val value = cache(key, {
-      updated = true
-      f
-    })
+        isStalePlan = !planned && isStale(x)
+        if (isStalePlan) {
+          cacheAccessor.remove(cache)(key, userKey)
+        }
+      } while (isStalePlan)
 
-    if (updated)
-      monitor.cacheMiss(key)
-    else
-      monitor.cacheHit(key)
-
-    value
-  }
-
-  def remove(cache: LRUCache[K, T])(key: K, userKey: String): Unit = {
-    cache.remove(key)
-    monitor.cacheDiscard(key, userKey)
+      (x, planned)
+    }
   }
 }

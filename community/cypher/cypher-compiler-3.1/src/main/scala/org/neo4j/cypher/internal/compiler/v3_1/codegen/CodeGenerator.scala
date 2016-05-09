@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{InstrumentedGraphStatistics,
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, PlannerName, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
-import org.neo4j.helpers.Clock
+import java.time.Clock
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 
@@ -57,7 +57,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
-            Some(PlanFingerprint(clock.currentTimeMillis(), planContext.txIdProvider(), igs.snapshot.freeze))
+            Some(PlanFingerprint(clock.millis(), planContext.txIdProvider(), igs.snapshot.freeze))
           case _ =>
             None
         }

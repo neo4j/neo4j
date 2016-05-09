@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.{ParameterNotFoundException, Sema
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v3_1.GeneratedQueryStructure
 import org.neo4j.graphdb.{Direction, Node, Relationship}
-import org.neo4j.helpers.Clock
+import java.time.Clock
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
