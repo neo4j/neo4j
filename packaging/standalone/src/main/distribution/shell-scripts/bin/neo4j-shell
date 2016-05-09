@@ -42,7 +42,7 @@ do
 
             ARGS+=("${option}")
             # '-' means read file through STDIN
-            if [[ "${option}" = *file ]] && [ "${orig_filename}" = "-" ]; then
+            if [[ "${option}" = *file ]] && [[ "${orig_filename}" = "-" ]]; then
               ARGS+=("${orig_filename}")
             else
               ARGS+=("$(resolve_path "${orig_filename}")")
