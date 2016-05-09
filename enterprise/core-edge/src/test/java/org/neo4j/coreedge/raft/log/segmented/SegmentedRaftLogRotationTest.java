@@ -31,13 +31,12 @@ import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
-import org.neo4j.coreedge.raft.log.segmented.SegmentedPhysicalRaftLog;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 
-public class SegmentedPhysicalRaftLogRotationTest
+public class SegmentedRaftLogRotationTest
 {
     private LifeSupport life = new LifeSupport();
     private FileSystemAbstraction fileSystem;
@@ -49,7 +48,7 @@ public class SegmentedPhysicalRaftLogRotationTest
         life.shutdown();
     }
 
-    private SegmentedPhysicalRaftLog createRaftLog( long rotateAtSize )
+    private SegmentedRaftLog createRaftLog( long rotateAtSize )
     {
         if ( fileSystem == null )
         {
@@ -58,7 +57,7 @@ public class SegmentedPhysicalRaftLogRotationTest
         File directory = new File( "raft-log" );
         fileSystem.mkdir( directory );
 
-        SegmentedPhysicalRaftLog newRaftLog = new SegmentedPhysicalRaftLog( fileSystem, directory, rotateAtSize,
+        SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, rotateAtSize,
                 new DummyRaftableContentSerializer(),
                 NullLogProvider.getInstance(), 1000 );
         life.add( newRaftLog );
@@ -73,7 +72,7 @@ public class SegmentedPhysicalRaftLogRotationTest
         // Given
         AtomicLong currentVersion = new AtomicLong();
         int rotateAtSize = 100;
-        SegmentedPhysicalRaftLog log = createRaftLog( rotateAtSize );
+        SegmentedRaftLog log = createRaftLog( rotateAtSize );
 
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < rotateAtSize; i++ )
@@ -93,7 +92,7 @@ public class SegmentedPhysicalRaftLogRotationTest
     public void shouldBeAbleToRecoverToLatestStateAfterRotation() throws Throwable
     {
         int rotateAtSize = 100;
-        SegmentedPhysicalRaftLog log = createRaftLog( rotateAtSize );
+        SegmentedRaftLog log = createRaftLog( rotateAtSize );
 
         StringBuilder builder = new StringBuilder();
         for ( int i = 0; i < rotateAtSize - 40; i++ )

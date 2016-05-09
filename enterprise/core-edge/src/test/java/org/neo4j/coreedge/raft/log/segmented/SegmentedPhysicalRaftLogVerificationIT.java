@@ -24,7 +24,6 @@ import java.io.File;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogVerificationIT;
-import org.neo4j.coreedge.raft.log.segmented.SegmentedPhysicalRaftLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
@@ -41,7 +40,7 @@ public class SegmentedPhysicalRaftLogVerificationIT extends RaftLogVerificationI
         long rotateAtSizeBytes = 128;
         int entryCacheSize = 4;
 
-        SegmentedPhysicalRaftLog newRaftLog = new SegmentedPhysicalRaftLog( fsa, directory, rotateAtSizeBytes,
+        SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fsa, directory, rotateAtSizeBytes,
                 new DummyRaftableContentSerializer(), NullLogProvider.getInstance(), entryCacheSize );
 
         newRaftLog.init();

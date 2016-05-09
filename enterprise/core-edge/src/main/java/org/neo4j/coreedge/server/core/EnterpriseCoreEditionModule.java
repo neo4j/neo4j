@@ -54,7 +54,7 @@ import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogMetadataCache;
-import org.neo4j.coreedge.raft.log.segmented.SegmentedPhysicalRaftLog;
+import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
@@ -527,7 +527,7 @@ public class EnterpriseCoreEditionModule
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
                 int metaDataCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
 
-                return life.add( new SegmentedPhysicalRaftLog(
+                return life.add( new SegmentedRaftLog(
                         fileSystem,
                         new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
                         rotateAtSize,
