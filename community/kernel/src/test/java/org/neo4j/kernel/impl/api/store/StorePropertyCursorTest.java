@@ -785,15 +785,16 @@ public class StorePropertyCursorTest
     private static StorePropertyCursor newStorePropertyCursor( PropertyStore propertyStore,
             Consumer<StorePropertyCursor> cache )
     {
-        DynamicStringStore s = propertyStore.getStringStore();
-        DynamicArrayStore a = propertyStore.getArrayStore();
-        RecordCursor<DynamicRecord> sc = s.newRecordCursor( s.newRecord() );
-        RecordCursor<DynamicRecord> ac = a.newRecordCursor( a.newRecord() );
-        return new StorePropertyCursor(
-                propertyStore.newRecordCursor( propertyStore.newRecord() ).acquire( 0, NORMAL ),
-                propertyStore.getStringStore().newRecordCursor( propertyStore.getStringStore().newRecord() ).acquire( 0, NORMAL ),
-                propertyStore.getArrayStore().newRecordCursor( propertyStore.getArrayStore().newRecord() ).acquire( 0, NORMAL ),
-                cache );
+        RecordCursor<PropertyRecord> propertyRecordCursor = propertyStore.newRecordCursor( propertyStore.newRecord() );
+
+        DynamicStringStore stringStore = propertyStore.getStringStore();
+        RecordCursor<DynamicRecord> dynamicStringCursor = stringStore.newRecordCursor( stringStore.newRecord() );
+
+        DynamicArrayStore arrayStore = propertyStore.getArrayStore();
+        RecordCursor<DynamicRecord> dynamicArrayCursor = arrayStore.newRecordCursor( arrayStore.newRecord() );
+
+        return new StorePropertyCursor( propertyRecordCursor.acquire( 0, NORMAL ),
+                dynamicStringCursor.acquire( 0, NORMAL ), dynamicArrayCursor.acquire( 0, NORMAL ), cache );
     }
 
     private static List<PropertyRecord> createPropertyChain( PropertyStore store, int firstRecordId, int keyId,

@@ -44,6 +44,13 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
      */
     RecordCursor<R> acquire( long id, RecordLoad mode );
 
+    /**
+     * Moves this cursor to the specified {@code id} with the specified {@link RecordLoad mode} without actually
+     * fetching the record. {@link #next()} and {@link #get()} could be used next to fetch the record.
+     *
+     * @param id the id of the record.
+     * @param mode the mode for subsequent loading.
+     */
     void placeAt( long id, RecordLoad mode );
 
     /**

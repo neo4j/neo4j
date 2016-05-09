@@ -108,9 +108,8 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             @Override
             protected StoreNodeRelationshipCursor create()
             {
-                return new StoreNodeRelationshipCursor( relationshipStore.newRecord(), neoStores,
-                        relationshipGroupStore.newRecord(), storeStatement, this, lockService,
-                        cursors );
+                return new StoreNodeRelationshipCursor( relationshipStore.newRecord(),
+                        relationshipGroupStore.newRecord(), this, lockService, cursors );
             }
         };
         singlePropertyCursor = new InstanceCache<StoreSinglePropertyCursor>()
@@ -118,8 +117,8 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             @Override
             protected StoreSinglePropertyCursor create()
             {
-                return new StoreSinglePropertyCursor( cursors.property(),
-                        cursors.propertyString(), cursors.propertyArray(), this );
+                return new StoreSinglePropertyCursor( cursors.property(), cursors.propertyString(),
+                        cursors.propertyArray(), this );
             }
         };
         allPropertyCursor = new InstanceCache<StorePropertyCursor>()
@@ -127,8 +126,8 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             @Override
             protected StorePropertyCursor create()
             {
-                return new StorePropertyCursor( cursors.property(),
-                        cursors.propertyString(), cursors.propertyArray(), allPropertyCursor );
+                return new StorePropertyCursor( cursors.property(), cursors.propertyString(), cursors.propertyArray(),
+                        allPropertyCursor );
             }
         };
     }

@@ -34,7 +34,7 @@ public class StoreLabelCursor implements Cursor<LabelItem>, LabelItem
     private long[] labels;
     private int index;
     private int currentLabel;
-    private Consumer<StoreLabelCursor> instanceCache;
+    private final Consumer<StoreLabelCursor> instanceCache;
 
     public StoreLabelCursor( Consumer<StoreLabelCursor> instanceCache )
     {

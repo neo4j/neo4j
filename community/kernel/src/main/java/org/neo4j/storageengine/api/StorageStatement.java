@@ -31,13 +31,16 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  * are accessed through this statement interface as opposed to through the {@link StoreReadLayer} directly.
  * One of the main reasons is that the access methods returns objects, like {@link Cursor cursors} which
  * are valuable to reuse over a reasonably large window to reduce garbage churn in general.
- *
+ * <p>
  * A {@link StorageStatement} must be {@link #acquire() acquired} before use. After use the statement
  * should be {@link #release() released}. After released the statement can be acquired again.
  * Creating and closing {@link StorageStatement} and there's also benefits keeping these statements opened
- * during a longer perioud of time, with the assumption that it's still one thread at a time using each.
+ * during a longer period of time, with the assumption that it's still one thread at a time using each.
  * With that in mind these statements should not be opened and closed for each operation, perhaps not even
  * for each transaction.
+ * <p>
+ * All cursors provided by this statement are views over data in the store. They do not interact with transaction
+ * state.
  */
 public interface StorageStatement extends AutoCloseable
 {

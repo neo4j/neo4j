@@ -53,9 +53,7 @@ public class StoreNodeRelationshipCursorTest
         @SuppressWarnings( "unchecked" )
         StoreNodeRelationshipCursor cursor = new StoreNodeRelationshipCursor(
                 new RelationshipRecord( -1 ),
-                stores,
                 new RelationshipGroupRecord( -1 ),
-                mock( StoreStatement.class ),
                 mock( Consumer.class ),
                 NO_LOCK_SERVICE, new RecordCursors( stores ) );
         reset( stores.getRelationshipGroupStore() );

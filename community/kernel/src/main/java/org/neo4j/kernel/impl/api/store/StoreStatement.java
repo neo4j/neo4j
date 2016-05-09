@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -47,7 +46,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  * The cursors call the release methods, so there is no need for manual release, only
  * closing those cursor.
  * <p/>
- * {@link NeoStores} caches one of these per thread, so that they can be reused between statements/transactions.
  */
 public class StoreStatement implements StorageStatement
 {
@@ -60,14 +58,16 @@ public class StoreStatement implements StorageStatement
     private final RelationshipStore relationshipStore;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
     private final RecordCursors recordCursors;
-    private IndexReaderFactory indexReaderFactory;
     private final Supplier<LabelScanReader> labelScanStore;
+    
+    private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
-    private boolean acquired, closed;
 
-    public StoreStatement( final NeoStores neoStores, final LockService lockService,
-            Supplier<IndexReaderFactory> indexReaderFactory,
-            Supplier<LabelScanReader> labelScanReaderSupplier )
+    private boolean acquired;
+    private boolean closed;
+
+    public StoreStatement( NeoStores neoStores, LockService lockService,
+            Supplier<IndexReaderFactory> indexReaderFactory, Supplier<LabelScanReader> labelScanReaderSupplier )
     {
         this.neoStores = neoStores;
         this.indexReaderFactorySupplier = indexReaderFactory;
@@ -81,7 +81,7 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreSingleNodeCursor create()
             {
-                return new StoreSingleNodeCursor( new NodeRecord( -1 ), neoStores, StoreStatement.this, this,
+                return new StoreSingleNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
                         lockService, recordCursors );
             }
         };
@@ -100,7 +100,7 @@ public class StoreStatement implements StorageStatement
             protected StoreSingleRelationshipCursor create()
             {
                 return new StoreSingleRelationshipCursor( relationshipStore.newRecord(),
-                        neoStores, StoreStatement.this, this, lockService, recordCursors );
+                        this, lockService, recordCursors );
             }
         };
         iteratorRelationshipCursor = new InstanceCache<StoreIteratorRelationshipCursor>()
@@ -109,7 +109,7 @@ public class StoreStatement implements StorageStatement
             protected StoreIteratorRelationshipCursor create()
             {
                 return new StoreIteratorRelationshipCursor( relationshipStore.newRecord(),
-                        neoStores, StoreStatement.this, this, lockService, recordCursors );
+                        this, lockService, recordCursors );
             }
         };
     }
@@ -117,6 +117,7 @@ public class StoreStatement implements StorageStatement
     @Override
     public void acquire()
     {
+        assert !closed;
         assert !acquired;
         this.acquired = true;
     }
@@ -164,12 +165,22 @@ public class StoreStatement implements StorageStatement
     @Override
     public void release()
     {
+        assert !closed;
         assert acquired;
-        doRelease();
+        closeSchemaResources();
         acquired = false;
     }
 
-    private void doRelease()
+    @Override
+    public void close()
+    {
+        assert !closed;
+        closeSchemaResources();
+        recordCursors.close();
+        closed = true;
+    }
+
+    private void closeSchemaResources()
     {
         if ( indexReaderFactory != null )
         {
@@ -183,22 +194,13 @@ public class StoreStatement implements StorageStatement
         }
     }
 
-    @Override
-    public void close()
+    private static class AllStoreIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
     {
-        doRelease();
-        assert !closed;
-        recordCursors.close();
-        closed = true;
-    }
-
-    private class AllStoreIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
-    {
-        private final CommonAbstractStore store;
+        private final CommonAbstractStore<?,?> store;
         private long highId;
         private long currentId;
 
-        public AllStoreIdIterator( CommonAbstractStore store )
+        AllStoreIdIterator( CommonAbstractStore<?,?> store )
         {
             this.store = store;
             highId = store.getHighestPossibleIdInUse();

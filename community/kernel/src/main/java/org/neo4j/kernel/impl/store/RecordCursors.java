@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -61,12 +62,8 @@ public class RecordCursors implements AutoCloseable
     @Override
     public void close()
     {
-        node.close();
-        relationship.close();
-        relationshipGroup.close();
-        property.close();
-        propertyArray.close();
-        propertyString.close();
+        IOUtils.closeAll( RuntimeException.class,
+                node, relationship, relationshipGroup, property, propertyArray, propertyString );
     }
 
     public RecordCursor<NodeRecord> node()

@@ -23,7 +23,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -53,14 +52,12 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     private final RecordCursors cursors;
 
     public StoreNodeRelationshipCursor( RelationshipRecord relationshipRecord,
-            NeoStores neoStores,
             RelationshipGroupRecord groupRecord,
-            StoreStatement storeStatement,
             Consumer<StoreNodeRelationshipCursor> instanceCache,
             LockService lockService,
             RecordCursors cursors )
     {
-        super( relationshipRecord, neoStores, storeStatement, lockService, cursors );
+        super( relationshipRecord, lockService, cursors );
         this.groupRecord = groupRecord;
         this.instanceCache = instanceCache;
         this.cursors = cursors;
