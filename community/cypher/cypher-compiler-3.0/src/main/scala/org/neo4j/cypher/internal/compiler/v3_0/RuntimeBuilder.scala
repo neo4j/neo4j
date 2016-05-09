@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
+import java.time.Clock
+
 import org.neo4j.cypher.internal.compiler.v3_0.CompilationPhaseTracer.CompilationPhase._
 import org.neo4j.cypher.internal.compiler.v3_0.CompiledPlanBuilder.createTracer
 import org.neo4j.cypher.internal.compiler.v3_0.codegen.profiling.ProfilingTracer
@@ -29,13 +31,12 @@ import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan, Gen
 import org.neo4j.cypher.internal.compiler.v3_0.helpers._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_0.planner.{PeriodicCommit, CantCompileQueryException}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_0.planner.{CantCompileQueryException, PeriodicCommit}
 import org.neo4j.cypher.internal.compiler.v3_0.spi.{GraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, InvalidArgumentException, SemanticTable}
-import org.neo4j.helpers.Clock
 
 object RuntimeBuilder {
   def create(runtimeName: Option[RuntimeName], interpretedProducer: InterpretedPlanBuilder,

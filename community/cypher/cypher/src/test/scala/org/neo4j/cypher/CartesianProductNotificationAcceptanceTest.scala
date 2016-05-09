@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import java.time.Clock
+
 import org.mockito.Matchers._
 import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.compatibility._
@@ -28,7 +30,6 @@ import org.neo4j.cypher.internal.frontend.v3_0.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_0.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_0.GeneratedQueryStructure
-import org.neo4j.helpers.Clock
 import org.neo4j.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -112,7 +113,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
         errorIfShortestPathFallbackUsedAtRuntime = false,
         nonIndexedLabelWarningThreshold = 10000L
       ),
-      Clock.SYSTEM_CLOCK,
+      Clock.systemUTC(),
       GeneratedQueryStructure,
       new WrappedMonitors3_0(kernelMonitors),
       new StringInfoLogger3_0(NullLog.getInstance),

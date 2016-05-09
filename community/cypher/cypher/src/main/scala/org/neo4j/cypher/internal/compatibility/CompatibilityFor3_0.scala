@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility
 
 import java.io.PrintWriter
+import java.time.Clock
 import java.{lang, util}
 
 import org.neo4j.cypher._
@@ -41,7 +42,6 @@ import org.neo4j.cypher.internal.spi.v3_0._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.graphdb.{InputPosition, Node, Path, QueryExecutionType, Relationship, ResourceIterator}
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}

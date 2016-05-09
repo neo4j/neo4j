@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.planner
 
+import java.time.Clock
+
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
@@ -37,7 +39,6 @@ import org.neo4j.cypher.internal.frontend.v3_0._
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.helpers.Clock
 
 import scala.collection.mutable
 
@@ -166,7 +167,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       queryPlanner = queryPlanner,
       rewriterSequencer = rewriterSequencer,
       plannerName = None,
-      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, monitors)),
+      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors)),
       semanticChecker = semanticChecker,
       updateStrategy = None,
       config = config)
