@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
+import java.time.Clock
+
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase.{AST_REWRITE, PARSING, SEMANTIC_CHECK}
 import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.CodeStructure
@@ -34,7 +36,6 @@ import org.neo4j.cypher.internal.frontend.v3_1.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_1.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition, SemanticTable, inSequence}
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 
 trait AstRewritingMonitor {

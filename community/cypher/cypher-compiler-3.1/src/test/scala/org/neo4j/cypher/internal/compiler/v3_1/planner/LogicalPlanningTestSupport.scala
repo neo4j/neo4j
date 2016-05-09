@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner
 
+import java.time.Clock
+
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_1._
@@ -27,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.ast.rewriters.{namePatternPredica
 import org.neo4j.cypher.internal.compiler.v3_1.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp.{DefaultIDPSolverConfig, IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.steps.LogicalPlanProducer
@@ -37,7 +39,6 @@ import org.neo4j.cypher.internal.frontend.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.helpers.Clock
 
 import scala.collection.mutable
 
@@ -166,7 +167,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       queryPlanner = queryPlanner,
       rewriterSequencer = rewriterSequencer,
       plannerName = None,
-      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, monitors)),
+      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors)),
       semanticChecker = semanticChecker,
       updateStrategy = None,
       config = config)

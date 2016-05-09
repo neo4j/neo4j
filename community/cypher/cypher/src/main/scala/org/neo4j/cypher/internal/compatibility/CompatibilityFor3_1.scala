@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility
 
 import java.io.PrintWriter
+import java.time.Clock
 import java.{lang, util}
 
 import org.neo4j.cypher._
@@ -30,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev3_1, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev3_1, PlannerName, ProfileMode => ProfileModev3_1, _}
+import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_1.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherException => InternalCypherException}
@@ -41,7 +42,6 @@ import org.neo4j.cypher.internal.spi.v3_1._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.graphdb.{InputPosition, Node, Path, QueryExecutionType, Relationship, ResourceIterator}
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
-import java.util.concurrent.TimeUnit
+import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.{StringInfoLogger3_1, WrappedMonitors3_1}
@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_1.GeneratedQueryStructure
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.helpers.{Clock, FrozenClock}
 import org.neo4j.logging.AssertableLogProvider.inLog
 import org.neo4j.logging.{AssertableLogProvider, Log, NullLog}
 
@@ -38,7 +37,7 @@ import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                     clock: Clock = Clock.SYSTEM_CLOCK, log: Log = NullLog.getInstance) = {
+                     clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance) = {
 
     CypherCompilerFactory.costBasedCompiler(
       graph,
@@ -144,7 +143,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should monitor cache remove") {
     // given
     val counter = new CacheCounter()
-    val clock: Clock = new FrozenClock(1000, TimeUnit.MILLISECONDS)
+    val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     val compiler = createCompiler(queryPlanTTL = 0, clock = clock)
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
@@ -165,7 +164,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     // given
     val counter = new CacheCounter()
     val logProvider = new AssertableLogProvider()
-    val clock: Clock = new FrozenClock(1000, TimeUnit.MILLISECONDS)
+    val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     val compiler = createCompiler(queryPlanTTL = 0, clock = clock, log = logProvider.getLog(getClass))
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"

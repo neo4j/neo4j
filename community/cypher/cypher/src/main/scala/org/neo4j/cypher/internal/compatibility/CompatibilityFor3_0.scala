@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.compiler.v3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, InternalResultRow, InternalResultVisitor}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{InternalResultRow, InternalResultVisitor, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, ExplainMode => ExplainModev3_0, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev3_0, PlannerName, ProfileMode => ProfileModev3_0, _}
+import org.neo4j.cypher.internal.compiler.v3_0.{CypherCompilerFactory, DPPlannerName, IDPPlannerName, InfoLogger, Monitors, PlannerName, ExplainMode => ExplainModev3_0, NormalMode => NormalModev3_0, ProfileMode => ProfileModev3_0, _}
 import org.neo4j.cypher.internal.frontend.v3_0.notification.{InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_0.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_0.{CypherException => InternalCypherException}

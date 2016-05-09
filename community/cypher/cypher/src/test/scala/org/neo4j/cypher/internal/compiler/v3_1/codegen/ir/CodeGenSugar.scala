@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir
 
+import java.time.Clock
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
@@ -34,7 +35,6 @@ import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_1.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.{KernelTransaction, Statement}
@@ -52,7 +52,7 @@ trait CodeGenSugar extends MockitoSugar {
     val statistics: GraphStatistics = mock[GraphStatistics]
     val context = mock[PlanContext]
     doReturn(statistics).when(context).statistics
-    new CodeGenerator(GeneratedQueryStructure).generate(plan, context, Clock.SYSTEM_CLOCK, semanticTable, CostBasedPlannerName.default)
+    new CodeGenerator(GeneratedQueryStructure).generate(plan, context, Clock.systemUTC(), semanticTable, CostBasedPlannerName.default)
   }
 
   def compileAndExecute(plan: LogicalPlan,

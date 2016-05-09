@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_1.CypherCompilerConfiguration
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -41,15 +42,15 @@ class PlannerFactory(graph: GraphDatabaseQueryService, kernelAPI: KernelAPI, ker
   import helpers.wrappersFor3_0._
 
   def create(spec: PlannerSpec_v2_3) =  spec.planner match {
-    case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, as2_3(config), CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
+    case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, as2_3(config), Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI)
     case _ => CompatibilityFor2_3Cost(graph, as2_3(config),
-      CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime)
+                                      Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime)
   }
 
   def create(spec: PlannerSpec_v3_0) =  spec.planner match {
-    case CypherPlanner.rule => CompatibilityFor3_0Rule(graph, as3_0(config), CypherCompiler.CLOCK, kernelMonitors, kernelAPI)
+    case CypherPlanner.rule => CompatibilityFor3_0Rule(graph, as3_0(config), Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI)
     case _ => CompatibilityFor3_0Cost(graph, as3_0(config),
-      CypherCompiler.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.updateStrategy)
+      Clock.SYSTEM_CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.updateStrategy)
   }
 
   def create(spec: PlannerSpec_v3_1) = spec.planner match {

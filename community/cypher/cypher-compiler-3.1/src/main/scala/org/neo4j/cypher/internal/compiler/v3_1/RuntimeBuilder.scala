@@ -19,23 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
+import java.time.Clock
+
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhase._
 import org.neo4j.cypher.internal.compiler.v3_1.CompiledPlanBuilder.createTracer
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenerator, CodeStructure}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.InterpretedExecutionPlanBuilder.interpretedToExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{ExecutionPlan, GeneratedQuery, InternalExecutionResult, NewRuntimeSuccessRateMonitor, PlanFingerprint, PlanFingerprintReference, Provider, READ_ONLY}
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_1.planner.{PeriodicCommit, CantCompileQueryException}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_1.planner.{CantCompileQueryException, PeriodicCommit}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, PlanContext, QueryContext}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{InternalNotification, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, InvalidArgumentException, SemanticTable}
-import org.neo4j.helpers.Clock
 
 object RuntimeBuilder {
   def create(runtimeName: Option[RuntimeName], interpretedProducer: InterpretedPlanBuilder,

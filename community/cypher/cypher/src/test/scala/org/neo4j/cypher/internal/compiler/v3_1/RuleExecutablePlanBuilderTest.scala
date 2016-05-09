@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1
 
+import java.time.Clock
 import java.util.concurrent._
 
 import org.junit.Assert._
@@ -45,7 +46,6 @@ import org.neo4j.cypher.internal.frontend.v3_1.{InternalException, Rewriter, Sco
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
 import org.neo4j.cypher.internal.spi.v3_1.{GeneratedQueryStructure, TransactionBoundQueryContext}
 import org.neo4j.graphdb.Label.label
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
@@ -70,7 +70,7 @@ class RuleExecutablePlanBuilderTest
     queryPlanner = queryPlanner,
     rewriterSequencer = rewriterSequencer,
     plannerName = None,
-    runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, mock[Monitors]), CompiledPlanBuilder(Clock.SYSTEM_CLOCK,GeneratedQueryStructure)),
+    runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), mock[Monitors]), CompiledPlanBuilder(Clock.systemUTC(),GeneratedQueryStructure)),
     semanticChecker = mock[SemanticChecker],
     updateStrategy = None,
     config = config

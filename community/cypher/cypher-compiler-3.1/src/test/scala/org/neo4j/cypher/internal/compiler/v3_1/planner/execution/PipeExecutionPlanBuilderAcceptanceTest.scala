@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.execution
 
-import org.mockito.Mockito.{verify, when, atLeastOnce}
+import java.time.Clock
+
+import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.neo4j.cypher.internal.compiler.v3_1.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.True
@@ -34,7 +36,6 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_1.ast._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.helpers.Clock
 
 class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -44,7 +45,7 @@ class PipeExecutionPlanBuilderAcceptanceTest extends CypherFunSuite with Logical
   implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-  val planBuilder = new PipeExecutionPlanBuilder(Clock.SYSTEM_CLOCK, monitors)
+  val planBuilder = new PipeExecutionPlanBuilder(Clock.systemUTC(), monitors)
 
   def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo = {
     val logicalPlan = f(solved)

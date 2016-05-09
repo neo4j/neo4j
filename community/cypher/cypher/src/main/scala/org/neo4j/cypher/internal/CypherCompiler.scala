@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal
 
+import java.time.Clock
+
 import org.neo4j.cypher.internal.compatibility.exceptionHandlerFor3_1
 import org.neo4j.cypher.internal.compiler.v3_1._
 import org.neo4j.cypher.internal.frontend.v3_1.InputPosition
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.configuration.Config
@@ -34,7 +35,7 @@ import org.neo4j.logging.{Log, LogProvider}
 object CypherCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
   val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
-  val CLOCK = Clock.SYSTEM_CLOCK
+  val CLOCK = Clock.systemUTC()
   val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD = 0.5
   val DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD = 10000
 }

@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_1.planner.execution
 import org.neo4j.cypher.internal.compiler.v3_1.Monitors
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.{FakePipe, Pipe, RonjaPipe}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Cardinality
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
-import org.neo4j.helpers.FakeClock
+import org.neo4j.time.FakeClock
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
