@@ -130,14 +130,20 @@ public class StoreCopyServer
     }
 
     /**
+     * Trigger store flush (checkpoint) and write {@link NeoStoreDataSource#listStoreFiles(boolean) store files} to the
+     * given {@link StoreWriter}.
+     *
+     * @param triggerName name of the component asks for store files.
+     * @param writer store writer to write files to.
+     * @param includeLogs <code>true</code> if transaction logs should be copied, <code>false</code> otherwise.
      * @return a {@link RequestContext} specifying at which point the store copy started.
      */
-    public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer, boolean includeLogs )
+    public RequestContext flushStoresAndStreamStoreFiles( String triggerName, StoreWriter writer, boolean includeLogs )
     {
         try
         {
             monitor.startTryCheckPoint();
-            long lastAppliedTransaction = checkPointer.tryCheckPoint( new SimpleTriggerInfo( "store copy" ) );
+            long lastAppliedTransaction = checkPointer.tryCheckPoint( new SimpleTriggerInfo( triggerName ) );
             monitor.finishTryCheckPoint();
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( (int) ByteUnit.mebiBytes( 1 ) );
 
