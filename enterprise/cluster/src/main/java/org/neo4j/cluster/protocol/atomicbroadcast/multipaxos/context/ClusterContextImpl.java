@@ -170,7 +170,7 @@ class ClusterContextImpl
     @Override
     public void created( String name )
     {
-        commonState.setConfiguration( new ClusterConfiguration( name, logProvider,
+        commonState.setConfiguration( new  ClusterConfiguration( name, logProvider,
                 Collections.singleton( commonState.boundAt() ) ) );
         joined();
     }

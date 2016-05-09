@@ -103,12 +103,6 @@ class AbstractContextImpl
     }
 
     @Override
-    public List<URI> getAcceptors()
-    {
-        return commonState.configuration().getMemberURIs();
-    }
-
-    @Override
     public Map<InstanceId, URI> getMembers()
     {
         return commonState.configuration().getMembers();

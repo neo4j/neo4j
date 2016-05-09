@@ -33,10 +33,12 @@ import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
+import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -145,4 +147,10 @@ public class ClusterSettings
 
     @Internal
     public static final Setting<String> instance_name = setting("unsupported.ha.instance_name", STRING, (String) null);
+
+    @Description( "Maximum number of servers to involve when agreeing to membership changes. " +
+            "In very large clusters, the probability of half the cluster failing is low, but protecting against " +
+            "any arbitrary half failing is expensive. Therefore you may wish to set this parameter to a value less " +
+            "than the cluster size." )
+    public static final Setting<Integer> max_acceptors = setting( "ha.max_acceptors", INTEGER, "21", min( 1 ) );
 }

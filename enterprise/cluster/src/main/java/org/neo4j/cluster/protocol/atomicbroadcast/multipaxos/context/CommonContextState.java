@@ -32,19 +32,22 @@ class CommonContextState
     private org.neo4j.cluster.InstanceId lastKnownAliveUpToDateInstance;
     private long nextInstanceId = 0;
     private ClusterConfiguration configuration;
+    private final int maxAcceptors;
 
-    public CommonContextState( ClusterConfiguration configuration )
+    public CommonContextState( ClusterConfiguration configuration, int maxAcceptors )
     {
         this.configuration = configuration;
+        this.maxAcceptors = maxAcceptors;
     }
 
     private CommonContextState( URI boundAt, long lastKnownLearnedInstanceInCluster, long nextInstanceId,
-                        ClusterConfiguration configuration )
+                        ClusterConfiguration configuration, int maxAcceptors )
     {
         this.boundAt = boundAt;
         this.lastKnownLearnedInstanceInCluster = lastKnownLearnedInstanceInCluster;
         this.nextInstanceId = nextInstanceId;
         this.configuration = configuration;
+        this.maxAcceptors = maxAcceptors;
     }
 
     public URI boundAt()
@@ -110,10 +113,15 @@ class CommonContextState
         this.configuration = configuration;
     }
 
+    public int getMaxAcceptors()
+    {
+        return maxAcceptors;
+    }
+
     public CommonContextState snapshot( Log log )
     {
         return new CommonContextState( boundAt, lastKnownLearnedInstanceInCluster, nextInstanceId,
-                configuration.snapshot(log) );
+                configuration.snapshot(log), maxAcceptors );
     }
 
     @Override

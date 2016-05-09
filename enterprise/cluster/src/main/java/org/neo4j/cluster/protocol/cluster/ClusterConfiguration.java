@@ -172,12 +172,6 @@ public class ClusterConfiguration
         return roles;
     }
 
-    public int getAllowedFailures()
-    {
-        assert members.size() > 0;
-        return (members.size() - 1) / 2;
-    }
-
     public void left()
     {
         this.members = new HashMap<>();

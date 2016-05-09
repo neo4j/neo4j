@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
@@ -33,8 +34,15 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.PaxosInstanceStore;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.helpers.collection.Iterables.limit;
+
+import static org.neo4j.helpers.collection.Iterables.asList;
+
 
 class ProposerContextImpl
         extends AbstractContextImpl
@@ -47,25 +55,30 @@ class ProposerContextImpl
     private final Map<InstanceId, Message> bookedInstances;
 
     private final PaxosInstanceStore paxosInstances;
+    private HeartbeatContext heartbeatContext;
 
     ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
                          LogProvider logging,
-                         Timeouts timeouts, PaxosInstanceStore paxosInstances )
+                         Timeouts timeouts, PaxosInstanceStore paxosInstances,
+                         HeartbeatContext heartbeatContext )
     {
         super( me, commonState, logging, timeouts );
         this.paxosInstances = paxosInstances;
+        this.heartbeatContext = heartbeatContext;
         pendingValues = new LinkedList<>(  );
         bookedInstances = new HashMap<>();
     }
 
     private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, LogProvider logging,
                                  Timeouts timeouts, Deque<Message> pendingValues,
-                                 Map<InstanceId, Message> bookedInstances, PaxosInstanceStore paxosInstances )
+                                 Map<InstanceId, Message> bookedInstances, PaxosInstanceStore paxosInstances,
+                                 HeartbeatContext heartbeatContext)
     {
         super( me, commonState, logging, timeouts );
         this.pendingValues = pendingValues;
         this.bookedInstances = bookedInstances;
         this.paxosInstances = paxosInstances;
+        this.heartbeatContext = heartbeatContext;
     }
 
     @Override
@@ -149,17 +162,24 @@ class ProposerContextImpl
     }
 
     @Override
+    public List<URI> getAcceptors()
+    {
+        Iterable<URI> aliveMembers = Iterables.map( new Function<org.neo4j.cluster.InstanceId, URI>()
+        {
+            @Override
+            public URI apply( org.neo4j.cluster.InstanceId instanceId ) throws RuntimeException
+            {
+                return heartbeatContext.getUriForId( instanceId );
+            }
+        }, heartbeatContext.getAlive() );
+
+        return asList( limit( (int) Math.min(Iterables.count( aliveMembers ), commonState.getMaxAcceptors()), aliveMembers ) );
+    }
+
+    @Override
     public int getMinimumQuorumSize( List<URI> acceptors )
     {
-        // n >= 2f+1
-        if ( acceptors.size() >= 2 * commonState.configuration().getAllowedFailures() + 1 )
-        {
-            return acceptors.size() - commonState.configuration().getAllowedFailures();
-        }
-        else
-        {
-            return acceptors.size();
-        }
+        return (acceptors.size() / 2) + 1;
     }
 
     /**
@@ -212,10 +232,10 @@ class ProposerContextImpl
     }
 
     public ProposerContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logging, Timeouts timeouts,
-                                         PaxosInstanceStore paxosInstancesSnapshot )
+                                         PaxosInstanceStore paxosInstancesSnapshot, HeartbeatContext heartbeatContext )
     {
         return new ProposerContextImpl( me, commonStateSnapshot, logging, timeouts, new LinkedList<>( pendingValues ),
-                new HashMap<>(bookedInstances), paxosInstancesSnapshot );
+                new HashMap<>(bookedInstances), paxosInstancesSnapshot, heartbeatContext );
     }
 
     @Override
