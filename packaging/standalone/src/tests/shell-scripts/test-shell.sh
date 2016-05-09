@@ -65,6 +65,13 @@ test_expect_success "should rewrite relative paths and leave absolute paths unch
   test_expect_java_arg '--conf /an/absolute/conf'
 "
 
+test_expect_success "should not resolve '-' for --file" "
+  neo4j-home/bin/neo4j-shell --file - --path - --conf - || true &&
+  test_expect_java_arg '--file -' &&
+  test_expect_java_arg '--path $(pwd)/-' &&
+  test_expect_java_arg '--conf $(pwd)/-'
+"
+
 test_expect_success "should rewrite paths as needed and leave other options unchanged" "
   neo4j-home/bin/neo4j-shell -file /tmp/absolute-file -path=a/relative/path -host foobar -port 1234 -readonly || true &&
   test_expect_java_arg '-file /tmp/absolute-file' &&
