@@ -333,7 +333,7 @@ public class StoreCopyClientTest
 
                     RequestContext requestContext = new StoreCopyServer( neoStoreDataSource,
                             checkPointer, fs, originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
-                            .flushStoresAndStreamStoreFiles( writer, false );
+                            .flushStoresAndStreamStoreFiles( "test", writer, false );
 
                     final StoreId storeId = original.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                     .testAccessNeoStores().getMetaDataStore().getStoreId();
