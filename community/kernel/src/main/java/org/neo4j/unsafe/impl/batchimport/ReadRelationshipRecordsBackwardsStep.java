@@ -33,19 +33,21 @@ import static java.lang.Math.min;
  */
 public class ReadRelationshipRecordsBackwardsStep extends ReadRecordsStep<RelationshipRecord>
 {
+    private final long firstRelationshipId;
     private long id;
 
     public ReadRelationshipRecordsBackwardsStep( StageControl control, Configuration config,
-            RelationshipStore store )
+            RelationshipStore store, long firstRelationshipId )
     {
         super( control, config, store );
-        id = highId;
+        this.firstRelationshipId = firstRelationshipId;
+        this.id = highId;
     }
 
     @Override
     protected Object nextBatchOrNull( long ticket, int batchSize )
     {
-        int size = (int) min( batchSize, id );
+        int size = (int) min( batchSize, id-firstRelationshipId );
         RelationshipRecord[] batch = new RelationshipRecord[size];
         boolean seenReservedId = false;
 

@@ -36,9 +36,10 @@ public class InputRelationshipReader extends InputEntityReader<InputRelationship
 {
     private String previousType;
 
-    public InputRelationshipReader( StoreChannel channel, StoreChannel header, int bufferSize ) throws IOException
+    public InputRelationshipReader( StoreChannel channel, StoreChannel header, int bufferSize, Runnable closeAction )
+            throws IOException
     {
-        super( channel, header, bufferSize, 2 );
+        super( channel, header, bufferSize, 2, closeAction );
     }
 
     @Override
