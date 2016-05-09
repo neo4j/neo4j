@@ -27,7 +27,7 @@ import org.neo4j.coreedge.raft.log.RaftLogVerificationIT;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
-public class SegmentedPhysicalRaftLogVerificationIT extends RaftLogVerificationIT
+public class SegmentedRaftLogVerificationIT extends RaftLogVerificationIT
 {
     @Override
     protected RaftLog createRaftLog() throws Throwable
