@@ -28,6 +28,7 @@ import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -41,8 +42,7 @@ public class LearnerContextTest
     public void shouldOnlyAllowHigherLastLearnedInstanceId() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
-                mock( ClusterConfiguration.class ), null, logProvider, null, null, null, null, null );
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, 10, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(), null, null, null, null, null );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When
@@ -57,8 +57,7 @@ public class LearnerContextTest
     public void shouldTrackLastKnownUpToDateAliveInstance() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
-                mock( ClusterConfiguration.class ), null, logProvider, null, null, null, null, null );
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, 10, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(), null, null, null, null, null );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When
@@ -75,8 +74,7 @@ public class LearnerContextTest
     public void settingLastLearnedInstanceToNegativeOneShouldAlwaysWin() throws Exception
     {
         // Given
-        MultiPaxosContext mpCtx = new MultiPaxosContext( null, Iterables.<ElectionRole>empty(),
-                mock( ClusterConfiguration.class ), null, logProvider, null, null, null, null, null );
+        MultiPaxosContext mpCtx = new MultiPaxosContext( null, 10, Iterables.<ElectionRole>empty(), mock( ClusterConfiguration.class ), null, NullLogProvider.getInstance(), null, null, null, null, null );
         LearnerContext state = mpCtx.getLearnerContext();
 
         // When
