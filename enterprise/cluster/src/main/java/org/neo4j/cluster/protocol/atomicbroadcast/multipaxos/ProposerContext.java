@@ -59,4 +59,6 @@ public interface ProposerContext
     Message popPendingValue();
 
     void leave();
+
+    List<URI> getAcceptors();
 }

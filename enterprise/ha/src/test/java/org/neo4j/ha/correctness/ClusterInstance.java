@@ -83,7 +83,9 @@ class ClusterInstance
     private boolean online = true;
 
     public static ClusterInstance newClusterInstance( InstanceId id, URI uri, Monitors monitors,
-                                                      ClusterConfiguration configuration, LogProvider logging )
+                                                      ClusterConfiguration configuration,
+                                                      int maxSurvivableFailedMembers,
+                                                      LogProvider logging )
     {
         MultiPaxosServerFactory factory = new MultiPaxosServerFactory( configuration,
                 logging, monitors.newMonitor( StateMachines.Monitor.class ) );
@@ -99,6 +101,7 @@ class ClusterInstance
 
         DelayedDirectExecutor executor = new DelayedDirectExecutor( logging );
         final MultiPaxosContext context = new MultiPaxosContext( id,
+                maxSurvivableFailedMembers,
                 Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
                 new ClusterConfiguration( configuration.getName(), logging,
                         configuration.getMemberURIs() ),

@@ -51,11 +51,11 @@ public class TestProver
         ClusterState state = new ClusterState(
                 asList(
                         newClusterInstance( new InstanceId( 1 ), new URI( "cluster://localhost:5001" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ),
+                                new Monitors(), config, 10, NullLogProvider.getInstance() ),
                         newClusterInstance( new InstanceId( 2 ), new URI( "cluster://localhost:5002" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ),
+                                new Monitors(), config, 10, NullLogProvider.getInstance() ),
                         newClusterInstance( new InstanceId( 3 ), new URI( "cluster://localhost:5003" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ) ),
+                                new Monitors(), config, 10, NullLogProvider.getInstance() ) ),
                 emptySetOf( ClusterAction.class )
         );
 
@@ -80,11 +80,11 @@ public class TestProver
         ClusterState state = new ClusterState(
                 asList(
                         newClusterInstance( new InstanceId( 1 ), new URI( "cluster://localhost:5001" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ),
+                                new Monitors(), config, 10, NullLogProvider.getInstance() ),
                         newClusterInstance( new InstanceId( 2 ), new URI( "cluster://localhost:5002" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ),
+                                new Monitors(), config, 10, NullLogProvider.getInstance() ),
                         newClusterInstance( new InstanceId( 3 ), new URI( "cluster://localhost:5003" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ) ),
+                                new Monitors(), config, 10, NullLogProvider.getInstance() ) ),
                 emptySetOf( ClusterAction.class )
         );
 

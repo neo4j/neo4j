@@ -60,7 +60,7 @@ public class TestProtocolServer
 
         stateMachineExecutor = new DelayedDirectExecutor( logProvider );
 
-        server = factory.newProtocolServer( instanceId, timeoutStrategy, receiver, sender, acceptorInstanceStore,
+        server = factory.newProtocolServer( instanceId, 10, timeoutStrategy, receiver, sender, acceptorInstanceStore,
                 electionCredentialsProvider, stateMachineExecutor, new ObjectStreamFactory(), new ObjectStreamFactory() );
 
         server.listeningAt( serverUri );

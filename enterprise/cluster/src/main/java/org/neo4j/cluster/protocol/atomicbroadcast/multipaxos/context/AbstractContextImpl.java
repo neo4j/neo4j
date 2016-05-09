@@ -34,6 +34,7 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
 /**
@@ -100,12 +101,6 @@ class AbstractContextImpl
     public URI boundAt()
     {
         return commonState.boundAt();
-    }
-
-    @Override
-    public List<URI> getAcceptors()
-    {
-        return commonState.configuration().getMemberURIs();
     }
 
     @Override

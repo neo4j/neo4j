@@ -33,8 +33,6 @@ public interface ConfigurationContext
 
     URI boundAt();
 
-    List<URI> getAcceptors();
-
     Map<InstanceId,URI> getMembers();
 
     InstanceId getCoordinator();

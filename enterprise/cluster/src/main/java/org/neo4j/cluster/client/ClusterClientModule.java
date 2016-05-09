@@ -194,8 +194,8 @@ public class ClusterClientModule
 
         AcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
 
-        server = protocolServerFactory.newProtocolServer( config.get( ClusterSettings.server_id ), timeoutStrategy,
-                receiver, sender,
+        server = protocolServerFactory.newProtocolServer( config.get( ClusterSettings.server_id ),
+                config.get( ClusterSettings.max_acceptors ), timeoutStrategy, receiver, sender,
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor, objectInputStreamFactory,
                 objectOutputStreamFactory );
 
