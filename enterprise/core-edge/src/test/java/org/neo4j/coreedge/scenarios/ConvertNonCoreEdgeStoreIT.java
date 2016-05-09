@@ -22,12 +22,17 @@ package org.neo4j.coreedge.scenarios;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
 import org.neo4j.coreedge.discovery.Cluster;
 import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
+import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,6 +44,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.rule.TargetDirectory;
 
@@ -50,8 +56,21 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
+@RunWith(Parameterized.class)
 public class ConvertNonCoreEdgeStoreIT
 {
+
+    @Parameterized.Parameters(name = "Record format: {0}")
+    public static Collection<Object> data()
+    {
+        return Arrays.asList( new Object[]{
+                StandardV3_0.NAME, HighLimit.NAME
+        } );
+    }
+
+    @Parameterized.Parameter(value = 0)
+    public String recordFormat;
+
     @Rule
     public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
 
@@ -73,16 +92,16 @@ public class ConvertNonCoreEdgeStoreIT
         File dbDir = dir.directory();
         FileUtils.deleteRecursively( dbDir );
 
-        File classicNeo4jStore = createClassicNeo4jStore( dbDir, 2000 );
+        File classicNeo4jStore = createClassicNeo4jStore( dbDir, 2000, recordFormat );
 
         for ( int serverId = 0; serverId < 3; serverId++ )
         {
             File destination = new File( dbDir, "server-core-" + serverId );
             FileUtils.copyRecursively( classicNeo4jStore, destination );
-            new ConvertClassicStoreCommand( destination ).execute();
+            new ConvertClassicStoreCommand( destination, recordFormat ).execute();
         }
 
-        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory() );
+        cluster = Cluster.start( dbDir, 3, 0, new TestOnlyDiscoveryServiceFactory(), recordFormat );
 
         // when
         GraphDatabaseService coreDB = cluster.awaitLeader( 5000 );
@@ -113,12 +132,12 @@ public class ConvertNonCoreEdgeStoreIT
         }
     }
 
-    private File createClassicNeo4jStore( File base, int nodesToCreate )
+    private File createClassicNeo4jStore( File base, int nodesToCreate, String recordFormat )
     {
         File existingDbDir = new File( base, "existing" );
         GraphDatabaseService db = new GraphDatabaseFactory()
                             .newEmbeddedDatabaseBuilder( existingDbDir )
-                            .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
+                            .setConfig( GraphDatabaseSettings.record_format, recordFormat )
                             .newGraphDatabase();
 
         for ( int i = 0; i < (nodesToCreate / 2); i++ )

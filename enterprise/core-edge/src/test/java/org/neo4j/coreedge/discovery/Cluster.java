@@ -51,6 +51,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
@@ -72,7 +73,7 @@ public class Cluster
     private Set<EdgeGraphDatabase> edgeServers = new HashSet<>();
 
     Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers, DiscoveryServiceFactory discoveryServiceFactory,
-             Map<String,String> coreParams )
+             Map<String,String> coreParams, String recordFormat )
             throws ExecutionException, InterruptedException
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
@@ -82,13 +83,27 @@ public class Cluster
         ExecutorService executor = Executors.newCachedThreadPool();
         try
         {
-            startCoreServers( executor, noOfCoreServers, initialHosts, coreParams );
-            startEdgeServers( executor, noOfEdgeServers, initialHosts );
+            startCoreServers( executor, noOfCoreServers, initialHosts, coreParams, recordFormat );
+            startEdgeServers( executor, noOfEdgeServers, initialHosts, recordFormat );
         }
         finally
         {
             executor.shutdownNow();
         }
+    }
+
+    Cluster( File parentDir, int noOfCoreServers, int noOfEdgeServers, DiscoveryServiceFactory discoveryServiceFactory,
+             Map<String,String> coreParams )
+            throws ExecutionException, InterruptedException
+    {
+        this(parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, coreParams, StandardV3_0.NAME);
+    }
+
+    public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
+                                 DiscoveryServiceFactory discoveryServiceFactory, String recordFormat )
+            throws ExecutionException, InterruptedException
+    {
+        return new Cluster( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, stringMap(), recordFormat );
     }
 
     public static Cluster start( File parentDir, int noOfCoreServers, int noOfEdgeServers,
@@ -152,7 +167,8 @@ public class Cluster
     }
 
     private void startCoreServers( ExecutorService executor, final int noOfCoreServers,
-            List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams )
+                                   List<AdvertisedSocketAddress> addresses, Map<String, String> extraParams,
+                                   String recordFormat )
             throws InterruptedException, ExecutionException
     {
         CompletionService<CoreGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
@@ -160,7 +176,7 @@ public class Cluster
         for ( int i = 0; i < noOfCoreServers; i++ )
         {
             final int serverId = i;
-            ecs.submit( () -> startCoreServer( serverId, noOfCoreServers, addresses, extraParams ) );
+            ecs.submit( () -> startCoreServer( serverId, noOfCoreServers, addresses, extraParams, recordFormat ) );
         }
 
         for ( int i = 0; i < noOfCoreServers; i++ )
@@ -170,7 +186,7 @@ public class Cluster
     }
 
     private void startEdgeServers( ExecutorService executor, int noOfEdgeServers, final List<AdvertisedSocketAddress>
-            addresses )
+            addresses, String recordFormat )
             throws InterruptedException, ExecutionException
     {
         CompletionService<EdgeGraphDatabase> ecs = new ExecutorCompletionService<>( executor );
@@ -178,7 +194,7 @@ public class Cluster
         for ( int i = 0; i < noOfEdgeServers; i++ )
         {
             final int serverId = i;
-            ecs.submit( () -> startEdgeServer( serverId, addresses ) );
+            ecs.submit( () -> startEdgeServer( serverId, addresses, recordFormat ) );
         }
 
         for ( int i = 0; i < noOfEdgeServers; i++ )
@@ -187,7 +203,7 @@ public class Cluster
         }
     }
 
-    public CoreGraphDatabase startCoreServer( int serverId, int clusterSize, List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams )
+    public CoreGraphDatabase startCoreServer( int serverId, int clusterSize, List<AdvertisedSocketAddress> addresses, Map<String, String> extraParams, String recordFormat )
     {
         int clusterPort = 5000 + serverId;
         int txPort = 6000 + serverId;
@@ -196,6 +212,9 @@ public class Cluster
         String initialHosts = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
         final Map<String, String> params = serverParams( "CORE", serverId, initialHosts );
+
+        params.put(GraphDatabaseSettings.record_format.name(), recordFormat);
+
         params.put( CoreEdgeClusterSettings.cluster_listen_address.name(), "localhost:" + clusterPort );
 
         params.put( CoreEdgeClusterSettings.transaction_advertised_address.name(), "localhost:" + txPort );
@@ -216,17 +235,18 @@ public class Cluster
                 discoveryServiceFactory );
     }
 
-    public EdgeGraphDatabase startEdgeServer( int serverId, List<AdvertisedSocketAddress> addresses )
+    public EdgeGraphDatabase startEdgeServer( int serverId, List<AdvertisedSocketAddress> addresses, String recordFormat )
     {
         final File storeDir = edgeServerStoreDirectory( parentDir, serverId );
-        return startEdgeServer( serverId, storeDir, addresses );
+        return startEdgeServer( serverId, storeDir, addresses, recordFormat );
     }
 
-    private EdgeGraphDatabase startEdgeServer( int serverId, File storeDir, List<AdvertisedSocketAddress> addresses )
+    private EdgeGraphDatabase startEdgeServer( int serverId, File storeDir, List<AdvertisedSocketAddress> addresses, String recordFormat )
     {
         String initialHosts = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
         final Map<String, String> params = serverParams( "EDGE", serverId, initialHosts );
+        params.put(GraphDatabaseSettings.record_format.name(), recordFormat);
         params.put( HaSettings.pull_interval.name(), String.valueOf( 5 ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         params.put( GraphDatabaseSettings.auth_store.name(), new File(parentDir, "auth").getAbsolutePath() );
@@ -343,16 +363,17 @@ public class Cluster
 
     public void addCoreServerWithServerId( int serverId, int intendedClusterSize )
     {
-        addCoreServerWithServerId( serverId, intendedClusterSize, stringMap() );
+        addCoreServerWithServerId( serverId, intendedClusterSize, stringMap(), StandardV3_0.NAME );
     }
 
-    public void addCoreServerWithServerId( int serverId, int intendedClusterSize, Map<String,String> extraParams )
+    private void addCoreServerWithServerId( int serverId, int intendedClusterSize, Map<String, String> extraParams,
+                                            String recordFormat )
     {
         Config config = firstOrNull( coreServers ).getDependencyResolver().resolveDependency( Config.class );
         List<AdvertisedSocketAddress> advertisedAddress = config.get( CoreEdgeClusterSettings
                 .initial_core_cluster_members );
 
-        coreServers.add( startCoreServer( serverId, intendedClusterSize, advertisedAddress, extraParams ) );
+        coreServers.add( startCoreServer( serverId, intendedClusterSize, advertisedAddress, extraParams, recordFormat ) );
     }
 
     public void addEdgeServerWithFileLocation( int serverId )
@@ -361,7 +382,7 @@ public class Cluster
         List<AdvertisedSocketAddress> advertisedAddresses = config.get( CoreEdgeClusterSettings
                 .initial_core_cluster_members );
 
-        edgeServers.add( startEdgeServer( serverId, advertisedAddresses ) );
+        edgeServers.add( startEdgeServer( serverId, advertisedAddresses, StandardV3_0.NAME ) );
     }
 
     private InstanceId serverIdFor( GraphDatabaseFacade graphDatabaseFacade )
@@ -438,7 +459,7 @@ public class Cluster
         List<AdvertisedSocketAddress> advertisedAddresses = config.get( CoreEdgeClusterSettings
                 .initial_core_cluster_members );
 
-        edgeServers.add( startEdgeServer( 999, edgeDatabaseStoreFileLocation, advertisedAddresses ) );
+        edgeServers.add( startEdgeServer( 999, edgeDatabaseStoreFileLocation, advertisedAddresses, StandardV3_0.NAME ) );
     }
 
     /**

@@ -24,6 +24,7 @@ import java.io.PrintStream;
 
 import org.neo4j.dbms.ConfigFactory;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Strings;
@@ -50,7 +51,10 @@ public class ConvertNonCoreEdgeStoreCli
         Config config = ConfigFactory.readFrom( new File( configPath, "neo4j.conf" ) )
                 .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
 
-        new ConvertClassicStoreCommand( config.get( DatabaseManagementSystemSettings.database_path ) ).execute();
+        new ConvertClassicStoreCommand(
+                config.get( DatabaseManagementSystemSettings.database_path ),
+                config.get( GraphDatabaseSettings.record_format ))
+                .execute();
     }
 
     private static void printUsage( PrintStream out )

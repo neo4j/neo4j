@@ -26,6 +26,8 @@ import org.neo4j.coreedge.raft.replication.tx.LogIndexTxHeaderEncoding;
 import org.neo4j.coreedge.raft.state.DurableStateStorageImporter;
 import org.neo4j.coreedge.raft.state.id_allocation.IdAllocationState;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -67,10 +69,12 @@ import static org.neo4j.kernel.impl.store.id.IdType.STRING_BLOCK;
 public class ConvertClassicStoreCommand
 {
     private File databaseDir;
+    private String recordFormat;
 
-    public ConvertClassicStoreCommand( File databaseDir )
+    public ConvertClassicStoreCommand( File databaseDir, String recordFormat )
     {
         this.databaseDir = databaseDir;
+        this.recordFormat = recordFormat;
     }
 
     public void execute() throws Throwable
@@ -81,7 +85,11 @@ public class ConvertClassicStoreCommand
 
     private void appendNullTransactionLogEntryToSetRaftIndexToMinusOne( File dbDir) throws TransactionFailureException
     {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( dbDir );
+
+        GraphDatabaseBuilder builder = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbDir )
+                .setConfig( GraphDatabaseSettings.record_format, recordFormat );
+
+        GraphDatabaseAPI db = (GraphDatabaseAPI) builder.newGraphDatabase();
 
         TransactionCommitProcess commitProcess = db.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
 
