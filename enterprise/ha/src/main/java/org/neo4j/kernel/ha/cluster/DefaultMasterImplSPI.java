@@ -55,6 +55,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 public class DefaultMasterImplSPI implements MasterImpl.SPI
 {
     private static final int ID_GRAB_SIZE = 1000;
+    static final String STORE_COPY_CHECKPOINT_TRIGGER = "store copy";
+
     private final GraphDatabaseAPI graphDb;
     private final TransactionChecksumLookup txChecksumLookup;
     private final FileSystemAbstraction fileSystem;
@@ -168,7 +170,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     {
         StoreCopyServer streamer = new StoreCopyServer( neoStoreDataSource,
                 checkPointer, fileSystem, storeDir, monitors.newMonitor( StoreCopyServer.Monitor.class ) );
-        return streamer.flushStoresAndStreamStoreFiles( writer, false );
+        return streamer.flushStoresAndStreamStoreFiles( STORE_COPY_CHECKPOINT_TRIGGER, writer, false );
     }
 
     @Override

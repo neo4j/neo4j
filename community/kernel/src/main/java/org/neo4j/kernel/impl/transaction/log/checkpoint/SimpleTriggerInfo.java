@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import java.util.Objects;
+
 /**
  * Simple implementation of a trigger info taking in construction the name/description of what triggered the check point
  * and offering the possibility to be enriched with a single optional extra description.
@@ -47,5 +49,27 @@ public class SimpleTriggerInfo implements TriggerInfo
         assert description != null;
         assert this.description == null;
         this.description = description;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        SimpleTriggerInfo that = (SimpleTriggerInfo) o;
+        return Objects.equals( triggerName, that.triggerName ) &&
+               Objects.equals( description, that.description );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( triggerName, description );
     }
 }
