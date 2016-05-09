@@ -34,6 +34,7 @@ import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
+import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -50,6 +51,7 @@ import static org.neo4j.coreedge.raft.log.RaftLogHelper.hasNoContent;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.NAIVE;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.PHYSICAL;
+import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.SEGMENTED;
 
 @RunWith(Parameterized.class)
 public class RaftLogDurabilityTest
@@ -93,9 +95,23 @@ public class RaftLogDurabilityTest
             return log;
         };
 
+        RaftLogFactory segmented = ( fileSystem ) -> {
+            File directory = new File( "raft-log" );
+            fileSystem.mkdir( directory );
+
+            long rotateAtSizeBytes = 128;
+            int entryCacheSize = 4;
+
+            SegmentedRaftLog log = new SegmentedRaftLog( fileSystem, directory, rotateAtSizeBytes, new DummyRaftableContentSerializer(),
+                    NullLogProvider.getInstance(), entryCacheSize );
+            log.start();
+            return log;
+        };
+
         return Arrays.asList( new Object[][]{
                 {NAIVE, naive},
                 {PHYSICAL, physical},
+                {SEGMENTED, segmented},
         } );
     }
 
