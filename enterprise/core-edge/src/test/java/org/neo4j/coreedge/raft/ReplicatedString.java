@@ -69,4 +69,9 @@ public class ReplicatedString implements ReplicatedContent
     {
         return format( "ReplicatedString{data=%s}", value );
     }
+
+    public String value()
+    {
+        return value;
+    }
 }
