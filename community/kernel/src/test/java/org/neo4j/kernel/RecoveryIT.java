@@ -68,6 +68,8 @@ public class RecoveryIT
         NeoStores neoStore =
                 ((GraphDatabaseAPI) recoveredDatabase).getDependencyResolver().resolveDependency( NeoStores.class );
         assertEquals( numberOfNodes, neoStore.getNodeStore().getHighId() );
+        // Make sure id generator has been rebuilt so this doesn't throw null pointer exception
+        assertTrue( neoStore.getNodeStore().nextId() > 0 );
 
         database.shutdown();
         recoveredDatabase.shutdown();
