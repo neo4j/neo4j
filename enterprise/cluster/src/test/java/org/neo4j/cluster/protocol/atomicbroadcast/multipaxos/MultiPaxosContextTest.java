@@ -47,7 +47,7 @@ public class MultiPaxosContextTest
     {
         // Given
         MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
-                Collections.<ElectionRole>emptyList(),
+                10, Collections.<ElectionRole>emptyList(),
                 mock( ClusterConfiguration.class ), mock( Executor.class ),
                 new TestLogging(), new ObjectStreamFactory(),
                 new ObjectStreamFactory(), mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
@@ -78,7 +78,7 @@ public class MultiPaxosContextTest
         ElectionCredentialsProvider electionCredentials = mock( ElectionCredentialsProvider.class );
 
         MultiPaxosContext ctx = new MultiPaxosContext( new InstanceId( 1 ),
-                Collections.<ElectionRole>emptyList(),
+                10, Collections.<ElectionRole>emptyList(),
                 clusterConfig, executor,
                 logging, objStream,
                 objStream, acceptorInstances, timeouts, electionCredentials );
