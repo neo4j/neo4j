@@ -19,6 +19,10 @@
  */
 package schema;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -27,10 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
@@ -76,10 +76,8 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -168,7 +166,7 @@ public class MultipleIndexPopulationStressIT
         // WHEN creating the indexes under stressful updates
         populateDbAndIndexes( nodeCount, multiThreaded );
         ConsistencyCheckService cc = new ConsistencyCheckService();
-        Result result = cc.runFullConsistencyCheck( directory.directory(),
+        Result result = cc.runFullConsistencyCheck( directory.graphDbDir(),
                 new Config( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
                 NONE, NullLogProvider.getInstance(), false );
         assertTrue( result.isSuccessful() );
@@ -300,7 +298,7 @@ public class MultipleIndexPopulationStressIT
 
     private void createRandomData( int count ) throws IOException
     {
-        BatchImporter importer = new ParallelBatchImporter( directory.directory(), fs,
+        BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fs,
                 DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, Config.empty() );
         importer.doImport( new RandomDataInput( count ) );
     }
@@ -402,7 +400,7 @@ public class MultipleIndexPopulationStressIT
             try
             {
                 return new BadCollector( fs.openAsOutputStream(
-                        new File( directory.directory(), "bad" ), false ), 0, 0 );
+                        new File( directory.graphDbDir(), "bad" ), false ), 0, 0 );
             }
             catch ( IOException e )
             {
