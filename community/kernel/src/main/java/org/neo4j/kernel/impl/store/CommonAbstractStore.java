@@ -1175,6 +1175,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 assert pageCursor != null : "Not initialized";
                 if ( NULL_REFERENCE.is( currentId ) )
                 {
+                    record.clear();
+                    record.setId( NULL_REFERENCE.intValue() );
                     return false;
                 }
 
@@ -1190,7 +1192,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     }
                     finally
                     {
-                        currentId = record.inUse() ? getNextRecordReference( record ) : NULL_REFERENCE.intValue();
+                        // This will get the next reference:
+                        // inUse ==> actual next reference
+                        // !inUse && mode == CHECK ==> NULL
+                        // !inUse && mode == NORMAL ==> NULL (+InvalidRecordException thrown in try)
+                        // !inUse && mode == FORCE ==> actual next reference
+                        currentId = getNextRecordReference( record );
                     }
                 }
                 catch ( IOException e )
