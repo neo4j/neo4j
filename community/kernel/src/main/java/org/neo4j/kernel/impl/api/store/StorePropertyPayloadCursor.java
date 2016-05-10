@@ -87,6 +87,7 @@ class StorePropertyPayloadCursor
 
     private final long[] data = new long[MAX_NUMBER_OF_PAYLOAD_LONG_ARRAY];
     private int position = INITIAL_POSITION;
+    private boolean exhausted;
 
     StorePropertyPayloadCursor( DynamicStringStore stringStore, DynamicArrayStore arrayStore )
     {
@@ -105,6 +106,7 @@ class StorePropertyPayloadCursor
     void clear()
     {
         position = INITIAL_POSITION;
+        exhausted = false;
         buffer = cachedBuffer;
         // Array of data should be filled with '0' because it is possible to call next() without calling init().
         // In such case 'false' should be returned, which might not be the case if there is stale data in the buffer.
@@ -113,6 +115,11 @@ class StorePropertyPayloadCursor
 
     boolean next()
     {
+        if ( exhausted )
+        {
+            return false;
+        }
+
         if ( position == INITIAL_POSITION )
         {
             position = 0;
@@ -121,11 +128,13 @@ class StorePropertyPayloadCursor
         {
             position += currentBlocksUsed();
         }
-        if ( position >= data.length )
+
+        if ( position >= data.length || type() == null )
         {
+            exhausted = true;
             return false;
         }
-        return type() != null;
+        return true;
     }
 
     PropertyType type()
@@ -268,7 +277,7 @@ class StorePropertyPayloadCursor
     {
         buffer.clear();
         long startBlockId = PropertyBlock.fetchLong( currentHeader() );
-        try ( GenericCursor<DynamicRecord> records = store.getRecordsCursor( startBlockId, true, cursor ) )
+        try ( GenericCursor<DynamicRecord> records = store.getRecordsCursor( startBlockId, cursor ) )
         {
             while ( records.next() )
             {

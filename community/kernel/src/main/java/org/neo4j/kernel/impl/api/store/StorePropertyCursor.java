@@ -23,7 +23,6 @@ import java.io.IOException;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.Consumer;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.cursor.PropertyItem;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -66,35 +65,33 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
             return true;
         }
 
-        if ( nextPropertyRecordId == Record.NO_NEXT_PROPERTY.intValue() )
+        while ( nextPropertyRecordId != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            return false;
-        }
-
-        long currentPropertyRecordId = nextPropertyRecordId;
-        try ( PageCursor cursor = propertyStore.newReadCursor( currentPropertyRecordId ) )
-        {
-            int offset = cursor.getOffset();
-            do
+            try ( PageCursor cursor = propertyStore.newReadCursor( nextPropertyRecordId ) )
             {
-                cursor.setOffset( offset );
-                nextPropertyRecordId = readNextPropertyRecordId( cursor );
+                int offset = cursor.getOffset();
+                do
+                {
+                    cursor.setOffset( offset );
+                    nextPropertyRecordId = readNextPropertyRecordId( cursor );
 
-                payload.clear();
-                payload.init( cursor );
+                    payload.clear();
+                    payload.init( cursor );
+                }
+                while ( cursor.shouldRetry() );
             }
-            while ( cursor.shouldRetry() );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
+
+            if ( payload.next() )
+            {
+                return true;
+            }
         }
 
-        if ( !payload.next() )
-        {
-            throw new NotFoundException( "Property record with id " + currentPropertyRecordId + " not in use" );
-        }
-        return true;
+        return false;
     }
 
     @Override

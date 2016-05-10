@@ -49,7 +49,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -84,8 +83,8 @@ public class StorePropertyPayloadCursorTest
             // Given
             StorePropertyPayloadCursor cursor = newCursor( 1, 2, 3L );
 
-            cursor.next();
-            cursor.next();
+            assertTrue( cursor.next() );
+            assertTrue( cursor.next() );
 
             // When
             cursor.clear();
@@ -100,9 +99,9 @@ public class StorePropertyPayloadCursorTest
             // Given
             StorePropertyPayloadCursor cursor = newCursor( 1, 2, 3 );
 
-            cursor.next();
-            cursor.next();
-            cursor.next();
+            assertTrue( cursor.next() );
+            assertTrue( cursor.next() );
+            assertTrue( cursor.next() );
 
             // When
             cursor.clear();
@@ -131,7 +130,7 @@ public class StorePropertyPayloadCursorTest
             StorePropertyPayloadCursor cursor = newCursor();
 
             // When
-            cursor.next();
+            assertFalse( cursor.next() );
 
             // Then
             // next() on an empty cursor works just fine
@@ -161,6 +160,18 @@ public class StorePropertyPayloadCursorTest
             verify( dynamicStringStore ).newDynamicRecordCursor();
             verify( dynamicArrayStore ).newDynamicRecordCursor();
         }
+
+        @Test
+        public void nextMultipleInvocations()
+        {
+            StorePropertyPayloadCursor cursor = newCursor();
+
+            assertFalse( cursor.next() );
+            assertFalse( cursor.next() );
+            assertFalse( cursor.next() );
+            assertFalse( cursor.next() );
+        }
+
     }
 
     @RunWith( Parameterized.class )
@@ -477,7 +488,7 @@ public class StorePropertyPayloadCursorTest
 
         S store = mock( clazz );
         when( store.newDynamicRecordCursor() ).thenReturn( mock( AbstractDynamicStore.DynamicRecordCursor.class ) );
-        when( store.getRecordsCursor( anyLong(), anyBoolean(), any( AbstractDynamicStore.DynamicRecordCursor.class ) ) )
+        when( store.getRecordsCursor( anyLong(), any( AbstractDynamicStore.DynamicRecordCursor.class ) ) )
                 .thenReturn( recordCursor );
 
         return store;

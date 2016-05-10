@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,6 +39,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -59,17 +61,12 @@ public class AbstractDynamicStoreTest
     {
         fs = fsr.get();
         pageCache = pageCacheRule.getPageCache( fsr.get() );
-        StoreChannel channel = fs.create( fileName );
-        try
+        try ( StoreChannel channel = fs.create( fileName ) )
         {
             ByteBuffer buffer = ByteBuffer.allocate( 4 );
             buffer.putInt( BLOCK_SIZE );
             buffer.flip();
             channel.write( buffer );
-        }
-        finally
-        {
-            channel.close();
         }
     }
 
@@ -89,6 +86,67 @@ public class AbstractDynamicStoreTest
                 otherBitsInTheInUseByte |= 1;
             }
         }
+    }
+
+    @Test
+    public void dynamicRecordCursorReadsInUseRecords()
+    {
+        try ( AbstractDynamicStore store = newTestableDynamicStore() )
+        {
+            DynamicRecord first = createDynamicRecord( 1, store );
+            DynamicRecord second = createDynamicRecord( 2, store );
+            DynamicRecord third = createDynamicRecord( 3, store );
+
+            first.setNextBlock( second.getId() );
+            store.forceUpdateRecord( first );
+            second.setNextBlock( third.getId() );
+            store.forceUpdateRecord( second );
+
+            AbstractDynamicStore.DynamicRecordCursor recordsCursor = store.getRecordsCursor( 1 );
+            assertTrue( recordsCursor.next() );
+            assertEquals( first, recordsCursor.get() );
+            assertTrue( recordsCursor.next() );
+            assertEquals( second, recordsCursor.get() );
+            assertTrue( recordsCursor.next() );
+            assertEquals( third, recordsCursor.get() );
+            assertFalse( recordsCursor.next() );
+        }
+    }
+
+    @Test
+    public void dynamicRecordCursorReadsNotInUseRecords()
+    {
+        try ( AbstractDynamicStore store = newTestableDynamicStore() )
+        {
+            DynamicRecord first = createDynamicRecord( 1, store );
+            DynamicRecord second = createDynamicRecord( 2, store );
+            DynamicRecord third = createDynamicRecord( 3, store );
+
+            first.setNextBlock( second.getId() );
+            store.forceUpdateRecord( first );
+            second.setNextBlock( third.getId() );
+            store.forceUpdateRecord( second );
+            second.setInUse( false );
+            store.forceUpdateRecord( second );
+
+            AbstractDynamicStore.DynamicRecordCursor recordsCursor = store.getRecordsCursor( 1 );
+            assertTrue( recordsCursor.next() );
+            assertEquals( first, recordsCursor.get() );
+            assertTrue( recordsCursor.next() );
+            assertEquals( second, recordsCursor.get() );
+            assertTrue( recordsCursor.next() );
+            assertEquals( third, recordsCursor.get() );
+            assertFalse( recordsCursor.next() );
+        }
+    }
+
+    private static DynamicRecord createDynamicRecord( long id, AbstractDynamicStore store )
+    {
+        DynamicRecord first = new DynamicRecord( id );
+        first.setInUse( true );
+        first.setData( RandomUtils.nextBytes( 10 ) );
+        store.forceUpdateRecord( first );
+        return first;
     }
 
     private void assertRecognizesByteAsInUse( AbstractDynamicStore store, byte inUseByte )
