@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -29,7 +33,9 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -112,6 +118,81 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
             // THEN
             assertEquals( "(" + start.getId() + ")-[" + type + "," + relationship.getId() + "]->(" + end.getId() + ")",
                     toString );
+        }
+    }
+
+    public void createDropRelationshipLongStringProperty()
+    {
+        Label markerLabel = DynamicLabel.label( "marker" );
+        String testPropertyKey = "testProperty";
+        String propertyValue = RandomStringUtils.randomAscii( 255 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node start = db.createNode( markerLabel );
+            Node end = db.createNode( markerLabel );
+            Relationship relationship = start.createRelationshipTo( end, withName( "type" ) );
+            relationship.setProperty( testPropertyKey, propertyValue );
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Relationship relationship = db.getRelationshipById( 0 );
+            assertEquals( propertyValue, relationship.getProperty( testPropertyKey ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Relationship relationship = db.getRelationshipById( 0 );
+            relationship.removeProperty( testPropertyKey );
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Relationship relationship = db.getRelationshipById( 0 );
+            assertFalse( relationship.hasProperty( testPropertyKey ) );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void createDropRelationshipLongArrayProperty()
+    {
+        Label markerLabel = DynamicLabel.label( "marker" );
+        String testPropertyKey = "testProperty";
+        byte[] propertyValue = RandomUtils.nextBytes( 1024 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node start = db.createNode( markerLabel );
+            Node end = db.createNode( markerLabel );
+            Relationship relationship = start.createRelationshipTo( end, withName( "type" ) );
+            relationship.setProperty( testPropertyKey, propertyValue );
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Relationship relationship = db.getRelationshipById( 0 );
+            assertArrayEquals( propertyValue, (byte[]) relationship.getProperty( testPropertyKey ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Relationship relationship = db.getRelationshipById( 0 );
+            relationship.removeProperty( testPropertyKey );
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Relationship relationship = db.getRelationshipById( 0 );
+            assertFalse( relationship.hasProperty( testPropertyKey ) );
+            tx.success();
         }
     }
 

@@ -65,7 +65,6 @@ import org.neo4j.logging.LogProvider;
 public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRecord,IntStoreHeader>
         implements DynamicRecordAllocator
 {
-
     public AbstractDynamicStore(
             File fileName,
             Config conf,

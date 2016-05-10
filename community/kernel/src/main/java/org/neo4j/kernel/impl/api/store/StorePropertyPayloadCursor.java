@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LongerShortString;
@@ -32,6 +31,7 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.ShortArray;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.string.UTF8;
 
@@ -47,7 +47,7 @@ import static org.neo4j.kernel.impl.store.PropertyType.SHORT;
 import static org.neo4j.kernel.impl.store.PropertyType.SHORT_ARRAY;
 import static org.neo4j.kernel.impl.store.PropertyType.SHORT_STRING;
 import static org.neo4j.kernel.impl.store.PropertyType.STRING;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Cursor that provides a view on property blocks of a particular property record.
@@ -78,6 +78,7 @@ class StorePropertyPayloadCursor
     private long[] data;
     private int position = INITIAL_POSITION;
     private int numberOfBlocks = 0;
+    private boolean exhausted;
 
     StorePropertyPayloadCursor( DynamicStringStore stringStore, DynamicArrayStore arrayStore )
     {
@@ -91,16 +92,24 @@ class StorePropertyPayloadCursor
         buffer = cachedBuffer;
         data = blocks;
         this.numberOfBlocks = numberOfBlocks;
+        exhausted = false;
     }
 
     void clear()
     {
         position = INITIAL_POSITION;
         numberOfBlocks = 0;
+        exhausted = false;
+        buffer = cachedBuffer;
     }
 
     boolean next()
     {
+        if ( exhausted )
+        {
+            return false;
+        }
+
         if ( position == INITIAL_POSITION )
         {
             position = 0;
@@ -110,11 +119,12 @@ class StorePropertyPayloadCursor
             position += currentBlocksUsed();
         }
 
-        if ( position >= numberOfBlocks )
+        if ( position >= numberOfBlocks || type() == null )
         {
+            exhausted = true;
             return false;
         }
-        return type() != null;
+        return true;
     }
 
     PropertyType type()
@@ -193,7 +203,7 @@ class StorePropertyPayloadCursor
         {
             stringRecordCursor = stringStore.newRecordCursor( stringStore.newRecord() );
         }
-        readFromStore( stringStore, stringRecordCursor );
+        readFromStore( stringRecordCursor );
         buffer.flip();
         return UTF8.decode( buffer.array(), 0, buffer.limit() );
     }
@@ -212,7 +222,7 @@ class StorePropertyPayloadCursor
         {
             arrayRecordCursor = arrayStore.newRecordCursor( arrayStore.newRecord() );
         }
-        readFromStore( arrayStore, arrayRecordCursor );
+        readFromStore( arrayRecordCursor );
         buffer.flip();
         return readArrayFromBuffer( buffer );
     }
@@ -272,14 +282,15 @@ class StorePropertyPayloadCursor
         return bits;
     }
 
-    private void readFromStore( AbstractDynamicStore store, RecordCursor<DynamicRecord> cursor )
+    private void readFromStore( RecordCursor<DynamicRecord> cursor )
     {
         buffer.clear();
         long startBlockId = PropertyBlock.fetchLong( currentHeader() );
-        try ( Cursor<DynamicRecord> records = cursor.acquire( startBlockId, NORMAL ) )
+        try ( Cursor<DynamicRecord> records = cursor.acquire( startBlockId, FORCE ) )
         {
-            while ( records.next() )
+            while ( true )
             {
+                records.next();
                 DynamicRecord dynamicRecord = records.get();
                 byte[] data = dynamicRecord.getData();
                 if ( buffer.remaining() < data.length )
@@ -290,6 +301,10 @@ class StorePropertyPayloadCursor
                     buffer = newBuffer;
                 }
                 buffer.put( data, 0, data.length );
+                if ( Record.NULL_REFERENCE.is( dynamicRecord.getNextBlock() ) )
+                {
+                    break;
+                }
             }
         }
     }
