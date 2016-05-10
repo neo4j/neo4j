@@ -63,6 +63,7 @@ import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
@@ -129,7 +130,8 @@ public class ConsistencyCheckService
                 logProvider );
 
         ConsistencySummaryStatistics summary;
-        final File reportFile = chooseReportPath(tuningConfiguration );
+        // With the added neo4j_home config the logs directory will end up in db location
+        final File reportFile = chooseReportPath( tuningConfiguration, storeDir );
         Log reportLog = new ConsistencyReportLog( Suppliers.lazySingleton( () -> {
             try
             {
@@ -198,8 +200,14 @@ public class ConsistencyCheckService
         return Result.SUCCESS;
     }
 
-    private File chooseReportPath( Config tuningConfiguration)
+    private File chooseReportPath( Config tuningConfiguration, File storeDir )
     {
+        if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
+        {
+            tuningConfiguration = tuningConfiguration.with(
+                    stringMap( GraphDatabaseSettings.neo4j_home.name(), storeDir.getAbsolutePath() ) );
+        }
+
         final File reportPath = tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
         return new File( reportPath, defaultLogFileName( timestamp ) );
     }
