@@ -38,6 +38,15 @@ public class ShiroAuthSubject implements AuthSubject
     private final Subject subject;
     private final AuthenticationResult authenticationResult;
 
+    public static ShiroAuthSubject castOrFail( AuthSubject authSubject )
+    {
+        if ( !(authSubject instanceof ShiroAuthSubject) )
+        {
+            throw new IllegalArgumentException( "Incorrect AuthSubject type " + authSubject.getClass().getTypeName() );
+        }
+        return (ShiroAuthSubject) authSubject;
+    }
+
     public ShiroAuthSubject( ShiroAuthManager authManager, Subject subject, AuthenticationResult authenticationResult )
     {
         this.authManager = authManager;
@@ -58,6 +67,11 @@ public class ShiroAuthSubject implements AuthSubject
     public void setPassword( String password ) throws IOException, IllegalCredentialsException
     {
         authManager.setPassword( this, (String) subject.getPrincipals().getPrimaryPrincipal(), password );
+    }
+
+    public boolean doesUsernameMatch( String username )
+    {
+        return subject.getPrincipal().equals( username );
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.Credential;
+import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.User;
 
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -46,6 +47,7 @@ public class ShiroAuthManagerTest
 {
     private InMemoryUserRepository users;
     private AuthenticationStrategy authStrategy;
+    private PasswordPolicy passwordPolicy;
     private ShiroAuthManager manager;
 
     @Before
@@ -53,7 +55,8 @@ public class ShiroAuthManagerTest
     {
         users = new InMemoryUserRepository();
         authStrategy = mock( AuthenticationStrategy.class );
-        manager = new ShiroAuthManager( users, authStrategy, true );
+        passwordPolicy = mock( PasswordPolicy.class );
+        manager = new ShiroAuthManager( users, passwordPolicy, authStrategy, true );
     }
 
     @Test
@@ -328,7 +331,7 @@ public class ShiroAuthManagerTest
     @Test
     public void shouldThrowWhenAuthIsDisabled() throws Throwable
     {
-        manager = new ShiroAuthManager( users, authStrategy, false );
+        manager = new ShiroAuthManager( users, passwordPolicy, authStrategy, false );
         manager.start();
 
         try

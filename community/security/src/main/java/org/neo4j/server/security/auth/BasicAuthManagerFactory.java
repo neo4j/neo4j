@@ -51,6 +51,9 @@ public class BasicAuthManagerFactory extends AuthManager.Factory
         final UserRepository userRepository =
                 new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider );
 
-        return new BasicAuthManager( userRepository, systemUTC(), config.get( GraphDatabaseSettings.auth_enabled ) );
+        final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
+
+        return new BasicAuthManager( userRepository, passwordPolicy, systemUTC(),
+                config.get( GraphDatabaseSettings.auth_enabled ) );
     }
 }

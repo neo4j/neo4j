@@ -21,13 +21,14 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.time.Clock;
 
+import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.UserRepository;
 
 public class EnterpriseAuthManager extends ShiroAuthManager
 {
-    public EnterpriseAuthManager( UserRepository users, Clock clock, boolean authEnabled )
+    public EnterpriseAuthManager( UserRepository users, PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
     {
-        super( users, clock, authEnabled );
+        super( users, passwordPolicy, clock, authEnabled );
     }
 
     @Override

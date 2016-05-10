@@ -29,11 +29,14 @@ import org.apache.shiro.subject.Subject;
 import java.io.IOException;
 import java.time.Clock;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicAuthManager;
+import org.neo4j.server.security.auth.BasicAuthSubject;
+import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
@@ -43,23 +46,23 @@ public class ShiroAuthManager extends BasicAuthManager
     private final SecurityManager securityManager;
     private final FileUserRealm realm;
 
-    public ShiroAuthManager( UserRepository userRepository, AuthenticationStrategy authStrategy, boolean authEnabled )
+    public ShiroAuthManager( UserRepository userRepository, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy, boolean authEnabled )
     {
-        super( userRepository, authStrategy, authEnabled );
+        super( userRepository, passwordPolicy, authStrategy, authEnabled );
 
         realm = new FileUserRealm( userRepository );
         // TODO: Do not forget realm.setCacheManager(...) before going into production...
         securityManager = new DefaultSecurityManager( realm );
     }
 
-    public ShiroAuthManager( UserRepository users, AuthenticationStrategy authStrategy )
+    public ShiroAuthManager( UserRepository users, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
     {
-        this( users, authStrategy, true );
+        this( users, passwordPolicy, authStrategy, true );
     }
 
-    public ShiroAuthManager( UserRepository users, Clock clock, boolean authEnabled )
+    public ShiroAuthManager( UserRepository users, PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
     {
-        this( users, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
+        this( users, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
     }
 
     @Override
@@ -125,5 +128,21 @@ public class ShiroAuthManager extends BasicAuthManager
             authStrategy.updateWithAuthenticationResult( result, username );
         }
         return new ShiroAuthSubject(this, subject, result);
+    }
+
+    @Override
+    public void setPassword( AuthSubject authSubject, String username, String password ) throws IOException,
+            IllegalCredentialsException
+    {
+        ShiroAuthSubject shiroAuthSubject = ShiroAuthSubject.castOrFail( authSubject );
+
+        if ( !shiroAuthSubject.doesUsernameMatch( username ) )
+        {
+            throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
+        }
+
+        passwordPolicy.validatePassword( authSubject, password );
+
+        setUserPassword( username, password );
     }
 }
