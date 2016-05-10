@@ -629,11 +629,12 @@ public enum ShortArray
         return array.getClass().getComponentType().isPrimitive();
     }
 
-    private static final Map<Class<?>, ShortArray> all = new IdentityHashMap<>( values().length * 2 );
+    private static final ShortArray[] TYPES = ShortArray.values();
+    private static final Map<Class<?>, ShortArray> all = new IdentityHashMap<>( TYPES.length * 2 );
 
     static
     {
-        for ( ShortArray shortArray : values() )
+        for ( ShortArray shortArray : TYPES )
         {
             all.put( shortArray.primitiveClass, shortArray );
             all.put( shortArray.boxedClass, shortArray );
@@ -772,7 +773,7 @@ public enum ShortArray
 
     public static ShortArray typeOf( byte typeId )
     {
-        return ShortArray.values()[typeId-1];
+        return TYPES[typeId - 1];
     }
 
     public static ShortArray typeOf( Object array )
@@ -782,13 +783,14 @@ public enum ShortArray
 
     public static int calculateNumberOfBlocksUsed( long firstBlock )
     {
-        Bits bits = Bits.bitsFromLongs( new long[] {firstBlock} );
-        // bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
-        bits.getInt( 24 ); // Get rid of key
-        bits.getByte( 4 ); // Get rid of short array type
-        bits.getByte( 4 ); // Get rid of the type
-        int arrayLength = bits.getByte( 6 );
-        int requiredBits = bits.getByte( 6 );
+        // inside the high 4B of the first block of a short array sits the header
+        int highInt = (int) (firstBlock >>> 32);
+        // bits 32-37 contains number of items (length)
+        int arrayLength = highInt & 0b11_1111;
+        highInt >>>= 6;
+        // bits 38-43 contains number of requires bits per item
+        int requiredBits = highInt & 0b11_1111;
+        // no values can be represented by 0 bits, so we use that value for 64 instead
         if ( requiredBits == 0 )
         {
             requiredBits = 64;

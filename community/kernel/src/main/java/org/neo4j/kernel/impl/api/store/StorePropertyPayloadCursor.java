@@ -183,8 +183,7 @@ class StorePropertyPayloadCursor
     String shortStringValue()
     {
         assertOfType( SHORT_STRING );
-        Bits bits = valueAsBits();
-        return LongerShortString.decode( bits );
+        return LongerShortString.decode( data, position, currentBlocksUsed() );
     }
 
     String stringValue()
@@ -364,9 +363,6 @@ class StorePropertyPayloadCursor
 
     private void assertOfType( PropertyType expected )
     {
-        if ( type() != expected )
-        {
-            throw new IllegalStateException( "Expected type " + expected + " but was " + type() );
-        }
+        assert type() == expected : "Expected type " + expected + " but was " + type();
     }
 }
