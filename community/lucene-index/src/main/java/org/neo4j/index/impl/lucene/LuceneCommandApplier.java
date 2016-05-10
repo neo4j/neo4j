@@ -61,9 +61,19 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
         CommitContext context = commitContext( command );
         String key = definitions.getKey( command.getKeyId() );
         Object value = command.getValue();
-        context.ensureWriterInstantiated();
-        context.indexType.addToDocument( context.getDocument( new IdData( command.getEntityId() ), true ).document,
-                key, value );
+
+        // Below is a check for a null value where such a value is ignored. This may look strange, but the
+        // reason is that there was this bug where adding a null value to an index would be fine and written
+        // into the log as a command, to later fail during application of that command, i.e. here.
+        // There was a fix introduced to throw IllegalArgumentException out to user right away if passing in
+        // null or object that had toString() produce null. Although databases already affected by this would
+        // not be able to recover, which is why this check is here.
+        if ( value != null )
+        {
+            context.ensureWriterInstantiated();
+            context.indexType.addToDocument( context.getDocument( new IdData( command.getEntityId() ), true ).document,
+                    key, value );
+        }
         return false;
     }
 
@@ -73,10 +83,20 @@ public class LuceneCommandApplier extends CommandHandler.Adapter
         CommitContext context = commitContext( command );
         String key = definitions.getKey( command.getKeyId() );
         Object value = command.getValue();
-        context.ensureWriterInstantiated();
-        RelationshipData entityId = new RelationshipData( command.getEntityId(),
-                command.getStartNode(), command.getEndNode() );
-        context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
+
+        // Below is a check for a null value where such a value is ignored. This may look strange, but the
+        // reason is that there was this bug where adding a null value to an index would be fine and written
+        // into the log as a command, to later fail during application of that command, i.e. here.
+        // There was a fix introduced to throw IllegalArgumentException out to user right away if passing in
+        // null or object that had toString() produce null. Although databases already affected by this would
+        // not be able to recover, which is why this check is here.
+        if ( value != null )
+        {
+            context.ensureWriterInstantiated();
+            RelationshipData entityId = new RelationshipData( command.getEntityId(),
+                    command.getStartNode(), command.getEndNode() );
+            context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
+        }
         return false;
     }
 
