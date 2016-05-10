@@ -112,7 +112,7 @@ public class BasicAuthSubject implements AuthSubject
      */
     private void validatePassword( String password ) throws IllegalCredentialsException
     {
-        if (password == null || password.isEmpty() )
+        if ( password == null || password.isEmpty() )
         {
             throw new IllegalCredentialsException( "Password cannot be empty." );
         }
