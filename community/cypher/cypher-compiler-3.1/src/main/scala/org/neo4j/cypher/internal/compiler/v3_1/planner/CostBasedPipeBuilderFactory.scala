@@ -42,9 +42,9 @@ object CostBasedPipeBuilderFactory {
     def createQueryGraphSolver(n: CostBasedPlannerName): QueryGraphSolver = n match {
       case IDPPlannerName =>
         val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-        val solverConfig = ConfigurableIDPSolverConfig(
+        val solverConfig = new ConfigurableIDPSolverConfig(
           maxTableSize = config.idpMaxTableSize,
-          iterationDuration = config.idpIterationDuration
+          iterationDurationLimit = config.idpIterationDuration
         )
         val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
 
