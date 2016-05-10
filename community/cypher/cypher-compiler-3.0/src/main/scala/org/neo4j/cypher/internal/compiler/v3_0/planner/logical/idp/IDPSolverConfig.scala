@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_0.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{PatternRelationship, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans.{LogicalPlan, PatternRelationship}
 
 /**
  * The IDP inner loop can be optimized and tweaked in several ways, and this trait encapsulates those settings
@@ -47,18 +47,18 @@ case object DefaultIDPSolverConfig extends IDPSolverConfig {
 
 /* The default settings for IDP uses a maxTableSize and a inner loop duration threshold
    to improve planning performance with minimal impact of plan quality */
-case class ConfigurableIDPSolverConfig(override val maxTableSize: Int, iterationDuration: Long) extends IDPSolverConfig {
-  override def iterationDurationLimit = iterationDuration
+class ConfigurableIDPSolverConfig(override val maxTableSize: Int,
+                                  override val iterationDurationLimit: Long) extends IDPSolverConfig {
   override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
 }
 
 /* For testing IDP we sometimes limit the solver to expands only */
-case object ExpandOnlyIDPSolverConfig extends IDPSolverConfig {
+case object ExpandOnlyIDPSolverConfig extends ConfigurableIDPSolverConfig(256, Long.MaxValue) {
   override def solvers(queryGraph: QueryGraph) = Seq(expandSolverStep(_))
 }
 
 /* For testing IDP we sometimes limit the solver to joins only */
-case object JoinOnlyIDPSolverConfig extends IDPSolverConfig {
+case object JoinOnlyIDPSolverConfig extends ConfigurableIDPSolverConfig(256, Long.MaxValue) {
   override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_))
 }
 
@@ -66,8 +66,7 @@ case object JoinOnlyIDPSolverConfig extends IDPSolverConfig {
    This making planning very fast, but can lead to non-optimal plans where joins make more sense */
 case object ExpandOnlyWhenPatternIsLong extends IDPSolverConfig {
   override def solvers(queryGraph: QueryGraph) =
-    if(queryGraph.patternRelationships.size > 10) Seq(expandSolverStep(_))
-    else Seq(joinSolverStep(_), expandSolverStep(_))
+    Seq(AdaptiveSolverStep(_, (qg, goal) => qg.patternRelationships.size > 10))
 }
 
 /* One more advanced approach is to allow the inner loop to automatically switch from
@@ -78,5 +77,19 @@ case object ExpandOnlyWhenPatternIsLong extends IDPSolverConfig {
    time to develop more confidence in the approach. */
 case class AdaptiveChainPatternConfig(patternLengthThreshold: Int) extends IDPSolverConfig {
   override def solvers(queryGraph: QueryGraph) =
-    Seq(AdaptiveSolverStep(_, patternLengthThreshold))
+    Seq(AdaptiveSolverStep(_, (qg, goal) => goal.size >= patternLengthThreshold))
+}
+
+case class AdaptiveSolverStep(qg: QueryGraph, predicate: (QueryGraph, Goal) => Boolean) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+
+  private val join = joinSolverStep(qg)
+  private val expand = expandSolverStep(qg)
+
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan])
+                    (implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+    if (!registry.compacted() && predicate(qg, goal))
+      expand(registry, goal, table)
+    else
+      expand(registry, goal, table) ++ join(registry, goal, table)
+  }
 }

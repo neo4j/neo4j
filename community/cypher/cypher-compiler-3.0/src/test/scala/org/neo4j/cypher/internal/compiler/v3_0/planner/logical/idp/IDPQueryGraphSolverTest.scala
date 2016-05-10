@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_0.planner.logical.idp
 
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions}
-import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.Cardinality
+import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.{Cardinality, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v3_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_0.planner.{LogicalPlanningTestSupport2, QueryGraph, Selections}
 import org.neo4j.cypher.internal.frontend.v3_0.SemanticDirection
@@ -487,9 +487,17 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val solverConfigsToTest = Seq(
       ExpandOnlyIDPSolverConfig,
       ExpandOnlyWhenPatternIsLong,
-      ConfigurableIDPSolverConfig(maxTableSize = 32, iterationDuration = Long.MaxValue), // table limited
-      ConfigurableIDPSolverConfig(maxTableSize = Int.MaxValue, iterationDuration = 500), // time limited
-      AdaptiveChainPatternConfig(10)
+      new IDPSolverConfig {
+        override def solvers(queryGraph: QueryGraph): Seq[(QueryGraph) => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
+          ExpandOnlyWhenPatternIsLong.solvers(queryGraph)
+        override def iterationDurationLimit: Long = 100
+      },
+      new ConfigurableIDPSolverConfig(maxTableSize = 32, iterationDurationLimit = Long.MaxValue), // table limited
+      new ConfigurableIDPSolverConfig(maxTableSize = Int.MaxValue, iterationDurationLimit = 500), // time limited
+      AdaptiveChainPatternConfig(10), // default
+      new AdaptiveChainPatternConfig(5) { // make sure it works on comprehsions for very long patterns
+        override def iterationDurationLimit: Long = 20
+      }
     )
 
     solverConfigsToTest.foreach { solverConfig =>
