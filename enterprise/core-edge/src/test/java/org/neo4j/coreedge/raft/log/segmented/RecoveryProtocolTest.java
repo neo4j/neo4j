@@ -30,7 +30,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.coreedge.raft.log.DamagedLogStorageException;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
-import org.neo4j.coreedge.raft.log.segmented.SegmentHeader;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;

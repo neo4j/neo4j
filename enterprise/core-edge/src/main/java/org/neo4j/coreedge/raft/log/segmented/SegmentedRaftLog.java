@@ -35,15 +35,13 @@ import org.neo4j.coreedge.raft.state.ChannelMarshal;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.collection.LruCache;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 /**
- * The physical RAFT log is an append only log supporting the operations required to support
- * the RAFT consensus algorithm. The physical part relates to the fact that the implementation
- * borrows from infrastructure around the already existing {@link PhysicalLogFile} and related.
+ * The segmented RAFT log is an append only log supporting the operations required to support
+ * the RAFT consensus algorithm.
  *
  * A RAFT log must be able to append new entries, but also truncate not yet committed entries,
  * prune out old compacted entries and skip to a later starting point.
@@ -58,7 +56,7 @@ import org.neo4j.logging.LogProvider;
  * by switching to the next segment file, called the next version. A new segment file is also started
  * when the threshold for a particular file has been reached.
  */
-public class SegmentedPhysicalRaftLog extends LifecycleAdapter implements RaftLog
+public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 {
     private final Log log;
 
@@ -76,7 +74,7 @@ public class SegmentedPhysicalRaftLog extends LifecycleAdapter implements RaftLo
 
     private State state;
 
-    public SegmentedPhysicalRaftLog(
+    public SegmentedRaftLog(
             FileSystemAbstraction fileSystem,
             File directory,
             long rotateAtSize,

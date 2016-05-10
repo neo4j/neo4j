@@ -19,27 +19,20 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-/**
- * Collects all the state that must be recovered after a restart.
- */
-public class State
+import java.io.File;
+
+import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
+import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
+
+public class ConcurrentStressIT extends org.neo4j.coreedge.raft.log.ConcurrentStressIT
 {
-    Segments segments;
-
-    long prevIndex = -1;
-    long prevTerm = -1;
-    long appendIndex = -1;
-    long currentTerm = -1;
-
     @Override
-    public String toString()
+    public RaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
     {
-        return "State{" +
-               "segments=" + segments +
-               ", prevIndex=" + prevIndex +
-               ", prevTerm=" + prevTerm +
-               ", appendIndex=" + appendIndex +
-               ", currentTerm=" + currentTerm +
-               '}';
+        SegmentedRaftLog raftLog = new SegmentedRaftLog( fsa, dir, 8 * 1024 * 1024, new DummyRaftableContentSerializer(), NullLogProvider.getInstance(), 8 );
+        raftLog.start();
+        return raftLog;
     }
 }

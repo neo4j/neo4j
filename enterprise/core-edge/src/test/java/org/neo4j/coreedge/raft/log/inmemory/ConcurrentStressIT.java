@@ -17,29 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.log.segmented;
+package org.neo4j.coreedge.raft.log.inmemory;
 
-/**
- * Collects all the state that must be recovered after a restart.
- */
-public class State
+import java.io.File;
+
+import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
+import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.io.fs.FileSystemAbstraction;
+
+public class ConcurrentStressIT extends org.neo4j.coreedge.raft.log.ConcurrentStressIT
 {
-    Segments segments;
-
-    long prevIndex = -1;
-    long prevTerm = -1;
-    long appendIndex = -1;
-    long currentTerm = -1;
-
     @Override
-    public String toString()
+    public RaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
     {
-        return "State{" +
-               "segments=" + segments +
-               ", prevIndex=" + prevIndex +
-               ", prevTerm=" + prevTerm +
-               ", appendIndex=" + appendIndex +
-               ", currentTerm=" + currentTerm +
-               '}';
+        return new InMemoryRaftLog();
     }
 }
