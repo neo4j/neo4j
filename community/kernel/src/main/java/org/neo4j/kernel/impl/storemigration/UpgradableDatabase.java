@@ -27,8 +27,10 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.StoreVersions;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.DatabaseNotCleanlyShutDownException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreFormatException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradeMissingStoreFilesException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
@@ -71,6 +73,8 @@ public class UpgradableDatabase
      * version cannot be determined.
      * @throws UnexpectedUpgradingStoreVersionException if store cannot be upgraded due to an unexpected store
      * version found.
+     * @throws UnexpectedUpgradingStoreFormatException if store cannot be upgraded due to an unexpected store
+     * format found.
      * @throws DatabaseNotCleanlyShutDownException if store cannot be upgraded due to not being cleanly shut down.
      */
     public RecordFormats checkUpgradeable( File storeDirectory )
@@ -82,6 +86,14 @@ public class UpgradableDatabase
             // This store already has the format that we want
             // Although this method should not have been called in this case.
             return format;
+        }
+
+        // If we are trying to open an enterprise store when configured to use community format, then inform the user
+        // of the config setting to change since downgrades aren't possible but the store can still be opened.
+        if ( StoreVersions.isEnterpriseStoreVersion( result.actualVersion ) &&
+                StoreVersions.isCommunityStoreVersion( format.storeVersion() ) )
+        {
+            throw new StoreUpgrader.UnexpectedUpgradingStoreFormatException();
         }
 
         RecordFormats fromFormat;

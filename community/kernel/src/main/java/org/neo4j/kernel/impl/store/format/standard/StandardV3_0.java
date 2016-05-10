@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.StoreVersions;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -35,7 +36,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 public class StandardV3_0 extends BaseRecordFormats
 {
     public static final RecordFormats RECORD_FORMATS = new StandardV3_0();
-    public static final String STORE_VERSION = "v0.A.7";
+    public static final String STORE_VERSION = StoreVersions.STANDARD_V3_0;
     public static final String NAME = "standard";
 
     public StandardV3_0()
