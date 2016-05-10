@@ -498,6 +498,7 @@ public enum LongerShortString
     public static final int ALL_BIT_MASK = bitMask( LongerShortString.values() );
     public static final int ENCODING_UTF8 = 0;
     public static final int ENCODING_LATIN1 = 10;
+    private static final int HEADER_SIZE = 39; // bits
 
     final int encodingHeader;
     final long mask;
@@ -764,33 +765,45 @@ public enum LongerShortString
      */
     public static String decode( PropertyBlock block )
     {
-        Bits bits = Bits.bitsFromLongs( block.getValueBlocks() );
-        return decode( bits );
+        return decode( block.getValueBlocks(), 0, block.getValueBlocks().length );
     }
 
-    public static String decode(Bits bits)
+    public static String decode( long[] blocks, int offset, int length )
     {
-        long firstLong = bits.getLongs()[0];
+        long firstLong = blocks[offset];
         if ( ( firstLong & 0xFFFFFF0FFFFFFFFFL ) == 0 ) return "";
-        bits.getInt( 24 ); // Get rid of the key
-        bits.getByte( 4 ); // Get rid of the type
-        int encoding = bits.getByte( 5 ); //(int) ( ( firstLong & 0xF00000000L ) >>> 32 );
-        int stringLength = bits.getByte( 6 ); //(int) ( ( firstLong & 0xFC000000L ) >>> 26 );
-        if ( encoding == LongerShortString.ENCODING_UTF8 ) return decodeUTF8( bits, stringLength );
-        if ( encoding == ENCODING_LATIN1 ) return decodeLatin1( bits, stringLength );
+        // key(24b) + type(4) = 28
+        int encoding = (int) ((firstLong & 0x1F0000000L) >>> 28); // 5 bits of encoding
+        int stringLength = (int) ((firstLong & 0x7E00000000L) >>> 33); // 6 bits of stringLength
+        if ( encoding == LongerShortString.ENCODING_UTF8 ) return decodeUTF8( blocks, offset, stringLength );
+        if ( encoding == ENCODING_LATIN1 ) return decodeLatin1( blocks, offset, stringLength );
 
         LongerShortString table = getEncodingTable( encoding );
         char[] result = new char[stringLength];
         // encode shifts in the bytes with the first char at the MSB, therefore
         // we must "unshift" in the reverse order
-        for ( int i = 0; i < stringLength; i++ )
-        {
-            byte codePoint = bits.getByte( table.step );
-            result[i] = table.decTranslate( codePoint );
-        }
+        decode( result, blocks, offset, table );
 
         // We know the char array is unshared, so use sharing constructor explicitly
         return UnsafeUtil.newSharedArrayString( result );
+    }
+
+    private static void decode( char[] result, long[] blocks, int offset, LongerShortString table )
+    {
+        int block = offset;
+        int maskShift = HEADER_SIZE;
+        long baseMask = table.mask;
+        for ( int i = 0; i < result.length; i++ )
+        {
+            byte codePoint = (byte) ((blocks[block] >>> maskShift) & baseMask);
+            maskShift += table.step;
+            if ( maskShift >= 64 && block + 1 < blocks.length )
+            {
+                maskShift %= 64;
+                codePoint |= (blocks[++block] & (baseMask >>> (table.step - maskShift))) << (table.step - maskShift);
+            }
+            result[i] = table.decTranslate( codePoint );
+        }
     }
 
     // lookup table by encoding header
@@ -878,22 +891,40 @@ public enum LongerShortString
         }
     }
 
-    private static String decodeLatin1( Bits bits, int stringLength )
-    { // see decode
+    private static String decodeLatin1( long[] blocks, int offset, int stringLength )
+    {
         char[] result = new char[stringLength];
-        for ( int i = 0; i < stringLength; i++ )
+        int block = offset;
+        int maskShift = HEADER_SIZE;
+        for ( int i = 0; i < result.length; i++ )
         {
-            result[i] = (char) bits.getShort( 8 );
+            char codePoint = (char) ((blocks[block] >>> maskShift) & 0xFF);
+            maskShift += 8;
+            if ( maskShift >= 64 )
+            {
+                maskShift %= 64;
+                codePoint |= (blocks[++block] & (0xFF >>> (8-maskShift))) << (8-maskShift);
+            }
+            result[i] = codePoint;
         }
-        return new String( result );
+        return UnsafeUtil.newSharedArrayString( result );
     }
 
-    private static String decodeUTF8( Bits bits, int stringLength )
+    private static String decodeUTF8( long[] blocks, int offset, int stringLength )
     {
         byte[] result = new byte[stringLength];
-        for ( int i = 0; i < stringLength; i++ )
+        int block = offset;
+        int maskShift = HEADER_SIZE;
+        for ( int i = 0; i < result.length; i++ )
         {
-            result[i] = bits.getByte();
+            byte codePoint = (byte) (blocks[block] >>> maskShift);
+            maskShift += 8;
+            if ( maskShift >= 64 )
+            {
+                maskShift %= 64;
+                codePoint |= (blocks[++block] & (0xFF >>> (8-maskShift))) << (8-maskShift);
+            }
+            result[i] = codePoint;
         }
         return UTF8.decode( result );
     }
@@ -903,26 +934,23 @@ public enum LongerShortString
         /*
          * [ lll,llle][eeee,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
          */
-        int encoding = (int) ( ( firstBlock & 0x1F0000000L ) >> 28 );
-        int length = (int) ( ( firstBlock & 0x7E00000000L ) >> 33 );
-        /*
-        Bits bits = Bits.bitsFromLongs( new long[] {firstBlock} );
-        bits.getInt( 24 ); // key
-        bits.getByte( 4 ); // type
-        int encoding = bits.getByte( 5 );
-        int length = bits.getByte( 6 );
-        */
-        if (encoding==ENCODING_UTF8 || encoding == ENCODING_LATIN1) return calculateNumberOfBlocksUsedForStep8(length);
-        return calculateNumberOfBlocksUsed( getEncodingTable(encoding), length );
+        int encoding = (int) ((firstBlock & 0x1F0000000L) >> 28);
+        int length = (int) ((firstBlock & 0x7E00000000L) >> 33);
+        if ( encoding == ENCODING_UTF8 || encoding == ENCODING_LATIN1 )
+        {
+            return calculateNumberOfBlocksUsedForStep8( length );
+        }
+        return calculateNumberOfBlocksUsed( getEncodingTable( encoding ), length );
     }
 
     public static int calculateNumberOfBlocksUsedForStep8( int length )
     {
-        return totalBits(length << 3); // * 8
+        return totalBits( length << 3 ); // * 8
     }
+
     public static int calculateNumberOfBlocksUsed( LongerShortString encoding, int length )
     {
-        return totalBits(length * encoding.step);
+        return totalBits( length * encoding.step );
     }
 
     private static int totalBits( int bitsForCharacters )
