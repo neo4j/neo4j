@@ -23,6 +23,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  // TCK'd
   test("should handle numeric ranges") {
     val one = createNode(Map("value" -> 1))
     val two = createNode(Map("value" -> 2))
@@ -41,6 +42,7 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
       Set(Map("n" -> one), Map("n" -> two), Map("n" -> three)))
   }
 
+  // TCK'd
   test("should handle string ranges") {
     val a = createNode(Map("value" -> "a"))
     val b = createNode(Map("value" -> "b"))
@@ -59,12 +61,14 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
       Set(Map("n" -> a), Map("n" -> b), Map("n" -> c)))
   }
 
+  // TCK'd
   test("should handle empty ranges") {
     createNode(Map("value" -> 3))
 
     executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE 10 < n.value < 3 RETURN n").toSet shouldBe empty
   }
 
+  // TCK'd
   test("should handle long chains of operators") {
     val node1 = createNode(Map("prop1" -> 3, "prop2" -> 4))
     val node2 = createNode(Map("prop1" -> 4, "prop2" -> 5))
@@ -76,28 +80,30 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
     executeWithAllPlannersAndCompatibilityMode("MATCH (n)-->(m) WHERE n.prop1 < m.prop1 = n.prop2 <> m.prop2 RETURN m").toSet should equal(Set(Map("m" -> node2)))
   }
 
+  // TCK'd
   test("should handle numerical literal on the left when using an index") {
     graph.createIndex("Product", "unitsInStock")
-    val small = createLabeledNode(Map("unitsInStock" -> 8), "Product")
-    val large = createLabeledNode(Map("unitsInStock" -> 12), "Product")
+    createLabeledNode(Map("unitsInStock" -> 8), "Product")
+    val expected = createLabeledNode(Map("unitsInStock" -> 12), "Product")
 
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       """
         |MATCH (p:Product)
-        |USING index p:Product(unitsInStock)
+        |USING INDEX p:Product(unitsInStock)
         |WHERE 10 < p.unitsInStock
         |RETURN p
       """.stripMargin)
 
-    result.toList should equal(List(Map("p" -> large)))
+    result.toList should equal(List(Map("p" -> expected)))
   }
 
+  // TCK'd
   test("should handle numerical literal on the right when using an index") {
     graph.createIndex("Product", "unitsInStock")
-    val small = createLabeledNode(Map("unitsInStock" -> 8), "Product")
-    val large = createLabeledNode(Map("unitsInStock" -> 12), "Product")
+    createLabeledNode(Map("unitsInStock" -> 8), "Product")
+    val expected = createLabeledNode(Map("unitsInStock" -> 12), "Product")
 
-    val result = executeWithCostPlannerOnly(
+    val result = executeWithAllPlannersAndCompatibilityMode(
       """
         |MATCH (p:Product)
         |USING index p:Product(unitsInStock)
@@ -105,7 +111,7 @@ class ComparisonOperatorAcceptanceTest extends ExecutionEngineFunSuite with NewP
         |RETURN p
       """.stripMargin)
 
-    result.toList should equal(List(Map("p" -> large)))
+    result.toList should equal(List(Map("p" -> expected)))
   }
 
 }

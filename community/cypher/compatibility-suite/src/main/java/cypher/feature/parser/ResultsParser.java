@@ -35,7 +35,9 @@ public class ResultsParser
     ResultsParser()
     {
         this.lexer = new FeatureResultsLexer( new ANTLRInputStream( "" ) );
+        lexer.addErrorListener( new ParsingErrorListener() );
         this.parser = new FeatureResultsParser( new CommonTokenStream( lexer ) );
+        parser.addErrorListener( new ParsingErrorListener() );
         this.walker = new ParseTreeWalker();
     }
 
