@@ -156,6 +156,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
          */
         KernelTransaction currentTransaction();
 
+        void assertInUnterminatedTransaction();
+
         /** true if {@link #currentTransaction()} would return a transaction. */
         boolean isInOpenTransaction();
 
@@ -193,10 +195,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
         this.spi = spi;
         this.relActions = new StandardRelationshipActions( spi::currentStatement, spi::currentTransaction,
-                this::assertTransactionOpen, ( id ) -> new NodeProxy( nodeActions, id ), this );
+                spi::assertInUnterminatedTransaction, ( id ) -> new NodeProxy( nodeActions, id ), this );
         this.nodeActions =
-                new StandardNodeActions( spi::currentStatement, spi::currentTransaction, this::assertTransactionOpen,
-                        relActions, this );
+                new StandardNodeActions( spi::currentStatement, spi::currentTransaction,
+                        spi::assertInUnterminatedTransaction, relActions, this );
         this.schema = new SchemaImpl( spi::currentStatement );
         AutoIndexerFacade<Node> nodeAutoIndexer = new AutoIndexerFacade<>(
                 () -> new ReadOnlyIndexFacade<>(
