@@ -326,6 +326,17 @@ public class StoreUpgrader
         }
     }
 
+    public static class UnexpectedUpgradingStoreFormatException extends UnableToUpgradeException
+    {
+        protected static final String MESSAGE =
+                "This is an enterprise-only store. Please configure '%s' to open.";
+
+        public UnexpectedUpgradingStoreFormatException()
+        {
+            super( String.format( MESSAGE, GraphDatabaseSettings.record_format.name() ) );
+        }
+    }
+
     public static class DatabaseNotCleanlyShutDownException extends UnableToUpgradeException
     {
         private static final String MESSAGE =

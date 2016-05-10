@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.StoreVersions;
 import org.neo4j.kernel.impl.store.format.standard.LabelTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.PropertyKeyTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipTypeTokenRecordFormat;
@@ -49,7 +50,7 @@ public class HighLimit extends BaseRecordFormats
 
     public static final RecordFormats RECORD_FORMATS = new HighLimit();
     // Enterprise.HighLimit.Zero
-    public static final String STORE_VERSION = "vE.H.0";
+    public static final String STORE_VERSION = StoreVersions.HIGH_LIMIT_V3_0;
     public static final String NAME = "high_limit";
 
     public HighLimit()
