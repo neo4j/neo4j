@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.cursor.Cursor;
@@ -60,11 +59,13 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
@@ -247,7 +248,7 @@ public class LabelsAcceptanceTest
 
         // THEN
 
-        Set<String> names = Stream.of( Labels.values() ).map( Labels::name ).collect( Collectors.toSet() );
+        Set<String> names = Stream.of( Labels.values() ).map( Labels::name ).collect( toSet() );
         assertThat( node, inTx( db, hasLabels( names ) ));
     }
 
@@ -604,6 +605,85 @@ public class LabelsAcceptanceTest
         // No exceptions from the above
 
 
+    }
+
+    @Test
+    public void nodeWithManyLabels()
+    {
+        int labels = 500;
+        int halveLabels = labels / 2;
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        long nodeId = createNode( db ).getId();
+
+        addLabels( nodeId, 0, halveLabels );
+        addLabels( nodeId, halveLabels, halveLabels );
+
+        verifyLabels( nodeId, 0, labels );
+
+        removeLabels( nodeId, halveLabels, halveLabels );
+        verifyLabels( nodeId, 0, halveLabels );
+
+        removeLabels( nodeId, 0, halveLabels - 2 );
+        verifyLabels( nodeId, halveLabels - 2, 2 );
+    }
+
+    private void addLabels( long nodeId, int startLabelIndex, int count )
+    {
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            Node node = dbRule.getNodeById( nodeId );
+            int endLabelIndex = startLabelIndex + count;
+            for ( int i = startLabelIndex; i < endLabelIndex; i++ )
+            {
+                node.addLabel( labelWithIndex( i ) );
+            }
+            tx.success();
+        }
+    }
+
+    private void verifyLabels( long nodeId, int startLabelIndex, int count )
+    {
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            Node node = dbRule.getNodeById( nodeId );
+            Set<String> labelNames = Iterables.asList( node.getLabels() )
+                    .stream()
+                    .map( Label::name )
+                    .sorted()
+                    .collect( toSet() );
+
+            assertEquals( count, labelNames.size() );
+            int endLabelIndex = startLabelIndex + count;
+            for ( int i = startLabelIndex; i < endLabelIndex; i++ )
+            {
+                assertTrue( labelNames.contains( labelName( i ) ) );
+            }
+            tx.success();
+        }
+    }
+
+    private void removeLabels( long nodeId, int startLabelIndex, int count )
+    {
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            Node node = dbRule.getNodeById( nodeId );
+            int endLabelIndex = startLabelIndex + count;
+            for ( int i = startLabelIndex; i < endLabelIndex; i++ )
+            {
+                node.removeLabel( labelWithIndex( i ) );
+            }
+            tx.success();
+        }
+    }
+
+    private static Label labelWithIndex( int index )
+    {
+        return label( labelName( index ) );
+    }
+
+    private static String labelName( int index )
+    {
+        return "Label-" + index;
     }
 
     @SuppressWarnings("deprecation")

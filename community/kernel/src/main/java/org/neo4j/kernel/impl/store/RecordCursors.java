@@ -38,6 +38,7 @@ public class RecordCursors implements AutoCloseable
     private final RecordCursor<PropertyRecord> property;
     private final RecordCursor<DynamicRecord> propertyString;
     private final RecordCursor<DynamicRecord> propertyArray;
+    private final RecordCursor<DynamicRecord> label;
 
     public RecordCursors( NeoStores neoStores )
     {
@@ -52,6 +53,7 @@ public class RecordCursors implements AutoCloseable
         property = newCursor( neoStores.getPropertyStore(), mode );
         propertyString = newCursor( neoStores.getPropertyStore().getStringStore(), mode );
         propertyArray = newCursor( neoStores.getPropertyStore().getArrayStore(), mode );
+        label = newCursor( neoStores.getNodeStore().getDynamicLabelStore(), mode );
     }
 
     private static <R extends AbstractBaseRecord> RecordCursor<R> newCursor( RecordStore<R> store, RecordLoad mode )
@@ -63,7 +65,7 @@ public class RecordCursors implements AutoCloseable
     public void close()
     {
         IOUtils.closeAll( RuntimeException.class,
-                node, relationship, relationshipGroup, property, propertyArray, propertyString );
+                node, relationship, relationshipGroup, property, propertyArray, propertyString, label );
     }
 
     public RecordCursor<NodeRecord> node()
@@ -94,5 +96,10 @@ public class RecordCursors implements AutoCloseable
     public RecordCursor<DynamicRecord> propertyString()
     {
         return propertyString;
+    }
+
+    public RecordCursor<DynamicRecord> label()
+    {
+        return label;
     }
 }

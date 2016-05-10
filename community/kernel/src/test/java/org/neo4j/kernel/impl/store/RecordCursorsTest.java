@@ -72,6 +72,7 @@ public class RecordCursorsTest
         verify( recordCursors.property() ).close();
         verify( recordCursors.propertyString() ).close();
         verify( recordCursors.propertyArray() ).close();
+        verify( recordCursors.label() ).close();
     }
 
     private static RecordCursors newRecordCursorsWithMockedNeoStores()
@@ -83,6 +84,7 @@ public class RecordCursorsTest
         PropertyStore propertyStore = newStoreMockWithRecordCursor( PropertyStore.class );
         DynamicStringStore dynamicStringStore = newStoreMockWithRecordCursor( DynamicStringStore.class );
         DynamicArrayStore dynamicArrayStore = newStoreMockWithRecordCursor( DynamicArrayStore.class );
+        DynamicArrayStore dynamicLabelStore = newStoreMockWithRecordCursor( DynamicArrayStore.class );
 
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
         when( neoStores.getRelationshipStore() ).thenReturn( relStore );
@@ -90,6 +92,7 @@ public class RecordCursorsTest
         when( neoStores.getPropertyStore() ).thenReturn( propertyStore );
         when( propertyStore.getStringStore() ).thenReturn( dynamicStringStore );
         when( propertyStore.getArrayStore() ).thenReturn( dynamicArrayStore );
+        when( nodeStore.getDynamicLabelStore() ).thenReturn( dynamicLabelStore );
 
         return new RecordCursors( neoStores );
     }

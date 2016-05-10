@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -92,7 +91,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             @Override
             protected StoreLabelCursor create()
             {
-                return new StoreLabelCursor( this );
+                return new StoreLabelCursor( cursors.label(), this );
             }
         };
         singleLabelCursor = new InstanceCache<StoreSingleLabelCursor>()
@@ -100,7 +99,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             @Override
             protected StoreSingleLabelCursor create()
             {
-                return new StoreSingleLabelCursor( this );
+                return new StoreSingleLabelCursor( cursors.label(), this );
             }
         };
         nodeRelationshipCursor = new InstanceCache<StoreNodeRelationshipCursor>()
@@ -147,13 +146,13 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
     @Override
     public Cursor<LabelItem> labels()
     {
-        return labelCursor.get().init( NodeLabelsField.get( nodeRecord, nodeStore ) );
+        return labelCursor.get().init( nodeRecord );
     }
 
     @Override
     public Cursor<LabelItem> label( int labelId )
     {
-        return singleLabelCursor.get().init( NodeLabelsField.get( nodeRecord, nodeStore ), labelId );
+        return singleLabelCursor.get().init( nodeRecord, labelId );
     }
 
     /**

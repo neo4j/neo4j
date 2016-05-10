@@ -24,8 +24,6 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -1146,17 +1144,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public Collection<RECORD> getRecords( long firstId, RecordLoad mode )
     {
-        // TODO we should instead be passed in a consumer of records, so we don't have to spend memory building up
-        // this list
         try ( RecordCursor<RECORD> cursor = newRecordCursor( newRecord() ) )
         {
-            List<RECORD> recordList = new LinkedList<>();
             cursor.acquire( firstId, mode );
-            while ( cursor.next() )
-            {
-                recordList.add( (RECORD) cursor.get().clone() );
-            }
-            return recordList;
+            return cursor.getAll();
         }
     }
 

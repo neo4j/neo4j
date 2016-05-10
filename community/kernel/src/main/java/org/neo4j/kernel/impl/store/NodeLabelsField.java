@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 /**
@@ -52,6 +53,13 @@ public class NodeLabelsField
         return fieldPointsToDynamicRecordOfLabels( node.getLabelField() )
                 ? DynamicNodeLabels.get( node, nodeStore )
                 : InlineNodeLabels.get( node );
+    }
+
+    public static long[] get( NodeRecord node, RecordCursor<DynamicRecord> dynamicLabelCursor )
+    {
+        return fieldPointsToDynamicRecordOfLabels( node.getLabelField() )
+               ? DynamicNodeLabels.get( node, dynamicLabelCursor )
+               : InlineNodeLabels.get( node );
     }
 
     public static boolean fieldPointsToDynamicRecordOfLabels( long labelField )

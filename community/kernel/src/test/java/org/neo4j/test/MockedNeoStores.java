@@ -45,10 +45,15 @@ public class MockedNeoStores
         // Cursor, absolutely mocked and cannot be used at all as it is
         RecordCursor cursor = mockedRecordCursor();
 
-        // NodeStore
+        // NodeStore - DynamicLabelStore
         NodeStore nodeStore = mock( NodeStore.class );
         when( nodeStore.newRecordCursor( any() ) ).thenReturn( cursor );
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
+
+        // NodeStore - DynamicLabelStore
+        DynamicArrayStore dynamicLabelStore = mock( DynamicArrayStore.class );
+        when( dynamicLabelStore.newRecordCursor( any() ) ).thenReturn( cursor );
+        when( nodeStore.getDynamicLabelStore() ).thenReturn( dynamicLabelStore );
 
         // RelationshipStore
         RelationshipStore relationshipStore = mock( RelationshipStore.class );

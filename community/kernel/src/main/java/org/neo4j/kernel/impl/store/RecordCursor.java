@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.cursor.Cursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -87,6 +90,17 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
       * @return whether or not that record is in use.
       */
     boolean next( long id, R record, RecordLoad mode );
+
+    @SuppressWarnings( "unchecked" )
+    default List<R> getAll()
+    {
+        List<R> recordList = new ArrayList<>();
+        while ( next() )
+        {
+            recordList.add( (R) get().clone() );
+        }
+        return recordList;
+    }
 
     class Delegator<R extends AbstractBaseRecord> implements RecordCursor<R>
     {

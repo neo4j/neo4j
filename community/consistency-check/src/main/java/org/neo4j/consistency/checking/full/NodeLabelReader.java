@@ -110,7 +110,7 @@ public class NodeLabelReader
             }
             return LabelChainWalker.labelIds( recordList );
         }
-        return NodeLabelsField.get( nodeRecord, null );
+        return InlineNodeLabels.get( nodeRecord );
     }
 
     public static Set<Long> getListOfLabels( long labelField )
