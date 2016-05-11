@@ -35,7 +35,8 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 NAME=neo4j
 DAEMON=/usr/bin/$NAME
-PIDFILE=/var/run/${NAME}/neo4j.pid
+PIDDIR=/var/run/${NAME}
+PIDFILE=${PIDDIR}/neo4j.pid
 SCRIPTNAME=/etc/init.d/$NAME-service
 
 [ -x "$DAEMON" ] || exit 0
@@ -46,6 +47,9 @@ SCRIPTNAME=/etc/init.d/$NAME-service
 
 do_start()
 {
+  [ -d "${PIDDIR}" ] || mkdir -p "${PIDDIR}"
+  chown "${NEO_USER}:" "${PIDDIR}"
+
   start-stop-daemon --chuid ${NEO_USER} --start --quiet --oknodo --pidfile $PIDFILE --exec $DAEMON -- start
 }
 
