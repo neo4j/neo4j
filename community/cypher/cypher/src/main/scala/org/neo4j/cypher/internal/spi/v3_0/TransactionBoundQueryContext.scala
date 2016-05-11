@@ -347,6 +347,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def releaseExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().releaseExclusive(ResourceTypes.NODE, obj)
+
+    override def detachDelete(obj: Node): Int =
+      try {
+        transactionalContext.statement.dataWriteOperations().nodeDetachDelete(obj.getId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => 0
+        // node has been deleted by another transaction, oh well...
+      }
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -410,6 +418,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def releaseExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
+
+    override def detachDelete(obj: Relationship): Int = ???
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String) =
