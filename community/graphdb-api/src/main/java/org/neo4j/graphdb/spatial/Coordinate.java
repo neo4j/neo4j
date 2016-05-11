@@ -33,11 +33,11 @@ import static java.util.Arrays.stream;
  * <li>x, y, z ordering in a cartesian reference system</li>
  * <li>east, north, altitude in a projected coordinate reference system</li>
  * <li>longitude, latitude, altitude in a geographic reference system</li>
+ * </ul>
  * <p>
  * Additional numbers are allowed and the meaning of these additional numbers depends on the coordinate reference
  * system
  * (see ${@link CRS})
- * </ul>
  */
 public final class Coordinate
 {

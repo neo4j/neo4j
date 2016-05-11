@@ -189,7 +189,8 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       rewriterSequencer = RewriterStepSequencer.newPlain,
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
-      updateStrategy = None
+      updateStrategy = None,
+      publicTypeConverter = identity
     )
   }
 

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.CypherException
 
 import scala.collection.mutable
 
-case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: List[String]) extends ExecutionResultBuilderFactory {
+case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: List[String], publicTypeConverter: Any => Any) extends ExecutionResultBuilderFactory {
   def create(): ExecutionResultBuilder =
     ExecutionWorkflowBuilder()
 
@@ -58,7 +58,9 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
 
     def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
-      val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+      val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
+                                 triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty,
+                                 publicTypeConverter = publicTypeConverter)
       try {
         try {
           createResults(state, planType, notificationLogger)

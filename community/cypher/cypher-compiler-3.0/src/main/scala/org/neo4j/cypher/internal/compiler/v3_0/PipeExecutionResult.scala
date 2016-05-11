@@ -45,7 +45,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   self =>
 
-  val javaValues = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
+  val javaValues = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue, state.publicTypeConverter)
   lazy val dumpToString = withDumper(dumper => dumper.dumpToString(_))
 
   def dumpToString(writer: PrintWriter) { withDumper(dumper => dumper.dumpToString(writer)(_)) }

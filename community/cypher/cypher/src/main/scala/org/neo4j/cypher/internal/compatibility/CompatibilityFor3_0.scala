@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.io.PrintWriter
 import java.time.Clock
-import java.{lang, util}
+import java.util.Collections
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_0
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
@@ -39,9 +38,10 @@ import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.v3_0.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_0._
+import org.neo4j.cypher.internal.{QueryStatistics, _}
+import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
-import org.neo4j.graphdb.{InputPosition, Node, Path, QueryExecutionType, Relationship, ResourceIterator}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
@@ -55,6 +55,26 @@ import scala.util.Try
 object helpersv3_0 {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, session: QuerySession): Unit = {
     monitor.endFailure(session, t)
+  }
+
+  def asPublicType(value: Any): Any = value match {
+    case p: Point => wrapPoint(p)
+
+    case other => other
+  }
+
+  private def wrapPoint(point: Point) = new graphdb.spatial.Point {
+    override def getCRS: graphdb.spatial.CRS = new graphdb.spatial.CRS {
+
+      override def getType: String = point.crs.name
+
+      override def getHref: String = point.crs.url
+
+      override def getCode: Int = point.crs.code
+    }
+
+    override def getCoordinates: java.util.List[graphdb.spatial.Coordinate] = Collections
+      .singletonList(new graphdb.spatial.Coordinate(point.coordinates:_*))
   }
 }
 
@@ -225,14 +245,14 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
     monitor.endSuccess(session) // this method is expected to be idempotent
   }
 
-  def javaIterator: ResourceIterator[util.Map[String, Any]] = {
+  def javaIterator: graphdb.ResourceIterator[java.util.Map[String, Any]] = {
     val innerJavaIterator = inner.javaIterator
     exceptionHandlerFor3_0.runSafely {
       if (!innerJavaIterator.hasNext) {
         endQueryExecution()
       }
     }
-    new ResourceIterator[util.Map[String, Any]] {
+    new graphdb.ResourceIterator[java.util.Map[String, Any]] {
       def close() = exceptionHandlerFor3_0.runSafely {
         endQueryExecution()
         innerJavaIterator.close()
@@ -329,18 +349,18 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
     CompatibilityPlanDescriptionFor3_0(i, CypherVersion.v3_0, planner, runtime)
   }
 
-  def executionType: QueryExecutionType = {
+  def executionType: graphdb.QueryExecutionType = {
     val qt = inner.executionType match {
-      case READ_ONLY => QueryExecutionType.QueryType.READ_ONLY
-      case READ_WRITE => QueryExecutionType.QueryType.READ_WRITE
-      case WRITE => QueryExecutionType.QueryType.WRITE
-      case SCHEMA_WRITE => QueryExecutionType.QueryType.SCHEMA_WRITE
-      case DBMS => QueryExecutionType.QueryType.READ_ONLY // TODO: We need to decide how we expose this in the public API
+      case READ_ONLY => graphdb.QueryExecutionType.QueryType.READ_ONLY
+      case READ_WRITE => graphdb.QueryExecutionType.QueryType.READ_WRITE
+      case WRITE => graphdb.QueryExecutionType.QueryType.WRITE
+      case SCHEMA_WRITE => graphdb.QueryExecutionType.QueryType.SCHEMA_WRITE
+      case DBMS => graphdb.QueryExecutionType.QueryType.READ_ONLY // TODO: We need to decide how we expose this in the public API
     }
     inner.executionMode match {
-      case ExplainModev3_0 => QueryExecutionType.explained(qt)
-      case ProfileModev3_0 => QueryExecutionType.profiled(qt)
-      case NormalModev3_0 => QueryExecutionType.query(qt)
+      case ExplainModev3_0 => graphdb.QueryExecutionType.explained(qt)
+      case ProfileModev3_0 => graphdb.QueryExecutionType.profiled(qt)
+      case NormalModev3_0 => graphdb.QueryExecutionType.query(qt)
     }
   }
 
@@ -352,21 +372,21 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
     case LengthOnNonPathNotification(pos) =>
       NotificationCode.LENGTH_ON_NON_PATH.notification(pos.asInputPosition)
     case PlannerUnsupportedNotification =>
-      NotificationCode.PLANNER_UNSUPPORTED.notification(InputPosition.empty)
+      NotificationCode.PLANNER_UNSUPPORTED.notification(graphdb.InputPosition.empty)
     case RuntimeUnsupportedNotification =>
-      NotificationCode.RUNTIME_UNSUPPORTED.notification(InputPosition.empty)
+      NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)
     case IndexHintUnfulfillableNotification(label, propertyKey) =>
-      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.index(label, propertyKey))
+      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.index(label, propertyKey))
     case JoinHintUnfulfillableNotification(variables) =>
-      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
+      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
     case JoinHintUnsupportedNotification(variables) =>
-      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
+      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
     case IndexLookupUnfulfillableNotification(labels) =>
-      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
+      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
     case EagerLoadCsvNotification =>
-      NotificationCode.EAGER_LOAD_CSV.notification(InputPosition.empty)
+      NotificationCode.EAGER_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case LargeLabelWithLoadCsvNotification =>
-      NotificationCode.LARGE_LABEL_LOAD_CSV.notification(InputPosition.empty)
+      NotificationCode.LARGE_LABEL_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case MissingLabelNotification(pos, label) =>
       NotificationCode.MISSING_LABEL.notification(pos.asInputPosition, NotificationDetail.Factory.label(label))
     case MissingRelTypeNotification(pos, relType) =>
@@ -390,15 +410,15 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
 
   private def unwrapResultRow(row: InternalResultRow): ResultRow = new ResultRow {
 
-    override def getRelationship(key: String): Relationship = row.getRelationship(key)
+    override def getRelationship(key: String): graphdb.Relationship = row.getRelationship(key)
 
     override def get(key: String): AnyRef = row.get(key)
 
-    override def getBoolean(key: String): lang.Boolean = row.getBoolean(key)
+    override def getBoolean(key: String): java.lang.Boolean = row.getBoolean(key)
 
-    override def getPath(key: String): Path = row.getPath(key)
+    override def getPath(key: String): graphdb.Path = row.getPath(key)
 
-    override def getNode(key: String): Node = row.getNode(key)
+    override def getNode(key: String): graphdb.Node = row.getNode(key)
 
     override def getNumber(key: String): Number = row.getNumber(key)
 
@@ -410,7 +430,7 @@ case class ExecutionResultWrapperFor3_0(inner: InternalExecutionResult, planner:
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: frontend.v3_0.InputPosition) {
-    def asInputPosition = new InputPosition(pos.offset, pos.line, pos.column)
+    def asInputPosition = new graphdb.InputPosition(pos.offset, pos.line, pos.column)
   }
 
 }
@@ -468,11 +488,11 @@ case class CompatibilityPlanDescriptionFor3_0(inner: InternalPlanDescription, ve
 
     def hasProfilerStatistics: Boolean = self.hasProfilerStatistics
 
-    def getArguments: util.Map[String, AnyRef] = arguments.asJava
+    def getArguments: java.util.Map[String, AnyRef] = arguments.asJava
 
-    def getIdentifiers: util.Set[String] = identifiers.asJava
+    def getIdentifiers: java.util.Set[String] = identifiers.asJava
 
-    def getChildren: util.List[PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
+    def getChildren: java.util.List[PlanDescription] = in.extendedChildren.toList.map(_.asJava).asJava
 
     override def toString: String = self.toString
   }
@@ -514,7 +534,9 @@ case class CompatibilityFor3_0Cost(graph: GraphDatabaseQueryService,
 
     val logger = new StringInfoLogger3_0(log)
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.costBasedCompiler(graph, config, clock, GeneratedQueryStructure, monitors, logger, rewriterSequencer, plannerName, runtimeName, updateStrategy)
+    CypherCompilerFactory.costBasedCompiler(graph, config, clock, GeneratedQueryStructure,
+                                            monitors, logger, rewriterSequencer, plannerName, runtimeName,
+                                            updateStrategy, helpersv3_0.asPublicType)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
@@ -527,7 +549,7 @@ case class CompatibilityFor3_0Rule(graph: GraphDatabaseQueryService,
                                    kernelAPI: KernelAPI) extends CompatibilityFor3_0 {
   protected val compiler = {
     val monitors = new WrappedMonitors3_0(kernelMonitors)
-    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer)
+    CypherCompilerFactory.ruleBasedCompiler(graph, config, clock, monitors, rewriterSequencer, helpersv3_0.asPublicType)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize

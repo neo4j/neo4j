@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_0.symbols.TypeSpec
   *
   * @param delegate The plan builder to delegate to
   */
-case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuilder) extends ExecutablePlanBuilder {
+case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuilder, publicTypeConverter: Any => Any) extends ExecutablePlanBuilder {
 
   override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan = {
@@ -45,7 +45,7 @@ case class DelegatingProcedureExecutablePlanBuilder(delegate: ExecutablePlanBuil
         val mkException = new SyntaxExceptionCreator(inputQuery.queryText, inputQuery.offset)
         errors.foreach { error => throw mkException(error.msg, error.position) }
 
-        ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices)
+        ProcedureCallExecutionPlan(signature, args, resolved.callResultTypes, resolved.callResultIndices, publicTypeConverter)
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, prop) =>

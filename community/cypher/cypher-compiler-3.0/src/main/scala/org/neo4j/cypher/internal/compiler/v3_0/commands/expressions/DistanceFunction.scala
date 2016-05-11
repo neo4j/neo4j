@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
+import java.lang.Math._
+
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_0.{CRS, ExecutionContext, Geometry}
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import Math._
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 

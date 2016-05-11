@@ -31,20 +31,24 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes._
 import org.neo4j.cypher.internal.compiler.v3_0.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_0.SyntaxException
-import org.neo4j.cypher.internal.frontend.v3_0.helpers.{fixedPoint, NonEmptyList}
+import org.neo4j.cypher.internal.frontend.v3_0.helpers.{NonEmptyList, fixedPoint}
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
 }
 
-class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConfiguration, rewriterSequencer: (String) => RewriterStepSequencer, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
+class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConfiguration,
+                                  rewriterSequencer: (String) => RewriterStepSequencer,
+                                  eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary,
+                                  publicTypeConverter: Any => Any)
   extends PatternGraphBuilder with ExecutablePlanBuilder with GraphQueryBuilder {
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
   override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan =
-    interpretedToExecutionPlan(producePipe(inputQuery, planContext, tracer), planContext, inputQuery, createFingerprintReference, config)
+    interpretedToExecutionPlan(producePipe(inputQuery, planContext, tracer), planContext, inputQuery,
+                               createFingerprintReference, config, publicTypeConverter)
 
   def producePipe(in: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer): PipeInfo = {
     val rewriter = rewriterSequencer("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter
