@@ -54,8 +54,16 @@ do_stop()
   $DAEMON stop
 }
 
+do_ulimit()
+{
+  if [ -n "${NEO4J_ULIMIT_NOFILE}" ]; then
+    ulimit -n "${NEO4J_ULIMIT_NOFILE}"
+  fi
+}
+
 case "$1" in
   start)
+    do_ulimit
     do_start
     ;;
   stop)
