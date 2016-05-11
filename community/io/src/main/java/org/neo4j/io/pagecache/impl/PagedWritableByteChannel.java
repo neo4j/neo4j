@@ -22,24 +22,24 @@ package org.neo4j.io.pagecache.impl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-public final class PagedReadableByteChannel implements ReadableByteChannel
+public class PagedWritableByteChannel implements WritableByteChannel
 {
     private final PageCursor cursor;
     private boolean open = true;
     private int bytesLeftInCurrentPage;
 
-    public PagedReadableByteChannel( PagedFile pagedFile ) throws IOException
+    public PagedWritableByteChannel( PagedFile pagedFile ) throws IOException
     {
-        cursor = pagedFile.io( 0, PagedFile.PF_SHARED_READ_LOCK | PagedFile.PF_READ_AHEAD );
+        cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK );
     }
 
     @Override
-    public int read( ByteBuffer dst ) throws IOException
+    public int write( ByteBuffer src ) throws IOException
     {
         if ( !open )
         {
@@ -47,28 +47,17 @@ public final class PagedReadableByteChannel implements ReadableByteChannel
         }
         if ( bytesLeftInCurrentPage == 0 )
         {
-            if ( cursor.next() )
+            if ( !cursor.next() )
             {
-                bytesLeftInCurrentPage = cursor.getCurrentPageSize();
+                throw new IOException( "Could not advance write cursor" );
             }
-            else
-            {
-                return -1;
-            }
+            bytesLeftInCurrentPage = cursor.getCurrentPageSize();
         }
-        int position = dst.position();
-        int remaining = Math.min( dst.remaining(), bytesLeftInCurrentPage );
-        int offset = cursor.getOffset();
-        do
+        int remaining = Math.min( src.remaining(), bytesLeftInCurrentPage );
+        for ( int i = 0; i < remaining; i++ )
         {
-            dst.position( position );
-            cursor.setOffset( offset );
-            for ( int i = 0; i < remaining; i++ )
-            {
-                dst.put( cursor.getByte() );
-            }
+            cursor.putByte( src.get() );
         }
-        while ( cursor.shouldRetry() );
         bytesLeftInCurrentPage -= remaining;
         return remaining;
     }

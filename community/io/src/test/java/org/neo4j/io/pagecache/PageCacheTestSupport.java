@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -232,14 +233,26 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             int recordCount,
             int recordSize ) throws IOException
     {
-        StoreChannel channel = fs.open( file, "rw" );
+        try ( StoreChannel channel = fs.open( file, "rw" ) )
+        {
+            generateFileWithRecords( channel, recordCount, recordSize );
+        }
+    }
+
+    protected void generateFileWithRecords( WritableByteChannel channel, int recordCount, int recordSize )
+            throws IOException
+    {
         ByteBuffer buf = ByteBuffer.allocate( recordSize );
         for ( int i = 0; i < recordCount; i++ )
         {
             generateRecordForId( i, buf );
-            channel.writeAll( buf );
+            int rem = buf.remaining();
+            do
+            {
+                rem -= channel.write( buf );
+            }
+            while ( rem > 0 );
         }
-        channel.close();
     }
 
     protected static void generateRecordForId( long id, ByteBuffer buf )

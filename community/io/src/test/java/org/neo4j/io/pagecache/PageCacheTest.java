@@ -34,6 +34,7 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
@@ -4002,7 +4003,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void readableByteChannelMustBeOpenUntilClosed() throws Exception
     {
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -4018,7 +4019,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void readableByteChannelMustReadAllBytesInFile() throws Exception
     {
         File file = file( "a" );
@@ -4032,7 +4033,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @RepeatRule.Repeat( times = 20 )
-    @Test
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void readableByteChannelMustReadAllBytesInFileConsistently() throws Exception
     {
         File file = file( "a" );
@@ -4049,7 +4050,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
-    @Test( expected = ClosedChannelException.class )
+    @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = ClosedChannelException.class )
     public void readingFromClosedReadableByteChannelMustThrow() throws Exception
     {
         File file = file( "a" );
@@ -4060,6 +4061,54 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             ReadableByteChannel channel = pf.openReadableByteChannel();
             channel.close();
             channel.read( ByteBuffer.allocate( recordSize ) );
+            fail( "That read should have thrown" );
+        }
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writableByteChannelMustBeOpenUntilClosed() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            WritableByteChannel channel;
+            try ( WritableByteChannel ch = pf.openWritableByteChannel() )
+            {
+                assertTrue( ch.isOpen() );
+                channel = ch;
+            }
+            assertFalse( channel.isOpen() );
+        }
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    public void writableByteChannelMustWriteAllBytesInFile() throws Exception
+    {
+        File file = file( "a" );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            try ( WritableByteChannel channel = pf.openWritableByteChannel() )
+            {
+                generateFileWithRecords( channel, recordCount, recordSize );
+            }
+            try ( ReadableByteChannel channel = pf.openReadableByteChannel() )
+            {
+                verifyRecordsInFile( channel, recordCount );
+            }
+        }
+    }
+
+    @Test( timeout = SHORT_TIMEOUT_MILLIS, expected = ClosedChannelException.class )
+    public void writingToClosedWritableByteChannelMustThrow() throws Exception
+    {
+        File file = file( "a" );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            WritableByteChannel channel = pf.openWritableByteChannel();
+            channel.close();
+            channel.write( ByteBuffer.allocate( recordSize ) );
             fail( "That read should have thrown" );
         }
     }

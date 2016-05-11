@@ -22,6 +22,7 @@ package org.neo4j.adversaries.pagecache;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.Objects;
 
 import org.neo4j.adversaries.Adversary;
@@ -29,6 +30,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.PagedReadableByteChannel;
+import org.neo4j.io.pagecache.impl.PagedWritableByteChannel;
 
 /**
  * A {@linkplain PagedFile paged file} that wraps another paged file and an {@linkplain Adversary adversary} to provide
@@ -99,5 +101,11 @@ public class AdversarialPagedFile implements PagedFile
     public ReadableByteChannel openReadableByteChannel() throws IOException
     {
         return new PagedReadableByteChannel( this );
+    }
+
+    @Override
+    public WritableByteChannel openWritableByteChannel() throws IOException
+    {
+        return new PagedWritableByteChannel( this );
     }
 }

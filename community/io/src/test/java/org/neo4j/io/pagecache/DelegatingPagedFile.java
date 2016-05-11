@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 
 public class DelegatingPagedFile implements PagedFile
 {
@@ -60,6 +61,12 @@ public class DelegatingPagedFile implements PagedFile
     public ReadableByteChannel openReadableByteChannel() throws IOException
     {
         return delegate.openReadableByteChannel();
+    }
+
+    @Override
+    public WritableByteChannel openWritableByteChannel() throws IOException
+    {
+        return delegate.openWritableByteChannel();
     }
 
     public void flushAndForce( IOLimiter limiter ) throws IOException

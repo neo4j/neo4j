@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.format;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCursor;
@@ -84,6 +85,12 @@ public class RecordBoundaryCheckingPagedFile implements PagedFile
     public ReadableByteChannel openReadableByteChannel() throws IOException
     {
         return actual.openReadableByteChannel();
+    }
+
+    @Override
+    public WritableByteChannel openWritableByteChannel() throws IOException
+    {
+        return actual.openWritableByteChannel();
     }
 
     public int ioCalls()
