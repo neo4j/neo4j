@@ -121,7 +121,7 @@ public abstract class EditionModule
             {
                 return candidate.newInstance( config, logging.getUserLogProvider() );
             }
-            else if ( key.equals( "" ) )
+            else if ( key.isEmpty() )
             {
                 // As a default use the available service for the configured build edition
                 logging.getInternalLog( GraphDatabaseFacadeFactory.class )
@@ -130,7 +130,7 @@ public abstract class EditionModule
             }
         }
 
-        if ( key.equals( "" ) )
+        if ( key.isEmpty() )
         {
             logging.getUserLog( GraphDatabaseFacadeFactory.class )
                     .error( "No auth manager implementation specified and no default could be loaded. " +
