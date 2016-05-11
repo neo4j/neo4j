@@ -777,6 +777,8 @@ public class EncodingIdMapperTest
         abstract Factory<Object> data( Random random );
     }
 
-    public final @Rule RandomRule random = new RandomRule().withSeed( 1436724681847L );
-    public final @Rule RepeatRule repeater = new RepeatRule();
+    @Rule
+    public final RandomRule random = new RandomRule().withSeed( 1436724681847L );
+    @Rule
+    public final RepeatRule repeater = new RepeatRule();
 }

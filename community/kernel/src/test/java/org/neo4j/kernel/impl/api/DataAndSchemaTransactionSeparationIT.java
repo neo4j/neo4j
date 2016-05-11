@@ -175,7 +175,7 @@ public class DataAndSchemaTransactionSeparationIT
         return graphDb -> nodes.first().createRelationshipTo( nodes.other(), withName( "RELATED" ) );
     }
 
-    private static abstract class FailureRewrite<T> implements Function<GraphDatabaseService, T>
+    private abstract static class FailureRewrite<T> implements Function<GraphDatabaseService, T>
     {
         private final String message;
 

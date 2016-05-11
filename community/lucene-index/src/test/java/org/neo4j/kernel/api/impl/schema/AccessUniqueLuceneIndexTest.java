@@ -52,12 +52,12 @@ public class AccessUniqueLuceneIndexTest
         LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor, asList( add( 1l, "value1" ), add( 2l, "value2" ) ) );
-        updateAndCommit( accessor, asList( add( 3l, "value3" ) ) );
+        updateAndCommit( accessor, asList( add( 1L, "value1" ), add( 2L, "value2" ) ) );
+        updateAndCommit( accessor, asList( add( 3L, "value3" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( indexStorage, "value1" ) );
+        assertEquals( asList( 1L ), getAllNodes( indexStorage, "value1" ) );
     }
 
     @Test
@@ -69,12 +69,12 @@ public class AccessUniqueLuceneIndexTest
         LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
-        updateAndCommit( accessor, asList( change( 1l, "value1", "value2" ) ) );
+        updateAndCommit( accessor, asList( add( 1L, "value1" ) ) );
+        updateAndCommit( accessor, asList( change( 1L, "value1", "value2" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( indexStorage, "value2" ) );
+        assertEquals( asList( 1L ), getAllNodes( indexStorage, "value2" ) );
         assertEquals( emptyList(), getAllNodes( indexStorage, "value1" ) );
     }
 
@@ -87,23 +87,23 @@ public class AccessUniqueLuceneIndexTest
         LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
-        updateAndCommit( accessor, asList( add( 2l, "value2" ) ) );
-        updateAndCommit( accessor, asList( add( 3l, "value3" ) ) );
-        updateAndCommit( accessor, asList( add( 4l, "value4" ) ) );
-        updateAndCommit( accessor, asList( remove( 1l, "value1" ) ) );
-        updateAndCommit( accessor, asList( remove( 2l, "value2" ) ) );
-        updateAndCommit( accessor, asList( remove( 3l, "value3" ) ) );
-        updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
-        updateAndCommit( accessor, asList( add( 3l, "value3b" ) ) );
+        updateAndCommit( accessor, asList( add( 1L, "value1" ) ) );
+        updateAndCommit( accessor, asList( add( 2L, "value2" ) ) );
+        updateAndCommit( accessor, asList( add( 3L, "value3" ) ) );
+        updateAndCommit( accessor, asList( add( 4L, "value4" ) ) );
+        updateAndCommit( accessor, asList( remove( 1L, "value1" ) ) );
+        updateAndCommit( accessor, asList( remove( 2L, "value2" ) ) );
+        updateAndCommit( accessor, asList( remove( 3L, "value3" ) ) );
+        updateAndCommit( accessor, asList( add( 1L, "value1" ) ) );
+        updateAndCommit( accessor, asList( add( 3L, "value3b" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 1l ), getAllNodes( indexStorage, "value1" ) );
+        assertEquals( asList( 1L ), getAllNodes( indexStorage, "value1" ) );
         assertEquals( emptyList(), getAllNodes( indexStorage, "value2" ) );
         assertEquals( emptyList(), getAllNodes( indexStorage, "value3" ) );
-        assertEquals( asList( 3l ), getAllNodes( indexStorage, "value3b" ) );
-        assertEquals( asList( 4l ), getAllNodes( indexStorage, "value4" ) );
+        assertEquals( asList( 3L ), getAllNodes( indexStorage, "value3b" ) );
+        assertEquals( asList( 4L ), getAllNodes( indexStorage, "value4" ) );
     }
 
     @Test
@@ -115,14 +115,14 @@ public class AccessUniqueLuceneIndexTest
         LuceneIndexAccessor accessor = createAccessor( indexStorage );
 
         // when
-        updateAndCommit( accessor, asList( add( 1l, "value1" ) ) );
-        updateAndCommit( accessor, asList( add( 2l, "value2" ) ) );
-        updateAndCommit( accessor, asList( change( 1l, "value1", "value2" ), change( 2l, "value2", "value1" ) ) );
+        updateAndCommit( accessor, asList( add( 1L, "value1" ) ) );
+        updateAndCommit( accessor, asList( add( 2L, "value2" ) ) );
+        updateAndCommit( accessor, asList( change( 1L, "value1", "value2" ), change( 2L, "value2", "value1" ) ) );
         accessor.close();
 
         // then
-        assertEquals( asList( 2l ), getAllNodes( indexStorage, "value1" ) );
-        assertEquals( asList( 1l ), getAllNodes( indexStorage, "value2" ) );
+        assertEquals( asList( 2L ), getAllNodes( indexStorage, "value1" ) );
+        assertEquals( asList( 1L ), getAllNodes( indexStorage, "value2" ) );
     }
 
     private LuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException

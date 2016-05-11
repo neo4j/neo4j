@@ -45,7 +45,7 @@ public class MasterServerTest
         MasterServer masterServer = new MasterServer( master, mock( LogProvider.class ),
                 mock(Server.Configuration.class ), mock( TxChecksumVerifier.class ),
                 mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ), conversationManager, logEntryReader );
-        RequestContext requestContext = new RequestContext( 1l, 1, 1, 0, 0l );
+        RequestContext requestContext = new RequestContext( 1L, 1, 1, 0, 0L );
 
         masterServer.stopConversation( requestContext );
 

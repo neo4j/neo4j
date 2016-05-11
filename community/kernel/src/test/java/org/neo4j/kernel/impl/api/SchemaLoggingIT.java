@@ -38,7 +38,8 @@ public class SchemaLoggingIT
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
-    @Rule public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
 
     @Test
     public void shouldLogUserReadableLabelAndPropertyNames() throws Exception

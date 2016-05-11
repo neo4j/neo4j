@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
@@ -50,7 +50,8 @@ public class TestShutdownSequence
         graphDb.shutdown();
     }
 
-    public @Test
+    @Test
+    public
     void eventHandlersAreOnlyInvokedOnceDuringShutdown()
     {
         final AtomicInteger counter = new AtomicInteger();
@@ -85,7 +86,8 @@ public class TestShutdownSequence
         assertEquals( 1, counter.get() );
     }
 
-    public @Test
+    @Test
+    public
     void canRemoveFilesAndReinvokeShutdown()
     {
         graphDb.shutdown();
@@ -93,7 +95,8 @@ public class TestShutdownSequence
         graphDb.shutdown();
     }
 
-    public @Test
+    @Test
+    public
     void canInvokeShutdownFromShutdownHandler()
     {
         graphDb.registerKernelEventHandler( new KernelEventHandler()

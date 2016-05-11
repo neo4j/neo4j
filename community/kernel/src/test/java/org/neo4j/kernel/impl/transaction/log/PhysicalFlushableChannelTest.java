@@ -265,5 +265,6 @@ public class PhysicalFlushableChannelTest
     }
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 }

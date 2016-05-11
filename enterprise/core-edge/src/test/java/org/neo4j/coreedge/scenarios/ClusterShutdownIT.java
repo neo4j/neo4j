@@ -52,7 +52,7 @@ public class ClusterShutdownIT
         final int clusterSize = 3;
 
         // We test a reasonable set of permutations.
-        int shutdownOrders[][] = {{0, 1, 2}, {1, 2, 0}, {2, 0, 1}};
+        int[][] shutdownOrders = {{0, 1, 2}, {1, 2, 0}, {2, 0, 1}};
 
         for ( int victimId = 0; victimId < clusterSize; victimId++ )
         {

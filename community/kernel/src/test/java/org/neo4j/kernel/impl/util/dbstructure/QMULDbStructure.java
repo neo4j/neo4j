@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.util.dbstructure;
 
 import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor;
 
 //
 // GENERATED FILE. DO NOT EDIT.
@@ -61,18 +60,18 @@ implements Visitable<DbStructureVisitor>
         visitor.visitPropertyKey( 16, "location_lat" );
         visitor.visitRelationshipType( 0, "friends" );
         visitor.visitRelationshipType( 1, "FRIEND" );
-        visitor.visitIndex( new IndexDescriptor( 1, 2 ), ":Person(uid)", 1.0d, 135164l );
-        visitor.visitAllNodesCount( 135242l );
-        visitor.visitNodeCount( 1, "Person", 135213l );
-        visitor.visitRelCount( -1, -1, -1, "MATCH ()-[]->() RETURN count(*)", 4537616l );
-        visitor.visitRelCount( 1, -1, -1, "MATCH (:Person)-[]->() RETURN count(*)", 4536688l );
-        visitor.visitRelCount( -1, -1, 1, "MATCH ()-[]->(:Person) RETURN count(*)", 4536688l );
-        visitor.visitRelCount( -1, 0, -1, "MATCH ()-[:friends]->() RETURN count(*)", 4537616l );
-        visitor.visitRelCount( 1, 0, -1, "MATCH (:Person)-[:friends]->() RETURN count(*)", 4536688l );
-        visitor.visitRelCount( -1, 0, 1, "MATCH ()-[:friends]->(:Person) RETURN count(*)", 4536688l );
-        visitor.visitRelCount( -1, 1, -1, "MATCH ()-[:FRIEND]->() RETURN count(*)", 0l );
-        visitor.visitRelCount( 1, 1, -1, "MATCH (:Person)-[:FRIEND]->() RETURN count(*)", 0l );
-        visitor.visitRelCount( -1, 1, 1, "MATCH ()-[:FRIEND]->(:Person) RETURN count(*)", 0l );
+        visitor.visitIndex( new IndexDescriptor( 1, 2 ), ":Person(uid)", 1.0d, 135164L );
+        visitor.visitAllNodesCount( 135242L );
+        visitor.visitNodeCount( 1, "Person", 135213L );
+        visitor.visitRelCount( -1, -1, -1, "MATCH ()-[]->() RETURN count(*)", 4537616L );
+        visitor.visitRelCount( 1, -1, -1, "MATCH (:Person)-[]->() RETURN count(*)", 4536688L );
+        visitor.visitRelCount( -1, -1, 1, "MATCH ()-[]->(:Person) RETURN count(*)", 4536688L );
+        visitor.visitRelCount( -1, 0, -1, "MATCH ()-[:friends]->() RETURN count(*)", 4537616L );
+        visitor.visitRelCount( 1, 0, -1, "MATCH (:Person)-[:friends]->() RETURN count(*)", 4536688L );
+        visitor.visitRelCount( -1, 0, 1, "MATCH ()-[:friends]->(:Person) RETURN count(*)", 4536688L );
+        visitor.visitRelCount( -1, 1, -1, "MATCH ()-[:FRIEND]->() RETURN count(*)", 0L );
+        visitor.visitRelCount( 1, 1, -1, "MATCH (:Person)-[:FRIEND]->() RETURN count(*)", 0L );
+        visitor.visitRelCount( -1, 1, 1, "MATCH ()-[:FRIEND]->(:Person) RETURN count(*)", 0L );
    }
 }
 

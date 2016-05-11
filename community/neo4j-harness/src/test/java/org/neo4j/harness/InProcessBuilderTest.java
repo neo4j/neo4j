@@ -52,7 +52,6 @@ import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -76,7 +75,8 @@ public class InProcessBuilderTest
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( InProcessBuilderTest.class );
 
-    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldLaunchAServerInSpecifiedDirectory() throws Exception

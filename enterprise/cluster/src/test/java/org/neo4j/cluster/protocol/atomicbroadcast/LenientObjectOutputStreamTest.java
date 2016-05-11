@@ -20,6 +20,8 @@
 package org.neo4j.cluster.protocol.atomicbroadcast;
 
 
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,8 +29,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.net.URI;
-
-import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
@@ -45,13 +45,13 @@ public class LenientObjectOutputStreamTest
         MemberIsAvailable memberIsAvailable = memberIsAvailable();
 
         VersionMapper versionMapper = new VersionMapper();
-        versionMapper.addMappingFor( memberIsAvailable.getClass().getName(), 12345l );
+        versionMapper.addMappingFor( memberIsAvailable.getClass().getName(), 12345L );
 
         // when
         Object deserialisedObject = deserialise( serialise( memberIsAvailable, versionMapper ) );
 
         // then
-        assertEquals( 12345l, serialVersionUIDFor( deserialisedObject ));
+        assertEquals( 12345L, serialVersionUIDFor( deserialisedObject ));
     }
 
     @Test

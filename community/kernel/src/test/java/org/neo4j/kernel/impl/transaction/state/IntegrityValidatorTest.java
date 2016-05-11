@@ -45,9 +45,9 @@ public class IntegrityValidatorTest
         IntegrityValidator validator = new IntegrityValidator(store, indexes);
 
         doThrow( new UniquenessConstraintVerificationFailedKernelException( null, new RuntimeException() ) )
-                .when( indexes ).validateIndex( 2l );
+                .when( indexes ).validateIndex( 2L );
 
-        UniquePropertyConstraintRule record = uniquenessConstraintRule( 1l, 1, 1, 2l );
+        UniquePropertyConstraintRule record = uniquenessConstraintRule( 1L, 1, 1, 2L );
 
         // When
         try
@@ -69,7 +69,7 @@ public class IntegrityValidatorTest
         IndexingService indexes = mock(IndexingService.class);
         IntegrityValidator validator = new IntegrityValidator(store, indexes );
 
-        NodeRecord record = new NodeRecord( 1l, false, 1l, -1l );
+        NodeRecord record = new NodeRecord( 1L, false, 1L, -1L );
         record.setInUse( false );
 
         // When
@@ -92,7 +92,7 @@ public class IntegrityValidatorTest
         MetaDataStore metaDataStore = mock( MetaDataStore.class );
         when( store.getMetaDataStore() ).thenReturn( metaDataStore );
         IndexingService indexes = mock( IndexingService.class );
-        when( metaDataStore.getLatestConstraintIntroducingTx() ).thenReturn( 10l );
+        when( metaDataStore.getLatestConstraintIntroducingTx() ).thenReturn( 10L );
         IntegrityValidator validator = new IntegrityValidator( store, indexes );
 
         // When

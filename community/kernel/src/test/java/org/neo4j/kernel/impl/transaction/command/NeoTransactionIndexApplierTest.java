@@ -51,7 +51,7 @@ import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
 public class NeoTransactionIndexApplierTest
 {
-    private final static Descriptor INDEX_DESCRIPTOR = new Descriptor( "in-memory", "1.0" );
+    private static final Descriptor INDEX_DESCRIPTOR = new Descriptor( "in-memory", "1.0" );
 
     private final IndexingService indexingService = mock( IndexingService.class );
     @SuppressWarnings( "unchecked" )

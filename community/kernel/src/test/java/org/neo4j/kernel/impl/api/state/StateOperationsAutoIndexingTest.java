@@ -45,7 +45,6 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.properties.Property.property;
 
 public class StateOperationsAutoIndexingTest
@@ -149,7 +148,7 @@ public class StateOperationsAutoIndexingTest
         context.nodeSetProperty( stmt, 1337, property );
 
         // Then
-        verify( nodeOps ).propertyChanged( eq(writeOps), eq(1337l), any(Property.class), eq(property) );
+        verify( nodeOps ).propertyChanged( eq(writeOps), eq(1337L), any(Property.class), eq(property) );
     }
 
     @Test
@@ -170,7 +169,7 @@ public class StateOperationsAutoIndexingTest
         context.relationshipSetProperty( stmt, 1337, property );
 
         // Then
-        verify( relOps ).propertyChanged( eq(writeOps), eq(1337l), any(Property.class), eq(property) );
+        verify( relOps ).propertyChanged( eq(writeOps), eq(1337L), any(Property.class), eq(property) );
     }
 
     @Test
@@ -191,7 +190,7 @@ public class StateOperationsAutoIndexingTest
         context.nodeRemoveProperty( stmt, 1337, existingProperty.propertyKeyId() );
 
         // Then
-        verify( nodeOps ).propertyRemoved( writeOps, 1337l, existingProperty.propertyKeyId() );
+        verify( nodeOps ).propertyRemoved( writeOps, 1337L, existingProperty.propertyKeyId() );
     }
 
     @Test
@@ -211,6 +210,6 @@ public class StateOperationsAutoIndexingTest
         context.relationshipRemoveProperty( stmt, 1337, existingProperty.propertyKeyId() );
 
         // Then
-        verify( relOps ).propertyRemoved( writeOps, 1337l, existingProperty.propertyKeyId() );
+        verify( relOps ).propertyRemoved( writeOps, 1337L, existingProperty.propertyKeyId() );
     }
 }

@@ -38,7 +38,7 @@ public class Digests
         }
     }
 
-    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+    protected static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     // TODO: Replace with BytePrinter#compactHex once auth work is merged
     private static String hex(byte[] bytes)

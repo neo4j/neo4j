@@ -130,8 +130,8 @@ public class IndexStatisticsTest
 
         // then
         assertEquals( 0.75d, indexSelectivity( index ), DOUBLE_ERROR_TOLERANCE );
-        assertEquals( 4l, indexSize( index ) );
-        assertEquals( 0l, indexUpdates( index ) );
+        assertEquals( 4L, indexSize( index ) );
+        assertEquals( 0L, indexUpdates( index ) );
     }
 
     @Test
@@ -145,8 +145,8 @@ public class IndexStatisticsTest
 
         // then
         assertEquals( 1.0d, indexSelectivity( index ), DOUBLE_ERROR_TOLERANCE );
-        assertEquals( 0l, indexSize( index ) );
-        assertEquals( 4l, indexUpdates( index ) );
+        assertEquals( 0L, indexSize( index ) );
+        assertEquals( 4L, indexUpdates( index ) );
     }
 
     @Test
@@ -162,8 +162,8 @@ public class IndexStatisticsTest
 
         // then
         assertEquals( 0.75d, indexSelectivity( index ), DOUBLE_ERROR_TOLERANCE );
-        assertEquals( 4l, indexSize( index ) );
-        assertEquals( 4l, indexUpdates( index ) );
+        assertEquals( 4L, indexSize( index ) );
+        assertEquals( 4L, indexUpdates( index ) );
     }
 
     @Test
@@ -186,13 +186,13 @@ public class IndexStatisticsTest
         {
             DoubleLongRegister actual = getTracker()
                     .indexSample( index.getLabelId(), index.getPropertyKeyId(), Registers.newDoubleLongRegister() );
-            assertDoubleLongEquals( 0l, 0l, actual );
+            assertDoubleLongEquals( 0L, 0L, actual );
         }
 
         // and then index size and index updates are zero on disk
         DoubleLongRegister actual = getTracker()
                 .indexUpdatesAndSize( index.getLabelId(), index.getPropertyKeyId(), Registers.newDoubleLongRegister() );
-        assertDoubleLongEquals( 0l, 0l, actual );
+        assertDoubleLongEquals( 0L, 0L, actual );
     }
 
     @Test
@@ -208,7 +208,7 @@ public class IndexStatisticsTest
         double expectedSelectivity = UNIQUE_NAMES / (created);
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( created, indexSize( index ) );
-        assertEquals( 0l, indexUpdates( index ) );
+        assertEquals( 0L, indexUpdates( index ) );
     }
 
     @Test

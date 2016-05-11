@@ -136,7 +136,7 @@ public class PagingTraversalTest
     @Test
     public void shouldRespondWith400OnNegativePageSize()
     {
-        long arbitraryStartNodeId = 1l;
+        long arbitraryStartNodeId = 1L;
         int negativePageSize = -5;
         String arbitraryDescription = description();
         Response response = service.createPagedTraverser( arbitraryStartNodeId, TraverserReturnType.node,
@@ -148,7 +148,7 @@ public class PagingTraversalTest
     @Test
     public void shouldRespondWith400OnLeaseTime()
     {
-        long arbitraryStartNodeId = 1l;
+        long arbitraryStartNodeId = 1L;
         int arbitraryPageSize = 5;
         String arbitraryDescription = description();
         Response response = service.createPagedTraverser( arbitraryStartNodeId, TraverserReturnType.node,

@@ -288,7 +288,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         }
     }
 
-    public static abstract class Reader<Value>
+    public abstract static class Reader<Value>
     {
         protected abstract Value parseValue( ReadableBuffer value );
 

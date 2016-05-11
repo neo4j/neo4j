@@ -22,12 +22,14 @@ package org.neo4j.kernel.impl.util;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 
 public class DebugUtilTest
 {
-    public final @Rule TestName testName = new TestName();
+    @Rule
+    public final TestName testName = new TestName();
 
     @Test
     public void shouldFigureOutThatThisIsATest()

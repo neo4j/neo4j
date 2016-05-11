@@ -56,7 +56,7 @@ public class TestPlaceboTransaction
         when( bridge.get() ).thenReturn( statement );
         placeboTx = new PlaceboTransaction( () -> kernelTransaction, bridge );
         resource = mock( Node.class );
-        when( resource.getId() ).thenReturn( 1l );
+        when( resource.getId() ).thenReturn( 1L );
     }
 
     @Test

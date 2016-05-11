@@ -56,7 +56,8 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 public class TransactionCommittingResponseUnpackerTest
 {
-    public final @Rule LifeRule life = new LifeRule( true );
+    @Rule
+    public final LifeRule life = new LifeRule( true );
 
     @Test
     public void shouldAwaitTransactionObligationsToBeFulfilled() throws Throwable
@@ -73,7 +74,7 @@ public class TransactionCommittingResponseUnpackerTest
         unpacker.unpackResponse( new DummyObligationResponse( 4 ), NO_OP_TX_HANDLER );
 
         // THEN
-        verify( fulfiller, times( 1 ) ).fulfill( 4l );
+        verify( fulfiller, times( 1 ) ).fulfill( 4L );
     }
 
     @Test

@@ -19,7 +19,6 @@
  */
 package org.neo4j.coreedge.raft;
 
-import org.neo4j.coreedge.network.Message;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -32,6 +31,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
+
+import org.neo4j.coreedge.network.Message;
 
 public class RaftTestNetwork<T>
 {
@@ -107,6 +108,7 @@ public class RaftTestNetwork<T>
             }
             catch ( InterruptedException e )
             {
+                Thread.currentThread().interrupt();
             }
         }
 
@@ -118,6 +120,7 @@ public class RaftTestNetwork<T>
             }
             catch ( InterruptedException e )
             {
+                Thread.currentThread().interrupt();
             }
         }
     }

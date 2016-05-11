@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileUtils;
 public class StoreUtil
 {
     // Branched directories will end up in <dbStoreDir>/branched/<timestamp>/
-    public final static String BRANCH_SUBDIRECTORY = "branched";
+    public static final String BRANCH_SUBDIRECTORY = "branched";
 
     public static void cleanStoreDir( File storeDir ) throws IOException
     {

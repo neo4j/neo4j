@@ -50,7 +50,7 @@ public class RegexPattern extends AbstractFilterExpression
 
     public boolean matches( FilterValueGetter valueGetter )
     {
-        Object values[] = valueGetter.getValues( getLabel() );
+        Object[] values = valueGetter.getValues( getLabel() );
         for ( Object value : values )
         {
             boolean matches = this.pattern.matcher( value.toString() ).find();

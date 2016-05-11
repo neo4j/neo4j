@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -52,7 +52,7 @@ public class OnlineIndexProxyTest
 
         // then
         verify( accessor ).drop();
-        verify( storeView ).replaceIndexCounts( descriptor, 0l, 0l, 0l );
+        verify( storeView ).replaceIndexCounts( descriptor, 0L, 0L, 0L );
         verifyNoMoreInteractions( accessor, storeView );
     }
 }

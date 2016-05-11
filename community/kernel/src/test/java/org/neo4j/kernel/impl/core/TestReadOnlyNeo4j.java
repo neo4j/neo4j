@@ -50,7 +50,8 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class TestReadOnlyNeo4j
 {
     private static final File PATH = new File( "read-only" );
-    public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
     public void testSimple()

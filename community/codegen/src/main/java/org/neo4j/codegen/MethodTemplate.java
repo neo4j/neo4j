@@ -98,7 +98,7 @@ public class MethodTemplate
         }
     }
 
-    public static abstract class Builder
+    public abstract static class Builder
     {
         final Parameter[] parameters;
         private final Map<String,TypeReference> locals = new HashMap<>();

@@ -107,7 +107,7 @@ public class IndexConstraintsTest
                 ecs.take().get();
                 ++numSucceeded;
             }
-            catch ( ExecutionException e )
+            catch ( ExecutionException ignored )
             {
             }
         }

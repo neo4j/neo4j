@@ -36,7 +36,7 @@ public class SessionWorker implements Runnable
     /** Poison pill for closing the session and shutting down the worker */
     public static final Consumer<Session> SHUTDOWN = session1 -> {};
 
-    private final static int workQueueSize = Integer.getInteger( "org.neo4j.bolt.workQueueSize", 100 );
+    private static final int workQueueSize = Integer.getInteger( "org.neo4j.bolt.workQueueSize", 100 );
 
     private final ArrayBlockingQueue<Consumer<Session>> workQueue = new ArrayBlockingQueue<>( workQueueSize );
     private final Session session;

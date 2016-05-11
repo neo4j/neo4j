@@ -24,7 +24,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.internal.AssumptionViolatedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -284,7 +283,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         };
     }
 
-    public static abstract class Fixture<T extends PageCache>
+    public abstract static class Fixture<T extends PageCache>
     {
         public abstract T createPageCache(
                 PageSwapperFactory swapperFactory,

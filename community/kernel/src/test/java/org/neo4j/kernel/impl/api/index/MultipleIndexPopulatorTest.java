@@ -281,7 +281,7 @@ public class MultipleIndexPopulatorTest
         multipleIndexPopulator.cancel();
 
         verify( indexStoreView, times( 2 ) )
-                .replaceIndexCounts( any( IndexDescriptor.class ), eq( 0l ), eq( 0l ), eq( 0l ) );
+                .replaceIndexCounts( any( IndexDescriptor.class ), eq( 0L ), eq( 0L ), eq( 0L ) );
         verify( indexPopulator1 ).close( false );
         verify( indexPopulator2 ).close( false );
     }

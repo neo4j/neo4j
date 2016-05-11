@@ -147,7 +147,7 @@ public class AbstractKeyValueStoreTest
         try ( Lifespan life = new Lifespan() )
         {
             Store store = life.add( createTestStore() );
-            assertEquals( 10l, store.headers().get( TX_ID ).longValue() );
+            assertEquals( 10L, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -217,7 +217,7 @@ public class AbstractKeyValueStoreTest
         {
             life.add( store );
 
-            assertEquals( 64l, store.headers().get( TX_ID ).longValue() );
+            assertEquals( 64L, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -320,7 +320,7 @@ public class AbstractKeyValueStoreTest
 
         assertEquals( 2, rotation.rotate() );
 
-        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5l,
+        Future<Long> rotationFuture = threading.executeAndAwait( store.rotation, 5L,
                 thread -> Thread.State.TIMED_WAITING == thread.getState(), 100, SECONDS );
 
         Thread.sleep( TimeUnit.SECONDS.toMillis( 1 ) );
@@ -340,7 +340,7 @@ public class AbstractKeyValueStoreTest
 
         // when
         updateStore( store, 1 );
-        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, thread -> {
+        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3L, thread -> {
             switch ( thread.getState() )
             {
             case BLOCKED:
@@ -374,7 +374,7 @@ public class AbstractKeyValueStoreTest
         // then
         assertEquals( 3, rotation.get().longValue() );
         assertEquals( 3, store.headers().get( TX_ID ).longValue() );
-        store.rotation.apply( 4l );
+        store.rotation.apply( 4L );
     }
 
     @Test( timeout = 2000 )
@@ -389,7 +389,7 @@ public class AbstractKeyValueStoreTest
         expectedException.expect( RotationTimeoutException.class );
 
         // WHEN
-        store.prepareRotation( 10l ).rotate();
+        store.prepareRotation( 10L ).rotate();
     }
 
     private Store createTestStore()
@@ -407,7 +407,7 @@ public class AbstractKeyValueStoreTest
             {
                 if ( field == TX_ID )
                 {
-                    return (Value) (Object) 1l;
+                    return (Value) (Object) 1L;
                 }
                 else
                 {

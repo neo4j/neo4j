@@ -133,7 +133,7 @@ public class ProtocolChooserTest
     public void shouldHandleVersionBoundary() throws Throwable
     {
         // Given
-        long maxUnsignedInt32 = 4_294_967_295l;
+        long maxUnsignedInt32 = 4_294_967_295L;
 
         when( factory.apply( ch, true ) ).thenReturn( protocol );
         available.put( maxUnsignedInt32, factory );

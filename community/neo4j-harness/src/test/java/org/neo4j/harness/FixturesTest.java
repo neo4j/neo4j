@@ -27,7 +27,6 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
@@ -46,7 +45,8 @@ public class FixturesTest
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( FixturesTest.class );
 
-    @Rule public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldAccepSingleCypherFileAsFixture() throws Exception

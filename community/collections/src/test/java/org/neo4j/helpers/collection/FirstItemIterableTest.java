@@ -21,56 +21,82 @@ package org.neo4j.helpers.collection;
 
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 /**
  * @author mh
  * @since 19.04.12
  */
-public class FirstItemIterableTest {
+public class FirstItemIterableTest
+{
     @Test
-    public void testEmptyIterator() throws Exception {
-        final FirstItemIterable firstItemIterable = new FirstItemIterable(Collections.emptyList());
-        final Iterator empty = firstItemIterable.iterator();
-        assertEquals(false, empty.hasNext());
-        try {
-            empty.next(); fail();
-        } catch(NoSuchElementException nse) {}
-        assertEquals(null, firstItemIterable.getFirst());
+    public void testEmptyIterator() throws Exception
+    {
+        FirstItemIterable<?> firstItemIterable = new FirstItemIterable<>( Collections.emptyList() );
+        Iterator<?> empty = firstItemIterable.iterator();
+        assertEquals( false, empty.hasNext() );
+        try
+        {
+            empty.next();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( NoSuchElementException.class ) );
+        }
+        assertEquals( null, firstItemIterable.getFirst() );
     }
+
     @Test
-    public void testSingleIterator() throws Exception {
-        final FirstItemIterable firstItemIterable = new FirstItemIterable(Collections.singleton(Boolean.TRUE));
-        final Iterator empty = firstItemIterable.iterator();
-        assertEquals(true, empty.hasNext());
-        assertEquals(Boolean.TRUE, empty.next());
-        assertEquals(Boolean.TRUE, firstItemIterable.getFirst());
-        assertEquals(false, empty.hasNext());
-        try {
-            empty.next(); fail();
-        } catch(NoSuchElementException nse) {}
-        assertEquals(Boolean.TRUE, firstItemIterable.getFirst());
+    public void testSingleIterator() throws Exception
+    {
+        FirstItemIterable<Boolean> firstItemIterable = new FirstItemIterable<>( Collections.singleton( Boolean.TRUE ) );
+        Iterator<Boolean> empty = firstItemIterable.iterator();
+        assertEquals( true, empty.hasNext() );
+        assertEquals( Boolean.TRUE, empty.next() );
+        assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
+        assertEquals( false, empty.hasNext() );
+        try
+        {
+            empty.next();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( NoSuchElementException.class ) );
+        }
+        assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
     }
+
     @Test
-    public void testMultiIterator() throws Exception {
-        final FirstItemIterable firstItemIterable = new FirstItemIterable(Arrays.asList(Boolean.TRUE,Boolean.FALSE));
-        final Iterator empty = firstItemIterable.iterator();
-        assertEquals(true, empty.hasNext());
-        assertEquals(Boolean.TRUE, empty.next());
-        assertEquals(Boolean.TRUE, firstItemIterable.getFirst());
-        assertEquals(true, empty.hasNext());
-        assertEquals(Boolean.FALSE, empty.next());
-        assertEquals(Boolean.TRUE, firstItemIterable.getFirst());
-        assertEquals(false, empty.hasNext());
-        try {
-            empty.next(); fail();
-        } catch(NoSuchElementException nse) {}
-        assertEquals(Boolean.TRUE, firstItemIterable.getFirst());
+    public void testMultiIterator() throws Exception
+    {
+        FirstItemIterable<Boolean> firstItemIterable = new FirstItemIterable<>( asList( Boolean.TRUE, Boolean.FALSE ) );
+        Iterator<Boolean> empty = firstItemIterable.iterator();
+        assertEquals( true, empty.hasNext() );
+        assertEquals( Boolean.TRUE, empty.next() );
+        assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
+        assertEquals( true, empty.hasNext() );
+        assertEquals( Boolean.FALSE, empty.next() );
+        assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
+        assertEquals( false, empty.hasNext() );
+        try
+        {
+            empty.next();
+            fail( "Exception expected" );
+        }
+        catch ( Exception e )
+        {
+            assertThat( e, instanceOf( NoSuchElementException.class ) );
+        }
+        assertEquals( Boolean.TRUE, firstItemIterable.getFirst() );
     }
 }

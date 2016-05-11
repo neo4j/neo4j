@@ -65,11 +65,14 @@ public class TestLifecycleException
 
     private LifecycleException exceptionFor( LifecycleStatus from, LifecycleStatus to )
     {
-        return new LifecycleException( new Object(){
-                @Override public String toString(){
-                    return"SomeComponent";
-                }
-            }, from, to, null );
+        return new LifecycleException( new Object()
+        {
+            @Override
+            public String toString()
+            {
+                return "SomeComponent";
+            }
+        }, from, to, null );
     }
 
 }

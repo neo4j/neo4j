@@ -126,7 +126,7 @@ public class GraphDbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d, 0l );
+        verify( visitor ).visitIndex( descriptor, ":Person(name)", 1.0d, 0L );
     }
 
     @Test

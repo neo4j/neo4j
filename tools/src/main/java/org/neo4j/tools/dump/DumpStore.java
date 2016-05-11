@@ -212,7 +212,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         dump( ids, neoStores.getPropertyStore() );
     }
 
-    private static void dumpSchemaStore( NeoStores neoStores, long ids[] ) throws Exception
+    private static void dumpSchemaStore( NeoStores neoStores, long[] ids ) throws Exception
     {
         try ( SchemaStore store = neoStores.getSchemaStore() )
         {

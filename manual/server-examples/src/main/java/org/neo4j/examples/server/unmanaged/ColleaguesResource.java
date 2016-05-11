@@ -63,7 +63,7 @@ public class ColleaguesResource
 
     @GET
     @Path("/{personName}")
-    public Response findColleagues( final @PathParam("personName") String personName )
+    public Response findColleagues( @PathParam("personName") final String personName )
     {
         StreamingOutput stream = new StreamingOutput()
         {

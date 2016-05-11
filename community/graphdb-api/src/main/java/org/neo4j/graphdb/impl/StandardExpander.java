@@ -43,7 +43,6 @@ import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.NestingIterator;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
 
 public abstract class StandardExpander implements PathExpander
@@ -52,7 +51,7 @@ public abstract class StandardExpander implements PathExpander
     {
     }
 
-    static abstract class StandardExpansion<T> implements Iterable<T>
+    abstract static class StandardExpansion<T> implements Iterable<T>
     {
         final StandardExpander expander;
         final Path path;
@@ -266,21 +265,24 @@ public abstract class StandardExpander implements PathExpander
         },
         INCOMING( Direction.OUTGOING )
         {
-            @Override Exclusion reversed()
+            @Override
+            Exclusion reversed()
             {
                 return OUTGOING;
             }
         },
         OUTGOING( Direction.INCOMING )
         {
-            @Override Exclusion reversed()
+            @Override
+            Exclusion reversed()
             {
                 return INCOMING;
             }
         },
         NONE( Direction.BOTH, "" )
         {
-            @Override boolean includes( Direction direction )
+            @Override
+            boolean includes( Direction direction )
             {
                 return true;
             }
@@ -685,7 +687,7 @@ public abstract class StandardExpander implements PathExpander
         }
     }
 
-    private static abstract class Filter
+    private abstract static class Filter
     {
         abstract boolean exclude( Path path );
     }
@@ -767,9 +769,10 @@ public abstract class StandardExpander implements PathExpander
         return new RelationshipExpansion( this, path, state );
     }
 
+    @SuppressWarnings( "unchecked" )
     static <T> T[] append( T[] array, T item )
     {
-        @SuppressWarnings("unchecked") T[] result = (T[]) Array.newInstance(
+        T[] result = (T[]) Array.newInstance(
                 array.getClass().getComponentType(), array.length + 1 );
         System.arraycopy( array, 0, result, 0, array.length );
         result[array.length] = item;

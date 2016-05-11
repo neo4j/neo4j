@@ -23,7 +23,7 @@ import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 
 public class ThresholdConfigParser
 {
-    public final static class ThresholdConfigValue
+    public static final class ThresholdConfigValue
     {
         public static final ThresholdConfigValue NO_PRUNING = new ThresholdConfigValue( "false", -1 );
         public final String type;

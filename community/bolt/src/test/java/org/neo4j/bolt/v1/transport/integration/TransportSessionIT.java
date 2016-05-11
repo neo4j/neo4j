@@ -232,7 +232,7 @@ public class TransportSessionIT
         // Then
         assertThat( client, eventuallyRecieves(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( 1l ) ) ),
+                msgRecord( eqRecord( equalTo( 1L ) ) ),
                 msgSuccess( map( "type", "r" ) ) ) );
     }
 

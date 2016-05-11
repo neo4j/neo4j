@@ -52,10 +52,11 @@ import static org.neo4j.kernel.impl.core.BigStoreIT.machineIsOkToRunThisTest;
 public class BigBatchStoreIT implements RelationshipType
 {
     private static final File PATH = new File( "target/var/bigb" );
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private org.neo4j.unsafe.batchinsert.BatchInserter db;
-    public @Rule
-    TestName testName = new TestName()
+    @Rule
+    public TestName testName = new TestName()
     {
         @Override
         public String getMethodName()

@@ -83,19 +83,19 @@ public class LogTruncationTest
         permutations.put( Command.NeoStoreCommand.class,
                 new Command[] { new Command.NeoStoreCommand( new NeoStoreRecord(), after ) } );
         permutations.put( Command.NodeCommand.class, new Command[] { new Command.NodeCommand(
-                new NodeRecord( 12l, false, 13l, 13l ), new NodeRecord( 0, false, 0, 0 ) ) } );
+                new NodeRecord( 12L, false, 13L, 13L ), new NodeRecord( 0, false, 0, 0 ) ) } );
         permutations.put( Command.RelationshipCommand.class,
-                new Command[] { new Command.RelationshipCommand( new RelationshipRecord( 1l ),
-                        new RelationshipRecord( 1l, 2l, 3l, 4 ) ) } );
+                new Command[] { new Command.RelationshipCommand( new RelationshipRecord( 1L ),
+                        new RelationshipRecord( 1L, 2L, 3L, 4 ) ) } );
         permutations.put( Command.PropertyCommand.class, new Command[] { new Command.PropertyCommand(
-                new PropertyRecord( 1, new NodeRecord( 12l, false, 13l, 13 ) ), new PropertyRecord( 1, new NodeRecord(
-                        12l, false, 13l, 13 ) ) ) } );
+                new PropertyRecord( 1, new NodeRecord( 12L, false, 13L, 13 ) ), new PropertyRecord( 1, new NodeRecord(
+                        12L, false, 13L, 13 ) ) ) } );
         permutations.put( Command.RelationshipGroupCommand.class,
                 new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
         permutations.put( Command.SchemaRuleCommand.class, new Command[] { new Command.SchemaRuleCommand(
-                asList( dynamicRecord( 1l, false, true, -1l, 1, "hello".getBytes() ) ),
-                asList( dynamicRecord( 1l, true, true, -1l, 1, "hello".getBytes() ) ), new IndexRule( 1, 3, 4,
+                asList( dynamicRecord( 1L, false, true, -1L, 1, "hello".getBytes() ) ),
+                asList( dynamicRecord( 1L, true, true, -1L, 1, "hello".getBytes() ) ), new IndexRule( 1, 3, 4,
                         new SchemaIndexProvider.Descriptor( "1", "2" ), null ) ) } );
         permutations
                 .put( Command.RelationshipTypeTokenCommand.class,
@@ -110,7 +110,7 @@ public class LogTruncationTest
 
         // Index commands
         AddRelationshipCommand addRelationshipCommand = new AddRelationshipCommand();
-        addRelationshipCommand.init( 1, 1l, 12345, "some value", 1, 1 );
+        addRelationshipCommand.init( 1, 1L, 12345, "some value", 1, 1 );
         permutations.put( AddRelationshipCommand.class, new Command[] { addRelationshipCommand } );
 
         CreateCommand createCommand = new CreateCommand();
@@ -118,7 +118,7 @@ public class LogTruncationTest
         permutations.put( CreateCommand.class, new Command[] { createCommand } );
 
         AddNodeCommand addCommand = new AddNodeCommand();
-        addCommand.init( 1234, 122l, 2, "value" );
+        addCommand.init( 1234, 122L, 2, "value" );
         permutations.put( AddNodeCommand.class, new Command[] { addCommand } );
 
         DeleteCommand deleteCommand = new DeleteCommand();

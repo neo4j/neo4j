@@ -71,8 +71,8 @@ public class TestPatternMatching implements GraphHolder
     public static TargetDirectory.TestDirectory testDirectory =
             TargetDirectory.testDirForTest( TestPatternMatching.class );
 
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+    @Rule
+    public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
     private static GraphDatabaseService graphDb;
     private Transaction tx;

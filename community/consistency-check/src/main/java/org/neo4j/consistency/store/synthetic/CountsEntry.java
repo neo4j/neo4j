@@ -71,7 +71,7 @@ public class CountsEntry extends AbstractBaseRecord
         return count;
     }
 
-    public static abstract class CheckAdapter implements RecordCheck<CountsEntry,ConsistencyReport.CountsConsistencyReport>
+    public abstract static class CheckAdapter implements RecordCheck<CountsEntry,ConsistencyReport.CountsConsistencyReport>
     {
     }
 }

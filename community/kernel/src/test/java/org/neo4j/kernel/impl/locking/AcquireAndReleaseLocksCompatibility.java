@@ -96,7 +96,7 @@ public class AcquireAndReleaseLocksCompatibility extends LockingCompatibilityTes
     {
         // When
         clientA.acquireExclusive( NODE, 1L );
-        clientA.acquireShared( NODE, 2l );
+        clientA.acquireShared( NODE, 2L );
 
         // Then shared locks should wait
         Future<Object> clientBLock = acquireShared( clientB, NODE, 1L ).callAndAssertWaiting();

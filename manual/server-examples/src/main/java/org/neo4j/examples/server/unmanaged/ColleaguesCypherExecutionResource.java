@@ -56,7 +56,7 @@ public class ColleaguesCypherExecutionResource
 
     @GET
     @Path("/{personName}")
-    public Response findColleagues( final @PathParam("personName") String personName )
+    public Response findColleagues( @PathParam("personName") final String personName )
     {
         final Map<String, Object> params = MapUtil.map( "personName", personName );
 

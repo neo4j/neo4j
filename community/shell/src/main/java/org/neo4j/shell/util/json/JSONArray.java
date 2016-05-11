@@ -46,7 +46,12 @@ SOFTWARE.
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A JSONArray is an ordered sequence of values. Its external text form is a
@@ -194,7 +199,7 @@ public class JSONArray {
     public JSONArray(Collection collection, boolean includeSuperClass) {
         this.myArrayList = new ArrayList<Object>();
         if (collection != null) {
-            Iterator iter = collection.iterator();;
+            Iterator iter = collection.iterator();
             while (iter.hasNext()) {
                 Object o = iter.next();
                 if (o instanceof Map) {

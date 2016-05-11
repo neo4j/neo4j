@@ -60,7 +60,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         else if ( arg instanceof Long )
         {
             builder.append( arg.toString() );
-            builder.append( 'l' );
+            builder.append( 'L' );
         }
         else if ( arg instanceof Integer )
         {

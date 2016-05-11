@@ -33,8 +33,8 @@ import org.neo4j.test.rule.TargetDirectory;
 
 public class CoreEdgeRolesIT
 {
-    public final
     @Rule
+    public final
     TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
 
     @Rule

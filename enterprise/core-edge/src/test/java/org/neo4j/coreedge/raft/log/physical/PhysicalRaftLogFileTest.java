@@ -54,7 +54,8 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 
 public class PhysicalRaftLogFileTest
 {
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0, 0, 0 );

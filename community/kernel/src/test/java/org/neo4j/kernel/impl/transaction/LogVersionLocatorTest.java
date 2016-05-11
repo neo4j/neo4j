@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.junit.Test;
+
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -38,7 +39,7 @@ public class LogVersionLocatorTest
     public void shouldFindLogPosition() throws NoSuchTransactionException
     {
         // given
-        final long txId = 42l;
+        final long txId = 42L;
 
         final PhysicalLogicalTransactionStore.LogVersionLocator locator =
                 new PhysicalLogicalTransactionStore.LogVersionLocator( txId );
@@ -57,7 +58,7 @@ public class LogVersionLocatorTest
     public void shouldNotFindLogPosition() throws NoSuchTransactionException
     {
         // given
-        final long txId = 1l;
+        final long txId = 1L;
 
         final PhysicalLogicalTransactionStore.LogVersionLocator locator =
                 new PhysicalLogicalTransactionStore.LogVersionLocator( txId );
@@ -89,7 +90,7 @@ public class LogVersionLocatorTest
     public void shouldAlwaysThrowIfVisitIsNotCalled() throws NoSuchTransactionException
     {
         // given
-        final long txId = 1l;
+        final long txId = 1L;
 
         final PhysicalLogicalTransactionStore.LogVersionLocator locator =
                 new PhysicalLogicalTransactionStore.LogVersionLocator( txId );

@@ -49,7 +49,8 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class HTTPLoggingDocIT extends ExclusiveServerTestBase
 {
-    @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void givenExplicitlyDisabledServerLoggingConfigurationShouldNotLogAccesses() throws Exception

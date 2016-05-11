@@ -48,7 +48,12 @@ import java.io.Writer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * A JSONObject is an unordered collection of name/value pairs. Its
@@ -118,6 +123,11 @@ public class JSONObject {
          @Override
         protected final Object clone() {
             return this;
+        }
+
+        @Override
+        public int hashCode() {
+            return 1;
         }
 
         /**
@@ -403,7 +413,7 @@ public class JSONObject {
      * @param names An array of strings, the names of the fields to be obtained
      * from the object.
      */
-    public JSONObject(Object object, String names[]) {
+    public JSONObject(Object object, String[] names) {
         this();
         Class c = object.getClass();
         for (int i = 0; i < names.length; i += 1) {
@@ -489,7 +499,7 @@ public class JSONObject {
      * @param  d A double.
      * @return A String.
      */
-    static public String doubleToString(double d) {
+    public static String doubleToString(double d) {
         if (Double.isInfinite(d) || Double.isNaN(d)) {
             return "null";
         }
@@ -742,7 +752,7 @@ public class JSONObject {
      * @return A String.
      * @throws JSONException If n is a non-finite number.
      */
-    static public String numberToString(Number n)
+    public static String numberToString(Number n)
             throws JSONException {
         if (n == null) {
             throw new JSONException("Null pointer");
@@ -1176,7 +1186,7 @@ public class JSONObject {
      * @param s A String.
      * @return A simple JSON value.
      */
-    static public Object stringToValue(String s) {
+    public static Object stringToValue(String s) {
         if (s.equals("")) {
             return s;
         }

@@ -37,7 +37,7 @@ import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 public class BasicAuthentication implements Authentication
 {
     private final BasicAuthManager authManager;
-    private final static String SCHEME = "basic";
+    private static final String SCHEME = "basic";
     private final Log log;
     private final Supplier<String> identifier;
     private AuthSubject authSubject;

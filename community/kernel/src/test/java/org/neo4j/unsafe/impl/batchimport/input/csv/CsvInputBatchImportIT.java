@@ -485,7 +485,8 @@ public class CsvInputBatchImportIT
     }
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     private final long seed = currentTimeMillis();
     private final Random random = new Random( seed );
 }

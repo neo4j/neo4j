@@ -96,7 +96,7 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
         visitRemovedRelationship( relationshipId );
     }
 
-    private static abstract class DetailVisitor implements RelationshipVisitor<ConstraintValidationKernelException>
+    private abstract static class DetailVisitor implements RelationshipVisitor<ConstraintValidationKernelException>
     {
         abstract void visit( long relationshipId ) throws ConstraintValidationKernelException;
 

@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import static java.lang.String.format;
 import static java.lang.System.out;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -131,17 +130,17 @@ public class PropertyValueComparatorTest
         }
     };
 
-    private final static boolean DEBUG = false;
+    private static final boolean DEBUG = false;
 
-    private final static boolean[] BOOLEANS = new boolean[]{true, false};
-    private final static int LOWER = 10;
-    private final static int UPPER = 20;
+    private static final boolean[] BOOLEANS = new boolean[]{true, false};
+    private static final int LOWER = 10;
+    private static final int UPPER = 20;
 
-    private final static int[] BOUND_VALUES = new int[]{10, 11, 12, 13, 14};
+    private static final int[] BOUND_VALUES = new int[]{10, 11, 12, 13, 14};
 
     // This is needed to handle cases like 9 > x < 10, i.e. the bounds are very close and we need
     // to construct the in-between value by adding 0.5d
-    private final static double[] TESTED_VALUES =
+    private static final double[] TESTED_VALUES =
         new double[]{7.5, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5};
 }
 

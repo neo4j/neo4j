@@ -213,7 +213,7 @@ public class HeartbeatStateTest
                         internalLog ) );
 
         timeouts.tick( 0 );
-        when( timeoutStrategy.timeoutFor( any( Message.class ) ) ).thenReturn( 5l );
+        when( timeoutStrategy.timeoutFor( any( Message.class ) ) ).thenReturn( 5L );
 
         // when
         stateMachines.process( Message.internal( HeartbeatMessage.join ) );

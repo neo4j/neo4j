@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 
 public class IndexUpdaterMapTest
 {
-    private final long transactionId = 42l;
+    private final long transactionId = 42L;
 
     private IndexMap indexMap;
 

@@ -49,18 +49,18 @@ public class DarwinInstallation extends UnixInstallation
                     "echo neo4j-import",
                     "bash"};
 
-            try( FileWriter fileWriter = new FileWriter( new File( filename ), false ) )
+            try ( FileWriter fileWriter = new FileWriter( new File( filename ), false ) )
             {
-                for( String scriptCommand : scriptCommands )
+                for ( String scriptCommand : scriptCommands )
                 {
-                    fileWriter.write( scriptCommand + "\n");
+                    fileWriter.write( scriptCommand + "\n" );
                 }
 
-            String commands[] = { "bash", "-c", "chmod a+x " + filename };
+                String[] commands = {"bash", "-c", "chmod a+x " + filename};
 
-            Runtime.getRuntime().exec( commands );
+                Runtime.getRuntime().exec( commands );
             }
-            catch( IOException ioe )
+            catch ( IOException ioe )
             {
                 System.out.println( "Error writing " + filename );
             }
@@ -71,7 +71,6 @@ public class DarwinInstallation extends UnixInstallation
         }
     }
 
-    @Override
     public Environment getEnvironment()
     {
         return new DarwinEnvironment();

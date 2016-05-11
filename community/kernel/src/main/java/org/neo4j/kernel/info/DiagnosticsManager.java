@@ -80,7 +80,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         synchronized ( providers )
         {
-            @SuppressWarnings( "hiding" ) State state = this.state;
+            @SuppressWarnings( "hiding" )
+            State state = this.state;
             if ( !state.startup( this ) ) return;
         }
         dumpAll( DiagnosticsPhase.INITIALIZED, getTargetLog() );
@@ -90,7 +91,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         synchronized ( providers )
         {
-            @SuppressWarnings( "hiding" ) State state = this.state;
+            @SuppressWarnings( "hiding" )
+            State state = this.state;
             if ( !state.startup( this ) ) return;
         }
         dumpAll( DiagnosticsPhase.STARTED, getTargetLog() );
@@ -102,7 +104,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         synchronized ( providers )
         {
-            @SuppressWarnings( "hiding" ) State state = this.state;
+            @SuppressWarnings( "hiding" )
+            State state = this.state;
             if ( !state.shutdown( this ) ) return;
         }
         dumpAll( DiagnosticsPhase.STOPPING, getTargetLog() );
@@ -113,7 +116,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     {
         synchronized ( providers )
         {
-            @SuppressWarnings( "hiding" ) State state = this.state;
+            @SuppressWarnings( "hiding" )
+            State state = this.state;
             if ( !state.shutdown( this ) ) return;
         }
         dumpAll( DiagnosticsPhase.SHUTDOWN, getTargetLog() );
@@ -219,7 +223,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     public void prependProvider( DiagnosticsProvider provider )
     {
-        @SuppressWarnings( "hiding" ) State state = this.state;
+        @SuppressWarnings( "hiding" )
+        State state = this.state;
         if ( state == State.STOPPED ) return;
         providers.add( 0, provider );
         if ( state == State.STARTED ) dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );
@@ -227,7 +232,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     public void appendProvider( DiagnosticsProvider provider )
     {
-        @SuppressWarnings( "hiding" ) State state = this.state;
+        @SuppressWarnings( "hiding" )
+        State state = this.state;
         if ( state == State.STOPPED ) return;
         providers.add( provider );
         if ( state == State.STARTED ) dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );

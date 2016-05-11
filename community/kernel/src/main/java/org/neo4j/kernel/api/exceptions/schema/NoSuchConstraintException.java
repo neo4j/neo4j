@@ -28,7 +28,7 @@ import static java.lang.String.format;
 public class NoSuchConstraintException extends SchemaKernelException
 {
     private final PropertyConstraint constraint;
-    private final static String message = "No such constraint %s.";
+    private static final String message = "No such constraint %s.";
 
     public NoSuchConstraintException( PropertyConstraint constraint )
     {

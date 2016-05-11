@@ -108,7 +108,7 @@ public class DumpLogicalLog
         return logsFound;
     }
 
-    public static void main( String args[] ) throws IOException
+    public static void main( String[] args ) throws IOException
     {
         Args arguments = Args.withFlags( TO_FILE ).parse( args );
         TimeZone timeZone = parseTimeZoneConfig( arguments );

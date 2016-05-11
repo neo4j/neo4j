@@ -239,7 +239,7 @@ class KeyValueWriter implements Closeable
         }
     }
 
-    static abstract class Writer
+    abstract static class Writer
     {
         private static final boolean WRITE_TO_PAGE_CACHE =
                 flag( KeyValueWriter.class, "WRITE_TO_PAGE_CACHE", false );

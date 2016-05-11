@@ -158,7 +158,7 @@ public final class AsyncLogEvent extends AsyncEvent
         return TIMESTAMP.format( timestamp );
     }
 
-    private static abstract class BulkLogger
+    private abstract static class BulkLogger
     {
         abstract void process( long timestamp, Object target );
     }

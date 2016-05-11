@@ -39,4 +39,25 @@
     <property name="message" value="Two or more consecutive empty lines"/>
   </module>
 
+  <module name="TreeWalker">
+
+    <module name="PackageDeclaration"/>
+    <module name="UpperEll"/>
+    <module name="ArrayTypeStyle"/>
+    <module name="MissingOverride"/>
+    <module name="EmptyStatement"/>
+    <module name="SuperFinalize"/>
+    <module name="EqualsHashCode"/>
+    <module name="ModifierOrder"/>
+    <module name="EmptyCatchBlock">
+      <property name="exceptionVariableName" value="ignore|ignored"/>
+    </module>
+    <module name="AnnotationLocation">
+      <property name="allowSamelineMultipleAnnotations" value="false"/>
+      <property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
+      <property name="allowSamelineParameterizedAnnotation" value="false"/>
+    </module>
+
+  </module>
+
 </module>

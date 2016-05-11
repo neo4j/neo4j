@@ -32,12 +32,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 
 /**
@@ -77,7 +76,7 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
     @Test
     public void shouldNotInitializeTxOnReadOnlyOpsOnNeoXaDS() throws Exception
     {
-        long nodeId = 0l;
+        long nodeId = 0L;
 
         try(Transaction transaction = slave.beginTx())
         {

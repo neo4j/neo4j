@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.plugins;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
-
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import org.junit.AfterClass;
@@ -31,6 +26,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import javax.ws.rs.core.MediaType;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -187,14 +187,9 @@ public class CloneSubgraphPluginTest extends ExclusiveServerTestBase
 
     private int nodeCount()
     {
-        try ( Transaction tx = server.getDatabase().getGraph().beginTx() )
+        try ( Transaction ignore = server.getDatabase().getGraph().beginTx() )
         {
-            int count = 0;
-            for ( @SuppressWarnings("unused") Node node : server.getDatabase().getGraph().getAllNodes() )
-            {
-                count++;
-            }
-            return count;
+            return Math.toIntExact( server.getDatabase().getGraph().getAllNodes().stream().count() );
         }
     }
 }

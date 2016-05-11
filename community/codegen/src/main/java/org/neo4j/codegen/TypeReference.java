@@ -199,7 +199,7 @@ public class TypeReference
         return writeTo( new StringBuilder() ).toString();
     }
 
-    public static abstract class Bound
+    public abstract static class Bound
     {
         private final TypeReference type;
 

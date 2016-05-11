@@ -105,7 +105,7 @@ public abstract class BatchOperations
         return baseUri.resolve("." + requestedPath);
     }
 
-    private final static Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d{1,10})\\}");
+    private static final Pattern PLACHOLDER_PATTERN=Pattern.compile("\\{(\\d{1,10})\\}");
 
     protected String replaceLocationPlaceholders( String str,
                                                   Map<Integer, String> locations )

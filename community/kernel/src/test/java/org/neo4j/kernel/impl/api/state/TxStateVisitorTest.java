@@ -47,7 +47,7 @@ public class TxStateVisitorTest
     public void shouldSeeAddedRelationshipProperties() throws Exception
     {
         // Given
-        long relId = 1l;
+        long relId = 1L;
         int propKey = 2;
         GatheringVisitor visitor = new GatheringVisitor();
         DefinedProperty prop = stringProperty( propKey, "hello" );

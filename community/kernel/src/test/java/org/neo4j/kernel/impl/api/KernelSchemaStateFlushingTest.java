@@ -44,7 +44,8 @@ import static org.junit.Assert.assertEquals;
 
 public class KernelSchemaStateFlushingTest
 {
-    public @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     private GraphDatabaseAPI db;
     private KernelAPI kernel;

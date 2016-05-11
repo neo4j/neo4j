@@ -161,9 +161,9 @@ public class BatchingTransactionAppenderTest
         transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted, -1 );
 
-        LogEntryStart start = new LogEntryStart( 0, 0, 0l, latestCommittedTxWhenStarted, null,
+        LogEntryStart start = new LogEntryStart( 0, 0, 0L, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );
-        LogEntryCommit commit = new OnePhaseCommit( nextTxId, 0l );
+        LogEntryCommit commit = new OnePhaseCommit( nextTxId, 0L );
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 
@@ -208,7 +208,7 @@ public class BatchingTransactionAppenderTest
 
         LogEntryStart start = new LogEntryStart( 0, 0, 0L, latestCommittedTxWhenStarted, null,
                 LogPosition.UNSPECIFIED );
-        LogEntryCommit commit = new OnePhaseCommit( latestCommittedTxWhenStarted + 2, 0l );
+        LogEntryCommit commit = new OnePhaseCommit( latestCommittedTxWhenStarted + 2, 0L );
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation( start, transactionRepresentation, commit );
 
@@ -316,11 +316,11 @@ public class BatchingTransactionAppenderTest
                 positionCache, transactionIdStore, BYPASS, databaseHealth ) );
 
         // When
-        appender.checkPoint( new LogPosition( 1l, 2l ), LogCheckPointEvent.NULL );
+        appender.checkPoint( new LogPosition( 1L, 2L ), LogCheckPointEvent.NULL );
 
         // Then
-        verify( channel, times( 1 ) ).putLong( 1l );
-        verify( channel, times( 1 ) ).putLong( 2l );
+        verify( channel, times( 1 ) ).putLong( 1L );
+        verify( channel, times( 1 ) ).putLong( 2L );
         verify( channel, times( 1 ) ).prepareForFlush();
         verify( flushable, times( 1 ) ).flush();
         verifyZeroInteractions( databaseHealth );
@@ -342,7 +342,7 @@ public class BatchingTransactionAppenderTest
         // When
         try
         {
-            appender.checkPoint( new LogPosition( 0l, 0l ), LogCheckPointEvent.NULL );
+            appender.checkPoint( new LogPosition( 0L, 0L ), LogCheckPointEvent.NULL );
             fail( "should have thrown " );
         }
         catch ( IOException ex )

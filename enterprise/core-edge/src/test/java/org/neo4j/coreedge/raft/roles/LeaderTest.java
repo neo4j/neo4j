@@ -52,7 +52,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.coreedge.raft.MessageUtils.messageFor;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.TestMessageBuilders.appendEntriesResponse;
@@ -60,8 +59,8 @@ import static org.neo4j.coreedge.raft.roles.Role.FOLLOWER;
 import static org.neo4j.coreedge.raft.state.RaftStateBuilder.raftState;
 import static org.neo4j.coreedge.server.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @RunWith(MockitoJUnitRunner.class)
 public class LeaderTest
@@ -104,12 +103,12 @@ public class LeaderTest
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
-        when( logMock.appendIndex() ).thenReturn( 100l );
+        when( logMock.appendIndex() ).thenReturn( 100L );
 
         when( state.commitIndex() ).thenReturn( -1L );
         when( state.entryLog() ).thenReturn( logMock );
         when( state.followerStates() ).thenReturn( followerState );
-        when( state.term() ).thenReturn( 4l ); // both leader and follower are in the same term
+        when( state.term() ).thenReturn( 4L ); // both leader and follower are in the same term
 
         // when
         // that leader is asked to handle a response from that follower that says that the follower is up to date
@@ -146,12 +145,12 @@ public class LeaderTest
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
-        when( logMock.appendIndex() ).thenReturn( 100l );
+        when( logMock.appendIndex() ).thenReturn( 100L );
 
         when( state.commitIndex() ).thenReturn( -1L );
         when( state.entryLog() ).thenReturn( logMock );
         when( state.followerStates() ).thenReturn( followerState );
-        when( state.term() ).thenReturn( 4l ); // both leader and follower are in the same term
+        when( state.term() ).thenReturn( 4L ); // both leader and follower are in the same term
 
         // when
         // that leader is asked to handle a response from that follower that says that the follower is up to date
@@ -189,13 +188,13 @@ public class LeaderTest
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
-        when( logMock.appendIndex() ).thenReturn( 100l );
+        when( logMock.appendIndex() ).thenReturn( 100L );
         // with commit requests in this test
 
         when( state.commitIndex() ).thenReturn( -1L );
         when( state.entryLog() ).thenReturn( logMock );
         when( state.followerStates() ).thenReturn( followerState );
-        when( state.term() ).thenReturn( 231l ); // both leader and follower are in the same term
+        when( state.term() ).thenReturn( 231L ); // both leader and follower are in the same term
 
         // when that leader is asked to handle a response from that follower that says that the follower is still
         // missing things
@@ -243,13 +242,13 @@ public class LeaderTest
         followerState = new FollowerStates<>( followerState, instance2, instance2State );
 
         ReadableRaftLog logMock = mock( ReadableRaftLog.class );
-        when( logMock.appendIndex() ).thenReturn( 100l );
+        when( logMock.appendIndex() ).thenReturn( 100L );
         //  with commit requests in this test
 
         when( state.commitIndex() ).thenReturn( -1L );
         when( state.entryLog() ).thenReturn( logMock );
         when( state.followerStates() ).thenReturn( followerState );
-        when( state.term() ).thenReturn( 4l ); // both leader and follower are in the same term
+        when( state.term() ).thenReturn( 4L ); // both leader and follower are in the same term
 
         // when that leader is asked to handle a response from that follower that says that the follower is still
         // missing things
@@ -303,7 +302,7 @@ public class LeaderTest
         when( state.commitIndex() ).thenReturn( -1L );
         when( state.entryLog() ).thenReturn( log );
         when( state.followerStates() ).thenReturn( followerState );
-        when( state.term() ).thenReturn( 4l ); // both leader and follower are in the same term
+        when( state.term() ).thenReturn( 4L ); // both leader and follower are in the same term
 
         // when
         // that leader is asked to handle a response from that follower that says that the follower is still missing

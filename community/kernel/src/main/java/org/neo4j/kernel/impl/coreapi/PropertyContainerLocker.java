@@ -104,7 +104,7 @@ public class PropertyContainerLocker
         }
     }
 
-    private static abstract class CoreAPILock implements Lock
+    private abstract static class CoreAPILock implements Lock
     {
         private final Supplier<Statement> stmtProvider;
         private final ResourceType type;

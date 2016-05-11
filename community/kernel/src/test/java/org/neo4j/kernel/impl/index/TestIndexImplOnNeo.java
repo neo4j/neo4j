@@ -43,7 +43,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestIndexImplOnNeo
 {
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private GraphDatabaseService db;
 
     @Before

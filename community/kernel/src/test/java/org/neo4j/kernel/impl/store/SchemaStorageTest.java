@@ -231,8 +231,8 @@ public class SchemaStorageTest
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
         Mockito.when( schemaStorageSpy.loadAllSchemaRules() ).thenReturn(
                 Iterators.<SchemaRule>iterator(
-                        getUniquePropertyConstraintRule( 1l, LABEL1, PROP1 ),
-                        getUniquePropertyConstraintRule( 2l, LABEL1, PROP1 ) ) );
+                        getUniquePropertyConstraintRule( 1L, LABEL1, PROP1 ),
+                        getUniquePropertyConstraintRule( 2L, LABEL1, PROP1 ) ) );
 
         //EXPECT
         expectedException.expect( DuplicateEntitySchemaRuleException.class );
@@ -268,8 +268,8 @@ public class SchemaStorageTest
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
         Mockito.when( schemaStorageSpy.loadAllSchemaRules() ).thenReturn(
                 Iterators.<SchemaRule>iterator(
-                        getRelationshipPropertyExistenceConstraintRule( 1l, TYPE1, PROP1 ),
-                        getRelationshipPropertyExistenceConstraintRule( 2l, TYPE1, PROP1 ) ) );
+                        getRelationshipPropertyExistenceConstraintRule( 1L, TYPE1, PROP1 ),
+                        getRelationshipPropertyExistenceConstraintRule( 2L, TYPE1, PROP1 ) ) );
 
         //EXPECT
         expectedException.expect( DuplicateEntitySchemaRuleException.class );
@@ -293,7 +293,7 @@ public class SchemaStorageTest
             String property )
     {
         return UniquePropertyConstraintRule
-                .uniquenessConstraintRule( id, labelId( label ), propId( property ), 0l );
+                .uniquenessConstraintRule( id, labelId( label ), propId( property ), 0L );
     }
 
     private RelationshipPropertyExistenceConstraintRule getRelationshipPropertyExistenceConstraintRule( long id,

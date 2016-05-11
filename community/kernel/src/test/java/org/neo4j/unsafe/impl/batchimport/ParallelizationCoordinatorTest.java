@@ -121,5 +121,6 @@ public class ParallelizationCoordinatorTest
         };
     }
 
-    public final @Rule OtherThreadRule<Void> t2 = new OtherThreadRule<>();
+    @Rule
+    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 }

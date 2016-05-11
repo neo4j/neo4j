@@ -24,8 +24,8 @@ import static java.lang.String.format;
 /** Uniquely identifies an operation as performed under a global session. */
 public class LocalOperationId
 {
-    final private long localSessionId;
-    final private long sequenceNumber;
+    private final long localSessionId;
+    private final long sequenceNumber;
 
     public LocalOperationId( long localSessionId, long sequenceNumber )
     {

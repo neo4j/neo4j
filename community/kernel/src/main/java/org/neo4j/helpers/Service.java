@@ -152,7 +152,7 @@ public abstract class Service
      *
      * @author Tobias Ivarsson
      */
-    public static abstract class CaseInsensitiveService extends Service
+    public abstract static class CaseInsensitiveService extends Service
     {
         /**
          * Create a new instance of a service implementation identified with the
@@ -168,7 +168,7 @@ public abstract class Service
         }
 
         @Override
-        final public boolean matches( String key )
+        public final boolean matches( String key )
         {
             for ( String id : keys )
             {

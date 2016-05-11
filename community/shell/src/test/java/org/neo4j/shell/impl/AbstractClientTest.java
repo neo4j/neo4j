@@ -64,14 +64,14 @@ public class AbstractClientTest
                             {
                                 out.println( message );
                             }
-                            catch ( RemoteException e )
+                            catch ( RemoteException ignored )
                             {
                             }
                             return new Response( "", Continuation.INPUT_COMPLETE );
                         }
                     };
                 }
-                catch ( RemoteException e )
+                catch ( RemoteException ignored )
                 {
                 }
                 return server;
@@ -119,7 +119,7 @@ public class AbstractClientTest
                             {
                                 out.println( message );
                             }
-                            catch ( RemoteException e )
+                            catch ( RemoteException ignored )
                             {
                             }
                             return new Response( prompt, line.endsWith( ";" ) ? Continuation.EXCEPTION_CAUGHT
@@ -127,7 +127,7 @@ public class AbstractClientTest
                         }
                     };
                 }
-                catch ( RemoteException e )
+                catch ( RemoteException ignored )
                 {
                 }
                 return server;

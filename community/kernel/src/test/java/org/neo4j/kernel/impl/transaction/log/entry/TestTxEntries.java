@@ -37,7 +37,8 @@ import static org.neo4j.test.rule.fs.EphemeralFileSystemRule.shutdownDbAction;
 public class TestTxEntries
 {
     private final File storeDir = new File("dir");
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     /*
      * Starts a JVM, executes a tx that fails on prepare and rollbacks,

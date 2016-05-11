@@ -62,7 +62,7 @@ public class PrimitiveCollectionEqualityTest
         boolean remove( T coll );
     }
 
-    private static abstract class ValueProducer<T extends PrimitiveCollection>
+    private abstract static class ValueProducer<T extends PrimitiveCollection>
     {
         private final Class<T> applicableType;
 

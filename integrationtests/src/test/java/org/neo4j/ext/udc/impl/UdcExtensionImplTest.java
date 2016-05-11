@@ -595,7 +595,7 @@ public class UdcExtensionImplTest
     {
         if(gdb != null)
         {
-            @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db = (GraphDatabaseAPI) gdb;
+            GraphDatabaseAPI db = (GraphDatabaseAPI) gdb;
             gdb.shutdown();
             FileUtils.deleteDirectory( new File( db.getStoreDir() ) );
         }

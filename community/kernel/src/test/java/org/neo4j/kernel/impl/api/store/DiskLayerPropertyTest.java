@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.lang.reflect.Array;
-
 import org.junit.Test;
+
+import java.lang.reflect.Array;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.properties.Property;
@@ -31,7 +31,6 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StorageStatement;
 
 import static java.util.Collections.singletonMap;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -184,7 +183,7 @@ public class DiskLayerPropertyTest extends DiskLayerTest
         }
         if ( type == long.class )
         {
-            return 17l;
+            return 17L;
         }
         if ( type == double.class )
         {

@@ -401,7 +401,7 @@ public class ObservedClusterMembersTest
         {
             if ( clusterMember.getInstanceId().equals( clusterId2 ) )
             {
-                assertThat( count( clusterMember.getRoles() ), equalTo( 1l ) );
+                assertThat( count( clusterMember.getRoles() ), equalTo( 1L ) );
                 assertThat( Iterables.single( clusterMember.getRoles() ), equalTo( SLAVE ) );
                 break; // that's the only member we care about
             }

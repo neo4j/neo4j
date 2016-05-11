@@ -40,8 +40,8 @@ public class LockManagerImplTest
     public void shouldAllowGetReadWriteLocks()
     {
         // given
-        LockResource node1 = new LockResource( ResourceTypes.NODE, 1l );
-        LockResource node2 = new LockResource( ResourceTypes.NODE, 2l );
+        LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
+        LockResource node2 = new LockResource( ResourceTypes.NODE, 2L );
         LockTransaction lockTransaction = new LockTransaction();
         LockManagerImpl lockManager = new LockManagerImpl( new RagManager() );
 
@@ -62,7 +62,7 @@ public class LockManagerImplTest
     public void shouldNotBePossibleReleaseNotExistingLock()
     {
         // given
-        LockResource node1 = new LockResource( ResourceTypes.NODE, 1l );
+        LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
         LockTransaction lockTransaction = new LockTransaction();
         LockManagerImpl lockManager = new LockManagerImpl( new RagManager() );
 
@@ -78,7 +78,7 @@ public class LockManagerImplTest
     public void shouldCleanupNotUsedLocks()
     {
         // given
-        LockResource node = new LockResource( ResourceTypes.NODE, 1l );
+        LockResource node = new LockResource( ResourceTypes.NODE, 1L );
         LockTransaction lockTransaction = new LockTransaction();
         LockManagerImpl lockManager = new LockManagerImpl( new RagManager() );
         lockManager.getWriteLock( node, lockTransaction );
@@ -104,7 +104,7 @@ public class LockManagerImplTest
     public void shouldReleaseNotAcquiredLocks() {
 
         // given
-        LockResource node = new LockResource( ResourceTypes.NODE, 1l );
+        LockResource node = new LockResource( ResourceTypes.NODE, 1L );
         LockTransaction lockTransaction = new LockTransaction();
         RWLock rwLock = Mockito.mock( RWLock.class );
         LockManagerImpl lockManager = new MockedLockLockManager( new RagManager(), rwLock );

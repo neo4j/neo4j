@@ -19,6 +19,12 @@
  */
 package org.neo4j.server.rest;
 
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.WebResource.Builder;
+import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -29,12 +35,6 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.WebResource.Builder;
-import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
-
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
@@ -42,7 +42,7 @@ import org.neo4j.test.server.HTTP;
 public class RestRequest {
 
     private final URI baseUri;
-    private final static Client DEFAULT_CLIENT = Client.create();
+    private static final Client DEFAULT_CLIENT = Client.create();
     private final Client client;
     private MediaType accept = MediaType.APPLICATION_JSON_TYPE;
     private Map<String, String> headers=new HashMap<String, String>();

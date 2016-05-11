@@ -19,11 +19,11 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.kernel.configuration.Config;
@@ -145,10 +145,10 @@ public class DefaultUdcInformationCollectorTest
         private final Map<IdType, Long> idsInUse = new HashMap<>();
 
         {
-            idsInUse.put( IdType.NODE, 100l );
-            idsInUse.put( IdType.RELATIONSHIP, 200l );
-            idsInUse.put( IdType.LABEL_TOKEN, 300l );
-            idsInUse.put( IdType.PROPERTY, 400l );
+            idsInUse.put( IdType.NODE, 100L );
+            idsInUse.put( IdType.RELATIONSHIP, 200L );
+            idsInUse.put( IdType.LABEL_TOKEN, 300L );
+            idsInUse.put( IdType.PROPERTY, 400L );
         }
 
         @Override

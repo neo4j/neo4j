@@ -244,7 +244,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     private void countRelationships( int expectedCount, Iterable<Relationship> rels )
     {
         int count = 0;
-        for ( @SuppressWarnings( "unused" ) Relationship ignored : rels )
+        for ( Relationship ignored : rels )
         {
             count++;
         }
@@ -258,10 +258,8 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Node node2 = getGraphDb().createNode();
         Relationship relationship = node1.createRelationshipTo( node2,
             MyRelTypes.TEST );
-        Relationship relArray1[] = getRelationshipArray( node1
-            .getRelationships() );
-        Relationship relArray2[] = getRelationshipArray( node2
-            .getRelationships() );
+        Relationship[] relArray1 = getRelationshipArray( node1.getRelationships() );
+        Relationship[] relArray2 = getRelationshipArray( node2.getRelationships() );
         assertEquals( 1, relArray1.length );
         assertEquals( relationship, relArray1[0] );
         assertEquals( 1, relArray2.length );
@@ -623,8 +621,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( node2, rel3.getStartNode() );
         assertEquals( node1, rel3.getEndNode() );
 
-        Relationship relArray[] = getRelationshipArray( node1.getRelationships(
-            MyRelTypes.TEST, Direction.OUTGOING ) );
+        Relationship[] relArray = getRelationshipArray( node1.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
         assertEquals( 1, relArray.length );
         assertEquals( rel2, relArray[0] );
         relArray = getRelationshipArray( node1.getRelationships(
@@ -812,7 +809,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         hub = graphDB.getNodeById( hub.getId() );
 
         int count = 0;
-        for ( @SuppressWarnings( "unused" ) Relationship r1 : hub.getRelationships() )
+        for ( Relationship ignore : hub.getRelationships() )
         {
             count += Iterables.count( hub.getRelationships() );
         }

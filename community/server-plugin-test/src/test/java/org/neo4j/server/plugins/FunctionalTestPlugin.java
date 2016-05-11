@@ -73,8 +73,8 @@ public class FunctionalTestPlugin extends ServerPlugin
     }
 
     @PluginTarget( Node.class )
-    public Iterable<Relationship> getRelationshipsBetween( final @Source Node start,
-            final @Parameter( name = "other" ) Node end )
+    public Iterable<Relationship> getRelationshipsBetween( @Source final Node start,
+            @Parameter( name = "other" ) final Node end )
     {
         List<Relationship> result = new ArrayList<>();
         try ( Transaction tx = start.getGraphDatabase().beginTx() )
@@ -267,7 +267,7 @@ public class FunctionalTestPlugin extends ServerPlugin
             Node node;
             try
             {
-                node = db.getNodeById( 0l );
+                node = db.getNodeById( 0L );
             } catch(NotFoundException e)
             {
                 node = db.createNode();

@@ -95,7 +95,7 @@ public class SlaveLocksClientConcurrentTest
         when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).then(
                 new WaitLatchAnswer( resourceLatch, readerCompletedLatch ) );
 
-        long nodeId = 10l;
+        long nodeId = 10L;
         ResourceReader resourceReader =
                 new ResourceReader( reader, ResourceTypes.NODE, nodeId, resourceLatch, readerCompletedLatch );
         ResourceWriter resourceWriter = new ResourceWriter( writer, ResourceTypes.NODE, nodeId );

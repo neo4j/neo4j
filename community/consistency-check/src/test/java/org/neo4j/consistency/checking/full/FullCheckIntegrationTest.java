@@ -134,15 +134,13 @@ import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
 import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
-import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule
-        .nodePropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.NodePropertyExistenceConstraintRule.nodePropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule
-        .relPropertyExistenceConstraintRule;
+import static org.neo4j.kernel.impl.store.record.RelationshipPropertyExistenceConstraintRule.relPropertyExistenceConstraintRule;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -347,7 +345,7 @@ public class FullCheckIntegrationTest
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = new ArrayList<>();
-                allocateFromNumbers( newRecords, prependNodeId( nodeRecord.getId(), new long[]{42l} ),
+                allocateFromNumbers( newRecords, prependNodeId( nodeRecord.getId(), new long[]{42L} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
@@ -376,7 +374,8 @@ public class FullCheckIntegrationTest
         assertTrue( "should be consistent", stats.isConsistent() );
     }
 
-    @Test @Ignore("2013-07-17 Revisit once we store sorted label ids")
+    @Test
+    @Ignore("2013-07-17 Revisit once we store sorted label ids")
     public void shouldReportOrphanNodeDynamicLabelAsInconsistency() throws Exception
     {
         // given
@@ -825,7 +824,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = new ArrayList<>();
                 allocateFromNumbers( newRecords,
-                        prependNodeId( nodeRecord.getId(), new long[]{42l, 42l} ),
+                        prependNodeId( nodeRecord.getId(), new long[]{42L, 42L} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
@@ -857,7 +856,7 @@ public class FullCheckIntegrationTest
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
                 Collection<DynamicRecord> newRecords = new ArrayList<>();
-                allocateFromNumbers( newRecords, prependNodeId( next.node(), new long[]{42l} ),
+                allocateFromNumbers( newRecords, prependNodeId( next.node(), new long[]{42L} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 

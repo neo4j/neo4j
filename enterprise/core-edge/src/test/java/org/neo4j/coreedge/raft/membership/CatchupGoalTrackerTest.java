@@ -19,16 +19,14 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
-import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
-import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.FakeClock;
 
 import static org.junit.Assert.assertFalse;
@@ -175,7 +173,8 @@ public class CatchupGoalTrackerTest
             return 0;
         }
 
-        @Override public long readEntryTerm( long logIndex ) throws IOException
+        @Override
+        public long readEntryTerm( long logIndex ) throws IOException
         {
             return 0;
         }

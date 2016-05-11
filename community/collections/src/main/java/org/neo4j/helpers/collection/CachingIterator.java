@@ -61,6 +61,7 @@ public class CachingIterator<T> implements ListIterator<T>
      * @return whether or not there are more items in this iteration given the
      * current {@link #position()}.
      */
+    @Override
     public boolean hasNext()
     {
         return visited.size() > position ? true : source.hasNext();
@@ -76,6 +77,7 @@ public class CachingIterator<T> implements ListIterator<T>
      *
      * @return the next item given the current {@link #position()}.
      */
+    @Override
     public T next()
     {
         if ( visited.size() > position )
@@ -166,6 +168,7 @@ public class CachingIterator<T> implements ListIterator<T>
      *
      * {@inheritDoc}
      */
+    @Override
     public boolean hasPrevious()
     {
         return position > 0;
@@ -174,6 +177,7 @@ public class CachingIterator<T> implements ListIterator<T>
     /**
      * {@inheritDoc}
      */
+    @Override
     public T previous()
     {
         if ( !hasPrevious() )
@@ -207,6 +211,7 @@ public class CachingIterator<T> implements ListIterator<T>
     /**
      * {@inheritDoc}
      */
+    @Override
     public int nextIndex()
     {
         return position;
@@ -215,6 +220,7 @@ public class CachingIterator<T> implements ListIterator<T>
     /**
      * {@inheritDoc}
      */
+    @Override
     public int previousIndex()
     {
         return position-1;
@@ -225,6 +231,7 @@ public class CachingIterator<T> implements ListIterator<T>
      *
      * {@inheritDoc}
      */
+    @Override
     public void remove()
     {
         throw new UnsupportedOperationException();
@@ -235,6 +242,7 @@ public class CachingIterator<T> implements ListIterator<T>
      *
      * {@inheritDoc}
      */
+    @Override
     public void set( T e )
     {
         throw new UnsupportedOperationException();
@@ -245,6 +253,7 @@ public class CachingIterator<T> implements ListIterator<T>
      *
      * {@inheritDoc}
      */
+    @Override
     public void add( T e )
     {
         throw new UnsupportedOperationException();

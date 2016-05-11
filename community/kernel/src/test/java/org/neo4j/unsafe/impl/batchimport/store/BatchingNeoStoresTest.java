@@ -39,7 +39,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -155,7 +154,9 @@ public class BatchingNeoStoresTest
         }
     }
 
-    public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
-    public final @Rule PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
 }

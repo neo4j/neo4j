@@ -202,7 +202,7 @@ public class NodeLabelsFieldTest
     {
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
-        Long nodeId = 24l;
+        Long nodeId = 24L;
         NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, oneByteLongs(56) );
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
 
@@ -239,7 +239,7 @@ public class NodeLabelsFieldTest
     {
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
-        Long nodeId = 42l;
+        Long nodeId = 42L;
         NodeRecord node = nodeRecordWithDynamicLabels( nodeId, nodeStore, oneByteLongs( 57 ) );
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( node );
 
@@ -290,7 +290,7 @@ public class NodeLabelsFieldTest
     public void shouldReadNullDynamicRecordFromInlineLabelsField() throws Exception
     {
         // GIVEN
-        NodeRecord node = nodeRecordWithInlinedLabels( 23l );
+        NodeRecord node = nodeRecordWithInlinedLabels( 23L );
 
         // WHEN
         boolean isDynamicReference = NodeLabelsField.fieldPointsToDynamicRecordOfLabels( node.getLabelField() );
@@ -497,7 +497,8 @@ public class NodeLabelsFieldTest
 
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NodeStore nodeStore;
 
     @Before

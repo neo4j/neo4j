@@ -41,7 +41,7 @@ public class TestProperties extends AbstractNeo4jTestCase
         Node node = getGraphDb().createNode();
 
         node.setProperty( "name", "oscar" );
-        node.setProperty( "favourite_numbers", new Long[] { 1l, 2l, 3l } );
+        node.setProperty( "favourite_numbers", new Long[] { 1L, 2L, 3L } );
         node.setProperty( "favourite_colors", new String[] { "blue", "red" } );
         node.removeProperty( "favourite_colors" );
         newTransaction();

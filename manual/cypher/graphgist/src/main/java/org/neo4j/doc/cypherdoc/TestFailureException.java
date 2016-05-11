@@ -86,7 +86,7 @@ class TestFailureException extends RuntimeException
         }
     }
 
-    private static abstract class Snapshot
+    private abstract static class Snapshot
     {
         final String filename;
 

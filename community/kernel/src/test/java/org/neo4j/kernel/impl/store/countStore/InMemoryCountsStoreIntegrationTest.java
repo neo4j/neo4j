@@ -219,7 +219,7 @@ public class InMemoryCountsStoreIntegrationTest
         }
     }
 
-    private synchronized static Map<CountsKey,long[]> updateMapByDiff( Map<CountsKey,long[]> map,
+    private static synchronized Map<CountsKey,long[]> updateMapByDiff( Map<CountsKey,long[]> map,
             Map<CountsKey,long[]> diff )
     {
         diff.entrySet().forEach( ( pair ) -> map.compute( pair.getKey(),

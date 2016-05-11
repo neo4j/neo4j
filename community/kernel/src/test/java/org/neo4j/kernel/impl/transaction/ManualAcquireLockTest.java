@@ -45,7 +45,8 @@ public class ManualAcquireLockTest
     public DatabaseRule db = new ImpermanentDatabaseRule(  );
     public GraphTransactionRule tx = new GraphTransactionRule( db );
 
-    @Rule public TestRule chain = RuleChain.outerRule( db ).around( tx );
+    @Rule
+    public TestRule chain = RuleChain.outerRule( db ).around( tx );
 
     private Worker worker;
 
@@ -76,7 +77,7 @@ public class ManualAcquireLockTest
             worker.setProperty( node, key, "ksjd" );
             fail( "Shouldn't be able to grab it" );
         }
-        catch ( Exception e )
+        catch ( Exception ignored )
         {
         }
         nodeLock.release();

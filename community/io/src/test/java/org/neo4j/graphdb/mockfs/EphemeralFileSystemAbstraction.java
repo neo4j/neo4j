@@ -1195,7 +1195,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     // Copied from kernel since we don't want to depend on that module here
-    private static abstract class PrefetchingIterator<T> implements Iterator<T>
+    private abstract static class PrefetchingIterator<T> implements Iterator<T>
     {
         boolean hasFetchedNext;
         T nextObject;

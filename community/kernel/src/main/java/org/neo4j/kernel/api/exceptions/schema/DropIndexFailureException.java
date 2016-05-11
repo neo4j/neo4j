@@ -29,7 +29,7 @@ import static java.lang.String.format;
 public class DropIndexFailureException extends SchemaKernelException
 {
     private final IndexDescriptor indexDescriptor;
-    private final static String message = "Unable to drop index on %s: %s";
+    private static final String message = "Unable to drop index on %s: %s";
 
     public DropIndexFailureException( IndexDescriptor indexDescriptor, SchemaKernelException cause )
     {

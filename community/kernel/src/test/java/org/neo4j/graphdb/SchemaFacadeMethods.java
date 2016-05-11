@@ -26,7 +26,6 @@ import org.neo4j.graphdb.schema.Schema;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;
-
 import static org.mockito.Mockito.mock;
 
 public class SchemaFacadeMethods
@@ -120,7 +119,7 @@ public class SchemaFacadeMethods
             @Override
             public void call( Schema self )
             {
-                self.awaitIndexOnline( INDEX_DEFINITION, 1l, TimeUnit.SECONDS );
+                self.awaitIndexOnline( INDEX_DEFINITION, 1L, TimeUnit.SECONDS );
             }
         };
 
@@ -130,7 +129,7 @@ public class SchemaFacadeMethods
             @Override
             public void call( Schema self )
             {
-                self.awaitIndexesOnline( 1l, TimeUnit.SECONDS );
+                self.awaitIndexesOnline( 1L, TimeUnit.SECONDS );
             }
         };
 

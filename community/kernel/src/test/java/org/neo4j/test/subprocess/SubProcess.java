@@ -91,7 +91,8 @@ public abstract class SubProcess<T, P> implements Serializable
             me = me.getSuperclass();
         }
         Type type = ( (ParameterizedType) me.getGenericSuperclass() ).getActualTypeArguments()[0];
-        @SuppressWarnings( { "hiding" } ) Class<T> t;
+        @SuppressWarnings( { "hiding" } )
+        Class<T> t;
         if ( type instanceof Class<?> )
         {
             t = (Class<T>) type;

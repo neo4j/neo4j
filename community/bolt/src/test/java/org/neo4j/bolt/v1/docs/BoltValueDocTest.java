@@ -151,7 +151,7 @@ public class BoltValueDocTest
         }
         else if ( type.equalsIgnoreCase( "integer" ) )
         {
-            return 1337l;
+            return 1337L;
         }
         else if ( type.equalsIgnoreCase( "boolean" ) )
         {

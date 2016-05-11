@@ -24,17 +24,18 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelTransactionTestBase;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.security.AccessMode;
 
 import static org.junit.Assert.assertNotNull;
 
 public class KernelTransactionAccessModeTest extends KernelTransactionTestBase
 {
-    @Rule public ExpectedException exception = ExpectedException.none();
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     public void shouldNotAllowReadsInNoneMode() throws Throwable

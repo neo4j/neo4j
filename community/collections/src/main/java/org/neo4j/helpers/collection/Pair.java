@@ -112,7 +112,8 @@ public abstract class Pair<T1, T2>
         }
         if ( obj instanceof Pair )
         {
-            @SuppressWarnings( "rawtypes" ) Pair that = (Pair) obj;
+            @SuppressWarnings( "rawtypes" )
+            Pair that = (Pair) obj;
             return equals( this.other(), that.other() ) && equals( this.first(), that.first() );
         }
         return false;

@@ -25,8 +25,8 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 
 public class CountsSnapshot
 {
-    final private Map<CountsKey,long[]> map;
-    final private long txId;
+    private final Map<CountsKey,long[]> map;
+    private final long txId;
 
     public CountsSnapshot( long txId, Map<CountsKey,long[]> map )
     {

@@ -153,10 +153,10 @@ public class DiffSetsTest
         DiffSets<Long> diffSets = new DiffSets();
 
         // WHEN
-        Iterator<Long> result = diffSets.apply( asList( 18l ).iterator() );
+        Iterator<Long> result = diffSets.apply( asList( 18L ).iterator() );
 
         // THEN
-        assertEquals( asList( 18l ), asCollection( result ) );
+        assertEquals( asList( 18L ), asCollection( result ) );
 
     }
 
@@ -165,14 +165,14 @@ public class DiffSetsTest
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
-        diffSets.add( 52l );
-        diffSets.remove( 43l );
+        diffSets.add( 52L );
+        diffSets.remove( 43L );
 
         // WHEN
-        Iterator<Long> result = diffSets.apply( asList( 18l ).iterator() );
+        Iterator<Long> result = diffSets.apply( asList( 18L ).iterator() );
 
         // THEN
-        assertEquals( asList( 18l, 52l ), asCollection( result ) );
+        assertEquals( asList( 18L, 52L ), asCollection( result ) );
 
     }
 
@@ -181,13 +181,13 @@ public class DiffSetsTest
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
-        diffSets.remove( 43l );
+        diffSets.remove( 43L );
 
         // WHEN
-        Iterator<Long> result = diffSets.apply( asList( 42l, 43l, 44l ).iterator() );
+        Iterator<Long> result = diffSets.apply( asList( 42L, 43L, 44L ).iterator() );
 
         // THEN
-        assertEquals( asList( 42l, 44l ), asCollection( result ) );
+        assertEquals( asList( 42L, 44L ), asCollection( result ) );
 
     }
 
@@ -196,16 +196,16 @@ public class DiffSetsTest
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
-        diffSets.add( 42l );
-        diffSets.add( 44l );
+        diffSets.add( 42L );
+        diffSets.add( 44L );
 
         // WHEN
-        Iterator<Long> result = diffSets.apply( asList( 42l, 43l ).iterator() );
+        Iterator<Long> result = diffSets.apply( asList( 42L, 43L ).iterator() );
 
         // THEN
         Collection<Long> collectedResult = asCollection( result );
         assertEquals( 3, collectedResult.size() );
-        assertThat( collectedResult, hasItems( 43l, 42l, 44l ) );
+        assertThat( collectedResult, hasItems( 43L, 42L, 44L ) );
     }
 
     @Test
@@ -245,5 +245,5 @@ public class DiffSetsTest
         assertEquals( asSet( 0 ), diff.getRemoved() );
     }
 
-    private static final Predicate<Long> ODD_FILTER = item -> item % 2 == 1l;
+    private static final Predicate<Long> ODD_FILTER = item -> item % 2 == 1L;
 }

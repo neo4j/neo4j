@@ -173,7 +173,7 @@ public abstract class Command implements StorageCommand
         }
     }
 
-    public static abstract class BaseCommand<RECORD extends AbstractBaseRecord> extends Command
+    public abstract static class BaseCommand<RECORD extends AbstractBaseRecord> extends Command
     {
         protected final RECORD before;
         protected final RECORD after;
@@ -467,7 +467,7 @@ public abstract class Command implements StorageCommand
         }
     }
 
-    public static abstract class TokenCommand<RECORD extends TokenRecord> extends Command
+    public abstract static class TokenCommand<RECORD extends TokenRecord> extends Command
     {
         protected final RECORD before;
         protected final RECORD after;

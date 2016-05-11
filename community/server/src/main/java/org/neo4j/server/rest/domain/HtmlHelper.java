@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class HtmlHelper
 {
-    private final static String STYLE_LOCATION = "http://resthtml.neo4j.org/style/";
+    private static final String STYLE_LOCATION = "http://resthtml.neo4j.org/style/";
 
     public static String from( final Object object, final ObjectType objectType )
     {

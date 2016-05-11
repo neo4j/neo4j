@@ -108,7 +108,7 @@ public class DefaultTraverser implements Traverser
         return lastIterator;
     }
 
-    private static abstract class ResourcePathIterableWrapper<T> implements ResourceIterable<T>
+    private abstract static class ResourcePathIterableWrapper<T> implements ResourceIterable<T>
     {
         private final ResourceIterable<Path> iterableToWrap;
 

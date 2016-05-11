@@ -30,7 +30,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Input;
  */
 public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceability
 {
-    public static abstract class Adapter<T> extends PrefetchingIterator<T> implements InputIterator<T>
+    public abstract static class Adapter<T> extends PrefetchingIterator<T> implements InputIterator<T>
     {
         private final SourceTraceability defaults = new SourceTraceability.Adapter()
         {

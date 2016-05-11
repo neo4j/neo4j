@@ -222,7 +222,7 @@ public class LockServiceMicroBenchmark
         return Runtime.getRuntime().availableProcessors();
     }
 
-    static abstract class MeasuringThread extends Thread
+    abstract static class MeasuringThread extends Thread
     {
         final int iterations;
         long minTime = Long.MAX_VALUE, maxTime, totalTime;

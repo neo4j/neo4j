@@ -98,7 +98,7 @@ public class DummyThirdPartyWebService
     private int countNodesIn( GraphDatabaseService db )
     {
         int count = 0;
-        for ( @SuppressWarnings("unused") Node node : db.getAllNodes() )
+        for ( Node ignore : db.getAllNodes() )
         {
             count++;
         }

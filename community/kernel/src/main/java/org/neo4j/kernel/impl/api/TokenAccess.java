@@ -127,7 +127,7 @@ public abstract class TokenAccess<R>
         return false;
     }
 
-    private static abstract class TokenIterator<T> extends PrefetchingResourceIterator<T>
+    private abstract static class TokenIterator<T> extends PrefetchingResourceIterator<T>
     {
         final Statement statement;
         final TokenAccess<T> access;

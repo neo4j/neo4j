@@ -56,7 +56,7 @@ public abstract class LockingCompatibilityTestSuite
 {
     protected abstract Locks createLockManager();
 
-    public static abstract class Compatibility
+    public abstract static class Compatibility
     {
         @Rule
         public OtherThreadRule<Void> threadA = new OtherThreadRule<>();

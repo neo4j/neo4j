@@ -28,7 +28,7 @@ import static java.lang.String.format;
 
 public class PropertyValueComparison
 {
-    public final static Object LOWEST_OBJECT = new Object()
+    public static final Object LOWEST_OBJECT = new Object()
     {
         @Override
         public String toString()
@@ -42,13 +42,13 @@ public class PropertyValueComparison
     // This compares two values that have the same super type according to that super type's comparator
     // Any values that fall under OTHER, are compared by Strings.prettyPrint
     // NULL is not supported
-    public final static PropertyValueComparator<Object> COMPARE_VALUES = new AnyPropertyValueComparator();
+    public static final PropertyValueComparator<Object> COMPARE_VALUES = new AnyPropertyValueComparator();
 
-    public final static PropertyValueComparator<Number> COMPARE_NUMBERS = new NumberPropertyValueComparator();
+    public static final PropertyValueComparator<Number> COMPARE_NUMBERS = new NumberPropertyValueComparator();
 
-    public final static PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
+    public static final PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
 
-    public final static PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
+    public static final PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
 
     public enum SuperType
     {

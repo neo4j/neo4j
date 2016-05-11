@@ -76,7 +76,7 @@ public class TestMasterCommittingAtSlave
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
         propagator.committed( 2, MasterServerId );
-        assertCalls( (FakeSlave) slaves.iterator().next(), 2l );
+        assertCalls( (FakeSlave) slaves.iterator().next(), 2L );
         logProvider.assertNone( communicationLogMessage );
     }
 

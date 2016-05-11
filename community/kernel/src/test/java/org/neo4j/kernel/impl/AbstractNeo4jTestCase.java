@@ -39,7 +39,6 @@ import java.lang.reflect.Field;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 @AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
@@ -62,7 +62,8 @@ public abstract class AbstractNeo4jTestCase
 
     protected static final File NEO4J_BASE_DIR = new File( "target", "var" );
 
-    public static final @ClassRule TestRule START_GRAPHDB = new TestRule()
+    @ClassRule
+    public static final TestRule START_GRAPHDB = new TestRule()
     {
         @Override
         public Statement apply( Statement base, Description description )

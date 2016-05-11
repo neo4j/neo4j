@@ -55,7 +55,7 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
         return bits.getLong( requiredBits );
     }
 
-    public static abstract class Configuration
+    public abstract static class Configuration
         extends CommonAbstractStore.Configuration
     {
     }

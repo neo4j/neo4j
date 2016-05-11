@@ -115,7 +115,8 @@ public class ConcurrentCreateAndGetRelationshipsIT
         }
     }
 
-    public final @Rule ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Rule
+    public final ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
     private static final RelationshipType RELTYPE = MyRelTypes.TEST;
 
     private static class Worker extends Thread

@@ -72,8 +72,8 @@ public class PagedTraverserDocIT extends ExclusiveServerTestBase
     @ClassRule
     public static TemporaryFolder staticFolder = new TemporaryFolder();
 
-    public
     @Rule
+    public
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
     private static FakeClock clock;
 

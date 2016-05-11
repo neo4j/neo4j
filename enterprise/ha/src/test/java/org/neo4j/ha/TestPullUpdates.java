@@ -64,8 +64,10 @@ public class TestPullUpdates
     private ClusterManager.ManagedCluster cluster;
     private static final int PULL_INTERVAL = 100;
     private static final int SHELL_PORT = 6370;
-    public final @Rule TestName testName = new TestName();
-    public final @Rule TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TestName testName = new TestName();
+    @Rule
+    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     @After
     public void doAfter() throws Throwable

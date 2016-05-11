@@ -31,7 +31,7 @@ public class DuplicateIndexEntryConflictExceptionTest
     public void messageShouldIncludePropertyValueAndNodeIds() throws Exception
     {
         // given
-        DuplicateIndexEntryConflictException e = new DuplicateIndexEntryConflictException( "value1", asSet(11l, 22l, 33l) );
+        DuplicateIndexEntryConflictException e = new DuplicateIndexEntryConflictException( "value1", asSet(11L, 22L, 33L) );
 
         // then
         assertEquals( format( "Multiple nodes have property value 'value1':%n" +
@@ -42,7 +42,7 @@ public class DuplicateIndexEntryConflictExceptionTest
     public void evidenceMessageShouldIncludeLabelAndPropertyKey() throws Exception
     {
         // given
-        DuplicateIndexEntryConflictException e = new DuplicateIndexEntryConflictException( "value1", asSet(11l, 22l, 33l) );
+        DuplicateIndexEntryConflictException e = new DuplicateIndexEntryConflictException( "value1", asSet(11L, 22L, 33L) );
 
         // then
         assertEquals( format( "Multiple nodes with label `Label1` have property `propertyKey1` = 'value1':%n" +

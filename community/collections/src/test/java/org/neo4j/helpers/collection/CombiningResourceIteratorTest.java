@@ -38,12 +38,12 @@ public class CombiningResourceIteratorTest
     public void shouldNotCloseDuringIteration() throws Exception
     {
         // Given
-        ResourceIterator<Long> it1 = spy( asResourceIterator( iterator( 1l, 2l, 3l ) ) );
-        ResourceIterator<Long> it2 = spy( asResourceIterator( iterator( 5l, 6l, 7l ) ) );
+        ResourceIterator<Long> it1 = spy( asResourceIterator( iterator( 1L, 2L, 3L ) ) );
+        ResourceIterator<Long> it2 = spy( asResourceIterator( iterator( 5L, 6L, 7L ) ) );
         CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>( iterator(it1, it2) );
 
         // When I iterate through it, things come back in the right order
-        assertThat( Iterators.asList( combingIterator ), equalTo(asList(1l,2l,3l,5l,6l,7l)) );
+        assertThat( Iterators.asList( combingIterator ), equalTo(asList( 1L, 2L, 3L, 5L, 6L, 7L )) );
 
         // Then
         verify(it1, never()).close();
@@ -54,8 +54,8 @@ public class CombiningResourceIteratorTest
     public void closesAllIteratorsOnShutdown() throws Exception
     {
         // Given
-        ResourceIterator<Long> it1 = spy( asResourceIterator( iterator( 1l, 2l, 3l ) ) );
-        ResourceIterator<Long> it2 = spy( asResourceIterator( iterator( 5l, 6l, 7l ) ) );
+        ResourceIterator<Long> it1 = spy( asResourceIterator( iterator( 1L, 2L, 3L ) ) );
+        ResourceIterator<Long> it2 = spy( asResourceIterator( iterator( 5L, 6L, 7L ) ) );
         CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>( iterator(it1, it2) );
 
         // Given I iterate through half of it
@@ -77,11 +77,11 @@ public class CombiningResourceIteratorTest
     public void shouldHandleSingleItemIterators() throws Exception
     {
         // Given
-        ResourceIterator<Long> it1 = asResourceIterator( iterator( 1l) );
-        ResourceIterator<Long> it2 = asResourceIterator( iterator( 5l, 6l, 7l ) );
+        ResourceIterator<Long> it1 = asResourceIterator( iterator( 1L ) );
+        ResourceIterator<Long> it2 = asResourceIterator( iterator( 5L, 6L, 7L ) );
         CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>( iterator(it1, it2) );
 
         // When I iterate through it, things come back in the right order
-        assertThat( Iterators.asList( combingIterator ), equalTo(asList(1l,5l,6l,7l)) );
+        assertThat( Iterators.asList( combingIterator ), equalTo(asList( 1L, 5L, 6L, 7L )) );
     }
 }
