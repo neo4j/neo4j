@@ -28,26 +28,29 @@ readonly NEO4J_BIN
 declare -a ARGS=("")
 while [[ $# > 0 ]]
 do
-    option="$1"
+    option="${1}"
+    shift
     case "${option}" in
         --file=*|-file=*|--path=*|-path=*|--conf=*|-conf=*)
             orig_filename="${option#*=}"
             orig_arg="${option%=*}"
 
-            ARGS+=("${orig_arg}=$(resolve_path "${orig_filename}")")
-            shift
+            set -- "${orig_arg}" "${orig_filename}" "$@"
             ;;
         --file|-file|--path|-path|--conf|-conf)
-            orig_filename="${2}"
+            orig_filename="${1}"
+            shift
 
             ARGS+=("${option}")
-            ARGS+=("$(resolve_path "${orig_filename}")")
-            shift
-            shift
+            # '-' means read file through STDIN
+            if [[ "${option}" = *file ]] && [[ "${orig_filename}" = "-" ]]; then
+              ARGS+=("${orig_filename}")
+            else
+              ARGS+=("$(resolve_path "${orig_filename}")")
+            fi
             ;;
         *)
             ARGS+=("${option}")
-            shift
             ;;
     esac
 done
