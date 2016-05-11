@@ -45,7 +45,10 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -58,6 +61,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.util.Collections.singletonList;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -67,7 +71,9 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -598,6 +604,31 @@ public class ProcedureIT
         assertThat( result.next().get( "n.p" ), equalTo( 42L ) );
     }
 
+    @Test
+    public void shouldCallProcedureReturningPaths() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            Node node1 = db.createNode();
+            Node node2 = db.createNode();
+            Relationship rel = node1.createRelationshipTo( node2, RelationshipType.withName( "KNOWS" ) );
+
+            // When
+            Result res = db.execute( "CALL org.neo4j.procedure.nodePaths({node}) YIELD path RETURN path", map( "node", node1 ) );
+
+            // Then
+            assertTrue( res.hasNext() );
+            Map<String,Object> value = res.next();
+            Path path = (Path) value.get( "path" );
+            assertThat( path.length(), equalTo( 1 ) );
+            assertThat( path.startNode(), equalTo( node1 ) );
+            assertThat( asList( path.relationships() ), equalTo( singletonList( rel ) ) );
+            assertThat( path.endNode(), equalTo( node2 ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
     private String createCsvFile( String... lines ) throws IOException
     {
         File file = plugins.newFile();
@@ -685,6 +716,16 @@ public class ProcedureIT
         public MyOutputRecord( String name )
         {
             this.name = name;
+        }
+    }
+
+    public static class PathOutputRecord
+    {
+        public Path path;
+
+        public PathOutputRecord( Path path )
+        {
+            this.path = path;
         }
     }
 
@@ -897,6 +938,15 @@ public class ProcedureIT
                     exceptionsInProcedure.add( e );
                 }
             } );
+        }
+
+        @Procedure
+        public Stream<PathOutputRecord> nodePaths( @Name( "node" ) Node node )
+        {
+            return db
+                .execute( "WITH {node} AS node MATCH p=(node)-[*]->() RETURN p", map( "node", node ) )
+                .stream()
+                .map( record -> new PathOutputRecord( (Path) record.getOrDefault( "p", null ) ) );
         }
     }
 }

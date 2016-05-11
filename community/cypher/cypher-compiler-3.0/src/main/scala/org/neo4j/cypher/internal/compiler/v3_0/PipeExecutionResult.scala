@@ -65,7 +65,11 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next() = Eagerly.immutableMapValues(self.next(), javaValues.asDeepJavaValue).asJava
+    def next() = {
+      val value = self.next()
+      val result = Eagerly.immutableMapValues(value, javaValues.asDeepJavaValue).asJava
+      result
+    }
   }
 
   override def toList: List[Predef.Map[String, Any]] = result.toList
