@@ -35,11 +35,11 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
+  Netty
   Netty/All-in-One
   opencsv
   parboiled-core
   parboiled-scala
-  The Netty Project
 
 BSD - Scala License
   Scala Library
