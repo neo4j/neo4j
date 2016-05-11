@@ -19,12 +19,12 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -551,45 +551,50 @@ public class LabelsAcceptanceTest
         }
     }
 
-    @Ignore("Fix this properly later")
     @Test
     public void shouldAllowManyLabelsAndPropertyCursor()
     {
-        // given
+        int propertyCount = 10;
+        int labelCount = 15;
+
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
-            node.setProperty( "foo", "bar" );
-            for ( int i = 0; i < 20; i++ )
+            for ( int i = 0; i < propertyCount; i++ )
             {
-                node.addLabel( label( "label:" + i ) );
+                node.setProperty( "foo" + i, "bar" );
             }
-
+            for ( int i = 0; i < labelCount; i++ )
+            {
+                node.addLabel( label( "label" + i ) );
+            }
             tx.success();
         }
 
-        // when
+        Set<Integer> seenProperties = new HashSet<>();
+        Set<Integer> seenLabels = new HashSet<>();
         try ( Transaction tx = db.beginTx() )
         {
-            ThreadToStatementContextBridge bridge =
-                    db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-            try (Statement statement = bridge.getTopLevelTransactionBoundToThisThread( true ).acquireStatement())
+            DependencyResolver resolver = db.getDependencyResolver();
+            ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
+            try ( Statement statement = bridge.getTopLevelTransactionBoundToThisThread( true ).acquireStatement() )
             {
                 try ( Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursor( node.getId() ) )
                 {
-                    if (nodeCursor.next())
+                    if ( nodeCursor.next() )
                     {
                         try ( Cursor<PropertyItem> properties = nodeCursor.get().properties() )
                         {
-                            while (properties.next())
+                            while ( properties.next() )
                             {
+                                seenProperties.add( properties.get().propertyKeyId() );
                                 try ( Cursor<LabelItem> labels = nodeCursor.get().labels() )
                                 {
-                                    while (labels.next())
+                                    while ( labels.next() )
                                     {
-
+                                        seenLabels.add( labels.get().getAsInt() );
                                     }
                                 }
                             }
@@ -597,14 +602,11 @@ public class LabelsAcceptanceTest
                     }
                 }
             }
-
             tx.success();
         }
 
-        // then
-        // No exceptions from the above
-
-
+        assertEquals( propertyCount, seenProperties.size() );
+        assertEquals( labelCount, seenLabels.size() );
     }
 
     @Test
