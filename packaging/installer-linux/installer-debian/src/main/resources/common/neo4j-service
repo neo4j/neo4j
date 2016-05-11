@@ -83,12 +83,20 @@ do_stop()
 	return "$RETVAL"
 }
 
+do_ulimit()
+{
+  if [ -n "${NEO4J_ULIMIT_NOFILE}" ]; then
+    ulimit -n "${NEO4J_ULIMIT_NOFILE}"
+  fi
+}
+
 # Ensure that the NEO_USER is set to a useful default.
 [ -n "${NEO_USER}" ] || NEO_USER=$NAME
 
 case "$1" in
   start)
 	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+	do_ulimit
 	do_start
 	case "$?" in
 		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
