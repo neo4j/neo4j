@@ -464,7 +464,7 @@ public abstract class GraphDatabaseSettings
     public static final Setting<File> logs_directory = pathSetting( "dbms.directories.logs", "logs" );
 
     @Internal
-    public static final Setting<File> log_queries_filename = derivedSetting("dbms.querylog.filename",
+    public static final Setting<File> log_queries_filename = derivedSetting("dbms.logs.query.path",
             logs_directory,
             ( logs ) -> new File( logs, "query.log" ),
             PATH );
