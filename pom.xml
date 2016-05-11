@@ -77,11 +77,6 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <version>2.4</version>
-        </plugin>
-        <plugin>
           <groupId>org.neo4j.build.plugins</groupId>
           <artifactId>clirr-maven-plugin</artifactId>
           <version>1.0.1</version>
