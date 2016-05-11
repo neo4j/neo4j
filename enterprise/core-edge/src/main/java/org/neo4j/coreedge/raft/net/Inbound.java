@@ -21,12 +21,12 @@ package org.neo4j.coreedge.raft.net;
 
 import org.neo4j.coreedge.network.Message;
 
-public interface Inbound
+public interface Inbound<M extends Message>
 {
-    void registerHandler( MessageHandler handler );
+    void registerHandler( MessageHandler<M> handler );
 
-    interface MessageHandler
+    interface MessageHandler<M extends Message>
     {
-        void handle( Message message );
+        void handle( M message );
     }
 }

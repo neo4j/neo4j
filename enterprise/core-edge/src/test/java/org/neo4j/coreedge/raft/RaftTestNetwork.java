@@ -278,9 +278,9 @@ public class RaftTestNetwork<T>
         }
     }
 
-    public class Inbound implements org.neo4j.coreedge.raft.net.Inbound
+    public class Inbound implements org.neo4j.coreedge.raft.net.Inbound<Message>
     {
-        private MessageHandler handler;
+        private MessageHandler<Message> handler;
         private final BlockingQueue<Message> Q = new ArrayBlockingQueue<>( 64, true );
         private NetworkThread networkThread;
 
@@ -311,7 +311,7 @@ public class RaftTestNetwork<T>
         }
 
         @Override
-        public void registerHandler( MessageHandler handler )
+        public void registerHandler( MessageHandler<Message> handler )
         {
             this.handler = handler;
         }

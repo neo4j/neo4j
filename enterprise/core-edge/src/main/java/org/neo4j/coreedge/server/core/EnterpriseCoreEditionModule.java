@@ -43,11 +43,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.CoreDiscoveryService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
-import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
-import org.neo4j.coreedge.raft.LeaderLocator;
-import org.neo4j.coreedge.raft.RaftInstance;
-import org.neo4j.coreedge.raft.RaftServer;
-import org.neo4j.coreedge.raft.RaftStateMachine;
+import org.neo4j.coreedge.raft.*;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
@@ -625,7 +621,8 @@ public class EnterpriseCoreEditionModule
             throw new RuntimeException( e );
         }
 
-        LoggingInbound loggingRaftInbound = new LoggingInbound( raftServer, messageLogger, myself.getRaftAddress() );
+        LoggingInbound<RaftMessages.RaftMessage<CoreMember>>
+                loggingRaftInbound = new LoggingInbound<>( raftServer, messageLogger, myself.getRaftAddress() );
 
         long electionTimeout = config.get( CoreEdgeClusterSettings.leader_election_timeout );
         long heartbeatInterval = electionTimeout / 3;

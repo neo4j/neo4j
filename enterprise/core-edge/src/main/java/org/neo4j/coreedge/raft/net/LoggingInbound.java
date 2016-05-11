@@ -24,13 +24,13 @@ import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.logging.MessageLogger;
 
-public class LoggingInbound implements Inbound
+public class LoggingInbound<M extends Message> implements Inbound<M>
 {
-    private final Inbound inbound;
+    private final Inbound<M> inbound;
     private final MessageLogger<AdvertisedSocketAddress> messageLogger;
     private final AdvertisedSocketAddress me;
 
-    public LoggingInbound( Inbound inbound, MessageLogger<AdvertisedSocketAddress> messageLogger,
+    public LoggingInbound( Inbound<M> inbound, MessageLogger<AdvertisedSocketAddress> messageLogger,
                            AdvertisedSocketAddress me )
     {
         this.inbound = inbound;
@@ -39,11 +39,11 @@ public class LoggingInbound implements Inbound
     }
 
     @Override
-    public void registerHandler( final MessageHandler handler )
+    public void registerHandler( final MessageHandler<M> handler )
     {
-        inbound.registerHandler( new MessageHandler()
+        inbound.registerHandler( new MessageHandler<M>()
         {
-            public synchronized void handle( Message message )
+            public synchronized void handle( M message )
             {
                 messageLogger.log( me, message );
                 handler.handle( message );

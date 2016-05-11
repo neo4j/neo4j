@@ -46,12 +46,12 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound
+public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound<RaftMessages.RaftMessage<MEMBER>>
 {
     private final ListenSocketAddress listenAddress;
     private final Log log;
     private final ByteBufMarshal<ReplicatedContent> marshal;
-    private MessageHandler messageHandler;
+    private MessageHandler<RaftMessages.RaftMessage<MEMBER>> messageHandler;
     private EventLoopGroup workerGroup;
     private Channel channel;
 
@@ -118,7 +118,7 @@ public class RaftServer<MEMBER> extends LifecycleAdapter implements Inbound
     }
 
     @Override
-    public void registerHandler( Inbound.MessageHandler handler )
+    public void registerHandler( Inbound.MessageHandler<RaftMessages.RaftMessage<MEMBER>> handler )
     {
         this.messageHandler = handler;
     }

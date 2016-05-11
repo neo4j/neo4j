@@ -19,16 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Set;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 import org.neo4j.coreedge.helper.VolatileFuture;
-import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -45,16 +36,22 @@ import org.neo4j.coreedge.raft.state.ReadableRaftState;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.term.TermState;
 import org.neo4j.coreedge.raft.state.vote.VoteState;
-import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
-
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
 /**
@@ -77,7 +74,8 @@ import static org.neo4j.coreedge.raft.roles.Role.LEADER;
  *
  * @param <MEMBER> The membership type.
  */
-public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.MessageHandler, CoreMetaData
+public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
+        Inbound.MessageHandler<RaftMessages.RaftMessage<MEMBER>>, CoreMetaData
 {
     private final LeaderNotFoundMonitor leaderNotFoundMonitor;
 
@@ -111,7 +109,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
                          StateStorage<VoteState<MEMBER>> voteStorage, RaftLog entryLog,
                          RaftStateMachine raftStateMachine, long electionTimeout, long heartbeatInterval,
                          RenewableTimeoutService renewableTimeoutService,
-                         final Inbound inbound, final Outbound<MEMBER> outbound,
+                         final Inbound<RaftMessages.RaftMessage<MEMBER>> inbound, final Outbound<MEMBER> outbound,
                          LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
                          RaftLogShippingManager<MEMBER> logShipping,
                          Supplier<DatabaseHealth> databaseHealthSupplier,
@@ -293,12 +291,11 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>, Inbound.Mess
         return false;
     }
 
-    public synchronized void handle( Message incomingMessage )
+    public synchronized void handle( RaftMessages.RaftMessage<MEMBER> incomingMessage )
     {
         try
         {
-            Outcome<MEMBER> outcome = currentRole.handler.handle(
-                    (RaftMessages.RaftMessage<MEMBER>) incomingMessage, state, log );
+            Outcome<MEMBER> outcome = currentRole.handler.handle( incomingMessage, state, log );
 
             boolean newLeaderWasElected = leaderChanged( outcome, state.leader() );
             boolean newCommittedEntry = outcome.getCommitIndex() > state.commitIndex();

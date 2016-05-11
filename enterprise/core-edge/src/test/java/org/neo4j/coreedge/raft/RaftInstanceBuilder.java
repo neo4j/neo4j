@@ -53,7 +53,7 @@ public class RaftInstanceBuilder<MEMBER>
     private RenewableTimeoutService renewableTimeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK,
             NullLogProvider.getInstance() );
 
-    private Inbound inbound = handler -> {};
+    private Inbound<RaftMessages.RaftMessage<MEMBER>> inbound = handler -> {};
     private Outbound<MEMBER> outbound = ( advertisedSocketAddress, messages ) -> {};
 
     private LogProvider logProvider = NullLogProvider.getInstance();
@@ -61,7 +61,6 @@ public class RaftInstanceBuilder<MEMBER>
 
     private long electionTimeout = 500;
     private long heartbeatInterval = 150;
-    private long leaderWaitTimeout = 10000;
     private long catchupTimeout = 30000;
     private long retryTimeMillis = electionTimeout / 2;
     private int catchupBatchSize = 64;
@@ -92,12 +91,6 @@ public class RaftInstanceBuilder<MEMBER>
         return new RaftInstance<>( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, inbound, outbound, logProvider,
                 membershipManager, logShipping, databaseHealthSupplier, monitors );
-    }
-
-    public RaftInstanceBuilder<MEMBER> leaderWaitTimeout( long leaderWaitTimeout )
-    {
-        this.leaderWaitTimeout = leaderWaitTimeout;
-        return this;
     }
 
     public RaftInstanceBuilder<MEMBER> electionTimeout( long electionTimeout )
