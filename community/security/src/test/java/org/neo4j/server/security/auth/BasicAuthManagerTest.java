@@ -21,6 +21,7 @@ package org.neo4j.server.security.auth;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 
@@ -66,7 +67,8 @@ public class BasicAuthManagerTest
         when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.SUCCESS );
 
         // When
-        AuthenticationResult result = manager.authenticate( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
@@ -85,7 +87,8 @@ public class BasicAuthManagerTest
         when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // When
-        AuthenticationResult result = manager.authenticate( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ) );
@@ -104,7 +107,8 @@ public class BasicAuthManagerTest
         when( authStrategy.authenticate( user, "abc123" )).thenReturn( AuthenticationResult.SUCCESS );
 
         // When
-        AuthenticationResult result = manager.authenticate( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
@@ -122,7 +126,8 @@ public class BasicAuthManagerTest
         manager.start();
 
         // When
-        AuthenticationResult result = manager.authenticate( "unknown", "abc123" );
+        AuthSubject authSubject = manager.login( "unknown", "abc123" );
+        AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
@@ -233,7 +238,7 @@ public class BasicAuthManagerTest
 
         try
         {
-            manager.authenticate( "foo", "bar" );
+            manager.login( "foo", "bar" );
             fail( "exception expected" );
         } catch ( IllegalStateException e )
         {

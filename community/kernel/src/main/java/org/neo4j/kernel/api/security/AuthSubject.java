@@ -27,6 +27,7 @@ public interface AuthSubject extends AccessMode
 {
     void logout();
 
+    // TODO: Refine this API into something more polished
     AuthenticationResult getAuthenticationResult();
 
     /**

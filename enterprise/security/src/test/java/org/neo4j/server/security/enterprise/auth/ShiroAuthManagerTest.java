@@ -84,7 +84,7 @@ public class ShiroAuthManagerTest
         when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( true );
 
         // When
-        AuthenticationResult result = manager.authenticate( "jake", "abc123" );
+        AuthenticationResult result = manager.login( "jake", "abc123" ).getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.SUCCESS ) );
@@ -99,7 +99,8 @@ public class ShiroAuthManagerTest
         manager.start();
 
         // When
-        AuthenticationResult result = manager.authenticate( "jake", "abc123" );
+        AuthSubject authSubject = manager.login( "jake", "abc123" );
+        AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ) );
@@ -115,7 +116,7 @@ public class ShiroAuthManagerTest
         when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( true );
 
         // When
-        AuthenticationResult result = manager.authenticate( "jake", "abc123" );
+        AuthenticationResult result = manager.login( "jake", "abc123" ).getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) );
@@ -131,7 +132,8 @@ public class ShiroAuthManagerTest
         when( authStrategy.isAuthenticationPermitted( "unknown" )).thenReturn( true );
 
         // When
-        AuthenticationResult result = manager.authenticate( "unknown", "abc123" );
+        AuthSubject authSubject = manager.login( "unknown", "abc123" );
+        AuthenticationResult result = authSubject.getAuthenticationResult();
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
@@ -336,7 +338,7 @@ public class ShiroAuthManagerTest
 
         try
         {
-            manager.authenticate( "foo", "bar" );
+            manager.login( "foo", "bar" );
             fail( "exception expected" );
         } catch ( IllegalStateException e )
         {

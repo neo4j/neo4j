@@ -94,13 +94,6 @@ public class BasicAuthManager implements AuthManager, UserManager
         users.shutdown();
     }
 
-    public AuthenticationResult authenticate( String username, String password )
-    {
-        AuthSubject subject = login( username, password );
-
-        return subject.getAuthenticationResult();
-    }
-
     @Override
     public AuthSubject login( String username, String password )
     {

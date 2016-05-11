@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicAuthManager;
-import org.neo4j.server.security.auth.BasicAuthSubject;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.User;
@@ -72,14 +71,6 @@ public class ShiroAuthManager extends BasicAuthManager
         {
             realm.newUser( "neo4j", DEFAULT_GROUP, "neo4j", true );
         }
-    }
-
-    @Override
-    public AuthenticationResult authenticate( String username, String password )
-    {
-        AuthSubject subject = login( username, password );
-
-        return subject.getAuthenticationResult();
     }
 
     @Override
