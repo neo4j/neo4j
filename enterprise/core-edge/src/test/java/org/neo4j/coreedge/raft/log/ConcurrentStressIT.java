@@ -43,7 +43,8 @@ import static org.junit.Assert.assertEquals;
 public abstract class ConcurrentStressIT
 {
     private static final int MAX_CONTENT_SIZE = 2048;
-    public final @Rule TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
 
     protected abstract RaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable;
 
