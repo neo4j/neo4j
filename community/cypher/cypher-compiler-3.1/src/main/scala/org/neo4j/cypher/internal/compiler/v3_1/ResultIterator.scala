@@ -67,9 +67,12 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
   override def next(): Map[String, Any] = failIfThrows {
     if (closer.isClosed) Iterator.empty.next()
 
-    Eagerly.immutableMapValues(inner.next(), materialize)
+    val value = inner.next()
+    val result = Eagerly.immutableMapValues(value, materialize)
+    result
   }
 
+  // TODO: Get rid of this in favor of using ScalaRuntimeValueConverte
   private def materialize(v: Any): Any = v match {
     case (x: Stream[_])   => x.map(materialize).toList
     case (x: Map[_, _])   => Eagerly.immutableMapValues(x, materialize)

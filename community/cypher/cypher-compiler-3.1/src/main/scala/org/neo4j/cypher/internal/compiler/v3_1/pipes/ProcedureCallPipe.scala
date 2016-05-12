@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_1.pipes
 import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{AllEffects, ProcedureCallMode}
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.ScalaCompatibility.asScalaCompatible
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.{CollectionSupport, RuntimeJavaValueConverter}
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.{CollectionSupport, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments.Signature
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{InternalPlanDescription, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{ProcedureSignature, QualifiedProcedureName}
@@ -68,13 +67,16 @@ case class ProcedureCallPipe(source: Pipe,
     val builder = Seq.newBuilder[(String, Any)]
     builder.sizeHint(resultIndices.length)
 
+    val isGraphKernelResultValue = qtx.isGraphKernelResultValue _
+    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
+
     input flatMap { input =>
       val argValues = argExprs.map(arg => converter.asDeepJavaValue(arg(input)(state)))
       val results = callMode.call(qtx, name, argValues)
       results map { resultValues =>
         resultIndices foreach { case (k, v) =>
           val javaValue = resultValues(k)
-          val scalaValue = asScalaCompatible(javaValue)
+          val scalaValue = scalaValues.asDeepScalaValue(javaValue)
           builder += v -> scalaValue
         }
         val rowEntries = builder.result()
