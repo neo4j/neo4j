@@ -17,23 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth.exception;
+package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.exceptions.Status;
+import java.io.IOException;
 
-public class IllegalCredentialsException extends Exception implements Status.HasStatus
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+
+public interface UserManager
 {
-    private final Status status;
+    User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException,
+            IllegalCredentialsException;
 
-    public IllegalCredentialsException( String message )
-    {
-        super(message);
-        this.status = Status.Request.Invalid;
-    }
+    boolean deleteUser( String username ) throws IOException;
 
-    @Override
-    public Status status()
-    {
-        return status;
-    }
+    User getUser( String username );
+
+    void setUserPassword( String username, String password ) throws IOException, IllegalCredentialsException;
 }

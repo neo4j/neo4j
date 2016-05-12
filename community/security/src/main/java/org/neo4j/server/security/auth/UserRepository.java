@@ -21,13 +21,14 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
 
 /**
  * A component that can store and retrieve users. Implementations must be thread safe.
  */
-public interface UserRepository
+public interface UserRepository extends Lifecycle
 {
     User findByName( String name );
 

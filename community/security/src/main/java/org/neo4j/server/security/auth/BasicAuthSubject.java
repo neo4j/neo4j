@@ -22,7 +22,9 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.server.security.auth.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
+import org.neo4j.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.api.security.AuthenticationResult;
 
 public class BasicAuthSubject implements AuthSubject
 {
@@ -110,7 +112,7 @@ public class BasicAuthSubject implements AuthSubject
      */
     private void validatePassword( String password ) throws IllegalCredentialsException
     {
-        if (password == null || password.isEmpty() )
+        if ( password == null || password.isEmpty() )
         {
             throw new IllegalCredentialsException( "Password cannot be empty." );
         }

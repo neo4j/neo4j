@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.kernel.api.security.AuthenticationResult;
+
 public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
 {
     private static final int FAILED_AUTH_COOLDOWN_PERIOD = 5_000;
