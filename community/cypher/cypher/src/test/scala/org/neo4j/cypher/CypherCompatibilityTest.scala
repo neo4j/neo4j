@@ -88,7 +88,6 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
         assertProfiled(engine, "CYPHER 1.9 PROFILE START n=node(*) RETURN n")
         assertProfiled(engine, "CYPHER 2.2 PROFILE MATCH n RETURN n")
         assertProfiled(engine, "CYPHER 2.3 runtime=interpreted PROFILE MATCH n RETURN n")
-        assertProfiled(engine, "CYPHER 2.3 runtime=compiled PROFILE MATCH n RETURN n")
     }
   }
 
@@ -131,36 +130,6 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     runWithConfig() {
       engine =>
         shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER planner=COST $queryThatCannotRunWithCostPlanner"), Status.Statement.PlannerUnsupportedWarning)
-    }
-  }
-
-  test("should not fail if asked to execute query with runtime=compiled on simple query") {
-    runWithConfig("dbms.cypher.hints.error" -> "true") {
-      engine =>
-        engine.execute("MATCH (n:Movie) RETURN n")
-        engine.execute("CYPHER runtime=compiled MATCH (n:Movie) RETURN n")
-        shouldHaveNoWarnings(engine.execute("EXPLAIN CYPHER runtime=compiled MATCH (n:Movie) RETURN n"))
-    }
-  }
-
-  test("should fail if asked to execute query with runtime=compiled instead of falling back to interpreted if hint errors turned on") {
-    runWithConfig("dbms.cypher.hints.error" -> "true") {
-      engine =>
-        intercept[InvalidArgumentException](engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"))
-    }
-  }
-
-  test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning if hint errors turned off") {
-    runWithConfig("dbms.cypher.hints.error" -> "false") {
-      engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"), Status.Statement.RuntimeUnsupportedWarning)
-    }
-  }
-
-  test("should not fail if asked to execute query with runtime=compiled and instead fallback to interpreted and return a warning by default") {
-    runWithConfig() {
-      engine =>
-        shouldHaveWarning(engine.execute(s"EXPLAIN CYPHER runtime=compiled $querySupportedByCostButNotCompiledRuntime"), Status.Statement.RuntimeUnsupportedWarning)
     }
   }
 

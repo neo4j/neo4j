@@ -26,7 +26,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
   test("Scan all nodes") {
     val nodes = Set(createNode("a"), createNode("b"), createNode("c"))
 
-    executeWithAllPlannersAndRuntimes("match n return n").columnAs[Node]("n").toSet should equal(nodes)
+    executeWithAllPlanners("match n return n").columnAs[Node]("n").toSet should equal(nodes)
   }
 
   test("Scan labeled node") {
@@ -34,7 +34,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     createLabeledNode("Person")
     val animals = Set(createLabeledNode("Animal"), createLabeledNode("Animal"))
 
-    executeWithAllPlannersAndRuntimes("match (n:Animal) return n").columnAs[Node]("n").toSet should equal(animals)
+    executeWithAllPlanners("match (n:Animal) return n").columnAs[Node]("n").toSet should equal(animals)
   }
 
   test("Seek node by id given on the left") {

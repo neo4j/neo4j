@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, HintException, IndexHintException, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -34,7 +34,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph.createConstraint("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -50,7 +50,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph.createConstraint("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -66,7 +66,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph.createConstraint("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
 
     //THEN
     result.toList should equal (List())
@@ -82,7 +82,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph.createConstraint("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
     //THEN
     result.toList should equal (List())
@@ -98,7 +98,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     graph.createConstraint("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))

@@ -30,10 +30,6 @@ class CypherStatementWithOptionsTest extends CypherFunSuite {
     intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER PLANNER COST PLANNER RULE RETURN 42"))
   }
 
-  test("should not allow inconsistent runtime options") {
-    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER runtime=compiled runtime=interpreted RETURN 42"))
-  }
-
   test("should not allow multiple versions") {
     intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER 2.2 CYPHER 2.3 RETURN 42"))
   }

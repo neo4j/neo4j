@@ -35,7 +35,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
 
-    val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN n")
+    val result = profileWithAllPlanners("MATCH (n) RETURN n")
 
     assertRows(3)(result)("AllNodesScan", "ProduceResults")
     assertDbHits(0)(result)("ProduceResults")
@@ -47,7 +47,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
 
-    val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN (n:Foo)")
+    val result = profileWithAllPlanners("MATCH (n) RETURN (n:Foo)")
 
     assertRows(3)(result)("AllNodesScan", "ProduceResults")
     assertDbHits(0)(result)("ProduceResults")
@@ -78,7 +78,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createLabeledNode("A"), createLabeledNode("B"))
 
     //WHEN
-    val result = profileWithAllPlannersAndRuntimes("match (n:A)-->(x:B) return *")
+    val result = profileWithAllPlanners("match (n:A)-->(x:B) return *")
 
     //THEN
     assertRows(1)(result)("ProduceResults", "Filter", "Expand(All)", "NodeByLabelScan")
@@ -159,7 +159,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
 
     //GIVEN
-    val result = profileWithAllPlannersAndRuntimes("MATCH n RETURN n.foo")
+    val result = profileWithAllPlanners("MATCH n RETURN n.foo")
 
     //WHEN THEN
     assertRows(1)(result)("ProduceResults")
@@ -177,7 +177,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
 
     // WHEN
-    val result = profileWithAllPlannersAndRuntimes("MATCH n optional match (n)-->(x) return x")
+    val result = profileWithAllPlanners("MATCH n optional match (n)-->(x) return x")
 
     // THEN
     assertDbHits(0)(result)("ProduceResults")
@@ -198,7 +198,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
     createNode()
-    val result = profileWithAllPlannersAndRuntimes("""MATCH n RETURN n LIMIT 1""")
+    val result = profileWithAllPlanners("""MATCH n RETURN n LIMIT 1""")
 
     // WHEN
     result.toList
@@ -241,7 +241,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("should support profiling optional match queries") {
     createLabeledNode(Map("x" -> 1), "Label")
-    val result = profileWithAllPlannersAndRuntimes("match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
+    val result = profileWithAllPlanners("match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
     result("A") should equal(1)
     result("B") should equal(null.asInstanceOf[Int])
   }
@@ -339,13 +339,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
    }
 
   test("should show expand without types in a simple form") {
-    val a = profileWithAllPlannersAndRuntimes("match n-->() return *")
+    val a = profileWithAllPlanners("match n-->() return *")
 
     a.executionPlanDescription().toString should include("()<--(n)")
   }
 
   test("should show expand with types in a simple form") {
-    val result = profileWithAllPlannersAndRuntimes("match n-[r:T]->() return *")
+    val result = profileWithAllPlanners("match n-[r:T]->() return *")
 
     result.executionPlanDescription().toString should include("()<-[r:T]-(n)")
   }
@@ -355,7 +355,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createLabeledNode("Label1")
 
     // when
-    val result = profileWithAllPlannersAndRuntimes("match (n:Label1) return n")
+    val result = profileWithAllPlanners("match (n:Label1) return n")
 
     // then
     assertDbHits(2)(result)("NodeByLabelScan")
@@ -367,7 +367,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate(createNode(), createNode())
 
     // when
-    val result = profileWithAllPlannersAndRuntimes("match (n)-->(x) return x")
+    val result = profileWithAllPlanners("match (n)-->(x) return x")
 
     // then
     assertDbHits(3)(result)("Expand(All)")
@@ -376,10 +376,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("should report correct dbhits and rows for literal addition") {
     // when
-    val result = profileWithAllPlannersAndRuntimes("return 5 + 3")
+    val result = profileWithAllPlanners("return 5 + 3")
 
     // then
-    assertDbHits(0)(result)("Argument", "Projection", "ProduceResults")
+    assertDbHits(0)(result)("Projection", "ProduceResults")
     assertRows(1)(result)("ProduceResults")
   }
 
@@ -388,7 +388,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode("name" -> "foo")
 
     // when
-    val result = profileWithAllPlannersAndRuntimes("match n return n.name + 3")
+    val result = profileWithAllPlanners("match n return n.name + 3")
 
     // then
     assertDbHits(1)(result)("Projection")
@@ -400,7 +400,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode("name" -> 10)
 
     // when
-    val result = profileWithAllPlannersAndRuntimes("match n return n.name - 3")
+    val result = profileWithAllPlanners("match n return n.name - 3")
 
     // then
     assertDbHits(1)(result)("Projection")
@@ -420,7 +420,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode()
     createNode()
 
-    val result = profileWithAllPlannersAndRuntimes("match n, m return n, m")
+    val result = profileWithAllPlanners("match n, m return n, m")
     assertRows(16)(result)("CartesianProduct")
   }
 
@@ -436,7 +436,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     graph.createIndex("Glass", "name")
 
     // when
-    val result = profileWithAllPlannersAndRuntimes(
+    val result = profileWithAllPlanners(
       "match (n:Glass {name: 'Seymour'})-[:R1]->(o)-[:R2]->(p:Glass) USING INDEX n:Glass(name) return p.name")
 
     // then
@@ -501,34 +501,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(4)(result)("Filter")
   }
 
-  test("joins with identical scans") {
-    //given
-    val corp = createLabeledNode("Company")
-    val a1 = createLabeledNode("Artist")
-    val a2 = createLabeledNode("Artist")
-    val c = createLabeledNode("Concert")
-    val v = createLabeledNode("Venue")
-    relate(corp, a1, "SIGNED_WITH")
-    relate(corp, a2, "SIGNED_WITH")
-    relate(a1, c, "PERFORMED_AT")
-    relate(a2, c, "PERFORMED_AT")
-    relate(c, v, "IN")
-
-    //force a plan to have a scan on corp in both the lhs and the rhs of join
-    val query =
-      """MATCH (corp:Company)<-[:SIGNED_WITH]-(a1:Artist)-[:PERFORMED_AT]->(c:Concert)-[:IN]->(v:Venue)
-        |MATCH (corp)<-[:SIGNED_WITH]-(a2:Artist)-[:PERFORMED_AT]->(c)
-        |USING JOIN ON c,corp
-        |RETURN a1, a2, v""".stripMargin
-
-    //when
-    val result = profileWithAllPlannersAndRuntimes(query)
-
-    //then
-    assertDbHits(2)(result)("NodeByLabelScan")
-    assertRows(1)(result)("NodeByLabelScan")
-  }
-
   test("distinct should not look up properties every time") {
     // GIVEN
     createNode("prop"-> 42)
@@ -576,8 +548,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   def profileWithAllPlanners(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlanners(_,_:_*), q, params:_*)
-
-  def profileWithAllPlannersAndRuntimes(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlannersAndRuntimes(_,_:_*), q, params:_*)
 
   override def profile(q: String, params: (String, Any)*): InternalExecutionResult = fail("Don't use profile together in ProfilerAcceptanceTest")
 

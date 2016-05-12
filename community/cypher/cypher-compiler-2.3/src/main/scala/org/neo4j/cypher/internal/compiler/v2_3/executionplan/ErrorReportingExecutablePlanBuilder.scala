@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.{CompilationPhaseTracer, Prepared
 import org.neo4j.cypher.internal.frontend.v2_3.InvalidArgumentException
 
 case class ErrorReportingExecutablePlanBuilder(inner: ExecutablePlanBuilder) extends ExecutablePlanBuilder {
-  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer): Either[CompiledPlan, PipeInfo] =
+  override def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer) =
     try {
       inner.producePlan(inputQuery, planContext, tracer)
     } catch {

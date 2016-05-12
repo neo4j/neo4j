@@ -81,12 +81,12 @@ class FallbackPlanBuilderTest extends CypherFunSuite {
     val pipeBuilder = new SilentFallbackPlanBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor])
     val preparedQuery = PreparedQuery(parser.parse(queryText), queryText, Map.empty)(null, Set.empty, null, null)
     val pipeInfo = mock[PipeInfo]
-    when( oldBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING ) ).thenReturn(Right(pipeInfo))
-    when( newBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING ) ).thenReturn(Right(pipeInfo))
+    when( oldBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING ) ).thenReturn(pipeInfo)
+    when( newBuilder.producePlan(preparedQuery, planContext, CompilationPhaseTracer.NO_TRACING ) ).thenReturn(pipeInfo)
 
     def result = {
       val plan = pipeBuilder.producePlan(preparedQuery, planContext)
-      plan.right.toOption.get
+      plan
     }
 
     def assertUsed(used: ExecutablePlanBuilder) = {

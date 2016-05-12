@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, Scope, SemanticTable}
-import org.neo4j.cypher.internal.spi.v2_3.{GeneratedQueryStructure, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext
 import org.neo4j.graphdb.DynamicLabel
 import org.neo4j.helpers.Clock
 import org.scalatest.mock.MockitoSugar
@@ -65,7 +65,7 @@ class RuleExecutablePlanBuilderTest
     queryPlanner = queryPlanner,
     rewriterSequencer = rewriterSequencer,
     plannerName = None,
-    runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, mock[Monitors]), CompiledPlanBuilder(Clock.SYSTEM_CLOCK,GeneratedQueryStructure)),
+    runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.SYSTEM_CLOCK, mock[Monitors])),
     semanticChecker = mock[SemanticChecker],
     useErrorsOverWarnings = false,
     idpMaxTableSize = 128,
@@ -117,7 +117,7 @@ class RuleExecutablePlanBuilderTest
 
       // when
 
-      val commands = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
+      val commands = pipeBuilder.producePlan(parsedQ, planContext).pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
 
       assertTrue("Property was not resolved", commands == Seq(DeletePropertyAction(identifier, PropertyKey("foo", pkId))))
     } finally {
@@ -142,7 +142,7 @@ class RuleExecutablePlanBuilderTest
       val parsedQ = new FakePreparedQuery(q)
 
       // when
-      val predicate = execPlanBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe.asInstanceOf[FilterPipe].predicate
+      val predicate = execPlanBuilder.producePlan(parsedQ, planContext).pipe.asInstanceOf[FilterPipe].predicate
 
       assertTrue("Label was not resolved", predicate == HasLabel(Identifier("x"), Label("Person", labelId)))
     } finally {
@@ -167,7 +167,7 @@ class RuleExecutablePlanBuilderTest
       val parsedQ = new FakePreparedQuery(q)
 
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors2_3(kernelMonitors), RewriterStepSequencer.newValidating)
-      val pipe = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe
+      val pipe = pipeBuilder.producePlan(parsedQ, planContext).pipe
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -193,7 +193,7 @@ class RuleExecutablePlanBuilderTest
 
 
       val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors2_3(kernelMonitors), RewriterStepSequencer.newValidating)
-      val pipe = execPlanBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe
+      val pipe = execPlanBuilder.producePlan(parsedQ, planContext).pipe
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -219,7 +219,7 @@ class RuleExecutablePlanBuilderTest
       val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors2_3(kernelMonitors), RewriterStepSequencer.newValidating)
 
       // when
-      val periodicCommit = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.periodicCommit
+      val periodicCommit = pipeBuilder.producePlan(parsedQ, planContext).periodicCommit
 
       assert(periodicCommit === Some(PeriodicCommitInfo(None)))
     } finally {

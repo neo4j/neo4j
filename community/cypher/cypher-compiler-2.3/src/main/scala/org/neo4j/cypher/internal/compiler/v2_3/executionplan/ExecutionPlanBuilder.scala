@@ -19,14 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.QueryExecutionTracer
-import org.neo4j.cypher.internal.compiler.v2_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.{DescriptionProvider, tracer}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.profiler.Profiler
@@ -37,7 +32,6 @@ import org.neo4j.cypher.internal.frontend.v2_3.PeriodicCommitInOpenTransactionEx
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v2_3.notification.InternalNotification
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.{Statement => KernelStatement}
 
@@ -48,18 +42,9 @@ trait RunnablePlan {
   def apply(statement: KernelStatement,
             nodeManager: EntityAccessor,
             execMode: ExecutionMode,
-            descriptionProvider: DescriptionProvider,
             params: Map[String, Any],
             closer: TaskCloser): InternalExecutionResult
 }
-
-case class CompiledPlan(updating: Boolean,
-                        periodicCommit: Option[PeriodicCommitInfo] = None,
-                        fingerprint: Option[PlanFingerprint] = None,
-                        plannerUsed: PlannerName,
-                        planDescription: InternalPlanDescription,
-                        columns: Seq[String],
-                        executionResultBuilder: RunnablePlan )
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -93,7 +78,7 @@ object ExecutablePlanBuilder {
 }
 
 trait ExecutablePlanBuilder {
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): Either[CompiledPlan, PipeInfo]
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): PipeInfo
 }
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAccessor,
@@ -102,46 +87,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAc
 
   def build(planContext: PlanContext, inputQuery: PreparedQuery, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING): ExecutionPlan = {
     val executablePlan = pipeBuilder.producePlan(inputQuery, planContext, tracer)
-    executablePlan match {
-      case Left(compiledPlan) => buildCompiled(compiledPlan, inputQuery)
-      case Right(pipeInfo) => buildInterpreted(pipeInfo, inputQuery)
-    }
-  }
-
-  private def buildCompiled(compiledPlan: CompiledPlan, inputQuery: PreparedQuery) = {
-    new ExecutionPlan {
-      val fingerprint = PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, compiledPlan.fingerprint)
-
-      override def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastCommittedTxId, statistics)
-
-      override def run(queryContext: QueryContext, kernelStatement: KernelStatement,
-              executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
-        val taskCloser = new TaskCloser
-        taskCloser.addTask(queryContext.close)
-        try {
-          if (executionMode == ExplainMode) {
-            //close all statements
-            taskCloser.close(success = true)
-            new ExplainExecutionResult(compiledPlan.columns.toList,
-              compiledPlan.planDescription, QueryType.READ_ONLY, inputQuery.notificationLogger.notifications)
-          } else
-            compiledPlan.executionResultBuilder(kernelStatement, entityAccessor, executionMode,
-              tracer(executionMode), params, taskCloser)
-        } catch {
-          case (t: Throwable) =>
-            taskCloser.close(success = false)
-            throw t
-        }
-      }
-
-      override def plannerUsed: PlannerName = compiledPlan.plannerUsed
-
-      override def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
-
-      override def runtimeUsed = CompiledRuntimeName
-
-      override def notifications(planContext: PlanContext) = Seq.empty
-    }
+    buildInterpreted(executablePlan, inputQuery)
   }
 
   private def checkForNotifications(pipe: Pipe, planContext: PlanContext): Seq[InternalNotification] = {
@@ -224,26 +170,3 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, entityAccessor: EntityAc
     }
 }
 
-object ExecutionPlanBuilder {
-  type DescriptionProvider =
-        (InternalPlanDescription => (Provider[InternalPlanDescription], Option[QueryExecutionTracer]))
-
-  def tracer( mode: ExecutionMode ) : DescriptionProvider = mode match {
-    case ProfileMode =>
-      val tracer = new ProfilingTracer()
-      (description: InternalPlanDescription) => (new Provider[InternalPlanDescription] {
-
-        override def get(): InternalPlanDescription = description.map {
-          plan: InternalPlanDescription =>
-            val data = tracer.get(plan.id)
-            plan.
-              addArgument(Arguments.DbHits(data.dbHits())).
-              addArgument(Arguments.Rows(data.rows())).
-              addArgument(Arguments.Time(data.time()))
-        }
-      }, Some(tracer))
-    case _ => (description: InternalPlanDescription) => (new Provider[InternalPlanDescription] {
-      override def get(): InternalPlanDescription = description
-    }, None)
-  }
-}

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{NewPlannerTestSupport, ExecutionEngineFunSuite}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb._
 
 class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -52,12 +52,12 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("predicates on optional matches should be respected") {
-    val result = executeWithAllPlannersAndRuntimes("match (n:Single) optional match n-[r]-(m) where m.prop = 42 return m")
+    val result = executeWithAllPlanners("match (n:Single) optional match n-[r]-(m) where m.prop = 42 return m")
     assert(result.toList === List(Map("m" -> nodeA)))
   }
 
   test("has label on null should evaluate to null") {
-    val result = executeWithAllPlannersAndRuntimes("match (n:Single) optional match n-[r:TYPE]-(m) return m:TYPE")
+    val result = executeWithAllPlanners("match (n:Single) optional match n-[r:TYPE]-(m) return m:TYPE")
     assert(result.toList === List(Map("m:TYPE" -> null)))
   }
 
@@ -84,7 +84,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("optional matching between two found nodes behaves as expected") {
-    val result = executeWithAllPlannersAndRuntimes(
+    val result = executeWithAllPlanners(
       """match (a:A), (b:C)
         |optional match (x)-->(b)
         |return x""".stripMargin)
@@ -103,7 +103,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     relate(x2, b1)
     relate(x2, b2)
 
-    val result = executeWithAllPlannersAndRuntimes("MATCH (a:X) OPTIONAL MATCH (a)-->(b:Y) RETURN b")
+    val result = executeWithAllPlanners("MATCH (a:X) OPTIONAL MATCH (a)-->(b:Y) RETURN b")
     result.toSet should equal(Set(Map("b" -> null), Map("b" -> b1), Map("b" -> b2)))
   }
 
@@ -130,13 +130,13 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("should support optional match to find self loops") {
-    val result = executeWithAllPlannersAndRuntimes("match (a:B) optional match a-[r]->a return r")
+    val result = executeWithAllPlanners("match (a:B) optional match a-[r]->a return r")
 
     assert(result.toSet === Set(Map("r" -> selfRel)))
   }
 
   test("should support optional match to not find self loops") {
-    val result = executeWithAllPlannersAndRuntimes("match (a) where not (a:B) optional match (a)-[r]->(a) return r")
+    val result = executeWithAllPlanners("match (a) where not (a:B) optional match (a)-[r]->(a) return r")
 
     assert(result.toSet === Set(Map("r" -> null)))
   }
@@ -190,7 +190,7 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   test("should handle correlated optional matches - the first does not match, and the second must not match") {
-    val result = executeWithAllPlannersAndRuntimes(
+    val result = executeWithAllPlanners(
       """match (a:A), (b:B)
         |optional match (a)-->(x)
         |optional match (x)-[r]->(b)

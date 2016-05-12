@@ -46,7 +46,7 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers w
     createNode()
     createNode()
     createNode()
-    val result = executeWithAllPlannersAndRuntimes("match n return n limit 0")
+    val result = executeWithAllPlanners("match n return n limit 0")
     result should be(empty)
   }
 
@@ -107,7 +107,7 @@ order by a.age""").toList)
   }
 
   test("long or double") {
-    val result = executeWithAllPlannersAndRuntimes("return 1, 1.5").toList.head
+    val result = executeWithAllPlanners("return 1, 1.5").toList.head
 
     result("1") should haveType[java.lang.Long]
     result("1.5") should haveType[java.lang.Double]
@@ -208,13 +208,13 @@ order by a.age""").toList)
   test("array prop output") {
     createNode("foo" -> Array(1, 2, 3))
 
-    val result = executeWithAllPlannersAndRuntimes("match n return n").dumpToString()
+    val result = executeWithAllPlanners("match n return n").dumpToString()
 
     result should include ("[1,2,3]")
   }
 
   test("map output") {
-    val result = executeWithAllPlannersAndRuntimes("return {a:1, b:'foo'}").dumpToString()
+    val result = executeWithAllPlanners("return {a:1, b:'foo'}").dumpToString()
 
     result should ( include ("""{a -> 1, b -> "foo"}""") or include ("""{b -> "foo", a -> 1}""") )
   }
@@ -291,7 +291,7 @@ order by a.age""").toList)
   }
 
   test("allow queries with only return") {
-    val result = executeWithAllPlannersAndRuntimes("RETURN 'Andres'").toList
+    val result = executeWithAllPlanners("RETURN 'Andres'").toList
 
     result should equal(List(Map("'Andres'" -> "Andres")))
   }
@@ -316,7 +316,7 @@ order by a.age""").toList)
 
   test("should be able to alias expressions") {
     createNode("id" -> 42)
-    val result = executeWithAllPlannersAndRuntimes("match (a) return a.id as a, a.id")
+    val result = executeWithAllPlanners("match (a) return a.id as a, a.id")
     result.toList should equal(List(Map("a" -> 42, "a.id" -> 42)))
   }
 
@@ -365,19 +365,19 @@ order by a.age""").toList)
   }
 
   test("compiled runtime should support literal expressions") {
-    val result = executeWithAllPlannersAndRuntimes("RETURN 1")
+    val result = executeWithAllPlanners("RETURN 1")
 
     result.toList should equal(List(Map("1" -> 1)))
   }
 
   test("compiled runtime should support addition of collections") {
-    val result = executeWithAllPlannersAndRuntimes("RETURN [1,2,3] + [4, 5] AS FOO")
+    val result = executeWithAllPlanners("RETURN [1,2,3] + [4, 5] AS FOO")
 
     result.toComparableResult should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
   }
 
   test("compiled runtime should support addition of item to collection") {
-    val result = executeWithAllPlannersAndRuntimes("""RETURN [1,2,3] + 4 AS FOO""")
+    val result = executeWithAllPlanners("""RETURN [1,2,3] + 4 AS FOO""")
 
     result.toComparableResult should equal(List(Map("FOO" -> List(1, 2, 3, 4))))
   }
@@ -385,7 +385,7 @@ order by a.age""").toList)
   test("Should return correct scala objects") {
     val query = "RETURN {uid: 'foo'} AS params"
 
-    val rows = executeWithAllPlannersAndRuntimes(query).columnAs[Map[String, Any]]("params").toList
+    val rows = executeWithAllPlanners(query).columnAs[Map[String, Any]]("params").toList
 
     rows.head should equal(Map("uid" -> "foo"))
   }

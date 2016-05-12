@@ -33,5 +33,4 @@ case object RulePlannerOption extends PlannerPreParserOption("rule")
 case object IDPPlannerOption extends PlannerPreParserOption("idp")
 case object DPPlannerOption extends PlannerPreParserOption("dp")
 case object InterpretedRuntimeOption extends RuntimePreParserOption("interpreted")
-case object CompiledRuntimeOption extends RuntimePreParserOption("compiled")
 case class ConfigurationOptions(version: Option[VersionOption], options: Seq[PreParserOption]) extends PreParserOption

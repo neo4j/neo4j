@@ -23,7 +23,7 @@ import java.util
 
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_3
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.{CompiledRuntimeName, CostBasedPlannerName}
+import org.neo4j.cypher.internal.compiler.v2_3.{CostBasedPlannerName, InterpretedRuntimeName}
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
 import org.scalatest.Assertions
 
@@ -44,7 +44,7 @@ trait QueryStatisticsTestSupport {
         override def endFailure(session: QuerySession, throwable: Throwable){}
       }
       implicit val session = QueryEngineProvider.embeddedSession
-      val r = new ExecutionResultWrapperFor2_3(actual, CostBasedPlannerName.default, CompiledRuntimeName)
+      val r = new ExecutionResultWrapperFor2_3(actual, CostBasedPlannerName.default, InterpretedRuntimeName)
       apply(r.queryStatistics())
     }
   }

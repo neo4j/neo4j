@@ -86,8 +86,6 @@ class CypherCompiler(graph: GraphDatabaseService,
   private final val VERSIONS_WITH_FIXED_PLANNER: Set[CypherVersion] = Set(v1_9)
   private final val VERSIONS_WITH_FIXED_RUNTIME: Set[CypherVersion] = Set(v1_9, v2_2)
 
-  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled))
-
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
     val logger = new RecordingNotificationLogger
@@ -125,9 +123,6 @@ class CypherCompiler(graph: GraphDatabaseService,
 
     if (VERSIONS_WITH_FIXED_RUNTIME(cypherVersion) && statementWithOption.runtime.nonEmpty)
       throw new InvalidArgumentException("RUNTIME not supported in versions older than Neo4j v2.3")
-
-    if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((planner, runtime)))
-      throw new InvalidArgumentException(s"Unsupported PLANNER - RUNTIME combination: ${planner.name} - ${runtime.name}")
   }
 
   @throws(classOf[SyntaxException])
