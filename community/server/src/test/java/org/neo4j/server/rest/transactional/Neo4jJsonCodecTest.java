@@ -28,6 +28,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.CRS;
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.CartesianPoint;
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.GeographicPoint;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -218,4 +221,31 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         // then
         verify( jsonGenerator, times( 1 ) ).writeFieldName( "null" );
     }
+
+    @Test
+    public void testGeographicPointWriting() throws IOException
+    {
+        //Given
+        GeographicPoint value = new GeographicPoint( 12.3, 45.6, CRS.WGS84() );
+
+        //When
+        jsonCodec.writeValue( jsonGenerator, value );
+
+        //Then
+        verify( jsonGenerator, times( 3 ) ).writeEndObject();
+    }
+
+    @Test
+    public void testCartesianPointWriting() throws IOException
+    {
+        //Given
+        CartesianPoint value = new CartesianPoint( 123.0, 456.0 );
+
+        //When
+        jsonCodec.writeValue( jsonGenerator, value );
+
+        //Then
+        verify( jsonGenerator, times( 3 ) ).writeEndObject();
+    }
+
 }
