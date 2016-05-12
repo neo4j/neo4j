@@ -19,9 +19,9 @@
  */
 package org.neo4j.coreedge.raft.replication.session;
 
-import org.junit.Test;
-
 import java.util.UUID;
+
+import org.junit.Test;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreMember;
@@ -31,9 +31,9 @@ import static org.junit.Assert.assertNotEquals;
 
 public class LocalSessionPoolTest
 {
-    CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
+    private CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
             new AdvertisedSocketAddress( "raft:1" ) );
-    GlobalSession<CoreMember> globalSession = new GlobalSession<>( UUID.randomUUID(), coreMember );
+    private GlobalSession<CoreMember> globalSession = new GlobalSession<>( UUID.randomUUID(), coreMember );
 
     @Test
     public void poolGivesBackSameSessionAfterRelease()

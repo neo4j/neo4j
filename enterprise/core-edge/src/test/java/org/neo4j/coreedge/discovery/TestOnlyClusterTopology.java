@@ -23,39 +23,36 @@ import java.util.ArrayList;
 import java.util.Set;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.helpers.collection.Iterables;
 
-public class TestOnlyClusterTopology implements ClusterTopology
+class TestOnlyClusterTopology implements ClusterTopology
 {
     private final ArrayList<CoreMember> coreMembers;
-    private final Set<InstanceId> edgeMembers;
+    private final Set<BoltAddress> boltAddresses;
+    private final Set<BoltAddress> edgeBoltAddresses;
     private final boolean canBeBootstrapped;
 
-    public TestOnlyClusterTopology( boolean canBeBootstrapped, Set<CoreMember> coreMembers, Set<InstanceId> edgeMembers )
+    TestOnlyClusterTopology( boolean canBeBootstrapped, Set<CoreMember> coreMembers,
+                             Set<BoltAddress> coreBoltAddresses, Set<BoltAddress> edgeBoltAddresses )
     {
         this.canBeBootstrapped = canBeBootstrapped;
-        this.edgeMembers = edgeMembers;
+        this.boltAddresses = coreBoltAddresses;
+        this.edgeBoltAddresses = edgeBoltAddresses;
         this.coreMembers = new ArrayList<>( coreMembers );
     }
 
     @Override
-    public AdvertisedSocketAddress firstTransactionServer()
-    {
-        return coreMembers.size() > 0 ? coreMembers.get( 0 ).getCoreAddress() : null;
-    }
-
-    @Override
-    public int getNumberOfCoreServers()
-    {
-        return coreMembers.size();
-    }
-
-    @Override
-    public Set<CoreMember> getMembers()
+    public Set<CoreMember> coreMembers()
     {
         return Iterables.asSet( coreMembers );
+    }
+
+    @Override
+    public Set<BoltAddress> edgeMembers()
+    {
+        return edgeBoltAddresses;
     }
 
     @Override
@@ -66,12 +63,18 @@ public class TestOnlyClusterTopology implements ClusterTopology
     }
 
     @Override
+    public Set<BoltAddress> boltCoreMembers()
+    {
+        return boltAddresses;
+    }
+
+    @Override
     public String toString()
     {
         return "TestOnlyClusterTopology{" +
                 "coreMembers.size()=" + coreMembers.size() +
                 ", bootstrappable=" + bootstrappable() +
-                ", edgeMembers.size()=" + edgeMembers.size() +
+                ", edgeMembers.size()=" + edgeBoltAddresses.size() +
                 '}';
     }
 }

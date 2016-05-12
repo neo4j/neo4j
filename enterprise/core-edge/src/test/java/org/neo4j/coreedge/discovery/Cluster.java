@@ -241,6 +241,7 @@ public class Cluster
         int clusterPort = 5000 + serverId;
         int txPort = 6000 + serverId;
         int raftPort = 7000 + serverId;
+        int boltPort = 8000 + serverId;
 
         String initialHosts = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
 
@@ -254,6 +255,10 @@ public class Cluster
         params.put( CoreEdgeClusterSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
         params.put( CoreEdgeClusterSettings.raft_advertised_address.name(), "localhost:" + raftPort );
         params.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
+
+        params.put( new GraphDatabaseSettings.BoltConnector("bolt").type.name(), "BOLT" );
+        params.put( new GraphDatabaseSettings.BoltConnector("bolt").enabled.name(), "true" );
+        params.put( new GraphDatabaseSettings.BoltConnector("bolt").address.name(), "127.0.0.1:" + boltPort );
 
         params.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
@@ -296,6 +301,9 @@ public class Cluster
         {
             params.put( entry.getKey(), entry.getValue().apply( serverId ) );
         }
+        params.put( new GraphDatabaseSettings.BoltConnector("bolt").type.name(), "BOLT" );
+        params.put( new GraphDatabaseSettings.BoltConnector("bolt").enabled.name(), "true" );
+        params.put( new GraphDatabaseSettings.BoltConnector("bolt").address.name(), "127.0.0.1:" + (9000 + serverId ));
 
         return new EdgeGraphDatabase( storeDir, params, GraphDatabaseDependencies.newDependencies(),
                 discoveryServiceFactory );
@@ -330,7 +338,7 @@ public class Cluster
         }
     }
 
-    public void shutdownEdgeServers()
+    private void shutdownEdgeServers()
     {
         for ( EdgeGraphDatabase edgeServer : edgeServers )
         {
@@ -493,9 +501,9 @@ public class Cluster
     public int numberOfCoreServers()
     {
         CoreGraphDatabase aCoreGraphDb = coreServers.iterator().next();
-        CoreDiscoveryService coreDiscoveryService =
-                aCoreGraphDb.getDependencyResolver().resolveDependency( CoreDiscoveryService.class );
-        return coreDiscoveryService.currentTopology().getNumberOfCoreServers();
+        CoreTopologyService coreTopologyService = aCoreGraphDb.getDependencyResolver()
+                .resolveDependency( CoreTopologyService.class );
+        return coreTopologyService.currentTopology().coreMembers().size();
     }
 
     public void addEdgeServerWithFileLocation( File edgeDatabaseStoreFileLocation )

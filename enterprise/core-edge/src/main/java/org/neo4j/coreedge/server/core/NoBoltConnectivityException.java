@@ -17,21 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.discovery;
+package org.neo4j.coreedge.server.core;
 
-import java.util.Collections;
-import java.util.Set;
-
-import org.neo4j.coreedge.server.BoltAddress;
-import org.neo4j.coreedge.server.CoreMember;
-
-public interface ClusterTopology
+public class NoBoltConnectivityException extends RuntimeException
 {
-    boolean bootstrappable();
-
-    Set<CoreMember> coreMembers();
-
-    Set<BoltAddress> edgeMembers();
-
-    Set<BoltAddress> boltCoreMembers();
+    public NoBoltConnectivityException()
+    {
+        super( "No Bolt connector configured. Please refer to the 'Configuring Bolt Connectors' section of the " +
+                "documentation for more details - " +
+                "http://neo4j.com/docs/operations-manual/current/#_configuring_bolt_connectors" );
+    }
 }

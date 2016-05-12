@@ -41,16 +41,21 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.ListenSocketAddress;
+import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDiscoveryService
+class HazelcastServerLifecycle extends LifecycleAdapter
+        implements CoreTopologyService, ReadOnlyTopologyService
 {
-    public static final String CLUSTER_SERVER = "cluster_server";
-    public static final String TRANSACTION_SERVER = "transaction_server";
-    public static final String SERVER_ID = "server_id";
-    public static final String RAFT_SERVER = "raft_server";
+    private static final String CLUSTER_SERVER = "cluster_server";
+    private static final String SERVER_ID = "server_id";
+
+    static final String TRANSACTION_SERVER = "transaction_server";
+    static final String RAFT_SERVER = "raft_server";
+    static final String BOLT_SERVER = "bolt_server";
 
     private Config config;
     private HazelcastInstance hazelcastInstance;
@@ -159,8 +164,11 @@ public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDi
         AdvertisedSocketAddress transactionSource = config.get( CoreEdgeClusterSettings.transaction_advertised_address );
         memberAttributeConfig.setStringAttribute( TRANSACTION_SERVER, transactionSource.toString() );
 
-        AdvertisedSocketAddress advertisedAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
-        memberAttributeConfig.setStringAttribute( RAFT_SERVER, advertisedAddress.toString() );
+        AdvertisedSocketAddress raftAddress = config.get( CoreEdgeClusterSettings.raft_advertised_address );
+        memberAttributeConfig.setStringAttribute( RAFT_SERVER, raftAddress.toString() );
+
+        HostnamePort boltAddress = EnterpriseEdgeEditionModule.extractBoltAddress( config );
+        memberAttributeConfig.setStringAttribute( BOLT_SERVER, boltAddress.toString() );
 
         c.setMemberAttributeConfig( memberAttributeConfig );
 
@@ -175,7 +183,8 @@ public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDi
     @Override
     public HazelcastClusterTopology currentTopology()
     {
-        return new HazelcastClusterTopology( hazelcastInstance.getCluster().getMembers() );
+        return new HazelcastClusterTopology(
+                hazelcastInstance.getCluster().getMembers(), HazelcastClient.edgeMembers(hazelcastInstance) );
     }
 
     public interface StartupListener
@@ -187,7 +196,7 @@ public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDi
     {
         private final Listener listener;
 
-        public MembershipListenerAdapter( Listener listener )
+        MembershipListenerAdapter( Listener listener )
         {
             this.listener = listener;
         }
@@ -195,14 +204,18 @@ public class HazelcastServerLifecycle extends LifecycleAdapter implements CoreDi
         @Override
         public void memberAdded( MembershipEvent membershipEvent )
         {
-            HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology( hazelcastInstance.getCluster().getMembers() );
+            HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology(
+                    hazelcastInstance.getCluster().getMembers(),
+                    HazelcastClient.edgeMembers(hazelcastInstance) );
             listener.onTopologyChange( clusterTopology );
         }
 
         @Override
         public void memberRemoved( MembershipEvent membershipEvent )
         {
-            HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology( hazelcastInstance.getCluster().getMembers() );
+            HazelcastClusterTopology clusterTopology = new HazelcastClusterTopology(
+                    hazelcastInstance.getCluster().getMembers(),
+                    HazelcastClient.edgeMembers(hazelcastInstance) );
             listener.onTopologyChange( clusterTopology );
         }
 

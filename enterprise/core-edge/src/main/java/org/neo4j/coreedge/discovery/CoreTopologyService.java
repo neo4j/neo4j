@@ -19,19 +19,14 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import java.util.Collections;
-import java.util.Set;
-
-import org.neo4j.coreedge.server.BoltAddress;
-import org.neo4j.coreedge.server.CoreMember;
-
-public interface ClusterTopology
+public interface CoreTopologyService extends ReadOnlyTopologyService
 {
-    boolean bootstrappable();
+    void addMembershipListener( Listener listener );
 
-    Set<CoreMember> coreMembers();
+    void removeMembershipListener( Listener listener );
 
-    Set<BoltAddress> edgeMembers();
-
-    Set<BoltAddress> boltCoreMembers();
+    interface Listener
+    {
+        void onTopologyChange( ClusterTopology clusterTopology );
+    }
 }

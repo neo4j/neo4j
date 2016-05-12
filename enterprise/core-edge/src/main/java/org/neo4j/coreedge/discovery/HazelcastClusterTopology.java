@@ -25,38 +25,64 @@ import java.util.Set;
 import com.hazelcast.core.Member;
 
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
 
+import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.BOLT_SERVER;
 import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.RAFT_SERVER;
 import static org.neo4j.coreedge.discovery.HazelcastServerLifecycle.TRANSACTION_SERVER;
 
 public class HazelcastClusterTopology implements ClusterTopology
 {
-    public static final String EDGE_SERVERS = "edge-servers";
-    private final Set<Member> hazelcastMembers;
+    static final String EDGE_SERVERS = "edge-servers";
+    private final Set<Member> coreMembers;
+    private Set<BoltAddress> edgeMembers;
 
-    public HazelcastClusterTopology( Set<Member> hazelcastMembers )
+    HazelcastClusterTopology( Set<Member> coreMembers, Set<BoltAddress> edgeMembers )
     {
-        this.hazelcastMembers = hazelcastMembers;
+        this.coreMembers = coreMembers;
+        this.edgeMembers = edgeMembers;
     }
 
     @Override
     public boolean bootstrappable()
     {
-        Member firstMember = hazelcastMembers.iterator().next();
+        Member firstMember = coreMembers.iterator().next();
         return firstMember.localMember();
     }
 
     @Override
-    public int getNumberOfCoreServers()
+    public Set<BoltAddress> boltCoreMembers()
     {
-        return hazelcastMembers.size();
+        return toBoltMembers( coreMembers );
+    }
+
+    private Set<BoltAddress> toBoltMembers( Set<Member> members )
+    {
+        Set<BoltAddress> coreMembers = new HashSet<>();
+
+        for ( Member member : members )
+        {
+            if ( member.getStringAttribute( BOLT_SERVER ) != null )
+            {
+                coreMembers.add( new BoltAddress(
+                        new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) ) ) );
+            }
+        }
+
+        return coreMembers;
     }
 
     @Override
-    public Set<CoreMember> getMembers()
+    public Set<CoreMember> coreMembers()
     {
-        return toCoreMembers( hazelcastMembers );
+        return toCoreMembers( coreMembers );
+    }
+
+    @Override
+    public Set<BoltAddress> edgeMembers()
+    {
+        return edgeMembers;
     }
 
     private Set<CoreMember> toCoreMembers( Set<Member> members )
@@ -68,16 +94,9 @@ public class HazelcastClusterTopology implements ClusterTopology
             coreMembers.add( new CoreMember(
                     new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) ),
                     new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) )
-            ));
+            ) );
         }
 
         return coreMembers;
-    }
-
-    @Override
-    public AdvertisedSocketAddress firstTransactionServer()
-    {
-        Member member = hazelcastMembers.iterator().next();
-        return new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) );
     }
 }

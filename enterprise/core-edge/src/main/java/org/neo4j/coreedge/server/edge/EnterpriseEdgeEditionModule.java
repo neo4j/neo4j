@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.server.edge;
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -36,12 +37,14 @@ import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
-import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
+import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.NonBlockingChannels;
+import org.neo4j.coreedge.server.core.NoBoltConnectivityException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -81,6 +84,10 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.udc.UsageData;
 
 import static java.util.Collections.singletonMap;
+import static java.util.stream.Collectors.toList;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
+import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 
 /**
@@ -147,7 +154,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
 
-        EdgeDiscoveryService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, logProvider);
+        EdgeTopologyService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, logProvider);
         life.add(dependencies.satisfyDependency( discoveryService ));
 
         Supplier<TransactionApplier> transactionApplierSupplier =
@@ -186,9 +193,29 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                         new StoreFiles( new DefaultFileSystemAbstraction() ),
                         dependencies.provideDependency( NeoStoreDataSource.class ),
                         dependencies.provideDependency( TransactionIdStore.class ),
-                        databaseHealthSupplier ),
+                        databaseHealthSupplier),
                 txPollingClient, platformModule.dataSourceManager, new ConnectToRandomCoreServer( discoveryService ),
-                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider ) );
+                new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider, discoveryService, config ) );
+    }
+
+    public static HostnamePort extractBoltAddress( Config config )
+    {
+        List<HostnamePort> addresses = config
+                .view( enumerate( GraphDatabaseSettings.Connector.class ) )
+                .map( GraphDatabaseSettings.BoltConnector::new )
+                .filter( ( connConfig ) -> BOLT.equals( config.get( connConfig.type ) )
+                        && config.get( connConfig.enabled ) )
+                .map( ( connConfig ) -> config.get( connConfig.address ) )
+                .collect( toList() );
+        if ( addresses.size() == 0 )
+        {
+            throw new NoBoltConnectivityException();
+        }
+        else
+        {
+            // Just use the first.
+            return addresses.get( 0 );
+        }
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,

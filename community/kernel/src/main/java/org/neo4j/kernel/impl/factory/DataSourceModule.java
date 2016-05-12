@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -164,7 +163,7 @@ public class DataSourceModule
 
         AtomicReference<QueryExecutionEngine> queryExecutor = new AtomicReference<>( QueryEngineProvider.noEngine() );
         this.queryExecutor = queryExecutor::get;
-        Procedures procedures = setupProcedures( platformModule, editionModule.coreAPIAvailabilityGuard );
+        Procedures procedures = setupProcedures( platformModule, editionModule );
 
         DbmsOperations dbmsOperations = new NonTransactionalDbmsOperations( procedures );
         deps.satisfyDependency( dbmsOperations );
@@ -340,7 +339,7 @@ public class DataSourceModule
         };
     }
 
-    private Procedures setupProcedures( PlatformModule platform, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard )
+    private Procedures setupProcedures( PlatformModule platform, EditionModule editionModule )
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
@@ -360,7 +359,9 @@ public class DataSourceModule
         procedures.registerComponent( Log.class, (ctx) -> proceduresLog );
 
         // Register injected private API components: useful to have available in procedures to access the kernel etc.
-        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir, platform.dependencies, storeId, this.queryExecutor, coreAPIAvailabilityGuard, platform.urlAccessRule );
+        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platform.config, platform.storeDir,
+                platform.dependencies, storeId, this.queryExecutor, editionModule.coreAPIAvailabilityGuard,
+                platform.urlAccessRule );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply );
 
         // Below components are not public API, but are made available for internal
@@ -373,6 +374,8 @@ public class DataSourceModule
         procedures.registerComponent( DependencyResolver.class, (ctx) -> platform.dependencies );
         procedures.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ) );
         procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade );
+
+        editionModule.registerProcedures(procedures);
 
         return procedures;
     }

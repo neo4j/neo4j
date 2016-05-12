@@ -41,7 +41,7 @@ import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.edge.TransactionLogCatchUpFactory;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
-import org.neo4j.coreedge.discovery.CoreDiscoveryService;
+import org.neo4j.coreedge.discovery.CoreTopologyService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
@@ -120,6 +120,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -136,6 +137,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -169,6 +171,7 @@ public class EnterpriseCoreEditionModule
     private final RaftInstance<CoreMember> raft;
     private final CoreState coreState;
     private final CoreMember myself;
+    private final CoreTopologyService discoveryService;
 
     @Override
     public CoreMember id()
@@ -214,6 +217,26 @@ public class EnterpriseCoreEditionModule
         }
     }
 
+    public enum ConsistencyLevel
+    {
+        RYOW_CORE,
+        RYOW_EDGE
+    }
+
+    @Override
+    public void registerProcedures( Procedures procedures )
+    {
+        try
+        {
+            procedures.register( new DiscoverConsistencyLevelsProcedure() );
+            procedures.register( new DiscoverMembersProcedure( discoveryService ) );
+        }
+        catch ( ProcedureException e )
+        {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     protected SPI spi()
     {
@@ -239,8 +262,8 @@ public class EnterpriseCoreEditionModule
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        CoreDiscoveryService discoveryService =
-                discoveryServiceFactory.coreDiscoveryService( config );
+        discoveryService = discoveryServiceFactory.coreDiscoveryService( config );
+
         life.add( dependencies.satisfyDependency( discoveryService ) );
 
         final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
@@ -252,7 +275,8 @@ public class EnterpriseCoreEditionModule
 
         myself = new CoreMember(
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
-                config.get( CoreEdgeClusterSettings.raft_advertised_address ) );
+                config.get( CoreEdgeClusterSettings.raft_advertised_address )
+        );
 
         final MessageLogger<AdvertisedSocketAddress> messageLogger;
         if ( config.get( CoreEdgeClusterSettings.raft_messages_log_enable ) )
@@ -575,7 +599,7 @@ public class EnterpriseCoreEditionModule
 
     private static RaftInstance<CoreMember> createRaft( LifeSupport life,
                                                         Outbound<AdvertisedSocketAddress> outbound,
-                                                        CoreDiscoveryService discoveryService,
+                                                        CoreTopologyService discoveryService,
                                                         Config config,
                                                         MessageLogger<AdvertisedSocketAddress> messageLogger,
                                                         RaftLog raftLog,

@@ -19,14 +19,9 @@
  */
 package org.neo4j.coreedge.discovery;
 
-public interface CoreDiscoveryService extends EdgeDiscoveryService
+import org.neo4j.helpers.HostnamePort;
+
+public interface EdgeTopologyService extends ReadOnlyTopologyService
 {
-    void addMembershipListener( Listener listener );
-
-    void removeMembershipListener( Listener listener );
-
-    interface Listener
-    {
-        void onTopologyChange( ClusterTopology clusterTopology );
-    }
+    void registerEdgeServer( HostnamePort address );
 }
