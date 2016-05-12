@@ -19,13 +19,23 @@
  */
 package org.neo4j.cypher;
 
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Coordinate;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
 public class GraphDatabaseServiceExecuteTest
@@ -52,5 +62,79 @@ public class GraphDatabaseServiceExecuteTest
             tx.success();
         }
         assertEquals( before + 1, after );
+    }
+
+    @Test
+    public void shouldNotReturnInternalGeographicPointType() throws Exception
+    {
+        // given
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+
+        // when
+        Result execute = graphDb.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
+
+        // then
+        Object obj = execute.next().get( "p" );
+        assertThat( obj, Matchers.instanceOf(Point.class));
+
+        Point point = (Point) obj;
+        assertThat( point.getCoordinate(), equalTo(new Coordinate( 144.317718, -37.031738 )));
+
+        CRS crs = point.getCRS();
+        assertThat( crs.getCode(), equalTo(4326));
+        assertThat( crs.getType(), equalTo("WGS-84"));
+        assertThat( crs.getHref(), equalTo("http://spatialreference.org/ref/epsg/4326/"));
+    }
+
+    @Test
+    public void shouldNotReturnInternalCartesianPointType() throws Exception
+    {
+        // given
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+
+        // when
+        Result execute = graphDb.execute( "RETURN point({x: 13.37, y: 13.37, crs:'cartesian'}) AS p" );
+
+        // then
+        Object obj = execute.next().get( "p" );
+        assertThat( obj, Matchers.instanceOf(Point.class));
+
+        Point point = (Point) obj;
+        assertThat( point.getCoordinate(), equalTo(new Coordinate( 13.37, 13.37 )));
+
+        CRS crs = point.getCRS();
+        assertThat( crs.getCode(), equalTo(7203));
+        assertThat( crs.getType(), equalTo("cartesian"));
+        assertThat( crs.getHref(), equalTo("http://spatialreference.org/ref/sr-org/7203/"));
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldNotReturnInternalPointWhenInArray() throws Exception
+    {
+        // given
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+
+        // when
+        Result execute = graphDb.execute( "RETURN [point({longitude: 144.317718, latitude: -37.031738})] AS ps" );
+
+        // then
+        List<Point> points = (List<Point>)execute.next().get( "ps" );
+        assertThat( points.get(0), Matchers.instanceOf(Point.class));
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldNotReturnInternalPointWhenInMap() throws Exception
+    {
+        // given
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+
+        // when
+        Result execute = graphDb.execute( "RETURN {p: point({longitude: 144.317718, latitude: -37.031738})} AS m" );
+
+        // then
+        Map<String,Object> points = (Map<String, Object>)execute.next().get( "m" );
+        assertThat( points.get("p"), Matchers.instanceOf(Point.class));
     }
 }

@@ -36,7 +36,8 @@ object CostBasedPipeBuilderFactory {
              plannerName: Option[CostBasedPlannerName],
              runtimeBuilder: RuntimeBuilder,
              config: CypherCompilerConfiguration,
-             updateStrategy: Option[UpdateStrategy]
+             updateStrategy: Option[UpdateStrategy],
+             publicTypeConverter: Any => Any
   ) = {
 
     def createQueryGraphSolver(n: CostBasedPlannerName): QueryGraphSolver = n match {
@@ -63,6 +64,6 @@ object CostBasedPipeBuilderFactory {
     CostBasedExecutablePlanBuilder(monitors, metricsFactory, tokenResolver, queryPlanner,
       createQueryGraphSolver(actualPlannerName), rewriterSequencer, semanticChecker, actualPlannerName, runtimeBuilder,
       actualUpdateStrategy,
-      config)
+      config, publicTypeConverter)
   }
 }

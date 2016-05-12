@@ -76,7 +76,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
   private val preParsedQueries = new LRUCachev3_1[String, PreParsedQuery](getPlanCacheSize)
   private val parsedQueries = new LRUCachev3_1[String, ParsedQuery](getPlanCacheSize)
 
-  private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
+  private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   @throws(classOf[SyntaxException])

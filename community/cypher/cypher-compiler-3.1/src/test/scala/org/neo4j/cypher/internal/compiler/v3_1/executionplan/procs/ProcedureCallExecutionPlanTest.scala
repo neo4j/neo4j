@@ -34,8 +34,8 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   test("should be able to call procedure with single argument") {
     // Given
-    val proc = ProcedureCallExecutionPlan(readSignature,
-      Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b")
+    val proc = ProcedureCallExecutionPlan(readSignature, Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
+                                          publicTypeConverter = identity
     )
 
     // When
@@ -48,7 +48,8 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   test("should eagerize write procedure") {
     // Given
     val proc = ProcedureCallExecutionPlan(writeSignature,
-      Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b")
+                                          Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
+                                          publicTypeConverter = identity
     )
 
     // When
@@ -61,7 +62,8 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   test("should not eagerize read procedure") {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature,
-      Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b")
+                                          Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
+                                          publicTypeConverter = identity
     )
 
     // When
@@ -86,7 +88,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     ProcedureReadOnlyAccess
   )
 
-  private val writeSignature =  ProcedureSignature(
+  private val writeSignature = ProcedureSignature(
     QualifiedProcedureName(Seq.empty, "foo"),
     Seq(FieldSignature("a", symbols.CTInteger)),
     Some(Seq(FieldSignature("b", symbols.CTInteger))),
@@ -102,7 +104,8 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
       val input = invocationOnMock.getArguments()(1).asInstanceOf[Seq[AnyRef]]
       new Iterator[Array[AnyRef]] {
         override def hasNext = !iteratorExhausted
-        override def next() = if(hasNext) {
+
+        override def next() = if (hasNext) {
           iteratorExhausted = true
           input.toArray
         } else throw new IllegalStateException("Iterator exhausted")

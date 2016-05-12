@@ -204,7 +204,7 @@ object StandardInternalExecutionResult {
 
     self: StandardInternalExecutionResult =>
 
-    val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
+    val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue, identity)
 
     @throws(classOf[Exception])
     def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {

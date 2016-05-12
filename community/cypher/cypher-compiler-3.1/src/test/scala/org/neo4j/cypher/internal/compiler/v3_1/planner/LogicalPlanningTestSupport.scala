@@ -167,10 +167,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       queryPlanner = queryPlanner,
       rewriterSequencer = rewriterSequencer,
       plannerName = None,
-      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors)),
+      runtimeBuilder = InterpretedRuntimeBuilder(InterpretedPlanBuilder(Clock.systemUTC(), monitors, identity)),
       semanticChecker = semanticChecker,
       updateStrategy = None,
-      config = config)
+      config = config,
+      publicTypeConverter = identity)
   }
 
   val config = CypherCompilerConfiguration(

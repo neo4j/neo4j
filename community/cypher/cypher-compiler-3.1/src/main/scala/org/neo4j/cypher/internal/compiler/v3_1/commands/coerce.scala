@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.commands
 
-import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.Point
+import org.neo4j.cypher.internal.compiler.v3_1.Point
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.{IsCollection, IsMap}
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._

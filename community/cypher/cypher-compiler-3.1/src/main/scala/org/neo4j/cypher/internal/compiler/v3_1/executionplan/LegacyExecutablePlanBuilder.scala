@@ -29,25 +29,34 @@ import org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders.prepare.Ke
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.builders.{DisconnectedShortestPathEndPointsBuilder, _}
 import org.neo4j.cypher.internal.compiler.v3_1.pipes._
 import org.neo4j.cypher.internal.compiler.v3_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v3_1.SyntaxException
-import org.neo4j.cypher.internal.frontend.v3_1.helpers.{fixedPoint, NonEmptyList}
+import org.neo4j.cypher.internal.frontend.v3_1.helpers.{NonEmptyList, fixedPoint}
+import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStep._
+
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
 }
 
-class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConfiguration, rewriterSequencer: (String) => RewriterStepSequencer, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
+class LegacyExecutablePlanBuilder(monitors: Monitors, config: CypherCompilerConfiguration,
+                                  rewriterSequencer: (String) => RewriterStepSequencer,
+                                  eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary,
+                                  publicTypeConverter: Any => Any)
   extends PatternGraphBuilder with ExecutablePlanBuilder with GraphQueryBuilder {
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
   override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING,
                            createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference): ExecutionPlan =
-    interpretedToExecutionPlan(producePipe(inputQuery, planContext, tracer), planContext, inputQuery, createFingerprintReference, config)
+    interpretedToExecutionPlan(producePipe(inputQuery, planContext, tracer), planContext, inputQuery,
+                               createFingerprintReference, config, publicTypeConverter)
 
   def producePipe(in: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer): PipeInfo = {
-    val rewriter = rewriterSequencer("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter
+
+
+    val rewriterStepSequencer: RewriterStepSequencer = rewriterSequencer.apply("LegacyPipeBuilder")
+    val rewriter = rewriterStepSequencer.apply(reattachAliasedExpressions).rewriter
     val rewrite = in.rewrite(rewriter)
 
     val res = rewrite.abstractQuery match {

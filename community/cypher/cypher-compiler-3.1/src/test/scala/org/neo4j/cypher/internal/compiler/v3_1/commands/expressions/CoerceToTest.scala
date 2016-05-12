@@ -19,19 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_1.ExecutionContext
+import java.util.{ArrayList => JavaList, HashMap => JavaMap}
+
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.Counter
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, Point}
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.language.postfixOps
-
-import java.util.{HashMap => JavaMap}
-import java.util.{ArrayList => JavaList}
 
 class CoerceToTest extends CypherFunSuite {
 

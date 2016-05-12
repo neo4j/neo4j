@@ -109,10 +109,11 @@ class ExecutionPlanBuilder(graph: GraphDatabaseQueryService,
 object InterpretedExecutionPlanBuilder {
   def interpretedToExecutionPlan(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuerySemantics,
                                  createFingerprintReference:Option[PlanFingerprint]=>PlanFingerprintReference,
-                                 config: CypherCompilerConfiguration) = {
+                                 config: CypherCompilerConfiguration,
+                                 publicTypeConverter: Any => Any) = {
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = inputQuery.statement.returnColumns
-    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
+    val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns, publicTypeConverter = publicTypeConverter)
     val func = getExecutionPlanFunction(periodicCommitInfo, inputQuery.queryText, updating, resultBuilderFactory, inputQuery
       .notificationLogger)
     new ExecutionPlan {

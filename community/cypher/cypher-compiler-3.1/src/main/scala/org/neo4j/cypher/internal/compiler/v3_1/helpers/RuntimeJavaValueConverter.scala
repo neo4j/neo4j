@@ -32,7 +32,7 @@ import scala.collection.Map
 //
 // Main use: Converting parameters when using ExecutionEngine from scala
 //
-class RuntimeJavaValueConverter(skip: Any => Boolean) {
+class RuntimeJavaValueConverter(skip: Any => Boolean, converter: Any => Any) {
 
   final def asDeepJavaMap[S](map: Map[S, Any]): JavaMap[S, Any] =
     if (map == null) null else immutableMapValues(map, asDeepJavaValue).asJava: JavaMap[S, Any]
@@ -42,7 +42,7 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
     case map: Map[_, _] => immutableMapValues(map, asDeepJavaValue).asJava: JavaMap[_, _]
     case iterable: Iterable[_] => iterable.map(asDeepJavaValue).toVector.asJava: JavaList[_]
     case traversable: TraversableOnce[_] => traversable.map(asDeepJavaValue).toVector.asJava: JavaList[_]
-    case anything => anything
+    case anything => converter(anything)
   }
 
   case class feedIteratorToVisitable[EX <: Exception](iterator: Iterator[Map[String, Any]]) {

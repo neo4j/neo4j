@@ -57,7 +57,7 @@ case class ProcedureCallPipe(source: Pipe,
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
-    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
+    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue, state.publicTypeConverter)
 
     rowProcessor(input, state, converter)
   }
