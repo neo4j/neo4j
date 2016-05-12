@@ -23,6 +23,7 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  // TCK'd
   test("only passing on pattern nodes work") {
     val a = createNode()
     val b = createNode()
@@ -34,6 +35,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toList should equal(List(Map("a" -> a, "b" -> b)))
   }
 
+  // TCK'd
   test("order by and limit can be used") {
     val a = createNode("A")
     createNode("B")
@@ -47,6 +49,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toList should equal(List(Map("a" -> a)))
   }
 
+  // TCK'd
   test("without dependencies between the query parts works") {
     val a = createNode()
     val b = createNode()
@@ -62,6 +65,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     ))
   }
 
+  // TCK'd
   test("with aliasing") {
     createLabeledNode(Map("prop"->42), "Start")
     val b = createLabeledNode(Map("prop"->42), "End")
@@ -73,6 +77,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toSet should equal(Set(Map("b" -> b)))
   }
 
+  // TCK'd
   test("should handle dependencies across WITH") {
     val b = createLabeledNode(Map("prop" -> 42), "End")
     createLabeledNode(Map("prop" -> 3), "End")
@@ -84,6 +89,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toSet should equal(Set(Map("b" -> b)))
   }
 
+  // TCK'd
   test("should handle dependencies across WITH with SKIP") {
     val a = createNode("prop" -> "A", "id" -> 0)
     createNode("prop" -> "B", "id" -> a.getId)
@@ -101,6 +107,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toSet should equal(Set(Map("b" -> a)))
   }
 
+  // TCK'd
   test("WHERE after WITH filters as expected") {
     createNode("A")
     val b = createNode("B")
@@ -112,6 +119,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toSet should equal(Set(Map("a" -> b)))
   }
 
+  // TCK'd
   test("WHERE after WITH can filter on top of aggregation") {
     val a = createNode("A")
     val b = createNode("B")
@@ -127,6 +135,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toSet should equal(Set(Map("a" -> a)))
   }
 
+  // TCK'd
   test("Can ORDER BY an aggregating key") {
     createNode("bar" -> "A")
     createNode("bar" -> "A")
@@ -139,6 +148,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result should not be empty
   }
 
+  // TCK'd except for the "not using Projection" part
   test("Can ORDER BY a DISTINCT column") {
     createNode("bar" -> "A")
     createNode("bar" -> "A")
@@ -152,6 +162,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result should not(use("Projection"))
   }
 
+  // TCK'd
   test("Can use WHERE on distinct columns") {
     createNode("bar" -> "A")
     createNode("bar" -> "A")
@@ -164,6 +175,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result should not be empty
   }
 
+  // TCK'd
   test("Can solve a simple pattern with the relationship and one endpoint bound") {
     val node1 = createNode()
     val node2 = createNode()
@@ -179,10 +191,12 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     ))
   }
 
+  // TCK'd
   test("nulls passing through WITH") {
     executeWithAllPlannersAndCompatibilityMode("optional match (a:Start) with a match (a)-->(b) return *") should be (empty)
   }
 
+  // TCK'd
   test("WITH {foo: {bar: 'baz'}} AS nestedMap RETURN nestedMap.foo.bar") {
 
     val result = executeWithAllPlannersAndCompatibilityMode(
@@ -191,6 +205,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toSet should equal(Set(Map("nestedMap.foo.bar" -> "baz")))
   }
 
+  // TCK'd
   test("connected components after WITH") {
     val n = createLabeledNode("A")
     val m = createLabeledNode("B")
@@ -202,6 +217,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result.toList should equal(List(Map("m" -> m, "n" -> n, "x" -> x)))
   }
 
+  // TCK'd
   test("WITH with predicate and aggregation should be handled by all planners") {
     // GIVEN
     createNode(Map("prop" -> 43))
@@ -215,6 +231,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     result should equal(1)
   }
 
+  // TCK'd
   test("multiple WITHs with predicates and aggregation should be handled by all planners") {
     // GIVEN
     val david = createNode("name" -> "David")
