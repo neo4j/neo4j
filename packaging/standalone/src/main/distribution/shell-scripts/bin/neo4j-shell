@@ -46,7 +46,7 @@ do
             if [[ "${option}" = *file ]] && [[ "${orig_filename}" = "-" ]]; then
               ARGS+=("${orig_filename}")
             else
-              ARGS+=("$(resolve_path "${orig_filename}")")
+              ARGS+=("$(resolve_path "${orig_filename}" "$(pwd)")")
             fi
             ;;
         *)
