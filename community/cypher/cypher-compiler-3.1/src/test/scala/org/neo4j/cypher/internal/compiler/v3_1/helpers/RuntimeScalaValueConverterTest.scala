@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_0.helpers
+package org.neo4j.cypher.internal.compiler.v3_1.helpers
 
 import java.util
 import java.util.Arrays.asList
 import java.util.Collections.{emptyList, emptyMap, singleton => singletonSet, singletonMap}
 
-import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class RuntimeScalaValueConverterTest extends CypherFunSuite {
 
