@@ -34,14 +34,14 @@ do
             orig_filename="${option#*=}"
             orig_arg="${option%=*}"
 
-            ARGS+=("${orig_arg}=$(resolve_path "${orig_filename}")")
+            ARGS+=("${orig_arg}=$(resolve_path "${orig_filename}" "$(pwd)")")
             shift
             ;;
         --into|-into|--db-config|-db-config)
             orig_filename="${2}"
 
             ARGS+=("${option}")
-            ARGS+=("$(resolve_path "${orig_filename}")")
+            ARGS+=("$(resolve_path "${orig_filename}" "$(pwd)")")
             shift
             shift
             ;;
