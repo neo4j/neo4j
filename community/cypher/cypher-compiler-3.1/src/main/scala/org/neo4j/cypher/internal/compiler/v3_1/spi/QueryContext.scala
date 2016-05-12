@@ -165,12 +165,12 @@ trait QueryContext extends TokenContext {
   // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database
   def isGraphKernelResultValue(v: Any): Boolean
+
+  def detachDelete(node: Node): Int
 }
 
 trait Operations[T <: PropertyContainer] {
   def delete(obj: T)
-
-  def detachDelete(obj: T): Int
 
   def setProperty(obj: Long, propertyKeyId: Int, value: Any)
 
