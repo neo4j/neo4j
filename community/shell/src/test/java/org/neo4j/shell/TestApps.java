@@ -22,8 +22,10 @@ package org.neo4j.shell;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
+import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
@@ -40,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -51,6 +54,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
@@ -1247,5 +1251,82 @@ public class TestApps extends AbstractShellTest
     public void canUseCall() throws Exception
     {
         executeCommand( "CALL db.labels" );
+    }
+
+    @Test
+    public void shouldSupportUsingPeriodicCommitInSession() throws Exception
+    {
+        long fileSize = 120;
+        long batch = 40;
+
+        String csvFileUrl = createCsvFile( fileSize );
+        long expectedCommitCount = fileSize / batch;
+
+        verifyNumberOfCommits( "USING PERIODIC COMMIT " + batch + " LOAD CSV FROM '" + csvFileUrl + "' AS l CREATE ();",
+                expectedCommitCount );
+    }
+
+    @Test
+    public void shouldSupportUsingPeriodicCommitInMultipleLine() throws Exception
+    {
+        long fileSize = 120;
+        long batch = 40;
+
+        String csvFileUrl = createCsvFile( fileSize );
+        long expectedCommitCount = fileSize / batch;
+
+        verifyNumberOfCommits(
+                "USING\nPERIODIC\nCOMMIT\n" + batch + "\nLOAD\nCSV\nFROM '" + csvFileUrl + "' AS l\nCREATE ();",
+                expectedCommitCount );
+    }
+
+    private void verifyNumberOfCommits( String query, long expectedCommitCount ) throws Exception
+    {
+        // Given
+
+        CtrlCHandler ctrlCHandler = mock( CtrlCHandler.class );
+        StartClient startClient = getStartClient();
+        long txIdBeforeQuery = lastClosedTxId();
+
+        // When
+        startClient.start( new String[]{"-path", db.getStoreDir(), "-c", query}, ctrlCHandler );
+
+        // then
+        long txId = lastClosedTxId();
+        assertEquals( expectedCommitCount + txIdBeforeQuery + 1 /* shell opens a tx to show the prompt */, txId );
+
+    }
+
+    private StartClient getStartClient()
+    {
+        return new StartClient( System.out, System.err )
+        {
+            @Override
+            protected GraphDatabaseShellServer getGraphDatabaseShellServer( File path, boolean readOnly,
+                    String configFile ) throws RemoteException
+            {
+                return new GraphDatabaseShellServer( db );
+            }
+        };
+    }
+
+    private long lastClosedTxId()
+    {
+        return db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
+    }
+
+    private String createCsvFile( long size ) throws IOException, InterruptedException
+    {
+        File tmpFile = File.createTempFile( "data", ".csv", null );
+        tmpFile.deleteOnExit();
+        try ( PrintWriter out = new PrintWriter( tmpFile ) )
+        {
+            out.println( "foo" );
+            for ( int i = 0; i < size; i++ )
+            {
+                out.println( i );
+            }
+        }
+        return tmpFile.toURI().toURL().toExternalForm();
     }
 }

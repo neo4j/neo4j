@@ -230,8 +230,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     @Override
-    public Continuation execute( AppCommandParser parser, Session session,
-            Output out ) throws Exception
+    public Continuation execute( AppCommandParser parser, Session session, Output out ) throws Exception
     {
         try ( Transaction tx = getServer().getDb().beginTransaction( implicit, FULL ) )
         {
