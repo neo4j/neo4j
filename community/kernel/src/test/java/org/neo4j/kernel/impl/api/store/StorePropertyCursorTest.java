@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
@@ -786,15 +787,22 @@ public class StorePropertyCursorTest
             Consumer<StorePropertyCursor> cache )
     {
         RecordCursor<PropertyRecord> propertyRecordCursor = propertyStore.newRecordCursor( propertyStore.newRecord() );
+        propertyRecordCursor.acquire( 0, NORMAL );
 
         DynamicStringStore stringStore = propertyStore.getStringStore();
         RecordCursor<DynamicRecord> dynamicStringCursor = stringStore.newRecordCursor( stringStore.newRecord() );
+        dynamicStringCursor.acquire( 0, NORMAL );
 
         DynamicArrayStore arrayStore = propertyStore.getArrayStore();
         RecordCursor<DynamicRecord> dynamicArrayCursor = arrayStore.newRecordCursor( arrayStore.newRecord() );
+        dynamicArrayCursor.acquire( 0, NORMAL );
 
-        return new StorePropertyCursor( propertyRecordCursor.acquire( 0, NORMAL ),
-                dynamicStringCursor.acquire( 0, NORMAL ), dynamicArrayCursor.acquire( 0, NORMAL ), cache );
+        RecordCursors cursors = mock( RecordCursors.class );
+        when( cursors.property() ).thenReturn( propertyRecordCursor );
+        when( cursors.propertyString() ).thenReturn( dynamicStringCursor );
+        when( cursors.propertyArray() ).thenReturn( dynamicArrayCursor );
+
+        return new StorePropertyCursor( cursors, cache );
     }
 
     private static List<PropertyRecord> createPropertyChain( PropertyStore store, int firstRecordId, int keyId,

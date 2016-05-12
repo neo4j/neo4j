@@ -30,6 +30,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
+/**
+ * Container for {@link RecordCursor}s for different stores. Intended to be reused by pooled transactions.
+ */
 public class RecordCursors implements AutoCloseable
 {
     private final RecordCursor<NodeRecord> node;

@@ -59,8 +59,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
             @Override
             protected StoreSinglePropertyCursor create()
             {
-                return new StoreSinglePropertyCursor( cursors.property(),
-                        cursors.propertyString(), cursors.propertyArray(), this );
+                return new StoreSinglePropertyCursor( cursors, this );
             }
         };
         allPropertyCursor = new InstanceCache<StorePropertyCursor>()
@@ -68,8 +67,7 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItemHelper
             @Override
             protected StorePropertyCursor create()
             {
-                return new StorePropertyCursor( cursors.property(),
-                        cursors.propertyString(), cursors.propertyArray(), this );
+                return new StorePropertyCursor( cursors, this );
             }
         };
     }

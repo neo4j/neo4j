@@ -116,8 +116,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             @Override
             protected StoreSinglePropertyCursor create()
             {
-                return new StoreSinglePropertyCursor( cursors.property(), cursors.propertyString(),
-                        cursors.propertyArray(), this );
+                return new StoreSinglePropertyCursor( cursors, this );
             }
         };
         allPropertyCursor = new InstanceCache<StorePropertyCursor>()
@@ -125,8 +124,7 @@ public abstract class StoreAbstractNodeCursor extends NodeItemHelper implements 
             @Override
             protected StorePropertyCursor create()
             {
-                return new StorePropertyCursor( cursors.property(), cursors.propertyString(), cursors.propertyArray(),
-                        allPropertyCursor );
+                return new StorePropertyCursor( cursors, allPropertyCursor );
             }
         };
     }

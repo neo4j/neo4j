@@ -91,6 +91,14 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
       */
     boolean next( long id, R record, RecordLoad mode );
 
+    /**
+     * Read all records in the chain starting from the id this cursor is positioned at using either
+     * {@link #acquire(long, RecordLoad)} or {@link #placeAt(long, RecordLoad)}. Each next record in the chain is
+     * determined by {@link RecordStore#getNextRecordReference(AbstractBaseRecord)}. Each record placed in the
+     * resulting list is a clone of the reused record.
+     *
+     * @return records of the chain in list.
+     */
     @SuppressWarnings( "unchecked" )
     default List<R> getAll()
     {
