@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_0.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_0.{CRS, CartesianPoint, ExecutionContext, GeographicPoint}
 import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
 
@@ -35,12 +35,12 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
         case CRS.Cartesian.name =>
           val x = map("x").asInstanceOf[Double]
           val y = map("y").asInstanceOf[Double]
-          new CartesianPoint(x, y)
+          CartesianPoint(x, y)
 
         case CRS.WGS84.name =>
           val longitude = map("longitude").asInstanceOf[Double]
           val latitude = map("latitude").asInstanceOf[Double]
-          new GeographicPoint(longitude, latitude, CRS.WGS84)
+          GeographicPoint(longitude, latitude, CRS.WGS84)
       }
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
@@ -54,43 +54,4 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
   override def symbolTableDependencies = data.symbolTableDependencies
 
   override def toString = "Point(" + data + ")"
-}
-
-case class CRS(name: String, id: Int)
-
-object CRS {
-  val Cartesian = CRS("cartesian", 7203) // See http://spatialreference.org/ref/sr-org/7203/
-  val WGS84 = CRS("WGS-84", 4326)       // See http://spatialreference.org/ref/epsg/4326/
-
-  def fromName(name: String) = name match {
-    case Cartesian.name => Cartesian
-    case WGS84.name => WGS84
-    case _ => throw new UnsupportedOperationException("Invalid or unsupported CRS name: " + name)
-  }
-
-  def fromSRID(id: Int) = id match {
-    case Cartesian.id => Cartesian
-    case WGS84.id => WGS84
-    case _ => throw new UnsupportedOperationException("Invalid or unsupported SRID: " + id)
-  }
-}
-
-trait Geometry {
-  def coordinates: Seq[Double]
-  def crs: CRS
-}
-
-trait Point extends Geometry {
-  def x: Double
-  def y: Double
-  def coordinates: Seq[Double] = Seq(x, y)
-}
-
-case class CartesianPoint(x: Double, y: Double) extends Point {
-  def crs = CRS.Cartesian
-}
-
-case class GeographicPoint(longitude: Double, latitude: Double, crs: CRS) extends Point {
-  def x: Double = longitude
-  def y: Double = latitude
 }

@@ -304,12 +304,14 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
       plannerName = Some(plannerName),
       rewriterSequencer = rewriterSequencer,
       queryPlanner = queryPlanner,
-      runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors), CompiledPlanBuilder(clock,GeneratedQueryStructure)),
+      runtimeBuilder = SilentFallbackRuntimeBuilder(InterpretedPlanBuilder(clock, monitors, identity), CompiledPlanBuilder(clock,GeneratedQueryStructure)),
       semanticChecker = checker,
       config = config,
-      updateStrategy = None
+      updateStrategy = None,
+      publicTypeConverter = identity
     )
-    val pipeBuilder = new SilentFallbackPlanBuilder(new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer), planner,
+    val pipeBuilder = new SilentFallbackPlanBuilder(new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer,
+                                                                                    publicTypeConverter = identity), planner,
                                                     planBuilderMonitor)
     val execPlanBuilder =
       new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
@@ -328,7 +330,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val parser = new CypherParser
     val checker = new SemanticChecker
     val rewriter = new ASTRewriter(rewriterSequencer)
-    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer)
+    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors, config, rewriterSequencer, publicTypeConverter = identity)
     val execPlanBuilder =
       new ExecutionPlanBuilder(graph, clock, pipeBuilder, PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _))
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)

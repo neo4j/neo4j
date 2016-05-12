@@ -57,7 +57,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       plannerName = Some(IDPPlannerName),
       runtimeName = Some(CompiledRuntimeName),
       updateStrategy = None,
-      rewriterSequencer = RewriterStepSequencer.newValidating
+      rewriterSequencer = RewriterStepSequencer.newValidating,
+      publicTypeConverter = identity
     )
   }
 

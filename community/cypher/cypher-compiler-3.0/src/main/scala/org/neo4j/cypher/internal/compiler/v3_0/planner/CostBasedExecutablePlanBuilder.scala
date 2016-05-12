@@ -35,8 +35,6 @@ import org.neo4j.cypher.internal.compiler.v3_0.tracing.rewriters.{ApplyRewriter,
 import org.neo4j.cypher.internal.frontend.v3_0.ast._
 import org.neo4j.cypher.internal.frontend.v3_0.{InternalException, Scope, SemanticTable}
 
-import scala.util.Try
-
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           metricsFactory: MetricsFactory,
@@ -48,10 +46,12 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                           plannerName: CostBasedPlannerName,
                                           runtimeBuilder: RuntimeBuilder,
                                           updateStrategy: UpdateStrategy,
-                                          config: CypherCompilerConfiguration)
+                                          config: CypherCompilerConfiguration,
+                                          publicTypeConverter: Any => Any)
   extends ExecutablePlanBuilder {
 
-  override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer, createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
+  override def producePlan(inputQuery: PreparedQuerySemantics, planContext: PlanContext, tracer: CompilationPhaseTracer,
+                           createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference) = {
     val statement =
       CostBasedExecutablePlanBuilder.rewriteStatement(
         statement = inputQuery.statement,
@@ -78,7 +78,8 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
   }
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)
-                        (planContext: PlanContext,  notificationLogger: InternalNotificationLogger):
+                        (planContext: PlanContext,
+                         notificationLogger: InternalNotificationLogger):
   (Option[PeriodicCommit], LogicalPlan, PipeExecutionBuilderContext) = {
 
     tokenResolver.resolve(ast)(semanticTable, planContext)

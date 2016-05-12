@@ -23,7 +23,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_0._
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.Pipe
-import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryTransactionalContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v3_0.spi.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.frontend.v3_0.test_helpers.CypherFunSuite
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
@@ -35,7 +35,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None, None, PlannerName), List.empty)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = true, None, None, PlannerName), List.empty, identity)
 
     // WHEN
     val builder = builderFactory.create()
@@ -52,7 +52,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty, identity)
 
     // WHEN
     val builder = builderFactory.create()
@@ -70,7 +70,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
-    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty)
+    val builderFactory = DefaultExecutionResultBuilderFactory(PipeInfo(pipe, updating = false, None, None, PlannerName), List.empty, identity)
 
     // WHEN
     val builder = builderFactory.create()
