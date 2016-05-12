@@ -104,10 +104,14 @@ case class ProcedureCallPipe(source: Pipe,
     ), variables)
   }
 
-  override def symbols = resultSymbols.foldLeft(source.symbols) {
+  override def symbols = {
+    val sourceSymbols = source.symbols
+    val outputSymbols = resultSymbols.foldLeft(sourceSymbols) {
       case (symbols, (symbolName, symbolType)) =>
-        symbols.add(symbolName, symbolType.legacyIteratedType)
+        symbols.add(symbolName, symbolType)
     }
+    outputSymbols
+  }
 
   override def localEffects = AllEffects
 
