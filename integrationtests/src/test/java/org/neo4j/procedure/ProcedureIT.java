@@ -644,6 +644,19 @@ public class ProcedureIT
         return file.toURI().toURL().toString();
     }
 
+
+    @Test
+    public void shouldReturnNodeListTypedAsNodeList()
+    {
+        // When
+        Result res = db.execute( "CALL org.neo4j.procedure.nodeList() YIELD nodes RETURN extract( x IN nodes | id(x) ) as ids" );
+
+        // Then
+        assertTrue( res.hasNext() );
+        assertThat( ((List<?>) res.next().get( "ids" ) ).size(), equalTo( 2 ) );
+        assertFalse( res.hasNext() );
+    }
+
     @Before
     public void setUp() throws IOException
     {
@@ -726,6 +739,16 @@ public class ProcedureIT
         public PathOutputRecord( Path path )
         {
             this.path = path;
+        }
+    }
+
+    public static class NodeListRecord
+    {
+        public List<Node> nodes;
+
+        public NodeListRecord( List<Node> nodes )
+        {
+            this.nodes = nodes;
         }
     }
 
@@ -921,8 +944,6 @@ public class ProcedureIT
             db.execute( "CALL org.neo4j.procedure.sideEffect", map( "value", value ) );
         }
 
-        private static final ScheduledExecutorService jobs = Executors.newScheduledThreadPool( 5 );
-
         @Procedure
         @PerformsWrites
         public void unsupportedProcedure()
@@ -948,5 +969,18 @@ public class ProcedureIT
                 .stream()
                 .map( record -> new PathOutputRecord( (Path) record.getOrDefault( "p", null ) ) );
         }
+
+        @Procedure
+        @PerformsWrites
+        public Stream<NodeListRecord> nodeList()
+        {
+            List<Node> nodesList = new ArrayList<>();
+            nodesList.add( db.createNode() );
+            nodesList.add( db.createNode() );
+
+            return Stream.of( new NodeListRecord( nodesList ) );
+        }
     }
+
+    private static final ScheduledExecutorService jobs = Executors.newScheduledThreadPool( 5 );
 }
