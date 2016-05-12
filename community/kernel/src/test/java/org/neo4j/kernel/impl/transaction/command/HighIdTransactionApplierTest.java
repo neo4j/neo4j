@@ -24,6 +24,12 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.test.rule.NeoStoresRule;
 
 import static org.junit.Assert.assertEquals;
@@ -94,5 +100,40 @@ public class HighIdTransactionApplierTest
         assertEquals( "PropertyStore DynamicStringStore", 7 + 1, neoStores.getPropertyStore().getStringStore().getHighId() );
         assertEquals( "PropertyStore DynamicArrayStore", 9 + 1, neoStores.getPropertyStore().getArrayStore().getHighId() );
         assertEquals( "SchemaStore", 20 + 1, neoStores.getSchemaStore().getHighId() );
+    }
+
+    @Test
+    public void shouldTrackSecondaryUnitIdsAsWell() throws Exception
+    {
+        // GIVEN
+        NeoStores neoStores = neoStoresRule.open();
+        HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );
+
+        NodeRecord node = new NodeRecord( 5 ).initialize( true, 123, true, 456, 0 );
+        node.setSecondaryUnitId( 6 );
+        node.setRequiresSecondaryUnit( true );
+
+        RelationshipRecord relationship = new RelationshipRecord( 10 )
+                .initialize( true, 1, 2, 3, 4, 5, 6, 7, 8, true, true );
+        relationship.setSecondaryUnitId( 12 );
+        relationship.setRequiresSecondaryUnit( true );
+
+        RelationshipGroupRecord relationshipGroup = new RelationshipGroupRecord( 8 )
+                .initialize( true, 0, 1, 2, 3, 4, 5 );
+        relationshipGroup.setSecondaryUnitId( 20 );
+        relationshipGroup.setRequiresSecondaryUnit( true );
+
+        // WHEN
+        tracker.visitNodeCommand( new NodeCommand( new NodeRecord( node.getId() ), node ) );
+        tracker.visitRelationshipCommand( new RelationshipCommand(
+                new RelationshipRecord( relationship.getId() ), relationship ) );
+        tracker.visitRelationshipGroupCommand( new RelationshipGroupCommand(
+                new RelationshipGroupRecord( relationshipGroup.getId() ), relationshipGroup ) );
+        tracker.close();
+
+        // THEN
+        assertEquals( node.getSecondaryUnitId()+1, neoStores.getNodeStore().getHighId() );
+        assertEquals( relationship.getSecondaryUnitId()+1, neoStores.getRelationshipStore().getHighId() );
+        assertEquals( relationshipGroup.getSecondaryUnitId()+1, neoStores.getRelationshipGroupStore().getHighId() );
     }
 }
