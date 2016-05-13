@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.id;
+package org.neo4j.coreedge.raft.replication.id;
 
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdRange;
@@ -44,7 +44,7 @@ public class IdRangeIterator
     private final long start;
     private final int length;
 
-    public IdRangeIterator( IdRange idRange )
+    public IdRangeIterator(IdRange idRange )
     {
         this.defrag = idRange.getDefragIds();
         this.start = idRange.getRangeStart();

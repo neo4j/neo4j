@@ -49,7 +49,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
@@ -161,7 +160,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                         platformModule.monitors );
 
         TxPollingClient txPollingClient = life.add(
-                new TxPollingClient( platformModule.jobScheduler, config.get( HaSettings.pull_interval ),
+                new TxPollingClient( platformModule.jobScheduler, config.get( CoreEdgeClusterSettings.pull_interval ),
                         platformModule.dependencies.provideDependency( TransactionIdStore.class ), edgeToCoreClient,
                         applyPulledTransactions, new ConnectToRandomCoreServer( discoveryService ), NullLogProvider
                         .getInstance() ) );

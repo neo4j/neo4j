@@ -49,13 +49,11 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
-
 import static org.neo4j.concurrent.Futures.combine;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -223,7 +221,7 @@ public class Cluster
         params.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
 
         params.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
-        params.put( HaSettings.pull_interval.name(), String.valueOf( 5 ) );
+        params.put( CoreEdgeClusterSettings.pull_interval.name(), String.valueOf( 5 ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         params.put( GraphDatabaseSettings.auth_store.name(), new File(parentDir, "auth").getAbsolutePath() );
 
@@ -247,7 +245,7 @@ public class Cluster
 
         final Map<String, String> params = serverParams( "EDGE", serverId, initialHosts );
         params.put(GraphDatabaseSettings.record_format.name(), recordFormat);
-        params.put( HaSettings.pull_interval.name(), String.valueOf( 5 ) );
+        params.put( CoreEdgeClusterSettings.pull_interval.name(), String.valueOf( 5 ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         params.put( GraphDatabaseSettings.auth_store.name(), new File(parentDir, "auth").getAbsolutePath() );
         params.put( GraphDatabaseSettings.logs_directory.name(), storeDir.getAbsolutePath() );
