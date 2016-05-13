@@ -19,13 +19,13 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.junit.After;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.raft.log.RaftLog;
@@ -34,6 +34,8 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+
+import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning;
 
 @RunWith(Parameterized.class)
 public class SegmentedRaftLogContractTest extends RaftLogContractTest
@@ -79,7 +81,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 1024,
                 new DummyRaftableContentSerializer(),
-                NullLogProvider.getInstance(), cacheSize );
+                NullLogProvider.getInstance(), cacheSize, raft_log_pruning.getDefaultValue());
         life.add( newRaftLog );
         life.init();
         life.start();

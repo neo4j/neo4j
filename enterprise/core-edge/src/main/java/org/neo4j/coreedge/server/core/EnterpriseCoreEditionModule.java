@@ -526,6 +526,8 @@ public class EnterpriseCoreEditionModule
             case SEGMENTED:
             {
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
+                int metaDataCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
+                String pruningStrategyConfig = config.get( CoreEdgeClusterSettings.raft_log_pruning );
                 int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_entry_cache_size );
 
                 return life.add( new SegmentedRaftLog(
@@ -534,7 +536,8 @@ public class EnterpriseCoreEditionModule
                         rotateAtSize,
                         marshal,
                         logProvider,
-                        entryCacheSize ) );
+                        entryCacheSize,
+                        pruningStrategyConfig) );
             }
 
             case NAIVE:

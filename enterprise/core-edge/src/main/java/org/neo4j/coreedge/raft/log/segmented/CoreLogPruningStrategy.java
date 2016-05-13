@@ -19,23 +19,17 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import java.io.File;
-
-import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
-import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.NullLogProvider;
-
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning;
-
-public class ConcurrentStressIT extends org.neo4j.coreedge.raft.log.ConcurrentStressIT
+public interface CoreLogPruningStrategy
 {
-    @Override
-    public RaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
-    {
-        SegmentedRaftLog raftLog = new SegmentedRaftLog( fsa, dir, 8 * 1024 * 1024, new DummyRaftableContentSerializer(), NullLogProvider.getInstance(), 8,
-                raft_log_pruning.getDefaultValue());
-        raftLog.start();
-        return raftLog;
-    }
+    /**
+     * Returns the index to keep depending on the configuration strategy.
+     * This does not factor in the value of the safe index to prune to.
+     *
+     * It is worth noting that the returned value may be the first available value,
+     * rather than the first possible value. This signifies that no pruning is needed.
+     * @param segments
+     * @return  The lowest index the pruning configuration allows to keep. It is a value in the same range as
+     * append indexes, starting from -1 all the way to {@link Long#MAX_VALUE}.
+     */
+    long getIndexToKeep( Segments segments );
 }

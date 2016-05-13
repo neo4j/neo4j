@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import static org.neo4j.coreedge.raft.log.EntryRecord.read;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -39,6 +37,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.storageengine.api.WritableChannel;
+
+import static org.neo4j.coreedge.raft.log.EntryRecord.read;
 
 /**
  * Keeps track of a segment of the RAFT log, i.e. a consecutive set of entries.
@@ -256,5 +256,10 @@ class SegmentFile
     public SegmentHeader header()
     {
         return header;
+    }
+
+    public long size()
+    {
+        return fileSystem.getFileSize( file );
     }
 }

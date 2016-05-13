@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -39,18 +37,20 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
+
 /**
  * The segmented RAFT log is an append only log supporting the operations required to support
  * the RAFT consensus algorithm.
- *
+ * <p>
  * A RAFT log must be able to append new entries, but also truncate not yet committed entries,
  * prune out old compacted entries and skip to a later starting point.
- *
+ * <p>
  * The RAFT log consists of a sequence of individual log files, called segments, with
  * the following format:
- *
+ * <p>
  * [HEADER] [ENTRY]*
- *
+ * <p>
  * So a header with zero or more entries following it. Each segment file contains a consecutive
  * sequence of appended entries. The operations of truncating and skipping in the log is implemented
  * by switching to the next segment file, called the next version. A new segment file is also started
@@ -70,17 +70,14 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     private final LogProvider logProvider;
     private final LruCache<Long,RaftLogEntry> entryCache; // TODO: replace with ring buffer, limit based on size
     private EntryStore entryStore;
+    private final SegmentedRaftLogPruner segmentedRaftLogPruner;
 //    private TermCache termCache;
 
     private State state;
 
-    public SegmentedRaftLog(
-            FileSystemAbstraction fileSystem,
-            File directory,
-            long rotateAtSize,
-            ChannelMarshal<ReplicatedContent> contentMarshal,
-            LogProvider logProvider,
-            int entryCacheSize )
+    public SegmentedRaftLog( FileSystemAbstraction fileSystem, File directory, long rotateAtSize,
+            ChannelMarshal<ReplicatedContent> contentMarshal, LogProvider logProvider, int entryCacheSize,
+            String pruningStrategyConfig )
     {
         this.fileSystem = fileSystem;
         this.directory = directory;
@@ -91,6 +88,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         this.log = logProvider.getLog( getClass() );
         this.logProvider = logProvider;
         this.entryCache = entryCacheSize >= 1 ? new LruCache<>( "raft-log-entry-cache", entryCacheSize ) : null;
+        this.segmentedRaftLogPruner = new SegmentedRaftLogPruner( pruningStrategyConfig, logProvider);
     }
 
     @Override
@@ -157,8 +155,9 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         }
         else
         {
-            throw new IllegalStateException( format( "Non-monotonic term %d for entry %s in term %d",
-                    entry.term(), entry.toString(), state.currentTerm ) );
+            throw new IllegalStateException(
+                    format( "Non-monotonic term %d for entry %s in term %d", entry.term(), entry.toString(),
+                            state.currentTerm ) );
         }
     }
 
@@ -275,7 +274,8 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long prune( long safeIndex ) throws IOException
     {
-        SegmentFile oldestNotDisposed = state.segments.prune( safeIndex );
+        long pruneIndex = segmentedRaftLogPruner.getIndexToPruneFrom( safeIndex, state.segments );
+        SegmentFile oldestNotDisposed = state.segments.prune( pruneIndex );
         state.prevIndex = oldestNotDisposed.header().prevIndex();
         state.prevTerm = oldestNotDisposed.header().prevTerm();
         return state.prevIndex;
