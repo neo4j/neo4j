@@ -131,6 +131,12 @@ public class SunMiscUTF8Encoder implements UTF8Encoder
         try
         {
             Field value = String.class.getDeclaredField( "value" );
+            if (value.getType() != char[].class)
+            {
+                throw new AssertionError(
+                        "This encoder depends being able to access raw char[] in java.lang.String, but the class is backed by a " +
+                         value.getType().getCanonicalName());
+            }
             value.setAccessible( true );
             return lookup.unreflectGetter( value );
         }
@@ -181,7 +187,7 @@ public class SunMiscUTF8Encoder implements UTF8Encoder
         }
         catch ( Throwable e )
         {
-            //
+            //there is no offset in String implementation
             return null;
         }
     }
