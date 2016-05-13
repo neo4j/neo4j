@@ -33,6 +33,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
+  protected def manyDbHits(count: Int): Int = count
 
   type EntityAccessor = inner.EntityAccessor
 
@@ -191,17 +192,16 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def isGraphKernelResultValue(v: Any): Boolean =
     inner.isGraphKernelResultValue(v)
+
+  override def detachDelete(node: Node): Int = manyDbHits(inner.detachDelete(node))
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
-  protected def manyDbHits(count: Int): Int = count
 
   override def delete(obj: T): Unit = singleDbHit(inner.delete(obj))
-
-  override def detachDelete(obj: T) = manyDbHits(inner.detachDelete(obj))
 
   override def setProperty(obj: Long, propertyKey: Int, value: Any): Unit =
     singleDbHit(inner.setProperty(obj, propertyKey, value))

@@ -298,14 +298,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def detachDelete(obj: Node): Int = {
-      try {
-        transactionalContext.statement.dataWriteOperations().nodeDetachDelete(obj.getId)
-      } catch {
-        case _: exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
-      }
-    }
-
     override def propertyKeyIds(id: Long): Iterator[Int] =
       JavaConversionSupport.asScala(transactionalContext.statement.readOperations().nodeGetPropertyKeys(id))
 
@@ -366,8 +358,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
-
-    override def detachDelete(obj: Relationship): Int = ???
 
     override def propertyKeyIds(id: Long): Iterator[Int] =
       asScala(transactionalContext.statement.readOperations().relationshipGetPropertyKeys(id))
@@ -617,6 +607,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         if (filters.isEmpty) nextNode
         else if (filters.forall(filter => filter test nextNode)) nextNode
         else null
+    }
+  }
+
+  override def detachDelete(node: Node): Int = {
+    try {
+      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
+    } catch {
+      case _: exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
     }
   }
 }

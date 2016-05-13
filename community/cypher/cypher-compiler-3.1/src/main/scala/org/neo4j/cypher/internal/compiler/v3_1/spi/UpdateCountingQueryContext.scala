@@ -63,10 +63,10 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   }
 
   override def nodeOps: Operations[Node] =
-    new CountingOps[Node](inner.nodeOps, nodesDeleted, Some(relationshipsDeleted))
+    new CountingOps[Node](inner.nodeOps, nodesDeleted)
 
   override def relationshipOps: Operations[Relationship] =
-    new CountingOps[Relationship](inner.relationshipOps, relationshipsDeleted, None)
+    new CountingOps[Relationship](inner.relationshipOps, relationshipsDeleted)
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = {
     val added = inner.setLabelsOnNode(node, labelIds)
@@ -136,6 +136,13 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = super.nodeGetDegree(node, dir)
 
+  override def detachDelete(node: Node): Int = {
+    nodesDeleted.increase()
+    val count = inner.detachDelete(node)
+    relationshipsDeleted.increase(count)
+    count
+  }
+
   class Counter {
     val counter: AtomicInteger = new AtomicInteger()
 
@@ -146,20 +153,12 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     }
   }
 
-  private class CountingOps[T <: PropertyContainer](inner: Operations[T],
-                                                    deletes: Counter, detachCounter: Option[Counter])
+  private class CountingOps[T <: PropertyContainer](inner: Operations[T], deletes: Counter)
     extends DelegatingOperations[T](inner) {
 
     override def delete(obj: T) {
       deletes.increase()
       inner.delete(obj)
-    }
-
-    override def detachDelete(obj: T): Int = {
-      deletes.increase()
-      val count = inner.detachDelete(obj)
-      detachCounter.foreach(_.increase(count))
-      count
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int) {
