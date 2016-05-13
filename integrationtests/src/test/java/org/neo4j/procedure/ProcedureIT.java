@@ -644,7 +644,6 @@ public class ProcedureIT
         return file.toURI().toURL().toString();
     }
 
-
     @Test
     public void shouldReturnNodeListTypedAsNodeList()
     {
