@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_0.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{CRS, CartesianPoint, ExecutionContext, GeographicPoint}
-import org.neo4j.cypher.internal.frontend.v3_0.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, SyntaxException}
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
 
@@ -33,14 +33,19 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
       val map = mapCreator(state.query)
       map.getOrElse("crs", CRS.WGS84.name) match {
         case CRS.Cartesian.name =>
+          if (!map.contains("x") || !map.contains("y")) throw new SyntaxException("A cartesian point must contain 'x' and 'y' coordinates")
           val x = map("x").asInstanceOf[Double]
           val y = map("y").asInstanceOf[Double]
           CartesianPoint(x, y)
 
         case CRS.WGS84.name =>
+          if (!map.contains("longitude") || !map.contains("latitude")) throw new SyntaxException("A cartesian point must contain 'x' and 'y' coordinates")
           val longitude = map("longitude").asInstanceOf[Double]
           val latitude = map("latitude").asInstanceOf[Double]
           GeographicPoint(longitude, latitude, CRS.WGS84)
+
+        case unknown => throw new SyntaxException(s"$unknown is not a supported coordinate system, supported values " +
+                                                    s"are ${CRS.Cartesian.name} and ${CRS.WGS84.name}")
       }
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }

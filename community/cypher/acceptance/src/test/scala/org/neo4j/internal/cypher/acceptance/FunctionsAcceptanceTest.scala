@@ -412,6 +412,25 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5))))
   }
 
+  test("should fail properly if missing cartesian coordinates") {
+    a [SyntaxException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
+                                                                 "params" -> Map("y" -> 1.0, "crs" -> "cartesian")))
+  }
+
+  test("should fail properly if missing geographic coordinates") {
+    a [SyntaxException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
+                                                                 "params" -> Map("y" -> 1.0, "crs" -> "WGS-84")))
+  }
+
+  test("should fail properly if unknown coordinate system") {
+    a [SyntaxException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
+                                                                 "params" -> Map("y" -> 1.0, "crs" -> "WGS-1337")))
+  }
+
+  test("should fail properly if missing CRS") {
+    a [SyntaxException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5}) as point"))
+  }
+
   test("point function should work with previous map") {
     val result = executeWithAllPlanners("WITH {latitude: 12.78, longitude: 56.7} as data RETURN point(data) as point")
     result should useProjectionWith("Point")
