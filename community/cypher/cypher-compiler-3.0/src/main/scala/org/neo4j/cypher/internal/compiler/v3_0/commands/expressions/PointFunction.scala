@@ -34,14 +34,14 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
       map.getOrElse("crs", CRS.WGS84.name) match {
         case CRS.Cartesian.name =>
           if (!map.contains("x") || !map.contains("y")) throw new SyntaxException("A cartesian point must contain 'x' and 'y' coordinates")
-          val x = map("x").asInstanceOf[Double]
-          val y = map("y").asInstanceOf[Double]
+          val x = safeToDouble(map("x"))
+          val y = safeToDouble(map("y"))
           CartesianPoint(x, y)
 
         case CRS.WGS84.name =>
           if (!map.contains("longitude") || !map.contains("latitude")) throw new SyntaxException("A cartesian point must contain 'x' and 'y' coordinates")
-          val longitude = map("longitude").asInstanceOf[Double]
-          val latitude = map("latitude").asInstanceOf[Double]
+          val longitude = safeToDouble(map("longitude"))
+          val latitude = safeToDouble(map("latitude"))
           GeographicPoint(longitude, latitude, CRS.WGS84)
 
         case unknown => throw new SyntaxException(s"$unknown is not a supported coordinate system, supported values " +
@@ -59,4 +59,9 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
   override def symbolTableDependencies = data.symbolTableDependencies
 
   override def toString = "Point(" + data + ")"
+
+  private def safeToDouble(value: Any) = value match {
+    case n: Number => n.doubleValue()
+    case other => throw new SyntaxException(other.getClass.getSimpleName + " is not a valid coordinate type.")
+  }
 }

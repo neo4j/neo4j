@@ -412,6 +412,12 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5))))
   }
 
+  test("point function should work with integer arguments") {
+    val result = executeWithAllPlanners("RETURN point({x: 2, y: 4, crs: 'cartesian'}) as point")
+    result should useProjectionWith("Point")
+    result.toList should equal(List(Map("point" -> CartesianPoint(2, 4))))
+  }
+
   test("should fail properly if missing cartesian coordinates") {
     a [SyntaxException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
                                                                  "params" -> Map("y" -> 1.0, "crs" -> "cartesian")))
