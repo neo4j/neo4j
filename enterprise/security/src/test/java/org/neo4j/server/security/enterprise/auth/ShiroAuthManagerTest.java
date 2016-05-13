@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,12 +52,20 @@ public class ShiroAuthManagerTest
     private ShiroAuthManager manager;
 
     @Before
-    public void setup()
+    public void setUp() throws Throwable
     {
         users = new InMemoryUserRepository();
         authStrategy = mock( AuthenticationStrategy.class );
         passwordPolicy = mock( PasswordPolicy.class );
         manager = new ShiroAuthManager( users, passwordPolicy, authStrategy, true );
+        manager.init();
+    }
+
+    @After
+    public void tearDown() throws Throwable
+    {
+        manager.stop();
+        manager.shutdown();
     }
 
     @Test
@@ -158,6 +167,8 @@ public class ShiroAuthManagerTest
     @Test
     public void shouldDeleteUser() throws Throwable
     {
+        System.out.println("shouldDeleteUser");
+
         // Given
         final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
         users.create( user );
@@ -333,6 +344,9 @@ public class ShiroAuthManagerTest
     @Test
     public void shouldThrowWhenAuthIsDisabled() throws Throwable
     {
+        // Restart with auth disabled
+        manager.stop();
+        manager.shutdown();
         manager = new ShiroAuthManager( users, passwordPolicy, authStrategy, false );
         manager.start();
 

@@ -43,7 +43,7 @@ public class BasicAuthManager implements AuthManager, UserManager
     public static final String DEFAULT_GROUP = "neo4j";
 
     protected final AuthenticationStrategy authStrategy;
-    private final UserRepository users;
+    protected final UserRepository users;
     protected final PasswordPolicy passwordPolicy;
     protected final boolean authEnabled;
 

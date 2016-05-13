@@ -62,6 +62,8 @@ public class FileUserRealm extends AuthorizingRealm
 
     public FileUserRealm( UserRepository userRepository )
     {
+        super();
+
         this.userRepository = userRepository;
         setCredentialsMatcher( credentialsMatcher );
         accountBuilder = new PredefinedGroupsAccountBuilder();

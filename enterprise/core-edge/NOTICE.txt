@@ -25,9 +25,16 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Shiro :: Core
+  Apache Shiro :: Support :: EHCache
+  Commons BeanUtils
+  Ehcache Core
   hazelcast-all
   Lucene Core
   Lucene Memory
   Netty
   Netty/All-in-One
+
+MIT License
+  SLF4J API Module
 

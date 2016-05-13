@@ -22,6 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.ExpiredCredentialsException;
 import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.mgt.DefaultSecurityManager;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.subject.Subject;
@@ -43,6 +44,7 @@ import org.neo4j.server.security.auth.UserRepository;
 public class ShiroAuthManager extends BasicAuthManager
 {
     private final SecurityManager securityManager;
+    private final EhCacheManager cacheManager;
     private final FileUserRealm realm;
 
     public ShiroAuthManager( UserRepository userRepository, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy, boolean authEnabled )
@@ -50,7 +52,9 @@ public class ShiroAuthManager extends BasicAuthManager
         super( userRepository, passwordPolicy, authStrategy, authEnabled );
 
         realm = new FileUserRealm( userRepository );
-        // TODO: Do not forget realm.setCacheManager(...) before going into production...
+        // TODO: Maybe MemoryConstrainedCacheManager is good enough if we do not need timeToLiveSeconds? It would be one less dependency.
+        //       Or we could try to reuse Hazelcast which is already a dependency, but we would need to write some glue code.
+        cacheManager = new EhCacheManager();
         securityManager = new DefaultSecurityManager( realm );
     }
 
@@ -65,12 +69,33 @@ public class ShiroAuthManager extends BasicAuthManager
     }
 
     @Override
+    public void init() throws Throwable
+    {
+        super.init();
+
+        cacheManager.init();
+        realm.setCacheManager( cacheManager );
+        realm.init();
+    }
+
+    @Override
     public void start() throws Throwable
     {
+        users.start();
+
         if ( authEnabled && realm.numberOfUsers() == 0 )
         {
             realm.newUser( "neo4j", DEFAULT_GROUP, "neo4j", true );
         }
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        super.shutdown();
+
+        realm.setCacheManager( null );
+        cacheManager.destroy();
     }
 
     @Override
