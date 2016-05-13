@@ -51,4 +51,6 @@ public class UdcConstants
     public static final String UDC_PROPERTY_PREFIX = "unsupported.dbms.udc";
     public static final String OS_PROPERTY_PREFIX = "os";
     public static final String UNKNOWN_DIST = "unknown";
+
+    public static final String STORE_FILE_SIZE = "storefilesize";
 }
