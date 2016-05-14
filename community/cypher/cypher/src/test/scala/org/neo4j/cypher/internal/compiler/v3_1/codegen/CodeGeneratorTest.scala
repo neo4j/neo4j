@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen
 
-import java.time.Clock
-
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -48,7 +46,7 @@ import scala.collection.JavaConverters
 
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val generator = new CodeGenerator(GeneratedQueryStructure, CodeGenConfiguration(mode = SourceCodeMode))
+  private val generator = new CodeGenerator(GeneratedQueryStructure, CodeGenConfiguration(mode = ByteCodeMode))
 
   test("all nodes scan") { // MATCH a RETURN a
     //given
@@ -69,16 +67,6 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> gNode),
       Map("a" -> hNode),
       Map("a" -> iNode)))
-  }
-
-  test("all nodes scan2") { // MATCH a RETURN a
-  //given
-  val plan = ProduceResult(List("a"), AllNodesScan(IdName("a"), Set.empty)(solved))
-
-    //when
-    val compiled = compileAndExecute(plan)
-
-
   }
 
   test("label scan") {// MATCH (a:T1) RETURN a

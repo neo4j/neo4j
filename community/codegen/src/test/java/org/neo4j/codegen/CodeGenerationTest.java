@@ -98,7 +98,7 @@ public class CodeGenerationTest
     {
         try
         {
-            generator = CodeGenerator.generateCode( strategy, SourceCode.PRINT_SOURCE );
+            generator = CodeGenerator.generateCode( strategy );
         }
         catch ( CodeGenerationNotSupportedException e )
         {
@@ -167,51 +167,6 @@ public class CodeGenerationTest
 
         // then
         assertTrue( (Boolean) constructorCalled );
-    }
-
-    @Test
-    public void shouldGenerateCallToDefaultSuperConstructor() throws Throwable
-    {
-        // given
-        ClassHandle handle;
-
-        try ( ClassGenerator simple = generateClass( NamedBase.class, "SimpleClass" ) )
-        {
-            simple.field( String.class, "foo" );
-            simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( String.class, "foo" ) )
-                    .build() );
-            handle = simple.handle();
-        }
-
-        // when
-        Object instance = constructor( handle.loadClass(), String.class, String.class ).invoke( "Pontus", "Tobias" );
-        Object constructorCalled = instanceMethod( instance, "defaultConstructorCalled" ).invoke();
-
-        // then
-        assertTrue( (Boolean) constructorCalled );
-    }
-
-    @Test
-    public void shouldNotGenerateCallToDefaultSuperConstructorIfSuperIsCalled() throws Throwable
-    {
-        // given
-        ClassHandle handle;
-        try ( ClassGenerator simple = generateClass( NamedBase.class, "SimpleClass" ) )
-        {
-            simple.field( String.class, "foo" );
-            simple.generate( MethodTemplate.constructor( param( String.class, "name" ), param( String.class, "foo" ) )
-                    .invokeSuper( new ExpressionTemplate[]{load( "name" )},
-                            new TypeReference[]{typeReference( String.class )} )
-                    .build() );
-            handle = simple.handle();
-        }
-
-        // when
-        Object instance = constructor( handle.loadClass(), String.class, String.class ).invoke( "Pontus", "Tobias" );
-        Object constructorCalled = instanceMethod( instance, "defaultConstructorCalled" ).invoke();
-
-        // then
-        assertFalse( (Boolean) constructorCalled );
     }
 
     @Test
@@ -1645,10 +1600,10 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             FieldReference value = simple.field( clazz, "value" );
-            try ( CodeBlock ctor = simple.generateConstructor( param( clazz, "value" ) ) )
-            {
-                ctor.put( ctor.self(), value, ctor.load( "value" ) );
-            }
+            simple.generate(MethodTemplate.constructor(  param( clazz, "value" ) )
+                    .invokeSuper()
+                    .put( self(), value.type(), value.name(), load( "value" ) )
+                    .build());
             simple.generate( MethodTemplate.method( clazz, "value" )
                     .returns( ExpressionTemplate.get( self(), clazz, "value" ) )
                     .build() );

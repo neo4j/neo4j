@@ -28,13 +28,11 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.function.Consumer;
 
-import org.neo4j.codegen.BaseExpressionVisitor;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
 import org.neo4j.codegen.MethodDeclaration;
 import org.neo4j.codegen.MethodEmitter;
-import org.neo4j.codegen.MethodReference;
 import org.neo4j.codegen.Parameter;
 import org.neo4j.codegen.TypeReference;
 
@@ -50,7 +48,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     private final MethodVisitor methodVisitor;
     private final MethodDeclaration declaration;
     private final ByteCodeExpressionVisitor expressionVisitor;
-    private boolean calledSuper = false;
     private final TypeReference base;
     private Deque<Block> stateStack = new LinkedList<>();
 
@@ -77,23 +74,18 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void done()
     {
-        callSuperIfNecessary();
-
         methodVisitor.visitEnd();
     }
 
     @Override
     public void expression( Expression expression )
     {
-        callSuperIfNecessary( expression );
         expression.accept( expressionVisitor );
     }
 
     @Override
     public void put( Expression target, FieldReference field, Expression value )
     {
-        callSuperIfNecessary();
-
         target.accept( expressionVisitor );
         value.accept( expressionVisitor );
         methodVisitor
@@ -103,16 +95,12 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void returns()
     {
-        callSuperIfNecessary();
-
         methodVisitor.visitInsn( RETURN );
     }
 
     @Override
     public void returns( Expression value )
     {
-        callSuperIfNecessary();
-
         value.accept( expressionVisitor );
         switch ( declaration.returnType().simpleName() )
         {
@@ -140,7 +128,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void assign( LocalVariable variable, Expression value )
     {
-        callSuperIfNecessary();
         value.accept( expressionVisitor );
         switch ( variable.type().simpleName() )
         {
@@ -168,7 +155,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void beginWhile( Expression test )
     {
-        callSuperIfNecessary();
         Label l0 = new Label();
         methodVisitor.visitLabel( l0 );
         test.accept( expressionVisitor );
@@ -181,7 +167,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void beginIf( Expression test )
     {
-        callSuperIfNecessary();
         test.accept( expressionVisitor );
 
         beginConditional( IFEQ );
@@ -190,7 +175,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void beginIfNot( Expression test )
     {
-        callSuperIfNecessary();
         test.accept( expressionVisitor );
         beginConditional( IFNE );
     }
@@ -198,7 +182,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void beginIfNull( Expression test )
     {
-        callSuperIfNecessary();
         test.accept( expressionVisitor );
         beginConditional( IFNONNULL );
     }
@@ -206,7 +189,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void beginIfNonNull( Expression test )
     {
-        callSuperIfNecessary();
         test.accept( expressionVisitor );
         beginConditional( IFNULL );
     }
@@ -214,8 +196,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void endBlock()
     {
-        callSuperIfNecessary();
-
         if ( stateStack.isEmpty() )
         {
             throw new IllegalStateException( "Unbalanced blocks" );
@@ -226,8 +206,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block )
     {
-        callSuperIfNecessary();
-
         Label l0 = new Label();
         Label l1 = new Label();
         Label l2 = new Label();
@@ -249,7 +227,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void throwException( Expression exception )
     {
-        callSuperIfNecessary();
         exception.accept( expressionVisitor );
         methodVisitor.visitInsn( ATHROW );
     }
@@ -257,8 +234,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     @Override
     public void declare( LocalVariable local )
     {
-        callSuperIfNecessary();
-
         //declare is a noop bytecode wise
     }
 
@@ -267,68 +242,6 @@ class MethodByteCodeEmitter implements MethodEmitter, Opcodes
     {
         //these are equivalent when it comes to bytecode
         assign( local, value );
-    }
-
-    /*
-     * Make sure we call default super constructor
-     */
-    private void callSuperIfNecessary()
-    {
-        if ( needsToCallSuperConstructor() )
-        {
-            callSuper();
-        }
-    }
-
-    /*
-     * Checks if expression contains call to super constructor
-     * otherwise generates call to default super constructor.
-     *
-     */
-    private void callSuperIfNecessary( Expression expression )
-    {
-        if ( !needsToCallSuperConstructor() )
-        {
-            return;
-        }
-
-        expression.accept( new BaseExpressionVisitor()
-        {
-            @Override
-            public void invoke( Expression target, MethodReference method, Expression[] arguments )
-            {
-                calledSuper = method.isConstructor() && loadsSuper( target );
-            }
-        } );
-
-        callSuperIfNecessary();
-    }
-
-    private void callSuper()
-    {
-        methodVisitor.visitVarInsn( ALOAD, 0 );
-        methodVisitor.visitMethodInsn( INVOKESPECIAL, byteCodeName( base ), "<init>", "()V", false );
-        calledSuper = true;
-    }
-
-    private boolean needsToCallSuperConstructor()
-    {
-        return declaration.isConstructor() && !calledSuper;
-    }
-
-    private boolean loadsSuper( Expression expression )
-    {
-        final boolean[] loadsSuper = new boolean[]{false};
-        expression.accept( new BaseExpressionVisitor()
-        {
-            @Override
-            public void loadThis( String sourceName )
-            {
-                loadsSuper[0] = "super".equals( sourceName );
-            }
-        } );
-
-        return loadsSuper[0];
     }
 
     private void beginConditional(int op)

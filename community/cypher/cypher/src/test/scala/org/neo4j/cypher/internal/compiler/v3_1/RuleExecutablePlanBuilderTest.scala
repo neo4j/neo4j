@@ -88,7 +88,6 @@ class RuleExecutablePlanBuilderTest
     override def rewrite(rewriter: Rewriter): PreparedQuerySemantics = this
   }
 
-
   test("should not accept returning the input execution plan") {
     val q = Query.empty
     val planContext = mock[PlanContext]

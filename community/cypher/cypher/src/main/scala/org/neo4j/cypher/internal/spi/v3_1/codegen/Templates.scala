@@ -112,6 +112,7 @@ object Templates {
     param[QueryExecutionTracer]("tracer"),
 
     param[util.Map[String, Object]]("params")).
+    invokeSuper().
     put(self(), typeRef[TaskCloser], "closer", load("closer")).
     put(self(), typeRef[ReadOperations], "ro",
         cast(classOf[ReadOperations], invoke(
