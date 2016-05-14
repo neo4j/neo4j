@@ -37,6 +37,9 @@ import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class CypherParserTest extends CypherFunSuite {
   val parser = new CypherParser
+
+  val f = PathExtractorExpression(Seq.empty)
+
   test("shouldParseEasiestPossibleQuery") {
     expectQuery(
       "start s = NODE(1) return s",
@@ -1307,7 +1310,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a=node(0), b=node(1) where a-->(b) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq(), SemanticDirection.OUTGOING, Map.empty))))).
+        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq(), SemanticDirection.OUTGOING, Map.empty)), True(), f))).
         returns (ReturnItem(Variable("a"), "a"))
     )
 
@@ -1315,7 +1318,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a=node(0), b=node(1) where exists((a)-->(b)) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED43", Seq(), SemanticDirection.OUTGOING, Map.empty))))).
+        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED43", Seq(), SemanticDirection.OUTGOING, Map.empty)), True(), f))).
         returns (ReturnItem(Variable("a"), "a"))
     )
   }
@@ -1325,7 +1328,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a=node(0), b=node(1) return exists((a)-->(b)) AS result""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        returns(ReturnItem(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED44", Seq(), SemanticDirection.OUTGOING, Map.empty)))), "result"))
+        returns(ReturnItem(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED44", Seq(), SemanticDirection.OUTGOING, Map.empty)), True(), f)), "result"))
     )
   }
 
@@ -1334,7 +1337,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a=node(0), b=node(1) where not(a-->()) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(Not(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED41"), "  UNNAMED38", Seq(), SemanticDirection.OUTGOING, Map.empty)))))).
+        where(Not(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED41"), "  UNNAMED38", Seq(), SemanticDirection.OUTGOING, Map.empty)), True(), f)))).
         returns (ReturnItem(Variable("a"), "a"))
     )
   }
@@ -1570,7 +1573,7 @@ class CypherParserTest extends CypherFunSuite {
       """start a=node(0), b=node(1) where a-[:KNOWS|:BLOCKS]-b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq("KNOWS","BLOCKS"), SemanticDirection.BOTH, Map.empty))))).
+        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq("KNOWS","BLOCKS"), SemanticDirection.BOTH, Map.empty)), True(), f))).
         returns (ReturnItem(Variable("a"), "a"))
     )
   }
@@ -2233,7 +2236,7 @@ class CypherParserTest extends CypherFunSuite {
       "start a  = node(1) return a-->()",
       Query.
         start(NodeById("a", 1)).
-        returns(ReturnItem(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED30"), "  UNNAMED27", Seq(), SemanticDirection.OUTGOING, Map.empty))), "a-->()"))
+        returns(ReturnItem(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED30"), "  UNNAMED27", Seq(), SemanticDirection.OUTGOING, Map.empty)), True(), f), "a-->()"))
     )
   }
 
@@ -2267,7 +2270,7 @@ class CypherParserTest extends CypherFunSuite {
   test("not with pattern") {
     def parsedQueryWithOffsets(offset1: Int, offset2: Int) = Query.
       matches(SingleNode("admin")).
-      where(Not(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("admin"), SingleNode("  UNNAMED" + offset2), "  UNNAMED" + offset1, Seq("MEMBER_OF"), SemanticDirection.OUTGOING, Map.empty)))))).
+      where(Not(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("admin"), SingleNode("  UNNAMED" + offset2), "  UNNAMED" + offset1, Seq("MEMBER_OF"), SemanticDirection.OUTGOING, Map.empty)), True(), f)))).
       returns(ReturnItem(Variable("admin"), "admin"))
 
     expectQuery(
@@ -2931,7 +2934,7 @@ class CypherParserTest extends CypherFunSuite {
         matches(SingleNode("a")).
         returns(
           ReturnItem(GenericCase(
-            Seq((NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED41"), "  UNNAMED30", Seq("LOVES"), SemanticDirection.OUTGOING, Map.empty)))), Literal(1))),
+            Seq((NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED41"), "  UNNAMED30", Seq("LOVES"), SemanticDirection.OUTGOING, Map.empty)), True(), f)), Literal(1))),
             Some(Literal(0))
           ), "result")
         )

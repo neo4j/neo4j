@@ -26,14 +26,21 @@ import org.neo4j.cypher.internal.frontend.v3_1.{IdentityMap, Rewriter, topDown}
 object PatternExpressionPatternElementNamer {
 
   def apply(expr: PatternExpression): (PatternExpression, Map[PatternElement, Variable]) = {
-    val unnamedMap = nameUnnamedPatternElements(expr)
+    val unnamedMap = nameUnnamedPatternElements(expr.pattern)
     val namedPattern = expr.pattern.endoRewrite(namePatternElementsFromMap(unnamedMap))
     val namedExpr = expr.copy(pattern = namedPattern)
     (namedExpr, unnamedMap)
   }
 
-  private def nameUnnamedPatternElements(expr: PatternExpression): Map[PatternElement, Variable] = {
-    val unnamedElements = findPatternElements(expr.pattern).filter(_.variable.isEmpty)
+  def apply(expr: PatternComprehension): (PatternComprehension, Map[PatternElement, Variable]) = {
+    val unnamedMap = nameUnnamedPatternElements(expr.pattern)
+    val namedPattern = expr.pattern.endoRewrite(namePatternElementsFromMap(unnamedMap))
+    val namedExpr = expr.copy(pattern = namedPattern)(expr.position)
+    (namedExpr, unnamedMap)
+  }
+
+  private def nameUnnamedPatternElements(pattern: RelationshipsPattern): Map[PatternElement, Variable] = {
+    val unnamedElements = findPatternElements(pattern).filter(_.variable.isEmpty)
     IdentityMap(unnamedElements.map {
       case elem: NodePattern =>
         elem -> Variable(UnNamedNameGenerator.name(elem.position.bumped()))(elem.position)

@@ -206,6 +206,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
 }
 
 sealed abstract class PatternElement extends ASTNode with ASTParticle {
+  def allVariables: Set[Variable]
   def variable: Option[Variable]
   def declareVariables(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
@@ -217,6 +218,8 @@ case class RelationshipChain(element: PatternElement, relationship: Relationship
   extends PatternElement {
 
   def variable: Option[Variable] = relationship.variable
+
+  override def allVariables: Set[Variable] = element.allVariables ++ relationship.variable ++ rightNode.variable
 
   def declareVariables(ctx: SemanticContext): SemanticCheck =
     element.declareVariables(ctx) chain
@@ -248,12 +251,14 @@ class InvalidNodePattern(val id: Variable)(position: InputPosition) extends Node
   }
 
   override def hashCode(): Int = 31 * id.hashCode()
+
+  override def allVariables: Set[Variable] = Set.empty
 }
 
-case class NodePattern(
-  variable: Option[Variable],
-  labels: Seq[LabelName],
-  properties: Option[Expression])(val position: InputPosition) extends PatternElement with SemanticChecking {
+case class NodePattern(variable: Option[Variable],
+                       labels: Seq[LabelName],
+                       properties: Option[Expression])(val position: InputPosition)
+  extends PatternElement with SemanticChecking {
 
   def declareVariables(ctx: SemanticContext): SemanticCheck =
     variable.fold(SemanticCheckResult.success) {
@@ -280,6 +285,8 @@ case class NodePattern(
     case _                                           =>
       properties.semanticCheck(Expression.SemanticContext.Simple) chain properties.expectType(CTMap.covariant)
   }
+
+  override def allVariables: Set[Variable] = variable.toSet
 }
 
 
