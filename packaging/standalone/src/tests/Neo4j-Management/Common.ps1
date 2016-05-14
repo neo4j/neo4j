@@ -17,6 +17,8 @@ Function global:New-MockJavaHome() {
   "This is a mock java.exe" | Out-File "$javaHome\bin\java.exe"
   "This is a mock java.exe" | Out-File "$javaHome\bin\server\jvm.dll"
 
+  $global:mockJavaExe = "$javaHome\bin\java.exe"
+
   return $javaHome
 }
 

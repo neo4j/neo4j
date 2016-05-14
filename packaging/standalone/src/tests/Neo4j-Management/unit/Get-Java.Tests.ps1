@@ -18,6 +18,7 @@ InModuleScope Neo4j-Management {
     Mock Get-ItemProperty { $null } -ParameterFilter {
       $Path -like 'Registry::*\JavaSoft\Java Runtime Environment*'
     }
+    Mock Confirm-JavaVersion { $true }
 
     # Java Detection Tests
     Context "Valid Java install in JAVA_HOME environment variable" {
@@ -29,6 +30,18 @@ InModuleScope Neo4j-Management {
 
       It "should have empty shell arguments" {
         $result.args | Should BeNullOrEmpty
+      }
+    }
+
+    Context "Legacy Java install in JAVA_HOME environment variable" {
+      Mock Confirm-JavaVersion -Verifiable { $false }
+      
+      It "should throw if java is not supported" {
+        { Get-Java -ErrorAction Stop } | Should Throw
+      }
+
+      It "calls verified mocks" {
+        Assert-VerifiableMocks
       }
     }
 
