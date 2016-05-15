@@ -37,6 +37,9 @@ import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 
 class CypherParserTest extends CypherFunSuite {
   val parser = new CypherParser
+
+  val f = PathExtractorExpression(Seq.empty)
+
   test("shouldParseEasiestPossibleQuery") {
     expectQuery(
       "start s = NODE(1) return s",
@@ -1301,40 +1304,43 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-
   test("supportsPatternExistsInTheWhereClause") {
+    val relatedTo1 = RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq(), SemanticDirection.OUTGOING, Map.empty)
     expectQuery(
       """start a=node(0), b=node(1) where a-->(b) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq(), SemanticDirection.OUTGOING, Map.empty))))).
+        where(NonEmpty(PathExpression(Seq(relatedTo1), True(), PathExtractorExpression(Seq(relatedTo1))))).
         returns (ReturnItem(Variable("a"), "a"))
     )
 
+    val relatedTo2 = RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED43", Seq(), SemanticDirection.OUTGOING, Map.empty)
     expectQuery(
       """start a=node(0), b=node(1) where exists((a)-->(b)) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED43", Seq(), SemanticDirection.OUTGOING, Map.empty))))).
+        where(NonEmpty(PathExpression(Seq(relatedTo2), True(), PathExtractorExpression(Seq(relatedTo2))))).
         returns (ReturnItem(Variable("a"), "a"))
     )
   }
 
   test("supportsPatternExistsInTheReturnClause") {
+    val relatedTo = RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED44", Seq(), SemanticDirection.OUTGOING, Map.empty)
     expectQuery(
       """start a=node(0), b=node(1) return exists((a)-->(b)) AS result""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        returns(ReturnItem(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED44", Seq(), SemanticDirection.OUTGOING, Map.empty)))), "result"))
+        returns(ReturnItem(NonEmpty(PathExpression(Seq(relatedTo), True(), PathExtractorExpression(Seq(relatedTo)))), "result"))
     )
   }
 
   test("supportsNotHasRelationshipInTheWhereClause") {
+    val relatedTo = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED41"), "  UNNAMED38", Seq(), SemanticDirection.OUTGOING, Map.empty)
     expectQuery(
       """start a=node(0), b=node(1) where not(a-->()) return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(Not(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED41"), "  UNNAMED38", Seq(), SemanticDirection.OUTGOING, Map.empty)))))).
+        where(Not(NonEmpty(PathExpression(Seq(relatedTo), True(), PathExtractorExpression(Seq(relatedTo)))))).
         returns (ReturnItem(Variable("a"), "a"))
     )
   }
@@ -1566,11 +1572,12 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("multiple relationship type in relationship predicate") {
+    val relatedTo = RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq("KNOWS", "BLOCKS"), SemanticDirection.BOTH, Map.empty)
     expectQuery(
       """start a=node(0), b=node(1) where a-[:KNOWS|:BLOCKS]-b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("b"), "  UNNAMED34", Seq("KNOWS","BLOCKS"), SemanticDirection.BOTH, Map.empty))))).
+        where(NonEmpty(PathExpression(Seq(relatedTo), True(), PathExtractorExpression(Seq(relatedTo))))).
         returns (ReturnItem(Variable("a"), "a"))
     )
   }
@@ -2229,11 +2236,12 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("return paths") {
+    val relatedTo = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED30"), "  UNNAMED27", Seq(), SemanticDirection.OUTGOING, Map.empty)
     expectQuery(
       "start a  = node(1) return a-->()",
       Query.
         start(NodeById("a", 1)).
-        returns(ReturnItem(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED30"), "  UNNAMED27", Seq(), SemanticDirection.OUTGOING, Map.empty))), "a-->()"))
+        returns(ReturnItem(PathExpression(Seq(relatedTo), True(), PathExtractorExpression(Seq(relatedTo))), "a-->()"))
     )
   }
 
@@ -2265,10 +2273,13 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("not with pattern") {
-    def parsedQueryWithOffsets(offset1: Int, offset2: Int) = Query.
-      matches(SingleNode("admin")).
-      where(Not(NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("admin"), SingleNode("  UNNAMED" + offset2), "  UNNAMED" + offset1, Seq("MEMBER_OF"), SemanticDirection.OUTGOING, Map.empty)))))).
-      returns(ReturnItem(Variable("admin"), "admin"))
+    def parsedQueryWithOffsets(offset1: Int, offset2: Int) = {
+      val relatedTo = RelatedTo(SingleNode("admin"), SingleNode("  UNNAMED" + offset2), "  UNNAMED" + offset1, Seq("MEMBER_OF"), SemanticDirection.OUTGOING, Map.empty)
+      Query.
+        matches(SingleNode("admin")).
+        where(Not(NonEmpty(PathExpression(Seq(relatedTo), True(), PathExtractorExpression(Seq(relatedTo)))))).
+        returns(ReturnItem(Variable("admin"), "admin"))
+    }
 
     expectQuery(
       "MATCH (admin) WHERE NOT (admin)-[:MEMBER_OF]->() RETURN admin",
@@ -2925,13 +2936,14 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("genericCaseCoercesInWhen") {
+    val relatedTo = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED41"), "  UNNAMED30", Seq("LOVES"), SemanticDirection.OUTGOING, Map.empty)
     expectQuery(
       """MATCH (a) RETURN CASE WHEN (a)-[:LOVES]->() THEN 1 ELSE 0 END AS result""".stripMargin,
       Query.
         matches(SingleNode("a")).
         returns(
           ReturnItem(GenericCase(
-            Seq((NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED41"), "  UNNAMED30", Seq("LOVES"), SemanticDirection.OUTGOING, Map.empty)))), Literal(1))),
+            Seq((NonEmpty(PathExpression(Seq(relatedTo), True(), PathExtractorExpression(Seq(relatedTo)))), Literal(1))),
             Some(Literal(0))
           ), "result")
         )

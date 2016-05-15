@@ -59,6 +59,24 @@ trait Literals extends Parser
     ) ~~>> (ast.MapExpression(_))
   }
 
+  def LiteralEntry: Rule1[ast.MapProjectionElement] = rule("literal entry")(
+    PropertyKeyName ~~ ch(':') ~~ Expression ~~>> (ast.LiteralEntry(_, _)))
+
+  def PropertySelector: Rule1[ast.MapProjectionElement] = rule("property selector")(
+    ch('.') ~~ Variable ~~>> (ast.PropertySelector(_)))
+
+  def VariableSelector: Rule1[ast.MapProjectionElement] = rule("variable selector")(
+    Variable ~~>> (ast.VariableSelector(_)))
+
+  def AllPropertiesSelector: Rule1[ast.MapProjectionElement] = rule("all properties selector")(
+    ch('.') ~~ ch('*') ~ push(ast.AllPropertiesSelector()(_)))
+
+  def MapProjection: Rule1[ast.MapProjection] = rule {
+    group(
+      Variable ~~ ch('{') ~~ zeroOrMore(LiteralEntry | PropertySelector | VariableSelector | AllPropertiesSelector, CommaSep) ~~ ch('}')
+    ) ~~>> (ast.MapProjection(_, _))
+  }
+
   def Parameter: Rule1[ast.Parameter] = rule("a parameter") {
     ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
   }

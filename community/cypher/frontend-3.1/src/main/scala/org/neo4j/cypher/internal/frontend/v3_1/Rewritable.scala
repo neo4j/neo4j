@@ -47,22 +47,26 @@ object Rewritable {
 
   implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
 
-    def dup(children: Seq[AnyRef]): AnyRef = that match {
-      case a: Rewritable =>
-        a.dup(children)
-      case p: Product =>
-        if (children.iterator eqElements p.children)
-          p
-        else
-          p.copyConstructor.invoke(p, children: _*)
-      case _: IndexedSeq[_] =>
-        children.toIndexedSeq
-      case _: Seq[_] =>
-        children
-      case _: Set[_] =>
-        children.toSet
-      case t =>
-        t
+    def dup(children: Seq[AnyRef]): AnyRef = try { that match {
+        case a: Rewritable =>
+          a.dup(children)
+        case p: Product =>
+          if (children.iterator eqElements p.children)
+            p
+          else
+            p.copyConstructor.invoke(p, children: _*)
+        case _: IndexedSeq[_] =>
+          children.toIndexedSeq
+        case _: Seq[_] =>
+          children
+        case _: Set[_] =>
+          children.toSet
+        case t =>
+          t
+      }
+    } catch {
+      case e: IllegalArgumentException =>
+        throw new InternalException(s"Failed rewriting $that\nTried using children: $children", e)
     }
   }
 

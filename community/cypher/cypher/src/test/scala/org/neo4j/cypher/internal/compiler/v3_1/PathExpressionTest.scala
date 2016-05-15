@@ -22,12 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v3_1.commands._
 import org.neo4j.cypher.internal.compiler.v3_1.commands.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.NonEmpty
+import org.neo4j.cypher.internal.compiler.v3_1.commands.predicates.{NonEmpty, True}
 import org.neo4j.cypher.internal.compiler.v3_1.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.compiler.v3_1.executionplan.AllReadEffects
-import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection
-import org.neo4j.graphdb.{Direction, Path}
+import org.neo4j.graphdb.Path
 
 class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
 
@@ -71,7 +69,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     relate(a, b)
 
     val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
-    val expression = NonEmpty(PathExpression(Seq(pattern)))
+    val expression = NonEmpty(PathExpression(Seq(pattern), True(), PathExtractorExpression(Seq(pattern))))
     val m = ExecutionContext.from("a" -> a)
 
     // WHEN
@@ -91,7 +89,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     relate(a, b)
 
     val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
-    val expression = NonEmpty(PathExpression(Seq(pattern)))
+    val expression = NonEmpty(PathExpression(Seq(pattern), True(), PathExtractorExpression(Seq(pattern))))
     val m = ExecutionContext.from("a" -> a)
 
     // WHEN

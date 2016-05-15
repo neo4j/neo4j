@@ -124,8 +124,8 @@ object ExtractExpression {
     ExtractExpression(ExtractScope(variable, innerPredicate, extractExpression)(position), expression)(position)
 }
 
-case class ListComprehension(scope: ExtractScope, expression: Expression)(val position: InputPosition) extends FilteringExpression
-{
+case class ListComprehension(scope: ExtractScope, expression: Expression)(val position: InputPosition)
+  extends FilteringExpression {
   val name = "[...]"
 
   def variable = scope.variable
@@ -156,6 +156,26 @@ object ListComprehension {
             extractExpression: Option[Expression])(position: InputPosition): ListComprehension =
     ListComprehension(ExtractScope(variable, innerPredicate, extractExpression)(position), expression)(position)
 
+}
+
+case class PatternComprehension(pattern: RelationshipsPattern, predicate: Option[Expression], projection: Expression)
+                               (val position: InputPosition)
+  extends ScopeExpression {
+
+  override def semanticCheck(ctx: SemanticContext) =
+    checkInnerExpression
+
+  private def checkInnerExpression: SemanticCheck =
+    withScopedState {
+      pattern.semanticCheck(Pattern.SemanticContext.Match) chain
+      projection.semanticCheck(SemanticContext.Simple) chain
+      predicate.semanticCheck(SemanticContext.Simple)
+    } chain {
+      val outerTypes: TypeGenerator = projection.types(_).wrapInList
+      this.specifyType(outerTypes)
+    }
+
+  override def variables: Set[Variable] = pattern.element.allVariables
 }
 
 sealed trait IterablePredicateExpression extends FilteringExpression {

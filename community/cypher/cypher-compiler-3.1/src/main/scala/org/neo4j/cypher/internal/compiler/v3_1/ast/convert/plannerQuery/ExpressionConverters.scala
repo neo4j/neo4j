@@ -51,12 +51,25 @@ object ExpressionConverters {
     }
   }
 
-  implicit class PatternExpressionExtractor(val expression: Expression) extends AnyVal {
-    def extractPatternExpressions: Seq[PatternExpression] =
-      expression.treeFold(Seq.empty[PatternExpression]) {
-        case p: PatternExpression =>
-          acc => (acc :+ p, None)
-      }
+  implicit class PatternComprehensionConverter(val exp: PatternComprehension) extends AnyVal {
+    def asQueryGraph: QueryGraph = {
+      val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
+      val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
+      val relChain: RelationshipChain = exp.pattern.element
+      val predicates: Vector[Expression] = relChain.fold(uniquePredicates.toVector) {
+        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
+        case _                                                          => identity
+      } ++ exp.predicate
+
+      val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
+
+      val patternContent = rewrittenChain.destructed
+      val qg = QueryGraph(
+        patternRelationships = patternContent.rels.toSet,
+        patternNodes = patternContent.nodeIds.toSet
+      ).addPredicates(predicates: _*)
+      qg.addArgumentIds(qg.coveredIds.filter(_.name.isNamed).toSeq)
+    }
   }
 
   implicit class PredicateConverter(val predicate: Expression) extends AnyVal {
