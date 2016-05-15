@@ -21,6 +21,7 @@ package org.neo4j.server.rest.transactional;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,11 +29,16 @@ import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
-import org.neo4j.cypher.internal.compiler.v3_0.ActsAsMap;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.Coordinate;
+import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Point;
+
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 public class Neo4jJsonCodec extends ObjectMapper
 {
@@ -72,9 +78,24 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             writeMap(out, (Map) value );
         }
-        else if( value instanceof ActsAsMap )
+        else if( value instanceof Geometry )
         {
-            writeMap( out, ((ActsAsMap) value).asMap() );
+            Geometry geom = (Geometry) value;
+            Object coordinates = (geom instanceof Point) ? ((Point) geom).getCoordinate() : geom.getCoordinates();
+            writeMap( out,
+                    genericMap( new LinkedHashMap<>(), "type", geom.getGeometryType(),
+                            "coordinates", coordinates, "crs", geom.getCRS() ) );
+        }
+        else if ( value instanceof Coordinate )
+        {
+            Coordinate coordinate = (Coordinate) value;
+            writeIterator( out, coordinate.getCoordinate().iterator());
+        }
+        else if ( value instanceof CRS )
+        {
+            CRS crs = (CRS) value;
+            writeMap( out, genericMap(new LinkedHashMap<>(), "name", crs.getType(), "type", "link", "properties",
+                    genericMap(new LinkedHashMap<>(), "href", crs.getHref() + "ogcwkt/", "type", "ogcwkt" ) ) );
         }
         else
         {

@@ -42,9 +42,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.neo4j.cypher.internal.compiler.v3_0.CRS;
-import org.neo4j.cypher.internal.compiler.v3_0.CartesianPoint;
-import org.neo4j.cypher.internal.compiler.v3_0.GeographicPoint;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Node;
@@ -54,6 +51,7 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
+import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
@@ -79,6 +77,9 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
+import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.*;
+import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockCartesian;
+import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockWGS84;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mocking.GraphMock.link;
 import static org.neo4j.test.mocking.GraphMock.node;
@@ -399,9 +400,13 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = getSerializerWith( output );
 
+        List<Coordinate> points = new ArrayList<>();
+        points.add( new Coordinate(1,2) );
+        points.add( new Coordinate(2,3) );
         Result executionResult = mockExecutionResult(
-                map( "point", new GeographicPoint( 12.3, 45.6, CRS.WGS84() ) ),
-                map( "point", new CartesianPoint( 123, 456 ) ) );
+                map( "geom", new MockPoint( 12.3, 45.6, mockWGS84() ) ),
+                map( "geom", new MockPoint( 123, 456, mockCartesian() ) ),
+                map( "geom", new MockGeometry( "LineString", points, mockCartesian() ) ) );
 
         // when
         serializer.statementResult( executionResult, false );
@@ -409,9 +414,21 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
 
         // then
         String result = output.toString( UTF_8.name() );
-        assertEquals( "{\"results\":[{\"columns\":[\"point\"]," +
-                "\"data\":[{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6],\"crs\":{\"name\":\"WGS-84\",\"type\":\"link\",\"properties\":{\"href\":\"http://spatialreference.org/ref/epsg/4326/ogcwkt/\",\"type\":\"ogcwkt\"}}}],\"meta\":[null]}," +
-                "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0],\"crs\":{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}}}],\"meta\":[null]}]}],\"errors\":[]}", result );
+        assertEquals( "{\"results\":[{\"columns\":[\"geom\"],\"data\":[" +
+                      "{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6],\"crs\":" +
+                        "{\"name\":\"WGS-84\",\"type\":\"link\",\"properties\":" +
+                          "{\"href\":\"http://spatialreference.org/ref/epsg/4326/ogcwkt/\",\"type\":\"ogcwkt\"}" +
+                        "}}],\"meta\":[null]}," +
+                      "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0],\"crs\":" +
+                        "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
+                          "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}" +
+                        "}}],\"meta\":[null]}," +
+                      "{\"row\":[{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[2.0,3.0]],\"crs\":" +
+                        "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
+                          "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}" +
+                        "}}],\"meta\":[null]}" +
+                      "]}],\"errors\":[]}",
+                result );
     }
 
     @Test

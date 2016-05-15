@@ -28,6 +28,13 @@ import java.util.List;
 public interface Geometry
 {
     /**
+     * Get string description of most specific type of this instance
+     *
+     * @return The instance type implementing Geometry
+     */
+    String getGeometryType();
+
+    /**
      * Get all coordinates of the geometry.
      *
      * @return The coordinates of the geometry.

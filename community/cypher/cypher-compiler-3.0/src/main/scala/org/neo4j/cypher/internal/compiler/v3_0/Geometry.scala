@@ -19,13 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
-import scala.collection.JavaConverters._
-
-trait ActsAsMap {
-  def asMap: java.util.Map[String,Object]
-}
-
-trait Geometry extends ActsAsMap {
+trait Geometry {
   def coordinates: Seq[Double]
   def crs: CRS
 }
@@ -34,7 +28,6 @@ trait Point extends Geometry {
   def x: Double
   def y: Double
   def coordinates = Vector(x, y)
-  def asMap = Map[String, Object]("type" -> "Point", "coordinates" -> coordinates.asJava, "crs" -> crs).asJava
 }
 
 case class CartesianPoint(x: Double, y: Double) extends Point {
@@ -46,9 +39,7 @@ case class GeographicPoint(longitude: Double, latitude: Double, crs: CRS) extend
   def y: Double = latitude
 }
 
-case class CRS(name: String, code: Int, url: String) extends ActsAsMap {
-  def asMap = Map[String, Object]("name" -> name, "type" -> "link", "properties" -> Map( "href" -> s"${url}ogcwkt/", "type" -> "ogcwkt" ).asJava).asJava
-}
+case class CRS(name: String, code: Int, url: String)
 
 object CRS {
   val Cartesian = CRS("cartesian", 7203, "http://spatialreference.org/ref/sr-org/7203/")
