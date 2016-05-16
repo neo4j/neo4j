@@ -58,6 +58,15 @@ public class ServerCommandLineArgsTest
     }
 
     @Test
+    public void shouldPickUpSpecifiedHomeDir() throws Exception
+    {
+        File homeDir = new File( "/some/absolute/homedir" ).getAbsoluteFile();
+
+        assertEquals( homeDir, parse( "--home-dir", homeDir.toString() ).homeDir() );
+        assertEquals( homeDir, parse( "--home-dir=" + homeDir.toString() ).homeDir() );
+    }
+    
+    @Test
     public void shouldPickUpOverriddenConfigurationParameters() throws Exception
     {
         // GIVEN

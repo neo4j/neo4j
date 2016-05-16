@@ -43,6 +43,7 @@ import static org.neo4j.helpers.collection.Pair.pair;
 public class ServerCommandLineArgs
 {
     public static final String CONFIG_DIR_ARG = "config-dir";
+    public static final String HOME_DIR_ARG = "home-dir";
     private final Args args;
     private final Pair<String, String>[] configOverrides;
 
@@ -83,5 +84,10 @@ public class ServerCommandLineArgs
                 } );
 
         return options.toArray( new Pair[options.size()] );
+    }
+
+    public File homeDir()
+    {
+        return new File( args.get( HOME_DIR_ARG ) );
     }
 }
