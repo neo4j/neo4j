@@ -105,6 +105,7 @@ import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
@@ -209,8 +210,9 @@ public class BatchInserterImpl implements BatchInserter
 
     private final LabelTokenStore labelTokenStore;
     private final Locks.Client noopLockClient = new NoOpClient();
-    private RecordFormats recordFormats;
+    private final RecordFormats recordFormats;
     private final long maxNodeId;
+    private final RecordCursors cursors;
 
 
     BatchInserterImpl( File storeDir,
@@ -303,6 +305,7 @@ public class BatchInserterImpl implements BatchInserter
 
         flushStrategy = new BatchedFlushStrategy( recordAccess, config.get( GraphDatabaseSettings
                 .batch_inserter_batch_size ) );
+        cursors = new RecordCursors( neoStores );
     }
 
     private Map<String, String> getDefaultParams()
@@ -912,7 +915,7 @@ public class BatchInserterImpl implements BatchInserter
     public Iterable<Long> getRelationshipIds( long nodeId )
     {
         flushStrategy.forceFlush();
-        return new BatchRelationshipIterable<Long>( neoStores, nodeId )
+        return new BatchRelationshipIterable<Long>( neoStores, nodeId, cursors )
         {
             @Override
             protected Long nextFrom( long relId, int type, long startNode, long endNode )
@@ -926,7 +929,7 @@ public class BatchInserterImpl implements BatchInserter
     public Iterable<BatchRelationship> getRelationships( long nodeId )
     {
         flushStrategy.forceFlush();
-        return new BatchRelationshipIterable<BatchRelationship>( neoStores, nodeId )
+        return new BatchRelationshipIterable<BatchRelationship>( neoStores, nodeId, cursors )
         {
             @Override
             protected BatchRelationship nextFrom( long relId, int type, long startNode, long endNode )
@@ -978,6 +981,7 @@ public class BatchInserterImpl implements BatchInserter
             throw new RuntimeException( e );
         }
 
+        cursors.close();
         neoStores.close();
 
         try

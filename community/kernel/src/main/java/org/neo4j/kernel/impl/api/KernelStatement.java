@@ -186,7 +186,8 @@ public class KernelStatement implements TxStateHolder, Statement
 
     private void cleanupResources()
     {
-        storeStatement.close();
+        storeStatement.release();
+        // closing is done by KTI
     }
 
     public StorageStatement getStoreStatement()

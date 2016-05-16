@@ -27,6 +27,9 @@ import org.neo4j.kernel.impl.api.store.StoreNodeRelationshipCursor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursors;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -39,14 +42,14 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
 {
     private final StoreNodeRelationshipCursor relationshipCursor;
 
-    public BatchRelationshipIterable( NeoStores neoStores, long nodeId )
+    public BatchRelationshipIterable( NeoStores neoStores, long nodeId, RecordCursors cursors )
     {
-        RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
-        RelationshipGroupRecord relationshipGroupRecord = new RelationshipGroupRecord( -1 );
-        this.relationshipCursor = new StoreNodeRelationshipCursor(
-                relationshipRecord, neoStores,
-                relationshipGroupRecord, null,
-                (cursor) -> {}, NO_LOCK_SERVICE );
+        RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+        RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
+        RelationshipRecord relationshipRecord = relationshipStore.newRecord();
+        RelationshipGroupRecord relationshipGroupRecord = relationshipGroupStore.newRecord();
+        this.relationshipCursor = new StoreNodeRelationshipCursor( relationshipRecord, relationshipGroupRecord,
+                cursor -> {}, NO_LOCK_SERVICE, cursors );
 
         // TODO There's an opportunity to reuse lots of instances created here, but this isn't a
         // critical path instance so perhaps not necessary a.t.m.

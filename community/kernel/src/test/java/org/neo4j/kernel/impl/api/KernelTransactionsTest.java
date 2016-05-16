@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.concurrent.Executors;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -58,6 +59,7 @@ import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
@@ -172,12 +174,52 @@ public class KernelTransactionsTest
         assertTrue( tx3.shouldBeTerminated() );
     }
 
+    @Test
+    public void transactionClosesUnderlyingStoreStatementWhenDisposed() throws Exception
+    {
+        StorageStatement storeStatement1 = mock( StorageStatement.class );
+        StorageStatement storeStatement2 = mock( StorageStatement.class );
+        StorageStatement storeStatement3 = mock( StorageStatement.class );
+
+        KernelTransactions kernelTransactions = newKernelTransactions( mock( TransactionCommitProcess.class ),
+                storeStatement1, storeStatement2, storeStatement3 );
+
+        // start and close 3 transactions from different threads
+        startAndCloseTransaction( kernelTransactions );
+        Executors.newSingleThreadExecutor().submit( () -> startAndCloseTransaction( kernelTransactions ) ).get();
+        Executors.newSingleThreadExecutor().submit( () -> startAndCloseTransaction( kernelTransactions ) ).get();
+
+        kernelTransactions.disposeAll();
+
+        verify( storeStatement1 ).close();
+        verify( storeStatement2 ).close();
+        verify( storeStatement3 ).close();
+    }
+
+    private static void startAndCloseTransaction( KernelTransactions kernelTransactions )
+    {
+        try
+        {
+            kernelTransactions.newInstance( KernelTransaction.Type.explicit, AccessMode.Static.FULL ).close();
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
     private static KernelTransactions newKernelTransactions() throws Exception
     {
         return newKernelTransactions( mock( TransactionCommitProcess.class ) );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess ) throws Exception
+    {
+        return newKernelTransactions( commitProcess, mock( StorageStatement.class ) );
+    }
+
+    private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
+            StorageStatement firstStoreStatements, StorageStatement... otherStorageStatements ) throws Exception
     {
         LifeSupport life = new LifeSupport();
         life.start();
@@ -186,7 +228,7 @@ public class KernelTransactionsTest
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
         StoreReadLayer readLayer = mock( StoreReadLayer.class );
-        when( readLayer.newStatement() ).thenAnswer( invocation -> mock( StorageStatement.class ) );
+        when( readLayer.newStatement() ).thenReturn( firstStoreStatements, otherStorageStatements );
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );

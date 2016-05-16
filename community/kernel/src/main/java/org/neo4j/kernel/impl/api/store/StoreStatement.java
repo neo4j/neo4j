@@ -31,9 +31,8 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -47,7 +46,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  * The cursors call the release methods, so there is no need for manual release, only
  * closing those cursor.
  * <p/>
- * {@link NeoStores} caches one of these per thread, so that they can be reused between statements/transactions.
  */
 public class StoreStatement implements StorageStatement
 {
@@ -59,28 +57,32 @@ public class StoreStatement implements StorageStatement
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final Supplier<IndexReaderFactory> indexReaderFactorySupplier;
-    private IndexReaderFactory indexReaderFactory;
+    private final RecordCursors recordCursors;
     private final Supplier<LabelScanReader> labelScanStore;
+    
+    private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
+
+    private boolean acquired;
     private boolean closed;
 
-    public StoreStatement( final NeoStores neoStores, final LockService lockService,
-            Supplier<IndexReaderFactory> indexReaderFactory,
-            Supplier<LabelScanReader> labelScanReaderSupplier )
+    public StoreStatement( NeoStores neoStores, LockService lockService,
+            Supplier<IndexReaderFactory> indexReaderFactory, Supplier<LabelScanReader> labelScanReaderSupplier )
     {
         this.neoStores = neoStores;
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanStore = labelScanReaderSupplier;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
+        this.recordCursors = new RecordCursors( neoStores );
 
         singleNodeCursor = new InstanceCache<StoreSingleNodeCursor>()
         {
             @Override
             protected StoreSingleNodeCursor create()
             {
-                return new StoreSingleNodeCursor( new NodeRecord( -1 ), neoStores, StoreStatement.this, this,
-                        lockService );
+                return new StoreSingleNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
+                        lockService, recordCursors );
             }
         };
         iteratorNodeCursor = new InstanceCache<StoreIteratorNodeCursor>()
@@ -88,8 +90,8 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreIteratorNodeCursor create()
             {
-                return new StoreIteratorNodeCursor( new NodeRecord( -1 ), neoStores, StoreStatement.this, this,
-                        lockService );
+                return new StoreIteratorNodeCursor( nodeStore.newRecord(), neoStores, StoreStatement.this, this,
+                        lockService, recordCursors );
             }
         };
         singleRelationshipCursor = new InstanceCache<StoreSingleRelationshipCursor>()
@@ -97,8 +99,8 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreSingleRelationshipCursor create()
             {
-                return new StoreSingleRelationshipCursor( new RelationshipRecord( -1 ),
-                        neoStores, StoreStatement.this, this, lockService );
+                return new StoreSingleRelationshipCursor( relationshipStore.newRecord(),
+                        this, lockService, recordCursors );
             }
         };
         iteratorRelationshipCursor = new InstanceCache<StoreIteratorRelationshipCursor>()
@@ -106,8 +108,8 @@ public class StoreStatement implements StorageStatement
             @Override
             protected StoreIteratorRelationshipCursor create()
             {
-                return new StoreIteratorRelationshipCursor( new RelationshipRecord( -1 ),
-                        neoStores, StoreStatement.this, this, lockService );
+                return new StoreIteratorRelationshipCursor( relationshipStore.newRecord(),
+                        this, lockService, recordCursors );
             }
         };
     }
@@ -115,7 +117,9 @@ public class StoreStatement implements StorageStatement
     @Override
     public void acquire()
     {
-        this.closed = false;
+        assert !closed;
+        assert !acquired;
+        this.acquired = true;
     }
 
     @Override
@@ -159,28 +163,44 @@ public class StoreStatement implements StorageStatement
     }
 
     @Override
+    public void release()
+    {
+        assert !closed;
+        assert acquired;
+        closeSchemaResources();
+        acquired = false;
+    }
+
+    @Override
     public void close()
     {
         assert !closed;
+        closeSchemaResources();
+        recordCursors.close();
+        closed = true;
+    }
+
+    private void closeSchemaResources()
+    {
         if ( indexReaderFactory != null )
         {
             indexReaderFactory.close();
+            // we can actually keep this object around
         }
         if ( labelScanReader != null )
         {
             labelScanReader.close();
             labelScanReader = null;
         }
-        closed = true;
     }
 
-    private class AllStoreIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+    private static class AllStoreIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
     {
-        private final CommonAbstractStore store;
+        private final CommonAbstractStore<?,?> store;
         private long highId;
         private long currentId;
 
-        public AllStoreIdIterator( CommonAbstractStore store )
+        AllStoreIdIterator( CommonAbstractStore<?,?> store )
         {
             this.store = store;
             highId = store.getHighestPossibleIdInUse();

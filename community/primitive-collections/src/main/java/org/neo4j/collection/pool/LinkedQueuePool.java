@@ -196,9 +196,4 @@ public class LinkedQueuePool<R> implements Pool<R>
             dispose( resource );
         }
     }
-
-    public void close( boolean force )
-    {
-        disposeAll();
-    }
 }

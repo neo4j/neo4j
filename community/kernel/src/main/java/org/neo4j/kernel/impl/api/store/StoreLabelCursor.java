@@ -22,6 +22,10 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.LabelItem;
 
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
@@ -34,17 +38,20 @@ public class StoreLabelCursor implements Cursor<LabelItem>, LabelItem
     private long[] labels;
     private int index;
     private int currentLabel;
-    private Consumer<StoreLabelCursor> instanceCache;
 
-    public StoreLabelCursor( Consumer<StoreLabelCursor> instanceCache )
+    private final RecordCursor<DynamicRecord> dynamicLabelRecordCursor;
+    private final Consumer<StoreLabelCursor> instanceCache;
+
+    public StoreLabelCursor( RecordCursor<DynamicRecord> dynamicLabelRecordCursor,
+            Consumer<StoreLabelCursor> instanceCache )
     {
+        this.dynamicLabelRecordCursor = dynamicLabelRecordCursor;
         this.instanceCache = instanceCache;
     }
 
-    public StoreLabelCursor init( long[] labels )
+    public StoreLabelCursor init( NodeRecord nodeRecord )
     {
-        this.labels = labels;
-        index = 0;
+        this.labels = NodeLabelsField.get( nodeRecord, dynamicLabelRecordCursor );
         return this;
     }
 
@@ -77,6 +84,14 @@ public class StoreLabelCursor implements Cursor<LabelItem>, LabelItem
     @Override
     public void close()
     {
+        // this cursor is pooled so it is better to clear it's state here
+        clearState();
         instanceCache.accept( this );
+    }
+
+    private void clearState()
+    {
+        labels = null;
+        index = 0;
     }
 }

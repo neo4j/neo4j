@@ -65,8 +65,8 @@ public class StorePropertyPayloadCursorTest
         @Test
         public void nextShouldAlwaysReturnFalseWhenNotInitialized()
         {
-            StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( mock( DynamicStringStore.class ),
-                    mock( DynamicArrayStore.class ) );
+            StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( mock( RecordCursor.class ),
+                    mock( RecordCursor.class ) );
 
             assertFalse( cursor.next() );
 
@@ -468,7 +468,8 @@ public class StorePropertyPayloadCursorTest
     private static StorePropertyPayloadCursor newCursor( DynamicStringStore dynamicStringStore,
             DynamicArrayStore dynamicArrayStore, Object... values )
     {
-        StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor( dynamicStringStore, dynamicArrayStore );
+        StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor(
+                dynamicStringStore.newRecordCursor( null ), dynamicArrayStore.newRecordCursor( null ) );
 
         long[] blocks = asBlocks( values );
         cursor.init( blocks, blocks.length );
