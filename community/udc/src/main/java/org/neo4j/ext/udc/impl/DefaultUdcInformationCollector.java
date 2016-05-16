@@ -64,7 +64,7 @@ import static org.neo4j.ext.udc.UdcConstants.RELATIONSHIP_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.REVISION;
 import static org.neo4j.ext.udc.UdcConstants.SERVER_ID;
 import static org.neo4j.ext.udc.UdcConstants.SOURCE;
-import static org.neo4j.ext.udc.UdcConstants.STORE_FILE_SIZE;
+import static org.neo4j.ext.udc.UdcConstants.STORE_SIZE;
 import static org.neo4j.ext.udc.UdcConstants.TAGS;
 import static org.neo4j.ext.udc.UdcConstants.TOTAL_MEMORY;
 import static org.neo4j.ext.udc.UdcConstants.UDC_PROPERTY_PREFIX;
@@ -187,17 +187,16 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private void addStoreFileSizes( Map<String,String> udcFields, ResourceIterator<File> files )
     {
+        long size = 0;
+
         while ( files.hasNext() )
         {
             File file = files.next();
 
-            add( udcFields, asStoreFileSizeFieldName( file ), file.length() );
+            size += file.length();
         }
-    }
 
-    private String asStoreFileSizeFieldName( File file )
-    {
-        return STORE_FILE_SIZE + "_" + file.getName().replaceAll( "\\.", "_" );
+        add( udcFields, STORE_SIZE, size );
     }
 
     private String determineOsDistribution()
