@@ -30,7 +30,6 @@ declare -r PROGRAM="$(basename "$0")"
 #   NEO4J_PLUGINS
 #   one per config setting, with dots converted to underscores
 #
-# Changes directory into NEO4J_HOME.
 setup_environment() {
   _setup_calculated_paths
   _read_config
