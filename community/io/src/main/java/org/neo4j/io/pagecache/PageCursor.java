@@ -144,61 +144,40 @@ public abstract class PageCursor implements AutoCloseable
     /**
      * Read the given length of bytes from the page into the given array, starting from the current offset into the
      * page, and writing from the given array offset, and then increment the current offset by the length argument.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset plus the length reaches beyond the end of the page.
      */
     public abstract void getBytes( byte[] data, int arrayOffset, int length );
 
     /**
      * Write out all the bytes of the given array into the page, beginning at the current offset into the page,
      * and then increment the current offset by the length of the array.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset plus the length of the array reaches beyond the end of the page.
      */
     public abstract void putBytes( byte[] data );
 
     /**
      * Write out the given length of bytes from the given offset into the the given array of bytes, into the page,
      * beginning at the current offset into the page, and then increment the current offset by the length argument.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset plus the length reaches beyond the end of the page.
      */
     public abstract void putBytes( byte[] data, int arrayOffset, int length );
 
     /**
      * Get the signed short at the current page offset, and then increment the offset by one.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset is not within the page bounds.
      */
     public abstract short getShort();
 
     /**
      * Get the signed short at the given offset into the page.
      * Leaves the current page offset unchanged.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the given offset is not within the page bounds.
      */
     public abstract short getShort( int offset );
 
     /**
      * Set the signed short at the current offset into the page, and then increment the offset by one.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the current offset is not within the page bounds.
      */
     public abstract void putShort( short value );
 
     /**
      * Set the signed short at the given offset into the page.
      * Leaves the current page offset unchanged.
-     *
-     * @throws IndexOutOfBoundsException
-     * if the given offset is not within the page bounds.
      */
     public abstract void putShort( int offset, short value );
 
