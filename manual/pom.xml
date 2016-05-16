@@ -26,6 +26,7 @@
     <module>neo4j-harness-enterprise-test</module>
     <module>embedded-examples</module>
     <module>server-examples</module>
+    <module>bolt</module>
   </modules>
 
   <scm>
