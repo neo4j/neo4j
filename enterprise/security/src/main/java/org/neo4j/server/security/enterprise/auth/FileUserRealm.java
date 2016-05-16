@@ -74,7 +74,7 @@ public class FileUserRealm extends AuthorizingRealm
     {
         User user = userRepository.findByName( (String) principals.getPrimaryPrincipal() );
 
-        return accountBuilder.buildAccount(user, getName());
+        return accountBuilder.buildAccount( user );
     }
 
     @Override
@@ -84,12 +84,17 @@ public class FileUserRealm extends AuthorizingRealm
 
         User user = userRepository.findByName( usernamePasswordToken.getUsername() );
 
+        if ( user == null )
+        {
+            throw new AuthenticationException( "User " + usernamePasswordToken.getUsername() + " does not exist" );
+        }
+
         // TODO: This will not work if AuthenticationInfo is cached,
         // unless you always do SecurityManager.logout properly (which will invalidate the cache)
         // For REST we may need to connect HttpSessionListener.sessionDestroyed with logout
-        if (user.passwordChangeRequired())
+        if ( user.passwordChangeRequired() )
         {
-            throw new ExpiredCredentialsException("Password change required");
+            throw new ExpiredCredentialsException( "Password change required" );
         }
 
         return new SimpleAuthenticationInfo( user.name(), user.credentials(), getName() );
@@ -123,5 +128,17 @@ public class FileUserRealm extends AuthorizingRealm
             throw new IllegalArgumentException(
                     "User name contains illegal characters. Please use simple ascii characters and numbers." );
         }
+    }
+
+    boolean credentialsMatchesPassword( String username, String password )
+    {
+        User user = userRepository.findByName( username );
+
+        if ( user != null )
+        {
+            return user.credentials().matchesPassword( password );
+        }
+
+        return false;
     }
 }

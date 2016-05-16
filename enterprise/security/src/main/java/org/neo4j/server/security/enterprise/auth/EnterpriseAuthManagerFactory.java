@@ -24,6 +24,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.UserRepository;
@@ -47,8 +48,7 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         final UserRepository userRepository =
                 new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider );
 
-        // TODO
-        final PasswordPolicy passwordPolicy = ( authSubject, password ) -> {};
+        final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
         return new EnterpriseAuthManager( userRepository, passwordPolicy, systemUTC(),
                 config.get( GraphDatabaseSettings.auth_enabled ) );

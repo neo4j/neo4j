@@ -157,7 +157,8 @@ public class ShiroAuthManager extends BasicAuthManager
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
 
-        passwordPolicy.validatePassword( authSubject, password );
+        passwordPolicy.validatePassword( authSubject, password,
+                pass -> realm.credentialsMatchesPassword( username, pass ) );
 
         setUserPassword( username, password );
     }

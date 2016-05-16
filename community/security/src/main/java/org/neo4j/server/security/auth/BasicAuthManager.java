@@ -151,7 +151,7 @@ public class BasicAuthManager implements AuthManager, UserManager
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
 
-        passwordPolicy.validatePassword( authSubject, password );
+        passwordPolicy.validatePassword( authSubject, password, basicAuthSubject::credentialsMatchesPassword );
 
         setUserPassword( username, password );
     }
@@ -169,7 +169,7 @@ public class BasicAuthManager implements AuthManager, UserManager
 
         if ( existingUser.credentials().matchesPassword( password ) )
         {
-            return;
+            throw new IllegalCredentialsException( "Old password and new password cannot be the same." );
         }
 
         try

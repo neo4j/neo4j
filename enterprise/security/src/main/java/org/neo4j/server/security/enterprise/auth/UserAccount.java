@@ -19,17 +19,14 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.apache.shiro.authc.SimpleAccount;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
 
-import java.util.Collections;
 import java.util.Set;
 
-import org.neo4j.server.security.auth.Credential;
-
-class UserAccount extends SimpleAccount
+class UserAccount extends SimpleAuthorizationInfo
 {
-    public UserAccount( String name, Credential credentials, String realm, Set<String> roleNames )
+    public UserAccount( Set<String> roleNames )
     {
-        super( Collections.singletonList( name ), credentials, realm, roleNames, null );
+        super( roleNames );
     }
 }

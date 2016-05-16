@@ -28,10 +28,10 @@ import org.neo4j.server.security.auth.User;
 public class PredefinedGroupsAccountBuilder implements AccountBuilder
 {
     @Override
-    public UserAccount buildAccount( User user, String realmName )
+    public UserAccount buildAccount( User user )
     {
         Set<String> roleNames = getRolesForGroup( user.group() );
-        return new UserAccount( user.name(), user.credentials(), realmName, roleNames );
+        return new UserAccount( roleNames );
     }
 
     private Set<String> getRolesForGroup( String group )

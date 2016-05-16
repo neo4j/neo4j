@@ -24,5 +24,11 @@ import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 
 public interface PasswordPolicy
 {
-    void validatePassword( AuthSubject authSubject, String password ) throws IllegalCredentialsException;
+    interface CredentialsMatcher
+    {
+        boolean credentialsMatchesPassword( String password );
+    }
+
+    void validatePassword( AuthSubject authSubject, String password, CredentialsMatcher credentialsMatcher )
+            throws IllegalCredentialsException;
 }

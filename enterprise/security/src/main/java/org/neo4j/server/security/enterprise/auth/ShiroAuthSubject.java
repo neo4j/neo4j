@@ -66,7 +66,7 @@ public class ShiroAuthSubject implements AuthSubject
     @Override
     public void setPassword( String password ) throws IOException, IllegalCredentialsException
     {
-        authManager.setPassword( this, (String) subject.getPrincipals().getPrimaryPrincipal(), password );
+        authManager.setPassword( this, (String) subject.getPrincipal(), password );
     }
 
     public boolean doesUsernameMatch( String username )
@@ -96,6 +96,11 @@ public class ShiroAuthSubject implements AuthSubject
     public String name()
     {
         return "AUTH";
+    }
+
+    Subject getSubject()
+    {
+        return subject;
     }
 
     private AccessMode.Static getAccesMode()

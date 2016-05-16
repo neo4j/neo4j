@@ -23,5 +23,5 @@ import org.neo4j.server.security.auth.User;
 
 public interface AccountBuilder
 {
-    UserAccount buildAccount(User user, String realmName);
+    UserAccount buildAccount(User user);
 }
