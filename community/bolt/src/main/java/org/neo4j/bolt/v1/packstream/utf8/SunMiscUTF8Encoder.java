@@ -30,19 +30,19 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
 
 /**
  * This is a specialized UTF-8 encoder that solves two predicaments:
- *
+ * <p>
  * 1) There's no way using public APIs to do GC-free string encoding unless
- *    you build a custom encoder, and GC output from UTF-8 encoding causes
- *    production instability
+ * you build a custom encoder, and GC output from UTF-8 encoding causes
+ * production instability
  * 2) The ArrayEncoder provided by HotSpot is 2 orders faster for UTF-8 encoding
- *    for a massive amount of real-world strings due to specialized handling of
- *    ascii, and we can't import that since we need to compile on IBM J9
- *
+ * for a massive amount of real-world strings due to specialized handling of
+ * ascii, and we can't import that since we need to compile on IBM J9
+ * <p>
  * We can't solve (1) without solving (2), because the default GC-spewing String#getBytes()
  * uses the optimized ArrayEncoder, meaning it's easy to write an encoder that
  * is GC-free, but then it'll be two orders slower than the stdlib, and vice
  * versa.
- *
+ * <p>
  * This solves both issues using MethodHandles. Future work here could include
  * writing a custom UTF-8 encoder (which could then avoid using ArrayEncoder),
  * as well as stopping use of String's for the main database paths.
@@ -53,12 +53,12 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
  */
 public class SunMiscUTF8Encoder implements UTF8Encoder
 {
-    private static final int BUFFER_SIZE = getInteger( SunMiscUTF8Encoder.class, "buffer_size", 1024*16 );
+    private static final int BUFFER_SIZE = getInteger( SunMiscUTF8Encoder.class, "buffer_size", 1024 * 16 );
     private static final int fallbackAtStringLength =
-            (int)(BUFFER_SIZE / StandardCharsets.UTF_8.newEncoder().averageBytesPerChar());
+            (int) (BUFFER_SIZE / StandardCharsets.UTF_8.newEncoder().averageBytesPerChar());
     private static final MethodHandle getCharArray = charArrayGetter();
     private static final MethodHandle arrayEncode = arrayEncode();
-
+    private static final MethodHandle getOffset = offsetHandle();
     private final CharsetEncoder charsetEncoder = StandardCharsets.UTF_8.newEncoder();
 
     private final byte[] out = new byte[BUFFER_SIZE];
@@ -71,24 +71,24 @@ public class SunMiscUTF8Encoder implements UTF8Encoder
         try
         {
             // If it's unlikely we will fit the encoded data, just use stdlib encoder
-            if( input.length() > fallbackAtStringLength )
+            if ( input.length() > fallbackAtStringLength )
             {
                 return fallbackEncoder.encode( input );
             }
 
             char[] rawChars = (char[]) getCharArray.invoke( input );
-            int len = (int)arrayEncode.invoke( charsetEncoder, rawChars, 0, input.length(), out );
+            int len = (int) arrayEncode.invoke( charsetEncoder, rawChars, offset(input), input.length(), out );
 
-            if( len == -1 )
+            if ( len == -1 )
             {
                 return fallbackEncoder.encode( input );
             }
 
-            outBuf.position(0);
-            outBuf.limit(len);
+            outBuf.position( 0 );
+            outBuf.limit( len );
             return outBuf;
         }
-        catch( ArrayIndexOutOfBoundsException e )
+        catch ( ArrayIndexOutOfBoundsException e )
         {
             // This happens when we can't fit the encoded string.
             // We try and avoid this altogether by falling back to the
@@ -114,7 +114,6 @@ public class SunMiscUTF8Encoder implements UTF8Encoder
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         try
         {
-
             return lookup.unreflect( Class.forName( "sun.nio.cs.ArrayEncoder" )
                     .getMethod( "encode", char[].class, int.class, int.class, byte[].class ) );
         }
@@ -132,6 +131,12 @@ public class SunMiscUTF8Encoder implements UTF8Encoder
         try
         {
             Field value = String.class.getDeclaredField( "value" );
+            if (value.getType() != char[].class)
+            {
+                throw new AssertionError(
+                        "This encoder depends being able to access raw char[] in java.lang.String, but the class is backed by a " +
+                         value.getType().getCanonicalName());
+            }
             value.setAccessible( true );
             return lookup.unreflectGetter( value );
         }
@@ -140,6 +145,50 @@ public class SunMiscUTF8Encoder implements UTF8Encoder
             throw new AssertionError(
                     "This encoder depends being able to access raw char[] in java.lang.String, which failed: " +
                     e.getMessage(), e );
+        }
+    }
+
+    /*
+     * If String.class is backed by a char[] together with an offset, return
+     * the offset otherwise return 0.
+     */
+    private static int offset( String value )
+    {
+        try
+        {
+            return getOffset == null ? 0 : (int) getOffset.invoke( value );
+        }
+        catch ( Throwable e )
+        {
+            throw new AssertionError(
+                    "This encoder depends being able to access the offset in the char[] array in java.lang.String, " +
+                    "which failed: " +
+                    e.getMessage(), e );
+        }
+    }
+
+    private static MethodHandle offsetHandle()
+    {
+        //We need access to the internal char[] in order to do gc free
+        //encoding. However for ibm jdk it is not always true that
+        //"foo" is backed by exactly ['f', 'o', 'o'], for example single
+        //ascii characters strings like "a" is backed by:
+        //
+        //    value = ['0', '1', ..., 'A', 'B', ..., 'a', 'b', ...]
+        //    offset = 'a'
+        //
+        //Hence we need access both to `value` and `offset`
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        try
+        {
+            Field value = String.class.getDeclaredField( "offset" );
+            value.setAccessible( true );
+            return lookup.unreflectGetter( value );
+        }
+        catch ( Throwable e )
+        {
+            //there is no offset in String implementation
+            return null;
         }
     }
 }
