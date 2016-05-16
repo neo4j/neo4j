@@ -111,7 +111,7 @@ setup_java_opts() {
 
 assemble_command_line() {
   retval=("${JAVA_CMD}" "-cp" "${CLASSPATH}" "${JAVA_OPTS[@]}" "-Dfile.encoding=UTF-8" "${MAIN_CLASS}" \
-          "--config-dir=${NEO4J_CONF}")
+          "--home-dir=${NEO4J_HOME}" "--config-dir=${NEO4J_CONF}")
 }
 
 do_console() {
