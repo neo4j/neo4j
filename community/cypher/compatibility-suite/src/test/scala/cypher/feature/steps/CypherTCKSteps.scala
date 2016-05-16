@@ -89,13 +89,6 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     }
   }
 
-  And(INIT_LONG_QUERY) { (query: String) =>
-    ifEnabled {
-      // side effects are necessary for setting up graph state
-      graph.execute(query)
-    }
-  }
-
   And(PARAMETERS) { (values: DataTable) =>
     ifEnabled {
       params = parseParameters(values)
@@ -103,14 +96,6 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   When(EXECUTING_QUERY) { (query: String) =>
-    ifEnabled {
-      result = Try {
-        graph.execute(query, params)
-      }
-    }
-  }
-
-  When(EXECUTING_LONG_QUERY) { (query: String) =>
     ifEnabled {
       result = Try {
         graph.execute(query, params)
