@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.ext.udc.UdcConstants;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
@@ -179,10 +178,7 @@ public class DefaultUdcInformationCollectorTest
         when( dataSource.listStoreFiles( false ) ).thenReturn( asResourceIterator( testFiles().iterator() ) );
         Map<String, String> udcParams = collector.getUdcParams();
 
-        assertThat( udcParams.get( "storefilesize_neostore_foo_db" ), is( "23" ) );
-        assertThat( udcParams.get( "storefilesize_neostore_bar_keys" ), is( "42" ) );
-        assertThat( udcParams.get( "storefilesize_neostore_baz_names" ), is( "87" ) );
-        assertThat( udcParams.get( "storefilesize_neostore_quux_id" ), is( "117" ) );
+        assertThat( udcParams.get( "storesize" ), is( "152" ) );
     }
 
     private Set<File> testFiles() throws Exception
@@ -190,14 +186,12 @@ public class DefaultUdcInformationCollectorTest
         File foo = testDirectory.file( "neostore.foo.db" );
         File bar = testDirectory.file( "neostore.bar.keys" );
         File baz = testDirectory.file( "neostore.baz.names" );
-        File quux = testDirectory.file( "neostore.quux.id" );
 
         ensureSize( foo, 23 );
         ensureSize( bar, 42 );
         ensureSize( baz, 87 );
-        ensureSize( quux, 117 );
 
-        return new HashSet<>( asList( foo, bar, baz, quux ) );
+        return new HashSet<>( asList( foo, bar, baz ) );
     }
 
     private void ensureSize( File foo, int size ) throws IOException
