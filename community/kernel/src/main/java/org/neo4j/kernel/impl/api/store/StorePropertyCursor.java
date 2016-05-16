@@ -23,8 +23,8 @@ import java.util.function.Consumer;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -42,17 +42,17 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
 
     private Lock lock;
 
-    public StorePropertyCursor( PropertyStore propertyStore, Consumer<StorePropertyCursor> instanceCache )
+    public StorePropertyCursor( RecordCursors cursors, Consumer<StorePropertyCursor> instanceCache )
     {
         this.instanceCache = instanceCache;
-        this.payload = new StorePropertyPayloadCursor( propertyStore.getStringStore(), propertyStore.getArrayStore() );
-        this.recordCursor = propertyStore.newRecordCursor( propertyStore.newRecord() );
+        this.payload = new StorePropertyPayloadCursor( cursors.propertyString(), cursors.propertyArray() );
+        this.recordCursor = cursors.property();
     }
 
     public StorePropertyCursor init( long firstPropertyId, Lock lock )
     {
         this.lock = lock;
-        recordCursor.acquire( firstPropertyId, FORCE );
+        recordCursor.placeAt( firstPropertyId, FORCE );
         payload.clear();
         return this;
     }
@@ -115,7 +115,6 @@ public class StorePropertyCursor implements Cursor<PropertyItem>, PropertyItem
         {
             payload.clear();
             instanceCache.accept( this );
-            recordCursor.close();
         }
         finally
         {

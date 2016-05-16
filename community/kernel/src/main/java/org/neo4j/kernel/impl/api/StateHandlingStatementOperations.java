@@ -23,9 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -979,11 +977,8 @@ public class StateHandlingStatementOperations implements
 
             state.txState().nodeDoReplaceProperty( node.id(), existingProperty, property );
 
-            PrimitiveIntCollection labelIds = getLabels( node );
-
-            indexesUpdateProperty( state, node.id(), labelIds, property.propertyKeyId(),
-                    existingProperty instanceof DefinedProperty ? (DefinedProperty) existingProperty : null,
-                    property );
+            DefinedProperty before = definedPropertyOrNull( existingProperty );
+            indexesUpdateProperty( state, node, property.propertyKeyId(), before, property );
 
             return existingProperty;
         }
@@ -1039,7 +1034,6 @@ public class StateHandlingStatementOperations implements
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
-            PrimitiveIntCollection labelIds = getLabels( node );
             Property existingProperty;
             try ( Cursor<PropertyItem> properties = node.property( propertyKeyId ) )
             {
@@ -1054,8 +1048,7 @@ public class StateHandlingStatementOperations implements
                     autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
                     state.txState().nodeDoRemoveProperty( node.id(), (DefinedProperty) existingProperty );
 
-                    indexesUpdateProperty( state, node.id(), labelIds, propertyKeyId,
-                            (DefinedProperty) existingProperty, null );
+                    indexesUpdateProperty( state, node, propertyKeyId, (DefinedProperty) existingProperty, null );
                 }
             }
             return existingProperty;
@@ -1105,17 +1098,16 @@ public class StateHandlingStatementOperations implements
         return Property.noGraphProperty( propertyKeyId );
     }
 
-    private void indexesUpdateProperty( KernelStatement state,
-            long nodeId,
-            PrimitiveIntCollection labels,
-            int propertyKey,
-            DefinedProperty before,
+    private void indexesUpdateProperty( KernelStatement state, NodeItem node, int propertyKey, DefinedProperty before,
             DefinedProperty after )
     {
-        PrimitiveIntIterator labelIterator = labels.iterator();
-        while ( labelIterator.hasNext() )
+        try ( Cursor<LabelItem> labels = node.labels() )
         {
-            indexUpdateProperty( state, nodeId, labelIterator.next(), propertyKey, before, after );
+            while ( labels.next() )
+            {
+                LabelItem label = labels.get();
+                indexUpdateProperty( state, node.id(), label.getAsInt(), propertyKey, before, after );
+            }
         }
     }
 
@@ -1702,19 +1694,6 @@ public class StateHandlingStatementOperations implements
     }
     // </Legacy index>
 
-    private PrimitiveIntCollection getLabels( NodeItem node )
-    {
-        PrimitiveIntStack labelIds = new PrimitiveIntStack();
-        try ( Cursor<LabelItem> labels = node.labels() )
-        {
-            while ( labels.next() )
-            {
-                labelIds.push( labels.get().getAsInt() );
-            }
-        }
-        return labelIds;
-    }
-
     @Override
     public boolean nodeExists( KernelStatement statement, long id )
     {
@@ -1731,5 +1710,10 @@ public class StateHandlingStatementOperations implements
             }
         }
         return storeLayer.nodeExists( id );
+    }
+
+    private static DefinedProperty definedPropertyOrNull( Property existingProperty )
+    {
+        return existingProperty instanceof DefinedProperty ? (DefinedProperty) existingProperty : null;
     }
 }

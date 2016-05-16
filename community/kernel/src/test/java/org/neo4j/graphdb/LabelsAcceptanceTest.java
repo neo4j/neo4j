@@ -19,18 +19,17 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.cursor.Cursor;
@@ -60,11 +59,13 @@ import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.asList;
@@ -245,7 +246,7 @@ public class LabelsAcceptanceTest
 
         // THEN
 
-        Set<String> names = Stream.of( Labels.values() ).map( Labels::name ).collect( Collectors.toSet() );
+        Set<String> names = Stream.of( Labels.values() ).map( Labels::name ).collect( toSet() );
         assertThat( node, inTx( db, hasLabels( names ) ));
     }
 
@@ -547,45 +548,50 @@ public class LabelsAcceptanceTest
         }
     }
 
-    @Ignore("Fix this properly later")
     @Test
     public void shouldAllowManyLabelsAndPropertyCursor()
     {
-        // given
+        int propertyCount = 10;
+        int labelCount = 15;
+
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         Node node;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode();
-            node.setProperty( "foo", "bar" );
-            for ( int i = 0; i < 20; i++ )
+            for ( int i = 0; i < propertyCount; i++ )
             {
-                node.addLabel( label( "label:" + i ) );
+                node.setProperty( "foo" + i, "bar" );
             }
-
+            for ( int i = 0; i < labelCount; i++ )
+            {
+                node.addLabel( label( "label" + i ) );
+            }
             tx.success();
         }
 
-        // when
+        Set<Integer> seenProperties = new HashSet<>();
+        Set<Integer> seenLabels = new HashSet<>();
         try ( Transaction tx = db.beginTx() )
         {
-            ThreadToStatementContextBridge bridge =
-                    db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-            try (Statement statement = bridge.getTopLevelTransactionBoundToThisThread( true ).acquireStatement())
+            DependencyResolver resolver = db.getDependencyResolver();
+            ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
+            try ( Statement statement = bridge.getTopLevelTransactionBoundToThisThread( true ).acquireStatement() )
             {
                 try ( Cursor<NodeItem> nodeCursor = statement.readOperations().nodeCursor( node.getId() ) )
                 {
-                    if (nodeCursor.next())
+                    if ( nodeCursor.next() )
                     {
                         try ( Cursor<PropertyItem> properties = nodeCursor.get().properties() )
                         {
-                            while (properties.next())
+                            while ( properties.next() )
                             {
+                                seenProperties.add( properties.get().propertyKeyId() );
                                 try ( Cursor<LabelItem> labels = nodeCursor.get().labels() )
                                 {
-                                    while (labels.next())
+                                    while ( labels.next() )
                                     {
-
+                                        seenLabels.add( labels.get().getAsInt() );
                                     }
                                 }
                             }
@@ -593,13 +599,90 @@ public class LabelsAcceptanceTest
                     }
                 }
             }
-
             tx.success();
         }
 
-        // then
-        // No exceptions from the above
+        assertEquals( propertyCount, seenProperties.size() );
+        assertEquals( labelCount, seenLabels.size() );
+    }
 
+    @Test
+    public void nodeWithManyLabels()
+    {
+        int labels = 500;
+        int halveLabels = labels / 2;
+        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
+        long nodeId = createNode( db ).getId();
+
+        addLabels( nodeId, 0, halveLabels );
+        addLabels( nodeId, halveLabels, halveLabels );
+
+        verifyLabels( nodeId, 0, labels );
+
+        removeLabels( nodeId, halveLabels, halveLabels );
+        verifyLabels( nodeId, 0, halveLabels );
+
+        removeLabels( nodeId, 0, halveLabels - 2 );
+        verifyLabels( nodeId, halveLabels - 2, 2 );
+    }
+
+    private void addLabels( long nodeId, int startLabelIndex, int count )
+    {
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            Node node = dbRule.getNodeById( nodeId );
+            int endLabelIndex = startLabelIndex + count;
+            for ( int i = startLabelIndex; i < endLabelIndex; i++ )
+            {
+                node.addLabel( labelWithIndex( i ) );
+            }
+            tx.success();
+        }
+    }
+
+    private void verifyLabels( long nodeId, int startLabelIndex, int count )
+    {
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            Node node = dbRule.getNodeById( nodeId );
+            Set<String> labelNames = Iterables.asList( node.getLabels() )
+                    .stream()
+                    .map( Label::name )
+                    .sorted()
+                    .collect( toSet() );
+
+            assertEquals( count, labelNames.size() );
+            int endLabelIndex = startLabelIndex + count;
+            for ( int i = startLabelIndex; i < endLabelIndex; i++ )
+            {
+                assertTrue( labelNames.contains( labelName( i ) ) );
+            }
+            tx.success();
+        }
+    }
+
+    private void removeLabels( long nodeId, int startLabelIndex, int count )
+    {
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            Node node = dbRule.getNodeById( nodeId );
+            int endLabelIndex = startLabelIndex + count;
+            for ( int i = startLabelIndex; i < endLabelIndex; i++ )
+            {
+                node.removeLabel( labelWithIndex( i ) );
+            }
+            tx.success();
+        }
+    }
+
+    private static Label labelWithIndex( int index )
+    {
+        return label( labelName( index ) );
+    }
+
+    private static String labelName( int index )
+    {
+        return "Label-" + index;
     }
 
     @SuppressWarnings("deprecation")

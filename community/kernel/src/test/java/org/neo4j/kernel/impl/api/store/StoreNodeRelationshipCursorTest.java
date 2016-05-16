@@ -24,17 +24,16 @@ import org.junit.Test;
 import java.util.function.Consumer;
 
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.Direction;
+import org.neo4j.test.MockedNeoStores;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
@@ -49,26 +48,21 @@ public class StoreNodeRelationshipCursorTest
         // on the NodeRecord#getNextRel() value. Although that value could actually be -1
 
         // GIVEN
-        NeoStores stores = mock( NeoStores.class );
-        NodeStore nodeStore = mock( NodeStore.class );
-        when( stores.getNodeStore() ).thenReturn( nodeStore );
-        RecordStore<RelationshipGroupRecord> relationshipGroupStore = mock( RelationshipGroupStore.class );
-        when( stores.getRelationshipGroupStore() ).thenReturn( relationshipGroupStore );
+        NeoStores stores = MockedNeoStores.basicMockedNeoStores();
 
         @SuppressWarnings( "unchecked" )
         StoreNodeRelationshipCursor cursor = new StoreNodeRelationshipCursor(
                 new RelationshipRecord( -1 ),
-                stores,
                 new RelationshipGroupRecord( -1 ),
-                mock( StoreStatement.class ),
                 mock( Consumer.class ),
-                NO_LOCK_SERVICE );
+                NO_LOCK_SERVICE, new RecordCursors( stores ) );
+        reset( stores.getRelationshipGroupStore() );
 
         // WHEN
         cursor.init( true, NO_NEXT_RELATIONSHIP.intValue(), 0, Direction.BOTH );
 
         // THEN
-        verifyNoMoreInteractions( relationshipGroupStore );
+        verifyNoMoreInteractions( stores.getRelationshipGroupStore() );
         assertFalse( cursor.next() );
     }
 }

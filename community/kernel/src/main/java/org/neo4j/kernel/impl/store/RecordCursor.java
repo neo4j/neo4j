@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.cursor.Cursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -45,6 +48,15 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
     RecordCursor<R> acquire( long id, RecordLoad mode );
 
     /**
+     * Moves this cursor to the specified {@code id} with the specified {@link RecordLoad mode} without actually
+     * fetching the record. {@link #next()} and {@link #get()} could be used next to fetch the record.
+     *
+     * @param id the id of the record.
+     * @param mode the mode for subsequent loading.
+     */
+    void placeAt( long id, RecordLoad mode );
+
+    /**
      * Moves to the next record and reads it. If this is the first call since {@link #acquire(long, RecordLoad)}
      * the record specified in acquire will be read, otherwise the next record in the chain,
      * {@link RecordStore#getNextRecordReference(AbstractBaseRecord)}.
@@ -64,6 +76,39 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
      * @return whether or not that record is in use.
      */
     boolean next( long id );
+
+     /**
+      * An additional way of placing this cursor at an arbitrary record id.
+      * Calling this method will not advance the "current id" as to change which {@link #next()} will load next.
+      * This method is useful when there's an opportunity to load a record from an already acquired
+      * {@link PageCursor} and potentially even an already pinned page.
+      *
+      * @param id record id to place cursor at.
+      * @param record record to load the record data into.
+      * @param mode {@link RecordLoad} mode temporarily overriding the default provided in
+      * {@link #acquire(long, RecordLoad)}.
+      * @return whether or not that record is in use.
+      */
+    boolean next( long id, R record, RecordLoad mode );
+
+    /**
+     * Read all records in the chain starting from the id this cursor is positioned at using either
+     * {@link #acquire(long, RecordLoad)} or {@link #placeAt(long, RecordLoad)}. Each next record in the chain is
+     * determined by {@link RecordStore#getNextRecordReference(AbstractBaseRecord)}. Each record placed in the
+     * resulting list is a clone of the reused record.
+     *
+     * @return records of the chain in list.
+     */
+    @SuppressWarnings( "unchecked" )
+    default List<R> getAll()
+    {
+        List<R> recordList = new ArrayList<>();
+        while ( next() )
+        {
+            recordList.add( (R) get().clone() );
+        }
+        return recordList;
+    }
 
     class Delegator<R extends AbstractBaseRecord> implements RecordCursor<R>
     {
@@ -87,6 +132,12 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
         }
 
         @Override
+        public void placeAt( long id, RecordLoad mode )
+        {
+            actual.placeAt( id, mode );
+        }
+
+        @Override
         public void close()
         {
             actual.close();
@@ -103,6 +154,12 @@ public interface RecordCursor<R extends AbstractBaseRecord> extends Cursor<R>
         public boolean next( long id )
         {
             return actual.next( id );
+        }
+
+        @Override
+        public boolean next( long id, R record, RecordLoad mode )
+        {
+            return actual.next( id, record, mode );
         }
     }
 }

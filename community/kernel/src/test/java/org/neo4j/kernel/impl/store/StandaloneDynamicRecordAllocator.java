@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format;
+package org.neo4j.kernel.impl.store;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
-class StandaloneDynamicRecordAllocator implements DynamicRecordAllocator
+public class StandaloneDynamicRecordAllocator implements DynamicRecordAllocator
 {
     private int next = 1;
 

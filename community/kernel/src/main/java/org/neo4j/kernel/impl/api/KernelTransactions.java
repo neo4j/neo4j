@@ -158,6 +158,7 @@ public class KernelTransactions extends LifecycleAdapter
         protected void dispose( KernelTransactionImplementation tx )
         {
             allTransactions.remove( tx );
+            tx.dispose();
             super.dispose( tx );
         }
     };

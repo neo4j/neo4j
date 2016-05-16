@@ -27,6 +27,7 @@ import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -54,7 +55,10 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TargetDirectory;
 
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -64,8 +68,10 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Event;
@@ -132,7 +138,7 @@ public class CommonAbstractStoreTest
         when( pageCursor.getCurrentPageId() ).thenReturn( pageIdForRecord );
         when( pageCursor.next( anyInt() ) ).thenReturn( true );
 
-        RecordCursor<TheRecord> cursor = store.newRecordCursor( new TheRecord( -1 ) );
+        RecordCursor<TheRecord> cursor = store.newRecordCursor( newRecord( -1 ) );
         cursor.acquire( recordId, RecordLoad.FORCE );
 
         cursor.next( recordId );
@@ -170,10 +176,37 @@ public class CommonAbstractStoreTest
     }
 
     @Test
+    public void recordCursorGetAllForEmptyCursor() throws IOException
+    {
+        TheStore store = newStore();
+        long recordId = 4;
+        long pageIdForRecord = store.pageIdForRecord( recordId );
+
+        when( pageCursor.getCurrentPageId() ).thenReturn( pageIdForRecord );
+        when( pageCursor.next( anyInt() ) ).thenReturn( false );
+
+        RecordCursor<TheRecord> cursor = store.newRecordCursor( newRecord( -1 ) );
+        cursor.acquire( recordId, RecordLoad.FORCE );
+
+        assertThat( cursor.getAll(), is( empty() ) );
+    }
+
+    @Test
+    public void recordCursorGetAll() throws IOException
+    {
+        TheStore store = newStore();
+        RecordCursor<TheRecord> cursor = spy( store.newRecordCursor( store.newRecord() ) );
+        doReturn( true ).doReturn( true ).doReturn( true ).doReturn( false ).when( cursor ).next();
+        doReturn( newRecord( 1 ) ).doReturn( newRecord( 5 ) ).doReturn( newRecord( 42 ) ).when( cursor ).get();
+
+        assertEquals( Arrays.asList( newRecord( 1 ), newRecord( 5 ), newRecord( 42 ) ), cursor.getAll() );
+    }
+
+    @Test
     public void throwsWhenRecordWithNegativeIdIsUpdated()
     {
         TheStore store = newStore();
-        TheRecord record = new TheRecord( -1 );
+        TheRecord record = newRecord( -1 );
 
         try
         {
@@ -193,7 +226,7 @@ public class CommonAbstractStoreTest
         when( recordFormat.getMaxId() ).thenReturn( maxFormatId );
 
         TheStore store = newStore();
-        TheRecord record = new TheRecord( maxFormatId + 1 );
+        TheRecord record = newRecord( maxFormatId + 1 );
 
         try
         {
@@ -210,7 +243,7 @@ public class CommonAbstractStoreTest
     public void throwsWhenRecordWithReservedIdIsUpdated()
     {
         TheStore store = newStore();
-        TheRecord record = new TheRecord( IdGeneratorImpl.INTEGER_MINUS_ONE );
+        TheRecord record = newRecord( IdGeneratorImpl.INTEGER_MINUS_ONE );
 
         try
         {
@@ -229,6 +262,11 @@ public class CommonAbstractStoreTest
         TheStore store = new TheStore( storeFile, config, idType, idGeneratorFactory, pageCache, log, recordFormat );
         store.initialise( false );
         return store;
+    }
+
+    private TheRecord newRecord( long id )
+    {
+        return new TheRecord( id );
     }
 
     private long insertNodeRecordAndObservePinEvent( RecordingPageCacheTracer tracer, NodeStore store )
@@ -281,6 +319,12 @@ public class CommonAbstractStoreTest
         TheRecord( long id )
         {
             super( id );
+        }
+
+        @Override
+        public TheRecord clone()
+        {
+            return new TheRecord( getId() );
         }
     }
 }

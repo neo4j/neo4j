@@ -35,7 +35,7 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
     @Override
     public RECORD newRecord()
     {
-        throw new UnsupportedOperationException( "Should not be called" );
+        return null;
     }
 
     @Override

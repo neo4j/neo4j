@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class StatementLifecycleTest
 {
     @Test
-    public void shouldCloseStoreStatementOnlyWhenReferenceCountDownToZero() throws Exception
+    public void shouldReleaseStoreStatementOnlyWhenReferenceCountDownToZero() throws Exception
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
@@ -47,11 +47,11 @@ public class StatementLifecycleTest
 
         // then
         statement.close();
-        verify( storageStatement ).close();
+        verify( storageStatement ).release();
     }
 
     @Test
-    public void shouldCloseStoreStatementWhenForceClosingStatements() throws Exception
+    public void shouldReleaseStoreStatementWhenForceClosingStatements() throws Exception
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
@@ -63,6 +63,6 @@ public class StatementLifecycleTest
         statement.forceClose();
 
         // then
-        verify( storageStatement ).close();
+        verify( storageStatement ).release();
     }
 }

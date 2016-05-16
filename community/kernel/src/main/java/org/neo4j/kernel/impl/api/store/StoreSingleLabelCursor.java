@@ -21,6 +21,9 @@ package org.neo4j.kernel.impl.api.store;
 
 import java.util.function.Consumer;
 
+import org.neo4j.kernel.impl.store.RecordCursor;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 
 /**
@@ -30,14 +33,15 @@ public class StoreSingleLabelCursor extends StoreLabelCursor
 {
     private int labelId;
 
-    public StoreSingleLabelCursor( InstanceCache<StoreSingleLabelCursor> instanceCache )
+    public StoreSingleLabelCursor( RecordCursor<DynamicRecord> dynamicLabelRecordCursor,
+            InstanceCache<StoreSingleLabelCursor> instanceCache )
     {
-        super( (Consumer) instanceCache );
+        super( dynamicLabelRecordCursor, (Consumer) instanceCache );
     }
 
-    public StoreSingleLabelCursor init( long[] labels, int labelId )
+    public StoreSingleLabelCursor init( NodeRecord nodeRecord, int labelId )
     {
-        super.init( labels );
+        super.init( nodeRecord );
         this.labelId = labelId;
         return this;
     }

@@ -605,4 +605,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         return "KernelTransaction[" + this.locks.getLockSessionId() + "]";
     }
+
+    public void dispose()
+    {
+        storageStatement.close();
+    }
 }

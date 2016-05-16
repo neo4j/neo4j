@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -49,17 +49,18 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     private int[] relTypes;
     private int groupChainIndex;
     private boolean end;
+    private final RecordCursors cursors;
 
     public StoreNodeRelationshipCursor( RelationshipRecord relationshipRecord,
-            NeoStores neoStores,
             RelationshipGroupRecord groupRecord,
-            StoreStatement storeStatement,
             Consumer<StoreNodeRelationshipCursor> instanceCache,
-            LockService lockService )
+            LockService lockService,
+            RecordCursors cursors )
     {
-        super( relationshipRecord, neoStores, storeStatement, lockService );
+        super( relationshipRecord, lockService, cursors );
         this.groupRecord = groupRecord;
         this.instanceCache = instanceCache;
+        this.cursors = cursors;
     }
 
     public StoreNodeRelationshipCursor init( boolean isDense,
@@ -85,7 +86,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
 
         if ( isDense && relationshipId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            relationshipGroupStore.getRecord( firstRelId, groupRecord, FORCE );
+            cursors.relationshipGroup().next( firstRelId, groupRecord, FORCE );
             relationshipId = nextChainStart();
         }
         else
@@ -101,7 +102,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
     {
         while ( relationshipId != NO_NEXT_RELATIONSHIP.intValue() )
         {
-            relationshipStore.getRecord( relationshipId, relationshipRecord, FORCE );
+            relationshipRecordCursor.next( relationshipId, relationshipRecord, FORCE );
 
             // If we end up on a relationship record that isn't in use there's a good chance there
             // have been a concurrent transaction deleting this record under or feet. Since we don't
@@ -207,7 +208,7 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
                 // Go to the next group
                 if ( !NULL_REFERENCE.is( groupRecord.getNext() ) )
                 {
-                    relationshipGroupStore.getRecord( groupRecord.getNext(), groupRecord, FORCE );
+                    cursors.relationshipGroup().next( groupRecord.getNext(), groupRecord, FORCE );
                 }
                 else
                 {
