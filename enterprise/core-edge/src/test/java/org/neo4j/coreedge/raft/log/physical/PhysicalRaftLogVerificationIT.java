@@ -30,6 +30,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.mockito.Mockito.mock;
+import static org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 
 public class PhysicalRaftLogVerificationIT extends RaftLogVerificationIT
 {
@@ -38,7 +39,7 @@ public class PhysicalRaftLogVerificationIT extends RaftLogVerificationIT
     {
         FileSystemAbstraction fsa = fsRule.get();
 
-        File directory = new File( "raft-log" );
+        File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
         fsa.mkdir( directory );
 
         long rotateAtSizeBytes = 128;

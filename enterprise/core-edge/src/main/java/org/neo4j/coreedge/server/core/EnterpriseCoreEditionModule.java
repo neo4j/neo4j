@@ -57,6 +57,7 @@ import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogMetadataCache;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
+import org.neo4j.coreedge.raft.log.pruning.PruningScheduler;
 import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
@@ -164,7 +165,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class EnterpriseCoreEditionModule
         extends EditionModule implements CoreEditionSPI
 {
-    private static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
+    public static final String CLUSTER_STATE_DIRECTORY_NAME = "cluster-state";
 
     private final RaftInstance<CoreMember> raft;
     private final CoreState coreState;
@@ -339,6 +340,9 @@ public class EnterpriseCoreEditionModule
             raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
                     coreState, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,
                     raftTimeoutService, databaseHealthSupplier, platformModule.monitors );
+
+            life.add( new PruningScheduler( coreState, platformModule.jobScheduler,
+                    config.get( CoreEdgeClusterSettings.raft_log_pruning_frequency ) ) );
         }
         catch ( IOException e )
         {
@@ -517,7 +521,7 @@ public class EnterpriseCoreEditionModule
 
                 return life.add( new PhysicalRaftLog(
                         fileSystem,
-                        new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
+                        new File( clusterStateDirectory, PhysicalRaftLog.PHYSICAL_LOG_DIRECTORY_NAME ),
                         rotateAtSize, pruneConf, entryCacheSize, headerCacheSize,
                         new PhysicalRaftLogFile.Monitor.Adapter(), marshal, databaseHealthSupplier, logProvider,
                         new RaftLogMetadataCache( metaDataCacheSize ) ) );
@@ -532,7 +536,7 @@ public class EnterpriseCoreEditionModule
 
                 return life.add( new SegmentedRaftLog(
                         fileSystem,
-                        new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
+                        new File( clusterStateDirectory, PhysicalRaftLog.PHYSICAL_LOG_DIRECTORY_NAME ),
                         rotateAtSize,
                         marshal,
                         logProvider,
@@ -544,7 +548,7 @@ public class EnterpriseCoreEditionModule
             default:
                 return life.add( new NaiveDurableRaftLog(
                         fileSystem,
-                        new File( clusterStateDirectory, NaiveDurableRaftLog.DIRECTORY_NAME ),
+                        new File( clusterStateDirectory, NaiveDurableRaftLog.NAIVE_LOG_DIRECTORY_NAME ),
                         marshal, logProvider ) );
         }
     }

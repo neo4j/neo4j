@@ -19,14 +19,11 @@
  */
 package org.neo4j.coreedge.raft.log.physical;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.mock;
+import org.junit.After;
+import org.junit.Test;
 
 import java.io.File;
 
-import org.junit.After;
-import org.junit.Test;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
@@ -36,6 +33,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 
 public class PhysicalRaftLogCacheConsistencyTest
 {
@@ -56,7 +58,7 @@ public class PhysicalRaftLogCacheConsistencyTest
         {
             fileSystem = new EphemeralFileSystemAbstraction();
         }
-        File directory = new File( "raft-log" );
+        File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, rotateAtSize, "1 files", 100, 10,

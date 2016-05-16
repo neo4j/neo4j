@@ -26,13 +26,15 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.neo4j.coreedge.raft.log.NaiveDurableRaftLog.NAIVE_LOG_DIRECTORY_NAME;
+
 public class NaiveDurableRaftLogContractTest extends RaftLogContractTest
 {
     @Override
     public RaftLog createRaftLog() throws IOException
     {
         FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-        File directory = new File( "raft-log" );
+        File directory = new File( NAIVE_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer(),

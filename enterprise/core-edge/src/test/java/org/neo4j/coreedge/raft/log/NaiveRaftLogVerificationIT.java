@@ -24,13 +24,15 @@ import java.io.File;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.neo4j.coreedge.raft.log.NaiveDurableRaftLog.NAIVE_LOG_DIRECTORY_NAME;
+
 public class NaiveRaftLogVerificationIT extends RaftLogVerificationIT
 {
     @Override
     protected RaftLog createRaftLog() throws Throwable
     {
         FileSystemAbstraction fsa = fsRule.get();
-        File directory = new File( "raft-log" );
+        File directory = new File( NAIVE_LOG_DIRECTORY_NAME );
         fsa.mkdir( directory );
 
         return new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),

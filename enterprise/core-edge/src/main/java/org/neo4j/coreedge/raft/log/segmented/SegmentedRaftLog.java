@@ -34,7 +34,6 @@ import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.collection.LruCache;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
@@ -58,8 +57,7 @@ import static java.lang.String.format;
  */
 public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
 {
-    private final Log log;
-
+    public static final String SEGMENTED_LOG_DIRECTORY_NAME = "raft-log";
     private final FileSystemAbstraction fileSystem;
     private final File directory;
     private final long rotateAtSize;
@@ -71,7 +69,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     private final LruCache<Long,RaftLogEntry> entryCache; // TODO: replace with ring buffer, limit based on size
     private EntryStore entryStore;
     private final SegmentedRaftLogPruner segmentedRaftLogPruner;
-//    private TermCache termCache;
 
     private State state;
 
@@ -85,7 +82,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         this.contentMarshal = contentMarshal;
 
         this.fileNames = new FileNames( directory );
-        this.log = logProvider.getLog( getClass() );
         this.logProvider = logProvider;
         this.entryCache = entryCacheSize >= 1 ? new LruCache<>( "raft-log-entry-cache", entryCacheSize ) : null;
         this.segmentedRaftLogPruner = new SegmentedRaftLogPruner( pruningStrategyConfig, logProvider);
@@ -103,9 +99,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         state = recoveryProtocol.run();
 
         entryStore = new EntryStore( state.segments );
-
-//        termCache = new TermCache();
-//        termCache.populateWith( entryStore, state.segments.last().prevIndex() );
     }
 
     @Override
@@ -118,7 +111,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         try
         {
             state.segments.last().write( state.appendIndex, entry );
-//            termCache.populate( state.appendIndex, entry.term() );
         }
         catch ( Throwable e )
         {
@@ -252,11 +244,6 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     @Override
     public long readEntryTerm( long logIndex ) throws IOException, RaftLogCompactedException
     {
-//        long cachedTerm = termCache.lookup( logIndex );
-//        if ( cachedTerm != UNKNOWN_TERM )
-//        {
-//            return cachedTerm;
-//        } else
         if ( logIndex == state.prevIndex )
         {
             return state.prevTerm;

@@ -35,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning;
 
 @RunWith(Parameterized.class)
@@ -76,7 +77,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
         {
             fileSystem = new EphemeralFileSystemAbstraction();
         }
-        File directory = new File( "raft-log" );
+        File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 1024,

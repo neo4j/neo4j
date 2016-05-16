@@ -19,18 +19,20 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.Test;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.logging.NullLogProvider;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
 
 public class StoreChannelPoolTest
 {
@@ -39,7 +41,8 @@ public class StoreChannelPoolTest
     {
         // given
         FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        StoreChannelPool pool = new StoreChannelPool( fsa, new File( "raft-log" ), "rw", NullLogProvider.getInstance() );
+        StoreChannelPool pool =
+                new StoreChannelPool( fsa, new File( SEGMENTED_LOG_DIRECTORY_NAME ), "rw", NullLogProvider.getInstance() );
         StoreChannel channel = pool.acquire( 0 );
 
         CountDownLatch latch = new CountDownLatch( 1 );
@@ -59,8 +62,11 @@ public class StoreChannelPoolTest
     {
         // given
         FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        StoreChannelPool pool = new StoreChannelPool( fsa, new File( "raft-log" ), "rw", NullLogProvider.getInstance() );
-        pool.markForDisposal( () -> {} );
+        StoreChannelPool pool = new StoreChannelPool( fsa, new File( SEGMENTED_LOG_DIRECTORY_NAME ), "rw",
+                NullLogProvider.getInstance() );
+
+        pool.markForDisposal( () -> {
+        } );
 
         // when
         try
