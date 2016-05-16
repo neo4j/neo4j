@@ -25,17 +25,12 @@ import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 public class BasicPasswordPolicy implements PasswordPolicy
 {
     @Override
-    public void validatePassword( AuthSubject authSubject, String password, CredentialsMatcher credentialsMatcher )
+    public void validatePassword( AuthSubject authSubject, String password )
             throws IllegalCredentialsException
     {
         if ( password == null || password.isEmpty() )
         {
             throw new IllegalCredentialsException( "Password cannot be empty." );
-        }
-
-        if ( credentialsMatcher.credentialsMatchesPassword( password ) )
-        {
-            throw new IllegalCredentialsException( "Old password and new password cannot be the same." );
         }
     }
 }

@@ -151,7 +151,7 @@ public class BasicAuthManager implements AuthManager, UserManager
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
 
-        passwordPolicy.validatePassword( authSubject, password, basicAuthSubject::credentialsMatchesPassword );
+        passwordPolicy.validatePassword( authSubject, password );
 
         setUserPassword( username, password );
     }

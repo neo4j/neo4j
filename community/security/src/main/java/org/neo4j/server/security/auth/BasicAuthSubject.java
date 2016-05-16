@@ -112,9 +112,4 @@ public class BasicAuthSubject implements AuthSubject
     {
         return accessMode.name();
     }
-
-    boolean credentialsMatchesPassword( String password )
-    {
-        return user.credentials().matchesPassword( password );
-    }
 }

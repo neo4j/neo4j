@@ -129,16 +129,4 @@ public class FileUserRealm extends AuthorizingRealm
                     "User name contains illegal characters. Please use simple ascii characters and numbers." );
         }
     }
-
-    boolean credentialsMatchesPassword( String username, String password )
-    {
-        User user = userRepository.findByName( username );
-
-        if ( user != null )
-        {
-            return user.credentials().matchesPassword( password );
-        }
-
-        return false;
-    }
 }
