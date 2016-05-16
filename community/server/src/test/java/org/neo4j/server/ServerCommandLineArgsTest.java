@@ -29,6 +29,7 @@ import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
@@ -65,7 +66,13 @@ public class ServerCommandLineArgsTest
         assertEquals( homeDir, parse( "--home-dir", homeDir.toString() ).homeDir() );
         assertEquals( homeDir, parse( "--home-dir=" + homeDir.toString() ).homeDir() );
     }
-    
+
+    @Test
+    public void shouldReturnNullIfHomeDirIsNotSpecified()
+    {
+        assertNull( parse().homeDir() );
+    }
+
     @Test
     public void shouldPickUpOverriddenConfigurationParameters() throws Exception
     {
