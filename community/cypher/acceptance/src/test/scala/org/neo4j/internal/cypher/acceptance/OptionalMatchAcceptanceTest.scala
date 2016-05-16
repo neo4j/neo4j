@@ -41,80 +41,90 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     selfRel = relate(nodeB, nodeB)
   }
 
+  // TCK'd
   test("optional nodes with labels in match clause should return null when there is no match") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n:Single) optional match (n)-[r]-(m:NonExistent) return r")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Single) OPTIONAL MATCH (n)-[r]-(m:NonExistent) RETURN r")
     assert(result.toList === List(Map("r" -> null)))
   }
 
-  test("optional nodes with labels in match clause should not return if where is no match") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n:Single) optional match (n)-[r]-(m) where m:NonExistent return r")
+  // TCK'd
+  test("optional nodes with labels in where clause should return null when there is no match") {
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:Single) OPTIONAL MATCH (n)-[r]-(m) WHERE m:NonExistent RETURN r")
     assert(result.toList === List(Map("r" -> null)))
   }
 
+  // TCK'd
   test("predicates on optional matches should be respected") {
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n:Single) optional match (n)-[r]-(m) where m.prop = 42 return m")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Single) OPTIONAL MATCH (n)-[r]-(m) WHERE m.prop = 42 RETURN m")
     assert(result.toList === List(Map("m" -> nodeA)))
   }
 
+  // TCK'd
   test("has label on null should evaluate to null") {
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n:Single) optional match (n)-[r:TYPE]-(m) return m:TYPE")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Single) OPTIONAL MATCH (n)-[r:TYPE]-(m) RETURN m:TYPE")
     assert(result.toList === List(Map("m:TYPE" -> null)))
   }
 
+  // TCK'd
   test("should allow match following optional match if there is an intervening WITH when there are no results") {
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Single) OPTIONAL MATCH (a)-->(b:NonExistent) OPTIONAL MATCH (a)-->(c:NonExistent) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Single) OPTIONAL MATCH (a)-->(b:NonExistent) OPTIONAL MATCH (a)-->(c:NonExistent) WITH coalesce(b, c) AS x MATCH (x)-->(d) RETURN d")
     assert(result.toList === List())
   }
 
-  test("should allow match following optional match if there is an intervening WITH when there are no results 23") {
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Single) OPTIONAL MATCH (a)-->(b:A) OPTIONAL MATCH (a)-->(c:B) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
+  // TCK'd
+  test("should allow match following optional match if there is an intervening WITH when there are results") {
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Single) OPTIONAL MATCH (a)-->(b:A) OPTIONAL MATCH (a)-->(c:B) WITH coalesce(b, c) AS x MATCH (x)-->(d) RETURN d")
     assert(result.toList === List(Map("d" -> nodeC)))
   }
 
+  // TCK'd
   test("should support optional match without any external dependencies in WITH") {
     val result = executeWithAllPlannersAndCompatibilityMode("OPTIONAL MATCH (a:A) WITH a AS a MATCH (b:B) RETURN a, b")
 
     assert(result.toList === List(Map("a" -> nodeA, "b" -> nodeB)))
   }
 
+  // TCK'd
   test("should support named paths inside of optional matches") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:A) optional match p = (a)-[:X]->(b) return p")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A) OPTIONAL MATCH p = (a)-[:X]->(b) RETURN p")
 
     assert(result.toList === List(Map("p" -> null)))
   }
 
+  // TCK'd
   test("optional matching between two found nodes behaves as expected") {
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
-      """match (a:A), (b:C)
-        |optional match (x)-->(b)
-        |return x""".stripMargin)
+      """MATCH (a:A), (b:C)
+        |OPTIONAL MATCH (x)-->(b)
+        |RETURN x""".stripMargin)
 
-    assert(result.toSet === Set(
-      Map("x" -> nodeA)
-    ))
+    assert(result.toSet === Set(Map("x" -> nodeA)))
   }
 
+  // TCK'd
   test("optional match with labels on the optional end node") {
     createLabeledNode("X")
     val x2 = createLabeledNode("X")
     val b1 = createLabeledNode("Y")
     val b2 = createLabeledNode("Y", "Z")
-
     relate(x2, b1)
     relate(x2, b2)
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:X) OPTIONAL MATCH (a)-->(b:Y) RETURN b")
+
     result.toSet should equal(Set(Map("b" -> null), Map("b" -> b1), Map("b" -> b2)))
   }
 
+  // TCK'd
   test("should support names paths inside of option matches with node predicates") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:A), (b:B) optional match p = (a)-[:X]->(b) return p")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A), (b:B) OPTIONAL MATCH p = (a)-[:X]->(b) RETURN p")
 
     assert(result.toList === List(Map("p" -> null)))
   }
 
+  // TCK'd
   test("should support varlength optional relationships") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:Single) optional match (a)-[*]->(b) return b")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Single) OPTIONAL MATCH (a)-[*]->(b) RETURN b")
 
     assert(result.toSet === Set(
       Map("b" -> nodeA),
@@ -123,118 +133,131 @@ class OptionalMatchAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     ))
   }
 
+  // TCK'd
   test("should support varlength optional relationships that is longer than the existing longest") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:Single) optional match (a)-[*3..]-(b) return b")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Single) OPTIONAL MATCH (a)-[*3..]-(b) RETURN b")
 
     assert(result.toSet === Set(Map("b" -> null)))
   }
 
+  // TCK'd
   test("should support optional match to find self loops") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:B) optional match (a)-[r]-(a) return r")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:B) OPTIONAL MATCH (a)-[r]-(a) RETURN r")
 
     assert(result.toSet === Set(Map("r" -> selfRel)))
   }
 
+  // TCK'd
   test("should support optional match to not find self loops") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a) where not (a:B) optional match (a)-[r]->(a) return r")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a) WHERE NOT (a:B) OPTIONAL MATCH (a)-[r]->(a) RETURN r")
 
     assert(result.toSet === Set(Map("r" -> null)))
   }
 
+  // TCK'd
   test("should support varlength optional relationships where both ends are already bound") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:Single), (x:C) optional match (a)-[*]->(x) return x")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Single), (x:C) OPTIONAL MATCH (a)-[*]->(x) RETURN x")
 
     assert(result.toSet === Set(
       Map("x" -> nodeC)
     ))
   }
 
+  // TCK'd
   test("should support varlength optional relationships where both ends are already bound but no paths exist") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:A), (b:B) optional match p = (a)-[*]->(b) return p")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A), (b:B) OPTIONAL MATCH p = (a)-[*]->(b) RETURN p")
 
     assert(result.toSet === Set(
       Map("p" -> null)
     ))
   }
 
+  // TCK'd
   test("should support optional relationships where both ends are already bound") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:Single), (c:C) optional match (a)-->(b)-->(c) return b")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Single), (c:C) OPTIONAL MATCH (a)-->(b)-->(c) RETURN b")
 
     assert(result.toSet === Set(
       Map("b" -> nodeA)
     ))
   }
 
+  // TCK'd
   test("should support optional relationships where both ends are already bound and no paths exist") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:A), (c:C) optional match (a)-->(b)-->(c) return b")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A), (c:C) OPTIONAL MATCH (a)-->(b)-->(c) RETURN b")
 
     assert(result.toSet === Set(
       Map("b" -> null)
     ))
   }
 
+  // TCK'd
   test("should handle pattern predicates in optional match") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:A), (c:C) optional match (a)-->(b) WHERE (b)-->(c) return b")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A), (c:C) OPTIONAL MATCH (a)-->(b) WHERE (b)-->(c) RETURN b")
 
     assert(result.toSet === Set(
       Map("b" -> null)
     ))
   }
 
+  // TCK'd
   test("should handle pattern predicates in optional match with hit") {
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:Single), (c:C) optional match (a)-->(b) WHERE (b)-->(c) return b")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Single), (c:C) OPTIONAL MATCH (a)-->(b) WHERE (b)-->(c) RETURN b")
 
     assert(result.toSet === Set(
       Map("b" -> nodeA)
     ))
   }
 
+  // TCK'd
   test("should handle correlated optional matches - the first does not match, and the second must not match") {
     val result = executeWithAllPlannersAndCompatibilityMode(
-      """match (a:A), (b:B)
-        |optional match (a)-->(x)
-        |optional match (x)-[r]->(b)
-        |return x, r""".stripMargin)
+      """MATCH (a:A), (b:B)
+        |OPTIONAL MATCH (a)-->(x)
+        |OPTIONAL MATCH (x)-[r]->(b)
+        |RETURN x, r""".stripMargin)
 
     assert(result.toSet === Set(
       Map("x" -> nodeC, "r" -> null)
     ))
   }
 
+  // TCK'd
   test("should handle optional match between optionally matched things") {
     val result = executeWithAllPlannersAndCompatibilityMode(
-      """OPTIONAL MATCH (a:NOT_THERE)
+      """OPTIONAL MATCH (a:NotThere)
         |WITH a
         |MATCH (b:B)
-        |with a, b
+        |WITH a, b
         |OPTIONAL MATCH (b)-[r:NOR_THIS]->(a)
         |RETURN a, b, r""".stripMargin)
 
     assert(result.toList === List(Map("b" -> nodeB, "r" -> null, "a" -> null)))
   }
 
+  // TCK'd
   test("should handle optional match between nulls") {
     val result = executeWithAllPlannersAndCompatibilityMode(
-      """OPTIONAL MATCH (a:NOT_THERE)
-        |OPTIONAL MATCH (b:NOT_THERE)
-        |with a, b
+      """OPTIONAL MATCH (a:NotThere)
+        |OPTIONAL MATCH (b:NotThere)
+        |WITH a, b
         |OPTIONAL MATCH (b)-[r:NOR_THIS]->(a)
         |RETURN a, b, r""".stripMargin)
 
     assert(result.toList === List(Map("b" -> null, "r" -> null, "a" -> null)))
   }
 
+  // TCK'd
   test("optional match and collect should work") {
-    createLabeledNode(Map("property" -> 42), "DOES_EXIST")
-    createLabeledNode(Map("property" -> 43), "DOES_EXIST")
-    createLabeledNode(Map("property" -> 44), "DOES_EXIST")
+    createLabeledNode(Map("property" -> 42), "DoesExist")
+    createLabeledNode(Map("property" -> 43), "DoesExist")
+    createLabeledNode(Map("property" -> 44), "DoesExist")
 
-    val query = """OPTIONAL MATCH (f:DOES_EXIST)
-                  |OPTIONAL MATCH (n:DOES_NOT_EXIST)
-                  |RETURN collect(DISTINCT n.property), collect(DISTINCT f.property)""".stripMargin
+    val query = """OPTIONAL MATCH (f:DoesExist)
+                  |OPTIONAL MATCH (n:DoesNotExist)
+                  |RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b""".stripMargin
 
-    val result = executeWithAllPlanners(query).toList
+    val result = executeWithAllPlanners(query)
 
-    result.size should equal(1)
+    result.toList should equal(List(Map("b" -> List(42, 43, 44), "a" -> List.empty)))
   }
 }
