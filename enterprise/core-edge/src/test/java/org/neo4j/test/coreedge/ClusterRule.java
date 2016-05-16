@@ -33,6 +33,7 @@ import org.neo4j.test.rule.TargetDirectory;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.function.IntFunction;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -84,7 +85,14 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     {
         if ( cluster != null )
         {
-            cluster.shutdown();
+            try
+            {
+                cluster.shutdown();
+            }
+            catch ( Throwable e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 

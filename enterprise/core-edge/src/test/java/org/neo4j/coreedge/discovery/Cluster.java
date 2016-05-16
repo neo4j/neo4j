@@ -106,7 +106,7 @@ public class Cluster
         }
         finally
         {
-            executor.shutdownNow();
+            executor.shutdown();
         }
     }
 
@@ -156,6 +156,11 @@ public class Cluster
     {
         return start( parentDir, noOfCoreServers, noOfEdgeServers, discoveryServiceFactory, coreParams, emptyMap(),
                 StandardV3_0.NAME );
+    }
+
+    public File coreServerStoreDirectory( int serverId )
+    {
+        return coreServerStoreDirectory( parentDir, serverId );
     }
 
     private static File coreServerStoreDirectory( File parentDir, int serverId )
@@ -299,13 +304,13 @@ public class Cluster
                 discoveryServiceFactory );
     }
 
-    public void shutdown()
+    public void shutdown() throws ExecutionException, InterruptedException
     {
         shutdownCoreServers();
         shutdownEdgeServers();
     }
 
-    public void shutdownCoreServers()
+    public void shutdownCoreServers() throws InterruptedException, ExecutionException
     {
         ExecutorService executor = Executors.newCachedThreadPool();
         List<Callable<Object>> serverShutdownSuppliers = new ArrayList<>();
@@ -321,13 +326,10 @@ public class Cluster
         {
             combine( executor.invokeAll( serverShutdownSuppliers ) ).get();
         }
-        catch ( InterruptedException | ExecutionException e )
-        {
-            e.printStackTrace();
-        }
         finally
         {
             executor.shutdown();
+            coreServers.clear();
         }
     }
 
@@ -337,6 +339,7 @@ public class Cluster
         {
             edgeServer.shutdown();
         }
+        edgeServers.clear();
     }
 
     public CoreGraphDatabase getCoreServerById( int serverId )

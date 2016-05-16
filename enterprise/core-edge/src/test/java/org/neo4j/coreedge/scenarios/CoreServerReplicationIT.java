@@ -21,6 +21,7 @@ package org.neo4j.coreedge.scenarios;
 
 import java.io.File;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -52,7 +53,7 @@ public class CoreServerReplicationIT
     private Cluster cluster;
 
     @After
-    public void shutdown()
+    public void shutdown() throws ExecutionException, InterruptedException
     {
         if ( cluster != null )
         {
