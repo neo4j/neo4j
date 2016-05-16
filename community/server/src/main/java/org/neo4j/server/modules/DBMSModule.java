@@ -19,8 +19,11 @@
  */
 package org.neo4j.server.modules;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.rest.dbms.UserService;
 import org.neo4j.server.rest.discovery.DiscoveryService;
 import org.neo4j.server.web.WebServer;
@@ -35,10 +38,12 @@ public class DBMSModule implements ServerModule
     private static final String ROOT_PATH = "/";
 
     private final WebServer webServer;
+    private final Config config;
 
-    public DBMSModule( WebServer webServer )
+    public DBMSModule( WebServer webServer, Config config )
     {
         this.webServer = webServer;
+        this.config = config;
     }
 
     @Override
@@ -49,9 +54,15 @@ public class DBMSModule implements ServerModule
 
     private List<String> getClassNames()
     {
-        return asList(
-                DiscoveryService.class.getName(),
-                UserService.class.getName() );
+        List<String> toReturn = new ArrayList<>( 2 );
+
+        toReturn.add( DiscoveryService.class.getName() );
+        if ( config.get( GraphDatabaseSettings.auth_enabled ) )
+        {
+            toReturn.add( UserService.class.getName() );
+        }
+
+        return toReturn;
     }
 
     @Override
