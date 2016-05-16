@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_0.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_0.{CRS, CartesianPoint, ExecutionContext, GeographicPoint}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
-import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_0.{CypherTypeException, InvalidArgumentException, SyntaxException}
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
 
@@ -33,7 +33,7 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
       val map = mapCreator(state.query)
       map.getOrElse("crs", CRS.WGS84.name) match {
         case CRS.Cartesian.name =>
-          if (!map.contains("x") || !map.contains("y")) throw new SyntaxException("A cartesian point must contain 'x' and 'y' coordinates")
+          if (!map.contains("x") || !map.contains("y")) throw new InvalidArgumentException("A cartesian point must contain 'x' and 'y' coordinates")
           val x = safeToDouble(map("x"))
           val y = safeToDouble(map("y"))
           CartesianPoint(x, y)
@@ -44,7 +44,7 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
           val latitude = safeToDouble(map("latitude"))
           GeographicPoint(longitude, latitude, CRS.WGS84)
 
-        case unknown => throw new SyntaxException(s"$unknown is not a supported coordinate system, supported values " +
+        case unknown => throw new InvalidArgumentException(s"$unknown is not a supported coordinate system, supported values " +
                                                     s"are ${CRS.Cartesian.name} and ${CRS.WGS84.name}")
       }
     case x => throw new CypherTypeException(s"Expected a map but got $x")
@@ -62,6 +62,6 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
 
   private def safeToDouble(value: Any) = value match {
     case n: Number => n.doubleValue()
-    case other => throw new SyntaxException(other.getClass.getSimpleName + " is not a valid coordinate type.")
+    case other => throw new CypherTypeException(other.getClass.getSimpleName + " is not a valid coordinate type.")
   }
 }

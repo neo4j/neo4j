@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_0.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewPlannerTestSupport, SyntaxException}
 
 class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -419,8 +419,8 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   }
 
   test("should fail properly if missing cartesian coordinates") {
-    a [SyntaxException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
-                                                                 "params" -> Map("y" -> 1.0, "crs" -> "cartesian")))
+    an [InvalidArgumentException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
+                                                                           "params" -> Map("y" -> 1.0, "crs" -> "cartesian")))
   }
 
   test("should fail properly if missing geographic coordinates") {
@@ -429,8 +429,8 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   }
 
   test("should fail properly if unknown coordinate system") {
-    a [SyntaxException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
-                                                                 "params" -> Map("y" -> 1.0, "crs" -> "WGS-1337")))
+    an [InvalidArgumentException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
+                                                                 "params" -> Map("crs" -> "WGS-1337")))
   }
 
   test("should fail properly if missing CRS") {
