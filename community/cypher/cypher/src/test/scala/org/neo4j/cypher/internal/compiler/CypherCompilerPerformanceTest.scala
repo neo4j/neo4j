@@ -22,11 +22,8 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD}
 import org.neo4j.cypher.internal.compatibility.{EntityAccessorWrapper2_3, WrappedMonitors2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.EntityAccessor
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, GreedyPlannerName, InfoLogger, _}
-import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
-import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.NodeManager
 
@@ -187,12 +184,11 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
         nonIndexedLabelWarningThreshold = 10000L
       ),
       clock = CLOCK,
-      structure = GeneratedQueryStructure,
       monitors = new WrappedMonitors2_3(kernelMonitors),
       logger = DEV_NULL,
       rewriterSequencer = RewriterStepSequencer.newPlain,
       plannerName = Some(GreedyPlannerName),
-      runtimeName = Some(CompiledRuntimeName)
+      runtimeName = Some(InterpretedRuntimeName)
     )
   }
 

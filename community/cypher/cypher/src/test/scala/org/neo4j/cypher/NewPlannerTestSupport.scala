@@ -23,10 +23,10 @@ import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, 
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_3
-import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherTestSupport
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -178,18 +178,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   def executeWithCostPlannerOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
     monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
 
-  def executeWithAllPlannersAndRuntimes(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
-    val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
-    val compiledResult = monitoringNewPlanner(innerExecute(s"CYPHER runtime=compiled $queryText", params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
-
-    assertResultsAreSame(interpretedResult, compiledResult, queryText, "Diverging results between interpreted and compiled runtime")
-    assertResultsAreSame(ruleResult, interpretedResult, queryText, "Diverging results between rule planner and interpreted runtime")
-    ruleResult.close()
-    interpretedResult.close()
-    compiledResult
-  }
-
   private def assertResultsAreSame(ruleResult: InternalExecutionResult, costResult: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
     withClue(errorMsg) {
       if (queryText.toLowerCase contains "order by") {
@@ -198,17 +186,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
         ruleResult.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsAs costResult.toComparableResultWithOptions(replaceNaNs)
       }
     }
-  }
-
-  def executeScalarWithNewRuntime[T](queryText: String, params: (String, Any)*) = {
-    val interpretedResult = self.executeScalar[T](s"CYPHER runtime=interpreted $queryText", params: _*)
-    val compiledResult = monitoringNewPlanner(self.executeScalar[T](s"CYPHER runtime=compiled $queryText", params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
-    val ruleResult = self.executeScalar[T](s"CYPHER planner=rule $queryText", params: _*)
-
-    assert(interpretedResult === compiledResult, "Diverging results between interpreted and compiled runtime")
-    assert(compiledResult === ruleResult, "Diverging results between compiled runtime and rule planner")
-
-    compiledResult
   }
 
   protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =

@@ -63,7 +63,7 @@ class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String
       case q: Union =>
         buildUnionQuery(q, planContext)
     }
-    Right(res)
+    res
   }
 
   private val unionBuilder = new UnionBuilder(this)

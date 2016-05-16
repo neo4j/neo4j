@@ -421,8 +421,8 @@ order by a.COL1""")
 
     relate(refNode, a, "X")
 
-    executeWithAllPlannersAndRuntimes("match a-->b where a = {a} return b", "a" -> a) should have size 1
-    executeWithAllPlannersAndRuntimes("match a-->b where a = {a} return b", "a" -> b) shouldBe empty
+    executeWithAllPlanners("match a-->b where a = {a} return b", "a" -> a) should have size 1
+    executeWithAllPlanners("match a-->b where a = {a} return b", "a" -> b) shouldBe empty
   }
 
   test("shouldHandleParametersNamedAsIdentifiers") {
@@ -681,7 +681,7 @@ order by a.COL1""")
     relate(a, b)
     relate(b, c)
 
-    val result = executeWithAllPlannersAndRuntimes("MATCH n-[r]->m WHERE n = {a} AND m = {b} RETURN *", "a"->a, "b"->c)
+    val result = executeWithAllPlanners("MATCH n-[r]->m WHERE n = {a} AND m = {b} RETURN *", "a"->a, "b"->c)
 
     result.toList shouldBe empty
   }
@@ -980,7 +980,7 @@ order by a.COL1""")
     createNode("coll" -> Array(1, 2, 3), "bool" -> true)
     createLabeledNode("LABEL")
 
-    val foundNode = executeWithAllPlannersAndRuntimes("match (n:LABEL) where n.coll and n.bool return n").columnAs[Node]("n").next()
+    val foundNode = executeWithAllPlanners("match (n:LABEL) where n.coll and n.bool return n").columnAs[Node]("n").next()
 
     foundNode should equal(n)
   }

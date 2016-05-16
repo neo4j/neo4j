@@ -115,7 +115,7 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<String> cypher_runtime = setting(
             "dbms.cypher.runtime",
-            options( "INTERPRETED", "COMPILED", DEFAULT ), DEFAULT );
+            options( "INTERPRETED", DEFAULT ), DEFAULT );
 
     @Description( "Enable tracing of compilation in cypher." )
     @Internal

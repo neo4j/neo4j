@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{NodeIndexSeek, NodeHashJoin}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{NodeHashJoin, NodeIndexSeek}
 import org.neo4j.cypher.internal.compiler.v2_3.{GreedyPlannerName, IDPPlannerName}
-import org.neo4j.cypher._
-import org.scalatest.matchers.{MatchResult, Matcher}
 import org.neo4j.kernel.api.exceptions.Status
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with RunWithConfigTestSupport {
 
@@ -75,7 +75,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   }
 
   test("scan hints are handled by ronja") {
-    executeWithAllPlannersAndRuntimes("match (n:Person) using scan n:Person return n").toList
+    executeWithAllPlanners("match (n:Person) using scan n:Person return n").toList
   }
 
   test("fail when equality checks are done with OR") {
@@ -184,7 +184,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -200,7 +200,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -216,7 +216,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
 
     //THEN
     result.toList should equal (List())
@@ -232,7 +232,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
     //THEN
     result.toList should equal (List())
@@ -248,7 +248,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimes("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+    val result = executeWithAllPlanners("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))

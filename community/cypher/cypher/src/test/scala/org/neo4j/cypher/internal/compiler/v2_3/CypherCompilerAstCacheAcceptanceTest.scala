@@ -23,18 +23,16 @@ import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.compatibility.{EntityAccessorWrapper2_3, StringInfoLogger2_3, WrappedMonitors2_3}
-import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, ExecutionPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v2_3.GeneratedQueryStructure
-import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.{Clock, FrozenClock}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.NodeManager
-import org.neo4j.logging.{NullLog, Log, AssertableLogProvider}
-import AssertableLogProvider.inLog
+import org.neo4j.logging.AssertableLogProvider.inLog
+import org.neo4j.logging.{AssertableLogProvider, Log, NullLog}
 
 import scala.collection.Map
 
@@ -54,11 +52,11 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
         idpIterationDuration = 1000,
         nonIndexedLabelWarningThreshold = 10000L
       ),
-      clock, GeneratedQueryStructure,
+      clock,
       new WrappedMonitors2_3(kernelMonitors),
       new StringInfoLogger2_3(log),
       plannerName = Some(GreedyPlannerName),
-      runtimeName = Some(CompiledRuntimeName),
+      runtimeName = Some(InterpretedRuntimeName),
       rewriterSequencer = RewriterStepSequencer.newValidating
     )
   }
