@@ -57,7 +57,12 @@ public abstract class ServerBootstrapper implements Bootstrapper
     public static int start( Bootstrapper boot, String... argv )
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
-        // TODO: fail here if home-dir isn't present
+
+        if ( args.homeDir() == null )
+        {
+            throw new ServerStartupException( "Argument --home-dir is required and was not provided." );
+        }
+
         return boot.start( args.homeDir(), args.configFile(), args.configOverrides() );
     }
 

@@ -88,6 +88,11 @@ public class ServerCommandLineArgs
 
     public File homeDir()
     {
+        if ( args.get( HOME_DIR_ARG ) == null )
+        {
+            return null;
+        }
+
         return new File( args.get( HOME_DIR_ARG ) );
     }
 }
