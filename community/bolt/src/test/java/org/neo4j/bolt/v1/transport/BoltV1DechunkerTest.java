@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.v1.transport;
 
+import org.junit.Test;
+
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-
-import org.junit.Test;
 
 import org.neo4j.bolt.v1.messaging.RecordingMessageHandler;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
