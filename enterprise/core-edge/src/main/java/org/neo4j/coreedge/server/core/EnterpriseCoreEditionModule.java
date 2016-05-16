@@ -522,14 +522,15 @@ public class EnterpriseCoreEditionModule
             case SEGMENTED:
             {
                 long rotateAtSize = config.get( CoreEdgeClusterSettings.raft_log_rotation_size );
-                int metaDataCacheSize = config.get( CoreEdgeClusterSettings.raft_log_meta_data_cache_size );
+                int entryCacheSize = config.get( CoreEdgeClusterSettings.raft_log_entry_cache_size );
 
                 return life.add( new SegmentedRaftLog(
                         fileSystem,
                         new File( clusterStateDirectory, PhysicalRaftLog.DIRECTORY_NAME ),
                         rotateAtSize,
-                        marshal, logProvider,
-                        metaDataCacheSize ) );
+                        marshal,
+                        logProvider,
+                        entryCacheSize ) );
             }
 
             case NAIVE:

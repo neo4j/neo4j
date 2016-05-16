@@ -134,7 +134,10 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
         }
 
         if ( entryCache != null )
-        { entryCache.put( state.appendIndex, entry ); }
+        {
+            entryCache.put( state.appendIndex, entry );
+        }
+
         return state.appendIndex;
     }
 
@@ -168,7 +171,10 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
                     state.appendIndex );
         }
 
-        if ( entryCache != null ) {entryCache.clear();}
+        if ( entryCache != null )
+        {
+            entryCache.clear();
+        }
 
         long newAppendIndex = fromIndex - 1;
         long newTerm = readEntryTerm( newAppendIndex );
