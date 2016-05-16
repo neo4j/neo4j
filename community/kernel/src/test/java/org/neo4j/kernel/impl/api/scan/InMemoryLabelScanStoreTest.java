@@ -38,7 +38,7 @@ public class InMemoryLabelScanStoreTest
         InMemoryLabelScanStore inMemoryLabelScanStore = new InMemoryLabelScanStore();
         populateIndex( inMemoryLabelScanStore );
         LabelScanReader labelScanReader = inMemoryLabelScanStore.newReader();
-        assertEquals( 6L, labelScanReader.getHighestIndexedNodeId() );
+        assertEquals( 6L, labelScanReader.getMinIndexedNodeId() );
     }
 
     private void populateIndex( InMemoryLabelScanStore inMemoryLabelScanStore ) throws IOException

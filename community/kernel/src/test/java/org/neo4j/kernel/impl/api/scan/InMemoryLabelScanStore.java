@@ -158,7 +158,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
             }
 
             @Override
-            public long getHighestIndexedNodeId()
+            public long getMinIndexedNodeId()
             {
                 return data.entrySet().stream().map( e -> Collections.max( e.getValue() ) ).reduce( Long::max )
                         .orElse( 0L );

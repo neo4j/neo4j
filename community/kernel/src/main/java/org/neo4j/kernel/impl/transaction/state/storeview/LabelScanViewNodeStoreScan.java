@@ -73,7 +73,7 @@ class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNod
         {
             this.nodeStore = nodeStore;
             labelScanReader = labelScanStore.newReader();
-            highestPossibleIdInUse = labelScanReader.getHighestIndexedNodeId();
+            highestPossibleIdInUse = labelScanReader.getMinIndexedNodeId();
             idIterator = labelScanReader.nodesWithAnyOfLabels( labelIds );
         }
 
@@ -106,7 +106,9 @@ class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNod
         @Override
         public long next()
         {
-            return idIterator.next();
+            long value = idIterator.next();
+            highestPossibleIdInUse = Math.max( highestPossibleIdInUse, value );
+            return value;
         }
     }
 }

@@ -69,7 +69,7 @@ public class LuceneLabelScanStoreIT extends LabelScanStoreIT
         populateIndex( labelScanStore );
         try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
         {
-            assertEquals( 1056L, labelScanReader.getHighestIndexedNodeId() );
+            assertEquals( 1057L, labelScanReader.getMinIndexedNodeId() );
         }
     }
 

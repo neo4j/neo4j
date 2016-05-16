@@ -55,5 +55,5 @@ public interface LabelScanReader extends Resource
      * Highest available in index node id
      * @return maximum labeled node id
      */
-    long getHighestIndexedNodeId();
+    long getMinIndexedNodeId();
 }

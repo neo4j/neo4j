@@ -57,8 +57,8 @@ public class LabelScanViewNodeStoreScanTest
         PrimitiveLongIterator labeledNodes = PrimitiveLongCollections.iterator( 1, 2, 4, 8 );
 
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
-        when( labelScanReader.getHighestIndexedNodeId() ).thenReturn( 10L );
-        when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 10L );
+        when( labelScanReader.getMinIndexedNodeId() ).thenReturn( 15L );
+        when( nodeStore.getHighId() ).thenReturn( 15L );
         when( labelScanReader.nodesWithAnyOfLabels( 1, 2 ) ).thenReturn( labeledNodes );
 
         int[] labelIds = new int[]{1, 2};
@@ -74,11 +74,11 @@ public class LabelScanViewNodeStoreScanTest
     @Test
     public void iterateOverLabelAndNewlyCreatedNodes() throws Exception
     {
-        PrimitiveLongIterator labeledNodes = PrimitiveLongCollections.iterator( 1, 2, 4, 8, 9, 10 );
+        PrimitiveLongIterator labeledNodes = PrimitiveLongCollections.iterator( 1, 2, 4, 8 );
 
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
-        when( labelScanReader.getHighestIndexedNodeId() ).thenReturn( 7L );
-        when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 10L );
+        when( labelScanReader.getMinIndexedNodeId() ).thenReturn( 7L );
+        when( nodeStore.getHighId() ).thenReturn( 11L );
         when( labelScanReader.nodesWithAnyOfLabels( 1, 2 ) ).thenReturn( labeledNodes );
 
         int[] labelIds = new int[]{1, 2};
@@ -89,6 +89,26 @@ public class LabelScanViewNodeStoreScanTest
 
         assertThat(visitedNodeIds, Matchers.hasSize( 6 ));
         assertThat( visitedNodeIds, Matchers.hasItems( 1L, 2L, 4L, 8L, 9L, 10L ) );
+    }
+
+    @Test
+    public void doNotIterateOverNodesFromLastRange()
+    {
+        PrimitiveLongIterator labeledNodes = PrimitiveLongCollections.iterator( 1, 2, 4, 8, 34, 35 );
+
+        when( labelScanStore.newReader() ).thenReturn( labelScanReader );
+        when( labelScanReader.getMinIndexedNodeId() ).thenReturn( 33L );
+        when( nodeStore.getHighId() ).thenReturn( 41L );
+        when( labelScanReader.nodesWithAnyOfLabels( 1, 2 ) ).thenReturn( labeledNodes );
+
+        int[] labelIds = new int[]{1, 2};
+
+        LabelScanViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
+        PrimitiveLongResourceIterator idIterator = storeScan.getNodeIdIterator();
+        List<Long> visitedNodeIds = PrimitiveLongCollections.asList( idIterator );
+
+        assertThat(visitedNodeIds, Matchers.hasSize( 11 ));
+        assertThat( visitedNodeIds, Matchers.hasItems( 1L, 2L, 4L, 8L, 34L, 35L, 36L, 37L, 38L, 39L, 40L ) );
     }
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )

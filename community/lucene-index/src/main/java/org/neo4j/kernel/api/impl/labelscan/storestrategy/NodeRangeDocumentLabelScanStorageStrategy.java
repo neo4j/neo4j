@@ -157,26 +157,32 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
     }
 
     @Override
-    public long getHighestIndexedNodeId( IndexSearcher searcher )
+    public long getMinRangeIndexedNodeId( IndexSearcher searcher )
     {
         try
         {
-            long maxId = 0;
-            IndexReaderContext context = searcher.getIndexReader().getContext();
-            List<LeafReaderContext> leaves = context.leaves();
-            for ( LeafReaderContext leaf : leaves )
-            {
-                NumericDocValues numeric = DocValues.getNumeric( leaf.reader(), BitmapDocumentFormat.RANGE );
-                for ( int i = 0; i < leaf.reader().maxDoc(); i++ )
-                {
-                    maxId = Math.max( numeric.get( i ), maxId );
-                }
-            }
-            return maxId << format.bitmapFormat().shift;
+            long highestIndexRange = getMaxIndexedRange( searcher );
+            return (highestIndexRange << format.bitmapFormat().shift) + 1;
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private long getMaxIndexedRange( IndexSearcher searcher ) throws IOException
+    {
+        long maxId = 0;
+        IndexReaderContext context = searcher.getIndexReader().getContext();
+        List<LeafReaderContext> leaves = context.leaves();
+        for ( LeafReaderContext leaf : leaves )
+        {
+            NumericDocValues numeric = DocValues.getNumeric( leaf.reader(), BitmapDocumentFormat.RANGE );
+            for ( int i = 0; i < leaf.reader().maxDoc(); i++ )
+            {
+                maxId = Math.max( numeric.get( i ), maxId );
+            }
+        }
+        return maxId;
     }
 }

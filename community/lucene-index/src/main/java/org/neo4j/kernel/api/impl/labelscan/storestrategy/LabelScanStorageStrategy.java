@@ -37,5 +37,10 @@ public interface LabelScanStorageStrategy
 
     PrimitiveLongIterator labelsForNode( IndexSearcher searcher, long nodeId );
 
-    long getHighestIndexedNodeId( IndexSearcher indexSearcher );
+    /**
+     * Return minimal node id that is indexed by highest range in underlying index
+     * @param indexSearcher index searcher
+     * @return minimal node id that is covered by highest available index range
+     */
+    long getMinRangeIndexedNodeId( IndexSearcher indexSearcher );
 }

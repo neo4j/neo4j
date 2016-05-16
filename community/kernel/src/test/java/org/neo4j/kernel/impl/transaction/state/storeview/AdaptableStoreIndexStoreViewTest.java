@@ -101,7 +101,7 @@ public class AdaptableStoreIndexStoreViewTest
         PrimitiveLongIterator labeledNodesIterator = PrimitiveLongCollections.iterator( 1, 2, 3, 4, 5, 6, 7, 8 );
         when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 20L );
         when( nodeStore.getHighId() ).thenReturn( 20L );
-        when( labelScanReader.getHighestIndexedNodeId() ).thenReturn( 20L );
+        when( labelScanReader.getMinIndexedNodeId() ).thenReturn( 20L );
         when( labelScanReader.nodesWithAnyOfLabels( 2, 6)).thenReturn( labeledNodesIterator );
 
         mockLabelNodeCount( countStore, 2 );
