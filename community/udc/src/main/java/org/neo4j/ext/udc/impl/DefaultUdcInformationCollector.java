@@ -20,6 +20,7 @@
 package org.neo4j.ext.udc.impl;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
@@ -32,15 +33,16 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 
 import org.neo4j.ext.udc.UdcSettings;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -62,6 +64,7 @@ import static org.neo4j.ext.udc.UdcConstants.RELATIONSHIP_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.REVISION;
 import static org.neo4j.ext.udc.UdcConstants.SERVER_ID;
 import static org.neo4j.ext.udc.UdcConstants.SOURCE;
+import static org.neo4j.ext.udc.UdcConstants.STORE_FILE_SIZE;
 import static org.neo4j.ext.udc.UdcConstants.TAGS;
 import static org.neo4j.ext.udc.UdcConstants.TOTAL_MEMORY;
 import static org.neo4j.ext.udc.UdcConstants.UDC_PROPERTY_PREFIX;
@@ -77,6 +80,8 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private String storeId;
     private boolean crashPing;
+
+    private NeoStoreDataSource neoStoreDataSource;
 
     public DefaultUdcInformationCollector( Config config, DataSourceManager xadsm,
             IdGeneratorFactory idGeneratorFactory, StartupStatistics startupStats, UsageData usageData )
@@ -95,6 +100,8 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
                 {
                     crashPing = startupStatistics.numberOfRecoveredTransactions() > 0;
                     storeId = Long.toHexString( ds.getStoreId().getRandomId() );
+
+                    neoStoreDataSource = ds;
                 }
 
                 @Override
@@ -102,6 +109,8 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
                 {
                     crashPing = false;
                     storeId = null;
+
+                    neoStoreDataSource = null;
                 }
             } );
         }
@@ -117,11 +126,11 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     }
 
     @Override
-    public Map<String, String> getUdcParams()
+    public Map<String,String> getUdcParams()
     {
         String classPath = getClassPath();
 
-        Map<String, String> udcFields = new HashMap<>();
+        Map<String,String> udcFields = new HashMap<>();
 
         add( udcFields, ID, storeId );
         add( udcFields, VERSION, filterVersionForUDC( usageData.get( UsageDataKeys.version ) ) );
@@ -150,8 +159,45 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
         add( udcFields, FEATURES, usageData.get( UsageDataKeys.features ).asHex() );
 
+        addStoreFileSizes( udcFields );
+
         udcFields.putAll( determineSystemProperties() );
         return udcFields;
+    }
+
+    /**
+     * Register store file sizes, sans transaction logs
+     */
+    private void addStoreFileSizes( Map<String,String> udcFields )
+    {
+        if ( neoStoreDataSource == null )
+        {
+            return;
+        }
+
+        try ( ResourceIterator<File> files = neoStoreDataSource.listStoreFiles( false ) )
+        {
+            addStoreFileSizes( udcFields, files );
+        }
+        catch ( IOException | NullPointerException ignored )
+        {
+            // we just didn't report store file sizes this time around
+        }
+    }
+
+    private void addStoreFileSizes( Map<String,String> udcFields, ResourceIterator<File> files )
+    {
+        while ( files.hasNext() )
+        {
+            File file = files.next();
+
+            add( udcFields, asStoreFileSizeFieldName( file ), file.length() );
+        }
+    }
+
+    private String asStoreFileSizeFieldName( File file )
+    {
+        return STORE_FILE_SIZE + "_" + file.getName().replaceAll( "\\.", "_" );
     }
 
     private String determineOsDistribution()
@@ -201,18 +247,16 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         }
     }
 
-    private final Map<String, String> jarNamesForTags = MapUtil.stringMap( "spring-", "spring",
-            "(javax.ejb|ejb-jar)", "ejb", "(weblogic|glassfish|websphere|jboss)", "appserver",
-            "openshift", "openshift", "cloudfoundry", "cloudfoundry",
-            "(junit|testng)", "test",
-            "jruby", "ruby", "clojure", "clojure", "jython", "python", "groovy", "groovy",
-            "(tomcat|jetty)", "web",
-            "spring-data-neo4j", "sdn" );
+    private final Map<String,String> jarNamesForTags =
+            MapUtil.stringMap( "spring-", "spring", "(javax.ejb|ejb-jar)", "ejb",
+                    "(weblogic|glassfish|websphere|jboss)", "appserver", "openshift", "openshift", "cloudfoundry",
+                    "cloudfoundry", "(junit|testng)", "test", "jruby", "ruby", "clojure", "clojure", "jython", "python",
+                    "groovy", "groovy", "(tomcat|jetty)", "web", "spring-data-neo4j", "sdn" );
 
-    private String determineTags( Map<String, String> jarNamesForTags, String classPath )
+    private String determineTags( Map<String,String> jarNamesForTags, String classPath )
     {
         StringBuilder result = new StringBuilder();
-        for ( Map.Entry<String, String> entry : jarNamesForTags.entrySet() )
+        for ( Map.Entry<String,String> entry : jarNamesForTags.entrySet() )
         {
             final Pattern pattern = Pattern.compile( entry.getKey() );
             if ( pattern.matcher( classPath ).find() )
@@ -328,7 +372,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         return result.toString();
     }
 
-    private void add( Map<String, String> udcFields, String name, Object value )
+    private void add( Map<String,String> udcFields, String name, Object value )
     {
         if ( value == null )
         {
@@ -356,9 +400,9 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         return propertyValue.replace( ' ', '_' );
     }
 
-    private Map<String, String> determineSystemProperties()
+    private Map<String,String> determineSystemProperties()
     {
-        Map<String, String> relevantSysProps = new HashMap<>();
+        Map<String,String> relevantSysProps = new HashMap<>();
         Properties sysProps = System.getProperties();
         Enumeration sysPropsNames = sysProps.propertyNames();
         while ( sysPropsNames.hasMoreElements() )
