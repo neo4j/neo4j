@@ -49,6 +49,21 @@ public class CypherQueriesIT extends AbstractRestFunctionalTestBase
         assertNoErrors( result );
     }
 
+    @Test
+    public void runningWithGeometryTypes() throws JsonParseException
+    {
+        // Document
+        ResponseEntity response = gen.get()
+                .noGraph()
+                .expectedStatus( 200 )
+                .payload( quotedJson(
+                        "{ 'statements': [ { 'statement': 'RETURN point({latitude:1.2,longitude:2.3}) as point' } ] }" ) )
+                .post( getDataUri() + "transaction/commit" );
+
+        // Then
+        Map<String,Object> result = jsonToMap( response.entity() );
+        assertNoErrors( result );
+    }
 
     private void assertNoErrors( Map<String, Object> response )
     {
