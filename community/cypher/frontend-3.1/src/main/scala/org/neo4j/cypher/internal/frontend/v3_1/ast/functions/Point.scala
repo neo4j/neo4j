@@ -19,13 +19,42 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_1.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_1.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_1.ast.{Function, SimpleTypedFunction, _}
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
+import org.neo4j.cypher.internal.frontend.v3_1.{SemanticCheck, SemanticCheckResult, SemanticError}
 
 case object Point extends Function with SimpleTypedFunction {
-  def name = "point"
 
-  val signatures = Vector(
+  override def name = "point"
+
+  override def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) =
+    super.semanticCheck(ctx, invocation) ifOkChain checkPointMap(invocation.args(0))
+
+  /*
+   * Checks so that the point map is properly formatted
+   */
+  protected def checkPointMap(expression: Expression): SemanticCheck = expression match {
+    //Cartesian point
+    case map: MapExpression if map.items.exists(withKey("x")) && map.items.exists(withKey("y")) =>
+      if (map.items.exists(withKey("crs"))) SemanticCheckResult.success
+      else SemanticError(s"A cartesian point must contain a 'crs' (coordinate reference system)", map.position)
+    //Geographic point
+    case map: MapExpression if map.items.exists(withKey("longitude")) && map.items.exists(withKey("latitude")) =>
+      SemanticCheckResult.success
+
+    case map: MapExpression => SemanticError(
+      s"A map with keys ${map.items.map((a) => s"'${a._1.name}'").mkString(", ")} is not describing a valid point, " +
+        s"a point is described either by using cartesian coordinates e.g. {x: 2.3, y: 4.5, crs: 'cartesian'} or using " +
+        s"geographic coordinates e.g. {latitude: 12.78, longitude: 56.7, crs: 'WGS-84'}.", map.position)
+
+    //if using variable or parameter we can't introspect the map here
+    case _ => SemanticCheckResult.success
+  }
+
+  private def withKey(key: String)(kv: (PropertyKeyName, Expression)) = kv._1.name == key
+
+  override val signatures = Vector(
     Signature(argumentTypes = Vector(CTMap), outputType = CTPoint)
   )
 }

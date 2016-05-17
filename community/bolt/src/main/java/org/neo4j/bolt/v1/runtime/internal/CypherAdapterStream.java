@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -32,6 +33,8 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.kernel.api.exceptions.Status;
 
 public class CypherAdapterStream implements RecordStream
 {
@@ -132,7 +135,7 @@ public class CypherAdapterStream implements RecordStream
             default:
                 return queryType.name();
         }
-    };
+    }
 
     private static class CypherAdapterRecord implements Record
     {
@@ -151,13 +154,28 @@ public class CypherAdapterStream implements RecordStream
             return fields;
         }
 
-        public CypherAdapterRecord reset( Result.ResultRow cypherRecord )
+        public CypherAdapterRecord reset( Result.ResultRow cypherRecord ) throws BoltIOException
         {
             for ( int i = 0; i < fields.length; i++ )
             {
                 fields[i] = cypherRecord.get( fieldNames[i] );
+                assertPackable( fields[i] );
             }
             return this;
+        }
+
+        private void assertPackable( Object field ) throws BoltIOException
+        {
+            //TODO this is a temporary measure, currently the packing of points
+            //fails in Neo4jPack#pack but it fails there when already begun writing
+            //headers to the result, so failing there and writing an error while in the process
+            //of writing a record results in a malformed error message.
+            //What needs to be done is inverting this so that the field has a visitable method
+            //that calls the proper pack method.
+            if (field instanceof Point)
+            {
+                throw new BoltIOException( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" );
+            }
         }
     }
 
