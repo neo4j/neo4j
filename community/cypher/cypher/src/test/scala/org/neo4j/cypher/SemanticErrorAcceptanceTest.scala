@@ -666,6 +666,18 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "A single relationship type must be specified for MERGE (line 1, column 9 (offset: 8))")
   }
 
+  test("give a nice error message when missing crs in cartesian point") {
+    executeAndEnsureError("RETURN point({x: 2.3, y: 4.5}) as point",
+                          "A cartesian point must contain a 'crs' (coordinate reference system) (line 1, column 14 (offset: 13))")
+  }
+
+  test("give a nice error message when using unknown arguments in point") {
+    executeAndEnsureError("RETURN point({xxx: 2.3, yyy: 4.5}) as point",
+                          "A map with keys 'xxx', 'yyy' is not describing a valid point, a point is described either by " +
+                            "using cartesian coordinates e.g. {x: 2.3, y: 4.5, crs: 'cartesian'} or using geographic " +
+                            "coordinates e.g. {latitude: 12.78, longitude: 56.7, crs: 'WGS-84'}. (line 1, column 14 (offset: 13))")
+  }
+
   def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
     import org.neo4j.cypher.internal.frontend.v3_0.helpers.StringHelper._
 

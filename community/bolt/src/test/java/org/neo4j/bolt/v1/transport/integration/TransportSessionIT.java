@@ -38,6 +38,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -48,6 +49,7 @@ import static org.neo4j.bolt.v1.messaging.message.Messages.init;
 import static org.neo4j.bolt.v1.messaging.message.Messages.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.Messages.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.hasNotification;
+import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
@@ -233,7 +235,7 @@ public class TransportSessionIT
         // Then
         assertThat( client, eventuallyRecieves(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( 1l ) ) ),
+                msgRecord( eqRecord( equalTo( 1L ) ) ),
                 msgSuccess( map( "type", "r" ) ) ) );
     }
 
@@ -263,6 +265,25 @@ public class TransportSessionIT
                                 "THIS_IS_NOT_A_LABEL)",
                                 SeverityLevel.WARNING, new InputPosition( 9, 1, 10 ) ) ) ) );
 
+    }
+
+    @Test
+    public void shouldFailNicelyOnPoints() throws Throwable
+    {
+        // When
+        client.connect( address )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( TransportTestUtil.chunk(
+                        init( "TestClient/1.1", emptyMap() ),
+                        run( "RETURN point({x:13, y:37, crs:'cartesian'}) as p" ),
+                        pullAll() ) );
+
+        // Then
+        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, eventuallyRecieves(
+                msgSuccess(),
+                msgSuccess( map( "fields", singletonList( "p") ) ),
+                msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt")) );
     }
 
     @Before
