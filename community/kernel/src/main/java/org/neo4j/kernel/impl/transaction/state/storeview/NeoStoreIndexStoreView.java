@@ -94,6 +94,18 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         }
     }
 
+    /**
+     * Accept updates in cases if updated node id is bellow or equal to currently indexed node.
+     * @param update update to check
+     * @param currentlyIndexedNodeId id of currently indexed node
+     * @return true if update is applicable
+     */
+    @Override
+    public boolean isAcceptableUpdate( NodePropertyUpdate update, long currentlyIndexedNodeId )
+    {
+        return update.getNodeId() <= currentlyIndexedNodeId;
+    }
+
     @Override
     public DoubleLongRegister indexSample( IndexDescriptor descriptor, DoubleLongRegister output )
     {

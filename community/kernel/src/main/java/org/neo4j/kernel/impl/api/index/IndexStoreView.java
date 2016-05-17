@@ -64,6 +64,14 @@ public interface IndexStoreView extends PropertyAccessor
 
     void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta );
 
+    /**
+     * Check if provided node update is applicable in a context of current store view.
+     * @param update update to check
+     * @param currentlyIndexedNodeId id of currently indexed node
+     * @return true if update is acceptable
+     */
+    boolean isAcceptableUpdate(NodePropertyUpdate update, long currentlyIndexedNodeId);
+
     StoreScan EMPTY_SCAN = new StoreScan()
     {
         @Override
@@ -125,6 +133,12 @@ public interface IndexStoreView extends PropertyAccessor
         @Override
         public void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta )
         {
+        }
+
+        @Override
+        public boolean isAcceptableUpdate( NodePropertyUpdate update, long currentlyIndexedNodeId )
+        {
+            return false;
         }
     };
 }

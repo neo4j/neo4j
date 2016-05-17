@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.function.IntPredicate;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
@@ -39,15 +40,16 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
  * Store view that will try to use label scan store {@link LabelScanStore} for cases when estimated number of nodes
  * is bellow certain threshold otherwise will fallback to whole store scan
  */
-public class AdaptableStoreIndexStoreView extends NeoStoreIndexStoreView
+public class AdaptableIndexStoreView extends NeoStoreIndexStoreView
 {
     private final LabelScanStore labelScanStore;
     private final CountsTracker counts;
+    private boolean usingLabelScan = true;
 
     private static final int VISIT_ALL_NODES_THRESHOLD_PERCENTAGE =
-            FeatureToggles.getInteger( AdaptableStoreIndexStoreView.class, "all.nodes.visit.percentage.threshold", 50 );
+            FeatureToggles.getInteger( AdaptableIndexStoreView.class, "all.nodes.visit.percentage.threshold", 50 );
 
-    public AdaptableStoreIndexStoreView( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores )
+    public AdaptableIndexStoreView( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores )
     {
         super( locks, neoStores );
         this.counts = neoStores.getCounts();
@@ -61,10 +63,25 @@ public class AdaptableStoreIndexStoreView extends NeoStoreIndexStoreView
     {
         if ( ArrayUtils.isEmpty( labelIds ) || isNumberOfLabeledNodesExceedThreshold( labelIds ) )
         {
+            usingLabelScan = false;
             return super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor );
         }
         return new LabelScanViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
+    }
+
+    /**
+     * Checks if provided node property update is applicable for current store view.
+     * In case if we use label store view - updates are always applicable, otherwise fallback to default behaviour of
+     * neo store view.
+     * @param update node property update
+     * @param currentlyIndexedNodeId currently indexed node id
+     * @return true if current update is acceptable and can be applied.
+     */
+    @Override
+    public boolean isAcceptableUpdate( NodePropertyUpdate update, long currentlyIndexedNodeId )
+    {
+        return usingLabelScan || super.isAcceptableUpdate( update, currentlyIndexedNodeId );
     }
 
     private boolean isNumberOfLabeledNodesExceedThreshold( int[] labelIds )

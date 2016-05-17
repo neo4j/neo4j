@@ -41,11 +41,11 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  * added into the store after that.
  * @param <FAILURE>
  */
-class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
+public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
 {
     private final LabelScanStore labelScanStore;
 
-    LabelScanViewNodeStoreScan( NodeStore nodeStore, LockService locks, PropertyStore propertyStore,
+    public LabelScanViewNodeStoreScan( NodeStore nodeStore, LockService locks, PropertyStore propertyStore,
             LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
             Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
             IntPredicate propertyKeyIdFilter )

@@ -325,7 +325,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                 {
                     // no need to check for null as nobody else is emptying this queue
                     NodePropertyUpdate update = queue.poll();
-                    if ( update.getNodeId() <= currentlyIndexedNodeId )
+                    if ( storeView.isAcceptableUpdate( update, currentlyIndexedNodeId ) )
                     {
                         updater.process( update );
                     }

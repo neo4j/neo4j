@@ -95,7 +95,7 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipDeleter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
-import org.neo4j.kernel.impl.transaction.state.storeview.AdaptableStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.AdaptableIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -224,7 +224,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             labelScanStore = labelScanStoreProvider.getLabelScanStore();
 
             schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( indexProvider );
-            indexStoreView = new AdaptableStoreIndexStoreView( labelScanStore, lockService, neoStores );
+            indexStoreView = new AdaptableIndexStoreView( labelScanStore, lockService, neoStores );
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, schemaIndexProviderMap,
                     indexStoreView, tokenNameLookup,
                     Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,
