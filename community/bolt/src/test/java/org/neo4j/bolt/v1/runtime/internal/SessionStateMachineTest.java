@@ -29,15 +29,10 @@ import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.BasicAuthenticationResult;
 import org.neo4j.bolt.v1.runtime.Session;
 import org.neo4j.bolt.v1.runtime.spi.RecordStream;
-import org.neo4j.bolt.v1.runtime.spi.StatementRunner;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.udc.UsageData;
+import org.neo4j.kernel.impl.factory.Protocol;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -112,7 +107,7 @@ public class SessionStateMachineTest
         machine.init( "FunClient/1.2",  Collections.<String, Object>emptyMap(), null, Session.Callback.NO_OP );
 
         // Then
-        verify( spi ).udcRegisterClient( "FunClient/1.2" );
+        verify( spi ).udcRegisterClient( "FunClient/1.2", Protocol.bolt );
     }
 
     @Test

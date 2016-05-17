@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.Protocol;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext;
 import org.neo4j.kernel.impl.query.QuerySession;
@@ -78,7 +79,7 @@ public class SessionStateMachine implements Session, SessionState
                             ctx.accessMode = authResult.getAccessMode();
                             ctx.credentialsExpired = authResult.credentialsExpired();
                             ctx.result( authResult.credentialsExpired() );
-                            ctx.spi.udcRegisterClient( clientName );
+                            ctx.spi.udcRegisterClient( clientName, Protocol.bolt );
                             ctx.setQuerySourceFromClientNameAndPrincipal( clientName, authToken.get( Authentication.PRINCIPAL ) );
                             return IDLE;
                         }
@@ -596,7 +597,7 @@ public class SessionStateMachine implements Session, SessionState
         RecordStream run( SessionStateMachine ctx, String statement, Map<String, Object> params )
                 throws KernelException;
         AuthenticationResult authenticate( Map<String, Object> authToken ) throws AuthenticationException;
-        void udcRegisterClient( String clientName );
+        void udcRegisterClient( String clientName, Protocol protocol );
         Statement currentStatement();
     }
     public SessionStateMachine( String connectionDescriptor, UsageData usageData, GraphDatabaseFacade db, ThreadToStatementContextBridge txBridge,

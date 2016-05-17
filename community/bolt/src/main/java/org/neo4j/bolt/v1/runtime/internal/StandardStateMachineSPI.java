@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.Protocol;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.udc.UsageData;
@@ -117,9 +118,10 @@ class StandardStateMachineSPI implements SessionStateMachine.SPI
     }
 
     @Override
-    public void udcRegisterClient( String clientName )
+    public void udcRegisterClient( String clientName, Protocol protocol )
     {
         usageData.get( UsageDataKeys.clientNames ).add( clientName );
+        usageData.set( UsageDataKeys.protocol, protocol );
     }
 
     @Override
