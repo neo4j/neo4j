@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Clock;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -43,15 +44,20 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullClient;
 import org.neo4j.coreedge.discovery.CoreDiscoveryService;
 import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.RaftDiscoveryServiceConnector;
-import org.neo4j.coreedge.raft.*;
+import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
+import org.neo4j.coreedge.raft.LeaderLocator;
+import org.neo4j.coreedge.raft.RaftInstance;
+import org.neo4j.coreedge.raft.RaftMessages;
+import org.neo4j.coreedge.raft.RaftServer;
+import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.MonitoredRaftLog;
 import org.neo4j.coreedge.raft.log.NaiveDurableRaftLog;
-import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogMetadataCache;
-import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
+import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
+import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
@@ -151,8 +157,6 @@ import org.neo4j.udc.UsageData;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
  * that are specific to the Enterprise Core edition that provides a core cluster.
@@ -242,7 +246,7 @@ public class EnterpriseCoreEditionModule
         final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         final SenderService senderService = new SenderService(
-                new ExpiryScheduler( platformModule.jobScheduler ), new Expiration( SYSTEM_CLOCK ),
+                new ExpiryScheduler( platformModule.jobScheduler ), new Expiration( Clock.systemUTC() ),
                 new RaftChannelInitializer( marshal ), logProvider, platformModule.monitors, maxQueueSize );
         life.add( senderService );
 
@@ -267,7 +271,7 @@ public class EnterpriseCoreEditionModule
         RaftServer<CoreMember> raftServer = new RaftServer<>( marshal, raftListenAddress, logProvider );
 
         final DelayedRenewableTimeoutService raftTimeoutService =
-                new DelayedRenewableTimeoutService( SYSTEM_CLOCK, logProvider );
+                new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
 
         RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
                 databaseHealthSupplier );
@@ -282,7 +286,7 @@ public class EnterpriseCoreEditionModule
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier );
 
         ExpiryScheduler expiryScheduler = new ExpiryScheduler( platformModule.jobScheduler );
-        Expiration expiration = new Expiration( SYSTEM_CLOCK );
+        Expiration expiration = new Expiration( Clock.systemUTC() );
 
         CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer( logProvider );
         CoreToCoreClient coreToCoreClient = life.add( new CoreToCoreClient( logProvider, expiryScheduler, expiration,
@@ -636,12 +640,12 @@ public class EnterpriseCoreEditionModule
         LeaderOnlyReplicator leaderOnlyReplicator = new LeaderOnlyReplicator<>( myself, myself.getRaftAddress(), outbound );
 
         RaftMembershipManager<CoreMember> raftMembershipManager = new RaftMembershipManager<>( leaderOnlyReplicator,
-                memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, SYSTEM_CLOCK,
+                memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, Clock.systemUTC(),
                 config.get( CoreEdgeClusterSettings.join_catch_up_timeout ), raftMembershipStorage );
 
         RaftLogShippingManager<CoreMember> logShipping = new RaftLogShippingManager<>( new RaftOutbound( outbound ),
                 logProvider, raftLog,
-                SYSTEM_CLOCK, myself, raftMembershipManager, electionTimeout,
+                Clock.systemUTC(), myself, raftMembershipManager, electionTimeout,
                 config.get( CoreEdgeClusterSettings.catchup_batch_size ),
                 config.get( CoreEdgeClusterSettings.log_shipping_max_lag ) );
 
@@ -678,27 +682,28 @@ public class EnterpriseCoreEditionModule
         }
     }
 
-    protected SchemaWriteGuard createSchemaWriteGuard()
+    private SchemaWriteGuard createSchemaWriteGuard()
     {
         return () -> {};
     }
 
-    protected KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
-                                           Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
+    private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
+                                         Config config, GraphDatabaseAPI graphAPI, LifeSupport life )
     {
         DefaultKernelData kernelData = new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphAPI );
         return life.add( kernelData );
     }
 
-    protected ReplicatedIdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fileSystem,
-                                                                     final ReplicatedIdRangeAcquirer idRangeAcquirer,
-                                                                     final LogProvider logProvider )
+    private ReplicatedIdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fileSystem,
+                                                                   final ReplicatedIdRangeAcquirer idRangeAcquirer,
+                                                                   final LogProvider logProvider )
     {
         return new ReplicatedIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider );
     }
 
-    protected Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
-            CoreMember myself, LeaderLocator<CoreMember> leaderLocator, long leaderLockTokenTimeout, ReplicatedLockTokenStateMachine lockTokenStateMachine )
+    private Locks createLockManager( final Config config, final LogService logging, final Replicator replicator,
+                                     CoreMember myself, LeaderLocator<CoreMember> leaderLocator, long
+                                             leaderLockTokenTimeout, ReplicatedLockTokenStateMachine lockTokenStateMachine )
     {
         Locks localLocks = CommunityEditionModule.createLockManager( config, logging );
 
@@ -706,13 +711,13 @@ public class EnterpriseCoreEditionModule
                 leaderLockTokenTimeout, lockTokenStateMachine );
     }
 
-    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
+    private TransactionHeaderInformationFactory createHeaderInformationFactory()
     {
         return () -> new TransactionHeaderInformation( -1, -1, new byte[0] );
     }
 
-    protected void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
-                                     final DependencyResolver dependencyResolver )
+    private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
+                                   final DependencyResolver dependencyResolver )
     {
         life.addLifecycleListener( ( instance, from, to ) -> {
             if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
@@ -732,12 +737,12 @@ public class EnterpriseCoreEditionModule
                 .perform();
     }
 
-    protected final class DefaultKernelData extends KernelData implements Lifecycle
+    private final class DefaultKernelData extends KernelData implements Lifecycle
     {
         private final GraphDatabaseAPI graphDb;
 
-        public DefaultKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
-                                  Config config, GraphDatabaseAPI graphDb )
+        DefaultKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
+                           Config config, GraphDatabaseAPI graphDb )
         {
             super( fileSystem, pageCache, storeDir, config );
             this.graphDb = graphDb;

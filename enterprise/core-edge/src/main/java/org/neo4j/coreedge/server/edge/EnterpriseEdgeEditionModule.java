@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.server.edge;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -46,33 +47,32 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
-import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
+import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.KernelData;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
@@ -80,7 +80,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.udc.UsageData;
 
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 
 /**
@@ -146,7 +145,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 () -> new TransactionApplier( platformModule.dependencies );
 
         ExpiryScheduler expiryScheduler = new ExpiryScheduler( platformModule.jobScheduler );
-        Expiration expiration = new Expiration( SYSTEM_CLOCK );
+        Expiration expiration = new Expiration( Clock.systemUTC() );
 
         EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer( logProvider );
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
@@ -185,8 +184,8 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                 new ExponentialBackoffStrategy( 1, TimeUnit.SECONDS ), logProvider ) );
     }
 
-    protected void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
-                                     final DependencyResolver dependencyResolver )
+    private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life,
+                                   final DependencyResolver dependencyResolver )
     {
         life.addLifecycleListener( ( instance, from, to ) -> {
             if ( instance instanceof DatabaseAvailability && to.equals( LifecycleStatus.STARTED ) )
@@ -201,12 +200,12 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         return ( appender, storageEngine, config ) -> new ReadOnlyTransactionCommitProcess();
     }
 
-    protected final class DefaultKernelData extends KernelData implements Lifecycle
+    private final class DefaultKernelData extends KernelData implements Lifecycle
     {
         private final GraphDatabaseAPI graphDb;
 
-        public DefaultKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
-                                  Config config, GraphDatabaseAPI graphDb )
+        DefaultKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
+                           Config config, GraphDatabaseAPI graphDb )
         {
             super( fileSystem, pageCache, storeDir, config );
             this.graphDb = graphDb;
@@ -239,5 +238,4 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         {
         }
     }
-
 }

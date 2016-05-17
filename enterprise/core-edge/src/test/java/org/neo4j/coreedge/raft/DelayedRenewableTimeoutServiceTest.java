@@ -19,20 +19,21 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.time.Clock;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.FakeClock;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -77,7 +78,8 @@ public class DelayedRenewableTimeoutServiceTest
         // given
         final AtomicLong timeoutCount = new AtomicLong();
 
-        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
+        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(),
+                NullLogProvider.getInstance() );
 
         long startTime = System.currentTimeMillis();
         timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, timeout -> timeoutCount.incrementAndGet() );
@@ -95,7 +97,8 @@ public class DelayedRenewableTimeoutServiceTest
         // given
         final AtomicLong timeoutCount = new AtomicLong();
 
-        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
+        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( Clock.systemUTC(),
+                NullLogProvider.getInstance() );
 
         long startTime = System.currentTimeMillis();
         RenewableTimeoutService.RenewableTimeout timeout =
@@ -132,7 +135,8 @@ public class DelayedRenewableTimeoutServiceTest
 
         FakeClock clock = new FakeClock();
 
-        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( clock, NullLogProvider.getInstance() );
+        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( clock,
+                NullLogProvider.getInstance() );
 
         RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, t -> timeoutCount
                 .incrementAndGet() );
@@ -162,17 +166,19 @@ public class DelayedRenewableTimeoutServiceTest
         final CountDownLatch latch = new CountDownLatch( 1 );
 
         FakeClock clock = new FakeClock();
-        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( clock, NullLogProvider.getInstance() );
+        DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService( clock,
+                NullLogProvider.getInstance() );
 
-        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0, handler -> {
-            try
-            {
-                latch.await( LONG_TIME_MS, MILLISECONDS );
-            }
-            catch ( InterruptedException ignored )
-            {
-            }
-        } );
+        RenewableTimeoutService.RenewableTimeout timeout = timeoutService.create( Timeouts.FOOBAR, TIMEOUT_MS, 0,
+                handler -> {
+                    try
+                    {
+                        latch.await( LONG_TIME_MS, MILLISECONDS );
+                    }
+                    catch ( InterruptedException ignored )
+                    {
+                    }
+                } );
 
         life.add( timeoutService );
 

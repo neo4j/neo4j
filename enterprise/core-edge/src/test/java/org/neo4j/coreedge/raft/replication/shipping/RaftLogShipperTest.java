@@ -19,12 +19,13 @@
  */
 package org.neo4j.coreedge.raft.replication.shipping;
 
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 import org.neo4j.coreedge.raft.LeaderContext;
 import org.neo4j.coreedge.raft.OutboundMessageCollector;
@@ -35,7 +36,6 @@ import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.server.RaftTestMember;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
 
@@ -44,23 +44,23 @@ import static org.junit.Assert.assertTrue;
 
 public class RaftLogShipperTest
 {
-    OutboundMessageCollector outbound;
-    RaftLog raftLog;
-    Clock clock;
-    RaftTestMember leader;
-    RaftTestMember follower;
-    long leaderTerm;
-    long leaderCommit;
-    long retryTimeMillis;
-    int catchupBatchSize = 64;
-    int maxAllowedShippingLag = 256;
+    private OutboundMessageCollector outbound;
+    private RaftLog raftLog;
+    private Clock clock;
+    private RaftTestMember leader;
+    private RaftTestMember follower;
+    private long leaderTerm;
+    private long leaderCommit;
+    private long retryTimeMillis;
+    private int catchupBatchSize = 64;
+    private int maxAllowedShippingLag = 256;
 
-    RaftLogShipper<RaftTestMember> logShipper;
+    private RaftLogShipper<RaftTestMember> logShipper;
 
-    RaftLogEntry entry0 = new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1000 ) );
-    RaftLogEntry entry1 = new RaftLogEntry( 0, ReplicatedString.valueOf( "kedha" ) );
-    RaftLogEntry entry2 = new RaftLogEntry( 0, ReplicatedInteger.valueOf( 2000 ) );
-    RaftLogEntry entry3 = new RaftLogEntry( 0, ReplicatedString.valueOf( "chupchick" ) );
+    private RaftLogEntry entry0 = new RaftLogEntry( 0, ReplicatedInteger.valueOf( 1000 ) );
+    private RaftLogEntry entry1 = new RaftLogEntry( 0, ReplicatedString.valueOf( "kedha" ) );
+    private RaftLogEntry entry2 = new RaftLogEntry( 0, ReplicatedInteger.valueOf( 2000 ) );
+    private RaftLogEntry entry3 = new RaftLogEntry( 0, ReplicatedString.valueOf( "chupchick" ) );
 
     @Before
     public void setup()
@@ -68,7 +68,7 @@ public class RaftLogShipperTest
         // defaults
         outbound = new OutboundMessageCollector();
         raftLog = new InMemoryRaftLog();
-        clock = Clock.SYSTEM_CLOCK;
+        clock = Clock.systemUTC();
         leader = new RaftTestMember( 0 );
         follower = new RaftTestMember( 1 );
         leaderTerm = 0;
@@ -86,7 +86,7 @@ public class RaftLogShipperTest
         }
     }
 
-    public void startLogShipper()
+    private void startLogShipper()
     {
         logShipper = new RaftLogShipper<>( outbound, NullLogProvider.getInstance(), raftLog,
                 clock, leader, follower, leaderTerm, leaderCommit, retryTimeMillis,

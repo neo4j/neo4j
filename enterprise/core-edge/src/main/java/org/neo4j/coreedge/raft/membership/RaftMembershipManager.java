@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.membership;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -39,7 +40,6 @@ import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.StateStorage;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

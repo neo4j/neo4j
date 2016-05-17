@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -29,7 +30,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -50,8 +50,8 @@ import static org.neo4j.kernel.impl.util.JobScheduler.SchedulingStrategy.POOLED;
  */
 public class DelayedRenewableTimeoutService extends LifecycleAdapter implements Runnable, RenewableTimeoutService
 {
-    public static final int TIMER_RESOLUTION = 1;
-    public static final TimeUnit TIMER_RESOLUTION_UNIT = TimeUnit.MILLISECONDS;
+    private static final int TIMER_RESOLUTION = 1;
+    private static final TimeUnit TIMER_RESOLUTION_UNIT = TimeUnit.MILLISECONDS;
 
     /**
      * Sorted by next-to-trigger.
@@ -96,12 +96,12 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
         return timeout;
     }
 
-    public void renew( ScheduledRenewableTimeout timeout )
+    private void renew( ScheduledRenewableTimeout timeout )
     {
         pendingRenewals.offer( timeout );
     }
 
-    public void cancel( ScheduledRenewableTimeout timeout )
+    private void cancel( ScheduledRenewableTimeout timeout )
     {
         synchronized ( timeouts )
         {
@@ -112,7 +112,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
     private long calcTimeoutTimestamp( long milliseconds, long randomRange )
     {
         int randomness = randomRange != 0 ? random.nextInt( (int) randomRange ) : 0;
-        return clock.currentTimeMillis() + milliseconds + randomness;
+        return clock.millis() + milliseconds + randomness;
     }
 
     @Override
@@ -120,7 +120,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
     {
         try
         {
-            long now = clock.currentTimeMillis();
+            long now = clock.millis();
             Collection<ScheduledRenewableTimeout> triggered = new LinkedList<>();
 
             synchronized ( timeouts )
@@ -187,7 +187,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
         scheduler.shutdown();
     }
 
-    public static class ScheduledRenewableTimeout implements RenewableTimeout, Comparable<ScheduledRenewableTimeout>
+    static class ScheduledRenewableTimeout implements RenewableTimeout, Comparable<ScheduledRenewableTimeout>
     {
         private static final AtomicLong idGen = new AtomicLong();
         private final long id = idGen.getAndIncrement();
@@ -197,7 +197,7 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
         private final DelayedRenewableTimeoutService timeouts;
         private long timeoutTimestampMillis;
 
-        public ScheduledRenewableTimeout( long timeoutTimestampMillis, long timeoutLength, long randomRange, TimeoutHandler
+        ScheduledRenewableTimeout( long timeoutTimestampMillis, long timeoutLength, long randomRange, TimeoutHandler
                 handler, DelayedRenewableTimeoutService timeouts )
         {
             this.timeoutTimestampMillis = timeoutTimestampMillis;
@@ -229,22 +229,22 @@ public class DelayedRenewableTimeoutService extends LifecycleAdapter implements 
             timeouts.cancel( this );
         }
 
-        public void setTimeoutTimestamp( long newTimestamp )
+        void setTimeoutTimestamp( long newTimestamp )
         {
             this.timeoutTimestampMillis = newTimestamp;
         }
 
         @Override
-        public int compareTo( ScheduledRenewableTimeout o )
+        public int compareTo( ScheduledRenewableTimeout renewableTimeout )
         {
-            if ( timeoutTimestampMillis == o.timeoutTimestampMillis )
+            if ( timeoutTimestampMillis == renewableTimeout.timeoutTimestampMillis )
             {
                 // Timeouts are set to trigger at the same time.
                 // Order them by id instead.
-                return (int) (id - o.id);
+                return (int) (id - renewableTimeout.id);
             }
 
-            return (int) (timeoutTimestampMillis - o.timeoutTimestampMillis);
+            return (int) (timeoutTimestampMillis - renewableTimeout.timeoutTimestampMillis);
         }
 
         @Override
