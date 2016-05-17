@@ -27,6 +27,7 @@
     <module>embedded-examples</module>
     <module>server-examples</module>
     <module>bolt</module>
+    <module>import-tool</module>
   </modules>
 
   <scm>
