@@ -20,7 +20,7 @@
 
 
 function show_java_requirements() {
-  echo "* Please use Oracle(R) Java(TM) 7 or OpenJDK(TM) to run Neo4j Server."
+  echo "* Please use Oracle(R) Java(TM) 8 (preferred) or 7 or OpenJDK(TM) 8 (preferred) or 7 to run Neo4j Server."
 }
 
 function show_installation_instructions() {
@@ -84,7 +84,7 @@ findjava() {
              echo "Using Java version: $JAVA_VERSION"
            fi
            if [ -z "$JAVA_HOME" ] ; then
-             JAVA_HOME=`/usr/libexec/java_home -v 1.7`
+             JAVA_HOME=$(/usr/libexec/java_home --failfast --version 1.8 || /usr/libexec/java_home --failfast --version 1.7)
            fi
            ;;
   esac
