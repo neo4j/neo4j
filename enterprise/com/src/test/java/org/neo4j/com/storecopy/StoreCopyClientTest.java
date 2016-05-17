@@ -44,6 +44,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -57,13 +58,11 @@ import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TargetDirectory;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -140,50 +139,34 @@ public class StoreCopyClientTest
     }
 
     @Test
-    public void storeCopyClientMustRespectConfiguredRecordFormat() throws Exception
+    public void storeCopyClientMustWorkWithStandardRecordFormat() throws Exception
     {
-        final File copyDir = new File( testDir.directory(), "copy" );
-        final File originalDir = new File( testDir.directory(), "original" );
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        String unkownFormat = "unkown_format";
-        Config config = Config.empty().augment( stringMap( record_format.name(), unkownFormat ) );
-        StoreCopyClient copier = new StoreCopyClient(
-                copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache,
-                new StoreCopyClient.Monitor.Adapter(), false );
-
-        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir );
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( originalDir, original );
-
-        // This should complain about the unkown format
-        try
-        {
-            copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED );
-            fail( "copyStore should have failed with this format configuration" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e.getMessage(), containsString( unkownFormat ) );
-        }
+        checkStoreCopyClientWithRecordFormats( StandardV3_0.NAME );
     }
 
     @Test
-    public void storeCopyClientMustWorkWithLowLimitRecordFormat() throws Exception
+    public void storeCopyClientMustWorkWithHighLimitRecordFormat() throws Exception
+    {
+        checkStoreCopyClientWithRecordFormats( HighLimit.NAME );
+    }
+
+    private void checkStoreCopyClientWithRecordFormats( String recordFormatsName ) throws Exception
     {
         final File copyDir = new File( testDir.directory(), "copy" );
         final File originalDir = new File( testDir.directory(), "original" );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        Config config = Config.empty().augment( stringMap( record_format.name(), StandardV3_0.NAME ) );
+        Config config = Config.empty().augment( stringMap( record_format.name(), recordFormatsName ) );
         StoreCopyClient copier = new StoreCopyClient(
                 copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache,
                 new StoreCopyClient.Monitor.Adapter(), false );
 
-        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, StandardV3_0.NAME );
+        final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, recordFormatsName );
         StoreCopyClient.StoreCopyRequester storeCopyRequest = storeCopyRequest( originalDir, original );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED );
 
         // Must not throw
-        startDatabase( copyDir, StandardV3_0.NAME ).shutdown();
+        startDatabase( copyDir, recordFormatsName ).shutdown();
     }
 
     @Test

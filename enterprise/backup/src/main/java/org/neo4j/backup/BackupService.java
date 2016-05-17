@@ -162,7 +162,7 @@ class BackupService
                 }
             }, CancellationRequest.NEVER_CANCELLED );
 
-            bumpMessagesDotLogFile( targetDirectory, timestamp );
+            bumpDebugDotLogFileVersion( targetDirectory, timestamp );
             boolean consistent = false;
             try
             {
@@ -205,7 +205,7 @@ class BackupService
             {
                 targetDb.shutdown();
             }
-            bumpMessagesDotLogFile( targetDirectory, backupStartTime );
+            bumpDebugDotLogFileVersion( targetDirectory, backupStartTime );
             clearIdFiles( targetDirectory );
             return outcome;
         }
@@ -353,7 +353,7 @@ class BackupService
         return new BackupOutcome( handler.getLastSeenTransactionId(), consistent );
     }
 
-    private static boolean bumpMessagesDotLogFile( File dbDirectory, long toTimestamp )
+    private static boolean bumpDebugDotLogFileVersion( File dbDirectory, long toTimestamp )
     {
         File[] candidates = dbDirectory.listFiles( new FilenameFilter()
         {

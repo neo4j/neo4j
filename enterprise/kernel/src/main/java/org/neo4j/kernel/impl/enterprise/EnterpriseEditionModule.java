@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 
 /**
@@ -41,7 +40,6 @@ public class EnterpriseEditionModule extends CommunityEditionModule
         super( platformModule );
         platformModule.dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
-        formats = StandardV3_0.RECORD_FORMATS;
     }
 
     @Override

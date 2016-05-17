@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
@@ -71,8 +70,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         {
             if ( fs.isDirectory( path ) )
             {
-                StoreFactory factory = new StoreFactory( fs, path, pages, RecordFormatSelector.autoSelectFormat(),
-                        NullLogProvider.getInstance() );
+                StoreFactory factory = new StoreFactory( path, pages, fs, NullLogProvider.getInstance() );
 
                 NeoStores neoStores = factory.openAllNeoStores();
                 neoStores.getCounts().accept( new DumpCountsStore( out, neoStores ) );

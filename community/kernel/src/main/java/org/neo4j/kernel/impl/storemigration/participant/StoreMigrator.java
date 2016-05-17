@@ -166,7 +166,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
         if ( versionToMigrateFrom.equals( StandardV2_1.STORE_VERSION ) )
         {
-            removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider, oldFormat, newFormat );
+            removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider, oldFormat );
         }
 
         // DO NOT migrate logs. LegacyLogs is able to migrate logs, but only changes its format, not any
@@ -281,7 +281,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void removeDuplicateEntityProperties( File storeDir, File migrationDir, PageCache pageCache,
-            SchemaIndexProvider schemaIndexProvider, RecordFormats oldFormat, RecordFormats newFormat )
+            SchemaIndexProvider schemaIndexProvider, RecordFormats oldFormat )
             throws IOException
     {
         StoreFile.fileOperation( COPY, fileSystem, storeDir, migrationDir, Iterables.<StoreFile,StoreFile>iterable(
@@ -305,17 +305,15 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         // there are no store trailers
         StoreFile.removeTrailers( oldFormat.storeVersion(), fileSystem, migrationDir, pageCache.pageSize() );
 
-        new PropertyDeduplicator( fileSystem, migrationDir, pageCache, schemaIndexProvider, newFormat )
+        new PropertyDeduplicator( fileSystem, migrationDir, pageCache, schemaIndexProvider )
                 .deduplicateProperties();
     }
 
-    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache,
-            RecordFormats recordFormats )
+    private void rebuildCountsFromScratch( File storeDir, long lastTxId, PageCache pageCache )
     {
         final File storeFileBase = new File( storeDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
-        final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, storeDir, pageCache, recordFormats, NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fileSystem, NullLogProvider.getInstance() );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             NodeStore nodeStore = neoStores.getNodeStore();
@@ -606,7 +604,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     countsStoreFiles, true, null, StoreFileType.STORE );
             File neoStore = new File( storeDir, DEFAULT_NAME );
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
-            rebuildCountsFromScratch( storeDir, lastTxId, pageCache, selectForVersion( versionToMigrateTo ) );
+            rebuildCountsFromScratch( storeDir, lastTxId, pageCache );
         }
     }
 

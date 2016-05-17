@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -54,18 +53,16 @@ public class PropertyDeduplicator
     private final File workingDir;
     private final PageCache pageCache;
     private final SchemaIndexProvider schemaIndexProvider;
-    private final RecordFormats recordFormats;
     private final PrimitiveIntObjectMap<Long> seenPropertyKeys;
     private final PrimitiveIntObjectMap<DuplicateCluster> localDuplicateClusters;
 
     public PropertyDeduplicator( FileSystemAbstraction fileSystem, File workingDir, PageCache pageCache,
-                                 SchemaIndexProvider schemaIndexProvider, RecordFormats recordFormats )
+                                 SchemaIndexProvider schemaIndexProvider )
     {
         this.fileSystem = fileSystem;
         this.workingDir = workingDir;
         this.pageCache = pageCache;
         this.schemaIndexProvider = schemaIndexProvider;
-        this.recordFormats = recordFormats;
 
         seenPropertyKeys = Primitive.intObjectMap();
         localDuplicateClusters = Primitive.intObjectMap();
@@ -73,10 +70,8 @@ public class PropertyDeduplicator
 
     public void deduplicateProperties() throws IOException
     {
-        final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, workingDir, pageCache, recordFormats, NullLogProvider.getInstance() );
-        try ( NeoStores neoStores = storeFactory.openNeoStores( StoreType.PROPERTY, StoreType
-                .NODE, StoreType.SCHEMA) )
+        StoreFactory factory = new StoreFactory( workingDir, pageCache, fileSystem, NullLogProvider.getInstance() );
+        try ( NeoStores neoStores = factory.openNeoStores( StoreType.PROPERTY, StoreType.NODE, StoreType.SCHEMA) )
         {
             PropertyStore propertyStore = neoStores.getPropertyStore();
             NodeStore nodeStore = neoStores.getNodeStore();

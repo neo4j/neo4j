@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -108,8 +107,7 @@ public class RsdrMain
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( files );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, files, RecordFormatSelector.autoSelectFormat(),
-                logProvider );
+        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, files, logProvider );
     }
 
     private static void interact( NeoStores neoStores ) throws IOException

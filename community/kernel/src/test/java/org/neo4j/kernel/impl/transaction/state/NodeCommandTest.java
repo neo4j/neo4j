@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -246,8 +245,7 @@ public class NodeCommandTest
         fs.get().mkdirs( dir );
         @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory( dir, Config.empty(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), StandardV3_0.RECORD_FORMATS,
-                NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }

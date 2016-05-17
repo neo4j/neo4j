@@ -118,9 +118,8 @@ public class StoreMigratorTest
                 upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory( fs, storeDirectory, pageCache, selectFormat(),
-                logService.getInternalLogProvider() );
-        storeFactory.openAllNeoStores().close();
+        StoreFactory factory = new StoreFactory( storeDirectory, pageCache, fs,  logService.getInternalLogProvider() );
+        factory.openAllNeoStores().close();
     }
 
     @Test
@@ -152,9 +151,8 @@ public class StoreMigratorTest
         migrator.rebuildCounts( storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory( fs, storeDirectory, pageCache, selectFormat(),
-                logService.getInternalLogProvider() );
-        storeFactory.openAllNeoStores().close();
+        StoreFactory factory = new StoreFactory( storeDirectory, pageCache, fs, logService.getInternalLogProvider() );
+        factory.openAllNeoStores().close();
     }
 
     @Test

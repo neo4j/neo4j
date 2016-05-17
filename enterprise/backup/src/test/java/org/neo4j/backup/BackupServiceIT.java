@@ -46,7 +46,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -59,7 +58,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -136,8 +134,7 @@ public class BackupServiceIT
     public int backupPort = 8200;
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() )
-            .startLazily().withConfig( getConfig() );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
 
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -327,10 +324,8 @@ public class BackupServiceIT
 
         // it should be possible to at this point to start db based on our backup and create couple of properties
         // their ids should not clash with already existing
-        GraphDatabaseService backupBasedDatabase =
-                new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( backupDir.getAbsoluteFile() )
-                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
-                        .newGraphDatabase();
+        GraphDatabaseService backupBasedDatabase = new GraphDatabaseFactory()
+                .newEmbeddedDatabase( backupDir.getAbsoluteFile() );
         try
         {
             try ( Transaction transaction = backupBasedDatabase.beginTx() )
@@ -865,20 +860,14 @@ public class BackupServiceIT
         }
     }
 
-    private Config getConfig()
-    {
-        return new Config( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(),
-                StandardV3_0.NAME ) );
-    }
-
     private DbRepresentation getBackupDbRepresentation()
     {
-        return DbRepresentation.of( backupDir, getConfig() );
+        return DbRepresentation.of( backupDir );
     }
 
     private DbRepresentation getDbRepresentation()
     {
-        return DbRepresentation.of( storeDir, getConfig() );
+        return DbRepresentation.of( storeDir );
     }
 
 }

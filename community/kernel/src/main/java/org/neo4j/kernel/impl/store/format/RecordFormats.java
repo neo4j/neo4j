@@ -46,6 +46,8 @@ public interface RecordFormats
         public abstract RecordFormats newInstance();
     }
 
+    String name();
+
     String storeVersion();
 
     /**

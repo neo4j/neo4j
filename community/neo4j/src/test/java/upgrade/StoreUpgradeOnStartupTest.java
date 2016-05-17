@@ -55,7 +55,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allLegacyStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveNoTrailer;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasCurrentFormatVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
@@ -106,7 +106,7 @@ public class StoreUpgradeOnStartupTest
 
         // then
         assertTrue( "Some store files did not have the correct version",
-                checkNeoStoreHasCurrentFormatVersion( check, workingDirectory ) );
+                checkNeoStoreHasDefaultFormatVersion( check, workingDirectory ) );
         assertTrue( allStoreFilesHaveNoTrailer( fileSystem, workingDirectory ) );
         assertConsistentStore( workingDirectory );
     }

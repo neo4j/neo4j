@@ -259,7 +259,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final Log msgLog;
     private final LogService logService;
     private final AutoIndexing autoIndexing;
-    private final RecordFormats formats;
     private final LogProvider logProvider;
     private final DependencyResolver dependencyResolver;
     private final TokenNameLookup tokenNameLookup;
@@ -335,8 +334,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             Monitors monitors,
             Tracers tracers,
             Procedures procedures,
-            IOLimiter ioLimiter,
-            RecordFormats formats )
+            IOLimiter ioLimiter )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -366,9 +364,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.tracers = tracers;
         this.procedures = procedures;
         this.ioLimiter = ioLimiter;
-
-        this.formats = RecordFormatSelector.select( config, formats, logService );
-        new RecordFormatPropertyConfigurator( this.formats, this.config ).configure();
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
@@ -430,6 +425,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         life.add( new Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
         // Upgrade the store before we begin
+        RecordFormats formats = selectStoreFormats( config, storeDir, fs, pageCache, logService );
         upgradeStore( formats );
 
         // Build all modules and their services
@@ -443,7 +439,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
-                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering, formats );
+                    indexConfigStore, updateableSchemaState::clear, legacyIndexTransactionOrdering );
 
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                     new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory() );
@@ -531,6 +527,15 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         databaseHealth.healed();
     }
 
+    private static RecordFormats selectStoreFormats( Config config, File storeDir, FileSystemAbstraction fs,
+            PageCache pageCache, LogService logService )
+    {
+        LogProvider logging = logService.getInternalLogProvider();
+        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, storeDir, fs, pageCache, logging );
+        new RecordFormatPropertyConfigurator( formats, config ).configure();
+        return formats;
+    }
+
     private void upgradeStore( RecordFormats format )
     {
         LabelScanStoreProvider labelScanStoreProvider =
@@ -555,8 +560,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
-            Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering,
-            RecordFormats format )
+            Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
     {
         LabelScanStoreProvider labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                 HighestSelectionStrategy.getInstance() );
@@ -569,7 +573,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 fs, logProvider, propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStateChangeCallback,
                 constraintSemantics, scheduler, tokenNameLookup, lockService, schemaIndexProvider,
                 indexingServiceMonitor, databaseHealth, labelScanStore, legacyIndexProviderLookup, indexConfigStore,
-                legacyIndexTransactionOrdering, transactionSnapshotSupplier, format );
+                legacyIndexTransactionOrdering, transactionSnapshotSupplier );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which

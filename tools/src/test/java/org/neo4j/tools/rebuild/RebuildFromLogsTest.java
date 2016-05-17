@@ -38,9 +38,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -48,8 +46,6 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
@@ -91,7 +87,7 @@ public class RebuildFromLogsTest
 
     private DbRepresentation getDbRepresentation( File path )
     {
-        return DbRepresentation.of( path, getConfig() );
+        return DbRepresentation.of( path );
     }
 
     @Test
@@ -135,18 +131,9 @@ public class RebuildFromLogsTest
         assertEquals( getDbRepresentation( prototypePath ), getDbRepresentation( rebuildPath ) );
     }
 
-    private Config getConfig()
-    {
-        return new Config( stringMap( record_format.name(), StandardV3_0.NAME ) );
-    }
-
     private GraphDatabaseAPI db( File rebuiltPath )
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( rebuiltPath )
-                .setConfig( record_format, StandardV3_0.NAME )
-                .newGraphDatabase();
-
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( rebuiltPath );
     }
 
     enum Transaction

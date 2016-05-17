@@ -27,9 +27,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -54,9 +52,7 @@ public class TestConfiguration
     @Test
     public void testOnByDefault() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
-                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
-                .newGraphDatabase();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( SOURCE_DIR );
         OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
         db.shutdown();
     }
@@ -66,7 +62,6 @@ public class TestConfiguration
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                 .newGraphDatabase();
         try
         {
@@ -84,7 +79,6 @@ public class TestConfiguration
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
                 .newGraphDatabase();
 
         OnlineBackup.from( HOST_ADDRESS ).full( BACKUP_DIR );
@@ -97,8 +91,7 @@ public class TestConfiguration
         String customPort = "12345";
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-                .setConfig( OnlineBackupSettings.online_backup_server, ":"+customPort )
-                .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
+                .setConfig( OnlineBackupSettings.online_backup_server, ":" + customPort )
                 .newGraphDatabase();
         try
         {

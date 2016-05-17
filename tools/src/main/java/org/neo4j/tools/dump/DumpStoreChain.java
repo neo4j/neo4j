@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -120,7 +119,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = Config.defaults();
             StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs,
-                    RecordFormatSelector.autoSelectFormat(), logProvider() );
+                    logProvider() );
 
             try ( NeoStores neoStores = storeFactory.openNeoStores( getStoreTypes() ) )
             {

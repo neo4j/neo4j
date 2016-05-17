@@ -24,17 +24,14 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.rule.TargetDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.test.rule.TargetDirectory.testDirForTest;
 
 public class StartupConstraintSemanticsTest
@@ -60,10 +57,7 @@ public class StartupConstraintSemanticsTest
         // when
         try
         {
-            graphDb = new GraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( dir.graphDbDir() )
-                    .setConfig( GraphDatabaseSettings.record_format, StandardV3_0.NAME )
-                    .newGraphDatabase();
+            graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( dir.graphDbDir() );
             fail( "should have failed to start!" );
         }
         // then

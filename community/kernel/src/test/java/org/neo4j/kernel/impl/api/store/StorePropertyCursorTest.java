@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -298,7 +297,7 @@ public class StorePropertyCursorTest
                 fs.deleteRecursively( storeDir );
             }
             fs.mkdirs( storeDir );
-            StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, StandardV3_0.RECORD_FORMATS, log );
+            StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, log );
             neoStores = storeFactory.openAllNeoStores( true );
             propertyStore = neoStores.getPropertyStore();
         }

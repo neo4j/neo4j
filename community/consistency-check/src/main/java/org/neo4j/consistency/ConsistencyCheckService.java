@@ -51,12 +51,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.logging.DuplicatingLog;
@@ -125,9 +123,7 @@ public class ConsistencyCheckService
         Config consistencyCheckerConfig = tuningConfiguration.with(
                 MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
         StoreFactory factory = new StoreFactory( storeDir, consistencyCheckerConfig,
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                RecordFormatSelector.autoSelectFormat( consistencyCheckerConfig, NullLogService.getInstance() ),
-                logProvider );
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
 
         ConsistencySummaryStatistics summary;
         // With the added neo4j_home config the logs directory will end up in db location
