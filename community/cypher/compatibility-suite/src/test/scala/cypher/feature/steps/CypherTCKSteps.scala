@@ -157,6 +157,12 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     }
   }
 
+  When(EXECUTING_CONTROL_QUERY) { (query: String) =>
+    result = Try {
+      graph.execute(query, params)
+    }
+  }
+
   private def successful(value: Try[Result]): Result = value match {
     case Success(r) => new ResultWrapper(r)
     case Failure(e) => fail(s"Expected successful result, but got error: $e")
