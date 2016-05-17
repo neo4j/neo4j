@@ -127,7 +127,7 @@ _setup_calculated_paths() {
     NEO4J_HOME="$(cd "$(dirname "$0")"/.. && pwd)"
   fi
   : "${NEO4J_CONF:=$(resolve_path conf)}"
-  readonly NEO4J_ROOT NEO4J_CONF
+  readonly NEO4J_HOME NEO4J_CONF
 }
 
 _read_config() {
