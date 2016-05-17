@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.elections;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,18 +36,18 @@ import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.membership.RaftTestGroup;
 import org.neo4j.coreedge.server.RaftTestMember;
 import org.neo4j.coreedge.server.RaftTestMemberSetBuilder;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
 
 public class Fixture
 {
-    final Set<RaftTestMember> members = new HashSet<>();
+    private final Set<RaftTestMember> members = new HashSet<>();
     final Set<RaftInstance<RaftTestMember>> rafts = new HashSet<>();
     final RaftTestNetwork<RaftTestMember> net;
-    final List<DelayedRenewableTimeoutService> timeoutServices = new ArrayList<>();
+    private final List<DelayedRenewableTimeoutService> timeoutServices = new ArrayList<>();
 
-    public Fixture( Set<Long> memberIds, RaftTestNetwork<RaftTestMember> net, long electionTimeout, long heartbeatInterval, RaftStateMachine stateMachine ) throws Throwable
+    Fixture( Set<Long> memberIds, RaftTestNetwork<RaftTestMember> net, long electionTimeout, long heartbeatInterval,
+             RaftStateMachine stateMachine ) throws Throwable
     {
         this.net = net;
 
@@ -79,7 +80,7 @@ public class Fixture
     private DelayedRenewableTimeoutService createTimeoutService() throws Throwable
     {
         DelayedRenewableTimeoutService timeoutService = new DelayedRenewableTimeoutService(
-                Clock.SYSTEM_CLOCK, NullLogProvider.getInstance() );
+                Clock.systemUTC(), NullLogProvider.getInstance() );
 
         timeoutServices.add( timeoutService );
 
@@ -89,7 +90,7 @@ public class Fixture
         return timeoutService;
     }
 
-    public void boot() throws BootstrapException
+    void boot() throws BootstrapException
     {
         net.start();
         try

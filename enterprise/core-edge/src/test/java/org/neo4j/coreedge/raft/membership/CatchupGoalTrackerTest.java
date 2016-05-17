@@ -19,15 +19,15 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.state.follower.FollowerState;
-import org.neo4j.helpers.FakeClock;
+import org.neo4j.time.FakeClock;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -35,8 +35,8 @@ import static org.junit.Assert.assertTrue;
 public class CatchupGoalTrackerTest
 {
 
-    public static final long ROUND_TIMEOUT = 15;
-    public static final long CATCHUP_TIMEOUT = 1_000;
+    private static final long ROUND_TIMEOUT = 15;
+    private static final long CATCHUP_TIMEOUT = 1_000;
 
     @Test
     public void shouldAchieveGoalIfWithinRoundTimeout() throws Exception

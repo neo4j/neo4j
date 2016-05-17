@@ -19,9 +19,8 @@
  */
 package org.neo4j.coreedge.server;
 
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
-
-import org.neo4j.helpers.Clock;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -39,7 +38,7 @@ public class Expiration
         this( clock, 2, MINUTES );
     }
 
-    public Expiration( Clock clock, long timeout, TimeUnit timeUnit )
+    Expiration( Clock clock, long timeout, TimeUnit timeUnit )
     {
         this.clock = clock;
         this.timeout = timeUnit.toMillis( timeout );
@@ -56,12 +55,12 @@ public class Expiration
 
         boolean expired()
         {
-            return clock.currentTimeMillis() > expires;
+            return clock.millis() > expires;
         }
 
         void renew()
         {
-            expires = clock.currentTimeMillis() + timeout;
+            expires = clock.millis() + timeout;
         }
 
         @Override

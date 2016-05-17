@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.raft.replication.shipping;
 
 import java.io.IOException;
+import java.time.Clock;
 
 import org.neo4j.coreedge.raft.DelayedRenewableTimeoutService;
 import org.neo4j.coreedge.raft.LeaderContext;
@@ -29,14 +30,13 @@ import org.neo4j.coreedge.raft.log.RaftLogCursor;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.net.Outbound;
-import org.neo4j.cursor.IOCursor;
-import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static java.lang.String.format;
+
 import static org.neo4j.coreedge.raft.RenewableTimeoutService.RenewableTimeout;
 import static org.neo4j.coreedge.raft.RenewableTimeoutService.TimeoutName;
 
@@ -113,8 +113,10 @@ public class RaftLogShipper<MEMBER>
 
     private Mode mode = Mode.MISMATCH;
 
-    public RaftLogShipper( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog, Clock clock, MEMBER leader, MEMBER follower,
-                           long leaderTerm, long leaderCommit, long retryTimeMillis, int catchupBatchSize, int maxAllowedShippingLag )
+    RaftLogShipper( Outbound<MEMBER> outbound, LogProvider logProvider, ReadableRaftLog raftLog, Clock clock, MEMBER
+            leader, MEMBER follower,
+                    long leaderTerm, long leaderCommit, long retryTimeMillis, int catchupBatchSize, int
+                            maxAllowedShippingLag )
     {
         this.outbound = outbound;
         this.catchupBatchSize = catchupBatchSize;
@@ -274,7 +276,7 @@ public class RaftLogShipper<MEMBER>
         lastLeaderContext = leaderContext;
     }
 
-    public synchronized void onScheduledTimeoutExpiry()
+    private synchronized void onScheduledTimeoutExpiry()
     {
         try
         {
@@ -284,7 +286,7 @@ public class RaftLogShipper<MEMBER>
             }
             else if ( timeoutAbsoluteMillis != 0 )
             {
-                long timeLeft = timeoutAbsoluteMillis - clock.currentTimeMillis();
+                long timeLeft = timeoutAbsoluteMillis - clock.millis();
 
                 if ( timeLeft > 0 )
                 {
@@ -323,14 +325,14 @@ public class RaftLogShipper<MEMBER>
 
     private boolean timedOut()
     {
-        return timeoutAbsoluteMillis != 0 && (clock.currentTimeMillis() - timeoutAbsoluteMillis) >= 0;
+        return timeoutAbsoluteMillis != 0 && (clock.millis() - timeoutAbsoluteMillis) >= 0;
     }
 
     private void scheduleTimeout( long deltaMillis )
     {
         // TODO: This cancel/create dance is a bit inefficient... consider something better.
 
-        timeoutAbsoluteMillis = clock.currentTimeMillis() + deltaMillis;
+        timeoutAbsoluteMillis = clock.millis() + deltaMillis;
 
         if ( timeout != null )
         {

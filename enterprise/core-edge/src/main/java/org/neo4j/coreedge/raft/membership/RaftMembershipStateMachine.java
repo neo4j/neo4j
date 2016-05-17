@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.membership;
 
+import java.time.Clock;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,7 +27,6 @@ import org.neo4j.coreedge.raft.log.ReadableRaftLog;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.raft.state.follower.FollowerStates;
 import org.neo4j.coreedge.raft.state.membership.RaftMembershipState;
-import org.neo4j.helpers.Clock;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -58,7 +58,7 @@ import static java.lang.String.format;
  *
  * Only a single member change is handled at a time.
  */
-public class RaftMembershipStateMachine<MEMBER>
+class RaftMembershipStateMachine<MEMBER>
 {
     private final Log log;
     public RaftMembershipStateMachineEventHandler<MEMBER> state = new Inactive();
@@ -73,9 +73,9 @@ public class RaftMembershipStateMachine<MEMBER>
 
     private MEMBER catchingUpMember;
 
-    public RaftMembershipStateMachine( ReadableRaftLog raftLog, Clock clock, long electionTimeout,
-                                       MembershipDriver<MEMBER> membershipDriver, LogProvider logProvider,
-                                       long catchupTimeout, RaftMembershipState<MEMBER> membershipState )
+    RaftMembershipStateMachine( ReadableRaftLog raftLog, Clock clock, long electionTimeout,
+                                MembershipDriver<MEMBER> membershipDriver, LogProvider logProvider,
+                                long catchupTimeout, RaftMembershipState<MEMBER> membershipState )
     {
         this.raftLog = raftLog;
         this.clock = clock;
@@ -101,37 +101,37 @@ public class RaftMembershipStateMachine<MEMBER>
         }
     }
 
-    public void onRole( Role role )
+    void onRole( Role role )
     {
         handleState( state.onRole( role ) );
     }
 
-    public void onRaftGroupCommitted()
+    void onRaftGroupCommitted()
     {
         handleState( state.onRaftGroupCommitted() );
     }
 
-    public void onFollowerStateChange( FollowerStates<MEMBER> followerStates )
+    void onFollowerStateChange( FollowerStates<MEMBER> followerStates )
     {
         handleState( state.onFollowerStateChange( followerStates ) );
     }
 
-    public void onMissingMember( MEMBER member )
+    void onMissingMember( MEMBER member )
     {
         handleState( state.onMissingMember( member ) );
     }
 
-    public void onSuperfluousMember( MEMBER member )
+    void onSuperfluousMember( MEMBER member )
     {
         handleState( state.onSuperfluousMember( member ) );
     }
 
-    public void onTargetChanged( Set<MEMBER> targetMembers )
+    void onTargetChanged( Set<MEMBER> targetMembers )
     {
         handleState( state.onTargetChanged( targetMembers ) );
     }
 
-    public class Inactive extends RaftMembershipStateMachineEventHandler.Adapter<MEMBER>
+    private class Inactive extends RaftMembershipStateMachineEventHandler.Adapter<MEMBER>
     {
         @Override
         public RaftMembershipStateMachineEventHandler<MEMBER> onRole( Role role )
@@ -157,7 +157,7 @@ public class RaftMembershipStateMachine<MEMBER>
         }
     }
 
-    public abstract class ActiveBaseState extends RaftMembershipStateMachineEventHandler.Adapter<MEMBER>
+    abstract class ActiveBaseState extends RaftMembershipStateMachineEventHandler.Adapter<MEMBER>
     {
         @Override
         public RaftMembershipStateMachineEventHandler<MEMBER> onRole( Role role )
@@ -173,7 +173,7 @@ public class RaftMembershipStateMachine<MEMBER>
         }
     }
 
-    public class Idle extends ActiveBaseState
+    private class Idle extends ActiveBaseState
     {
         @Override
         public RaftMembershipStateMachineEventHandler<MEMBER> onMissingMember( MEMBER member )
@@ -198,12 +198,12 @@ public class RaftMembershipStateMachine<MEMBER>
         }
     }
 
-    public class CatchingUp extends ActiveBaseState
+    private class CatchingUp extends ActiveBaseState
     {
         private final CatchupGoalTracker catchupGoalTracker;
         boolean movingToConsensus;
 
-        public CatchingUp( MEMBER member )
+        CatchingUp( MEMBER member )
         {
             this.catchupGoalTracker = new CatchupGoalTracker( raftLog, clock, electionTimeout, catchupTimeout );
             catchingUpMember = member;
