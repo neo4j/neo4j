@@ -69,16 +69,14 @@ check_java() {
   fi
 }
 
-# Resolve a path relative to the directory provided as second argument.  If no
-# directory is provided, resolve relative to $NEO4J_HOME.  Don't resolve if
+# Resolve a path relative to $NEO4J_HOME.  Don't resolve if
 # the path is absolute.
 resolve_path() {
     orig_filename=$1
-    relative_to=${2:-$NEO4J_HOME}
     if [[ ${orig_filename} == /* ]]; then
         filename="${orig_filename}"
     else
-        filename="${relative_to}/${orig_filename}"
+        filename="${NEO4J_HOME}/${orig_filename}"
     fi
     echo "${filename}"
 }
