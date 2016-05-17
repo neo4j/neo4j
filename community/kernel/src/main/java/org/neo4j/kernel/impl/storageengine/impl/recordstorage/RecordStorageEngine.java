@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -95,7 +94,7 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipDeleter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
-import org.neo4j.kernel.impl.transaction.state.storeview.AdaptableStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.AdaptableIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -117,10 +116,6 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
@@ -224,7 +219,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             labelScanStore = labelScanStoreProvider.getLabelScanStore();
 
             schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( indexProvider );
-            indexStoreView = new AdaptableStoreIndexStoreView( labelScanStore, lockService, neoStores );
+            indexStoreView = new AdaptableIndexStoreView( labelScanStore, lockService, neoStores );
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, schemaIndexProviderMap,
                     indexStoreView, tokenNameLookup,
                     Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).allIndexRules() ), logProvider,

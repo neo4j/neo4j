@@ -28,6 +28,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -36,8 +37,8 @@ import java.util.concurrent.Future;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -71,16 +72,14 @@ public class LuceneIndexAccessorTest
     private final Object value = "value", value2 = 40;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
 
-
-
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
+    public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations() throws IOException
     {
-        final File dir = new File( "dir" );
+        final File dir = Files.createTempDirectory("dir").toFile();
         return Arrays.asList(
                 arg( dirFactory1 -> {
                     LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
-                            .withFileSystem( new EphemeralFileSystemAbstraction() )
+                            .withFileSystem( new DefaultFileSystemAbstraction() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
                             .withIndexIdentifier( "1" )
@@ -93,7 +92,7 @@ public class LuceneIndexAccessorTest
                 arg( dirFactory1 -> {
                     LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
                             .uniqueIndex()
-                            .withFileSystem( new EphemeralFileSystemAbstraction() )
+                            .withFileSystem( new DefaultFileSystemAbstraction() )
                             .withDirectoryFactory( dirFactory1 )
                             .withIndexRootFolder( dir )
                             .withIndexIdentifier( "testIndex" )

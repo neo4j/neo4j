@@ -49,7 +49,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
-public class AdaptableStoreIndexStoreViewTest
+public class AdaptableIndexStoreViewTest
 {
 
     private LabelScanStore labelScanStore = mock( LabelScanStore.class );
@@ -80,8 +80,8 @@ public class AdaptableStoreIndexStoreViewTest
         mockLabelNodeCount( countStore, 2 );
         mockLabelNodeCount( countStore, 3 );
 
-        AdaptableStoreIndexStoreView storeView =
-                new AdaptableStoreIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
+        AdaptableIndexStoreView storeView =
+                new AdaptableIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
 
         StoreScan<Exception> storeScan = storeView
                 .visitNodes( new int[]{1, 2, 3}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );
@@ -101,14 +101,13 @@ public class AdaptableStoreIndexStoreViewTest
         PrimitiveLongIterator labeledNodesIterator = PrimitiveLongCollections.iterator( 1, 2, 3, 4, 5, 6, 7, 8 );
         when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 20L );
         when( nodeStore.getHighId() ).thenReturn( 20L );
-        when( labelScanReader.getMinIndexedNodeId() ).thenReturn( 20L );
         when( labelScanReader.nodesWithAnyOfLabels( 2, 6)).thenReturn( labeledNodesIterator );
 
         mockLabelNodeCount( countStore, 2 );
         mockLabelNodeCount( countStore, 6 );
 
-        AdaptableStoreIndexStoreView storeView =
-                new AdaptableStoreIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
+        AdaptableIndexStoreView storeView =
+                new AdaptableIndexStoreView( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores );
 
         StoreScan<Exception> storeScan = storeView
                 .visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor );

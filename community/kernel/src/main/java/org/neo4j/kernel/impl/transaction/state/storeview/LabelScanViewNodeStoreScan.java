@@ -30,22 +30,18 @@ import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.StoreIdIterator;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**
  * Store scan view that will try to minimize amount of scanned nodes by using label scan store {@link LabelScanStore}
  * as a source of known labeled node ids.
- * Label scan store reader will be aware only about nodes that where in the index at the moment of reader creation
- * soon as we finish iteration over ids from label scan store we will continue iterate over all nodes that where
- * added into the store after that.
  * @param <FAILURE>
  */
-class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
+public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
 {
     private final LabelScanStore labelScanStore;
 
-    LabelScanViewNodeStoreScan( NodeStore nodeStore, LockService locks, PropertyStore propertyStore,
+    public LabelScanViewNodeStoreScan( NodeStore nodeStore, LockService locks, PropertyStore propertyStore,
             LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
             Visitor<NodePropertyUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
             IntPredicate propertyKeyIdFilter )
@@ -56,24 +52,19 @@ class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNod
     }
 
     @Override
-    protected PrimitiveLongResourceIterator getNodeIdIterator()
+    public PrimitiveLongResourceIterator getNodeIdIterator()
     {
-        return new LabelScanViewIdIterator( labelScanStore, nodeStore, labelIds );
+        return new LabelScanViewIdIterator( labelScanStore, labelIds );
     }
 
     private class LabelScanViewIdIterator implements PrimitiveLongResourceIterator
     {
-        private final NodeStore nodeStore;
         private final LabelScanReader labelScanReader;
-        private long highestPossibleIdInUse;
-        private boolean iterateOverNewNodeIds = false;
         private PrimitiveLongIterator idIterator;
 
-        LabelScanViewIdIterator( LabelScanStore labelScanStore, NodeStore nodeStore, int[] labelIds )
+        LabelScanViewIdIterator( LabelScanStore labelScanStore, int[] labelIds )
         {
-            this.nodeStore = nodeStore;
             labelScanReader = labelScanStore.newReader();
-            highestPossibleIdInUse = labelScanReader.getMinIndexedNodeId();
             idIterator = labelScanReader.nodesWithAnyOfLabels( labelIds );
         }
 
@@ -86,29 +77,13 @@ class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNod
         @Override
         public boolean hasNext()
         {
-            boolean hasNext = idIterator.hasNext();
-            if ( !hasNext )
-            {
-                if ( iterateOverNewNodeIds )
-                {
-                    return false;
-                }
-                else
-                {
-                    idIterator = new StoreIdIterator( nodeStore, true, highestPossibleIdInUse + 1 );
-                    iterateOverNewNodeIds = true;
-                    return idIterator.hasNext();
-                }
-            }
-            return true;
+            return idIterator.hasNext();
         }
 
         @Override
         public long next()
         {
-            long value = idIterator.next();
-            highestPossibleIdInUse = Math.max( highestPossibleIdInUse, value );
-            return value;
+            return idIterator.next();
         }
     }
 }

@@ -154,6 +154,7 @@ public class IndexingServiceTest
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
                 .thenAnswer( invocation -> invocation.getArguments()[1] );
+        when( storeView.supportUpdates() ).thenReturn( true );
     }
 
     @Test

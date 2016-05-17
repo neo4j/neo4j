@@ -96,6 +96,16 @@ public class NodePropertyUpdate
         return updateMode;
     }
 
+    public long[] getLabelsBefore()
+    {
+        return labelsBefore;
+    }
+
+    public long[] getLabelsAfter()
+    {
+        return labelsAfter;
+    }
+
     /**
      * Whether or not this property update is for the given {@code labelId}.
      *

@@ -19,17 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.labelscan.storestrategy;
 
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -156,33 +151,4 @@ public class NodeRangeDocumentLabelScanStorageStrategy implements LabelScanStora
         }
     }
 
-    @Override
-    public long getMinRangeIndexedNodeId( IndexSearcher searcher )
-    {
-        try
-        {
-            long highestIndexRange = getMaxIndexedRange( searcher );
-            return (highestIndexRange << format.bitmapFormat().shift) + 1;
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    private long getMaxIndexedRange( IndexSearcher searcher ) throws IOException
-    {
-        long maxId = 0;
-        IndexReaderContext context = searcher.getIndexReader().getContext();
-        List<LeafReaderContext> leaves = context.leaves();
-        for ( LeafReaderContext leaf : leaves )
-        {
-            NumericDocValues numeric = DocValues.getNumeric( leaf.reader(), BitmapDocumentFormat.RANGE );
-            for ( int i = 0; i < leaf.reader().maxDoc(); i++ )
-            {
-                maxId = Math.max( numeric.get( i ), maxId );
-            }
-        }
-        return maxId;
-    }
 }

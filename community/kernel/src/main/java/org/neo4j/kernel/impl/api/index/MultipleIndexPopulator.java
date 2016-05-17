@@ -325,10 +325,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                 {
                     // no need to check for null as nobody else is emptying this queue
                     NodePropertyUpdate update = queue.poll();
-                    if ( update.getNodeId() <= currentlyIndexedNodeId )
-                    {
-                        updater.process( update );
-                    }
+                    storeView.acceptUpdate( updater, update, currentlyIndexedNodeId );
                 }
                 while ( !queue.isEmpty() );
             }
@@ -350,7 +347,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    private static class MultipleIndexUpdater implements IndexUpdater
+    public static class MultipleIndexUpdater implements IndexUpdater
     {
         private final Map<IndexPopulation,IndexUpdater> populationsWithUpdaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
@@ -515,7 +512,10 @@ public class MultipleIndexPopulator implements IndexPopulator
         public boolean visit( NodePropertyUpdates updates ) throws IndexPopulationFailedKernelException
         {
             add( updates );
-            populateFromQueue( updates.getNodeId() );
+            if ( storeView.supportUpdates() )
+            {
+                populateFromQueue( updates.getNodeId() );
+            }
             return false;
         }
 

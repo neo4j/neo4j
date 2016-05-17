@@ -83,17 +83,6 @@ public class PartitionedLuceneLabelScanStoreReader implements LabelScanReader
     }
 
     @Override
-
-    public long getMinIndexedNodeId()
-    {
-        int partitions = storeReaders.size();
-        LabelScanReader lastPartitionReader = storeReaders.get( partitions - 1 );
-        long highestPartitionIndexedNodes = lastPartitionReader.getMinIndexedNodeId();
-        long nodesInFullPartitions = (partitions - 1) * nodesInPartition;
-        return nodesInFullPartitions + highestPartitionIndexedNodes;
-    }
-
-    @Override
     public void close()
     {
         try

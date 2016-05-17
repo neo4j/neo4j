@@ -97,15 +97,6 @@ public class PartitionedLuceneLabelScanStoreReaderTest
         verifyResult( result );
     }
 
-    @Test
-    public void highestIndexedNodeId()
-    {
-        PartitionedLuceneLabelScanStoreReader storeReader = createPartitionedReaderWithReaders();
-        when( indexReader3.getMinIndexedNodeId() ).thenReturn( 8L );
-
-        assertEquals( 28, storeReader.getMinIndexedNodeId() );
-    }
-
     private void verifyResult( PrimitiveLongSet results )
     {
         assertEquals( 3, results.size() );

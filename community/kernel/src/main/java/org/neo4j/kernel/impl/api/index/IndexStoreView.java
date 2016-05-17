@@ -64,6 +64,22 @@ public interface IndexStoreView extends PropertyAccessor
 
     void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta );
 
+    /**
+     * Check if current store view support concurrent updates.
+     * @return true if concurrent updates supported
+     */
+    boolean supportUpdates();
+
+    /**
+     * Check if provided node update is applicable in a context of current store view.
+     *
+     * @param updater
+     * @param update update to check
+     * @param currentlyIndexedNodeId id of currently indexed node
+     */
+    void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+            long currentlyIndexedNodeId );
+
     StoreScan EMPTY_SCAN = new StoreScan()
     {
         @Override
@@ -124,6 +140,18 @@ public interface IndexStoreView extends PropertyAccessor
 
         @Override
         public void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta )
+        {
+        }
+
+        @Override
+        public boolean supportUpdates()
+        {
+            return false;
+        }
+
+        @Override
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+                long currentlyIndexedNodeId )
         {
         }
     };

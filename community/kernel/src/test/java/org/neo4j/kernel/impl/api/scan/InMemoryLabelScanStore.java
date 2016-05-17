@@ -157,12 +157,6 @@ public class InMemoryLabelScanStore implements LabelScanStore
                 return nodes.iterator();
             }
 
-            @Override
-            public long getMinIndexedNodeId()
-            {
-                return data.entrySet().stream().map( e -> Collections.max( e.getValue() ) ).reduce( Long::max )
-                        .orElse( 0L );
-            }
         };
     }
 

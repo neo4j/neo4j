@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodePropertyUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -91,6 +92,30 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         try ( CountsAccessor.IndexStatsUpdater updater = counts.updateIndexCounts() )
         {
             updater.incrementIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId(), updatesDelta );
+        }
+    }
+
+    @Override
+    public boolean supportUpdates()
+    {
+        return true;
+    }
+
+    /**
+     * Accept updates in cases if updated node id is bellow or equal to currently indexed node.
+     *
+     * @param updater
+     * @param update update to check
+     * @param currentlyIndexedNodeId id of currently indexed node
+     * @return true if update is applicable
+     */
+    @Override
+    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, NodePropertyUpdate update,
+            long currentlyIndexedNodeId )
+    {
+        if (update.getNodeId() <= currentlyIndexedNodeId)
+        {
+            updater.process( update );
         }
     }
 
