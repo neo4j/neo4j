@@ -23,6 +23,8 @@ package org.neo4j.codegen.bytecode;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
+import static org.objectweb.asm.Opcodes.GOTO;
+
 public class While implements Block
 {
     private final MethodVisitor methodVisitor;

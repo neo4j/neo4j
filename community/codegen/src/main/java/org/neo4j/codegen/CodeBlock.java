@@ -87,14 +87,9 @@ public class CodeBlock implements AutoCloseable
         }
     }
 
-    protected void emit( Consumer<MethodEmitter> emitFunction )
-    {
-        emitFunction.accept( emitter );
-    }
-
     public void expression( Expression expression )
     {
-        emit( ( e ) -> e.expression( expression ) );
+        emitter.expression( expression );
     }
 
     LocalVariable local( String name )
@@ -105,13 +100,13 @@ public class CodeBlock implements AutoCloseable
     public LocalVariable declare( TypeReference type, String name )
     {
         LocalVariable local = localVariables.createNew( type, name );
-        emit( e -> e.declare( local ) );
+        emitter.declare( local );
         return local;
     }
 
     public void assign( LocalVariable local, Expression value )
     {
-        emit( e -> e.assignVariableInScope( local, value ) );
+        emitter.assignVariableInScope( local, value );
     }
 
     public void assign( Class<?> type, String name, Expression value )
@@ -122,12 +117,12 @@ public class CodeBlock implements AutoCloseable
     public void assign( TypeReference type, String name, Expression value )
     {
         LocalVariable variable = localVariables.createNew( type, name );
-        emit( e -> e.assign( variable, value ) );
+        emitter.assign( variable, value );
     }
 
     public void put( Expression target, FieldReference field, Expression value )
     {
-        emit( e -> e.put( target, field, value ) );
+        emitter.put( target, field, value );
     }
 
     public Expression self()
@@ -161,58 +156,57 @@ public class CodeBlock implements AutoCloseable
 
     public CodeBlock whileLoop( Expression test )
     {
-        emit( e -> e.beginWhile( test ) );
+        emitter.beginWhile( test );
         return new CodeBlock( this );
     }
 
     public CodeBlock ifStatement( Expression test )
     {
-        emit( e -> e.beginIf( test ) );
+        emitter.beginIf( test );
         return new CodeBlock( this );
     }
 
     public CodeBlock ifNotStatement( Expression test )
     {
-        emit( e -> e.beginIfNot( test ) );
+        emitter.beginIfNot( test );
         return new CodeBlock( this );
     }
 
     public CodeBlock ifNullStatement( Expression test )
     {
-        emit( e -> e.beginIfNull( test ) );
+        emitter.beginIfNull( test );
         return new CodeBlock( this );
     }
 
     public CodeBlock ifNonNullStatement( Expression test )
     {
-        emit( e -> e.beginIfNonNull( test ) );
+        emitter.beginIfNonNull( test );
         return new CodeBlock( this );
     }
 
     public void tryCatch( Consumer<CodeBlock> body, Consumer<CodeBlock> onError, Parameter exception )
     {
-        emit( e -> e.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ),
-                this ) );
+        emitter.tryCatchBlock( body, onError, localVariables.createNew( exception.type(), exception.name() ),
+                this );
     }
 
     public void returns()
     {
-        emit( MethodEmitter::returns );
+        emitter.returns();
     }
 
     public void returns( Expression value )
     {
-        emit( e -> e.returns( value ) );
+        emitter.returns( value );
     }
 
     public void throwException( Expression exception )
     {
-        emit( e -> e.throwException( exception ) );
+        emitter.throwException( exception );
     }
 
     public TypeReference owner()
     {
         return clazz.handle();
     }
-
 }

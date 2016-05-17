@@ -106,7 +106,7 @@ public abstract class MethodDeclaration
             return this;
         }
 
-        public Builder modifiers(int modifiers)
+        public Builder modifiers( int modifiers )
         {
             this.modifiers = modifiers;
             return this;
@@ -177,7 +177,7 @@ public abstract class MethodDeclaration
 
     public boolean isGeneric()
     {
-        if ( returnType().isGeneric() || typeParameters.length != 0)
+        if ( returnType().isGeneric() || typeParameters.length != 0 )
         {
             return true;
         }
@@ -224,7 +224,7 @@ public abstract class MethodDeclaration
         for ( int i = 0; i < parameters.length; i++ )
         {
             Parameter parameter = parameters[i];
-            TypeReference erasedType = erase( parameter.type(), table);
+            TypeReference erasedType = erase( parameter.type(), table );
             newParameters[i] = param( erasedType, parameter.name() );
         }
         TypeReference[] newExceptions = new TypeReference[exceptions.length];
@@ -235,29 +235,11 @@ public abstract class MethodDeclaration
         String newName = name();
         boolean newIsConstrucor = isConstructor();
 
-        return new MethodDeclaration( owner, newParameters, newExceptions, modifiers, typeParameters )
-        {
-            @Override
-            public boolean isConstructor()
-            {
-                return newIsConstrucor;
-            }
-
-            @Override
-            public TypeReference returnType()
-            {
-                return newReturnType;
-            }
-
-            @Override
-            public String name()
-            {
-                return newName;
-            }
-        };
+        return methodDeclaration( owner, newReturnType, newParameters, newExceptions, newName, newIsConstrucor,
+                modifiers, typeParameters );
     }
 
-    private TypeReference erase( TypeReference reference, Map<String,TypeReference> table  )
+    private TypeReference erase( TypeReference reference, Map<String,TypeReference> table )
     {
         TypeReference erasedReference = table.get( reference.name() );
 
@@ -267,51 +249,14 @@ public abstract class MethodDeclaration
     static MethodDeclaration method( TypeReference owner, final TypeReference returnType, final String name,
             Parameter[] parameters, TypeReference[] exceptions, int modifiers, TypeParameter[] typeParameters )
     {
-        return new MethodDeclaration( owner, parameters, exceptions, modifiers, typeParameters )
-        {
-            @Override
-            public boolean isConstructor()
-            {
-                return false;
-            }
-
-            @Override
-            public TypeReference returnType()
-            {
-                return returnType;
-            }
-
-            @Override
-            public String name()
-            {
-                return name;
-            }
-        };
+        return methodDeclaration( owner, returnType, parameters, exceptions, name, false, modifiers, typeParameters );
     }
 
     static MethodDeclaration constructor( TypeReference owner, Parameter[] parameters, TypeReference[] exceptions,
             int modifiers, TypeParameter[] typeParameters )
     {
-        return new MethodDeclaration( owner, parameters, exceptions ,modifiers, typeParameters )
-        {
-            @Override
-            public boolean isConstructor()
-            {
-                return true;
-            }
-
-            @Override
-            public TypeReference returnType()
-            {
-                return TypeReference.VOID;
-            }
-
-            @Override
-            public String name()
-            {
-                return "<init>";
-            }
-        };
+        return methodDeclaration( owner, TypeReference.VOID, parameters, exceptions, "<init>", true, modifiers,
+                typeParameters );
     }
 
     public static class TypeParameter
@@ -341,5 +286,31 @@ public abstract class MethodDeclaration
         {
             return bound.superBound();
         }
+    }
+
+    private static MethodDeclaration methodDeclaration( TypeReference owner, final TypeReference returnType,
+            final Parameter[] parameters, final TypeReference[] exceptions, final String name,
+            final boolean isConstrucor, int modifiers, TypeParameter[] typeParameters )
+    {
+        return new MethodDeclaration( owner, parameters, exceptions, modifiers, typeParameters )
+        {
+            @Override
+            public boolean isConstructor()
+            {
+                return isConstrucor;
+            }
+
+            @Override
+            public TypeReference returnType()
+            {
+                return returnType;
+            }
+
+            @Override
+            public String name()
+            {
+                return name;
+            }
+        };
     }
 }

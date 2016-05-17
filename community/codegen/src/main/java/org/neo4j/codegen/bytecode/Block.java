@@ -19,9 +19,8 @@
  */
 package org.neo4j.codegen.bytecode;
 
-import org.objectweb.asm.Opcodes;
 
-interface Block extends Opcodes
+interface Block
 {
     void endBlock();
 }

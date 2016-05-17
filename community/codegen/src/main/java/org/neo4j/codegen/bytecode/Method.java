@@ -21,7 +21,8 @@ package org.neo4j.codegen.bytecode;
 
 
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+
+import static org.objectweb.asm.Opcodes.RETURN;
 
 public class Method implements Block
 {
@@ -39,7 +40,7 @@ public class Method implements Block
     {
         if ( isVoid )
         {
-            methodVisitor.visitInsn( Opcodes.RETURN );
+            methodVisitor.visitInsn( RETURN );
         }
         //we rely on asm to keep track of stack depth
         methodVisitor.visitMaxs( 0, 0 );
