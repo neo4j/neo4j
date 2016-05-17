@@ -49,17 +49,17 @@ import java.io.IOException;
  * </code></pre>
  * <p>There are a couple of things to this pattern that are worth noting:
  * <ul>
- *     <li>We use a try-with-resources clause to make sure that the resources
- *     associated with the PageCursor are always released properly.
- *     </li>
- *     <li>We use an if-clause for the next() call if we are only processing
- *     a single page, to make sure that the page exist and is accessible to us.
- *     </li>
- *     <li>We use a while-clause for next() if we are scanning through pages.
- *     </li>
- *     <li>We do our processing of the page in a do-while-retry loop, to
- *     make sure that we processed a page that was in a consistent state.
- *     </li>
+ * <li>We use a try-with-resources clause to make sure that the resources associated with the PageCursor are always
+ * released properly.
+ * </li>
+ * <li>We use an if-clause for the next() call if we are only processing a single page, to make sure that the page
+ * exist and is accessible to us.
+ * </li>
+ * <li>We use a while-clause for next() if we are scanning through pages.
+ * </li>
+ * <li>We do our processing of the page in a do-while-retry loop, to make sure that we processed a page that was in a
+ * consistent state.
+ * </li>
  * </ul>
  * You can alternatively use the {@link #next(long)} method, to navigate the
  * pages you need in a non-linear fashion.
@@ -258,6 +258,7 @@ public abstract class PageCursor implements AutoCloseable
     /**
      * Relinquishes all resources associated with this cursor, including the
      * cursor itself, and any linked cursors opened through it. The cursor cannot be used after this call.
+     *
      * @see AutoCloseable#close()
      */
     public abstract void close();
@@ -269,8 +270,8 @@ public abstract class PageCursor implements AutoCloseable
      * reset to zero.
      *
      * @throws IOException If the page was evicted while doing IO, the cursor will have
-     *                     to do a page fault to get the page back.
-     *                     This may throw an IOException.
+     * to do a page fault to get the page back.
+     * This may throw an IOException.
      */
     public abstract boolean shouldRetry() throws IOException;
 
@@ -292,23 +293,42 @@ public abstract class PageCursor implements AutoCloseable
      * Discern whether an out-of-bounds access has occurred since the last call to {@link #next()} or
      * {@link #next(long)}, or since the last call to {@link #shouldRetry()} that returned {@code true}, or since the
      * last call to this method.
+     *
      * @return {@code true} if an access was out of bounds, or the {@link #raiseOutOfBounds()} method has been called.
      */
     public abstract boolean checkAndClearBoundsFlag();
 
     /**
+     * Check if a cursor error has been set, and if so, remove it from the cursor and throw it.
+     */
+    public abstract void checkAndClearCursorError() throws CursorException;
+
+    /**
      * Explicitly raise the out-of-bounds flag.
+     *
      * @see #checkAndClearBoundsFlag()
      */
     public abstract void raiseOutOfBounds();
 
     /**
+     * Set an error condition on the cursor with the given message.
+     * <p>
+     * This will make calls to {@link #checkAndClearCursorError()} throw a {@link CursorException} with the given
+     * message, unless the error has gotten cleared by a {@link #shouldRetry()} call that returned {@code true},
+     * a call to {@link #next()} or {@link #next(long)}, or the cursor is closed.
+     *
+     * @param message The message of the {@link CursorException} that {@link #checkAndClearCursorError()} will throw.
+     */
+    public abstract void setCursorError( String message );
+
+    /**
      * Open a new page cursor with the same pf_flags as this cursor, as if calling the {@link PagedFile#io(long, int)}
      * on the relevant paged file. This cursor will then also delegate to the linked cursor when checking
      * {@link #shouldRetry()} and {@link #checkAndClearBoundsFlag()}.
-     *
+     * <p>
      * Opening a linked cursor on a cursor that already has a linked cursor, will close the older linked cursor.
      * Closing a cursor also closes any linked cursor.
+     *
      * @param pageId The page id that the linked cursor will be placed at after its first call to {@link #next()}.
      * @return A cursor that is linked with this cursor.
      */

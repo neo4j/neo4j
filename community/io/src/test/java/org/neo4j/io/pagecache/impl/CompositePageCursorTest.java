@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.StubPageCursor;
 
@@ -33,6 +34,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.test.ByteArrayMatcher.byteArray;
 
 public class CompositePageCursorTest
@@ -1144,5 +1146,103 @@ public class CompositePageCursorTest
         }
         assertTrue( pageCursor.checkAndClearBoundsFlag() );
         assertFalse( pageCursor.checkAndClearBoundsFlag() );
+    }
+
+    @Test
+    public void setCursorErrorMustApplyToCursorAtCurrentOffset() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        String firstMsg = "first boo";
+        String secondMsg = "second boo";
+
+        cursor.setCursorError( firstMsg );
+        assertFalse( cursor.checkAndClearBoundsFlag() );
+        try
+        {
+            first.checkAndClearCursorError();
+            fail( "first checkAndClearCursorError should have thrown" );
+        }
+        catch ( CursorException e )
+        {
+            assertThat( e.getMessage(), is( firstMsg ) );
+        }
+
+        cursor.setOffset( PAGE_SIZE );
+        cursor.setCursorError( secondMsg );
+        assertFalse( cursor.checkAndClearBoundsFlag() );
+        try
+        {
+            second.checkAndClearCursorError();
+            fail( "second checkAndClearCursorError should have thrown" );
+        }
+        catch ( CursorException e )
+        {
+            assertThat( e.getMessage(), is( secondMsg ) );
+        }
+    }
+
+    @Test
+    public void checkAndClearCursorErrorMustNotThrowIfNoErrorsAreSet() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        cursor.checkAndClearCursorError();
+    }
+
+    @Test
+    public void checkAndClearCursorErrorMustThrowIfFirstCursorHasError() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setCursorError( "boo" );
+        try
+        {
+            cursor.checkAndClearCursorError();
+            fail( "composite cursor checkAndClearCursorError should have thrown" );
+        }
+        catch ( CursorException e )
+        {
+            assertThat( e.getMessage(), is( "boo" ) );
+        }
+    }
+
+    @Test
+    public void checkAndClearCursorErrorMustThrowIfSecondCursorHasError() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        second.setCursorError( "boo" );
+        try
+        {
+            cursor.checkAndClearCursorError();
+            fail( "composite cursor checkAndClearCursorError should have thrown" );
+        }
+        catch ( CursorException e )
+        {
+            assertThat( e.getMessage(), is( "boo" ) );
+        }
+    }
+
+    @Test
+    public void checkAndClearCursorErrorWillOnlyCheckFirstCursorIfBothHaveErrorsSet() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setCursorError( "first boo" );
+        second.setCursorError( "second boo" );
+        try
+        {
+            cursor.checkAndClearCursorError();
+            fail( "composite cursor checkAndClearCursorError should have thrown" );
+        }
+        catch ( CursorException e )
+        {
+            assertThat( e.getMessage(), is( "first boo" ) );
+        }
+        try
+        {
+            second.checkAndClearCursorError();
+            fail( "second cursor checkAndClearCursorError should have thrown" );
+        }
+        catch ( CursorException e )
+        {
+            assertThat( e.getMessage(), is( "second boo" ) );
+        }
     }
 }

@@ -4106,6 +4106,465 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
     }
 
+    @Test
+    public void shouldRetryMustClearBoundsFlagIfLinkedCursorNeedsRetry() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( writer.next() ); // now at page id 0
+            assertTrue( writer.next() ); // now at page id 1, 0 is unlocked
+            assertTrue( writer.next() ); // now at page id 2, 1 is unlocked
+            assertTrue( reader.next() ); // reader now at page id 0
+            try ( PageCursor linkedReader = reader.openLinkedCursor( 1 ) )
+            {
+                assertTrue( linkedReader.next() ); // linked reader now at page id 1
+                assertTrue( writer.next( 1 ) ); // invalidate linked readers lock
+                assertTrue( writer.next() ); // move writer out of the way
+                reader.raiseOutOfBounds(); // raise bounds flag on parent reader
+                assertTrue( reader.shouldRetry() ); // we must retry because linked reader was invalidated
+                assertFalse( reader.checkAndClearBoundsFlag() ); // must return false because we are doing a retry
+            }
+        }
+    }
+
+    @Test
+    public void checkAndClearCursorErrorMustNotThrowIfNoErrorIsSet() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.checkAndClearCursorError();
+            }
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.checkAndClearCursorError();
+                //noinspection StatementWithEmptyBody
+                do
+                {
+                    // nothing
+                }
+                while ( cursor.shouldRetry() );
+                cursor.checkAndClearCursorError();
+            }
+        }
+    }
+
+    @Test
+    public void checkAndClearCursorErrorMustThrowIfErrorIsSet() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            String msg = "Boo" + ThreadLocalRandom.current().nextInt();
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.setCursorError( msg );
+                cursor.checkAndClearCursorError();
+                fail( "checkAndClearError on write cursor should have thrown" );
+            }
+            catch ( CursorException e )
+            {
+                assertThat( e.getMessage(), is( msg ) );
+            }
+
+            msg = "Boo" + ThreadLocalRandom.current().nextInt();
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.setCursorError( msg );
+                cursor.checkAndClearCursorError();
+                fail( "checkAndClearError on read cursor should have thrown" );
+            }
+            catch ( CursorException e )
+            {
+                assertThat( e.getMessage(), is( msg ) );
+            }
+        }
+    }
+
+    @Test
+    public void checkAndClearCursorErrorMustClearErrorIfSet() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.setCursorError( "boo" );
+                try
+                {
+                    cursor.checkAndClearCursorError();
+                    fail( "checkAndClearError on write cursor should have thrown" );
+                }
+                catch ( CursorException ignore )
+                {
+                }
+                cursor.checkAndClearCursorError();
+            }
+
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.setCursorError( "boo" );
+                try
+                {
+                    cursor.checkAndClearCursorError();
+                    fail( "checkAndClearError on read cursor should have thrown" );
+                }
+                catch ( CursorException ignore )
+                {
+                }
+                cursor.checkAndClearCursorError();
+            }
+        }
+    }
+
+    @Test
+    public void nextMustClearCursorErrorIfSet() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.setCursorError( "boo" );
+                assertTrue( cursor.next() );
+                cursor.checkAndClearCursorError();
+            }
+
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                cursor.setCursorError( "boo" );
+                assertTrue( cursor.next() );
+                cursor.checkAndClearCursorError();
+            }
+        }
+    }
+
+    @Test
+    public void nextWithIdMustClearCursorErrorIfSet() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next( 1 ) );
+                cursor.setCursorError( "boo" );
+                assertTrue( cursor.next( 2 ) );
+                cursor.checkAndClearCursorError();
+            }
+
+            try ( PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next( 1 ) );
+                cursor.setCursorError( "boo" );
+                assertTrue( cursor.next( 2 ) );
+                cursor.checkAndClearCursorError();
+            }
+        }
+    }
+
+    @Test
+    public void shouldRetryMustClearCursorErrorIfItReturnsTrue() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( writer.next() ); // now at page id 0
+            assertTrue( writer.next() ); // now at page id 1, 0 is unlocked
+            assertTrue( reader.next() ); // now at page id 0
+            assertTrue( writer.next( 0 ) ); // invalidate the readers lock on page 0
+            assertTrue( writer.next() ); // move writer out of the way
+            reader.setCursorError( "boo" );
+            assertTrue( reader.shouldRetry() ); // this should clear the cursor error
+            reader.checkAndClearCursorError();
+        }
+    }
+
+    @Test
+    public void shouldRetryMustNotClearCursorErrorIfItReturnsFalse() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            do
+            {
+                cursor.setCursorError( "boo" );
+            }
+            while ( cursor.shouldRetry() );
+            // The last shouldRetry has obviously returned 'false'
+            try
+            {
+                cursor.checkAndClearCursorError();
+                fail( "checkAndClearCursorError should have thrown" );
+            }
+            catch ( CursorException ignore )
+            {
+                // all good
+            }
+        }
+    }
+
+    @Test
+    public void shouldRetryMustClearCursorErrorIfLinkedShouldRetryReturnsTrue() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( writer.next() ); // now at page id 0
+            assertTrue( writer.next() ); // now at page id 1, 0 is unlocked
+            assertTrue( writer.next() ); // now at page id 2, 1 is unlocked
+            assertTrue( reader.next() ); // reader now at page id 0
+            try ( PageCursor linkedReader = reader.openLinkedCursor( 1 ) )
+            {
+                assertTrue( linkedReader.next() ); // linked reader now at page id 1
+                assertTrue( writer.next( 1 ) ); // invalidate linked readers lock
+                assertTrue( writer.next() ); // move writer out of the way
+                reader.setCursorError( "boo" ); // raise cursor error on parent reader
+                assertTrue( reader.shouldRetry() ); // we must retry because linked reader was invalidated
+                reader.checkAndClearCursorError(); // must not throw because shouldRetry returned true
+            }
+        }
+    }
+
+    @Test
+    public void shouldRetryMustClearLinkedCursorErrorIfItReturnsTrue() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( writer.next() ); // now at page id 0
+            assertTrue( writer.next() ); // now at page id 1, 0 is unlocked
+            assertTrue( writer.next() ); // now at page id 2, 1 is unlocked
+            assertTrue( reader.next() ); // reader now at page id 0
+            try ( PageCursor linkedReader = reader.openLinkedCursor( 1 ) )
+            {
+                assertTrue( linkedReader.next() ); // linked reader now at page id 1
+                linkedReader.setCursorError( "boo" );
+                assertTrue( writer.next( 0 ) ); // invalidate the read lock held by the parent reader
+                assertTrue( reader.shouldRetry() ); // this should clear the linked cursor error
+                linkedReader.checkAndClearCursorError();
+                reader.checkAndClearCursorError();
+            }
+        }
+    }
+
+    @Test
+    public void shouldRetryMustClearLinkedCursorErrorIfLinkedShouldRetryReturnsTrue() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( writer.next() ); // now at page id 0
+            assertTrue( writer.next() ); // now at page id 1, 0 is unlocked
+            assertTrue( writer.next() ); // now at page id 2, 1 is unlocked
+            assertTrue( reader.next() ); // reader now at page id 0
+            try ( PageCursor linkedReader = reader.openLinkedCursor( 1 ) )
+            {
+                assertTrue( linkedReader.next() ); // linked reader now at page id 1
+                linkedReader.setCursorError( "boo" );
+                assertTrue( writer.next( 1 ) ); // invalidate the read lock held by the linked reader
+                assertTrue( reader.shouldRetry() ); // this should clear the linked cursor error
+                linkedReader.checkAndClearCursorError();
+                reader.checkAndClearCursorError();
+            }
+        }
+    }
+
+    @Test
+    public void shouldRetryMustNotClearCursorErrorIfBothItAndLinkedShouldRetryReturnsFalse() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK );
+              PageCursor linkedReader = reader.openLinkedCursor( 1 ) )
+        {
+            assertTrue( reader.next() );
+            assertTrue( linkedReader.next() );
+            do
+            {
+                reader.setCursorError( "boo" );
+            }
+            while ( reader.shouldRetry() );
+            try
+            {
+                reader.checkAndClearCursorError();
+                fail( "checkAndClearCursorError should have thrown" );
+            }
+            catch ( CursorException ignore )
+            {
+                // all good
+            }
+        }
+    }
+
+    @Test
+    public void shouldRetryMustNotClearLinkedCursorErrorIfBothItAndLinkedShouldRetryReturnsFalse() throws Exception
+    {
+        File file = file( "a" );
+        generateFileWithRecords( file, recordCount, recordSize );
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file, filePageSize );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK );
+              PageCursor linkedReader = reader.openLinkedCursor( 1 ) )
+        {
+            assertTrue( reader.next() );
+            assertTrue( linkedReader.next() );
+            do
+            {
+                linkedReader.setCursorError( "boo" );
+            }
+            while ( reader.shouldRetry() );
+            try
+            {
+                reader.checkAndClearCursorError();
+                fail( "checkAndClearCursorError should have thrown" );
+            }
+            catch ( CursorException ignore )
+            {
+                // all good
+            }
+        }
+    }
+
+    @Test
+    public void checkAndClearCursorErrorMustThrowIfLinkedCursorHasErrorSet() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            String msg = "Boo" + ThreadLocalRandom.current().nextInt();
+            assertTrue( writer.next() );
+            try ( PageCursor linkedWriter = writer.openLinkedCursor( 1 ) )
+            {
+                assertTrue( linkedWriter.next() );
+                linkedWriter.setCursorError( msg );
+                try
+                {
+                    writer.checkAndClearCursorError();
+                    fail( "checkAndClearCursorError on writer should have thrown due to linked cursor error" );
+                }
+                catch ( CursorException e )
+                {
+                    assertThat( e.getMessage(), is( msg ) );
+                }
+            }
+
+            msg = "Boo" + ThreadLocalRandom.current().nextInt();
+            assertTrue( reader.next() );
+            try ( PageCursor linkedReader = reader.openLinkedCursor( 1 ) )
+            {
+                assertTrue( linkedReader.next() );
+                linkedReader.setCursorError( msg );
+                try
+                {
+                    reader.checkAndClearCursorError();
+                    fail( "checkAndClearCursorError on reader should have thrown due to linked cursor error" );
+                }
+                catch ( CursorException e )
+                {
+                    assertThat( e.getMessage(), is( msg ) );
+                }
+            }
+        }
+    }
+
+    @Test
+    public void checkAndClearCursorMustNotThrowIfErrorHasBeenSetButTheCursorHasBeenClosed() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            assertTrue( writer.next() );
+            writer.setCursorError( "boo" );
+            writer.close();
+            writer.checkAndClearCursorError();
+
+            PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK );
+            assertTrue( reader.next() );
+            reader.setCursorError( "boo" );
+            reader.close();
+            reader.checkAndClearCursorError();
+
+            writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            PageCursor linkedWriter = writer.openLinkedCursor( 1 );
+            assertTrue( linkedWriter.next() );
+            linkedWriter.setCursorError( "boo" );
+            writer.close();
+            linkedWriter.checkAndClearCursorError();
+
+            reader = pf.io( 0, PF_SHARED_READ_LOCK );
+            PageCursor linkedReader = reader.openLinkedCursor( 1 );
+            assertTrue( linkedReader.next() );
+            linkedReader.setCursorError( "boo" );
+            reader.close();
+            linkedReader.checkAndClearCursorError();
+        }
+    }
+
+    @Test
+    public void openingLinkedCursorOnClosedCursorMustThrow() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize ) )
+        {
+            PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            assertTrue( writer.next() );
+            writer.close();
+            try
+            {
+                writer.openLinkedCursor( 1 );
+                fail( "opening linked cursor on closed write cursor should have thrown" );
+            }
+            catch ( IllegalStateException ignore )
+            {
+                // all good
+            }
+
+            PageCursor reader = pf.io( 0, PF_SHARED_WRITE_LOCK );
+            assertTrue( reader.next() );
+            reader.close();
+            try
+            {
+                reader.openLinkedCursor( 1 );
+                fail( "opening linked cursor on closed reader cursor should have thrown" );
+            }
+            catch ( IllegalStateException ignore )
+            {
+                // all good
+            }
+        }
+    }
+
     @Test( timeout = SHORT_TIMEOUT_MILLIS )
     public void readableByteChannelMustBeOpenUntilClosed() throws Exception
     {

@@ -38,6 +38,7 @@ public class StubPageCursor extends PageCursor
     protected ByteBufferPage page;
     private int currentOffset;
     private boolean observedOverflow;
+    private String cursorErrorMessage;
     private boolean closed;
     private boolean needsRetry;
     private StubPageCursor linkedCursor;
@@ -138,9 +139,25 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
+    public void checkAndClearCursorError() throws CursorException
+    {
+        String message = this.cursorErrorMessage;
+        if ( message != null )
+        {
+            throw new CursorException( message );
+        }
+    }
+
+    @Override
     public void raiseOutOfBounds()
     {
         observedOverflow = true;
+    }
+
+    @Override
+    public void setCursorError( String message )
+    {
+        this.cursorErrorMessage = message;
     }
 
     @Override

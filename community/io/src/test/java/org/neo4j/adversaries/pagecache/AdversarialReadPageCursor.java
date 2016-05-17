@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -406,9 +407,21 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
+    public void checkAndClearCursorError() throws CursorException
+    {
+        delegate.checkAndClearCursorError();
+    }
+
+    @Override
     public void raiseOutOfBounds()
     {
         delegate.raiseOutOfBounds();
+    }
+
+    @Override
+    public void setCursorError( String message )
+    {
+        delegate.setCursorError( message );
     }
 
     @Override

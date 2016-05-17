@@ -99,18 +99,19 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     {
         MuninnPage p = page;
         boolean needsRetry = p != null && !p.validateReadLock( lockStamp );
+        needsRetry |= linkedCursor != null && linkedCursor.shouldRetry();
         if ( needsRetry )
         {
             startRetry();
         }
-        boolean linkedNeedsRetry = linkedCursor != null && linkedCursor.shouldRetry();
-        return needsRetry || linkedNeedsRetry;
+        return needsRetry;
     }
 
     private void startRetry() throws IOException
     {
         setOffset( 0 );
         checkAndClearBoundsFlag();
+        clearCursorError();
         lockStamp = page.tryOptimisticReadLock();
         // The page might have been evicted while we held the optimistic
         // read lock, so we need to check with page.pin that this is still
