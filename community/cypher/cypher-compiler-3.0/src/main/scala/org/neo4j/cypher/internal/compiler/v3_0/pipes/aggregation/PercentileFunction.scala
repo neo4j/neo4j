@@ -20,77 +20,72 @@
 package org.neo4j.cypher.internal.compiler.v3_0.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v3_0._
-import commands.expressions.{Expression, NumericHelper}
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{Expression, NumericHelper}
+import org.neo4j.cypher.internal.compiler.v3_0.pipes.QueryState
+import org.neo4j.cypher.internal.frontend.v3_0.InvalidArgumentException
 
-class PercentileContFunction(val value: Expression, val percentile: Expression)
-  extends AggregationFunction
+abstract class PercentileFunction(val value: Expression, val percentile: Expression) extends AggregationFunction
   with NumericExpressionOnly
   with NumericHelper {
 
-  def name = "PERCENTILE_CONT"
-
-  private var temp = Vector[Any]()
-  private var count:Int = 0
-  private var perc:Double = 0
-
-  def result: Any = {
-    temp = temp.sortBy((num:Any) => asDouble(num))
-
-    if(perc == 1.0 || count == 1) {
-      temp.last
-    } else if(count > 1) {
-      val floatIdx = perc * (count - 1)
-      val floor = floatIdx.toInt
-      val ceil = math.ceil(floatIdx).toInt
-      if(ceil == floor || floor == count - 1) temp(floor)
-      else asDouble(temp(floor)) * (ceil - floatIdx) + asDouble(temp(ceil)) * (floatIdx - floor)
-    } else {
-      null
-    }
-  }
+  protected var temp = Vector[Any]()
+  protected var count: Int = 0
+  protected var perc: Double = 0
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {
-      if(count < 1) perc = asDouble(percentile(data))
+      if (count < 1) {
+        perc = asDouble(percentile(data))
+        if (perc < 0 || perc > 1.0)
+          throw new InvalidArgumentException(
+            s"Invalid input '$perc' is not a valid argument, must be a number in the range 0.0 to 1.0")
+      }
       count += 1
       temp = temp :+ number
     })
   }
 }
 
-class PercentileDiscFunction(val value: Expression, val percentile: Expression)
-  extends AggregationFunction
-  with NumericExpressionOnly
-  with NumericHelper {
+class PercentileContFunction(value: Expression, percentile: Expression)
+  extends PercentileFunction(value, percentile) {
 
-  def name = "PERCENTILE_DISC"
-
-  private var temp = Vector[Any]()
-  private var count:Int = 0
-  private var perc:Double = 0
+  def name = "PERCENTILE_CONT"
 
   def result: Any = {
-    temp = temp.sortBy((num:Any) => asDouble(num))
+    temp = temp.sortBy((num: Any) => asDouble(num))
 
-    if(perc == 1.0 || count == 1) {
+    if (perc == 1.0 || count == 1) {
       temp.last
-    } else if(count > 1) {
-      val floatIdx = perc * count
-      var idx = floatIdx.toInt
-      idx = if(floatIdx != idx || idx == 0) idx
-            else idx - 1
-      temp(idx)
+    } else if (count > 1) {
+      val floatIdx = perc * (count - 1)
+      val floor = floatIdx.toInt
+      val ceil = math.ceil(floatIdx).toInt
+      if (ceil == floor || floor == count - 1) temp(floor)
+      else asDouble(temp(floor)) * (ceil - floatIdx) + asDouble(temp(ceil)) * (floatIdx - floor)
     } else {
       null
     }
   }
+}
 
-  def apply(data: ExecutionContext)(implicit state: QueryState) {
-    actOnNumber(value(data), (number) => {
-      if(count < 1) perc = asDouble(percentile(data))
-      count += 1
-      temp = temp :+ number
-    })
+class PercentileDiscFunction(value: Expression, percentile: Expression)
+  extends PercentileFunction(value, percentile) {
+
+  def name = "PERCENTILE_DISC"
+
+  def result: Any = {
+    temp = temp.sortBy((num: Any) => asDouble(num))
+
+    if (perc == 1.0 || count == 1) {
+      temp.last
+    } else if (count > 1) {
+      val floatIdx = perc * count
+      var idx = floatIdx.toInt
+      idx = if (floatIdx != idx || idx == 0) idx
+      else idx - 1
+      temp(idx)
+    } else {
+      null
+    }
   }
 }
