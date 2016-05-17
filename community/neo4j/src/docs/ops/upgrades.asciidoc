@@ -1,10 +1,8 @@
 [[deployment-upgrading]]
 = Upgrading
 
-:manual-base-url: http://neo4j.com/docs/{neo4j-version}
-:manual-ha-upgrade-guide: {manual-base-url}/ha-upgrade-guide.html
-:manual-cypher-compatibility: {manual-base-url}/cypher-compatibility.html
-:manual-neo4j-admin-manpage: {manual-base-url}/re02.html
+:manual-ha-upgrade-guide: {operations-manual-base-uri}/#ha-upgrade-guide
+:manual-neo4j-admin-manpage: {operations-manual-base-uri}/#man-neo4j-admin
 :neo4j-releases-download-page: http://neo4j.com/download/other-releases
 
 This section describes upgrading a _single_ Neo4j instance.
@@ -72,6 +70,6 @@ ifdef::upgradetext[the man page at {manual-neo4j-admin-manpage}).]
 The Cypher language may evolve between Neo4j versions.
 For backward compatibility, Neo4j provides directives which allow explicitly selecting a previous Cypher language version.
 This is possible to do globally or for individual statements, as described in the
-ifndef::upgradetext[<<cypher-compatibility, Cypher Compatibility section>>.]
-ifdef::upgradetext[Cypher Compatibility section at {manual-cypher-compatibility}.]
+link:{developer-manual-base-uri}/#cypher-compatibility[Neo4j Developer Manual -> Cypher Compatibility].
 ====
+
