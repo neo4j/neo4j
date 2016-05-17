@@ -30,76 +30,105 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
- * Manages user-facing locks. Takes a statement and will close it once the lock has been released.
+ * Manages user-facing locks.
  */
 public class PropertyContainerLocker
 {
     public Lock exclusiveLock( Supplier<Statement> stmtSupplier, PropertyContainer container )
     {
-        Statement statement = stmtSupplier.get();
+        try(Statement statement = stmtSupplier.get())
+        {
+            if(container instanceof Node )
+            {
+                statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
+                return new CoreAPILock(stmtSupplier, ResourceTypes.NODE, ((Node) container).getId())
+                {
+                    @Override
+                    void release( Statement statement, ResourceType type, long resourceId )
+                    {
+                        statement.readOperations().releaseExclusive( type, resourceId );
+                    }
+                };
+            }
+            else if(container instanceof Relationship )
+            {
+                statement.readOperations().acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
+                return new CoreAPILock(stmtSupplier, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
+                {
+                    @Override
+                    void release( Statement statement, ResourceType type, long resourceId )
+                    {
+                        statement.readOperations().releaseExclusive( type, resourceId );
+                    }
+                };
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
+            }
+        }
+    }
 
+    /**
+     * The Cypher runtime keeps statements open for longer, so this method does not close the statement after itself
+     */
+    public Lock exclusiveLock( Statement statement, PropertyContainer container )
+    {
         if ( container instanceof Node )
         {
             statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
-            return new CoreAPILock( stmtSupplier, ResourceTypes.NODE, ((Node) container).getId() )
-            {
-                @Override
-                void release( Statement statement, ResourceType type, long resourceId )
-                {
-                    statement.readOperations().releaseExclusive( type, resourceId );
-                }
+            return () -> {
+                long id = ((Node) container).getId();
+                statement.readOperations().releaseExclusive( ResourceTypes.NODE, id );
             };
         }
         else if ( container instanceof Relationship )
         {
             statement.readOperations()
                     .acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-            return new CoreAPILock( stmtSupplier, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() )
-            {
-                @Override
-                void release( Statement statement, ResourceType type, long resourceId )
-                {
-                    statement.readOperations().releaseExclusive( type, resourceId );
-                }
+            return () -> {
+                long id = ((Relationship) container).getId();
+                statement.readOperations().releaseExclusive( ResourceTypes.RELATIONSHIP, id );
             };
         }
         else
         {
             throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
         }
-
     }
 
     public Lock sharedLock( Supplier<Statement> stmtProvider, PropertyContainer container )
     {
-        Statement statement = stmtProvider.get();
-        if ( container instanceof Node )
+        try(Statement statement = stmtProvider.get())
         {
-            statement.readOperations().acquireShared( ResourceTypes.NODE, ((Node) container).getId() );
-            return new CoreAPILock( stmtProvider, ResourceTypes.NODE, ((Node) container).getId() )
+            if(container instanceof Node )
             {
-                @Override
-                void release( Statement statement, ResourceType type, long resourceId )
+                statement.readOperations().acquireShared( ResourceTypes.NODE, ((Node) container).getId() );
+                return new CoreAPILock(stmtProvider, ResourceTypes.NODE, ((Node) container).getId())
                 {
-                    statement.readOperations().releaseShared( type, resourceId );
-                }
-            };
-        }
-        else if ( container instanceof Relationship )
-        {
-            statement.readOperations().acquireShared( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-            return new CoreAPILock( stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() )
+                    @Override
+                    void release( Statement statement, ResourceType type, long resourceId )
+                    {
+                        statement.readOperations().releaseShared( type, resourceId );
+                    }
+                };
+            }
+            else if(container instanceof Relationship )
             {
-                @Override
-                void release( Statement statement, ResourceType type, long resourceId )
+                statement.readOperations().acquireShared( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
+                return new CoreAPILock(stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
                 {
-                    statement.readOperations().releaseShared( type, resourceId );
-                }
-            };
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
+                    @Override
+                    void release( Statement statement, ResourceType type, long resourceId )
+                    {
+                        statement.readOperations().releaseShared( type, resourceId );
+                    }
+                };
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
+            }
         }
     }
 
