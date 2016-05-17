@@ -41,6 +41,7 @@ import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
@@ -117,7 +118,8 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public Locks.Client acquireClient()
     {
-        return resolve( Locks.class ).newClient();
+        Locks locks = resolve( Locks.class );
+        return locks.newClient( TxTermination.NONE ); // we do not need to terminate transactions here
     }
 
     @Override

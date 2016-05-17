@@ -24,6 +24,7 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
+import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.Locks;
 
 import static java.lang.String.format;
@@ -31,14 +32,16 @@ import static java.lang.String.format;
 public class CommunityLockClient implements Locks.Client
 {
     private final LockManagerImpl manager;
+    private final TxTermination txTermination;
     private final LockTransaction lockTransaction = new LockTransaction();
 
     private final PrimitiveIntObjectMap<PrimitiveLongObjectMap<LockResource>> sharedLocks = Primitive.intObjectMap();
     private final PrimitiveIntObjectMap<PrimitiveLongObjectMap<LockResource>> exclusiveLocks = Primitive.intObjectMap();
 
-    public CommunityLockClient( LockManagerImpl manager )
+    public CommunityLockClient( LockManagerImpl manager, TxTermination txTermination )
     {
         this.manager = manager;
+        this.txTermination = txTermination;
     }
 
     @Override
@@ -55,7 +58,7 @@ public class CommunityLockClient implements Locks.Client
             }
 
             resource = new LockResource( resourceType, resourceId );
-            manager.getReadLock( resource, lockTransaction );
+            manager.getReadLock( resource, lockTransaction, txTermination );
             localLocks.put(resourceId, resource);
         }
     }
@@ -74,7 +77,7 @@ public class CommunityLockClient implements Locks.Client
             }
 
             resource = new LockResource( resourceType, resourceId );
-            manager.getWriteLock( resource, lockTransaction );
+            manager.getWriteLock( resource, lockTransaction, txTermination );
             localLocks.put(resourceId, resource);
         }
     }

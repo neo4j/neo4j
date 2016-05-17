@@ -21,12 +21,14 @@ package org.neo4j.kernel.ha.lock.forseti;
 
 import java.util.concurrent.ConcurrentMap;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.pool.LinkedQueuePool;
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
@@ -76,6 +78,8 @@ public class ForsetiClient implements Locks.Client
      * we want to hold in the global lock map. */
     private final ExclusiveLock myExclusiveLock = new ExclusiveLock(this);
 
+    private TxTermination txTermination;
+
     public ForsetiClient( int id,
                           ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps,
                           WaitStrategy<AcquireLockTimeoutException>[] waitStrategies,
@@ -93,6 +97,11 @@ public class ForsetiClient implements Locks.Client
             sharedLockCounts[i] = Primitive.longIntMap();
             exclusiveLockCounts[i] = Primitive.longIntMap();
         }
+    }
+
+    public void initialize( TxTermination txTermination )
+    {
+        this.txTermination = txTermination;
     }
 
     @Override
@@ -175,8 +184,7 @@ public class ForsetiClient implements Locks.Client
                     throw new UnsupportedOperationException( "Unknown lock type: " + existingLock );
                 }
 
-                // Apply the designated wait strategy
-                waitStrategies[resourceType.typeId()].apply( tries++ );
+                applyWaitStrategy( resourceType, tries++ );
 
                 // And take note of who we are waiting for. This is used for deadlock detection.
                 markAsWaitingFor( existingLock, resourceType, resourceId );
@@ -226,7 +234,7 @@ public class ForsetiClient implements Locks.Client
                     }
                 }
 
-                waitStrategies[resourceType.typeId()].apply( tries++ );
+                applyWaitStrategy( resourceType, tries++ );
                 markAsWaitingFor( existingLock, resourceType, resourceId );
             }
 
@@ -450,6 +458,7 @@ public class ForsetiClient implements Locks.Client
     @Override
     public void close()
     {
+        txTermination = null;
         releaseAll();
         clientPool.release( this );
     }
@@ -594,7 +603,7 @@ public class ForsetiClient implements Locks.Client
                 // Now we just wait for all clients to release the the share lock
                 while(sharedLock.numberOfHolders() > 1)
                 {
-                    waitStrategies[resourceType.typeId()].apply( tries++ );
+                    applyWaitStrategy( resourceType, tries++ );
                     markAsWaitingFor( sharedLock, resourceType, resourceId );
                 }
 
@@ -654,6 +663,17 @@ public class ForsetiClient implements Locks.Client
     public int id()
     {
         return myId;
+    }
+
+    private void applyWaitStrategy( Locks.ResourceType resourceType, int tries )
+    {
+        WaitStrategy<AcquireLockTimeoutException> waitStrategy = waitStrategies[resourceType.typeId()];
+        waitStrategy.apply( tries );
+
+        if ( txTermination.shouldBeTerminated() )
+        {
+            throw new TransactionTerminatedException();
+        }
     }
 
     // Visitors used for bulk ops on the lock maps (such as releasing all locks)

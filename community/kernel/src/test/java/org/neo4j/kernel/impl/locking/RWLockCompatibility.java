@@ -19,18 +19,21 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
-import org.junit.Ignore;
-import org.junit.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.api.tx.TxTermination;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 /**
@@ -218,7 +221,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         {
             super();
             this.nodeId = nodeId;
-            this.client = locks.newClient();
+            this.client = locks.newClient( TxTermination.NONE );
             this.name = name;
             this.numberOfIterations = numberOfIterations;
             this.depthCount = depthCount;

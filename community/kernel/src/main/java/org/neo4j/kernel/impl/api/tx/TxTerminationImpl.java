@@ -17,35 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.api.tx;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.kernel.impl.api.tx.TxTermination;
-
-class LockWorkerState
+public class TxTerminationImpl implements TxTermination
 {
-    final Locks grabber;
-    final Locks.Client client;
-    volatile boolean deadlockOnLastWait;
-    final List<String> completedOperations = new ArrayList<String>();
-    String doing;
-    
-    public LockWorkerState( Locks locks )
+    private volatile boolean terminated;
+
+    public void markForTermination()
     {
-        this.grabber = locks;
-        this.client = locks.newClient( TxTermination.NONE );
+        terminated = true;
     }
-    
-    public void doing( String doing )
+
+    public boolean shouldBeTerminated()
     {
-        this.doing = doing;
+        return terminated;
     }
-    
-    public void done()
+
+    public void reset()
     {
-        this.completedOperations.add( this.doing );
-        this.doing = null;
+        terminated = false;
     }
 }

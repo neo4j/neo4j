@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -114,8 +115,9 @@ public interface Locks extends Lifecycle
      * you call {@link Locks.Client#close()}.
      *
      * @throws IllegalStateException if this instance has been closed, i.e has had {@link #shutdown()} called.
+     * @param txTermination shows if transaction owning the client should be terminated
      */
-    Client newClient();
+    Client newClient( TxTermination txTermination );
 
     /** Visit all held locks. */
     void accept(Visitor visitor);

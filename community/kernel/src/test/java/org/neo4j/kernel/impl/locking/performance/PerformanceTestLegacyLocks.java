@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.RollbackException;
@@ -33,6 +32,7 @@ import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.community.LockManagerImpl;
 import org.neo4j.kernel.impl.locking.community.RagManager;
 
@@ -92,7 +92,7 @@ public class PerformanceTestLegacyLocks
                             for(; currentLock<numLocks; currentLock++)
                             {
                                 Object resource = localResources[rand.nextInt( numResources )];
-                                lockManager.getWriteLock( resource, tx );
+                                lockManager.getWriteLock( resource, tx, TxTermination.NONE );
                                 acquired[currentLock] = resource;
                             }
                         }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.lock;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -44,9 +45,9 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     }
 
     @Override
-    public Client newClient()
+    public Client newClient( TxTermination txTermination )
     {
-        Client client = local.newClient();
+        Client client = local.newClient( txTermination );
         return new SlaveLocksClient(
                 master, client, this.local, requestContextFactory, availabilityGuard, availabilityTimeoutMillis );
     }

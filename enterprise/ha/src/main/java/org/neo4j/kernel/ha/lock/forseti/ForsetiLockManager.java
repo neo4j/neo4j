@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
@@ -142,9 +143,10 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
 
     /**
      * Create a new client to use to grab and release locks.
+     * @param txTermination shows if transaction owning the client should be terminated
      */
     @Override
-    public Client newClient()
+    public Client newClient( TxTermination txTermination )
     {
         // We check this volatile closed flag here, which may seem like a contention overhead, but as the time
         // of writing we apply pooling of transactions and in extension pooling of lock clients,
@@ -154,7 +156,9 @@ public class ForsetiLockManager extends LifecycleAdapter implements Locks
             throw new IllegalStateException( this + " already closed" );
         }
 
-        return clientPool.acquire();
+        ForsetiClient client = clientPool.acquire();
+        client.initialize( txTermination );
+        return client;
     }
 
     @Override

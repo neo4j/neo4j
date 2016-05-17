@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.api.tx.TxTermination;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
@@ -68,7 +69,7 @@ public class SlaveLocksClientTest
         availabilityGuard = new AvailabilityGuard( new FakeClock() );
 
         Locks lockManager = new CommunityLockManger();
-        local = spy( lockManager.newClient() );
+        local = spy( lockManager.newClient( TxTermination.NONE ) );
 
         LockResult lockResultOk = new LockResult( LockStatus.OK_LOCKED );
         TransactionStreamResponse<LockResult> responseOk =

@@ -17,16 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking.community;
+package org.neo4j.kernel.impl.api.tx;
 
-import org.neo4j.kernel.impl.locking.LockingCompatibilityTestSuite;
-import org.neo4j.kernel.impl.locking.Locks;
-
-public class CommunityLocksCompatibility extends LockingCompatibilityTestSuite
+public interface TxTermination
 {
-    @Override
-    protected Locks createLockManager()
+    TxTermination NONE = new TxTermination()
     {
-        return new CommunityLockManger();
-    }
+        @Override
+        public boolean shouldBeTerminated()
+        {
+            return false;
+        }
+    };
+
+    boolean shouldBeTerminated();
 }
