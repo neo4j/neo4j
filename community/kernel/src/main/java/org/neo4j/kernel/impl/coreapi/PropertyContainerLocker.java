@@ -36,71 +36,70 @@ public class PropertyContainerLocker
 {
     public Lock exclusiveLock( Supplier<Statement> stmtSupplier, PropertyContainer container )
     {
-        try(Statement statement = stmtSupplier.get())
+        Statement statement = stmtSupplier.get();
+
+        if ( container instanceof Node )
         {
-            if(container instanceof Node )
+            statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
+            return new CoreAPILock( stmtSupplier, ResourceTypes.NODE, ((Node) container).getId() )
             {
-                statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
-                return new CoreAPILock(stmtSupplier, ResourceTypes.NODE, ((Node) container).getId())
+                @Override
+                void release( Statement statement, ResourceType type, long resourceId )
                 {
-                    @Override
-                    void release( Statement statement, ResourceType type, long resourceId )
-                    {
-                        statement.readOperations().releaseExclusive( type, resourceId );
-                    }
-                };
-            }
-            else if(container instanceof Relationship )
-            {
-                statement.readOperations().acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-                return new CoreAPILock(stmtSupplier, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
-                {
-                    @Override
-                    void release( Statement statement, ResourceType type, long resourceId )
-                    {
-                        statement.readOperations().releaseExclusive( type, resourceId );
-                    }
-                };
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
-            }
+                    statement.readOperations().releaseExclusive( type, resourceId );
+                }
+            };
         }
+        else if ( container instanceof Relationship )
+        {
+            statement.readOperations()
+                    .acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
+            return new CoreAPILock( stmtSupplier, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() )
+            {
+                @Override
+                void release( Statement statement, ResourceType type, long resourceId )
+                {
+                    statement.readOperations().releaseExclusive( type, resourceId );
+                }
+            };
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
+        }
+
     }
 
     public Lock sharedLock( Supplier<Statement> stmtProvider, PropertyContainer container )
     {
-        try(Statement statement = stmtProvider.get())
+        Statement statement = stmtProvider.get();
+        if ( container instanceof Node )
         {
-            if(container instanceof Node )
+            statement.readOperations().acquireShared( ResourceTypes.NODE, ((Node) container).getId() );
+            return new CoreAPILock( stmtProvider, ResourceTypes.NODE, ((Node) container).getId() )
             {
-                statement.readOperations().acquireShared( ResourceTypes.NODE, ((Node) container).getId() );
-                return new CoreAPILock(stmtProvider, ResourceTypes.NODE, ((Node) container).getId())
+                @Override
+                void release( Statement statement, ResourceType type, long resourceId )
                 {
-                    @Override
-                    void release( Statement statement, ResourceType type, long resourceId )
-                    {
-                        statement.readOperations().releaseShared( type, resourceId );
-                    }
-                };
-            }
-            else if(container instanceof Relationship )
+                    statement.readOperations().releaseShared( type, resourceId );
+                }
+            };
+        }
+        else if ( container instanceof Relationship )
+        {
+            statement.readOperations().acquireShared( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
+            return new CoreAPILock( stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() )
             {
-                statement.readOperations().acquireShared( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-                return new CoreAPILock(stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
+                @Override
+                void release( Statement statement, ResourceType type, long resourceId )
                 {
-                    @Override
-                    void release( Statement statement, ResourceType type, long resourceId )
-                    {
-                        statement.readOperations().releaseShared( type, resourceId );
-                    }
-                };
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
-            }
+                    statement.readOperations().releaseShared( type, resourceId );
+                }
+            };
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
         }
     }
 
