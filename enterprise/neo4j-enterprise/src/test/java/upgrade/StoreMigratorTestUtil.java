@@ -21,6 +21,7 @@ package upgrade;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -37,9 +38,8 @@ public class StoreMigratorTestUtil
     }
 
     public static ClusterManager.ManagedCluster buildClusterWithMasterDirIn( FileSystemAbstraction fs,
-                                                                             final File legacyStoreDir,
-                                                                             LifeSupport life )
-            throws Throwable
+            final File legacyStoreDir, LifeSupport life,
+            final Map<String,String> sharedConfig ) throws Throwable
     {
         File haRootDir = new File( legacyStoreDir.getParentFile(), "ha-migration" );
         fs.deleteRecursively( haRootDir );
@@ -57,6 +57,7 @@ public class StoreMigratorTestUtil
                     }
                 } )
                 .withCluster( clusterOfSize( 3 ) )
+                .withSharedConfig( sharedConfig )
                 .build();
 
         life.add( clusterManager );

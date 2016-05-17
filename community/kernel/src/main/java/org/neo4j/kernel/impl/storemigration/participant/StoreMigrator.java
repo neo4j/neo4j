@@ -346,7 +346,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, storeDir );
-                RecordCursors cursors = new RecordCursors( legacyStore );
+                RecordCursors nodeInputCursors = new RecordCursors( legacyStore );
+                RecordCursors relationshipInputCursors = new RecordCursors( legacyStore );
                 OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
         {
             Configuration importConfig = new Configuration.Overridden( config );
@@ -358,9 +359,10 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
                             importConfig ), importConfig ), additionalInitialIds, config );
-            InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore, requiresPropertyMigration, cursors );
+            InputIterable<InputNode> nodes =
+                    legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
             InputIterable<InputRelationship> relationships =
-                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, cursors );
+                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors );
             importer.doImport(
                     Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(),
                             Collectors.badCollector( badOutput, 0 ) ) );
