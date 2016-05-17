@@ -62,7 +62,16 @@ class FileURLAccessRule implements URLAccessRule
         try
         {
             final Path urlPath = Paths.get( url.toURI() );
-            return root.getAbsoluteFile().toPath().resolve( urlPath.getRoot().relativize( urlPath ) ).toUri().toURL();
+            final Path rootPath = root.toPath().normalize().toAbsolutePath();
+            // Normalize to prevent dirty tricks like '..'
+            final Path result = rootPath.resolve( urlPath.getRoot().relativize( urlPath ) ).normalize()
+                    .toAbsolutePath();
+
+            if ( result.startsWith( rootPath ) )
+            {
+                return result.toUri().toURL();
+            }
+            throw new URLAccessValidationError( "file URL points outside configured import directory" );
         }
         catch ( MalformedURLException | URISyntaxException e )
         {
