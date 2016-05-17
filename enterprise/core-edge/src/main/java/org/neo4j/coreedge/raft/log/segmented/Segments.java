@@ -19,14 +19,13 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import org.neo4j.coreedge.raft.log.segmented.OpenEndRangeMap.ValueRange;
@@ -36,6 +35,8 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.lang.String.format;
 
 /**
  * Keeps track of all the segments that the RAFT log consists of.
@@ -167,10 +168,10 @@ class Segments
         return rangeMap.last();
     }
 
-    public synchronized SegmentFile prune( long safeIndex )
+    public synchronized SegmentFile prune( long pruneIndex )
     {
         Collection<SegmentFile> forDisposal = new ArrayList<>();
-        SegmentFile oldestNotDisposed = collectSegmentsForDisposal( safeIndex, forDisposal );
+        SegmentFile oldestNotDisposed = collectSegmentsForDisposal( pruneIndex, forDisposal );
 
         for ( SegmentFile segment : forDisposal )
         {
@@ -186,7 +187,7 @@ class Segments
         return oldestNotDisposed;
     }
 
-    private SegmentFile collectSegmentsForDisposal( long safeIndex, Collection<SegmentFile> forDisposal )
+    private SegmentFile collectSegmentsForDisposal( long pruneIndex, Collection<SegmentFile> forDisposal )
     {
         Iterator<SegmentFile> itr = segmentFiles.iterator();
         SegmentFile prev = itr.next(); // there is always at least one segment
@@ -195,7 +196,7 @@ class Segments
         while ( itr.hasNext() )
         {
             SegmentFile segment = itr.next();
-            if ( segment.header().prevFileLastIndex() <= safeIndex )
+            if ( segment.header().prevFileLastIndex() <= pruneIndex )
             {
                 forDisposal.add( prev );
                 oldestNotDisposed = segment;
@@ -234,5 +235,10 @@ class Segments
         {
             filesItr.remove();
         }
+    }
+
+    public ListIterator<SegmentFile> getSegmentFileIteratorAtEnd()
+    {
+        return segmentFiles.listIterator( segmentFiles.size() );
     }
 }

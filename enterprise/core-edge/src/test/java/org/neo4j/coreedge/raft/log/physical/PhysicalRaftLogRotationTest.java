@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.raft.log.physical;
 
-import java.io.File;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.junit.After;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
@@ -38,6 +38,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog.PHYSICAL_LOG_DIRECTORY_NAME;
 
 public class PhysicalRaftLogRotationTest
 {
@@ -57,7 +58,7 @@ public class PhysicalRaftLogRotationTest
         {
             fileSystem = new EphemeralFileSystemAbstraction();
         }
-        File directory = new File( "raft-log" );
+        File directory = new File( PHYSICAL_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         PhysicalRaftLog newRaftLog = new PhysicalRaftLog( fileSystem, directory, rotateAtSize, "1 files", 100, 10,

@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
+import org.neo4j.coreedge.raft.log.pruning.LogPruner;
 import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ProgressTracker;
 import org.neo4j.coreedge.raft.replication.session.GlobalSessionTrackerState;
@@ -41,7 +42,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class CoreState extends LifecycleAdapter implements RaftStateMachine
+public class CoreState extends LifecycleAdapter implements RaftStateMachine, LogPruner
 {
 
     private static final long NOTHING = -1;
@@ -253,5 +254,11 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine
     {
         coreStateMachines.installSnapshots( coreSnapshot );
         sessionState = coreSnapshot.get( CoreStateType.SESSION_TRACKER );
+    }
+
+    @Override
+    public void prune() throws IOException
+    {
+        compact();
     }
 }

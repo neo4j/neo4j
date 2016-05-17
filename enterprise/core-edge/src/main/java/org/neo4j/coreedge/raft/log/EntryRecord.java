@@ -60,6 +60,10 @@ public class EntryRecord
             long appendIndex = channel.getLong();
             long term = channel.getLong();
             ReplicatedContent content = contentMarshal.unmarshal( channel );
+            if (content == null )
+            {
+                return null;
+            }
             return new EntryRecord( appendIndex, new RaftLogEntry( term, content ) );
         }
         catch ( ReadPastEndException e )

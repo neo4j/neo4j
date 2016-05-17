@@ -49,6 +49,8 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.hasNoContent;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
+import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
+import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.NAIVE;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.PHYSICAL;
 import static org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule.RaftLogImplementation.SEGMENTED;
@@ -70,14 +72,14 @@ public class RaftLogDurabilityTest
     public static Collection<Object[]> data()
     {
         RaftLogFactory naive = ( fileSystem ) -> {
-            File directory = new File( "raft-log" );
+            File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
             fileSystem.mkdir( directory );
             return new NaiveDurableRaftLog( fileSystem, directory, new DummyRaftableContentSerializer(),
                     NullLogProvider.getInstance() );
         };
 
         RaftLogFactory physical = ( fileSystem ) -> {
-            File directory = new File( "raft-log" );
+            File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
             fileSystem.mkdir( directory );
 
             long rotateAtSizeBytes = 128;
@@ -96,14 +98,14 @@ public class RaftLogDurabilityTest
         };
 
         RaftLogFactory segmented = ( fileSystem ) -> {
-            File directory = new File( "raft-log" );
+            File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
             fileSystem.mkdir( directory );
 
             long rotateAtSizeBytes = 128;
             int entryCacheSize = 4;
 
             SegmentedRaftLog log = new SegmentedRaftLog( fileSystem, directory, rotateAtSizeBytes, new DummyRaftableContentSerializer(),
-                    NullLogProvider.getInstance(), entryCacheSize );
+                    NullLogProvider.getInstance(), entryCacheSize, raft_log_pruning.getDefaultValue() );
             log.start();
             return log;
         };

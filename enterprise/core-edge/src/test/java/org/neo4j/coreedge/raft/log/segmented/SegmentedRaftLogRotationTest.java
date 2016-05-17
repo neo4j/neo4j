@@ -19,14 +19,13 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.neo4j.coreedge.raft.ReplicatedInteger;
 import org.neo4j.coreedge.raft.ReplicatedString;
 import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
@@ -35,6 +34,10 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
+
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
+import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning;
 
 public class SegmentedRaftLogRotationTest
 {
@@ -54,12 +57,12 @@ public class SegmentedRaftLogRotationTest
         {
             fileSystem = new EphemeralFileSystemAbstraction();
         }
-        File directory = new File( "raft-log" );
+        File directory = new File( SEGMENTED_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, rotateAtSize,
                 new DummyRaftableContentSerializer(),
-                NullLogProvider.getInstance(), 1000 );
+                NullLogProvider.getInstance(), 1000, raft_log_pruning.getDefaultValue() );
         life.add( newRaftLog );
         life.init();
         life.start();

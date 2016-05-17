@@ -83,7 +83,7 @@ import static org.neo4j.coreedge.raft.log.physical.pruning.RaftLogPruneStrategyF
  */
 public class PhysicalRaftLog implements RaftLog, Lifecycle
 {
-    public static final String DIRECTORY_NAME = "raft-log";
+    public static final String PHYSICAL_LOG_DIRECTORY_NAME = "raft-log";
 
     private final PhysicalRaftLogFiles logFiles;
     private final PhysicalRaftLogFile logFile;

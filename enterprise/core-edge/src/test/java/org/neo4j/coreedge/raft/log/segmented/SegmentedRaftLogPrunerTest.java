@@ -17,31 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.coreedge.raft.log;
+package org.neo4j.coreedge.raft.log.segmented;
 
-import java.io.File;
+import org.junit.Test;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.NullLogProvider;
-
-import static org.neo4j.coreedge.raft.log.NaiveDurableRaftLog.NAIVE_LOG_DIRECTORY_NAME;
-
-public class NaiveRaftLogVerificationIT extends RaftLogVerificationIT
+public class SegmentedRaftLogPrunerTest
 {
-    @Override
-    protected RaftLog createRaftLog() throws Throwable
+    @Test
+    public void name() throws Exception
     {
-        FileSystemAbstraction fsa = fsRule.get();
-        File directory = new File( NAIVE_LOG_DIRECTORY_NAME );
-        fsa.mkdir( directory );
 
-        return new NaiveDurableRaftLog( fsa, directory, new DummyRaftableContentSerializer(),
-                NullLogProvider.getInstance() );
-    }
-
-    @Override
-    protected long operations()
-    {
-        return 500;
     }
 }

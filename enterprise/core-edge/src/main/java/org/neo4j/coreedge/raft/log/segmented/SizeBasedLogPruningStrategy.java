@@ -19,23 +19,33 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
-import java.io.File;
+import java.util.ListIterator;
 
-import org.neo4j.coreedge.raft.log.DummyRaftableContentSerializer;
-import org.neo4j.coreedge.raft.log.RaftLog;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.NullLogProvider;
-
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning;
-
-public class ConcurrentStressIT extends org.neo4j.coreedge.raft.log.ConcurrentStressIT
+public class SizeBasedLogPruningStrategy implements CoreLogPruningStrategy
 {
-    @Override
-    public RaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
+    private final long bytesToKeep;
+
+    public SizeBasedLogPruningStrategy( long bytesToKeep )
     {
-        SegmentedRaftLog raftLog = new SegmentedRaftLog( fsa, dir, 8 * 1024 * 1024, new DummyRaftableContentSerializer(), NullLogProvider.getInstance(), 8,
-                raft_log_pruning.getDefaultValue());
-        raftLog.start();
-        return raftLog;
+        this.bytesToKeep = bytesToKeep;
+    }
+
+    public long getIndexToKeep( Segments segments )
+    {
+        long accumulatedSize = 0;
+        ListIterator<SegmentFile> iterator = segments.getSegmentFileIteratorAtEnd();
+        SegmentFile segmentFile = null;
+        while ( accumulatedSize < bytesToKeep && iterator.hasPrevious() )
+        {
+            segmentFile = iterator.previous();
+            accumulatedSize += sizeOf( segmentFile );
+        }
+
+        return segmentFile != null ? segmentFile.header().prevIndex() : -1;
+    }
+
+    private long sizeOf( SegmentFile value )
+    {
+        return value.size();
     }
 }

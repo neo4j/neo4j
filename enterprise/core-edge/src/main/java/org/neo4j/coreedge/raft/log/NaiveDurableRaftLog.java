@@ -19,12 +19,13 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import org.neo4j.coreedge.raft.replication.MarshallingException;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
 import org.neo4j.coreedge.server.ByteBufMarshal;
@@ -69,7 +70,7 @@ public class NaiveDurableRaftLog extends LifecycleAdapter implements RaftLog
     public static final int ENTRY_RECORD_LENGTH = 16;
     public static final int CONTENT_LENGTH_BYTES = 4;
     public static final int META_BYTES = 8 * 2;
-    public static final String DIRECTORY_NAME = "raft-log";
+    public static final String NAIVE_LOG_DIRECTORY_NAME = "raft-log";
 
     private StoreChannel entriesChannel;
     private StoreChannel contentChannel;
