@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -70,9 +69,8 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         try ( PageCache pageCache = createPageCache( fs ) )
         {
-            Function<File,StoreFactory> createStoreFactory =
-                    file -> new StoreFactory( file.getParentFile(), Config.defaults(), idGeneratorFactory, pageCache, fs,
-                            RecordFormatSelector.autoSelectFormat(), logProvider() );
+            Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( file.getParentFile(),
+                    Config.defaults(), idGeneratorFactory, pageCache, fs, logProvider() );
 
             for ( String arg : args )
             {

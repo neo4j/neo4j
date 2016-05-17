@@ -21,33 +21,41 @@ package org.neo4j.kernel.impl.store.format;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.File;
+import java.io.IOException;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_1;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
 /**
  * Selects record format that will be used in a database.
- * Support two types of selection : config based or automatic.
+ * Supports selection based on the existing store and given configuration.
  * <p>
  * Automatic selection is used by various tools and tests that should pretend being format independent (for
- * example backup)
+ * example backup).
  */
 public class RecordFormatSelector
 {
-
-    private static final RecordFormats DEFAULT_AUTOSELECT_FORMAT = StandardV3_0.RECORD_FORMATS;
+    private static final RecordFormats DEFAULT_FORMAT = StandardV3_0.RECORD_FORMATS;
 
     private static final Iterable<RecordFormats> KNOWN_FORMATS = asList(
             StandardV2_0.RECORD_FORMATS,
@@ -57,48 +65,20 @@ public class RecordFormatSelector
             StandardV3_0.RECORD_FORMATS
     );
 
-    /**
-     * Select record formats based on provided format name in
-     * {@link GraphDatabaseSettings#record_format} property
-     *
-     * @param config database configuration
-     * @param logService logging service
-     * @return configured record formats
-     * @throws IllegalArgumentException if requested format not found
-     */
-    public static RecordFormats select( Config config, LogService logService )
+    private RecordFormatSelector()
     {
-        String recordFormat = configuredRecordFormat( config );
-        RecordFormats formats = loadRecordFormat( recordFormat );
-        if ( formats == null )
-        {
-            handleMissingFormat( recordFormat, logService );
-        }
-        logSelectedFormat( logService, formats );
-        return formats;
+        throw new AssertionError( "Not for instantiation!" );
     }
 
     /**
-     * Select record formats based on provided format name in
-     * {@link GraphDatabaseSettings#record_format} property
-     * If property not specified provided defaultFormat will be return instead.
+     * Select {@link #DEFAULT_FORMAT} record format.
      *
-     * @param config database configuration
-     * @param defaultFormat default format
-     * @param logService logging service
-     * @return configured or default record format
-     * @throws IllegalArgumentException if requested format not found
+     * @return default record format.
      */
-    public static RecordFormats select( Config config, RecordFormats defaultFormat, LogService logService )
+    @Nonnull
+    public static RecordFormats defaultFormat()
     {
-        RecordFormats selectedFormat = defaultFormat;
-        String recordFormat = configuredRecordFormat( config );
-        if ( StringUtils.isNotEmpty( recordFormat ) )
-        {
-            selectedFormat = selectSpecificFormat( recordFormat, logService );
-        }
-        logSelectedFormat( logService, selectedFormat );
-        return selectedFormat;
+        return DEFAULT_FORMAT;
     }
 
     /**
@@ -108,11 +88,10 @@ public class RecordFormatSelector
      * @return record formats
      * @throws IllegalArgumentException if format for specified store version not found
      */
+    @Nonnull
     public static RecordFormats selectForVersion( String storeVersion )
     {
-        Iterable<RecordFormats> currentFormats =
-                map( RecordFormats.Factory::newInstance, Service.load( RecordFormats.Factory.class ) );
-        for ( RecordFormats format : concat( KNOWN_FORMATS, currentFormats ) )
+        for ( RecordFormats format : allFormats() )
         {
             if ( format.storeVersion().equals( storeVersion ) )
             {
@@ -123,47 +102,188 @@ public class RecordFormatSelector
     }
 
     /**
-     * Select {@link #DEFAULT_AUTOSELECT_FORMAT} record format.
-     *
-     * @return selected record format.
-     */
-    public static RecordFormats autoSelectFormat()
-    {
-        return autoSelectFormat( Config.empty(), NullLogService.getInstance() );
-    }
-
-    /**
      * Select configured record format based on available services in class path.
      * Specific format can be specified by {@link GraphDatabaseSettings#record_format} property.
      * <p>
-     * If format is not specified {@link #DEFAULT_AUTOSELECT_FORMAT} will be used.
+     * If format is not specified {@link #DEFAULT_FORMAT} will be used.
      *
-     * @param config - configuration parameters
-     * @param logService - logging service
-     * @return - selected record format.
-     * @throws IllegalArgumentException if specific requested format not found
+     * @param config configuration parameters
+     * @param logProvider logging provider
+     * @return selected record format
+     * @throws IllegalArgumentException if requested format not found
      */
-    public static RecordFormats autoSelectFormat( Config config, LogService logService )
+    @Nonnull
+    public static RecordFormats selectForConfig( Config config, LogProvider logProvider )
     {
         String recordFormat = configuredRecordFormat( config );
-        RecordFormats recordFormats = StringUtils.isNotEmpty( recordFormat ) ?
-                                      selectSpecificFormat( recordFormat, logService ) :
-                                      DEFAULT_AUTOSELECT_FORMAT;
-        logSelectedFormat( logService, recordFormats );
-        return recordFormats;
+        if ( StringUtils.isEmpty( recordFormat ) )
+        {
+            info( logProvider, "Record format not configured, selected default: " + defaultFormat().name() );
+            return defaultFormat();
+        }
+        RecordFormats format = selectSpecificFormat( recordFormat );
+        info( logProvider, "Selected record format based on config: " + format.name() );
+        return format;
     }
 
-    private static RecordFormats selectSpecificFormat( String recordFormat, LogService logService )
+    /**
+     * Select record format for the given store directory.
+     * <p>
+     * <b>Note:</b> package private only for testing.
+     *
+     * @param storeDir directory with the store
+     * @param fs the file system
+     * @param pageCache page cache to read store files
+     * @return record format of the given store or <code>null</code> if {@value MetaDataStore#DEFAULT_NAME} file not
+     * found or can't be read
+     */
+    @Nullable
+    static RecordFormats selectForStore( File storeDir, FileSystemAbstraction fs, PageCache pageCache,
+            LogProvider logProvider )
+    {
+        File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
+        if ( fs.fileExists( neoStoreFile ) )
+        {
+            try
+            {
+                long value = MetaDataStore.getRecord( pageCache, neoStoreFile, STORE_VERSION );
+                if ( value != MetaDataRecordFormat.FIELD_NOT_PRESENT )
+                {
+                    String storeVersion = MetaDataStore.versionLongToString( value );
+
+                    for ( RecordFormats format : allFormats() )
+                    {
+                        if ( format.storeVersion().equals( storeVersion ) )
+                        {
+                            info( logProvider, "Selected " + format.name() + " record format from store " + storeDir );
+                            return format;
+                        }
+                    }
+                }
+            }
+            catch ( IOException e )
+            {
+                info( logProvider, "Unable to read store format: " + e.getMessage() );
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Select record format for the given store (if exists) or from the given configuration. If there is no store and
+     * record format is not configured than {@link #DEFAULT_FORMAT} is selected.
+     *
+     * @param config configuration parameters
+     * @param storeDir directory with the store
+     * @param fs the file system
+     * @param pageCache page cache to read store files
+     * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
+     * @throws IllegalArgumentException when configured format is different from the format present in the store
+     */
+    @Nonnull
+    public static RecordFormats selectForStoreOrConfig( Config config, File storeDir, FileSystemAbstraction fs,
+            PageCache pageCache, LogProvider logProvider )
+    {
+        String configFormatName = configuredRecordFormat( config );
+        boolean formatConfigured = StringUtils.isNotEmpty( configFormatName );
+
+        RecordFormats currentFormat = selectForStore( storeDir, fs, pageCache, NullLogProvider.getInstance() );
+        boolean storeWithFormatExists = currentFormat != null;
+
+        if ( formatConfigured && storeWithFormatExists )
+        {
+            if ( currentFormat.name().equals( configFormatName ) )
+            {
+                info( logProvider, "Configured format matches format in the store. Selected: " + currentFormat.name() );
+                return currentFormat;
+            }
+            throw new IllegalArgumentException( String.format(
+                    "Configured format '%s' is different from the actual format in the store '%s'",
+                    configFormatName, currentFormat.name() ) );
+        }
+
+        if ( !formatConfigured && storeWithFormatExists )
+        {
+            info( logProvider, "Format not configured. Selected format from the store: " + currentFormat.name() );
+            return currentFormat;
+        }
+
+        if ( formatConfigured )
+        {
+            RecordFormats configuredFormat = loadRecordFormat( configFormatName );
+            if ( configuredFormat == null )
+            {
+                throw new IllegalArgumentException( "Unable to load configured format '" + configFormatName + "'" );
+            }
+            info( logProvider, "Selected configured format: " + configFormatName );
+            return configuredFormat;
+        }
+
+        return DEFAULT_FORMAT;
+    }
+
+    /**
+     * Select explicitly configured record format (via given {@code config}) or format from the store. If store does
+     * not exist or has old format ({@link RecordFormats#generation()}) than this method returns
+     * {@link #DEFAULT_FORMAT}.
+     *
+     * @param config configuration parameters
+     * @param storeDir directory with the store
+     * @param fs the file system
+     * @param pageCache page cache to read store files
+     * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
+     * @see RecordFormats#generation()
+     */
+    @Nonnull
+    public static RecordFormats selectNewestFormat( Config config, File storeDir, FileSystemAbstraction fs,
+            PageCache pageCache, LogProvider logProvider )
+    {
+        boolean formatConfigured = StringUtils.isNotEmpty( configuredRecordFormat( config ) );
+        if ( formatConfigured )
+        {
+            // format was explicitly configured so select it
+            return selectForConfig( config, logProvider );
+        }
+        else
+        {
+            RecordFormats result = selectForStore( storeDir, fs, pageCache, logProvider );
+            if ( result == null )
+            {
+                // format was not explicitly configured and store does not exist, select default format
+                info( logProvider, "Selected format '" + DEFAULT_FORMAT + "' for the new store" );
+                result = DEFAULT_FORMAT;
+            }
+            else if ( result.generation() < DEFAULT_FORMAT.generation() )
+            {
+                // format was not explicitly configured and store has lower format
+                // select default format, upgrade is intended
+                info( logProvider,
+                        "Selected format '" + DEFAULT_FORMAT + "' for existing store with format '" + result + "'" );
+                result = DEFAULT_FORMAT;
+            }
+            return result;
+        }
+    }
+
+    private static Iterable<RecordFormats> allFormats()
+    {
+        Iterable<RecordFormats.Factory> loadableFormatFactories = Service.load( RecordFormats.Factory.class );
+        Iterable<RecordFormats> loadableFormats = map( RecordFormats.Factory::newInstance, loadableFormatFactories );
+        return concat( KNOWN_FORMATS, loadableFormats );
+    }
+
+    @Nonnull
+    private static RecordFormats selectSpecificFormat( String recordFormat )
     {
         RecordFormats formats = loadRecordFormat( recordFormat );
         if ( formats == null )
         {
-            return handleMissingFormat( recordFormat, logService );
+            throw new IllegalArgumentException( "No record format found with the name '" + recordFormat + "'." );
         }
         return formats;
     }
 
-
+    @Nullable
     private static RecordFormats loadRecordFormat( String recordFormat )
     {
         if ( StringUtils.isNotEmpty( recordFormat ) )
@@ -181,24 +301,12 @@ public class RecordFormatSelector
         return null;
     }
 
-    private static void logSelectedFormat( LogService logService, RecordFormats formats )
+    private static void info( LogProvider logProvider, String message )
     {
-        String selectionMessage =
-                String.format( "Select %s as record format implementation.", formats.getClass().getName() );
-        getLog( logService ).warn( selectionMessage );
+        logProvider.getLog( RecordFormatSelector.class ).info( message );
     }
 
-    private static RecordFormats handleMissingFormat( String recordFormat, LogService logService )
-    {
-        getLog( logService ).warn( "Record format with key '" + recordFormat + "' not found." );
-        throw new IllegalArgumentException( "No record format found with the name '" + recordFormat + "'." );
-    }
-
-    private static Log getLog( LogService logService )
-    {
-        return logService.getInternalLog( RecordFormatSelector.class );
-    }
-
+    @Nonnull
     private static String configuredRecordFormat( Config config )
     {
         return config.get( GraphDatabaseSettings.record_format );

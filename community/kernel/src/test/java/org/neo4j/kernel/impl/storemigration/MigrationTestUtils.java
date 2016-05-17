@@ -240,10 +240,10 @@ public class MigrationTestUtils
         return false;
     }
 
-    public static boolean checkNeoStoreHasCurrentFormatVersion( StoreVersionCheck check, File workingDirectory )
+    public static boolean checkNeoStoreHasDefaultFormatVersion( StoreVersionCheck check, File workingDirectory )
     {
         File neostoreFile = new File( workingDirectory, MetaDataStore.DEFAULT_NAME );
-        return check.hasVersion( neostoreFile, RecordFormatSelector.autoSelectFormat().storeVersion() )
+        return check.hasVersion( neostoreFile, RecordFormatSelector.defaultFormat().storeVersion() )
                 .outcome.isSuccessful();
     }
 

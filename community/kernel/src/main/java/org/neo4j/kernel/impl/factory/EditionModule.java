@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -80,8 +79,6 @@ public abstract class EditionModule
     public CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
     public IOLimiter ioLimiter;
-
-    public RecordFormats formats;
 
     protected void doAfterRecoveryAndStartup( DatabaseInfo databaseInfo, DependencyResolver dependencyResolver )
     {

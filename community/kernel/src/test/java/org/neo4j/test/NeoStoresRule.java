@@ -25,14 +25,14 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 
@@ -47,11 +47,9 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 public class NeoStoresRule extends ExternalResource
 {
     private final Class<?> testClass;
-    private TargetDirectory targetDirectory;
     private NeoStores neoStores;
     private EphemeralFileSystemAbstraction efs;
     private PageCache pageCache;
-    private StoreFactory storeFactory;
     private final StoreType[] stores;
 
     public NeoStoresRule( Class<?> testClass, StoreType... stores )
@@ -62,18 +60,14 @@ public class NeoStoresRule extends ExternalResource
 
     public NeoStores open( String... config )
     {
-        Config conf = new Config( stringMap( config ) );
-        return open( RecordFormatSelector.select( conf, RecordFormatSelector.autoSelectFormat(),
-                NullLogService.getInstance() ), config );
+        return open( StandardV3_0.RECORD_FORMATS, config );
     }
 
     public NeoStores open( RecordFormats format, String... config )
     {
         efs = new EphemeralFileSystemAbstraction();
         Config conf = new Config( stringMap( config ) );
-        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( efs, conf, NULL,
-                NullLog.getInstance() );
-        pageCache = pageCacheFactory.getOrCreatePageCache();
+        pageCache = getOrCreatePageCache( conf, efs );
         return open( efs, pageCache, format, config );
     }
 
@@ -83,7 +77,7 @@ public class NeoStoresRule extends ExternalResource
         TargetDirectory targetDirectory = new TargetDirectory( fs, testClass );
         File storeDir = targetDirectory.makeGraphDbDir();
         Config configuration = new Config( stringMap( config ) );
-        storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
+        StoreFactory storeFactory = new StoreFactory( storeDir, configuration, new DefaultIdGeneratorFactory( fs ),
                 pageCache, fs, format, NullLogProvider.getInstance() );
         return neoStores = stores.length == 0
                 ? storeFactory.openAllNeoStores( true )
@@ -101,13 +95,16 @@ public class NeoStoresRule extends ExternalResource
         {
             pageCache.close();
         }
-        if ( targetDirectory != null )
-        {
-            targetDirectory.cleanup();
-        }
         if ( efs != null )
         {
             efs.shutdown();
         }
+    }
+
+    private static PageCache getOrCreatePageCache( Config config, FileSystemAbstraction fs )
+    {
+        Log log = NullLog.getInstance();
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fs, config, NULL, log );
+        return pageCacheFactory.getOrCreatePageCache();
     }
 }

@@ -61,9 +61,8 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -128,7 +127,7 @@ public class NeoStoresTest
         Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
         pageCache = pageCacheRule.getPageCache( fs.get() );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
-                fs.get(), StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                fs.get(), NullLogProvider.getInstance() );
         sf.openAllNeoStores( true ).close();
     }
 
@@ -137,7 +136,7 @@ public class NeoStoresTest
     {
         Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
-                fs.get(), StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                fs.get(), NullLogProvider.getInstance() );
         NeoStores neoStores = sf.openAllNeoStores( true );
 
         assertNotNull( neoStores.getMetaDataStore() );
@@ -154,7 +153,7 @@ public class NeoStoresTest
     {
         Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
-                fs.get(), StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                fs.get(), NullLogProvider.getInstance() );
 
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Block size of dynamic array store should be positive integer." );
@@ -170,7 +169,7 @@ public class NeoStoresTest
     {
         Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ), pageCache,
-                fs.get(), StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                fs.get(), NullLogProvider.getInstance() );
         NeoStores neoStores = sf.openNeoStores( true, StoreType.NODE_LABEL );
 
 
@@ -507,9 +506,9 @@ public class NeoStoresTest
         assertEquals( 10, MetaDataStore.setRecord( pageCache, new File( storeDir,
                 MetaDataStore.DEFAULT_NAME ).getAbsoluteFile(), Position.LOG_VERSION, 12 ) );
 
-        Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
+        Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, StandardV3_0.RECORD_FORMATS, NullLogProvider.getInstance() );
+                fileSystem, NullLogProvider.getInstance() );
 
         NeoStores neoStores = sf.openAllNeoStores();
         assertEquals( 12, neoStores.getMetaDataStore().getCurrentLogVersion() );
@@ -521,9 +520,8 @@ public class NeoStoresTest
     {
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
-        StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, getRecordFormat(),
-                NullLogProvider.getInstance() );
-        long recordVersion = MetaDataStore.versionStringToLong( getRecordFormat().storeVersion() );
+        StoreFactory factory = newStoreFactory( neoStoreDir, pageCache, fileSystem );
+        long recordVersion = defaultStoreVersion();
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
@@ -565,8 +563,7 @@ public class NeoStoresTest
         // given
         Config config = new Config( new HashMap<>(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory( dir.directory(), config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), StandardV3_0.RECORD_FORMATS,
-                NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
 
         // when
         NeoStores neoStores = sf.openAllNeoStores( true );
@@ -595,8 +592,7 @@ public class NeoStoresTest
     public void shouldInitializeTheTxIdToOne()
     {
         StoreFactory factory =
-                new StoreFactory( fs.get(), new File( "graph.db/neostore" ), pageCache, StandardV3_0.RECORD_FORMATS,
-                        NullLogProvider.getInstance() );
+                new StoreFactory( new File( "graph.db/neostore" ), pageCache, fs.get(), NullLogProvider.getInstance() );
 
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
@@ -615,8 +611,7 @@ public class NeoStoresTest
     {
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
-        StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, StandardV3_0.RECORD_FORMATS,
-                NullLogProvider.getInstance() );
+        StoreFactory factory = new StoreFactory( neoStoreDir, pageCache, fileSystem, NullLogProvider.getInstance() );
 
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
@@ -637,9 +632,8 @@ public class NeoStoresTest
     {
         FileSystemAbstraction fileSystem = fs.get();
         File neoStoreDir = new File( "/tmp/graph.db/neostore" ).getAbsoluteFile();
-        StoreFactory factory = new StoreFactory( fileSystem, neoStoreDir, pageCache, StandardV3_0.RECORD_FORMATS,
-                NullLogProvider.getInstance() );
-        long recordVersion = MetaDataStore.versionStringToLong( getRecordFormat().storeVersion() );
+        StoreFactory factory = newStoreFactory( neoStoreDir, pageCache, fileSystem );
+        long recordVersion = defaultStoreVersion();
         try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
@@ -682,8 +676,7 @@ public class NeoStoresTest
         // GIVEN
         FileSystemAbstraction fileSystem = fs.get();
         fileSystem.mkdirs( storeDir );
-        StoreFactory factory = new StoreFactory( fileSystem, storeDir, pageCache, StandardV3_0.RECORD_FORMATS,
-                NullLogProvider.getInstance() );
+        StoreFactory factory = new StoreFactory( storeDir, pageCache, fileSystem, NullLogProvider.getInstance() );
 
         try ( NeoStores neoStore = factory.openAllNeoStores( true ) )
         {
@@ -704,8 +697,7 @@ public class NeoStoresTest
         // GIVEN
         FileSystemAbstraction fileSystem = fs.get();
         fileSystem.mkdirs( storeDir );
-        StoreFactory factory = new StoreFactory( fileSystem, storeDir, pageCache, StandardV3_0.RECORD_FORMATS,
-                NullLogProvider.getInstance() );
+        StoreFactory factory = new StoreFactory( storeDir, pageCache, fileSystem, NullLogProvider.getInstance() );
 
         try ( NeoStores neoStore = factory.openAllNeoStores( true ) )
         {
@@ -749,6 +741,17 @@ public class NeoStoresTest
             stringToIndex.put( index.name(), index );
             intToIndex.put( index.id(), index );
         }
+    }
+
+    private static long defaultStoreVersion()
+    {
+        return MetaDataStore.versionStringToLong( RecordFormatSelector.defaultFormat().storeVersion() );
+    }
+
+    private static StoreFactory newStoreFactory( File neoStoreDir, PageCache pageCache, FileSystemAbstraction fs )
+    {
+        return new StoreFactory( neoStoreDir, pageCache, fs, RecordFormatSelector.defaultFormat(),
+                NullLogProvider.getInstance() );
     }
 
     private Token createDummyIndex( int id, String key )
@@ -1370,10 +1373,5 @@ public class NeoStoresTest
                 }
             }
         }
-    }
-
-    private RecordFormats getRecordFormat()
-    {
-        return StandardV3_0.RECORD_FORMATS;
     }
 }

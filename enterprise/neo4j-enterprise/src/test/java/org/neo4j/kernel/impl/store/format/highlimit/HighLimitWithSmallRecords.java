@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 public class HighLimitWithSmallRecords extends HighLimit
 {
     public static final String NAME = "high_limit_with_small_records";
+    public static final String STORE_VERSION = "vT.H.0";
     public static final RecordFormats RECORD_FORMATS = new HighLimitWithSmallRecords();
 
     private static final int NODE_RECORD_SIZE = NodeRecordFormat.RECORD_SIZE / 2;
@@ -39,6 +40,18 @@ public class HighLimitWithSmallRecords extends HighLimit
 
     private HighLimitWithSmallRecords()
     {
+    }
+
+    @Override
+    public String name()
+    {
+        return NAME;
+    }
+
+    @Override
+    public String storeVersion()
+    {
+        return STORE_VERSION;
     }
 
     @Override

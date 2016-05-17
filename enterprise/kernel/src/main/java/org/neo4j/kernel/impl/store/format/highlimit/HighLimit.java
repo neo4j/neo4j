@@ -54,7 +54,7 @@ public class HighLimit extends BaseRecordFormats
 
     public HighLimit()
     {
-        super( STORE_VERSION, 7, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
+        super( NAME, STORE_VERSION, 7, Capability.DENSE_NODES, Capability.SCHEMA, Capability.LUCENE_5 );
     }
 
     @Override

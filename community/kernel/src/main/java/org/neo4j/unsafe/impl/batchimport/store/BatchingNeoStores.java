@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
@@ -50,7 +49,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -193,7 +191,7 @@ public class BatchingNeoStores implements AutoCloseable
         try ( PageCache pageCache = createPageCache( fileSystem, dbConfig, NullLogProvider.getInstance(),
                 PageCacheTracer.NULL ) )
         {
-            StoreFactory storeFactory = new StoreFactory( fileSystem, new File( storeDir ), pageCache, newFormat,
+            StoreFactory storeFactory = new StoreFactory( new File( storeDir ), pageCache, fileSystem, newFormat,
                             NullLogProvider.getInstance() );
             try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
             {
@@ -212,7 +210,7 @@ public class BatchingNeoStores implements AutoCloseable
     {
         BatchingIdGeneratorFactory idGeneratorFactory = new BatchingIdGeneratorFactory( fileSystem );
         StoreFactory storeFactory = new StoreFactory( storeDir, neo4jConfig, idGeneratorFactory, pageCache, fileSystem,
-                RecordFormatSelector.autoSelectFormat( neo4jConfig, NullLogService.getInstance() ), logProvider );
+                logProvider );
         return storeFactory.openAllNeoStores( true );
     }
 

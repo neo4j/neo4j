@@ -123,15 +123,10 @@ public class StoreMigration
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             long startTime = System.currentTimeMillis();
-            new DatabaseMigrator(
-                    progressMonitor,
-                    fs,
-                    config,
-                    logService,
-                    schemaIndexProvider,
-                    labelScanStoreProvider,
-                    legacyIndexProvider.getIndexProviders(),
-                    pageCache, RecordFormatSelector.autoSelectFormat(config, logService) ).migrate( storeDirectory );
+            DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
+                    schemaIndexProvider, labelScanStoreProvider, legacyIndexProvider.getIndexProviders(),
+                    pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ) );
+            migrator.migrate( storeDirectory );
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }

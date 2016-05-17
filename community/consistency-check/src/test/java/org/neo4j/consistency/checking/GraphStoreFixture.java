@@ -46,20 +46,16 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -73,6 +69,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -84,7 +81,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
 public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
@@ -105,6 +101,10 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     private long arrayPropId;
     private int relTypeId;
     private int propKeyId;
+
+    /**
+     * Record format used to generate initial database.
+     */
     private String formatName = StringUtils.EMPTY;
 
     public GraphStoreFixture( boolean keepStatistics, String formatName )
@@ -118,11 +118,6 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         this( false, formatName );
     }
 
-    public GraphStoreFixture()
-    {
-        this( false, StandardV3_0.NAME );
-    }
-
     public void apply( Transaction transaction ) throws TransactionFailureException
     {
         applyTransaction( transaction );
@@ -134,10 +129,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
-            Config config = new Config( stringMap( GraphDatabaseSettings.record_format.name(), formatName ) );
-            neoStore = new StoreFactory( fileSystem, directory, pageCache,
-                    RecordFormatSelector.autoSelectFormat(config,  NullLogService.getInstance() ),
-                    NullLogProvider.getInstance() ).openAllNeoStores();
+            LogProvider logProvider = NullLogProvider.getInstance();
+            StoreFactory storeFactory = new StoreFactory( directory, pageCache, fileSystem, logProvider );
+            neoStore = storeFactory.openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )
             {
@@ -428,9 +422,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         // and the next startup of the store would do recovery where the transaction would have been
         // applied and all would have been well.
 
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory )
-                             .setConfig( GraphDatabaseSettings.record_format, formatName );
-        GraphDatabaseAPI database = (GraphDatabaseAPI) builder.newGraphDatabase();
+        GraphDatabaseAPI database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
         try
         {
             DependencyResolver dependencyResolver = database.getDependencyResolver();

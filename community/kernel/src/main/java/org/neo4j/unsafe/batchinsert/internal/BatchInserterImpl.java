@@ -148,6 +148,7 @@ import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
 import org.neo4j.kernel.internal.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -210,7 +211,6 @@ public class BatchInserterImpl implements BatchInserter
 
     private final LabelTokenStore labelTokenStore;
     private final Locks.Client noopLockClient = new NoOpClient();
-    private final RecordFormats recordFormats;
     private final long maxNodeId;
     private final RecordCursors cursors;
 
@@ -248,11 +248,13 @@ public class BatchInserterImpl implements BatchInserter
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
-        recordFormats = RecordFormatSelector.autoSelectFormat( config, logService );
-        maxNodeId = recordFormats.node().getMaxId();
-
+        LogProvider internalLogProvider = logService.getInternalLogProvider();
+        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, storeDir, fileSystem,
+                pageCache, internalLogProvider );
         StoreFactory sf = new StoreFactory( this.storeDir, config, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, logService.getInternalLogProvider() );
+                recordFormats, internalLogProvider );
+
+        maxNodeId = recordFormats.node().getMaxId();
 
         if ( dump )
         {

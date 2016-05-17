@@ -35,10 +35,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -62,9 +60,8 @@ public class ResponsePackerIT
         LogicalTransactionStore transactionStore = mock( LogicalTransactionStore.class );
         FileSystemAbstraction fs = fsRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        Monitors monitors = new Monitors();
 
-        try ( NeoStores neoStore = createNeoStore( fs, pageCache, monitors ) )
+        try ( NeoStores neoStore = createNeoStore( fs, pageCache ) )
         {
             MetaDataStore store = neoStore.getMetaDataStore();
             store.transactionCommitted( 2, 111 );
@@ -104,13 +101,11 @@ public class ResponsePackerIT
         }
     }
 
-    private NeoStores createNeoStore( FileSystemAbstraction fs, PageCache pageCache, Monitors monitors )
-            throws IOException
+    private NeoStores createNeoStore( FileSystemAbstraction fs, PageCache pageCache ) throws IOException
     {
         File storeDir = new File( "/store/" );
         fs.mkdirs( storeDir );
-        StoreFactory storeFactory = new StoreFactory( fs, storeDir, pageCache, RecordFormatSelector.autoSelectFormat(),
-                NullLogProvider.getInstance() );
+        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() );
         return storeFactory.openAllNeoStores( true );
     }
 }

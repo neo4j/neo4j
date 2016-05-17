@@ -44,7 +44,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class RelationshipChainExplorerTest
@@ -143,8 +142,9 @@ public class RelationshipChainExplorerTest
         }
         database.shutdown();
         PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction() );
-        Config config = new Config( stringMap( GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
-        return new StoreAccess( new DefaultFileSystemAbstraction(), pageCache, storeDirectory, config ).initialize();
+        StoreAccess storeAccess = new StoreAccess( new DefaultFileSystemAbstraction(), pageCache, storeDirectory,
+                Config.empty() );
+        return storeAccess.initialize();
     }
 
     protected String getRecordFormatName()
