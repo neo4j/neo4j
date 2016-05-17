@@ -24,6 +24,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
 import org.neo4j.coreedge.raft.net.Inbound;
@@ -70,12 +72,14 @@ public class RaftInstanceBuilder<MEMBER>
             new InMemoryStateStorage<>( new RaftMembershipState<>() );
     private Monitors monitors = new Monitors();
     private RaftStateMachine raftStateMachine = new RaftStateMachine(){};
+    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
 
     public RaftInstanceBuilder( MEMBER member, int expectedClusterSize, RaftGroup.Builder<MEMBER> memberSetBuilder )
     {
         this.member = member;
         this.expectedClusterSize = expectedClusterSize;
         this.memberSetBuilder = memberSetBuilder;
+        inFlightMap = new InFlightMap<>();
     }
 
     public RaftInstance<MEMBER> build()
@@ -85,8 +89,9 @@ public class RaftInstanceBuilder<MEMBER>
         RaftMembershipManager<MEMBER> membershipManager = new RaftMembershipManager<>( leaderOnlyReplicator,
                 memberSetBuilder, raftLog, logProvider, expectedClusterSize, electionTimeout, clock, catchupTimeout,
                 raftMembership );
-        RaftLogShippingManager<MEMBER> logShipping = new RaftLogShippingManager<>( outbound, logProvider, raftLog,
-                clock, member, membershipManager, retryTimeMillis, catchupBatchSize, maxAllowedShippingLag );
+        RaftLogShippingManager<MEMBER> logShipping =
+                new RaftLogShippingManager<>( outbound, logProvider, raftLog, clock, member, membershipManager,
+                        retryTimeMillis, catchupBatchSize, maxAllowedShippingLag, inFlightMap );
 
         RaftInstance<MEMBER> raft = new RaftInstance<>( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, outbound, logProvider,
