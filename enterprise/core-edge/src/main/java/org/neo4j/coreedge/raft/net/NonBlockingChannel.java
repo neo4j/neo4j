@@ -52,18 +52,16 @@ public class NonBlockingChannel implements Disposable
     private InetSocketAddress destination;
     private Queue<Object> messageQueue = new ConcurrentLinkedQueue<>();
     private volatile boolean stillRunning = true;
-    private ChannelHandler keepAliveHandler;
     private final MessageQueueMonitor monitor;
     private final int maxQueueSize;
     FutureListener<Void> errorListener;
 
     public NonBlockingChannel( Bootstrap bootstrap, final InetSocketAddress destination,
-                               ChannelHandler keepAliveHandler, final Log log, MessageQueueMonitor monitor,
-                               int maxQueueSize)
+                               final Log log, MessageQueueMonitor monitor,
+                               int maxQueueSize )
     {
         this.bootstrap = bootstrap;
         this.destination = destination;
-        this.keepAliveHandler = keepAliveHandler;
         this.monitor = monitor;
         this.maxQueueSize = maxQueueSize;
 
@@ -188,8 +186,6 @@ public class NonBlockingChannel implements Disposable
             Channel channel = channelFuture.awaitUninterruptibly().channel();
             if ( channelFuture.isSuccess() )
             {
-                Map.Entry<String, ChannelHandler> lastHandler = Iterators.last( channel.pipeline().iterator() );
-                channel.pipeline().addBefore( lastHandler.getKey(), "keepAlive", this.keepAliveHandler );
                 channel.flush();
                 nettyChannel = channel;
             }

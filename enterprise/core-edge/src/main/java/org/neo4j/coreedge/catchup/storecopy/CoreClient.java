@@ -40,8 +40,7 @@ import org.neo4j.coreedge.catchup.tx.edge.TxStreamCompleteListener;
 import org.neo4j.coreedge.network.Message;
 import org.neo4j.coreedge.raft.state.CoreSnapshot;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
-import org.neo4j.coreedge.server.Expiration;
-import org.neo4j.coreedge.server.ExpiryScheduler;
+import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -61,11 +60,12 @@ public abstract class CoreClient extends LifecycleAdapter implements StoreFileRe
 
     private SenderService senderService;
 
-    public CoreClient( LogProvider logProvider, ExpiryScheduler expiryScheduler, Expiration expiration,
-                       ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors, int maxQueueSize )
+    public CoreClient( LogProvider logProvider,
+                       ChannelInitializer<SocketChannel> channelInitializer, Monitors monitors, int maxQueueSize,
+                       NonBlockingChannels nonBlockingChannels )
     {
-        this.senderService = new SenderService( expiryScheduler, expiration, channelInitializer, logProvider,
-                monitors, maxQueueSize );
+        this.senderService = new SenderService( channelInitializer, logProvider,
+                monitors, maxQueueSize, nonBlockingChannels );
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 

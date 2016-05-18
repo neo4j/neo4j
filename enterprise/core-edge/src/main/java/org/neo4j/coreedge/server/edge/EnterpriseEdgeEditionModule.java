@@ -20,7 +20,6 @@
 package org.neo4j.coreedge.server.edge;
 
 import java.io.File;
-import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -40,8 +39,7 @@ import org.neo4j.coreedge.discovery.DiscoveryServiceFactory;
 import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
 import org.neo4j.coreedge.raft.replication.tx.ExponentialBackoffStrategy;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
-import org.neo4j.coreedge.server.Expiration;
-import org.neo4j.coreedge.server.ExpiryScheduler;
+import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -155,13 +153,11 @@ public class EnterpriseEdgeEditionModule extends EditionModule
         Supplier<TransactionApplier> transactionApplierSupplier =
                 () -> new TransactionApplier( platformModule.dependencies );
 
-        ExpiryScheduler expiryScheduler = new ExpiryScheduler( platformModule.jobScheduler );
-        Expiration expiration = new Expiration( Clock.systemUTC() );
-
-        EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer( logProvider );
+        NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
+        EdgeToCoreClient.ChannelInitializer channelInitializer = new EdgeToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
-        EdgeToCoreClient edgeToCoreClient = life.add( new EdgeToCoreClient( logProvider, expiryScheduler, expiration,
-                channelInitializer, platformModule.monitors, maxQueueSize ) );
+        EdgeToCoreClient edgeToCoreClient = life.add( new EdgeToCoreClient( logProvider,
+                channelInitializer, platformModule.monitors, maxQueueSize, nonBlockingChannels ) );
         channelInitializer.setOwner( edgeToCoreClient );
 
         Supplier<TransactionIdStore> transactionIdStoreSupplier =
