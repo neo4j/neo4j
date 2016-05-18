@@ -114,6 +114,10 @@ neo4j-admin import -mode <mode> -database <database-name> -from <source-director
       Import a database from a pre-3.0 Neo4j installation. <source-directory> is the database location (e.g.
       <neo4j-root>/data/graph.db).
 
+neo4j-admin core-convert -database <database-name>
+
+    Converts a database created in a non core-edge Neo4j installation into one that is core format friendly.
+
 neo4j-admin help
 
     Display this help text.
@@ -123,6 +127,10 @@ neo4j-admin help
         "import" {
           Write-Verbose "Import command specified"
           Return  [int](Invoke-Neo4jAdmin_Import -CommandArgs $ArgsHash -Neo4jServer $thisServer -ErrorAction Stop)
+        }
+        "core-convert" {
+          Write-Verbose "Core convert command specified"
+          Return  [int](Invoke-Neo4jAdmin_CoreConvert -CommandArgs $CommandArgs -Neo4jServer $thisServer -ErrorAction Stop)
         }
         default {
           Write-Host "Unknown command $Command"
