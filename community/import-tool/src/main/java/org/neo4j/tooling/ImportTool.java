@@ -519,7 +519,13 @@ public class ImportTool
 
     private static String manualReference( ManualPage page, Anchor anchor )
     {
-        return " http://neo4j.com/docs/" + Version.getKernel().getReleaseVersion() + "/" + page.getReference( anchor );
+        // Docs are versioned major.minor-suffix, so drop the patch version.
+        String[] versionParts = Version.getKernel().getReleaseVersion().split("-");
+        versionParts[0] = versionParts[0].substring(0, 3);
+        String docsVersion = String.join("-", versionParts);
+
+        return " http://neo4j.com/docs/operations-manual/" + docsVersion + "/" +
+               page.getReference( anchor );
     }
 
     /**
@@ -757,7 +763,8 @@ public class ImportTool
 
         public String getReference( Anchor anchor )
         {
-            return page + "#" + anchor.anchor;
+            // As long as the the operations manual is single-page we only use the anchor.
+            return "#" + anchor.anchor;
         }
     }
 
