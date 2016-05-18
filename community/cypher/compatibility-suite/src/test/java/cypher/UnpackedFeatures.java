@@ -72,7 +72,7 @@ public class UnpackedFeatures extends Enclosed
                 if ( matcher.matches( next ) )
                 {
                     File target = new File( directory, next.toString() );
-                    Files.copy( next, target.toPath(), REPLACE_EXISTING );
+                    Files.copy( next, target.toPath() );
                     System.out.println( "Unpacked " + target.getName() );
                 }
             }

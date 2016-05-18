@@ -22,30 +22,39 @@ package cypher.feature.steps
 import java.util
 
 import _root_.cucumber.api.DataTable
+import cypher.FeatureSuiteTest
 import cypher.cucumber.db.DatabaseConfigProvider.cypherConfig
 import cypher.cucumber.db.DatabaseLoader
+import cypher.feature.parser.matchers.ResultWrapper
 import cypher.feature.parser.{MatcherMatchingSupport, constructResultMatcher, parseParameters, statisticsParser}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.{GraphDatabaseBuilder, GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.tools.tck.TCKCucumberTemplate
-import org.opencypher.tools.tck.constants.TCKErrorDetails._
 import org.opencypher.tools.tck.constants.TCKStepDefinitions._
-import org.opencypher.tools.tck.constants.{TCKErrorPhases, TCKErrorTypes}
 import org.scalatest.{FunSuiteLike, Matchers}
 
 import scala.util.{Failure, Success, Try}
 
 class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate with MatcherMatchingSupport {
 
+  val requiredScenarioName = FeatureSuiteTest.SCENARIO_NAME_REQUIRED.trim.toLowerCase
+
   // Stateful
   var graph: GraphDatabaseService = null
   var result: Try[Result] = null
   var params: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
+  var currentScenarioName: String = ""
 
   After() { _ =>
-    // TODO: postpone this till the last scenario
-    graph.shutdown()
+    ifEnabled {
+      // TODO: postpone this till the last scenario
+      graph.shutdown()
+    }
+  }
+
+  Before() { scenario =>
+    currentScenarioName = scenario.getName.toLowerCase
   }
 
   Background(BACKGROUND) {
@@ -53,79 +62,113 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   Given(NAMED_GRAPH) { (dbName: String) =>
-    val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
-    graph = loadConfig(builder).newGraphDatabase()
+    ifEnabled {
+      val builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(DatabaseLoader(dbName))
+      graph = loadConfig(builder).newGraphDatabase()
+    }
   }
 
   Given(ANY_GRAPH) {
-    // We could do something fancy here, like randomising a state,
-    // in order to guarantee that we aren't implicitly relying on an empty db.
-    initEmpty()
+    ifEnabled {
+      // We could do something fancy here, like randomising a state,
+      // in order to guarantee that we aren't implicitly relying on an empty db.
+      initEmpty()
+    }
   }
 
   Given(EMPTY_GRAPH) {
-    initEmpty()
+    ifEnabled {
+      initEmpty()
+    }
   }
 
   And(INIT_QUERY) { (query: String) =>
-    // side effects are necessary for setting up graph state
-    graph.execute(query)
+    ifEnabled {
+      // side effects are necessary for setting up graph state
+      graph.execute(query)
+    }
   }
 
   And(INIT_LONG_QUERY) { (query: String) =>
-    // side effects are necessary for setting up graph state
-    graph.execute(query)
+    ifEnabled {
+      // side effects are necessary for setting up graph state
+      graph.execute(query)
+    }
   }
 
   And(PARAMETERS) { (values: DataTable) =>
-    params = parseParameters(values)
+    ifEnabled {
+      params = parseParameters(values)
+    }
   }
 
   When(EXECUTING_QUERY) { (query: String) =>
-    result = Try {
-      graph.execute(query, params)
+    ifEnabled {
+      result = Try {
+        graph.execute(query, params)
+      }
     }
   }
 
   When(EXECUTING_LONG_QUERY) { (query: String) =>
-    result = Try {
-      graph.execute(query, params)
+    ifEnabled {
+      result = Try {
+        graph.execute(query, params)
+      }
     }
   }
 
   Then(EXPECT_RESULT) { (expectedTable: DataTable) =>
-    val matcher = constructResultMatcher(expectedTable)
+    ifEnabled {
+      val matcher = constructResultMatcher(expectedTable)
 
-    inTx {
-      matcher should accept(successful(result))
+      inTx {
+        matcher should accept(successful(result))
+      }
     }
   }
 
   Then(EXPECT_ERROR) { (typ: String, phase: String, detail: String) =>
-    TCKErrorHandler(typ, phase, detail).check(result)
+    ifEnabled {
+      TCKErrorHandler(typ, phase, detail).check(result)
+    }
   }
 
   Then(EXPECT_SORTED_RESULT) { (expectedTable: DataTable) =>
-    val matcher = constructResultMatcher(expectedTable)
+    ifEnabled {
+      val matcher = constructResultMatcher(expectedTable)
 
-    inTx {
-      matcher should acceptOrdered(successful(result))
+      inTx {
+        matcher should acceptOrdered(successful(result))
+      }
     }
   }
 
   Then(EXPECT_EMPTY_RESULT) {
-    withClue("Expected empty result") {
-      successful(result).hasNext shouldBe false
+    ifEnabled {
+      withClue("Expected empty result") {
+        successful(result).hasNext shouldBe false
+      }
     }
   }
 
   And(SIDE_EFFECTS) { (expectations: DataTable) =>
-    statisticsParser(expectations) should accept(successful(result).getQueryStatistics)
+    ifEnabled {
+      statisticsParser(expectations) should accept(successful(result).getQueryStatistics)
+    }
   }
 
   And(NO_SIDE_EFFECTS) {
-    withClue("Expected no side effects") {
-      successful(result).getQueryStatistics.containsUpdates() shouldBe false
+    ifEnabled {
+      withClue("Expected no side effects") {
+        successful(result).getQueryStatistics.containsUpdates() shouldBe false
+      }
+    }
+  }
+
+  private def ifEnabled(f: => Unit): Unit = {
+    if (requiredScenarioName.isEmpty || currentScenarioName.contains(requiredScenarioName)) {
+      f
     }
   }
 

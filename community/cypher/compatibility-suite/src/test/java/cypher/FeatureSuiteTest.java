@@ -26,6 +26,14 @@ import org.junit.runner.RunWith;
 @RunWith( UnpackedFeatures.class )
 public class FeatureSuiteTest
 {
+
+    // These two constants are only used to make testing and debugging easier.
+    // If you want to run only a single feature, put the name of the feature file in `FEATURE_TO_RUN` (including .feature)
+    // If you want to run only a single scenario, put (part of) its name in the `SCENARIO_NAME_REQUIRED` constant
+    // Do not forget to clear these strings to empty strings before you commit!!
+    public static final String FEATURE_TO_RUN = "";
+    public static final String SCENARIO_NAME_REQUIRED = "";
+
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
@@ -36,7 +44,7 @@ public class FeatureSuiteTest
                     "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/rule.json"
             },
             glue = { "classpath:cypher/feature/steps" },
-            features = { "target/features" },
+            features = { "target/features/" + FEATURE_TO_RUN },
             strict = true
     )
     public static class RuleInterpreted
@@ -53,7 +61,7 @@ public class FeatureSuiteTest
                     "cypher.cucumber.db.DatabaseConfigProvider:/cypher/db/config/cost-interpreted.json",
             },
             glue = { "classpath:cypher/feature/steps" },
-            features = { "target/features" },
+            features = { "target/features/" + FEATURE_TO_RUN },
             strict = true
     )
     public static class CostInterpreted
