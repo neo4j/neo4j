@@ -48,7 +48,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     }
 
     @Override
-    public String read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
     {
         /*
          * First 4b
@@ -69,7 +69,8 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             {
                 // We must have performed an inconsistent read,
                 // because this many bytes cannot possibly fit in a record!
-                return payloadTooBigErrorMessage( record, recordSize, nrOfBytes );
+                cursor.setCursorError( payloadTooBigErrorMessage( record, recordSize, nrOfBytes ) );
+                return;
             }
 
             /*
@@ -83,13 +84,12 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
                     && nrOfBytes < dataSize || nrOfBytes > dataSize )
             {
-                return format( "Next block set[%d] current block illegal size[%d/%d]",
-                        record.getNextBlock(), record.getLength(), dataSize );
+                cursor.setCursorError( illegalBlockSizeMessage( record, dataSize ) );
+                return;
             }
 
             readData( record, cursor );
         }
-        return null;
     }
 
     public static String payloadTooBigErrorMessage( DynamicRecord record, int recordSize, int nrOfBytes )
@@ -97,6 +97,12 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
         return format( "DynamicRecord[%s] claims to have a payload of %s bytes, " +
                        "which is larger than the record size of %s bytes.",
                 record.getId(), nrOfBytes, recordSize );
+    }
+
+    private String illegalBlockSizeMessage( DynamicRecord record, int dataSize )
+    {
+        return format( "Next block set[%d] current block illegal size[%d/%d]",
+                record.getNextBlock(), record.getLength(), dataSize );
     }
 
     public static void readData( DynamicRecord record, PageCursor cursor )

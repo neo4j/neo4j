@@ -52,6 +52,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
  * Contains common implementation of {@link RecordStore}.
@@ -220,33 +221,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         idGeneratorFactory.create( idFileName, getNumberOfReservedLowIds(), true );
     }
 
-    protected void checkForOutOfBounds( PageCursor pageCursor, long recordId )
-    {
-        if ( pageCursor.checkAndClearBoundsFlag() )
-        {
-            throwOutOfBoundsException( recordId );
-        }
-    }
-
-    private void throwOutOfBoundsException( long recordId )
-    {
-        RECORD record = newRecord();
-        record.setId( recordId );
-        long pageId = pageIdForRecord( recordId );
-        int offset = offsetForId( recordId );
-        throw new UnderlyingStorageException( buildOutOfBoundsExceptionMessage(
-                record, pageId, offset, recordSize, storeFile.pageSize(), storageFileName.getAbsolutePath() ) );
-    }
-
-    protected static String buildOutOfBoundsExceptionMessage( AbstractBaseRecord record, long pageId, int offset,
-                                                              int recordSize, int pageSize, String filename )
-    {
-        return "Access to record " + record + " went out of bounds of the page. The record size is " +
-               recordSize + " bytes, and the access was at offset " + offset + " bytes into page " +
-               pageId + ", and the pages have a capacity of " + pageSize + " bytes. " +
-               "The mapped store file in question is " + filename;
-    }
-
     protected void createHeaderRecord( PageCursor cursor ) throws IOException
     {
         int offset = cursor.getOffset();
@@ -332,17 +306,17 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         byte[] data = new byte[recordSize];
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
-        try ( PageCursor pageCursor = storeFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            if ( pageCursor.next() )
+            if ( cursor.next() )
             {
                 do
                 {
-                    pageCursor.setOffset( offset );
-                    pageCursor.getBytes( data );
+                    cursor.setOffset( offset );
+                    cursor.getBytes( data );
                 }
-                while ( pageCursor.shouldRetry() );
-                checkForOutOfBounds( pageCursor, id );
+                while ( cursor.shouldRetry() );
+                checkForDecodingErrors( cursor, id, CHECK );
             }
         }
         return data;
@@ -403,7 +377,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     recordIsInUse = isInUse( cursor );
                 }
                 while ( cursor.shouldRetry() );
-                checkForOutOfBounds( cursor, id );
+                checkForDecodingErrors( cursor, id, NORMAL );
             }
             return recordIsInUse;
         }
@@ -1063,18 +1037,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         if ( cursor.next( pageId ) )
         {
             // There is a page in the store that covers this record, go read it
-            String error;
             do
             {
                 prepareForReading( cursor, offset, record );
-                error = recordFormat.read( record, cursor, mode, recordSize, storeFile );
+                recordFormat.read( record, cursor, mode, recordSize, storeFile );
             }
             while ( cursor.shouldRetry() );
-            checkForOutOfBounds( cursor, id );
-            if ( error != null )
-            {
-                mode.report( error );
-            }
+            checkForDecodingErrors( cursor, id, mode );
             verifyAfterReading( record, mode );
         }
         else
@@ -1101,7 +1070,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     recordFormat.write( record, cursor, recordSize, storeFile );
                 }
                 while ( cursor.shouldRetry() );
-                checkForOutOfBounds( cursor, id ); // We don't free ids if something weird goes wrong
+                checkForDecodingErrors( cursor, id, NORMAL ); // We don't free ids if something weird goes wrong
                 if ( !record.inUse() )
                 {
                     freeId( id );
@@ -1261,7 +1230,35 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     }
 
-    protected void verifyAfterReading( RECORD record, RecordLoad mode )
+    protected final void checkForDecodingErrors( PageCursor cursor, long recordId, RecordLoad mode )
+    {
+        if ( mode.checkForOutOfBounds( cursor ) )
+        {
+            throwOutOfBoundsException( recordId );
+        }
+        mode.clearOrThrowCursorError( cursor );
+    }
+
+    private void throwOutOfBoundsException( long recordId )
+    {
+        RECORD record = newRecord();
+        record.setId( recordId );
+        long pageId = pageIdForRecord( recordId );
+        int offset = offsetForId( recordId );
+        throw new UnderlyingStorageException( buildOutOfBoundsExceptionMessage(
+                record, pageId, offset, recordSize, storeFile.pageSize(), storageFileName.getAbsolutePath() ) );
+    }
+
+    protected static String buildOutOfBoundsExceptionMessage( AbstractBaseRecord record, long pageId, int offset,
+                                                              int recordSize, int pageSize, String filename )
+    {
+        return "Access to record " + record + " went out of bounds of the page. The record size is " +
+               recordSize + " bytes, and the access was at offset " + offset + " bytes into page " +
+               pageId + ", and the pages have a capacity of " + pageSize + " bytes. " +
+               "The mapped store file in question is " + filename;
+    }
+
+    protected final void verifyAfterReading( RECORD record, RecordLoad mode )
     {
         if ( !mode.verify( record ) )
         {
@@ -1269,7 +1266,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    protected void prepareForReading( PageCursor cursor, int offset, RECORD record )
+    protected final void prepareForReading( PageCursor cursor, int offset, RECORD record )
     {
         // Mark this record as unused. This to simplify implementations of readRecord.
         // readRecord can behave differently depending on RecordLoad argument and so it may be that

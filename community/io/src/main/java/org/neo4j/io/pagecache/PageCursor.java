@@ -299,7 +299,8 @@ public abstract class PageCursor implements AutoCloseable
     public abstract boolean checkAndClearBoundsFlag();
 
     /**
-     * Check if a cursor error has been set, and if so, remove it from the cursor and throw it.
+     * Check if a cursor error has been set on this or any linked cursor, and if so, remove it from the cursor
+     * and throw it as a {@link CursorException}.
      */
     public abstract void checkAndClearCursorError() throws CursorException;
 
@@ -320,6 +321,12 @@ public abstract class PageCursor implements AutoCloseable
      * @param message The message of the {@link CursorException} that {@link #checkAndClearCursorError()} will throw.
      */
     public abstract void setCursorError( String message );
+
+    /**
+     * Unconditionally clear any error condition that has been set on this or any linked cursor, without throwing an
+     * exception.
+     */
+    public abstract void clearCursorError();
 
     /**
      * Open a new page cursor with the same pf_flags as this cursor, as if calling the {@link PagedFile#io(long, int)}

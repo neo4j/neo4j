@@ -90,7 +90,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         super( recordSize, recordHeaderSize, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
     }
 
-    public String read( RECORD record, PageCursor primaryCursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public void read( RECORD record, PageCursor primaryCursor, RecordLoad mode, int recordSize, PagedFile storeFile )
             throws IOException
     {
         int primaryStartOffset = primaryCursor.getOffset();
@@ -106,7 +106,9 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                 // it may only be read as part of reading the primary unit.
                 record.clear();
                 // Return and try again
-                return "Expected record to be the first unit in the chain, but record header says it's not";
+                primaryCursor.setCursorError(
+                        "Expected record to be the first unit in the chain, but record header says it's not" );
+                return;
             }
 
             // This is a record that is split into multiple record units. We need a bit more clever
@@ -121,7 +123,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                 // We must have made an inconsistent read of the secondary record unit reference.
                 // No point in trying to read this.
                 record.clear();
-                return illegalSecondaryReferenceMessage( pageId );
+                primaryCursor.setCursorError( illegalSecondaryReferenceMessage( pageId ) );
+                return;
             }
             secondaryCursor.setOffset( offset + HEADER_BYTE);
             int primarySize = recordSize - (primaryCursor.getOffset() - primaryStartOffset);
@@ -132,13 +135,12 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             int secondarySize = recordSize - HEADER_BYTE;
             PageCursor composite = CompositePageCursor.compose(
                     primaryCursor, primarySize, secondaryCursor, secondarySize );
-            String result = doReadInternal( record, composite, recordSize, headerByte, inUse );
+            doReadInternal( record, composite, recordSize, headerByte, inUse );
             record.setSecondaryUnitId( secondaryId );
-            return result;
         }
         else
         {
-            return doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
+            doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
         }
     }
 
@@ -147,7 +149,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         return "Illegal secondary record reference: " + secondaryId;
     }
 
-    protected abstract String doReadInternal(
+    protected abstract void doReadInternal(
             RECORD record, PageCursor cursor, int recordSize, long inUseByte, boolean inUse );
 
     @Override

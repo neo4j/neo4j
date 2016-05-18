@@ -46,13 +46,9 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
-
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -222,11 +218,11 @@ public abstract class RecordFormatTest
             do
             {
                 cursor.setOffset( offset );
-                error = format.read( read, cursor, NORMAL, recordSize, storeFile );
+                format.read( read, cursor, NORMAL, recordSize, storeFile );
             }
             while ( cursor.shouldRetry() );
-            assertThat( error, is( nullValue() ) );
             assertFalse( "Out-of-bounds when reading record " + written, cursor.checkAndClearBoundsFlag() );
+            cursor.checkAndClearCursorError();
 
             // THEN
             if ( written.inUse() )

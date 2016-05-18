@@ -40,7 +40,7 @@ class NodeRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<NodeRecord>
         return new NodeRecord( -1 );
     }
 
-    public String read( NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public void read( NodeRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
             throws IOException
     {
         long headerByte = cursor.getByte();
@@ -66,7 +66,6 @@ class NodeRecordFormatV2_0 extends BaseOneByteHeaderRecordFormat<NodeRecord>
                     longFromIntAndMod( nextRel, relModifier ),
                     labels );
         }
-        return null;
     }
 
     @Override

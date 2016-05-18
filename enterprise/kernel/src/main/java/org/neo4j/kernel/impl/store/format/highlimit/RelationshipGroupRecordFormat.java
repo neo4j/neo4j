@@ -65,7 +65,7 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
     }
 
     @Override
-    protected String doReadInternal( RelationshipGroupRecord record, PageCursor cursor, int recordSize, long headerByte,
+    protected void doReadInternal( RelationshipGroupRecord record, PageCursor cursor, int recordSize, long headerByte,
                                    boolean inUse )
     {
         record.initialize( inUse,
@@ -75,7 +75,6 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
                 decodeCompressedReference( cursor, headerByte, HAS_LOOP_BIT, NULL ),
                 decodeCompressedReference( cursor ),
                 decodeCompressedReference( cursor, headerByte, HAS_NEXT_BIT, NULL ) );
-        return null;
     }
 
     @Override

@@ -36,7 +36,7 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
     }
 
     @Override
-    public String read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
     {
         byte inUseByte = cursor.getByte();
         boolean inUse = isInUse( inUseByte );
@@ -45,7 +45,6 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
         {
             readRecordData( cursor, record, inUse );
         }
-        return null;
     }
 
     protected void readRecordData( PageCursor cursor, RECORD record, boolean inUse )

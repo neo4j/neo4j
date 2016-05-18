@@ -156,6 +156,12 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
+    public void clearCursorError()
+    {
+        delegate.clearCursorError();
+    }
+
+    @Override
     public PageCursor openLinkedCursor( long pageId )
     {
         return delegate.openLinkedCursor( pageId );

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.io.pagecache.CursorException;
@@ -37,6 +38,9 @@ abstract class MuninnPageCursor extends PageCursor
 {
     private static final boolean tracePinnedCachePageId =
             flag( MuninnPageCursor.class, "tracePinnedCachePageId", false );
+
+    private static final boolean usePreciseCursorErrorStackTraces =
+            flag( MuninnPageCursor.class, "usePreciseCursorErrorStackTraces", true );
 
     // Size of the respective primitive types in bytes.
     private static final int SIZE_OF_BYTE = Byte.BYTES;
@@ -60,7 +64,10 @@ abstract class MuninnPageCursor extends PageCursor
     private int filePageSize;
     private int offset;
     private boolean outOfBounds;
-    private String cursorExceptionMessage;
+    // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
+    // CursorExceptionWithPreciseStackTrace with the message and stack trace pointing more or less directly at the
+    // offending code.
+    private Object cursorException;
 
     MuninnPageCursor( long victimPage )
     {
@@ -104,7 +111,7 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public final boolean next( long pageId ) throws IOException
     {
-        if ( currentPageId == nextPageId )
+        if ( currentPageId == pageId )
         {
             return true;
         }
@@ -166,7 +173,7 @@ abstract class MuninnPageCursor extends PageCursor
         pageSize = 0; // make all future bound checks fail
         page = null; // make all future page navigation fail
         currentPageId = UNBOUND_PAGE_ID;
-        cursorExceptionMessage = null;
+        cursorException = null;
     }
 
     @Override
@@ -708,18 +715,26 @@ abstract class MuninnPageCursor extends PageCursor
         MuninnPageCursor cursor = this;
         do
         {
-            String message = cursor.cursorExceptionMessage;
-            if ( message != null )
+            Object error = cursor.cursorException;
+            if ( error != null )
             {
                 clearCursorError( cursor );
-                throw new CursorException( message );
+                if ( usePreciseCursorErrorStackTraces )
+                {
+                    throw (CursorExceptionWithPreciseStackTrace) error;
+                }
+                else
+                {
+                    throw new CursorException( (String) error );
+                }
             }
             cursor = cursor.linkedCursor;
         }
         while ( cursor != null );
     }
 
-    protected void clearCursorError()
+    @Override
+    public void clearCursorError()
     {
         clearCursorError( this );
     }
@@ -728,7 +743,7 @@ abstract class MuninnPageCursor extends PageCursor
     {
         while ( cursor != null )
         {
-            cursor.cursorExceptionMessage = null;
+            cursor.cursorException = null;
             cursor = cursor.linkedCursor;
         }
     }
@@ -742,6 +757,14 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public void setCursorError( String message )
     {
-        this.cursorExceptionMessage = message;
+        Objects.requireNonNull( message );
+        if ( usePreciseCursorErrorStackTraces )
+        {
+            this.cursorException = new CursorExceptionWithPreciseStackTrace( message );
+        }
+        else
+        {
+            this.cursorException = message;
+        }
     }
 }

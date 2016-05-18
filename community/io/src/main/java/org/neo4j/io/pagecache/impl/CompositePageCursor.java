@@ -471,6 +471,13 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
+    public void clearCursorError()
+    {
+        first.clearCursorError();
+        second.clearCursorError();
+    }
+
+    @Override
     public PageCursor openLinkedCursor( long pageId )
     {
         throw new UnsupportedOperationException( "Linked cursors are not supported for composite cursors" );

@@ -47,7 +47,7 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
     }
 
     @Override
-    public String read( RelationshipGroupRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
+    public void read( RelationshipGroupRecord record, PageCursor cursor, RecordLoad mode, int recordSize,
             PagedFile storeFile ) throws IOException
     {
         // [    ,   x] in use
@@ -81,7 +81,6 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
                     owningNode,
                     BaseRecordFormat.longFromIntAndMod( nextLowBits, nextMod ) );
         }
-        return null;
     }
 
     @Override

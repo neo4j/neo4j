@@ -46,8 +46,11 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 /**
@@ -71,6 +74,7 @@ public class CommonAbstractStoreBehaviourTest
 
     private final Queue<Long> nextPageId = new ConcurrentLinkedQueue<>();
     private final Queue<Integer> nextPageOffset = new ConcurrentLinkedQueue<>();
+    private int cursorErrorOnRecord;
     private int intsPerRecord = 1;
 
     private MyStore store;
@@ -88,12 +92,12 @@ public class CommonAbstractStoreBehaviourTest
         nextPageId.clear();
     }
 
-    private void assertThrows( ThrowingAction<Exception> action ) throws Exception
+    private void assertThrowsUnderlyingStorageException( ThrowingAction<Exception> action ) throws Exception
     {
         try
         {
             action.apply();
-            fail( "expected an exception" );
+            fail( "expected an UnderlyingStorageException exception" );
         }
         catch ( UnderlyingStorageException exception )
         {
@@ -101,11 +105,41 @@ public class CommonAbstractStoreBehaviourTest
         }
     }
 
-    private void verifyExceptionOnAccess( ThrowingAction<Exception> access ) throws Exception
+    private void assertThrowsInvalidRecordException( ThrowingAction<Exception> action ) throws Exception
+    {
+        try
+        {
+            action.apply();
+            fail( "expected an InvalidRecordException exception" );
+        }
+        catch ( InvalidRecordException exception )
+        {
+            // Good!
+        }
+    }
+
+    private void verifyExceptionOnOutOfBoundsAccess( ThrowingAction<Exception> access ) throws Exception
+    {
+        prepareStoreForOutOfBoundsAccess();
+        assertThrowsUnderlyingStorageException( access );
+    }
+
+    private void prepareStoreForOutOfBoundsAccess()
     {
         createStore();
         nextPageOffset.add( 8190 );
-        assertThrows( access );
+    }
+
+    private void verifyExceptionOnCursorError( ThrowingAction<Exception> access ) throws Exception
+    {
+        prepareStoreForCursorError();
+        assertThrowsInvalidRecordException( access );
+    }
+
+    private void prepareStoreForCursorError()
+    {
+        createStore();
+        cursorErrorOnRecord = 5;
     }
 
     private void createStore()
@@ -120,7 +154,7 @@ public class CommonAbstractStoreBehaviourTest
         // 16-byte header will overflow an 8-byte page size
         Config config = CONFIG.with( stringMap( GraphDatabaseSettings.mapped_memory_page_size.name(), "8" ) );
         MyStore store = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ) );
-        assertThrows( () -> store.initialise( true ) );
+        assertThrowsUnderlyingStorageException( () -> store.initialise( true ) );
     }
 
     @Test
@@ -132,42 +166,95 @@ public class CommonAbstractStoreBehaviourTest
 
         config = CONFIG.with( stringMap( GraphDatabaseSettings.mapped_memory_page_size.name(), "8" ) );
         MyStore second = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ) );
-        assertThrows( () -> second.initialise( false ) );
+        assertThrowsUnderlyingStorageException( () -> second.initialise( false ) );
     }
 
     @Test
-    public void getRawRecordDataMustThrowOnPageOverflow() throws Exception
+    public void getRawRecordDataMustNotThrowOnPageOverflow() throws Exception
     {
-        verifyExceptionOnAccess( () -> store.getRawRecordData( 5 ) );
+        prepareStoreForOutOfBoundsAccess();
+        store.getRawRecordData( 5 );
     }
 
     @Test
     public void isInUseMustThrowOnPageOverflow() throws Exception
     {
-        verifyExceptionOnAccess( () -> store.isInUse( 5 ) );
+        verifyExceptionOnOutOfBoundsAccess( () -> store.isInUse( 5 ) );
+    }
+
+    @Test
+    public void isInUseMustThrowOnCursorError() throws Exception
+    {
+        verifyExceptionOnCursorError( () -> store.isInUse( 5 ) );
     }
 
     @Test
     public void getRecordMustThrowOnPageOverflow() throws Exception
     {
-        verifyExceptionOnAccess( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
+        verifyExceptionOnOutOfBoundsAccess( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
+    }
+
+    @Test
+    public void getRecordMustNotThrowOnPageOverflowWithCheckLoadMode() throws Exception
+    {
+        prepareStoreForOutOfBoundsAccess();
+        store.getRecord( 5, new IntRecord( 5 ), CHECK );
+    }
+
+    @Test
+    public void getRecordMustNotThrowOnPageOverflowWithForceLoadMode() throws Exception
+    {
+        prepareStoreForOutOfBoundsAccess();
+        store.getRecord( 5, new IntRecord( 5 ), FORCE );
     }
 
     @Test
     public void updateRecordMustThrowOnPageOverflow() throws Exception
     {
-        verifyExceptionOnAccess( () -> store.updateRecord( new IntRecord( 5 ) ) );
+        verifyExceptionOnOutOfBoundsAccess( () -> store.updateRecord( new IntRecord( 5 ) ) );
+    }
+
+    @Test
+    public void getRecordMustThrowOnCursorError() throws Exception
+    {
+        verifyExceptionOnCursorError( () -> store.getRecord( 5, new IntRecord( 5 ), NORMAL ) );
+    }
+
+    @Test
+    public void getRecordMustNotThrowOnCursorErrorWithCheckLoadMode() throws Exception
+    {
+        prepareStoreForCursorError();
+        store.getRecord( 5, new IntRecord( 5 ), CHECK );
+    }
+
+    @Test
+    public void getRecordMustNotThrowOnCursorErrorWithForceLoadMode() throws Exception
+    {
+        prepareStoreForCursorError();
+        store.getRecord( 5, new IntRecord( 5 ), FORCE );
     }
 
     @Test
     public void recordCursorNextMustThrowOnPageOverflow() throws Exception
     {
-        verifyExceptionOnAccess( () -> {
+        verifyExceptionOnOutOfBoundsAccess( () -> {
             try ( RecordCursor<IntRecord> cursor = store.newRecordCursor( new IntRecord( 0 ) ).acquire( 5, NORMAL ) )
             {
                 cursor.next();
             }
         } );
+    }
+
+    @Test
+    public void pageCursorErrorsMustNotLingerInRecordCursor() throws Exception
+    {
+        createStore();
+        RecordCursor<IntRecord> cursor = store.newRecordCursor( new IntRecord( 1 ) ).acquire( 1, FORCE );
+        cursorErrorOnRecord = 1;
+        // This will encounter a decoding error, which is ignored because FORCE
+        assertTrue( cursor.next() );
+        // Then this should not fail because of the previous decoding error, even though we stay on the same page
+        assertTrue( cursor.next( 2, new IntRecord( 2 ), NORMAL ) );
     }
 
     @Test
@@ -181,7 +268,7 @@ public class CommonAbstractStoreBehaviourTest
         record.value = 0xCAFEBABE;
         store.updateRecord( record );
         intsPerRecord = 8192;
-        assertThrows( () -> store.makeStoreOk() );
+        assertThrowsUnderlyingStorageException( () -> store.makeStoreOk() );
     }
 
     @Test
@@ -193,7 +280,7 @@ public class CommonAbstractStoreBehaviourTest
         record.value = 0xCAFEBABE;
         store.updateRecord( record );
         intsPerRecord = 8192;
-        assertThrows( () -> store.makeStoreOk() );
+        assertThrowsUnderlyingStorageException( () -> store.makeStoreOk() );
     }
 
     private static class IntRecord extends AbstractBaseRecord
@@ -233,16 +320,20 @@ public class CommonAbstractStoreBehaviourTest
         @Override
         public boolean isInUse( PageCursor cursor )
         {
+            int offset = cursor.getOffset();
+            long pageId = cursor.getCurrentPageId();
+            long recordId = (offset + pageId * cursor.getCurrentPageSize()) / 4;
             boolean inUse = false;
             for ( int i = 0; i < intsPerRecord; i++ )
             {
                 inUse |= cursor.getInt() != 0;
             }
+            maybeSetCursorError( cursor, recordId );
             return inUse;
         }
 
         @Override
-        public String read( IntRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+        public void read( IntRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
                 throws IOException
         {
             for ( int i = 0; i < intsPerRecord; i++ )
@@ -250,7 +341,15 @@ public class CommonAbstractStoreBehaviourTest
                 record.value = cursor.getInt();
             }
             record.setInUse( true );
-            return null;
+            maybeSetCursorError( cursor, record.getId() );
+        }
+
+        private void maybeSetCursorError( PageCursor cursor, long id )
+        {
+            if ( cursorErrorOnRecord == id )
+            {
+                cursor.setCursorError( "boom" );
+            }
         }
 
         @Override

@@ -371,18 +371,24 @@ class AdversarialReadPageCursor extends PageCursor
                 IllegalStateException.class );
         if ( state.hasPreparedInconsistentRead() )
         {
-            delegate.shouldRetry();
-            delegate.setOffset( 0 );
+            resetDelegate();
             return true;
         }
         if ( state.hasInconsistentRead() )
         {
-            delegate.shouldRetry();
-            delegate.setOffset( 0 );
+            resetDelegate();
             return true;
         }
         boolean retry = delegate.shouldRetry();
         return retry || (linkedCursor != null && linkedCursor.shouldRetry());
+    }
+
+    private void resetDelegate() throws IOException
+    {
+        delegate.shouldRetry();
+        delegate.setOffset( 0 );
+        delegate.checkAndClearBoundsFlag();
+        delegate.clearCursorError();
     }
 
     @Override
@@ -422,6 +428,12 @@ class AdversarialReadPageCursor extends PageCursor
     public void setCursorError( String message )
     {
         delegate.setCursorError( message );
+    }
+
+    @Override
+    public void clearCursorError()
+    {
+        delegate.clearCursorError();
     }
 
     @Override

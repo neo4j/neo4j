@@ -26,7 +26,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.PropertyType;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -65,7 +64,6 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     private long entityId;
     private byte entityType;
     private List<DynamicRecord> deletedRecords;
-    private String malformedMessage;
 
     // state for the Iterator aspect of this class.
     private int blockRecordsIteratorCursor;
@@ -256,19 +254,6 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
             }
             blocksLoaded = true;
         }
-    }
-
-    public void verifyRecordIsWellFormed()
-    {
-        if ( malformedMessage != null )
-        {
-            throw new InvalidRecordException( malformedMessage );
-        }
-    }
-
-    public void setMalformedMessage( String message )
-    {
-        malformedMessage = message;
     }
 
     public void setPropertyBlock( PropertyBlock block )

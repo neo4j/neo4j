@@ -62,7 +62,7 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
     }
 
     @Override
-    public String read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+    public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
             throws IOException
     {
         byte headerByte = cursor.getByte();
@@ -72,14 +72,14 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
             int length = cursor.getShort() | cursor.getByte() << 16;
             if ( length > recordSize | length < 0 )
             {
-                return payloadLengthErrorMessage( record, recordSize, length );
+                cursor.setCursorError( payloadLengthErrorMessage( record, recordSize, length ) );
+                return;
             }
             long next = cursor.getLong();
             boolean isStartRecord = (headerByte & START_RECORD_BIT) != 0;
             record.initialize( inUse, isStartRecord, next, -1, length );
             readData( record, cursor );
         }
-        return null;
     }
 
     private String payloadLengthErrorMessage( DynamicRecord record, int recordSize, int length )

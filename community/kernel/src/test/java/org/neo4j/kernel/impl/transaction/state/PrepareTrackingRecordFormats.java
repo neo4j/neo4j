@@ -181,10 +181,10 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
-        public String read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
+        public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
                 throws IOException
         {
-            return actual.read( record, cursor, mode, recordSize, storeFile );
+            actual.read( record, cursor, mode, recordSize, storeFile );
         }
 
         @Override

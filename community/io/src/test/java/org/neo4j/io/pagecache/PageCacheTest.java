@@ -2011,34 +2011,51 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         getPageCache( fs, maxPages, pageCachePageSize, tracer );
 
         long countedPages = 0;
+        long countedFaults = 0;
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             while ( cursor.next() )
             {
-                assertTrue( cursor.next( cursor.getCurrentPageId() ) );
+                countedPages++;
+                countedFaults++;
+            }
+
+            // Using next( pageId ) to the already-pinned page id does not count,
+            // so we only increment once for this section
+            countedPages++;
+            for ( int i = 0; i < 20; i++ )
+            {
+                assertTrue( cursor.next( 1 ) );
+            }
+
+            // But if we use next( pageId ) to a page that is different from the one already pinned,
+            // then it counts
+            for ( int i = 0; i < 20; i++ )
+            {
+                assertTrue( cursor.next( i ) );
                 countedPages++;
             }
         }
 
-        assertThat( "wrong count of pins", tracer.pins(), is( countedPages * 2 ) );
-        assertThat( "wrong count of unpins", tracer.unpins(), is( countedPages * 2 ) );
+        assertThat( "wrong count of pins", tracer.pins(), is( countedPages ) );
+        assertThat( "wrong count of unpins", tracer.unpins(), is( countedPages ) );
 
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
         long faults = tracer.faults();
         long bytesRead = tracer.bytesRead();
-        assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( countedPages ) );
+        assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( countedFaults ) );
         assertThat( "wrong number of bytes read",
-                bytesRead, greaterThanOrEqualTo( countedPages * filePageSize ) );
+                bytesRead, greaterThanOrEqualTo( countedFaults * filePageSize ) );
         // Every page we move forward can put the freelist behind so the cache
         // wants to evict more pages. Plus, every page fault we do could also
         // block and get a page directly transferred to it, and these kinds of
         // evictions can count in addition to the evictions we do when the
         // cache is behind on keeping the freelist full.
         assertThat( "wrong count of evictions", tracer.evictions(),
-                both( greaterThanOrEqualTo( countedPages - maxPages ) )
+                both( greaterThanOrEqualTo( countedFaults - maxPages ) )
                         .and( lessThanOrEqualTo( countedPages + faults ) ) );
     }
 
@@ -2057,15 +2074,19 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 assertTrue( cursor.next() );
                 assertThat( cursor.getCurrentPageId(), is( i ) );
-                assertTrue( cursor.next( i ) );
+                assertTrue( cursor.next( i ) ); // This does not count as a pin
                 assertThat( cursor.getCurrentPageId(), is( i ) );
 
                 writeRecords( cursor );
             }
+
+            // This counts as a single pin
+            assertTrue( cursor.next( 0 ) );
+            assertTrue( cursor.next( 0 ) );
         }
 
-        assertThat( "wrong count of pins", tracer.pins(), is( pagesToGenerate * 2 ) );
-        assertThat( "wrong count of unpins", tracer.unpins(), is( pagesToGenerate * 2 ) );
+        assertThat( "wrong count of pins", tracer.pins(), is( pagesToGenerate + 1 ) );
+        assertThat( "wrong count of unpins", tracer.unpins(), is( pagesToGenerate + 1 ) );
 
         // We might be unlucky and fault in the second next call, on the page
         // we brought up in the first next call. That's why we assert that we
@@ -4562,6 +4583,82 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             {
                 // all good
             }
+        }
+    }
+
+    @Test
+    public void settingNullCursorErrorMustThrow() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( writer.next() );
+            try
+            {
+                writer.setCursorError( null );
+                fail( "setting null cursor error on write cursor should have thrown" );
+            }
+            catch ( Exception e )
+            {
+                // all good
+            }
+
+            assertTrue( reader.next() );
+            try
+            {
+                reader.setCursorError( null );
+                fail( "setting null cursor error in read cursor should have thrown" );
+            }
+            catch ( Exception e )
+            {
+                // all good
+            }
+        }
+    }
+
+    @Test
+    public void clearCursorErrorMustUnsetErrorCondition() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( writer.next() );
+            writer.setCursorError( "boo" );
+            writer.clearCursorError();
+            writer.checkAndClearCursorError();
+
+            assertTrue( reader.next() );
+            reader.setCursorError( "boo" );
+            reader.clearCursorError();
+            reader.checkAndClearCursorError();
+        }
+    }
+
+    @Test
+    public void clearCursorErrorMustUnsetErrorConditionOnLinkedCursor() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
+              PageCursor writer = pf.io( 0, PF_SHARED_WRITE_LOCK );
+              PageCursor reader = pf.io( 0, PF_SHARED_READ_LOCK ) )
+        {
+            assertTrue( writer.next() );
+            PageCursor linkedWriter = writer.openLinkedCursor( 1 );
+            assertTrue( linkedWriter.next() );
+            linkedWriter.setCursorError( "boo" );
+            writer.clearCursorError();
+            writer.checkAndClearCursorError();
+
+            assertTrue( reader.next() );
+            PageCursor linkedReader = reader.openLinkedCursor( 1 );
+            assertTrue( linkedReader.next() );
+            linkedReader.setCursorError( "boo" );
+            reader.clearCursorError();
+            reader.checkAndClearCursorError();
         }
     }
 

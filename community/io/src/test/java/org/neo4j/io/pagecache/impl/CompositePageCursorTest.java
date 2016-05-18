@@ -1245,4 +1245,18 @@ public class CompositePageCursorTest
             assertThat( e.getMessage(), is( "second boo" ) );
         }
     }
+
+    @Test
+    public void clearCursorErrorMustClearBothCursors() throws Exception
+    {
+        PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
+        first.setCursorError( "first boo" );
+        second.setCursorError( "second boo" );
+        cursor.clearCursorError();
+
+        // Now these must not throw
+        first.checkAndClearCursorError();
+        second.checkAndClearCursorError();
+        cursor.checkAndClearCursorError();
+    }
 }

@@ -161,6 +161,12 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
+    public void clearCursorError()
+    {
+        this.cursorErrorMessage = null;
+    }
+
+    @Override
     public PageCursor openLinkedCursor( long pageId )
     {
         return linkedCursor = new StubPageCursor( pageId, pageSize );
