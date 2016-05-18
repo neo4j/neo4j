@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
+import org.neo4j.cypher.internal.compiler.v3_1.helpers.LiteralTypeSupport
 
 sealed trait BuildProbeTable extends Instruction {
 
@@ -49,7 +50,7 @@ case class BuildRecordingProbeTable(id:String, name: String, nodes: Set[Variable
   override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
     val value = generator.newTableValue(context.namer.newVarName(), valueStructure)
     fieldToVarName.foreach {
-      case (fieldName, localName) => generator.putField(valueStructure, value, localName.incoming.cypherType, fieldName, localName.incoming.name)
+      case (fieldName, localName) => generator.putField(valueStructure, value, LiteralTypeSupport.deriveCodeGenType(localName.incoming.cypherType), fieldName, localName.incoming.name)
     }
     generator.updateProbeTable(valueStructure, name, tableType, nodes.toSeq.map(_.name), value)
   }
@@ -64,7 +65,7 @@ case class BuildRecordingProbeTable(id:String, name: String, nodes: Set[Variable
     case (fieldName, localName) => localName.outgoing.name -> fieldName
   }
 
-  private val valueStructure = fieldToVarName.mapValues(_.outgoing.cypherType)
+  private val valueStructure = fieldToVarName.mapValues(c => LiteralTypeSupport.deriveCodeGenType(c.outgoing.cypherType))
 
   override val tableType = if(nodes.size == 1 ) LongToListTable(valueStructure, varNameToField)
                            else LongsToListTable(valueStructure, varNameToField)

@@ -20,13 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
+import org.neo4j.cypher.internal.frontend.v3_1.symbols.CTBoolean
 import org.neo4j.cypher.internal.frontend.v3_1.{IncomparableValuesException, symbols}
 
 case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  override def cypherType(implicit context: CodeGenContext) = symbols.CTBoolean
+  override def codeGenType(implicit context: CodeGenContext) =
+    if (nullable) CodeGenType(CTBoolean, ReferenceType)
+    else (lhs, rhs) match {
+    case (_:NodeExpression, _:NodeExpression) => CodeGenType(CTBoolean, BoolType)
+    case (_:RelationshipExpression, _:RelationshipExpression) => CodeGenType(CTBoolean, BoolType)
+    case _ => CodeGenType(CTBoolean, ReferenceType)
+  }
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     lhs.init(generator)
@@ -34,17 +41,18 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
   }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
-    if (nullable) structure.threeValuedEquals(lhs.generateExpression(structure), rhs.generateExpression(structure))
+    if (nullable) structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
+                                                        structure.box(rhs.generateExpression(structure), rhs.codeGenType))
     else (lhs, rhs) match {
-      case (NodeExpression(v1), NodeExpression(v2)) => structure.eq(structure.load(v1.name), structure.load(v2.name))
-      case (RelationshipExpression(v1), RelationshipExpression(v2)) => structure.eq(structure.load(v1.name), structure.load(v2.name))
+      case (NodeExpression(v1), NodeExpression(v2)) => structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name), CodeGenType.primitiveNode)
+      case (RelationshipExpression(v1), RelationshipExpression(v2)) => structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name),
+                                                                                                    CodeGenType.primitiveRel)
       case (NodeExpression(_), RelationshipExpression(_)) => throw new
           IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
       case (RelationshipExpression(_), NodeExpression(_)) => throw new
           IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
-      case _ => structure.threeValuedEquals(lhs.generateExpression(structure), rhs.generateExpression(structure))
+      case _ => structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure), lhs. codeGenType),
+                                                      structure.box(rhs.generateExpression(structure), rhs.codeGenType))
     }
   }
-
-
 }

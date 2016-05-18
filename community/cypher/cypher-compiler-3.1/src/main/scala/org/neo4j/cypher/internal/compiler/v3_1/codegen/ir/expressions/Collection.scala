@@ -34,9 +34,9 @@ case class Collection(expressions: Seq[CodeGenExpression]) extends CodeGenExpres
 
   override def nullable(implicit context: CodeGenContext) = false
 
-  override def cypherType(implicit context: CodeGenContext) = {
-    val commonType = expressions.map(_.cypherType).reduce[CypherType](_ leastUpperBound _)
+  override def codeGenType(implicit context: CodeGenContext) = {
+    val commonType = expressions.map(_.codeGenType.ct).reduce[CypherType](_ leastUpperBound _)
 
-    CTList(commonType)
+    CodeGenType(CTList(commonType), ReferenceType)
   }
 }

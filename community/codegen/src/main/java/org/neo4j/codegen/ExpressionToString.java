@@ -63,18 +63,18 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void load( TypeReference type, String name )
+    public void load(  LocalVariable variable)
     {
         result.append( "load{type=" );
-        if ( type == null )
+        if ( variable.type() == null )
         {
             result.append( "null" );
         }
         else
         {
-            type.writeTo( result );
+            variable.type().writeTo( result );
         }
-        result.append( ", name=" ).append( name ).append( "}" );
+        result.append( ", name=" ).append( variable.name() ).append( "}" );
     }
 
     @Override
@@ -133,9 +133,24 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void eq( Expression lhs, Expression rhs )
+    public void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse )
     {
-        result.append( "eq(" );
+        ternary( Expression.equal( test, Expression.constant( null ), TypeReference.OBJECT ),
+                onTrue, onFalse );
+    }
+
+    @Override
+    public void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse )
+    {
+        ternary( Expression.not(
+                Expression.equal( test, Expression.constant( null ), TypeReference.OBJECT )),
+                onTrue, onFalse );
+    }
+
+    @Override
+    public void equal( Expression lhs, Expression rhs, TypeReference ignored )
+    {
+        result.append( "equal(" );
         lhs.accept( this );
         result.append( ", " );
         rhs.accept( this );
@@ -151,9 +166,25 @@ class ExpressionToString implements ExpressionVisitor
         rhs.accept( this );
         result.append( ")" );
     }
+    @Override
+    public void addInts( Expression lhs, Expression rhs )
+    {
+        add(lhs, rhs);
+    }
 
     @Override
-    public void add( Expression lhs, Expression rhs )
+    public void addLongs( Expression lhs, Expression rhs )
+    {
+        add(lhs, rhs);
+    }
+
+    @Override
+    public void addDoubles( Expression lhs, Expression rhs )
+    {
+        add(lhs, rhs);
+    }
+
+    private void add( Expression lhs, Expression rhs )
     {
         result.append( "add(" );
         lhs.accept( this );
@@ -163,7 +194,7 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void gt( Expression lhs, Expression rhs )
+    public void gt( Expression lhs, Expression rhs, TypeReference ignored )
     {
         result.append( "gt(" );
         lhs.accept( this );
@@ -173,11 +204,58 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
-    public void sub( Expression lhs, Expression rhs )
+    public void subtractInts( Expression lhs, Expression rhs )
+    {
+        sub( lhs, rhs);
+    }
+
+    @Override
+    public void subtractLongs( Expression lhs, Expression rhs )
+    {
+        sub( lhs, rhs);
+    }
+
+    @Override
+    public void subtractDoubles( Expression lhs, Expression rhs )
+    {
+        sub( lhs, rhs);
+    }
+
+    private void sub( Expression lhs, Expression rhs )
     {
         result.append( "sub(" );
         lhs.accept( this );
         result.append( " - " );
+        rhs.accept( this );
+        result.append( ")" );
+    }
+
+    @Override
+    public void multiplyLongs( Expression lhs, Expression rhs )
+    {
+        mul( lhs, rhs);
+    }
+
+    @Override
+    public void multiplyDoubles( Expression lhs, Expression rhs )
+    {
+        mul( lhs, rhs);
+    }
+
+    private void mul( Expression lhs, Expression rhs )
+    {
+        result.append( "mul(" );
+        lhs.accept( this );
+        result.append( " * " );
+        rhs.accept( this );
+        result.append( ")" );
+    }
+
+    private void div( Expression lhs, Expression rhs )
+    {
+        result.append( "div(" );
+        lhs.accept( this );
+        result.append( " / " );
         rhs.accept( this );
         result.append( ")" );
     }
@@ -190,5 +268,36 @@ class ExpressionToString implements ExpressionVisitor
         result.append( ", expression=" );
         expression.accept( this );
         result.append( "}" );
+    }
+
+    @Override
+    public void newArray( TypeReference type, Expression... constants )
+    {
+        result.append( "newArray{type=" );
+        type.writeTo( result );
+        result.append( ", constants=" );
+        String sep = "";
+        for ( Expression constant : constants )
+        {
+            result.append( sep );
+            constant.accept( this );
+            sep = ", ";
+        }
+        result.append( "}" );
+    }
+
+    @Override
+    public void longToDouble( Expression expression )
+    {
+        result.append( "(double)" );
+        expression.accept( this );
+    }
+
+    @Override
+    public void pop( Expression expression )
+    {
+        result.append( "pop(" );
+        expression.accept( this );
+        result.append( ")" );
     }
 }

@@ -19,11 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen
 
-import java.lang.Boolean.getBoolean
-import java.time.Clock
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.CodeGenerator.SourceSink
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{CompiledPlan, PlanFingerprint, _}
@@ -37,32 +34,29 @@ import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, PlannerName, Task
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_1.helpers.Eagerly
 
-class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
+
+class CodeGenerator(val structure: CodeStructure[GeneratedQuery], conf: CodeGenConfiguration = CodeGenConfiguration() ) {
 
   import CodeGenerator.generateCode
 
   type PlanDescriptionProvider =
           (InternalPlanDescription) => (Provider[InternalPlanDescription], Option[QueryExecutionTracer])
 
-  def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable, plannerName: PlannerName) = {
+  def generate(plan: LogicalPlan, planContext: PlanContext, semanticTable: SemanticTable, plannerName: PlannerName) = {
     plan match {
       case res: ProduceResult =>
         val idMap = LogicalPlanIdentificationBuilder(plan)
 
-        var sources = Map.empty[String, String]
-        val sourceSink: SourceSink = if(getBoolean("org.neo4j.cypher.internal.codegen.IncludeSourcesInPlanDescription")) Some(
-          (className:String, sourceCode:String) => { sources = sources.updated(className, sourceCode) }) else None
-
-        val query: GeneratedQuery = generateQuery(plan, semanticTable, idMap, res.columns, sourceSink)
+        val query = generateQuery(plan, semanticTable, idMap, res.columns, conf)
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
-            Some(PlanFingerprint(clock.millis(), planContext.txIdProvider(), igs.snapshot.freeze))
+            Some(PlanFingerprint(conf.clock.millis(), planContext.txIdProvider(), igs.snapshot.freeze))
           case _ =>
             None
         }
 
-        val description: InternalPlanDescription = sources.foldLeft(LogicalPlan2PlanDescription(plan, idMap)) {
+        val description: InternalPlanDescription = query.source.foldLeft(LogicalPlan2PlanDescription(plan, idMap)) {
           case (root, (className, sourceCode)) => root.addArgument(SourceCode(className, sourceCode))
         }
 
@@ -71,7 +65,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
                     descriptionProvider: DescriptionProvider, params: Map[String, Any],
                     closer: TaskCloser): InternalExecutionResult = {
             val (provider, tracer) = descriptionProvider(description)
-            val execution: GeneratedQueryExecution = query.execute(closer, queryContext, execMode,
+            val execution: GeneratedQueryExecution = query.query.execute(closer, queryContext, execMode,
               provider, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
             new CompiledExecutionResult(closer, queryContext, execution, provider)
           }
@@ -83,13 +77,14 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
     }
   }
 
-  private def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id], columns: Seq[String], sources: SourceSink = None): GeneratedQuery = {
+  private def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id],
+                            columns: Seq[String], conf: CodeGenConfiguration): CodeStructureResult[GeneratedQuery] = {
     import LogicalPlanConverter._
     implicit val context = new CodeGenContext(semantics, ids)
     val (_, instructions) = asCodeGenPlan(plan).produce(context)
     generateCode(structure)(instructions, context.operatorIds.map {
       case (id: Id, field: String) => field -> id
-    }.toMap, columns, sources)
+    }.toMap, columns, conf)
   }
 
   private def asJavaHashMap(params: scala.collection.Map[String, Any]) = {
@@ -112,12 +107,11 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery]) {
 object CodeGenerator {
   type SourceSink = Option[(String, String) => Unit]
 
-  def generateCode[T](structure: CodeStructure[T])(instructions: Seq[Instruction], operatorIds: Map[String, Id], columns: Seq[String], sources:SourceSink=None)(implicit context: CodeGenContext): T = {
-    structure.generateQuery(packageName, Namer.newClassName(), columns, operatorIds, sources) { accept =>
+  def generateCode[T](structure: CodeStructure[T])(instructions: Seq[Instruction], operatorIds: Map[String, Id],
+                                                   columns: Seq[String], conf: CodeGenConfiguration)(implicit context: CodeGenContext): CodeStructureResult[T] = {
+    structure.generateQuery(Namer.newClassName(), columns, operatorIds, conf) { accept =>
       instructions.foreach(insn => insn.init(accept))
       instructions.foreach(insn => insn.body(accept))
     }
   }
-
-  private val packageName = "org.neo4j.cypher.internal.compiler.v3_0.generated"
 }

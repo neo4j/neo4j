@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import java.lang.Boolean.FALSE
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
@@ -54,7 +53,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService, logProvider: 
   private val lastCommittedTxId = LastCommittedTxIdProvider(queryService)
   protected val kernelMonitors: monitoring.Monitors = queryService.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
   private val compilationTracer: CompilationTracer = {
-    if(optGraphSetting(queryService, GraphDatabaseSettings.cypher_compiler_tracing, FALSE))
+    if( true) //optGraphSetting(queryService, GraphDatabaseSettings.cypher_compiler_tracing, FALSE))
       new TimingCompilationTracer(kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
     else
       CompilationTracer.NO_COMPILATION_TRACING

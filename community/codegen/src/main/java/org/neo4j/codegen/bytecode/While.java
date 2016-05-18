@@ -17,22 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.codegen;
+package org.neo4j.codegen.bytecode;
 
-public class TryBlock extends CodeBlock
+
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+
+import static org.objectweb.asm.Opcodes.GOTO;
+
+public class While implements Block
 {
-    TryBlock( CodeBlock parent )
+    private final MethodVisitor methodVisitor;
+    private final Label l0;
+    private final Label l1;
+
+    public While( MethodVisitor methodVisitor, Label l0, Label l1 )
     {
-        super( parent );
+        this.methodVisitor = methodVisitor;
+        this.l0 = l0;
+        this.l1 = l1;
     }
 
-    public CodeBlock catchBlock(Parameter exception)
+    @Override
+    public void endBlock()
     {
-        return emitCatch(exception);
-    }
-
-    public CodeBlock finallyBlock()
-    {
-        return emitFinally();
+        methodVisitor.visitJumpInsn( GOTO, l0 );
+        methodVisitor.visitLabel( l1 );
     }
 }

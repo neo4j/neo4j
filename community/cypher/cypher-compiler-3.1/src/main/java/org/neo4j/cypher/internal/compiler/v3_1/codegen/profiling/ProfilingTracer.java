@@ -39,14 +39,7 @@ public class ProfilingTracer implements QueryExecutionTracer
     {
         long nanoTime();
 
-        Clock SYSTEM_TIMER = new Clock()
-        {
-            @Override
-            public long nanoTime()
-            {
-                return System.nanoTime();
-            }
-        };
+        Clock SYSTEM_TIMER = System::nanoTime;
     }
 
     private static final Data ZERO = new Data();

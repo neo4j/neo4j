@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir
 
-import java.time.Clock
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
@@ -32,8 +31,9 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, InternalRes
 import org.neo4j.cypher.internal.compiler.v3_1.{CostBasedPlannerName, ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
+import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_1.{GeneratedQueryStructure, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.security.AccessMode
@@ -52,7 +52,7 @@ trait CodeGenSugar extends MockitoSugar {
     val statistics: GraphStatistics = mock[GraphStatistics]
     val context = mock[PlanContext]
     doReturn(statistics).when(context).statistics
-    new CodeGenerator(GeneratedQueryStructure).generate(plan, context, Clock.systemUTC(), semanticTable, CostBasedPlannerName.default)
+    new CodeGenerator(GeneratedQueryStructure).generate(plan, context, semanticTable, CostBasedPlannerName.default)
   }
 
   def compileAndExecute(plan: LogicalPlan,
@@ -105,12 +105,14 @@ trait CodeGenSugar extends MockitoSugar {
     rows
   }
 
+  def codeGenConfiguration = CodeGenConfiguration(mode = ByteCodeMode)
+
   def compile(instructions: Seq[Instruction], columns: Seq[String], operatorIds: Map[String, Id] = Map.empty): GeneratedQuery = {
     //In reality the same namer should be used for construction Instruction as in generating code
     //these tests separate the concerns so we give this namer non-standard prefixes
-    CodeGenerator.generateCode(GeneratedQueryStructure)(instructions, operatorIds, columns)(
+    CodeGenerator.generateCode(GeneratedQueryStructure)(instructions, operatorIds, columns, codeGenConfiguration)(
       new CodeGenContext(new SemanticTable(), Map.empty, new Namer(
-        new AtomicInteger(0), varPrefix = "TEST_VAR", methodPrefix = "TEST_METHOD")))
+        new AtomicInteger(0), varPrefix = "TEST_VAR", methodPrefix = "TEST_METHOD"))).query
   }
 
   def newInstance(clazz: GeneratedQuery,

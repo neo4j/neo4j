@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure, Variable}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: String)
   extends CodeGenExpression {
@@ -34,13 +34,15 @@ case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: St
 
     structure.incrementDbHits()
     if (nodeVariable.nullable)
-      structure.nullable(nodeVariable.name, nodeVariable.cypherType,
-                         structure.hasLabel(nodeVariable.name, labelVariable, localName))
+      structure.nullableReference(nodeVariable.name, CodeGenType.primitiveNode,
+                                  structure.box(
+                                    structure.hasLabel(nodeVariable.name, labelVariable, localName), CodeGenType.primitiveBool))
     else
       structure.hasLabel(nodeVariable.name, labelVariable, localName)
   }
 
   override def nullable(implicit context: CodeGenContext) = nodeVariable.nullable
 
-  override def cypherType(implicit context: CodeGenContext): CypherType = CTBoolean
+  override def codeGenType(implicit context: CodeGenContext) =
+    if (nullable) CodeGenType(CTBoolean, ReferenceType) else CodeGenType(CTBoolean, BoolType)
 }

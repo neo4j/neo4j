@@ -28,26 +28,26 @@ case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends Code
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  val validTypes = Seq(CTString, CTFloat, CTInteger, CTList(CTAny))
+  override def name: String = "add"
 
-  override def cypherType(implicit context: CodeGenContext) = (lhs.cypherType, rhs.cypherType) match {
-    // Strings
-    case (CTString, CTString) => CTString
+  override def codeGenType(implicit context: CodeGenContext) = (lhs.codeGenType.ct, rhs.codeGenType.ct) match {
 
     // Collections
-    case (ListType(left), ListType(right)) => ListType(left leastUpperBound right)
-    case (ListType(innerType), singleElement) => ListType(innerType leastUpperBound singleElement)
-    case (singleElement, ListType(innerType)) => ListType(innerType leastUpperBound singleElement)
+    case (ListType(left), ListType(right)) =>
+      CodeGenType(ListType(left leastUpperBound right), ReferenceType)
+    case (ListType(innerType), singleElement) =>
+      CodeGenType(ListType(innerType leastUpperBound singleElement), ReferenceType)
+    case (singleElement, ListType(innerType)) => CodeGenType(ListType(innerType leastUpperBound singleElement), ReferenceType)
+
+    // Strings
+    case (CTString, _) => CodeGenType(CTString, ReferenceType)
+    case (_, CTString) => CodeGenType(CTString, ReferenceType)
 
     // Numbers
-    case (CTInteger, CTInteger) => CTInteger
-    case (Number(_), Number(_)) => CTFloat
+    case (CTInteger, CTInteger) => CodeGenType(CTInteger, ReferenceType)
+    case (Number(_), Number(_)) => CodeGenType(CTFloat, ReferenceType)
 
     // Runtime we'll figure it out
-    case _ => CTAny
-  }
-
-  object Number {
-    def unapply(x: CypherType): Option[CypherType] = if (CTNumber.isAssignableFrom(x)) Some(x) else None
+    case _ => CodeGenType.Any
   }
 }

@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
-import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 
 trait CodeGenExpression {
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
   def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E
   def nullable(implicit context: CodeGenContext): Boolean
-  def cypherType(implicit context: CodeGenContext): CypherType
+  def codeGenType(implicit context: CodeGenContext): CodeGenType
 }

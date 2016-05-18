@@ -30,12 +30,12 @@ import org.neo4j.codegen.MethodEmitter;
 import org.neo4j.codegen.Parameter;
 import org.neo4j.codegen.TypeReference;
 
-class ClassWriter implements ClassEmitter
+class ClassSourceWriter implements ClassEmitter
 {
     private final StringBuilder target;
     final Configuration configuration;
 
-    ClassWriter( StringBuilder target, Configuration configuration )
+    ClassSourceWriter( StringBuilder target, Configuration configuration )
     {
         this.target = target;
         this.configuration = configuration;
@@ -89,23 +89,18 @@ class ClassWriter implements ClassEmitter
             if ( signature.isStatic() )
             {
                 target.append( "    static\n    {\n" );
-                return new MethodWriter( target, this );
+                return new MethodSourceWriter( target, this );
             }
             else
             {
-                target.append( "    public " );
+                target.append( "    " ).append( Modifier.toString( signature.modifiers() ) ).append( " " );
                 typeParameters( target, signature );
                 target.append( signature.declaringClass().simpleName() );
             }
         }
         else
         {
-            target.append( "    " );
-            if ( signature.isStatic() )
-            {
-                target.append( "static " );
-            }
-            target.append( "public " );
+            target.append( "    " ).append( Modifier.toString( signature.modifiers() ) ).append( " " );
             typeParameters( target, signature );
             target.append( signature.returnType().name() ).append( " " ).append( signature.name() );
         }
@@ -128,7 +123,7 @@ class ClassWriter implements ClassEmitter
             sep = ", ";
         }
         target.append( "\n    {\n" );
-        return new MethodWriter( target, this );
+        return new MethodSourceWriter( target, this );
     }
 
     private static void typeParameters( StringBuilder target, MethodDeclaration method )
@@ -175,7 +170,7 @@ class ClassWriter implements ClassEmitter
         if ( value != null )
         {
             append( " = " );
-            value.accept( new MethodWriter( target, this ) );
+            value.accept( new MethodSourceWriter( target, this ) );
         }
         append( ";\n" );
     }

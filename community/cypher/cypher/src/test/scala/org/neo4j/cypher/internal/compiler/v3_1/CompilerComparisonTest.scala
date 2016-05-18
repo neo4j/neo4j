@@ -34,7 +34,8 @@ import org.neo4j.cypher.internal.compiler.v3_1.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_1.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_1.parser.CypherParser
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
-import org.neo4j.cypher.internal.spi.v3_1.{GeneratedQueryStructure, TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.v3_1.{TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
@@ -363,7 +364,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   case class QueryResult(queryName: String, executionResults: Seq[QueryExecutionResult], queryText: String) {
     def toXml: Elem = {
-      val min = executionResults.map(_.dbHits).flatten.min
+      val min = executionResults.flatMap(_.dbHits).min
 
       <tr>
         <td>

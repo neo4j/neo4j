@@ -25,7 +25,7 @@ public interface ExpressionVisitor
 
     void invoke( MethodReference method, Expression[] arguments );
 
-    void load( TypeReference type, String name );
+    void load( LocalVariable variable);
 
     void getField( Expression target, FieldReference field );
 
@@ -41,15 +41,37 @@ public interface ExpressionVisitor
 
     void ternary( Expression test, Expression onTrue, Expression onFalse );
 
-    void eq( Expression lhs, Expression rhs );
+    void ternaryOnNull( Expression test, Expression onTrue, Expression onFalse );
+
+    void ternaryOnNonNull( Expression test, Expression onTrue, Expression onFalse );
+
+    void equal( Expression lhs, Expression rhs, TypeReference type );
 
     void or( Expression lhs, Expression rhs );
 
-    void add( Expression lhs, Expression rhs );
+    void addInts( Expression lhs, Expression rhs );
 
-    void gt( Expression lhs, Expression rhs );
+    void addLongs( Expression lhs, Expression rhs );
 
-    void sub( Expression lhs, Expression rhs );
+    void addDoubles( Expression lhs, Expression rhs );
+
+    void gt( Expression lhs, Expression rhs, TypeReference type );
+
+    void subtractInts( Expression lhs, Expression rhs );
+
+    void subtractLongs( Expression lhs, Expression rhs );
+
+    void subtractDoubles( Expression lhs, Expression rhs );
+
+    void multiplyLongs( Expression lhs, Expression rhs );
+
+    void multiplyDoubles( Expression lhs, Expression rhs );
 
     void cast( TypeReference type, Expression expression );
+
+    void newArray( TypeReference type, Expression... constants );
+
+    void longToDouble( Expression expression );
+
+    void pop( Expression expression );
 }

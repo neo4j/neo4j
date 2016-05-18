@@ -27,7 +27,7 @@ import org.scalatest._
 
 class CodeGenExpressionCompilationTest extends CypherFunSuite with Matchers with CodeGenSugar {
 
-  private val traceIds = Map("X" -> null, "id" -> null)
+  private val traceIds = Map("id" -> null)
 
   case class Operation(name: String,
                        execute: (CodeGenExpression, CodeGenExpression) => CodeGenExpression,

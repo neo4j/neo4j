@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir
 
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.CodeGenExpression
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{CodeGenExpression, CodeGenType}
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure, Variable}
 
 case class IndexUniqueSeek(opName: String, labelName: String, propName: String, descriptorVar: String,
@@ -39,7 +39,7 @@ case class IndexUniqueSeek(opName: String, labelName: String, propName: String, 
     generator.trace(opName) { body =>
       body.incrementDbHits()
       body.indexUniqueSeek(node.name, descriptorVar, expression.generateExpression(body))
-      body.ifStatement(body.notNull(node.name, node.cypherType)) { ifBody =>
+      body.ifNotStatement(body.isNull(node.name, CodeGenType.primitiveNode)) { ifBody =>
         ifBody.incrementRows()
         inner.body(ifBody)
       }

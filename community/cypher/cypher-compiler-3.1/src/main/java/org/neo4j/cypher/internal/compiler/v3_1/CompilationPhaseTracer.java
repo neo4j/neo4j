@@ -47,11 +47,6 @@ public interface CompilationPhaseTracer
             return NONE_PHASE;
         }
     };
-    CompilationPhaseEvent NONE_PHASE = new CompilationPhaseEvent()
-    {
-        @Override
-        public void close()
-        {
-        }
+    CompilationPhaseEvent NONE_PHASE = () -> {
     };
 }

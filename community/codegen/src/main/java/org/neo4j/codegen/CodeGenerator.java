@@ -32,16 +32,16 @@ public abstract class CodeGenerator
     private long generation, classes;
     private ByteCodeVisitor byteCodeVisitor = DO_NOTHING;
 
-    public static CodeGenerator generateCode( CodeGeneratorOption... options )
+    public static CodeGenerator generateCode( CodeGenerationStrategy<?> strategy, CodeGeneratorOption... options )
             throws CodeGenerationNotSupportedException
     {
-        return generateCode( Thread.currentThread().getContextClassLoader(), options );
+        return generateCode( Thread.currentThread().getContextClassLoader(), strategy, options );
     }
 
-    public static CodeGenerator generateCode( ClassLoader loader, CodeGeneratorOption... options )
+    public static CodeGenerator generateCode( ClassLoader loader, CodeGenerationStrategy<?> strategy, CodeGeneratorOption... options )
             throws CodeGenerationNotSupportedException
     {
-        return codeGenerator( requireNonNull( loader, "ClassLoader" ), options );
+        return codeGenerator( requireNonNull( loader, "ClassLoader" ), strategy, options );
     }
 
     public CodeGenerator( ClassLoader loader )

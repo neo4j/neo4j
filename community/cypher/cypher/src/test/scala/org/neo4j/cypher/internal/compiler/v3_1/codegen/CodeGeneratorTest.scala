@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.codegen
 
-import java.time.Clock
-
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
@@ -37,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 import org.neo4j.cypher.internal.frontend.v3_1.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_1.{ParameterNotFoundException, SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.spi.TransactionalContextWrapperv3_1
-import org.neo4j.cypher.internal.spi.v3_1.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
@@ -48,7 +46,7 @@ import scala.collection.JavaConverters
 
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val generator = new CodeGenerator(GeneratedQueryStructure)
+  private val generator = new CodeGenerator(GeneratedQueryStructure, CodeGenConfiguration(mode = ByteCodeMode))
 
   test("all nodes scan") { // MATCH a RETURN a
     //given
@@ -159,7 +157,8 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     //given
     val plan = ProduceResult(List("a", "b"),
         Expand(
-          AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+          AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"),
+          SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -293,6 +292,24 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
   }
 
+  test("expand into self loop") {
+    //given
+    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
+    val expandInto = Expand(
+      scanT1, IdName("a"), SemanticDirection.INCOMING,
+      Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(solved)
+
+    val plan = ProduceResult(List("a"), expandInto)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getNodesFromResult(compiled, "a")
+
+    result shouldBe empty
+  }
+
   test("expand into on top of expand all") {
     //given
     val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
@@ -302,7 +319,6 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val expandInto = Expand(
       expandAll, IdName("b"), SemanticDirection.INCOMING,
       Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(solved)
-
 
     val plan = ProduceResult(List("a", "b"), expandInto)
 
@@ -317,6 +333,28 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> bNode, "b" -> dNode),
       Map("a" -> cNode, "b" -> eNode)
     ))
+  }
+
+  test("optional expand into self loop") {
+    //given
+    val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
+    val optionalExpandInto = OptionalExpand(
+      scanT1, IdName("a"), SemanticDirection.OUTGOING,
+      Seq.empty, IdName("a"), IdName("r2"), ExpandInto, Seq(HasLabels(varFor("a"), Seq(LabelName("T2")(pos)))(pos)))(solved)
+
+
+    val plan = ProduceResult(List("a", "r2"), optionalExpandInto)
+
+    //when
+    val compiled = compileAndExecute(plan)
+
+    //then
+    val result = getResult(compiled, "a", "r2")
+
+    result should equal(List(
+      Map("a" -> aNode, "r2" -> null),
+      Map("a" -> bNode, "r2" -> null),
+      Map("a" -> cNode, "r2" -> null)))
   }
 
   test("optional expand into on top of expand all") {
@@ -501,7 +539,6 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> cNode, "b" -> eNode, "c" -> gNode)
     ))
   }
-
 
   test("hash join on top of hash join") {
 
@@ -787,7 +824,6 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     when(visitor.visit(any[InternalResultRow])).thenThrow(exception)
     intercept[RuntimeException] {
       compiled.accept(visitor)
-
     }
     verify(closer).close(success = false)
   }
@@ -843,7 +879,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def compile(plan: LogicalPlan) = {
-    generator.generate(plan, newMockedPlanContext, Clock.systemUTC(), semanticTable, CostBasedPlannerName.default)
+    generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }
 
   private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {

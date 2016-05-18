@@ -34,4 +34,6 @@ case class ScanForLabel(opName: String, labelName: String, labelVar: String) ext
   override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
                              (implicit context: CodeGenContext) =
     generator.nextNode(nextVar.name, iterVar)
+
+  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextNode(iterVar)
 }

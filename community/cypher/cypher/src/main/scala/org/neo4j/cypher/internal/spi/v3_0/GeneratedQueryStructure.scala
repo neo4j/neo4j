@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_0
 
 import java.util
+import java.util.function.Consumer
 
 import org.neo4j.codegen
 import org.neo4j.codegen.CodeGeneratorOption._
@@ -27,7 +28,7 @@ import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen._
-import org.neo4j.codegen.source.SourceVisitor
+import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
@@ -58,7 +59,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   override def generateQuery(packageName: String, className: String, columns: Seq[String], operatorIds: Map[String, Id], sourceSink: Option[SourceSink])
                             (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
     val generator: codegen.CodeGenerator = try {
-      codegen.CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, sourceSink.map(sink => new SourceVisitor {
+      codegen.CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, SourceCode.SOURCECODE, sourceSink.map(sink => new SourceVisitor {
         override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
           sink.apply(reference.name(), sourceCode.toString)
       }).getOrElse(BLANK_OPTION))
@@ -76,7 +77,8 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
         params = clazz.field(typeRef[util.Map[String, Object]], "params"),
         closeable = clazz.field(typeRef[SuccessfulCloseable], "closeable"),
-        success = clazz.generate(Templates.SUCCESS))
+        success = clazz.generate(Templates.SUCCESS),
+        close = clazz.generate(Templates.CLOSE))
       // the "COLUMNS" static field
       clazz.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList(
         columns.map(key => Expression.constant(key))))
@@ -98,14 +100,11 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         Parameter.param(parameterizedType(classOf[InternalResultVisitor[_]], typeParameter("E")), "visitor")).
         parameterizedWith("E", extending(typeRef[Exception])).
         throwsException(typeParameter("E")))) { method =>
-        using(method.tryBlock()) { body =>
-          body.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
-          block(Method(fields, body, new AuxGenerator(packageName, generator)))
-          body.expression(Expression.invoke(body.self(), fields.success))
-          using(body.finallyBlock()) { then =>
-            then.expression(Expression.invoke(body.self(), close))
-          }
-        }
+        method.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
+        block(Method(fields, method, new AuxGenerator(packageName, generator)))
+        method.expression(Expression.invoke(method.self(), fields.success))
+        method.expression(Expression.invoke(method.self(), fields.success))
+        method.expression(Expression.invoke(method.self(), fields.close))
       }
       clazz.handle()
     }
@@ -185,7 +184,8 @@ private case class Fields(closer: FieldReference,
                           tracer: FieldReference,
                           params: FieldReference,
                           closeable: FieldReference,
-                          success: MethodReference)
+                          success: MethodReference,
+                          close: MethodReference)
 
 private class AuxGenerator(val packageName: String, val generator: codegen.CodeGenerator) {
 
@@ -263,7 +263,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     generator.assign(typeRef[Long], toNodeVar, DirectionConverter.toGraphDb(direction) match {
       case Direction.INCOMING => startNode
       case Direction.OUTGOING => endNode
-      case Direction.BOTH => Expression.ternary(Expression.eq(startNode, generator.load(fromNodeVar)), endNode, startNode)
+      case Direction.BOTH => Expression.ternary(Expression.equal(startNode, generator.load(fromNodeVar), typeRef[Long]), endNode, startNode)
     })
     generator.assign(typeRef[Long], relVar, Expression.invoke(generator.load(extractor), Methods.relationship))
   }
@@ -328,13 +328,13 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def decreaseCounterAndCheckForZero(name: String): Expression = {
     val local = locals(name)
-    generator.assign(local, Expression.sub(local, Expression.constant(1)))
-    Expression.eq(Expression.constant(0), local)
+    generator.assign(local, Expression.subtractInts(local, Expression.constant(1)))
+    Expression.equal(Expression.constant(0), local, typeRef[Int])
   }
 
   override def counterEqualsZero(name: String): Expression = {
     val local = locals(name)
-    Expression.eq(Expression.constant(0), local)
+    Expression.equal(Expression.constant(0), local, typeRef[Int])
   }
 
   override def setInRow(column: String, value: Expression) =
@@ -354,7 +354,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def nullable(varName: String, cypherType: CypherType, onSuccess: Expression) = {
     Expression.ternary(
-      Expression.eq(nullValue(cypherType), generator.load(varName)),
+      Expression.equal(nullValue(cypherType), generator.load(varName), typeRef[Object]),
       Expression.constant(null),
       onSuccess)
   }
@@ -366,10 +366,12 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
   override def trace[V](planStepId: String)(block: MethodStructure[Expression]=>V) = if(!tracing) block(this)
   else {
     val eventName = s"event_$planStepId"
-    using(generator.tryBlock(typeRef[QueryExecutionEvent], eventName, traceEvent(planStepId))) { body =>
-      block(copy(event = Some(eventName),
-        generator = body))
-    }
+    generator.assign(typeRef[QueryExecutionEvent], eventName, traceEvent(planStepId))
+    val result = block(copy(event = Some(eventName), generator = generator))
+    Expression.invoke(tracer, Methods.executeOperator,
+                      Expression.invoke(generator.load(eventName),
+                                        GeneratedQueryStructure.method[QueryExecutionEvent, Unit]("close")))
+    result
   }
 
   private def traceEvent(planStepId: String) = Expression.invoke(tracer, Methods.executeOperator,
@@ -397,7 +399,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
 
   override def threeValuedEquals(lhs: Expression, rhs: Expression) = Expression.invoke(Methods.ternaryEquals, lhs, rhs)
 
-  override def eq(lhs: Expression, rhs: Expression) = Expression.eq(lhs, rhs)
+  override def eq(lhs: Expression, rhs: Expression) = Expression.equal(lhs, rhs, typeRef[Long])
 
   override def or(lhs: Expression, rhs: Expression) = Expression.or(lhs, rhs)
 
@@ -407,7 +409,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
     generator.assign(lowerType(cypherType), varName, nullValue(cypherType))
 
   override def notNull(varName: String, cypherType: CypherType) =
-    Expression.not(Expression.eq(nullValue(cypherType), generator.load(varName)))
+    Expression.not(Expression.equal(nullValue(cypherType), generator.load(varName), typeRef[Object]))
 
 
   override def nodeGetAllRelationships(iterVar: String, nodeVar: String, direction: SemanticDirection) = {
@@ -532,10 +534,10 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
         Expression.invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
       generator.expression(Expression.invoke(generator.load(tableVar), Methods.countingTablePut, generator.load(keyVar),
         Expression.ternary(
-          Expression.eq(generator.load(countName), Expression
-            .get(staticField[LongKeyIntValueTable, Int]("NULL"))),
+          Expression.equal(generator.load(countName), Expression
+            .get(staticField[LongKeyIntValueTable, Int]("NULL")), typeRef[Int]),
           Expression.constant(1),
-          Expression.add(generator.load(countName), Expression.constant(1)))))
+          Expression.addInts(generator.load(countName), Expression.constant(1)))))
     case LongsToCountTable =>
       val countName = context.namer.newVarName()
       val keyName = context.namer.newVarName()
@@ -543,9 +545,9 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       generator.assign(typeRef[java.lang.Integer], countName, Expression.invoke(generator.load(tableVar), Methods.countingTableCompositeKeyGet, generator.load(keyName)))
       generator.expression(Expression.invoke(generator.load(tableVar), Methods.countingTableCompositeKeyPut,
         generator.load(keyName), Expression.ternary(
-          Expression.eq(generator.load(countName), Expression.constant(null)),
+          Expression.equal(generator.load(countName), Expression.constant(null), typeRef[Int]),
           Expression.constant(1),
-          Expression.add(generator.load(countName), Expression.constant(1)))))
+          Expression.addInts(generator.load(countName), Expression.constant(1)))))
   }
 
   override def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])(block: MethodStructure[Expression] => Unit) = tableType match {
@@ -554,9 +556,9 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       val keyVar = keyVars.head
       val times = generator.declare(typeRef[Int], context.namer.newVarName())
       generator.assign(times, Expression.invoke(generator.load(tableVar), Methods.countingTableGet, generator.load(keyVar)))
-      using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
+      using(generator.whileLoop(Expression.gt(times, Expression.constant(0), typeRef[Int]))) { body =>
         block(copy(generator=body))
-        body.assign(times, Expression.sub(times, Expression.constant(1)))
+        body.assign(times, Expression.subtractInts(times, Expression.constant(1)))
       }
     case LongsToCountTable =>
       val times = generator.declare(typeRef[Int], context.namer.newVarName())
@@ -566,12 +568,12 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
         Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*)))
       generator.assign(times,
         Expression.ternary(
-          Expression.eq(generator.load(intermediate.name()), Expression.constant(null)),
+          Expression.equal(generator.load(intermediate.name()), Expression.constant(null), typeRef[Object]),
           Expression.constant(-1), generator.load(intermediate.name())))
 
-      using(generator.whileLoop(Expression.gt(times, Expression.constant(0)))) { body =>
+      using(generator.whileLoop(Expression.gt(times, Expression.constant(0), typeRef[Int]))) { body =>
         block(copy(generator=body))
-        body.assign(times, Expression.sub(times, Expression.constant(1)))
+        body.assign(times, Expression.subtractInts(times, Expression.constant(1)))
       }
 
     case tableType@LongToListTable(structure,localVars) =>
@@ -583,7 +585,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
       generator.assign(list, Expression.invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar)))
-      using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null))))) { onTrue =>
+      using(generator.ifStatement(Expression.not(Expression.equal(list, Expression.constant(null), typeRef[Object])))) { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (local, field) =>
@@ -600,7 +602,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       val elementName = context.namer.newVarName()
 
       generator.assign(list, Expression.invoke(generator.load(tableVar),hashTable.get, Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*)))
-      using(generator.ifStatement(Expression.not(Expression.eq(list, Expression.constant(null))))) { onTrue =>
+      using(generator.ifStatement(Expression.not(Expression.equal(list, Expression.constant(null), typeRef[Object])))) { onTrue =>
         using(onTrue.forEach(Parameter.param(hashTable.valueType, elementName), list)) { forEach =>
           localVars.foreach {
             case (local, field) =>
@@ -628,7 +630,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
       val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
       generator.assign(list, Expression
         .invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar))) // list = tableVar.get(keyVar);
-      using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName))))
+      using(generator.ifStatement(Expression.equal(Expression.constant(null), generator.load(listName), typeRef[Object])))
       { onTrue => // if (null == list)
         onTrue.assign(list, Templates.newInstance(hashTable.listType)) // list = new ListType();
         onTrue.expression(Expression.invoke(generator.load(tableVar), hashTable.put, generator.load(keyVar),
@@ -646,7 +648,7 @@ private case class Method(fields: Fields, generator: CodeBlock, aux:AuxGenerator
         .assign(typeRef[CompositeKey], keyName, Expression.invoke(Methods.compositeKey, keyVars.map(generator.load): _*))
       generator.assign(list, Expression
         .invoke(generator.load(tableVar), hashTable.get, generator.load(keyName))) // list = tableVar.get(keyVar);
-      using(generator.ifStatement(Expression.eq(Expression.constant(null), generator.load(listName))))
+      using(generator.ifStatement(Expression.equal(Expression.constant(null), generator.load(listName), typeRef[Object])))
       { onTrue => // if (null == list)
         onTrue.assign(list, Templates.newInstance(hashTable.listType)) // list = new ListType();
         onTrue.expression(Expression.invoke(generator.load(tableVar), hashTable.put, generator.load(keyName),
@@ -849,22 +851,28 @@ private object Templates {
     methodReference(typeRef[util.Arrays], typeRef[util.List[String]], "asList", typeRef[Array[String]]),
     values: _*)
 
-  def handleExceptions[V](generate: CodeBlock, ro: FieldReference)(block: CodeBlock => V) = using(generate.tryBlock()) { body =>
-    // the body of the try
-    val result = block(body)
-    // the catch block
-    using(body.catchBlock(param[KernelException]("e"))) { handle =>
-      handle.throwException(Expression.invoke(
-        Expression.newInstance(typeRef[CypherExecutionException]),
-        MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
-        Expression.invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
-                          Expression.invoke(
-            Expression.newInstance(typeRef[StatementTokenNameLookup]),
-            MethodReference.constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-            Expression.get(handle.self(), ro))),
-        handle.load("e")
-      ))
-    }
+  def handleExceptions[V](generate: CodeBlock, ro: FieldReference)(block: CodeBlock => V) = {
+    var result = null.asInstanceOf[V]
+
+    generate.tryCatch(new Consumer[CodeBlock] {
+      override def accept(body: CodeBlock) = {
+        result = block(body)
+      }
+    }, new Consumer[CodeBlock]() {
+      override def accept(handle: CodeBlock) = {
+        handle.throwException(Expression.invoke(
+          Expression.newInstance(typeRef[CypherExecutionException]),
+          MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
+          Expression.invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
+                            Expression.invoke(
+                              Expression.newInstance(typeRef[StatementTokenNameLookup]),
+                              MethodReference
+                                .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
+                              Expression.get(handle.self(), ro))), handle.load("e")
+        ))
+      }
+    }, param[KernelException]("e"))
+
     result
   }
 

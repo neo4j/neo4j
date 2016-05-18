@@ -34,14 +34,14 @@ public abstract class Expression extends ExpressionTemplate
 
     public abstract void accept( ExpressionVisitor visitor );
 
-    public static Expression gt( final Expression lhs, final Expression rhs )
+    public static Expression gt( final Expression lhs, final Expression rhs, TypeReference type )
     {
         return new Expression()
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.gt( lhs, rhs );
+                visitor.gt( lhs, rhs, type );
             }
         };
     }
@@ -58,50 +58,122 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
-    public static Expression eq( final Expression lhs, final Expression rhs )
+    public static Expression equal( final Expression lhs, final Expression rhs, TypeReference type )
     {
         return new Expression()
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.eq( lhs, rhs );
+                visitor.equal( lhs, rhs, type );
             }
         };
     }
 
-    static Expression load( final TypeReference type, final String name )
+    public static Expression load( final LocalVariable variable)
     {
         return new Expression()
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.load( type, name );
+                visitor.load( variable );
             }
         };
     }
 
-    public static Expression add( final Expression lhs, final Expression rhs )
+    public static Expression addInts( final Expression lhs, final Expression rhs )
     {
         return new Expression()
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.add( lhs, rhs );
+                visitor.addInts( lhs, rhs );
             }
         };
     }
 
-    public static Expression sub( final Expression lhs, final Expression rhs )
+    public static Expression addLongs( final Expression lhs, final Expression rhs )
     {
         return new Expression()
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.sub( lhs, rhs );
+                visitor.addLongs( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression addDoubles( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.addDoubles( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression subtractInts( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.subtractInts( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression subtractLongs( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.subtractLongs( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression subtractDoubles( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.subtractDoubles( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression multiplyLongs( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.multiplyLongs( lhs, rhs );
+            }
+        };
+    }
+
+    public static Expression multiplyDoubles( final Expression lhs, final Expression rhs )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.multiplyDoubles( lhs, rhs );
             }
         };
     }
@@ -123,6 +195,18 @@ public abstract class Expression extends ExpressionTemplate
             public void accept( ExpressionVisitor visitor )
             {
                 visitor.constant( value );
+            }
+        };
+    }
+
+    public static Expression newArray( TypeReference type, Expression...constants )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.newArray( type, constants );
             }
         };
     }
@@ -149,6 +233,30 @@ public abstract class Expression extends ExpressionTemplate
             public void accept( ExpressionVisitor visitor )
             {
                 visitor.getStatic( field );
+            }
+        };
+    }
+
+    public static Expression ternaryOnNull( final Expression test, final Expression onTrue, final Expression onFalse )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.ternaryOnNull( test, onTrue, onFalse );
+            }
+        };
+    }
+
+    public static Expression ternaryOnNonNull( final Expression test, final Expression onTrue, final Expression onFalse )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.ternaryOnNonNull( test, onTrue, onFalse );
             }
         };
     }
@@ -232,6 +340,30 @@ public abstract class Expression extends ExpressionTemplate
             public void accept( ExpressionVisitor visitor )
             {
                 visitor.not( expression );
+            }
+        };
+    }
+
+    public static Expression toDouble( final Expression expression )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.longToDouble( expression );
+            }
+        };
+    }
+
+    public static Expression pop( Expression expression )
+    {
+        return new Expression()
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.pop( expression );
             }
         };
     }

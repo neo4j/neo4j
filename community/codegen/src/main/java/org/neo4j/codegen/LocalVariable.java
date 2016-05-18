@@ -23,11 +23,13 @@ public class LocalVariable extends Expression
 {
     private final TypeReference type;
     private final String name;
+    private final int index;
 
-    LocalVariable( TypeReference type, String name )
+    LocalVariable( TypeReference type, String name, int index )
     {
         this.type = type;
         this.name = name;
+        this.index = index;
     }
 
     public TypeReference type()
@@ -40,9 +42,14 @@ public class LocalVariable extends Expression
         return name;
     }
 
+    public int index()
+    {
+        return index;
+    }
+
     @Override
     public void accept( ExpressionVisitor visitor )
     {
-        visitor.load( type, name );
+        visitor.load( this );
     }
 }

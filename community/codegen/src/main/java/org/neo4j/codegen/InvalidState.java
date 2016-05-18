@@ -19,6 +19,8 @@
  */
 package org.neo4j.codegen;
 
+import java.util.function.Consumer;
+
 class InvalidState implements MethodEmitter
 {
     public static final ClassEmitter CLASS_DONE = new ClassEmitter()
@@ -81,7 +83,7 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void assign( TypeReference type, String name, Expression value )
+    public void assign( LocalVariable variable, Expression value )
     {
         throw new IllegalStateException( reason );
     }
@@ -99,7 +101,19 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void beginFinally()
+    public void beginIfNot( Expression test )
+    {
+        throw new IllegalStateException( reason );
+    }
+
+    @Override
+    public void beginIfNull( Expression test )
+    {
+        throw new IllegalStateException( reason );
+    }
+
+    @Override
+    public void beginIfNonNull( Expression test )
     {
         throw new IllegalStateException( reason );
     }
@@ -111,7 +125,7 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void beginTry( Resource... resources )
+    public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block )
     {
         throw new IllegalStateException( reason );
     }
@@ -123,26 +137,15 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
-    public void beginCatch( Parameter exception )
-    {
-        throw new IllegalStateException( reason );
-    }
-
-    @Override
     public void declare( LocalVariable local )
     {
         throw new IllegalStateException( reason );
     }
 
     @Override
-    public void assign( LocalVariable local, Expression value )
+    public void assignVariableInScope( LocalVariable local, Expression value )
     {
         throw new IllegalStateException( reason );
     }
 
-    @Override
-    public void beginForEach( Parameter local, Expression iterable )
-    {
-        throw new IllegalStateException( reason );
-    }
 }

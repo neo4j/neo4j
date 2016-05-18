@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.{CodeGenContext, MethodStructure}
 
 case class Multiplication(lhs: CodeGenExpression, rhs: CodeGenExpression)
-  extends CodeGenExpression with BinaryOperator with NumericalOpType {
+  extends CodeGenExpression with BinaryOperator {
 
   override def nullable(implicit context: CodeGenContext) = lhs.nullable || rhs.nullable
 
-  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.mul
+  override protected def generator[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = structure.multiply
+
+  override def name: String = "multiply"
 }

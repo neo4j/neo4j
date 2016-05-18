@@ -27,7 +27,7 @@ case class WhileLoop(variable: Variable, producer: LoopDataGenerator, action: In
     val iterator = s"${variable.name}Iter"
     generator.trace(producer.opName) { body =>
       producer.produceIterator(iterator, body)
-      body.whileLoop(body.hasNext(iterator)) { loopBody =>
+      body.whileLoop(producer.hasNext(body, iterator)) { loopBody =>
         loopBody.incrementDbHits()
         loopBody.incrementRows()
         producer.produceNext(variable, iterator, loopBody)

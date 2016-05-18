@@ -74,7 +74,7 @@ object LogicalPlanConverter {
                                                (e: ast.Expression) => ExpressionConverter.createProjection(e)(context))
       val vars = columns.map {
         case (name, expr) =>
-          val variable = Variable(context.namer.newVarName(), expr.cypherType(context), expr.nullable(context))
+          val variable = Variable(context.namer.newVarName(), symbols.CTAny, expr.nullable(context))
           context.addVariable(name, variable)
           variable -> expr
       }
@@ -214,7 +214,6 @@ object LogicalPlanConverter {
         val nodeNames = nodeHashJoin.nodes.map(_.name)
         val notNodeSymbols = lhsSymbols intersect context.variableQueryVariables() diff nodeNames
         val symbols = notNodeSymbols.map(s => s -> context.getVariable(s)).toMap
-
 
         val opName = context.registerOperator(nodeHashJoin)
         val probeTable = BuildProbeTable(opName, probeTableName, joinNodes, symbols)(context)
