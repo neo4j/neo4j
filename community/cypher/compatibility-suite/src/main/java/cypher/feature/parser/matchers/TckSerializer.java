@@ -21,7 +21,6 @@ package cypher.feature.parser.matchers;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -129,9 +128,13 @@ class TckSerializer
         else if ( obj instanceof Map )
         {
             Map<?,?> map = (Map) obj;
-            Map<String,String> output = new HashMap<>( map.size() );
-            map.forEach( ( k, v ) -> output.put( k.toString(), serialize( v ) ) );
-            sb.append( output );
+            sb.append( "{" );
+            String[] comma = new String[]{ "" };
+            map.forEach( ( k, v ) -> {
+                sb.append( comma[0] ).append( k ).append( ": " ).append( serialize( v ) );
+                comma[0] = ", ";
+            } );
+            sb.append( "}" );
         }
         else
         {
