@@ -257,7 +257,6 @@ public class Cluster
         params.put( CoreEdgeClusterSettings.raft_listen_address.name(), "127.0.0.1:" + raftPort );
 
         params.put( CoreEdgeClusterSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
-        params.put( CoreEdgeClusterSettings.pull_interval.name(), String.valueOf( 5 ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         params.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
 
@@ -288,7 +287,6 @@ public class Cluster
 
         final Map<String, String> params = serverParams( "EDGE", serverId, initialHosts );
         params.put(GraphDatabaseSettings.record_format.name(), recordFormat);
-        params.put( CoreEdgeClusterSettings.pull_interval.name(), String.valueOf( 5 ) );
         params.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         params.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         params.put( GraphDatabaseSettings.logs_directory.name(), storeDir.getAbsolutePath() );
