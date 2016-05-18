@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -43,7 +44,7 @@ public class ClusterFormationIT
     private Cluster cluster;
 
     @After
-    public void shutdown()
+    public void shutdown() throws ExecutionException, InterruptedException
     {
         if ( cluster != null )
         {

@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.coreedge.discovery.Cluster;
@@ -58,7 +59,7 @@ public class EdgeServerReplicationIT
     private Cluster cluster;
 
     @After
-    public void shutdown()
+    public void shutdown() throws ExecutionException, InterruptedException
     {
         if ( cluster != null )
         {

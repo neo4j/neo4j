@@ -24,6 +24,7 @@ import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.StoreFiles;
 import org.neo4j.coreedge.catchup.storecopy.edge.CopiedStoreRecovery;
@@ -49,7 +50,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.HaSettings;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
@@ -76,10 +77,12 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.udc.UsageData;
 
+import static java.util.Collections.singletonMap;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 
 /**
@@ -91,12 +94,20 @@ public class EnterpriseEdgeEditionModule extends EditionModule
     public EnterpriseEdgeEditionModule( final PlatformModule platformModule,
                                         DiscoveryServiceFactory discoveryServiceFactory )
     {
+        LogService logging = platformModule.logging;
+        Log userLog = logging.getUserLog( EnterpriseEdgeEditionModule.class );
+        if ( platformModule.config.get( OnlineBackupSettings.online_backup_enabled ) )
+        {
+            userLog.warn( "Backup is not supported on edge servers. Ignoring the configuration setting: "
+                          + OnlineBackupSettings.online_backup_enabled );
+            platformModule.config.augment( singletonMap( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE ) );
+        }
+
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
         formats = StandardV3_0.RECORD_FORMATS;
 
         org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
         Config config = platformModule.config;
-        LogService logging = platformModule.logging;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         PageCache pageCache = platformModule.pageCache;
         File storeDir = platformModule.storeDir;
@@ -161,7 +172,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
                         platformModule.monitors );
 
         TxPollingClient txPollingClient = life.add(
-                new TxPollingClient( platformModule.jobScheduler, config.get( HaSettings.pull_interval ),
+                new TxPollingClient( platformModule.jobScheduler, config.get( CoreEdgeClusterSettings.pull_interval ),
                         platformModule.dependencies.provideDependency( TransactionIdStore.class ), edgeToCoreClient,
                         applyPulledTransactions, new ConnectToRandomCoreServer( discoveryService ), NullLogProvider
                         .getInstance() ) );

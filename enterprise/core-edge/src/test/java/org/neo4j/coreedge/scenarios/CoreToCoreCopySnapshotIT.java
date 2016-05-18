@@ -21,6 +21,7 @@ package org.neo4j.coreedge.scenarios;
 
 import java.io.File;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -51,7 +52,7 @@ public class CoreToCoreCopySnapshotIT
     private int TIMEOUT_MS = 5000;
 
     @After
-    public void shutdown()
+    public void shutdown() throws ExecutionException, InterruptedException
     {
         if ( cluster != null )
         {

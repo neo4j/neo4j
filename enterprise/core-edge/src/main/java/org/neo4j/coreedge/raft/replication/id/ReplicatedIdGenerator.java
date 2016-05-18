@@ -19,9 +19,7 @@
  */
 package org.neo4j.coreedge.raft.replication.id;
 
-import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.ha.id.IdAllocation;
-import org.neo4j.kernel.ha.id.IdRangeIterator;
+import org.neo4j.kernel.impl.store.id.IdType;;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.logging.Log;
@@ -29,8 +27,8 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.Math.max;
 
-import static org.neo4j.kernel.ha.id.IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
-import static org.neo4j.kernel.ha.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
+import static org.neo4j.coreedge.raft.replication.id.IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
+import static org.neo4j.coreedge.raft.replication.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
 public class ReplicatedIdGenerator implements IdGenerator
 {

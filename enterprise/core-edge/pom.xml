@@ -47,14 +47,13 @@
     <dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-ha</artifactId>
+            <artifactId>neo4j-com</artifactId>
             <version>${project.version}</version>
-          <exclusions>
-            <exclusion>
-              <groupId>org.neo4j</groupId>
-              <artifactId>neo4j-backup</artifactId>
-            </exclusion>
-          </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cluster</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
       <dependency>
@@ -128,6 +127,20 @@
       <dependency>
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-logging</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-backup</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-backup</artifactId>
         <version>${project.version}</version>
         <type>test-jar</type>
         <scope>test</scope>

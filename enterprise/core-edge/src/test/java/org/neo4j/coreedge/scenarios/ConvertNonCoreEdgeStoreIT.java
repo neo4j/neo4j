@@ -28,6 +28,7 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
 
 import org.neo4j.coreedge.convert.ConvertClassicStoreCommand;
 import org.neo4j.coreedge.discovery.Cluster;
@@ -77,7 +78,7 @@ public class ConvertNonCoreEdgeStoreIT
     private Cluster cluster;
 
     @After
-    public void shutdown()
+    public void shutdown() throws ExecutionException, InterruptedException
     {
         if ( cluster != null )
         {

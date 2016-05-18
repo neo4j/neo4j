@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -61,7 +62,7 @@ public class ConcurrentLockingIT
     private Cluster cluster;
 
     @After
-    public void shutdown()
+    public void shutdown() throws ExecutionException, InterruptedException
     {
         if ( cluster != null )
         {

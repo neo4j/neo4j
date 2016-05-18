@@ -20,6 +20,7 @@
 package org.neo4j.coreedge.scenarios;
 
 import java.io.File;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,7 +55,7 @@ public class RestartIT
     private Cluster cluster;
 
     @After
-    public void shutdown()
+    public void shutdown() throws ExecutionException, InterruptedException
     {
         if ( cluster != null )
         {
