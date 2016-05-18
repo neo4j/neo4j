@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
- * Manages user-facing locks. Takes a statement and will close it once the lock has been released.
+ * Manages user-facing locks.
  */
 public class PropertyContainerLocker
 {
@@ -66,6 +66,34 @@ public class PropertyContainerLocker
             {
                 throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
             }
+        }
+    }
+
+    /**
+     * The Cypher runtime keeps statements open for longer, so this method does not close the statement after itself
+     */
+    public Lock exclusiveLock( Statement statement, PropertyContainer container )
+    {
+        if ( container instanceof Node )
+        {
+            statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
+            return () -> {
+                long id = ((Node) container).getId();
+                statement.readOperations().releaseExclusive( ResourceTypes.NODE, id );
+            };
+        }
+        else if ( container instanceof Relationship )
+        {
+            statement.readOperations()
+                    .acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
+            return () -> {
+                long id = ((Relationship) container).getId();
+                statement.readOperations().releaseExclusive( ResourceTypes.RELATIONSHIP, id );
+            };
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
         }
     }
 

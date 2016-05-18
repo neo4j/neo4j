@@ -168,7 +168,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public Lock acquireWriteLock( PropertyContainer p )
     {
-        return locker.exclusiveLock( () -> statement, p );
+        return locker.exclusiveLock( statement, p );
     }
 
     @Override
