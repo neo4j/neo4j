@@ -104,9 +104,8 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.CoreMember.CoreMemberMarshal;
-import org.neo4j.coreedge.server.Expiration;
-import org.neo4j.coreedge.server.ExpiryScheduler;
 import org.neo4j.coreedge.server.ListenSocketAddress;
+import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
@@ -247,8 +246,8 @@ public class EnterpriseCoreEditionModule
         final CoreReplicatedContentMarshal marshal = new CoreReplicatedContentMarshal();
         int maxQueueSize = config.get( CoreEdgeClusterSettings.outgoing_queue_size );
         final SenderService senderService = new SenderService(
-                new ExpiryScheduler( platformModule.jobScheduler ), new Expiration( Clock.systemUTC() ),
-                new RaftChannelInitializer( marshal ), logProvider, platformModule.monitors, maxQueueSize );
+                new RaftChannelInitializer( marshal ), logProvider, platformModule.monitors, maxQueueSize,
+                new NonBlockingChannels() );
         life.add( senderService );
 
         myself = new CoreMember(
@@ -286,12 +285,11 @@ public class EnterpriseCoreEditionModule
                 dependencies.provideDependency( NeoStoreDataSource.class ),
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ), databaseHealthSupplier );
 
-        ExpiryScheduler expiryScheduler = new ExpiryScheduler( platformModule.jobScheduler );
-        Expiration expiration = new Expiration( Clock.systemUTC() );
+        NonBlockingChannels nonBlockingChannels = new NonBlockingChannels();
 
-        CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer( logProvider );
-        CoreToCoreClient coreToCoreClient = life.add( new CoreToCoreClient( logProvider, expiryScheduler, expiration,
-                channelInitializer, platformModule.monitors, maxQueueSize ) );
+        CoreToCoreClient.ChannelInitializer channelInitializer = new CoreToCoreClient.ChannelInitializer( logProvider, nonBlockingChannels );
+        CoreToCoreClient coreToCoreClient = life.add( new CoreToCoreClient( logProvider,
+                channelInitializer, platformModule.monitors, maxQueueSize, nonBlockingChannels ) );
         channelInitializer.setOwner( coreToCoreClient );
 
         StoreFetcher storeFetcher = new StoreFetcher( logProvider, fileSystem, platformModule.pageCache,

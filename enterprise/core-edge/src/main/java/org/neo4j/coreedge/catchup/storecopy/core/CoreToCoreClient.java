@@ -19,20 +19,24 @@
  */
 package org.neo4j.coreedge.catchup.storecopy.core;
 
+import java.util.concurrent.TimeUnit;
+
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.timeout.IdleStateHandler;
 
 import org.neo4j.coreedge.catchup.CatchupClientProtocol;
 import org.neo4j.coreedge.catchup.ClientMessageTypeHandler;
 import org.neo4j.coreedge.catchup.RequestMessageTypeEncoder;
 import org.neo4j.coreedge.catchup.ResponseMessageTypeEncoder;
+import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.FileContentHandler;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderDecoder;
 import org.neo4j.coreedge.catchup.storecopy.FileHeaderHandler;
-import org.neo4j.coreedge.catchup.storecopy.CoreClient;
 import org.neo4j.coreedge.catchup.storecopy.edge.GetStoreRequestEncoder;
+import org.neo4j.coreedge.server.IdleChannelReaperHandler;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreCopyFinishedResponseHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullRequestEncoder;
@@ -40,28 +44,30 @@ import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxPullResponseHandler;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseDecoder;
 import org.neo4j.coreedge.catchup.tx.edge.TxStreamFinishedResponseHandler;
-import org.neo4j.coreedge.server.Expiration;
-import org.neo4j.coreedge.server.ExpiryScheduler;
+import org.neo4j.coreedge.server.NonBlockingChannels;
 import org.neo4j.coreedge.server.logging.ExceptionLoggingHandler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 public class CoreToCoreClient extends CoreClient
 {
-    public CoreToCoreClient( LogProvider logProvider, ExpiryScheduler expiryScheduler, Expiration expiration,
-                             ChannelInitializer channelInitializer, Monitors monitors, int maxQueueSize )
+    public CoreToCoreClient( LogProvider logProvider,
+                             ChannelInitializer channelInitializer, Monitors monitors, int maxQueueSize,
+                             NonBlockingChannels nonBlockingChannels )
     {
-        super( logProvider, expiryScheduler, expiration, channelInitializer, monitors, maxQueueSize );
+        super( logProvider, channelInitializer, monitors, maxQueueSize, nonBlockingChannels );
     }
 
     public static class ChannelInitializer extends io.netty.channel.ChannelInitializer<SocketChannel>
     {
         private final LogProvider logProvider;
+        private NonBlockingChannels nonBlockingChannels;
         private CoreToCoreClient owner;
 
-        public ChannelInitializer( LogProvider logProvider )
+        public ChannelInitializer( LogProvider logProvider, NonBlockingChannels nonBlockingChannels )
         {
             this.logProvider = logProvider;
+            this.nonBlockingChannels = nonBlockingChannels;
         }
 
         public void setOwner( CoreToCoreClient coreToCoreClient )
@@ -102,6 +108,9 @@ public class CoreToCoreClient extends CoreClient
             pipeline.addLast( new FileHeaderDecoder( protocol ) );
             pipeline.addLast( new FileHeaderHandler( protocol, logProvider ) );
             pipeline.addLast( new FileContentHandler( protocol, owner ) );
+
+            pipeline.addLast( new IdleStateHandler( 0, 0, 2, TimeUnit.MINUTES) );
+            pipeline.addLast( new IdleChannelReaperHandler(nonBlockingChannels));
 
             pipeline.addLast( new ExceptionLoggingHandler( logProvider.getLog( getClass() ) ) );
         }
