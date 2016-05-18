@@ -61,6 +61,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         FileUtils.deleteRecursively( ServerTestUtils.getRelativeFile( DatabaseManagementSystemSettings.data_directory ) );
     }
 
+    @Rule
     public TargetDirectory.TestDirectory homeDir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
