@@ -204,5 +204,5 @@ public class CoreEdgeClusterSettings
             setting( "core_edge.raft_messages_log_enable", BOOLEAN, "true");
 
     @Description( "Interval of pulling updates from cores." )
-    public static final Setting<Long> pull_interval = setting( "core_edge.pull_interval", DURATION, "0s" );
+    public static final Setting<Long> pull_interval = setting( "core_edge.pull_interval", DURATION, "1s" );
 }
