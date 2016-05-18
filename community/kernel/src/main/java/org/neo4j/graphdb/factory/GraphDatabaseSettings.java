@@ -305,7 +305,7 @@ public abstract class GraphDatabaseSettings
 
     @Description("Size of buffer used by index sampling")
     public static final Setting<Long> index_sampling_buffer_size =
-            setting("dbms.index_sampling.buffer_size", BYTES, "64m",
+            setting("dbms.index_sampling.buffer_size", BYTES, "8m",
                     min( /* 1m */ 1048576L ), max( (long) Integer.MAX_VALUE ) );
 
     @Description("Percentage of index updates of total index size required before sampling of a given index is triggered")

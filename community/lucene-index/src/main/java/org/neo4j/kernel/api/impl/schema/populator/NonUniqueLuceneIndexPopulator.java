@@ -42,7 +42,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     public NonUniqueLuceneIndexPopulator( LuceneSchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
     {
         super( luceneIndex );
-        this.sampler = new NonUniqueIndexSampler( samplingConfig.bufferSize() );
+        this.sampler = new NonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
     }
 
     @Override
