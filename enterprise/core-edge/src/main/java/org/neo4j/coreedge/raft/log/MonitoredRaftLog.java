@@ -28,23 +28,13 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 public class MonitoredRaftLog implements RaftLog
 {
-    public static final String APPEND_INDEX_TAG = "appendIndex";
-    public static final String COMMIT_INDEX_TAG = "commitIndex";
-
     private final RaftLog delegate;
     private final RaftLogAppendIndexMonitor appendIndexMonitor;
-    private final RaftLogCommitIndexMonitor commitIndexMonitor;
 
     public MonitoredRaftLog( RaftLog delegate, Monitors monitors )
     {
         this.delegate = delegate;
-        this.appendIndexMonitor = monitors.newMonitor( RaftLogAppendIndexMonitor.class, getClass(), APPEND_INDEX_TAG );
-        this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass(), COMMIT_INDEX_TAG );
-    }
-
-    public RaftLog delegate()
-    {
-        return delegate;
+        this.appendIndexMonitor = monitors.newMonitor( RaftLogAppendIndexMonitor.class, getClass() );
     }
 
     @Override

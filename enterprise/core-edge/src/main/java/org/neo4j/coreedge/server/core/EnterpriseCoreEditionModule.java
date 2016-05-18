@@ -274,8 +274,8 @@ public class EnterpriseCoreEditionModule
         final DelayedRenewableTimeoutService raftTimeoutService =
                 new DelayedRenewableTimeoutService( Clock.systemUTC(), logProvider );
 
-        RaftLog underlyingLog = createRaftLog( config, life, fileSystem, clusterStateDirectory, marshal, logProvider,
-                databaseHealthSupplier );
+        RaftLog underlyingLog = createRaftLog(
+                config, life, fileSystem, clusterStateDirectory, marshal, logProvider, databaseHealthSupplier );
 
         MonitoredRaftLog raftLog = new MonitoredRaftLog( underlyingLog, platformModule.monitors );
 
@@ -335,7 +335,8 @@ public class EnterpriseCoreEditionModule
             coreState = new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),
                     databaseHealthSupplier, logProvider, progressTracker, lastFlushedStorage, lastApplyingStorage,
-                    sessionTrackerStorage, new NotMyselfSelectionStrategy( discoveryService, myself ), applier, downloader );
+                    sessionTrackerStorage, new NotMyselfSelectionStrategy( discoveryService, myself ), applier,
+                    downloader, platformModule.monitors );
 
             raft = createRaft( life, loggingOutbound, discoveryService, config, messageLogger, raftLog,
                     coreState, fileSystem, clusterStateDirectory, myself, logProvider, raftServer,

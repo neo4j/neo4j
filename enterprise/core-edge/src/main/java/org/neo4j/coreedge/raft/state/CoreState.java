@@ -29,6 +29,7 @@ import org.neo4j.coreedge.raft.RaftStateMachine;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
 import org.neo4j.coreedge.raft.log.RaftLogCursor;
+import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.coreedge.raft.log.pruning.LogPruner;
 import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ProgressTracker;
@@ -39,12 +40,12 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 public class CoreState extends LifecycleAdapter implements RaftStateMachine, LogPruner
 {
-
     private static final long NOTHING = -1;
     private CoreStateMachines coreStateMachines;
     private final RaftLog raftLog;
@@ -65,6 +66,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     private final CoreServerSelectionStrategy selectionStrategy;
 
     private final CoreStateDownloader downloader;
+    private final RaftLogCommitIndexMonitor commitIndexMonitor;
 
     public CoreState(
             RaftLog raftLog,
@@ -77,7 +79,8 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
             StateStorage<GlobalSessionTrackerState<CoreMember>> sessionStorage,
             CoreServerSelectionStrategy selectionStrategy,
             CoreStateApplier applier,
-            CoreStateDownloader downloader )
+            CoreStateDownloader downloader,
+            Monitors monitors )
     {
         this.raftLog = raftLog;
         this.lastFlushedStorage = lastFlushedStorage;
@@ -90,6 +93,7 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
         this.selectionStrategy = selectionStrategy;
         this.log = logProvider.getLog( getClass() );
         this.dbHealth = dbHealth;
+        this.commitIndexMonitor = monitors.newMonitor( RaftLogCommitIndexMonitor.class, getClass() );
     }
 
     public synchronized void setStateMachine( CoreStateMachines coreStateMachines, long lastApplied )
@@ -101,10 +105,12 @@ public class CoreState extends LifecycleAdapter implements RaftStateMachine, Log
     @Override
     public synchronized void notifyCommitted( long commitIndex )
     {
-        if ( this.lastSeenCommitIndex != commitIndex )
+        assert this.lastSeenCommitIndex <= commitIndex;
+        if ( this.lastSeenCommitIndex < commitIndex )
         {
             this.lastSeenCommitIndex = commitIndex;
             submitApplyJob( commitIndex );
+            commitIndexMonitor.commitIndex( commitIndex );
         }
     }
 
