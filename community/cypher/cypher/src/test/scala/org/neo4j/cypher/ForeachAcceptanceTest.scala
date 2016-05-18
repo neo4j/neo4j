@@ -121,4 +121,19 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
     // then
     assertStats(result, relationshipsDeleted = 1)
   }
+
+  test("merge inside foreach in compatibility mode should work nicely") {
+    // given
+
+    val query =
+      """|FOREACH(v IN [1] |
+         |  CREATE (a), (b)
+         |  MERGE (a)-[:FOO]->(b))""".stripMargin
+
+    // when
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    // then
+    assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
+  }
 }
