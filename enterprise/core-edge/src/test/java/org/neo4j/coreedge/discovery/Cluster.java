@@ -44,11 +44,13 @@ import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
@@ -180,9 +182,6 @@ public class Cluster
         params.put( ClusterSettings.cluster_name.name(), CLUSTER_NAME );
         params.put( ClusterSettings.server_id.name(), String.valueOf( serverId ) );
         params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialHosts );
-        params.put( "metrics.csv.enabled", "true" );
-        params.put( "metrics.neo4j.core_edge.enabled", "true" );
-        params.put( "metrics.csv.path", "metrics" );
         return params;
     }
 

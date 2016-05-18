@@ -27,6 +27,7 @@ import java.util.UUID;
 import org.neo4j.coreedge.raft.NewLeaderBarrier;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.coreedge.raft.replication.DistributedOperation;
 import org.neo4j.coreedge.raft.replication.ProgressTrackerImpl;
 import org.neo4j.coreedge.raft.replication.ReplicatedContent;
@@ -39,6 +40,7 @@ import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.CoreServerSelectionStrategy;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static junit.framework.TestCase.assertEquals;
@@ -65,13 +67,15 @@ public class CoreStateTest
     private final int flushEvery = 10;
 
     private final CoreStateApplier applier = new CoreStateApplier( NullLogProvider.getInstance() );
+    private final Monitors monitors = new Monitors();
     private final CoreState coreState = new CoreState( raftLog, flushEvery, () -> dbHealth, NullLogProvider.getInstance(),
             new ProgressTrackerImpl( globalSession ), lastFlushedStorage, lastApplyingStorage, sessionStorage,
-            mock( CoreServerSelectionStrategy.class ), applier, mock( CoreStateDownloader.class ) );
+            mock( CoreServerSelectionStrategy.class ), applier, mock( CoreStateDownloader.class ), monitors );
 
     private ReplicatedTransaction nullTx = new ReplicatedTransaction( null );
 
     private final CoreStateMachines txStateMachine = txStateMachinesMock();
+
     private CoreStateMachines txStateMachinesMock()
     {
         CoreStateMachines stateMachines = mock( CoreStateMachines.class );
@@ -97,6 +101,8 @@ public class CoreStateTest
     public void shouldApplyCommittedCommand() throws Exception
     {
         // given
+        RaftLogCommitIndexMonitor listener = mock( RaftLogCommitIndexMonitor.class );
+        monitors.addMonitorListener( listener );
         coreState.setStateMachine( txStateMachine, -1 );
         coreState.start();
 
@@ -111,6 +117,7 @@ public class CoreStateTest
         verify( txStateMachine ).dispatch( nullTx, 0 );
         verify( txStateMachine ).dispatch( nullTx, 1 );
         verify( txStateMachine ).dispatch( nullTx, 2 );
+        verify( listener).commitIndex( 2 );
     }
 
     @Test
