@@ -31,21 +31,20 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
   override def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = value match {
     case IsMap(mapCreator) =>
       val map = mapCreator(state.query)
-      map.getOrElse("crs", CRS.WGS84.name) match {
-        case CRS.Cartesian.name =>
-          if (!map.contains("x") || !map.contains("y")) throw new InvalidArgumentException("A cartesian point must contain 'x' and 'y' coordinates")
-          val x = safeToDouble(map("x"))
-          val y = safeToDouble(map("y"))
-          CartesianPoint(x, y)
-
-        case CRS.WGS84.name =>
-          if (!map.contains("longitude") || !map.contains("latitude")) throw new SyntaxException("A cartesian point must contain 'x' and 'y' coordinates")
-          val longitude = safeToDouble(map("longitude"))
-          val latitude = safeToDouble(map("latitude"))
-          GeographicPoint(longitude, latitude, CRS.WGS84)
-
-        case unknown => throw new InvalidArgumentException(s"$unknown is not a supported coordinate system, supported values " +
-                                                    s"are ${CRS.Cartesian.name} and ${CRS.WGS84.name}")
+      if (map.contains("x") && map.contains("y")) {
+        val crs = map.getOrElse("crs", CRS.Cartesian.name).asInstanceOf[String]
+        if (crs != CRS.Cartesian.name) throw new InvalidArgumentException(s"'$crs' is not a supported coordinate reference system for cartesian points, supported CRS are: '${CRS.Cartesian.name}'")
+        val x = safeToDouble(map("x"))
+        val y = safeToDouble(map("y"))
+        CartesianPoint(x, y, CRS.fromName(crs))
+      } else if (map.contains("latitude") && map.contains("longitude")) {
+        val crs = map.getOrElse("crs", CRS.WGS84.name).asInstanceOf[String]
+        if (crs != CRS.WGS84.name) throw new InvalidArgumentException(s"'$crs' is not a supported coordinate reference system for geographic points, supported CRS are: '${CRS.WGS84.name}'")
+        val latitude = safeToDouble(map("latitude"))
+        val longitude = safeToDouble(map("longitude"))
+        GeographicPoint(longitude, latitude, CRS.fromName(crs))
+      } else {
+        throw new InvalidArgumentException("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'")
       }
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
