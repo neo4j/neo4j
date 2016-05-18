@@ -45,21 +45,21 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
 
     private static final AccessMode getAccessModeFromUserPrincipal( Principal principal )
     {
-        if ( principal instanceof DelegatingPrinciple )
+        if ( principal instanceof DelegatingPrincipal )
         {
-            return ((DelegatingPrinciple) principal).getAccessMode();
+            return ((DelegatingPrincipal) principal).getAccessMode();
         }
         // If whitelisted uris can start transactions we cannot throw exception here
         //throw new IllegalArgumentException( "Tried to get access mode on illegal user principal" );
         return AccessMode.Static.NONE;
     }
 
-    public class DelegatingPrinciple implements Principal
+    public class DelegatingPrincipal implements Principal
     {
         private String username;
         private final AccessMode accessMode;
 
-        private DelegatingPrinciple( String username, AccessMode accessMode )
+        private DelegatingPrincipal( String username, AccessMode accessMode )
         {
             this.username = username;
             this.accessMode = accessMode;
@@ -80,12 +80,12 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
             {
                 return true;
             }
-            if ( !( o instanceof DelegatingPrinciple ) )
+            if ( !( o instanceof DelegatingPrincipal) )
             {
                 return false;
             }
 
-            DelegatingPrinciple that = (DelegatingPrinciple) o;
+            DelegatingPrincipal that = (DelegatingPrincipal) o;
             return username.equals( that.username );
         }
 
@@ -98,21 +98,21 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
         @Override
         public String toString()
         {
-            return "DelegatingPrinciple{" +
+            return "DelegatingPrincipal{" +
                     "username='" + username + '\'' +
                     '}';
         }
     }
 
     private final String authType;
-    private final DelegatingPrinciple principle;
+    private final DelegatingPrincipal principal;
 
     public AuthorizedRequestWrapper( final String authType, final String username, final HttpServletRequest request,
             AccessMode accessMode )
     {
         super( request );
         this.authType = authType;
-        this.principle = new DelegatingPrinciple( username, accessMode );
+        this.principal = new DelegatingPrincipal( username, accessMode );
     }
 
     @Override
@@ -124,7 +124,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
     @Override
     public Principal getUserPrincipal()
     {
-        return principle;
+        return principal;
     }
 
     @Override
@@ -137,9 +137,9 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
     public String toString()
     {
         return "AuthorizedRequestWrapper{" +
-                "authType='" + authType + '\'' +
-                ", principle=" + principle +
-                '}';
+               "authType='" + authType + '\'' +
+               ", principal=" + principal +
+               '}';
     }
 
     @Override
@@ -159,7 +159,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
         {
             return false;
         }
-        if ( !principle.equals( that.principle ) )
+        if ( !principal.equals( that.principal ) )
         {
             return false;
         }
@@ -171,7 +171,7 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
     public int hashCode()
     {
         int result = authType.hashCode();
-        result = 31 * result + principle.hashCode();
+        result = 31 * result + principal.hashCode();
         return result;
     }
 }

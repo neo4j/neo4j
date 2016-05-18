@@ -19,13 +19,12 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 
 public class BasicPasswordPolicy implements PasswordPolicy
 {
     @Override
-    public void validatePassword( AuthSubject authSubject, String password )
+    public void validatePassword( String password )
             throws IllegalCredentialsException
     {
         if ( password == null || password.isEmpty() )

@@ -151,8 +151,6 @@ public class BasicAuthManager implements AuthManager, UserManager
             throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
         }
 
-        passwordPolicy.validatePassword( authSubject, password );
-
         setUserPassword( username, password );
     }
 
@@ -166,6 +164,8 @@ public class BasicAuthManager implements AuthManager, UserManager
         {
             throw new IllegalCredentialsException( "User " + username + " does not exist" );
         }
+
+        passwordPolicy.validatePassword( password );
 
         if ( existingUser.credentials().matchesPassword( password ) )
         {

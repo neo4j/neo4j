@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 
 public interface PasswordPolicy
 {
-    void validatePassword( AuthSubject authSubject, String password ) throws IllegalCredentialsException;
+    // TODO: We may want to reintroduce AuthSubject here to be able to check against repeating last used passwords etc.
+    void validatePassword( String password ) throws IllegalCredentialsException;
 }
