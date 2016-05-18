@@ -202,7 +202,7 @@ Function Get-Java
           $ShellArgs += "-XX:NumberOfGCLogFiles=5"
         }
       }
-      $ShellArgs += @("-Dfile.encoding=UTF-8",$serverMainClass,"--config-dir=$($Neo4jServer.ConfDir)")
+      $ShellArgs += @("-Dfile.encoding=UTF-8",$serverMainClass,"--config-dir=$($Neo4jServer.ConfDir)","--home-dir=$($Neo4jServer.Home)")
     }
     
     # Shell arguments for the utility classes e.g. Import, Shell
