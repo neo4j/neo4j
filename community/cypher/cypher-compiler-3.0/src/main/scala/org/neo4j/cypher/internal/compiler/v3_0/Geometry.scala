@@ -30,9 +30,7 @@ trait Point extends Geometry {
   def coordinates = Vector(x, y)
 }
 
-case class CartesianPoint(x: Double, y: Double) extends Point {
-  def crs = CRS.Cartesian
-}
+case class CartesianPoint(x: Double, y: Double, crs: CRS) extends Point
 
 case class GeographicPoint(longitude: Double, latitude: Double, crs: CRS) extends Point {
   def x: Double = longitude

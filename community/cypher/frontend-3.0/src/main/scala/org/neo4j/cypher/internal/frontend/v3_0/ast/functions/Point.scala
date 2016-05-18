@@ -37,8 +37,7 @@ case object Point extends Function with SimpleTypedFunction {
   protected def checkPointMap(expression: Expression): SemanticCheck = expression match {
     //Cartesian point
     case map: MapExpression if map.items.exists(withKey("x")) && map.items.exists(withKey("y")) =>
-      if (map.items.exists(withKey("crs"))) SemanticCheckResult.success
-      else SemanticError(s"A cartesian point must contain a 'crs' (coordinate reference system)", map.position)
+      SemanticCheckResult.success
     //Geographic point
     case map: MapExpression if map.items.exists(withKey("longitude")) && map.items.exists(withKey("latitude")) =>
       SemanticCheckResult.success
