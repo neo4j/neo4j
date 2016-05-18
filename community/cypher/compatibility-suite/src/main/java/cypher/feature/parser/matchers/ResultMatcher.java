@@ -37,6 +37,13 @@ public class ResultMatcher implements Matcher<Result>
     @Override
     public boolean matches( Result value )
     {
+        boolean result = matchesWithoutNecessarilyExhausting( value );
+        exhaust( value );
+        return result;
+    }
+
+    private boolean matchesWithoutNecessarilyExhausting( Result value )
+    {
         List<RowMatcher> mutableCopy = new ArrayList<>( rowMatchers );
         while ( value.hasNext() && !mutableCopy.isEmpty() )
         {
@@ -63,6 +70,13 @@ public class ResultMatcher implements Matcher<Result>
 
     public boolean matchesOrdered( Result value )
     {
+        boolean matches = matchesOrderedWithoutNecessarilyExhausting( value );
+        exhaust( value );
+        return matches;
+    }
+
+    private boolean matchesOrderedWithoutNecessarilyExhausting( Result value )
+    {
         boolean matches = true;
         int counter = 0;
         while ( value.hasNext() && counter < rowMatchers.size() )
@@ -73,6 +87,15 @@ public class ResultMatcher implements Matcher<Result>
         boolean nothingLeftInReal = !value.hasNext();
         boolean nothingLeftInMatcher = counter == rowMatchers.size();
         return matches && nothingLeftInMatcher && nothingLeftInReal;
+    }
+
+    private void exhaust( Result value )
+    {
+        // exhaust the result to get a full toString()
+        while ( value.hasNext() )
+        {
+            value.next();
+        }
     }
 
     @Override

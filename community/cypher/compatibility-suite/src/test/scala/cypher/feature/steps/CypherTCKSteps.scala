@@ -173,7 +173,7 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   private def successful(value: Try[Result]): Result = value match {
-    case Success(r) => r
+    case Success(r) => new ResultWrapper(r)
     case Failure(e) => fail(s"Expected successful result, but got error: $e")
   }
 
