@@ -73,7 +73,6 @@ Function Get-Java
   Process
   {
     $javaPath = ''
-    $javaVersion = ''
     $javaCMD = ''
     
     $EnvJavaHome = Get-Neo4jEnv 'JAVA_HOME'
@@ -91,19 +90,18 @@ Function Get-Java
     $regKey = 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment'    
     if (($javaPath -eq '') -and (Test-Path -Path $regKey))
     {
-      $javaVersion = ''
+      $regJavaVersion = ''
       try
       {
-        $javaVersion = [string](Get-ItemProperty -Path $regKey -ErrorAction 'Stop').CurrentVersion
-        if ($javaVersion -ne '')
+        $regJavaVersion = [string](Get-ItemProperty -Path $regKey -ErrorAction 'Stop').CurrentVersion
+        if ($regJavaVersion -ne '')
         {
-          $javaPath = [string](Get-ItemProperty -Path "$regKey\$javaVersion" -ErrorAction 'Stop').JavaHome
+          $javaPath = [string](Get-ItemProperty -Path "$regKey\$regJavaVersion" -ErrorAction 'Stop').JavaHome
         }
       }
       catch
       {
         #Ignore any errors
-        $javaVersion = ''
         $javaPath = ''
       }
     }
@@ -112,19 +110,18 @@ Function Get-Java
     $regKey = 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment'    
     if (($javaPath -eq '') -and (Test-Path -Path $regKey))
     {
-      $javaVersion = ''
+      $regJavaVersion = ''
       try
       {
-        $javaVersion = [string](Get-ItemProperty -Path $regKey -ErrorAction 'Stop').CurrentVersion
-        if ($javaVersion -ne '')
+        $regJavaVersion = [string](Get-ItemProperty -Path $regKey -ErrorAction 'Stop').CurrentVersion
+        if ($regJavaVersion -ne '')
         {
-          $javaPath = [string](Get-ItemProperty -Path "$regKey\$javaVersion" -ErrorAction 'Stop').JavaHome
+          $javaPath = [string](Get-ItemProperty -Path "$regKey\$regJavaVersion" -ErrorAction 'Stop').JavaHome
         }
       }
       catch
       {
         #Ignore any errors
-        $javaVersion = ''
         $javaPath = ''
       }
     }
@@ -140,17 +137,16 @@ Function Get-Java
       }
     }
 
-    if ($javaVersion -eq '') { Write-Verbose 'Unable to determine Java version' }
     if ($javaPath -eq '') { Write-Error "Unable to determine the path to java.exe"; return $null }
     if ($javaCMD -eq '') { $javaCMD = "$javaPath\bin\java.exe" }
     if (-not (Test-Path -Path $javaCMD)) { Write-Error "Could not find java at $javaCMD"; return $null }
- 
-    $ShellArgs = @()
 
     Write-Verbose "Java detected at '$javaCMD'"
-    Write-Verbose "Java version detected as '$javaVersion'"
+
+    if (-not (Confirm-JavaVersion -Path $javaCMD)) {  Write-Error "This instance of Java is not supported"; return $null }
 
     # Shell arguments for the Neo4jServer and Arbiter classes
+    $ShellArgs = @()
     if ($PsCmdlet.ParameterSetName -eq 'ServerInvoke')
     {
       $serverMainClass = ''

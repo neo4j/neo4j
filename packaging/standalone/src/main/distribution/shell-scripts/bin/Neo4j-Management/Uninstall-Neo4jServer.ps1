@@ -74,12 +74,22 @@ Function Uninstall-Neo4jServer
     if ($prunsrv -eq $null) { throw "Could not determine the command line for PRUNSRV" }
 
     Write-Verbose "Uninstalling Neo4j as a service with command line $($prunsrv.cmd) $($prunsrv.args)"
-    $result = (Start-Process -FilePath $prunsrv.cmd -ArgumentList $prunsrv.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home)
+    $stdError = New-Neo4jTempFile -Prefix 'stderr'
+    $result = (Start-Process -FilePath $prunsrv.cmd -ArgumentList $prunsrv.args -Wait -NoNewWindow -PassThru -WorkingDirectory $Neo4jServer.Home -RedirectStandardError $stdError)
     Write-Verbose "Returned exit code $($result.ExitCode)"
 
     Write-Output $result.ExitCode
-    
-    Write-Host "Neo4j service uninstalled"
+
+    # Process the output
+    if ($result.ExitCode -eq 0) {
+      Write-Host "Neo4j service uninstalled"
+    } else {
+      Write-Host "Neo4j service did not uninstall"
+      # Write out STDERR if it did not uninstall
+      Get-Contet -Path $stdError -ErrorAction 'SilentlyContinue' | ForEach-Object -Process {
+        Write-Host $_
+      }
+    }
   }
   
   End
