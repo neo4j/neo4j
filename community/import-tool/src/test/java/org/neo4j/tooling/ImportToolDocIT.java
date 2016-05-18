@@ -434,7 +434,7 @@ public class ImportToolDocIT
     public void idSpaces() throws FileNotFoundException
     {
         // GIVEN
-        File movies = file( "ops", "movies7.csv" );
+        File movies = file( "ops", "movies8.csv" );
         try (PrintStream out = new PrintStream( movies ))
         {
             out.println( "movieId:ID(Movie),title,year:int,:LABEL" );
@@ -443,7 +443,7 @@ public class ImportToolDocIT
             out.println( "3,\"The Matrix Revolutions\",2003,Movie;Sequel" );
         }
 
-        File actors = file( "ops", "actors7.csv" );
+        File actors = file( "ops", "actors8.csv" );
         try (PrintStream out = new PrintStream( actors ))
         {
             out.println( "personId:ID(Actor),name,:LABEL" );
@@ -452,7 +452,7 @@ public class ImportToolDocIT
             out.println( "3,\"Carrie-Anne Moss\",Actor" );
         }
 
-        File roles = file( "ops", "roles7.csv" );
+        File roles = file( "ops", "roles8.csv" );
         try ( PrintStream out = new PrintStream( roles ) )
         {
             out.println( ":START_ID(Actor),role,:END_ID(Movie)" );
@@ -582,21 +582,21 @@ public class ImportToolDocIT
     public void propertyTypes() throws FileNotFoundException
     {
         // GIVEN
-        File movies = file( "ops", "movies10.csv" );
+        File movies = file( "ops", "movies7.csv" );
         try (PrintStream out = new PrintStream( movies ))
         {
             out.println( "movieId:ID,title,year:int,:LABEL" );
             out.println( "tt0099892,\"Joe Versus the Volcano\",1990,Movie" );
         }
 
-        File actors = file( "ops", "actors10.csv" );
+        File actors = file( "ops", "actors7.csv" );
         try (PrintStream out = new PrintStream( actors ))
         {
             out.println( "personId:ID,name,:LABEL" );
             out.println( "meg,\"Meg Ryan\",Actor" );
         }
 
-        File roles = file( "ops", "roles10.csv" );
+        File roles = file( "ops", "roles7.csv" );
         try (PrintStream out = new PrintStream( roles ))
         {
             out.println( ":START_ID,roles:string[],:END_ID,:TYPE" );
