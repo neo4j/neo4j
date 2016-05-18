@@ -123,4 +123,26 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, propertiesWritten = 0)
     result.toList should equal(List(Map("totalNumberOfProps" -> 0)))
   }
+
+  test("removing property when not sure if it is a node or relationship should still work - NODE") {
+    val n = createNode("name" -> "Anders")
+
+    updateWithBothPlannersAndCompatibilityMode("WITH {p} as p SET p.lastname = p.name REMOVE p.name", "p" -> n)
+
+    graph.inTx {
+      n.getProperty("lastname") should equal("Anders")
+      n.hasProperty("name") should equal(false)
+    }
+  }
+
+  test("removing property when not sure if it is a node or relationship should still work - REL") {
+    val r = relate(createNode(), createNode(), "name" -> "Anders")
+
+    updateWithBothPlannersAndCompatibilityMode("WITH {p} as p SET p.lastname = p.name REMOVE p.name", "p" -> r)
+
+    graph.inTx {
+      r.getProperty("lastname") should equal("Anders")
+      r.hasProperty("name") should equal(false)
+    }
+  }
 }

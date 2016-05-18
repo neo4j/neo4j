@@ -499,6 +499,12 @@ object ClauseConverters {
           SetRelationshipPropertyPattern(IdName.fromVariable(variable), propertyKey, Null()(propertyKey.position))
         ))
 
+      // REMOVE rel.prop when unknown whether node or rel
+      case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey))) =>
+        builder.amendQueryGraph(_.addMutatingPatterns(
+          SetPropertyPattern(variable, propertyKey, Null()(propertyKey.position))
+        ))
+
       case (builder, other) =>
         throw new InternalException(s"REMOVE $other not supported in cost planner yet")
     }
