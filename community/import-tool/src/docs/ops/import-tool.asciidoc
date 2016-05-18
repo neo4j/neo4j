@@ -433,22 +433,22 @@ The type for properties specified in nodes and relationships files is defined in
 The following example creates a small graph containing one actor and one movie connected by an `ACTED_IN` relationship.
 There is a `roles` property on the relationship which contains an array of the characters played by the actor in a movie.
 
-.movies10.csv
+.movies7.csv
 [source]
 ----
-include::movies10.csv[]
+include::movies7.csv[]
 ----
 
-.actors10.csv
+.actors7.csv
 [source]
 ----
-include::actors10.csv[]
+include::actors7.csv[]
 ----
 
-.roles10.csv
+.roles7.csv
 [source]
 ----
-include::roles10.csv[]
+include::roles7.csv[]
 ----
 
 The arguments to `neo4j-import` would be the following:
@@ -473,25 +473,25 @@ Those data sets can define id spaces where identifiers are unique within their r
 
 For example if movies and people both use sequential identifiers then we would define `Movie` and `Actor` id spaces.
 
-.movies7.csv
+.movies8.csv
 [source]
 ----
-include::movies7.csv[]
+include::movies8.csv[]
 ----
 
-.actors7.csv
+.actors8.csv
 [source]
 ----
-include::actors7.csv[]
+include::actors8.csv[]
 ----
 
 We also need to reference the appropriate id space in our relationships file so it knows which nodes to connect
 together:
 
-.roles7.csv
+.roles8.csv
 [source]
 ----
-include::roles7.csv[]
+include::roles8.csv[]
 ----
 
 The command line arguments would remain the same as before:
