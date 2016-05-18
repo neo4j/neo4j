@@ -19,6 +19,8 @@
  */
 package cypher.feature.parser
 
+import java.util.Collections
+
 import cypher.feature.parser.matchers.ResultMatcher
 import org.junit.runner.RunWith
 import org.mockito.Mockito._
@@ -59,6 +61,7 @@ abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAs
     // Mockito bug makes mocks unable to refer to other mocks in stubs; can't inline this
     val pathString = s"<$node>"
     when(path.toString).thenReturn(pathString)
+    when(path.relationships).thenReturn(Collections.emptyList[Relationship]())
     path
   }
 
@@ -66,6 +69,8 @@ abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAs
     val path = mock(classOf[Path])
     when(path.length()).thenReturn(relationships.length)
     when(path.relationships()).thenReturn(relationships.toIterable.asJava)
+    val startNode: Node = relationships.head.getStartNode
+    when(path.startNode()).thenReturn(startNode)
     // Mockito bug makes mocks unable to refer to other mocks in stubs; can't inline this
     val pathString = s"<${relationships.mkString(",")}>"
     when(path.toString).thenReturn(pathString)
@@ -78,6 +83,8 @@ abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAs
     // Mockito bug makes mocks unable to refer to other mocks in stubs; can't inline this
     val pathString = s"$startNode-$relationship->$endNode"
     when(relationship.toString).thenReturn(pathString)
+    when(relationship.getOtherNode(startNode)).thenReturn(endNode)
+    when(relationship.getOtherNode(endNode)).thenReturn(startNode)
     relationship
   }
 

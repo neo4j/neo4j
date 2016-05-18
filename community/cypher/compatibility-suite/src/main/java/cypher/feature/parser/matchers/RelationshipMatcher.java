@@ -48,6 +48,9 @@ public class RelationshipMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "RelationshipMatcher[" + relationshipTypeName + "]" + propertyMatcher;
+        StringBuilder sb = new StringBuilder();
+        sb.append( "[:" ).append( relationshipTypeName );
+        sb.append( " " ).append( propertyMatcher ).append( "]" );
+        return sb.toString();
     }
 }

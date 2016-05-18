@@ -81,11 +81,15 @@ public class PathMatcher implements ValueMatcher
     {
         if ( pathLinks.isEmpty() )
         {
-            return "PathMatcher" + singleNodePath;
+            return "<" + singleNodePath + ">";
         }
         else
         {
-            return "PathMatcher" + pathLinks;
+            StringBuilder sb = new StringBuilder(  );
+            sb.append( "<" );
+            pathLinks.forEach( sb::append );
+            sb.append( ">" );
+            return sb.toString();
         }
     }
 }

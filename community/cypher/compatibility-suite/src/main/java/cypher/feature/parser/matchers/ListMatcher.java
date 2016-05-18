@@ -70,6 +70,6 @@ public class ListMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "ListMatcher" + list.toString();
+        return list.toString();
     }
 }

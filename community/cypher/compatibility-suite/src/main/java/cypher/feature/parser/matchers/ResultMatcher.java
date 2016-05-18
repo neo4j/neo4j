@@ -37,6 +37,13 @@ public class ResultMatcher implements Matcher<Result>
     @Override
     public boolean matches( Result value )
     {
+        boolean result = matchesWithoutNecessarilyExhausting( value );
+        exhaust( value );
+        return result;
+    }
+
+    private boolean matchesWithoutNecessarilyExhausting( Result value )
+    {
         List<RowMatcher> mutableCopy = new ArrayList<>( rowMatchers );
         while ( value.hasNext() && !mutableCopy.isEmpty() )
         {
@@ -63,6 +70,13 @@ public class ResultMatcher implements Matcher<Result>
 
     public boolean matchesOrdered( Result value )
     {
+        boolean matches = matchesOrderedWithoutNecessarilyExhausting( value );
+        exhaust( value );
+        return matches;
+    }
+
+    private boolean matchesOrderedWithoutNecessarilyExhausting( Result value )
+    {
         boolean matches = true;
         int counter = 0;
         while ( value.hasNext() && counter < rowMatchers.size() )
@@ -75,13 +89,23 @@ public class ResultMatcher implements Matcher<Result>
         return matches && nothingLeftInMatcher && nothingLeftInReal;
     }
 
+    private void exhaust( Result value )
+    {
+        // exhaust the result to get a full toString()
+        while ( value.hasNext() )
+        {
+            value.next();
+        }
+    }
+
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder( "ResultMatcher of:\n" );
+        StringBuilder sb = new StringBuilder( "Expected result of:\n" );
+        int i = 1;
         for ( RowMatcher row : rowMatchers )
         {
-            sb.append( row ).append( "\n" );
+            sb.append( "[" ).append( i++ ).append( "] " ).append( row ).append( "\n" );
         }
         return sb.toString();
     }

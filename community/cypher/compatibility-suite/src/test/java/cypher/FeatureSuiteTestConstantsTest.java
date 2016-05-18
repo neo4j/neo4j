@@ -17,26 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.feature.parser.matchers;
+package cypher;
 
-public class StringMatcher implements ValueMatcher
+import org.junit.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isEmptyString;
+
+public class FeatureSuiteTestConstantsTest
 {
-    private final String string;
-
-    public StringMatcher( String string )
-    {
-        this.string = string;
+    @Test
+    public void runsAllFeatures() {
+        assertThat(FeatureSuiteTest.FEATURE_TO_RUN, isEmptyString());
     }
 
-    @Override
-    public boolean matches( Object value )
-    {
-        return value instanceof String && value.toString().equals( string );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "'" + string + "'";
+    @Test
+    public void runsAllScenarios() {
+        assertThat(FeatureSuiteTest.SCENARIO_NAME_REQUIRED, isEmptyString());
     }
 }

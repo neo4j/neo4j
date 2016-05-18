@@ -37,6 +37,6 @@ public class BooleanMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "BooleanMatcher(" + value + ")";
+        return Boolean.toString( value );
     }
 }
