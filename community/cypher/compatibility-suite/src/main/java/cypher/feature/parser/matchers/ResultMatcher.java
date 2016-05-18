@@ -101,10 +101,11 @@ public class ResultMatcher implements Matcher<Result>
     @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder( "ResultMatcher of:\n" );
+        StringBuilder sb = new StringBuilder( "Expected result of:\n" );
+        int i = 1;
         for ( RowMatcher row : rowMatchers )
         {
-            sb.append( row ).append( "\n" );
+            sb.append( "[" ).append( i++ ).append( "] " ).append( row ).append( "\n" );
         }
         return sb.toString();
     }

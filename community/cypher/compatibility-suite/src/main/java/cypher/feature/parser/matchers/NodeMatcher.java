@@ -59,6 +59,10 @@ public class NodeMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "NodeMatcher" + labelNames + propertyMatcher;
+        StringBuilder sb = new StringBuilder();
+        sb.append( "(" );
+        labelNames.forEach( ( l ) -> sb.append( ":" ).append( l ) );
+        sb.append( " " ).append( propertyMatcher ).append( ")" );
+        return sb.toString();
     }
 }

@@ -52,6 +52,6 @@ public class RowMatcher implements Matcher<Map<String,Object>>
     @Override
     public String toString()
     {
-        return "RowMatcher" + values;
+        return "expectedRow:" + values;
     }
 }

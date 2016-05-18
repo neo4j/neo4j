@@ -37,6 +37,6 @@ public class StringMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "StringMatcher(" + string + ")";
+        return "'" + string + "'";
     }
 }

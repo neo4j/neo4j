@@ -34,7 +34,7 @@ public interface ValueMatcher extends Matcher<Object>
         @Override
         public String toString()
         {
-            return "NullMatcher";
+            return "null";
         }
     };
 }

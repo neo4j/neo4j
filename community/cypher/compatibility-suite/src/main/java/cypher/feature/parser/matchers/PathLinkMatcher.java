@@ -70,9 +70,10 @@ public class PathLinkMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "PathLinkMatcher <<"
-               + leftNode + (outgoing ? "-" : "<-")
-               + relMatcher + (outgoing ? "->" : "-")
-               + rightNode + ">>";
+        StringBuilder sb = new StringBuilder();
+        sb.append( leftNode ).append( (outgoing ? "-" : "<-") );
+        sb.append( relMatcher ).append( (outgoing ? "->" : "-") );
+        sb.append( rightNode );
+        return sb.toString();
     }
 }

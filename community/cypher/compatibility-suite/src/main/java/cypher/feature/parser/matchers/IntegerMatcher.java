@@ -37,6 +37,6 @@ public class IntegerMatcher implements ValueMatcher
     @Override
     public String toString()
     {
-        return "IntegerMatcher(" + value + ")";
+        return Long.toString( value );
     }
 }
