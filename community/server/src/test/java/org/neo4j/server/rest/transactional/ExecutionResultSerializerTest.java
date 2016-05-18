@@ -51,6 +51,7 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
+import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
@@ -76,6 +77,9 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
+import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.*;
+import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockCartesian;
+import static org.neo4j.server.rest.transactional.Neo4jJsonCodecTest.mockWGS84;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.mockito.mock.GraphMock.link;
 import static org.neo4j.test.mockito.mock.GraphMock.node;
@@ -387,6 +391,44 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
                       "\"data\":[{\"row\":[[{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}]]," +
                       "\"meta\":[[{\"id\":1,\"type\":\"node\",\"deleted\":false},{\"id\":1,\"type\":\"relationship\",\"deleted\":false},{\"id\":2,\"type\":\"node\",\"deleted\":false}]]}]}]," +
                       "\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldSerializePointsAsListOfMapsOfProperties() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = getSerializerWith( output );
+
+        List<Coordinate> points = new ArrayList<>();
+        points.add( new Coordinate(1,2) );
+        points.add( new Coordinate(2,3) );
+        Result executionResult = mockExecutionResult(
+                map( "geom", new MockPoint( 12.3, 45.6, mockWGS84() ) ),
+                map( "geom", new MockPoint( 123, 456, mockCartesian() ) ),
+                map( "geom", new MockGeometry( "LineString", points, mockCartesian() ) ) );
+
+        // when
+        serializer.statementResult( executionResult, false );
+        serializer.finish();
+
+        // then
+        String result = output.toString( UTF_8.name() );
+        assertEquals( "{\"results\":[{\"columns\":[\"geom\"],\"data\":[" +
+                      "{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6],\"crs\":" +
+                        "{\"name\":\"WGS-84\",\"type\":\"link\",\"properties\":" +
+                          "{\"href\":\"http://spatialreference.org/ref/epsg/4326/ogcwkt/\",\"type\":\"ogcwkt\"}" +
+                        "}}],\"meta\":[null]}," +
+                      "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0],\"crs\":" +
+                        "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
+                          "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}" +
+                        "}}],\"meta\":[null]}," +
+                      "{\"row\":[{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[2.0,3.0]],\"crs\":" +
+                        "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
+                          "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}" +
+                        "}}],\"meta\":[null]}" +
+                      "]}],\"errors\":[]}",
+                result );
     }
 
     @Test

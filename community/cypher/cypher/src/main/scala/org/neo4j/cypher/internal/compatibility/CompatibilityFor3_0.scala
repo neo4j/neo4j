@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.compatibility
 
 import java.io.PrintWriter
+import java.util.Collections
 import java.{lang, util}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_0
+import org.neo4j.cypher.internal.compiler.v3_0.commands.expressions.{CRS, Point}
 import org.neo4j.cypher.internal.compiler.v3_0.executionplan.{ExecutionPlan => ExecutionPlan_v3_0, _}
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_0.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
@@ -49,6 +51,7 @@ import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.graphdb
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -57,6 +60,36 @@ import scala.util.Try
 object helpersv3_0 {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, session: QuerySession): Unit = {
     monitor.endFailure(session, t)
+  }
+
+  def asPublicType(value: Any): Any = value match {
+    case p: Point => wrapPoint(p)
+
+    case other => other
+  }
+
+  private def wrapPoint(point: Point) = new graphdb.spatial.Point {
+    override def getGeometryType = "Point"
+
+    override def getCRS: graphdb.spatial.CRS = new graphdb.spatial.CRS {
+
+      override def getType: String = point.crs.name
+
+      //TODO simplify when depending on newer version of 3.0.X
+      override def getHref: String = point.crs.name match {
+        case CRS.WGS84.name => "http://spatialreference.org/ref/epsg/4326/"
+        case CRS.Cartesian.name => "http://spatialreference.org/ref/sr-org/7203/"
+      }
+
+      //TODO simplify when depending on newer version of 3.0.X
+      override def getCode: Int = point.crs.name match {
+        case CRS.WGS84.name => 4326
+        case CRS.Cartesian.name => 7203
+      }
+    }
+
+    override def getCoordinates: java.util.List[graphdb.spatial.Coordinate] = Collections
+      .singletonList(new graphdb.spatial.Coordinate(point.coordinates:_*))
   }
 }
 

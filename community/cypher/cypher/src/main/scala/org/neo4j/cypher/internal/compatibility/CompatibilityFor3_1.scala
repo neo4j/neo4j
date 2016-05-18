@@ -65,6 +65,9 @@ object helpersv3_1 {
   }
 
   private def wrapPoint(point: Point) = new graphdb.spatial.Point {
+
+    override def getGeometryType = "Point"
+
     override def getCRS: graphdb.spatial.CRS = new graphdb.spatial.CRS {
 
       override def getType: String = point.crs.name

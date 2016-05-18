@@ -487,11 +487,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val solverConfigsToTest = Seq(
       ExpandOnlyIDPSolverConfig,
       ExpandOnlyWhenPatternIsLong,
-      new IDPSolverConfig {
-        override def solvers(queryGraph: QueryGraph): Seq[(QueryGraph) => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
-          ExpandOnlyWhenPatternIsLong.solvers(queryGraph)
-        override def iterationDurationLimit: Long = 100
-      },
+      ExpandOnlyWhenPatternIsLongShortIterationLimit,
       new ConfigurableIDPSolverConfig(maxTableSize = 32, iterationDurationLimit = Long.MaxValue), // table limited
       new ConfigurableIDPSolverConfig(maxTableSize = Int.MaxValue, iterationDurationLimit = 500), // time limited
       AdaptiveChainPatternConfig(10), // default
@@ -521,6 +517,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           val minJoinsExpected = solverConfig match {
             case ExpandOnlyIDPSolverConfig => 0
             case ExpandOnlyWhenPatternIsLong => 0
+            case ExpandOnlyWhenPatternIsLongShortIterationLimit => 0
             case _ => 1
           }
           assertMinExpandsAndJoins(plan, Map("expands" -> numberOfPatternRelationships, "joins" -> minJoinsExpected))
@@ -925,6 +922,13 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Argument(Set("a", "b"))(solved)()
       )
     }
+  }
+
+  case object ExpandOnlyWhenPatternIsLongShortIterationLimit extends IDPSolverConfig {
+
+    override def solvers(queryGraph: QueryGraph): Seq[(QueryGraph) => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
+      ExpandOnlyWhenPatternIsLong.solvers(queryGraph)
+    override def iterationDurationLimit: Long = 100
   }
 
   private def createQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor, solverConfig: IDPSolverConfig) =
