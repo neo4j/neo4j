@@ -304,7 +304,7 @@ public abstract class GraphDatabaseSettings
             setting("dbms.index_sampling.background_enabled", BOOLEAN, TRUE );
 
     @Description("Size of buffer used by index sampling. " +
-                 "This configuration setting is no longet applicable as from Neo4j 3.0.3." +
+                 "This configuration setting is no longer applicable as from Neo4j 3.0.3." +
                  "Please use dbms.index_sampling.sample_size_limit instead.")
     @Deprecated
     public static final Setting<Long> index_sampling_buffer_size = setting("dbms.index_sampling.buffer_size", BYTES, "64m",
