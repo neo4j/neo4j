@@ -262,7 +262,7 @@ public class EnterpriseCoreEditionModule
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        discoveryService = discoveryServiceFactory.coreDiscoveryService( config );
+        discoveryService = discoveryServiceFactory.coreDiscoveryService( config, logProvider );
 
         life.add( dependencies.satisfyDependency( discoveryService ) );
 

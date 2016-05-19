@@ -45,6 +45,8 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 class HazelcastServerLifecycle extends LifecycleAdapter
         implements CoreTopologyService, ReadOnlyTopologyService
@@ -56,15 +58,17 @@ class HazelcastServerLifecycle extends LifecycleAdapter
     static final String BOLT_SERVER = "bolt_server";
 
     private Config config;
+    private final Log log;
     private HazelcastInstance hazelcastInstance;
 
     private List<StartupListener> startupListeners = new ArrayList<>();
     private List<MembershipListener> membershipListeners = new ArrayList<>();
     private Map<MembershipListener, String> membershipRegistrationId = new ConcurrentHashMap<>();
 
-    public HazelcastServerLifecycle( Config config )
+    public HazelcastServerLifecycle( Config config, LogProvider logProvider )
     {
         this.config = config;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -135,10 +139,12 @@ class HazelcastServerLifecycle extends LifecycleAdapter
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
         tcpIpConfig.setEnabled( true );
 
-        for ( AdvertisedSocketAddress address : config.get( CoreEdgeClusterSettings.initial_core_cluster_members ) )
+        List<AdvertisedSocketAddress> initialMembers = config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
+        for ( AdvertisedSocketAddress address : initialMembers )
         {
             tcpIpConfig.addMember( address.toString() );
         }
+        log.info( "Discovering cluster with initial members: " + initialMembers );
 
         NetworkConfig networkConfig = new NetworkConfig();
         ListenSocketAddress address = config.get( CoreEdgeClusterSettings.cluster_listen_address );
