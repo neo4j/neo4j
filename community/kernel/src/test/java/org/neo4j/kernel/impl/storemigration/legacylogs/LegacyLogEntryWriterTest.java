@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Function;
+
+import org.junit.Test;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -33,9 +33,10 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.ArrayIOCursor;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -49,7 +50,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames.getLegacyLogFilename;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
@@ -69,13 +69,11 @@ public class LegacyLogEntryWriterTest
         final LegacyLogEntryWriter writer = new LegacyLogEntryWriter( fs );
         final File output = new File( getLegacyLogFilename( 3 ) );
         final LogHeader header = new LogHeader( CURRENT_LOG_VERSION, 1, 42l );
-
         // when
         try ( LogVersionedStoreChannel channel = writer.openWritableChannel( output ) )
         {
             writer.writeLogHeader( channel, header );
         }
-
         // then
         assertEquals( header, readLogHeader( fs, output ) );
     }
@@ -141,26 +139,6 @@ public class LegacyLogEntryWriterTest
 
     private IOCursor<LogEntry> mockCursor( final LogEntry... entries )
     {
-        return new IOCursor<LogEntry>()
-        {
-            private int pos = 0;
-
-            @Override
-            public LogEntry get()
-            {
-                return entries[pos++];
-            }
-
-            @Override
-            public boolean next() throws IOException
-            {
-                return pos < entries.length;
-            }
-
-            @Override
-            public void close() throws IOException
-            {// nothing to do
-            }
-        };
+        return new ArrayIOCursor<>( entries );
     }
 }

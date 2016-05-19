@@ -22,42 +22,38 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 
 /**
- * {@link IOCursor} abstraction on top of a {@link LogEntryReader}
+ * {@link IOCursor} abstraction over a given array
  */
-public class LogEntryCursor implements IOCursor<LogEntry>
+public class ArrayIOCursor<T> implements IOCursor<T>
 {
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
-    private final ReadableClosablePositionAwareChannel channel;
-    private LogEntry entry;
+    private final T[] entries;
+    private int pos = 0;
+    private boolean closed;
 
-    public LogEntryCursor( LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
-                           ReadableClosablePositionAwareChannel channel )
+    public ArrayIOCursor( T... entries )
     {
-        this.logEntryReader = logEntryReader;
-        this.channel = channel;
+        this.entries = entries;
     }
 
     @Override
-    public LogEntry get()
+    public T get()
     {
-        return entry;
+        assert !closed;
+        return entries[pos - 1];
     }
 
     @Override
     public boolean next() throws IOException
     {
-        entry = logEntryReader.readLogEntry( channel );
-
-        return entry != null;
+        assert !closed;
+        return pos++ < entries.length;
     }
 
     @Override
     public void close() throws IOException
     {
-        channel.close();
+        closed = true;
     }
 }

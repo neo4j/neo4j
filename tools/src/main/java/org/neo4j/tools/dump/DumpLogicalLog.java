@@ -29,18 +29,22 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.TreeSet;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.FilteringIOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -59,6 +63,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 public class DumpLogicalLog
 {
     private static final String TO_FILE = "tofile";
+    private static final String TX_FILTER = "txfilter";
 
     private final FileSystemAbstraction fileSystem;
 
@@ -68,7 +73,7 @@ public class DumpLogicalLog
     }
 
     public int dump( String filenameOrDirectory, String logPrefix, PrintStream out,
-                     TimeZone timeZone ) throws IOException
+                     TimeZone timeZone, String regex ) throws IOException
     {
         int logsFound = 0;
         for ( String fileName : filenamesOf( filenameOrDirectory, logPrefix ) )
@@ -76,11 +81,12 @@ public class DumpLogicalLog
             logsFound++;
             out.println( "=== " + fileName + " ===" );
             StoreChannel fileChannel = fileSystem.open( new File( fileName ), "r" );
+            ByteBuffer buffer = ByteBuffer.allocateDirect( LOG_HEADER_SIZE );
 
             LogHeader logHeader;
             try
             {
-                logHeader = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, false );
+                logHeader = readLogHeader( buffer, fileChannel, false );
             }
             catch ( IOException ex )
             {
@@ -89,7 +95,7 @@ public class DumpLogicalLog
                 fileChannel.close();
                 throw ex;
             }
-            out.println( "Logical log format:" + logHeader.logFormatVersion + "version: " + logHeader.logVersion +
+            out.println( "Logical log format: " + logHeader.logFormatVersion + " version: " + logHeader.logVersion +
                     " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
 
             PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
@@ -97,27 +103,71 @@ public class DumpLogicalLog
             ReadableLogChannel logChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
             LogEntryReader<ReadableClosablePositionAwareChannel> entryReader = new VersionAwareLogEntryReader<>();
 
-            try ( IOCursor<LogEntry> cursor = new LogEntryCursor( entryReader, logChannel ) )
+            IOCursor<LogEntry> entryCursor = new LogEntryCursor( entryReader, logChannel );
+            TransactionLogEntryCursor transactionCursor = new TransactionLogEntryCursor( entryCursor );
+            try ( IOCursor<LogEntry[]> cursor = regex == null ? transactionCursor :
+                    new FilteringIOCursor<>( transactionCursor, new TransactionRegexCriteria( regex, timeZone ) ) )
             {
-                while (cursor.next())
+                while ( cursor.next() )
                 {
-                    out.println( cursor.get().toString( timeZone ) );
+                    for ( LogEntry entry : cursor.get() )
+                    {
+                        out.println( entry.toString( timeZone ) );
+                    }
                 }
             }
         }
         return logsFound;
     }
 
+    private static class TransactionRegexCriteria implements Predicate<LogEntry[]>
+    {
+        private final Pattern pattern;
+        private final TimeZone timeZone;
+
+        TransactionRegexCriteria( String regex, TimeZone timeZone )
+        {
+            this.pattern = Pattern.compile( regex );
+            this.timeZone = timeZone;
+        }
+
+        @Override
+        public boolean test( LogEntry[] transaction )
+        {
+            for ( LogEntry entry : transaction )
+            {
+                if ( pattern.matcher( entry.toString( timeZone ) ).find() )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Usage: [--txfilter "regex"] [--tofile] storeDirOrFile1 storeDirOrFile2 ...
+     *
+     * --txfilter
+     * Will match regex against each {@link LogEntry} and if there is a match,
+     * include transaction containing the LogEntry in the dump.
+     * regex matching is done with {@link Pattern}
+     *
+     * --tofile
+     * Redirects output to dump-logical-log.txt in the store directory
+     */
     public static void main( String args[] ) throws IOException
     {
         Args arguments = Args.withFlags( TO_FILE ).parse( args );
         TimeZone timeZone = parseTimeZoneConfig( arguments );
+        String regex = arguments.get( TX_FILTER );
         try ( Printer printer = getPrinter( arguments ) )
         {
             for ( String fileAsString : arguments.orphans() )
             {
                 new DumpLogicalLog( new DefaultFileSystemAbstraction() )
-                        .dump( fileAsString, PhysicalLogFile.DEFAULT_NAME, printer.getFor( fileAsString ), timeZone );
+                        .dump( fileAsString, PhysicalLogFile.DEFAULT_NAME, printer.getFor( fileAsString ), timeZone,
+                                regex );
             }
         }
     }
