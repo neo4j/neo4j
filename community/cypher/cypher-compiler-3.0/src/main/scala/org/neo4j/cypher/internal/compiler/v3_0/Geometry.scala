@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_0
 
+import org.neo4j.cypher.internal.frontend.v3_0.InvalidArgumentException
+
 trait Geometry {
   def coordinates: Seq[Double]
   def crs: CRS
@@ -46,12 +48,12 @@ object CRS {
   def fromName(name: String) = name match {
     case Cartesian.name => Cartesian
     case WGS84.name => WGS84
-    case _ => throw new UnsupportedOperationException("Invalid or unsupported CRS name: " + name)
+    case _ => throw new InvalidArgumentException("Invalid or unsupported CRS name: " + name)
   }
 
   def fromSRID(id: Int) = id match {
     case Cartesian.`code` => Cartesian
     case WGS84.`code` => WGS84
-    case _ => throw new UnsupportedOperationException("Invalid or unsupported SRID: " + id)
+    case _ => throw new InvalidArgumentException("Invalid or unsupported SRID: " + id)
   }
 }

@@ -32,17 +32,21 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
     case IsMap(mapCreator) =>
       val map = mapCreator(state.query)
       if (map.contains("x") && map.contains("y")) {
-        val crs = map.getOrElse("crs", CRS.Cartesian.name).asInstanceOf[String]
-        if (crs != CRS.Cartesian.name) throw new InvalidArgumentException(s"'$crs' is not a supported coordinate reference system for cartesian points, supported CRS are: '${CRS.Cartesian.name}'")
         val x = safeToDouble(map("x"))
         val y = safeToDouble(map("y"))
-        CartesianPoint(x, y, CRS.fromName(crs))
+        val crsName = map.getOrElse("crs", CRS.Cartesian.name).asInstanceOf[String]
+        val crs = CRS.fromName(crsName)
+        crs match {
+          case CRS.WGS84 => GeographicPoint(x, y, crs)
+          case null => throw new InvalidArgumentException(s"'$crsName' is not a supported coordinate reference system for points, supported CRS are: '${CRS.WGS84.name}', '${CRS.Cartesian.name}'")
+          case _ => CartesianPoint(x, y, crs)
+        }
       } else if (map.contains("latitude") && map.contains("longitude")) {
-        val crs = map.getOrElse("crs", CRS.WGS84.name).asInstanceOf[String]
-        if (crs != CRS.WGS84.name) throw new InvalidArgumentException(s"'$crs' is not a supported coordinate reference system for geographic points, supported CRS are: '${CRS.WGS84.name}'")
+        val crsName = map.getOrElse("crs", CRS.WGS84.name).asInstanceOf[String]
+        if (crsName != CRS.WGS84.name) throw new InvalidArgumentException(s"'$crsName' is not a supported coordinate reference system for geographic points, supported CRS are: '${CRS.WGS84.name}'")
         val latitude = safeToDouble(map("latitude"))
         val longitude = safeToDouble(map("longitude"))
-        GeographicPoint(longitude, latitude, CRS.fromName(crs))
+        GeographicPoint(longitude, latitude, CRS.fromName(crsName))
       } else {
         throw new InvalidArgumentException("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'")
       }

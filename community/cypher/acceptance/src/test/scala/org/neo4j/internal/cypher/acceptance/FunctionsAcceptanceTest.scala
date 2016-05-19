@@ -463,23 +463,27 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
   }
 
   test("should fail properly if missing cartesian coordinates") {
-    an [InvalidArgumentException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
-                                                                           "params" -> Map("y" -> 1.0, "crs" -> "cartesian")))
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("y" -> 1.0, "crs" -> "cartesian"))
+    )
   }
 
   test("should fail properly if missing geographic longitude") {
-    a [InvalidArgumentException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
-      "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84")))
+    a [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84"))
+    )
   }
 
   test("should fail properly if missing geographic latitude") {
-    a [InvalidArgumentException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
-      "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84")))
+    a [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84"))
+    )
   }
 
   test("should fail properly if unknown coordinate system") {
-    an [InvalidArgumentException] shouldBe thrownBy(executeWithAllPlanners("RETURN point({params}) as point",
-                                                                 "params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337")))
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337"))
+    )
   }
 
   test("should default to Cartesian if missing cartesian CRS") {
@@ -488,10 +492,22 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     result.toList should equal(List(Map("point" -> CartesianPoint(2.3, 4.5, CRS.Cartesian))))
   }
 
-  test("should default to WGS83 if missing geographic CRS") {
+  test("should default to WGS84 if missing geographic CRS") {
     val result = executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5}) as point")
     result should useProjectionWith("Point")
     result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
+  }
+
+  test("should allow Geographic CRS with x/y coordinates") {
+    val result = executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84'}) as point")
+    result should useProjectionWith("Point")
+    result.toList should equal(List(Map("point" -> GeographicPoint(2.3, 4.5, CRS.WGS84))))
+  }
+
+  test("should not allow Cartesian CRS with latitude/longitude coordinates") {
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5, crs: 'cartesian'}) as point")
+    )
   }
 
   test("point function should work with previous map") {
