@@ -46,7 +46,7 @@ object indexScanLeafPlanner extends LeafPlanner {
         val name = scannable.name
         val propertyKeyName = scannable.propertyKey.name
 
-        produce(name, propertyKeyName, qg, scannable.property, predicate, lpp.planNodeIndexScan)
+        produce(name, propertyKeyName, qg, scannable.property, scannable.expr, lpp.planNodeIndexScan)
 
     }.flatten
 

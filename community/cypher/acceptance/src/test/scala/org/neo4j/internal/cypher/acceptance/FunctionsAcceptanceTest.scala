@@ -400,6 +400,32 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     executeScalarWithAllPlannersAndCompatibilityMode[Double]("MATCH (n) RETURN percentileCont(n.prop, 1)") should equal (30.0 +- 0.1)
   }
 
+  test("percentileCont should fail nicely at runtime") {
+    createNode("prop" -> 10.0)
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("MATCH (n) RETURN percentileCont(n.prop, {param})", "param" -> 1000)
+    )
+  }
+
+  test("percentileDisc should fail nicely at runtime") {
+    createNode("prop" -> 10.0)
+    an [InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("MATCH (n) RETURN percentileCont(n.prop, {param})", "param" -> 1000)
+    )
+  }
+
+  test("percentileDisc should fail nicely on more involved query") {
+    for (i <- 1 to 10) {
+      val node = createLabeledNode("START")
+      (1 to i).map(_ => relate(node, createNode()))
+    }
+    an [InvalidArgumentException] shouldBe thrownBy(executeWithAllPlanners("MATCH (n:START) " +
+                                                         "WITH n, size( (n)-->() ) AS deg WHERE deg > 2 " +
+                                                         "WITH deg LIMIT 100 " +
+                                                         //mixing up the argument order
+                                                         "RETURN percentileDisc(0.90, deg), deg"))
+  }
+
   test("point function should work with literal map") {
     val result = executeWithAllPlanners("RETURN point({latitude: 12.78, longitude: 56.7}) as point")
     result should useProjectionWith("Point")
