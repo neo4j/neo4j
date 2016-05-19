@@ -160,6 +160,11 @@ public interface JobScheduler extends Lifecycle
          * UDC timed events.
          */
         public static Group udc  = new Group( "UsageDataCollection", POOLED );
+
+        /**
+         * Storage maintenance.
+         */
+        public static Group storageMaintenance = new Group( "StorageMaintenance", POOLED );
     }
 
     interface JobHandle

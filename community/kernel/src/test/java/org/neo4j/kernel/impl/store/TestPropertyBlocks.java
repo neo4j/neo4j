@@ -861,7 +861,6 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
                 getIdGenerator( IdType.PROPERTY ).getNumberOfIdsInUse() );
         node.delete();
         commit();
-        assertEquals( "All property records should be freed", propcount,
-                getIdGenerator( IdType.PROPERTY ).getNumberOfIdsInUse() );
+        assertEquals( "All property records should be freed", propcount, propertyRecordsInUse() );
     }
 }

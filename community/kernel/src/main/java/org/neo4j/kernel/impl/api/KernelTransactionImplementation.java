@@ -149,6 +149,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long lastTransactionIdWhenStarted;
     private TransactionEvent transactionEvent;
     private Type type;
+    private volatile int reuseCount;
 
     public KernelTransactionImplementation( StatementOperationParts operations,
                                             SchemaWriteGuard schemaWriteGuard,
@@ -197,6 +198,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.accessMode = accessMode;
         this.currentStatement.initialize( locks );
         return this;
+    }
+
+    int getReuseCount()
+    {
+        return reuseCount;
     }
 
     @Override
@@ -576,6 +582,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         txState = null;
         hooksState = null;
         closeListener = null;
+        reuseCount++;
         pool.release( this );
     }
 

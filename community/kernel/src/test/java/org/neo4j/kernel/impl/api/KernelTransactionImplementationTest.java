@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,12 +27,12 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -413,5 +413,20 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
             verify( this.transactionMonitor, times( 1 ) ).upgradeToWriteTransaction();
         }
         verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldIncrementReuseCounterOnReuse() throws Exception
+    {
+        // GIVEN
+        KernelTransactionImplementation transaction = newTransaction( accessMode() );
+        int reuseCount = transaction.getReuseCount();
+
+        // WHEN
+        transaction.close();
+        transaction.initialize( 1, new NoOpClient(), KernelTransaction.Type.implicit, accessMode() );
+
+        // THEN
+        assertEquals( reuseCount + 1, transaction.getReuseCount() );
     }
 }

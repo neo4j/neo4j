@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyBatchIndexApplier;
 import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
@@ -73,6 +75,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.HighIdBatchTransactionApplier;
@@ -117,9 +120,12 @@ import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
+    private static final boolean safeIdBuffering = flag( RecordStorageEngine.class, "safeIdBuffering", true );
+
     /**
      * This setting is hidden to the user and is here merely for making it easier to back out of
      * a change where reading property chains incurs read locks on {@link LockService}.
@@ -145,6 +151,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final SchemaStorage schemaStorage;
     private final ConstraintSemantics constraintSemantics;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
+    private final JobScheduler scheduler;
     private final LockService lockService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
     private final CommandReaderFactory commandReaderFactory;
@@ -153,6 +160,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final Supplier<StorageStatement> storeStatementSupplier;
+
+    private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
+    private JobScheduler.JobHandle idBufferMaintenance;
 
     // Immutable state for creating/applying commands
     private final Loaders loaders;
@@ -183,12 +193,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LegacyIndexProviderLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore,
             IdOrderingQueue legacyIndexTransactionOrdering,
+            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier,
             RecordFormats recordFormats )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
         this.labelTokenHolder = labelTokens;
         this.schemaStateChangeCallback = schemaStateChangeCallback;
+        this.scheduler = scheduler;
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
@@ -198,12 +210,21 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         final StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory,
                 pageCache, fs, recordFormats, logProvider );
+        if ( safeIdBuffering )
+        {
+            // This buffering id generator factory will have properly buffering id generators injected into
+            // the stores. The buffering depends on knowledge about active transactions,
+            // so we'll initialize it below when all those components have been instantiated.
+            bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
+                    idGeneratorFactory, transactionsSnapshotSupplier );
+            storeFactory.setIdGeneratorFactory( bufferingIdGeneratorFactory );
+        }
         neoStores = storeFactory.openAllNeoStores( true );
 
         try
         {
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
-            schemaCache = new SchemaCache( constraintSemantics, Collections.<SchemaRule>emptyList() );
+            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList() );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
             schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( indexProvider );
@@ -412,6 +433,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         loadSchemaCache();
         indexingService.start();
         labelScanStore.start();
+        if ( safeIdBuffering )
+        {
+            Runnable maintenance = bufferingIdGeneratorFactory::maintenance;
+            idBufferMaintenance = scheduler.scheduleRecurring(
+                    JobScheduler.Groups.storageMaintenance, maintenance, 1, TimeUnit.SECONDS );
+        }
     }
 
     @Override
@@ -426,6 +453,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         labelScanStore.stop();
         indexingService.stop();
+        if ( safeIdBuffering )
+        {
+            idBufferMaintenance.cancel( false );
+        }
     }
 
     @Override

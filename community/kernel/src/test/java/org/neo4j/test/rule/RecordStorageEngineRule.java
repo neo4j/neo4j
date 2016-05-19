@@ -20,6 +20,8 @@
 package org.neo4j.test.rule;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -28,6 +30,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
@@ -96,13 +99,15 @@ public class RecordStorageEngineRule extends ExternalResource
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
         JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
         Config config = Config.defaults();
+        Supplier<KernelTransactionsSnapshot> txSnapshotSupplier =
+                () -> new KernelTransactionsSnapshot( Collections.emptySet() );
         return life.add( new RecordStorageEngine( storeDirectory, config, idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
                 mock( RelationshipTypeTokenHolder.class ), () -> {}, new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
                 labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
-                new SynchronizedArrayIdOrderingQueue( 20 ), recordFormats ) );
+                new SynchronizedArrayIdOrderingQueue( 20 ), txSnapshotSupplier, recordFormats ) );
     }
 
     @Override

@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.api.GuardingStatementOperations;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactions;
+import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.LockingStatementOperations;
 import org.neo4j.kernel.impl.api.SchemaStateConcern;
@@ -339,6 +340,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         this.storeDir = storeDir;
         this.config = config;
+        this.idGeneratorFactory = idGeneratorFactory;
         this.tokenNameLookup = tokenNameLookup;
         this.dependencyResolver = dependencyResolver;
         this.scheduler = scheduler;
@@ -370,7 +372,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         readOnly = config.get( Configuration.read_only );
         msgLog = logProvider.getLog( getClass() );
-        this.idGeneratorFactory = idGeneratorFactory;
         this.lockService = new ReentrantLockService();
         this.legacyIndexProviderLookup = new LegacyIndexProviderLookup()
         {
@@ -462,7 +463,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     transactionLogModule.logFiles(), startupStatistics,
                     storageEngine, logEntryReader );
 
-            KernelModule kernelModule = buildKernel(
+            final KernelModule kernelModule = buildKernel(
                     transactionLogModule.transactionAppender(),
                     dependencies.resolveDependency( IndexingService.class ),
                     storageEngine.storeReadLayer(),
@@ -559,11 +560,16 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         LabelScanStoreProvider labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                 HighestSelectionStrategy.getInstance() );
+        // TODO we should break this dependency on the kernelModule (which has not yet been created at this point in
+        // TODO the code) and instead let information about generations of transactions flow through the StorageEngine
+        // TODO API
+        Supplier<KernelTransactionsSnapshot> transactionSnapshotSupplier =
+                () -> kernelModule.kernelTransactions().get();
         RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config, idGeneratorFactory, pageCache,
                 fs, logProvider, propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, schemaStateChangeCallback,
                 constraintSemantics, scheduler, tokenNameLookup, lockService, schemaIndexProvider,
                 indexingServiceMonitor, databaseHealth, labelScanStore, legacyIndexProviderLookup, indexConfigStore,
-                legacyIndexTransactionOrdering, format );
+                legacyIndexTransactionOrdering, transactionSnapshotSupplier, format );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which

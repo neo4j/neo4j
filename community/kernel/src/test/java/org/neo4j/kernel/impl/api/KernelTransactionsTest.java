@@ -24,6 +24,10 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.concurrent.Executors;
 
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -47,11 +51,14 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.test.Race;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -62,6 +69,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 public class KernelTransactionsTest
 {
@@ -127,6 +137,106 @@ public class KernelTransactionsTest
         byte[] additionalHeader = transactionRepresentation[0].additionalHeader();
         assertNotNull( additionalHeader );
         assertTrue( additionalHeader.length > 0 );
+    }
+
+    @Test
+    public void shouldReuseClosedTransactionObjects() throws Exception
+    {
+        // GIVEN
+        KernelTransactions transactions = newKernelTransactions();
+        KernelTransaction a = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+
+        // WHEN
+        a.close();
+        KernelTransaction b = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+
+        // THEN
+        assertSame( a, b );
+    }
+
+    @Test
+    public void shouldTellWhenTransactionsFromSnapshotHaveBeenClosed() throws Exception
+    {
+        // GIVEN
+        KernelTransactions transactions = newKernelTransactions();
+        KernelTransaction a = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction b = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransaction c = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        KernelTransactionsSnapshot snapshot = transactions.get();
+        assertFalse( snapshot.allClosed() );
+
+        // WHEN a gets closed
+        a.close();
+        assertFalse( snapshot.allClosed() );
+
+        // WHEN c gets closed and (test knowing too much) that instance getting reused in another transaction "d".
+        c.close();
+        KernelTransaction d = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE );
+        assertFalse( snapshot.allClosed() );
+
+        // WHEN b finally gets closed
+        b.close();
+        assertTrue( snapshot.allClosed() );
+    }
+
+    @Test
+    public void shouldBeAbleToSnapshotDuringHeavyLoad() throws Throwable
+    {
+        // GIVEN
+        final KernelTransactions transactions = newKernelTransactions();
+        Race race = new Race();
+        final int threads = 50;
+        final AtomicBoolean end = new AtomicBoolean();
+        final AtomicReferenceArray<KernelTransactionsSnapshot> snapshots = new AtomicReferenceArray<>( threads );
+
+        // Representing "transaction" threads
+        for ( int i = 0; i < threads; i++ )
+        {
+            final int threadIndex = i;
+            race.addContestant( () -> {
+                ThreadLocalRandom random = ThreadLocalRandom.current();
+                while ( !end.get() )
+                {
+                    try ( KernelTransaction transaction = transactions.newInstance( KernelTransaction.Type.implicit, AccessMode.Static.NONE ) )
+                    {
+                        parkNanos( MILLISECONDS.toNanos( random.nextInt( 3 ) ) );
+                        if ( snapshots.get( threadIndex ) == null )
+                        {
+                            snapshots.set( threadIndex, transactions.get() );
+                            parkNanos( MILLISECONDS.toNanos( random.nextInt( 3 ) ) );
+                        }
+                    }
+                    catch ( TransactionFailureException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
+            } );
+        }
+
+        // Just checks snapshots
+        race.addContestant( () -> {
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            int snapshotsLeft = 1_000;
+            while ( snapshotsLeft > 0 )
+            {
+                int threadIndex = random.nextInt( threads );
+                KernelTransactionsSnapshot snapshot = snapshots.get( threadIndex );
+                if ( snapshot != null && snapshot.allClosed() )
+                {
+                    snapshotsLeft--;
+                    snapshots.set( threadIndex, null );
+                }
+            }
+
+            // End condition of this test can be described as:
+            //   when 1000 snapshots have been seen as closed.
+            // setting this boolean to true will have all other threads end as well so that race.go() will end
+            end.set( true );
+        } );
+
+        // WHEN
+        race.go();
     }
 
     @Test

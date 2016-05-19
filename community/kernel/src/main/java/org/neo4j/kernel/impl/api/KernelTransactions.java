@@ -29,14 +29,14 @@ import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -56,6 +56,7 @@ import static java.util.Collections.newSetFromMap;
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
 public class KernelTransactions extends LifecycleAdapter
+        implements Supplier<KernelTransactionsSnapshot>   // For providing KernelTransactionSnapshots
 {
     // Transaction dependencies
 
@@ -221,5 +222,11 @@ public class KernelTransactions extends LifecycleAdapter
         {
             throw new DatabaseShutdownException();
         }
+    }
+
+    @Override
+    public KernelTransactionsSnapshot get()
+    {
+        return new KernelTransactionsSnapshot( allTransactions );
     }
 }
