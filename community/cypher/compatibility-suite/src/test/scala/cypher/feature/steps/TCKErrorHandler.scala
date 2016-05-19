@@ -60,7 +60,7 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
           detail should equal(NESTED_AGGREGATION)
         else if (e.getMessage.matches("Can't create node `(\\w+)` with labels or properties here. The variable is already declared in this context"))
           detail should equal(VARIABLE_ALREADY_BOUND)
-        else if (e.getMessage.matches("Can't create node `\\w+` with labels or properties here. The variable is already declared in this context"))
+        else if (e.getMessage.matches("Can't create `\\w+` with properties or labels here. The variable is already declared in this context"))
           detail should equal(VARIABLE_ALREADY_BOUND)
 
         // Runtime errors
