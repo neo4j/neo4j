@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.impl.api;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +28,7 @@ import java.util.Collection;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -410,6 +411,21 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( locks ).newClient();
+    }
+
+    @Test
+    public void shouldIncrementReuseCounterOnReuse() throws Exception
+    {
+        // GIVEN
+        KernelTransactionImplementation transaction = newTransaction();
+        int reuseCount = transaction.getReuseCount();
+
+        // WHEN
+        transaction.close();
+        transaction.initialize( 1 );
+
+        // THEN
+        assertEquals( reuseCount + 1, transaction.getReuseCount() );
     }
 
     private final NeoStores neoStores = mock( NeoStores.class );

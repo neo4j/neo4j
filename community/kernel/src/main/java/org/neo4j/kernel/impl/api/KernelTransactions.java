@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -62,7 +63,9 @@ import static java.util.Collections.newSetFromMap;
  * for enumerating all running transactions. During normal operation, acquiring new transactions and enumerating live
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
-public class KernelTransactions extends LifecycleAdapter implements Factory<KernelTransaction>
+public class KernelTransactions extends LifecycleAdapter
+        implements Factory<KernelTransaction>, // For providing KernelTransaction instances
+        Supplier<KernelTransactionsSnapshot>   // For providing KernelTransactionSnapshots
 {
     // Transaction dependencies
 
@@ -248,5 +251,11 @@ public class KernelTransactions extends LifecycleAdapter implements Factory<Kern
         {
             throw new DatabaseShutdownException();
         }
+    }
+
+    @Override
+    public KernelTransactionsSnapshot get()
+    {
+        return new KernelTransactionsSnapshot( allTransactions );
     }
 }

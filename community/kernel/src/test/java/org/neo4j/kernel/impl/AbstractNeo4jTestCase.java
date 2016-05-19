@@ -39,7 +39,6 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.reflect.Field;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -50,10 +49,11 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoresSupplier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -283,31 +283,31 @@ public abstract class AbstractNeo4jTestCase
 
     protected long propertyRecordsInUse()
     {
-        return propertyStore().getNumberOfIdsInUse();
+        return numberOfRecordsInUse( propertyStore() );
+    }
+
+    public static <RECORD extends AbstractBaseRecord> int numberOfRecordsInUse( RecordStore<RECORD> store )
+    {
+        int inUse = 0;
+        for ( long id = store.getNumberOfReservedLowIds(); id < store.getHighId(); id++ )
+        {
+            RECORD record = store.forceGetRecord( id );
+            if ( record.inUse() )
+            {
+                inUse++;
+            }
+        }
+        return inUse;
     }
 
     protected long dynamicStringRecordsInUse()
     {
-        return dynamicRecordsInUse( "stringPropertyStore" );
+        return numberOfRecordsInUse( propertyStore().getStringStore() );
     }
 
     protected long dynamicArrayRecordsInUse()
     {
-        return dynamicRecordsInUse( "arrayPropertyStore" );
-    }
-
-    private long dynamicRecordsInUse( String fieldName )
-    {
-        try
-        {
-            Field storeField = PropertyStore.class.getDeclaredField( fieldName );
-            storeField.setAccessible( true );
-            return ((AbstractDynamicStore) storeField.get( propertyStore() )).getNumberOfIdsInUse();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        return numberOfRecordsInUse( propertyStore().getArrayStore() );
     }
 
     protected PropertyStore propertyStore()

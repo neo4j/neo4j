@@ -201,7 +201,7 @@ public class DataSourceModule
                 platformModule.monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 editionModule.headerInformationFactory, startupStatistics, nodeManager, guard, indexStore,
                 editionModule.commitProcessFactory, pageCache, editionModule.constraintSemantics,
-                platformModule.monitors, platformModule.tracers ) );
+                platformModule.monitors, platformModule.tracers, editionModule.idGeneratorFactory ) );
         dataSourceManager.register( neoStoreDataSource );
 
         life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );
