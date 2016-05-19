@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacylogs;
 
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Function;
+
+import org.junit.Test;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.ArrayIOCursor;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -74,7 +75,6 @@ public class LegacyLogEntryWriterTest
         {
             writer.writeLogHeader( channel, header );
         }
-
         // then
         assertEquals( header, readLogHeader( fs, output ) );
     }
@@ -140,26 +140,6 @@ public class LegacyLogEntryWriterTest
 
     private IOCursor<LogEntry> mockCursor( final LogEntry... entries )
     {
-        return new IOCursor<LogEntry>()
-        {
-            private int pos = 0;
-
-            @Override
-            public LogEntry get()
-            {
-                return entries[pos++];
-            }
-
-            @Override
-            public boolean next() throws IOException
-            {
-                return pos < entries.length;
-            }
-
-            @Override
-            public void close() throws IOException
-            {// nothing to do
-            }
-        };
+        return new ArrayIOCursor<>( entries );
     }
 }

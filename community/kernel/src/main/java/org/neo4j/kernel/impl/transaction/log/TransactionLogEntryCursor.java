@@ -20,44 +20,57 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
 
 /**
- * {@link IOCursor} abstraction on top of a {@link LogEntryReader}
+ * Groups {@link LogEntry} instances transaction by transaction
  */
-public class LogEntryCursor implements IOCursor<LogEntry>
+public class TransactionLogEntryCursor implements IOCursor<LogEntry[]>
 {
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
-    private final ReadableClosablePositionAwareChannel channel;
-    private LogEntry entry;
+    private final IOCursor<LogEntry> delegate;
+    private final List<LogEntry> transaction = new ArrayList<>();
 
-    public LogEntryCursor( LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
-                           ReadableClosablePositionAwareChannel channel )
+    public TransactionLogEntryCursor( IOCursor<LogEntry> delegate )
     {
-        this.logEntryReader = logEntryReader;
-        this.channel = channel;
+        this.delegate = delegate;
     }
 
     @Override
-    public LogEntry get()
+    public LogEntry[] get()
     {
-        return entry;
+        return transaction.toArray( new LogEntry[transaction.size()] );
     }
 
     @Override
     public boolean next() throws IOException
     {
-        entry = logEntryReader.readLogEntry( channel );
+        transaction.clear();
+        LogEntry entry;
+        while ( delegate.next() )
+        {
+            entry = delegate.get();
+            transaction.add( entry );
+            if ( isBreakPoint( entry ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
-        return entry != null;
+    private boolean isBreakPoint( LogEntry entry )
+    {
+        return entry.getType() == LogEntryByteCodes.TX_1P_COMMIT;
     }
 
     @Override
     public void close() throws IOException
     {
-        channel.close();
+        delegate.close();
     }
 }
