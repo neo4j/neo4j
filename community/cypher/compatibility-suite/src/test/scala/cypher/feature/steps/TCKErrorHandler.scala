@@ -78,7 +78,8 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
           detail should equal(DELETE_CONNECTED_NODE)
         else if (e.getMessage.matches("Don't know how to compare that\\..+"))
           detail should equal(INCOMPARABLE_VALUES)
-
+        else if (e.getMessage.startsWith("It is not allowed to refer to variables in"))
+          detail should equal("VariableUseNotAllowed")
         else fail(s"Unknown $phase error: $e", e)
 
       case Failure(e) =>
