@@ -29,18 +29,22 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.transaction.log.FilteringIOCursor;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
@@ -55,6 +59,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 public class DumpLogicalLog
 {
     private static final String TO_FILE = "tofile";
+    private static final String TX_FILTER = "txfilter";
 
     private final FileSystemAbstraction fileSystem;
 
@@ -64,7 +69,7 @@ public class DumpLogicalLog
     }
 
     public int dump( String filenameOrDirectory, String logPrefix, PrintStream out,
-                     TimeZone timeZone ) throws IOException
+            TimeZone timeZone, String regex ) throws IOException
     {
         int logsFound = 0;
         for ( String fileName : filenamesOf( filenameOrDirectory, logPrefix ) )
@@ -86,25 +91,54 @@ public class DumpLogicalLog
                 fileChannel.close();
                 throw ex;
             }
-            out.println( "Logical log format:" + logHeader.logFormatVersion + "version: " + logHeader.logVersion +
+            out.println( "Logical log format: " + logHeader.logFormatVersion + " version: " + logHeader.logVersion +
                     " with prev committed tx[" + logHeader.lastCommittedTxId + "]" );
-
-//            LogDeserializer deserializer = new LogDeserializer();
 
             PhysicalLogVersionedStoreChannel channel = new PhysicalLogVersionedStoreChannel(
                     fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableVersionableLogChannel logChannel =
                     new ReadAheadLogChannel( channel, NO_MORE_CHANNELS, 4096 );
 
-            try ( IOCursor<LogEntry> cursor = new LogEntryCursor( logChannel ) )
+            IOCursor<LogEntry> entryCursor = new LogEntryCursor( logChannel );
+            TransactionLogEntryCursor transactionCursor = new TransactionLogEntryCursor( entryCursor );
+            try ( IOCursor<LogEntry[]> cursor = regex == null ? transactionCursor :
+                    new FilteringIOCursor<>( transactionCursor, new TransactionRegexCriteria( regex, timeZone ) ) )
             {
-                while (cursor.next())
+                while ( cursor.next() )
                 {
-                    out.println( cursor.get().toString( timeZone ) );
+                    for ( LogEntry entry : cursor.get() )
+                    {
+                        out.println( entry.toString( timeZone ) );
+                    }
                 }
             }
         }
         return logsFound;
+    }
+
+    protected class TransactionRegexCriteria implements Predicate<LogEntry[]>
+    {
+        protected Pattern pattern;
+        private final TimeZone timeZone;
+
+        TransactionRegexCriteria( String regex, TimeZone timeZone )
+        {
+            pattern = Pattern.compile( regex );
+            this.timeZone = timeZone;
+        }
+
+        @Override
+        public boolean accept( LogEntry[] transaction )
+        {
+            for ( LogEntry entry : transaction )
+            {
+                if ( pattern.matcher( entry.toString( timeZone ) ).find() )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     protected static boolean isAGraphDatabaseDirectory( String fileName )
@@ -113,16 +147,29 @@ public class DumpLogicalLog
         return file.isDirectory() && new File( file, MetaDataStore.DEFAULT_NAME ).exists();
     }
 
+    /**
+     * Usage: [--txfilter "regex"] [--tofile] storeDirOrFile1 storeDirOrFile2 ...
+     *
+     * --txfilter
+     * Will match regex against each {@link LogEntry} and if there is a match,
+     * include transaction containing the LogEntry in the dump.
+     * regex matching is done with {@link Pattern}
+     *
+     * --tofile
+     * Redirects output to dump-logical-log.txt in the store directory
+     */
     public static void main( String args[] ) throws IOException
     {
         Args arguments = Args.withFlags( TO_FILE ).parse( args );
         TimeZone timeZone = parseTimeZoneConfig( arguments );
+        String regex = arguments.get( TX_FILTER );
         try ( Printer printer = getPrinter( arguments ) )
         {
             for ( String fileAsString : arguments.orphans() )
             {
                 new DumpLogicalLog( new DefaultFileSystemAbstraction() )
-                        .dump( fileAsString, PhysicalLogFile.DEFAULT_NAME, printer.getFor( fileAsString ), timeZone );
+                        .dump( fileAsString, PhysicalLogFile.DEFAULT_NAME, printer.getFor( fileAsString ), timeZone,
+                                regex );
             }
         }
     }

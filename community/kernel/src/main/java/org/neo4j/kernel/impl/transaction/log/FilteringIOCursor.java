@@ -21,47 +21,44 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.helpers.Predicate;
 
 /**
- * {@link IOCursor} abstraction on top of a {@link LogEntryReader}
+ * {@link IOCursor} implementation that uses a predicate to decide on what to keep and what to skip
  */
-public class LogEntryCursor implements IOCursor<LogEntry>
+public class FilteringIOCursor<T> implements IOCursor<T>
 {
-    private final LogEntryReader<ReadableLogChannel> logEntryReader;
-    private final ReadableLogChannel channel;
-    private LogEntry entry;
+    private final IOCursor<T> delegate;
+    private final Predicate<T> toKeep;
 
-    public LogEntryCursor( ReadableLogChannel channel )
+    public FilteringIOCursor( IOCursor<T> delegate, Predicate<T> toKeep )
     {
-        this( new VersionAwareLogEntryReader<>(), channel );
-    }
-
-    public LogEntryCursor( LogEntryReader<ReadableLogChannel> logEntryReader, ReadableLogChannel channel )
-    {
-        this.logEntryReader = logEntryReader;
-        this.channel = channel;
+        this.delegate = delegate;
+        this.toKeep = toKeep;
     }
 
     @Override
-    public LogEntry get()
+    public T get()
     {
-        return entry;
+        return delegate.get();
     }
 
     @Override
     public boolean next() throws IOException
     {
-        entry = logEntryReader.readLogEntry( channel );
-
-        return entry != null;
+        do
+        {
+            if ( !delegate.next() )
+            {
+                return false;
+            }
+        } while ( !toKeep.accept( delegate.get() ) );
+        return true;
     }
 
     @Override
     public void close() throws IOException
     {
-        channel.close();
+        delegate.close();
     }
 }
