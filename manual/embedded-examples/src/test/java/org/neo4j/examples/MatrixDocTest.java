@@ -21,7 +21,7 @@ package org.neo4j.examples;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.neo4j.test.JavaDocsGenerator;
+import org.neo4j.doc.tools.JavaDocsGenerator;
 
 import static org.junit.Assert.assertTrue;
 

@@ -323,6 +323,15 @@
       <version>20090211</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-doc-tools</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+
   </dependencies>
 
   <build>
