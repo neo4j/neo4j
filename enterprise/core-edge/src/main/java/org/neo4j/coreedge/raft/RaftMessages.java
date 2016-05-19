@@ -231,7 +231,8 @@ public interface RaftMessages
             {
                 super( from, Type.APPEND_ENTRIES_REQUEST );
                 Objects.requireNonNull( entries );
-                assert !((prevLogIndex == -1 && prevLogTerm != -1) || (prevLogTerm == -1 && prevLogIndex != -1));
+                assert !((prevLogIndex == -1 && prevLogTerm != -1) || (prevLogTerm == -1 && prevLogIndex != -1)) :
+                        format( "prevLogIndex was %d and prevLogTerm was %d", prevLogIndex, prevLogTerm );
                 this.entries = entries;
                 this.leaderTerm = leaderTerm;
                 this.prevLogIndex = prevLogIndex;
