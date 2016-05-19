@@ -49,8 +49,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, ch
 
   private var query: String = null
   private var status: String = Result.PASSED
-  private val shortQuery: Regex = TCKStepDefinitions.EXECUTING_QUERY.r
-  private val docStringQuery: Regex = TCKStepDefinitions.EXECUTING_LONG_QUERY.r
+  private val execQRegex: Regex = TCKStepDefinitions.EXECUTING_QUERY.r
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())
@@ -68,8 +67,8 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, ch
   override def step(step: Step) {
     if (step.getKeyword.trim == "When") {
       step.getName match {
-        case shortQuery(q) => query = q
-        case docStringQuery() => query = step.getDocString.getValue
+        case execQRegex() => query = step.getDocString.getValue
+        case _ => throw new IllegalStateException("An illegal 'When' step was encountered: " + step.getName)
       }
     }
   }

@@ -74,6 +74,8 @@ case class TCKErrorHandler(typ: String, phase: String, detail: String) extends M
           detail should equal(CREATE_BLOCKED_BY_CONSTRAINT)
         else if (e.getMessage.matches("Cannot delete node\\<\\d+\\>, because it still has relationships. To delete this node, you must first delete its relationships."))
           detail should equal(DELETE_CONNECTED_NODE)
+        else if (e.getMessage.matches("Don't know how to compare that\\..+"))
+          detail should equal(INCOMPARABLE_VALUES)
 
         else fail(s"Unknown $phase error: $e", e)
 

@@ -23,14 +23,16 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, IncomparableValuesException, N
 
 class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
+  // TCK'd
   test("NOT(p1 AND p2) should return true when p2 is false") {
     createNode("apa")
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n)where not(n.name = 'apa' and false) return n")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE NOT(n.name = 'apa' AND false) RETURN n")
 
     result should have size 1
   }
 
+  // TCK'd
   test("should throw exception if comparing string and number") {
     createLabeledNode(Map("prop" -> "15"), "Label")
 
@@ -39,6 +41,7 @@ class WhereAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     a[IncomparableValuesException] should be thrownBy executeWithAllPlannersAndCompatibilityMode(query)
   }
 
+  // Not TCK material
   test("should be able to handle a large DNF predicate without running out of memory") {
     // given
     val query = """MATCH (a)-[r]->(b) WHERE
