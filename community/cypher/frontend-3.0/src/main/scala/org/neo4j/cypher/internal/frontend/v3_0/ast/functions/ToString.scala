@@ -19,16 +19,37 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_0.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_0.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_0.ast.{Function, FunctionInvocation}
 import org.neo4j.cypher.internal.frontend.v3_0.symbols._
+import org.neo4j.cypher.internal.frontend.v3_0.{SemanticCheck, SemanticCheckResult, SemanticError, SemanticState}
 
-case object ToString extends Function with SimpleTypedFunction {
-  def name = "toString"
+case object ToString extends Function {
+  override def name = "toString"
 
-  val signatures = Vector(
-    Signature(argumentTypes = Vector(CTFloat), outputType = CTString),
-    Signature(argumentTypes = Vector(CTInteger), outputType = CTString),
-    Signature(argumentTypes = Vector(CTBoolean), outputType = CTString),
-    Signature(argumentTypes = Vector(CTString), outputType = CTString)
-  )
+  override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation): SemanticCheck =
+    checkMinArgs(invocation, 1) ifOkChain
+    checkMaxArgs(invocation, 1) ifOkChain
+    checkTypeOfArgument(invocation) ifOkChain
+    invocation.specifyType(CTString)
+
+  private def checkTypeOfArgument(invocation: FunctionInvocation): SemanticCheck = (s: SemanticState) => {
+    val e = invocation.args.head
+
+    s.expressionType(e).specified match {
+      case CTFloat.invariant |
+           CTInteger.invariant |
+           CTString.invariant |
+           CTBoolean.invariant |
+           CTNumber.invariant |
+           CTAny.invariant => SemanticCheckResult.success(s)
+
+      case
+        CTAny.covariant => SemanticCheckResult.success(s)
+
+      case x =>
+        val message = s"Type mismatch: expected Boolean, Float, Integer or String but was ${x.mkString(", ")}"
+        SemanticCheckResult.error(s, SemanticError(message, invocation.position))
+    }
+  }
 }

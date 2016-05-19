@@ -675,4 +675,10 @@ class FunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTes
     a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=cost $query", Map.empty[String,Any], graph.session()))
     a [SyntaxException] shouldBe thrownBy(eengine.execute(s"CYPHER planner=rule $query", Map.empty[String,Any], graph.session()))
   }
+
+  test("should handle a collection of values that individually are OK") {
+    //"match (n) return toString(n) "
+    val result = executeWithAllPlanners("RETURN [x in [1, 2.3, true, 'apa' ] | toString(x) ] as col")
+    result.toList should equal(List(Map("col"-> Seq("1", "2.3", "true", "apa"))))
+  }
 }
