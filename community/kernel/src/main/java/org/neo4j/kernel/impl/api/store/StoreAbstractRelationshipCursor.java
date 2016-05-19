@@ -44,16 +44,14 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItem.EntityI
     protected final RelationshipRecord relationshipRecord;
     protected final RelationshipStore relationshipStore;
     protected final RelationshipGroupStore relationshipGroupStore;
-    private final LockService lockService;
     protected StoreStatement storeStatement;
 
     private InstanceCache<StoreSinglePropertyCursor> singlePropertyCursor;
     private InstanceCache<StorePropertyCursor> allPropertyCursor;
 
     public StoreAbstractRelationshipCursor( RelationshipRecord relationshipRecord, final NeoStores neoStores,
-            StoreStatement storeStatement, LockService lockService )
+            StoreStatement storeStatement )
     {
-        this.lockService = lockService;
         this.relationshipStore = neoStores.getRelationshipStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.relationshipRecord = relationshipRecord;
@@ -115,47 +113,15 @@ public abstract class StoreAbstractRelationshipCursor extends EntityItem.EntityI
                 relationshipRecord.getSecondNode() : relationshipRecord.getFirstNode();
     }
 
-    private Lock shortLivedReadLock()
-    {
-        Lock lock = lockService.acquireRelationshipLock( relationshipRecord.getId(), LockService.LockType.READ_LOCK );
-        if ( lockService != NO_LOCK_SERVICE )
-        {
-            boolean success = true;
-            try
-            {
-                // It's safer to re-read the relationship record here, specifically nextProp, after acquiring the lock
-                relationshipStore.fillRecord( relationshipRecord.getId(), relationshipRecord, FORCE );
-                if ( !relationshipRecord.inUse() )
-                {
-                    // So it looks like the node has been deleted. The current behavior of RelationshipStore#fillRecord
-                    // w/ FORCE is to only set the inUse field on loading an unused record. This should (and will)
-                    // change to be more of a centralized behavior by the stores. Anyway, setting this pointer
-                    // to the primitive equivalent of null the property cursor will just look empty from the
-                    // outside and the releasing of the lock will be done as usual.
-                    relationshipRecord.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
-                }
-                success = true;
-            }
-            finally
-            {
-                if ( !success )
-                {
-                    lock.release();
-                }
-            }
-        }
-        return lock;
-    }
-
     @Override
     public Cursor<PropertyItem> properties()
     {
-        return allPropertyCursor.get().init( relationshipRecord.getNextProp(), shortLivedReadLock() );
+        return allPropertyCursor.get().init( relationshipRecord.getNextProp() );
     }
 
     @Override
     public Cursor<PropertyItem> property( int propertyKeyId )
     {
-        return singlePropertyCursor.get().init( relationshipRecord.getNextProp(), propertyKeyId, shortLivedReadLock() );
+        return singlePropertyCursor.get().init( relationshipRecord.getNextProp(), propertyKeyId );
     }
 }

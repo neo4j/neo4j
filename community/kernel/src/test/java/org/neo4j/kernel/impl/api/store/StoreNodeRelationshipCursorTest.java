@@ -34,7 +34,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.graphdb.Direction.BOTH;
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
 public class StoreNodeRelationshipCursorTest
@@ -60,8 +59,7 @@ public class StoreNodeRelationshipCursorTest
                 stores,
                 new RelationshipGroupRecord( -1, -1 ),
                 mock( StoreStatement.class ),
-                mock( Consumer.class ),
-                NO_LOCK_SERVICE );
+                mock( Consumer.class ) );
 
         // WHEN
         cursor.init( true, NO_NEXT_RELATIONSHIP.intValue(), 0, BOTH );

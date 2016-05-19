@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.PropertyStore;
 
 /**
@@ -37,9 +36,9 @@ public class StoreSinglePropertyCursor extends StorePropertyCursor
         super( propertyStore, (Consumer) instanceCache );
     }
 
-    public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId, Lock lock )
+    public StoreSinglePropertyCursor init( long firstPropertyId, int propertyKeyId )
     {
-        super.init( firstPropertyId, lock );
+        super.init( firstPropertyId );
         this.propertyKeyId = propertyKeyId;
         return this;
     }

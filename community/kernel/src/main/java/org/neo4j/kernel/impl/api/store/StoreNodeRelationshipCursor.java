@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
@@ -53,10 +52,9 @@ public class StoreNodeRelationshipCursor extends StoreAbstractRelationshipCursor
             NeoStores neoStores,
             RelationshipGroupRecord groupRecord,
             StoreStatement storeStatement,
-            Consumer<StoreNodeRelationshipCursor> instanceCache,
-            LockService lockService )
+            Consumer<StoreNodeRelationshipCursor> instanceCache )
     {
-        super( relationshipRecord, neoStores, storeStatement, lockService );
+        super( relationshipRecord, neoStores, storeStatement );
 
         this.groupRecord = groupRecord;
         this.instanceCache = instanceCache;
