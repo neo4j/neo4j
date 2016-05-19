@@ -109,7 +109,7 @@ public class CoreToCoreCopySnapshotIT
 
         CoreGraphDatabase source =
                 cluster.coreTx( ( db, tx ) -> {
-                    createStore( db, 1000 );
+                    createData( db, 1000 );
                     tx.success();
                 } );
 
@@ -135,7 +135,7 @@ public class CoreToCoreCopySnapshotIT
 
         CoreGraphDatabase source =
                 cluster.coreTx( ( db, tx ) -> {
-                    createStore( db, 10000 );
+                    createData( db, 10000 );
                     tx.success();
                 } );
 
@@ -153,7 +153,7 @@ public class CoreToCoreCopySnapshotIT
         assertEquals( DbRepresentation.of( source ), DbRepresentation.of( newDb ) );
     }
 
-    private void createStore( GraphDatabaseService db, int size )
+    static void createData( GraphDatabaseService db, int size )
     {
         for ( int i = 0; i < size; i++ )
         {

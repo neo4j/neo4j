@@ -19,96 +19,61 @@
  */
 package org.neo4j.coreedge.scenarios;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.coreedge.discovery.Cluster;
-import org.neo4j.coreedge.discovery.TestOnlyDiscoveryServiceFactory;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.core.EnterpriseCoreEditionModule;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.test.rule.TargetDirectory;
+import org.neo4j.test.coreedge.ClusterRule;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.coreedge.scenarios.CoreToCoreCopySnapshotIT.createData;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class CorePruningIT
 {
-
     @Rule
-    public final TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
-
-    private Cluster cluster;
-
-    @After
-    public void shutdown() throws ExecutionException, InterruptedException
-    {
-        if ( cluster != null )
-        {
-            cluster.shutdown();
-            cluster = null;
-        }
-    }
+    public final ClusterRule clusterRule = new ClusterRule( getClass() )
+            .withNumberOfCoreServers( 3 )
+            .withNumberOfEdgeServers( 0 )
+            .withSharedCoreParam( CoreEdgeClusterSettings.state_machine_flush_window_size, "1" )
+            .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_pruning, "1 entries" )
+            .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_rotation_size, "1K" )
+            .withSharedCoreParam( CoreEdgeClusterSettings.raft_log_pruning_frequency, "100ms" );
 
     @Test
     public void actuallyDeletesTheFiles() throws Exception
     {
         // given
-        File dbDir = dir.directory();
-        Map<String,String> params = stringMap( CoreEdgeClusterSettings.state_machine_flush_window_size.name(), "1",
-                CoreEdgeClusterSettings.raft_log_pruning.name(), "1 entries",
-                CoreEdgeClusterSettings.raft_log_rotation_size.name(), "1K",
-                CoreEdgeClusterSettings.raft_log_pruning_frequency.name(), "1ms" );
-
-        cluster = Cluster.start( dbDir, 3, 0, params, new TestOnlyDiscoveryServiceFactory() );
+        Cluster cluster = clusterRule.startCluster();
 
         CoreGraphDatabase coreGraphDatabase = null;
-        for ( int i = 0; i < 100; i++ )
+        int txs = 10;
+        for ( int i = 0; i < txs; i++ )
         {
             coreGraphDatabase = cluster.coreTx( ( db, tx ) -> {
-                createStore( db, 1 );
+                createData( db, 1 );
                 tx.success();
             } );
         }
 
-        // when pruning kicks in
-        Thread.sleep( 100 );
-
-        // then some files are actually deleted
-        int filesAfterPruning = numberOfFiles( new File( coreGraphDatabase.getStoreDir() ) );
-        int expectedNumberOfLogFilesAfterPruning = 2; //Specific for this test.
-        assertEquals( expectedNumberOfLogFilesAfterPruning, filesAfterPruning );
+        // when pruning kicks in then some files are actually deleted
+        File storeDir = new File( coreGraphDatabase.getStoreDir() );
+        int expectedNumberOfLogFilesAfterPruning = 2;
+        assertEventually( "raft logs eventually pruned", () -> numberOfFiles( storeDir ),
+                equalTo( expectedNumberOfLogFilesAfterPruning ), 1, TimeUnit.SECONDS );
     }
 
-    private int numberOfFiles( File storeDir )
+    private int numberOfFiles( File storeDir ) throws RuntimeException
     {
         File clusterDir = new File( storeDir, EnterpriseCoreEditionModule.CLUSTER_STATE_DIRECTORY_NAME );
         File raftLogDir = new File( clusterDir, SEGMENTED_LOG_DIRECTORY_NAME );
         return raftLogDir.list().length;
-    }
-
-    private void createStore( GraphDatabaseService db, int size )
-    {
-        for ( int i = 0; i < size; i++ )
-        {
-            Node node1 = db.createNode();
-            Node node2 = db.createNode();
-
-            node1.setProperty( "hej", "svej" );
-            node2.setProperty( "tjabba", "tjena" );
-
-            Relationship rel = node1.createRelationshipTo( node2, RelationshipType.withName( "halla" ) );
-            rel.setProperty( "this", "that" );
-        }
     }
 }
