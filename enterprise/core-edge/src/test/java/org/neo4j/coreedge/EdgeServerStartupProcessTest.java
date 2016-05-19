@@ -122,7 +122,7 @@ public class EdgeServerStartupProcessTest
     private Set<CoreMember> coreMembers( AdvertisedSocketAddress coreServerAddress )
     {
         final Set<CoreMember> coreMembers = new HashSet<>();
-        coreMembers.add( new CoreMember( coreServerAddress, null ) );
+        coreMembers.add( new CoreMember( coreServerAddress, null, null ) );
         return coreMembers;
     }
 }

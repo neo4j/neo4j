@@ -19,6 +19,14 @@
  */
 package org.neo4j.coreedge.raft;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
@@ -42,16 +50,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Set;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
+
 import static org.neo4j.coreedge.raft.roles.Role.LEADER;
 
 /**
@@ -203,7 +204,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
         return waitForLeader( 0, member -> member != null );
     }
 
-    public MEMBER waitForLeader( long timeoutMillis, Predicate<MEMBER> predicate ) throws NoLeaderFoundException
+    private MEMBER waitForLeader( long timeoutMillis, Predicate<MEMBER> predicate ) throws NoLeaderFoundException
     {
         try
         {

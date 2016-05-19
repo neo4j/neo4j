@@ -21,11 +21,11 @@ package org.neo4j.coreedge.discovery;
 
 import java.util.Set;
 
+import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.RaftInstance.BootstrapException;
 import org.neo4j.coreedge.raft.log.RaftLogCompactedException;
-import org.neo4j.coreedge.server.CoreMember;
-import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements CoreTopologyService.Listener

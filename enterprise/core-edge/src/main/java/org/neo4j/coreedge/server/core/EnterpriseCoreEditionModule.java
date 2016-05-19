@@ -110,6 +110,7 @@ import org.neo4j.coreedge.server.SenderService;
 import org.neo4j.coreedge.server.core.locks.LeaderOnlyLockManager;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenState;
 import org.neo4j.coreedge.server.core.locks.ReplicatedLockTokenStateMachine;
+import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
 import org.neo4j.coreedge.server.logging.BetterMessageLogger;
 import org.neo4j.coreedge.server.logging.MessageLogger;
 import org.neo4j.coreedge.server.logging.NullMessageLogger;
@@ -172,6 +173,7 @@ public class EnterpriseCoreEditionModule
     private final CoreState coreState;
     private final CoreMember myself;
     private final CoreTopologyService discoveryService;
+    private final LogProvider logProvider;
 
     @Override
     public CoreMember id()
@@ -217,23 +219,17 @@ public class EnterpriseCoreEditionModule
         }
     }
 
-    public enum ConsistencyLevel
-    {
-        RYOW_CORE,
-        RYOW_EDGE
-    }
-
     @Override
     public void registerProcedures( Procedures procedures )
     {
         try
         {
-            procedures.register( new DiscoverConsistencyLevelsProcedure() );
-            procedures.register( new DiscoverMembersProcedure( discoveryService ) );
+            procedures.register( new DiscoverMembersProcedure( discoveryService, logProvider ) );
+            procedures.register( new AcquireEndpointsProcedure( discoveryService, raft, logProvider ) );
         }
         catch ( ProcedureException e )
         {
-            e.printStackTrace();
+            throw new RuntimeException( e );
         }
     }
 
@@ -258,7 +254,7 @@ public class EnterpriseCoreEditionModule
         final LifeSupport life = platformModule.life;
         final GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
-        LogProvider logProvider = logging.getInternalLogProvider();
+        logProvider = logging.getInternalLogProvider();
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -275,7 +271,8 @@ public class EnterpriseCoreEditionModule
 
         myself = new CoreMember(
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
-                config.get( CoreEdgeClusterSettings.raft_advertised_address )
+                config.get( CoreEdgeClusterSettings.raft_advertised_address ),
+                 new AdvertisedSocketAddress(  EnterpriseEdgeEditionModule.extractBoltAddress(config).toString())
         );
 
         final MessageLogger<AdvertisedSocketAddress> messageLogger;
@@ -352,7 +349,8 @@ public class EnterpriseCoreEditionModule
             }
 
             CoreStateApplier applier = new CoreStateApplier( logProvider );
-            CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher, coreToCoreClient, logProvider );
+            CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, storeFetcher, coreToCoreClient,
+                    logProvider );
 
             coreState = new CoreState(
                     raftLog, config.get( CoreEdgeClusterSettings.state_machine_flush_window_size ),

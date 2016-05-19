@@ -96,6 +96,8 @@ import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockMan
  */
 public class EnterpriseEdgeEditionModule extends EditionModule
 {
+    private EdgeTopologyService discoveryService;
+
     public EnterpriseEdgeEditionModule( final PlatformModule platformModule,
                                         DiscoveryServiceFactory discoveryServiceFactory )
     {
@@ -154,7 +156,7 @@ public class EnterpriseEdgeEditionModule extends EditionModule
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
 
-        EdgeTopologyService discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, logProvider);
+        discoveryService = discoveryServiceFactory.edgeDiscoveryService( config, logProvider);
         life.add(dependencies.satisfyDependency( discoveryService ));
 
         Supplier<TransactionApplier> transactionApplierSupplier =

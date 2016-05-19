@@ -93,7 +93,8 @@ public class HazelcastClusterTopology implements ClusterTopology
         {
             coreMembers.add( new CoreMember(
                     new AdvertisedSocketAddress( member.getStringAttribute( TRANSACTION_SERVER ) ),
-                    new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) )
+                    new AdvertisedSocketAddress( member.getStringAttribute( RAFT_SERVER ) ),
+                    new AdvertisedSocketAddress( member.getStringAttribute( BOLT_SERVER ) )
             ) );
         }
 

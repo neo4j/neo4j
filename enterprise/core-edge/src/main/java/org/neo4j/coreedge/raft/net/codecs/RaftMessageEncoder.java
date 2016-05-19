@@ -85,8 +85,8 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Raf
         }
         else if ( message instanceof RaftMessages.AppendEntries.Response )
         {
-            RaftMessages.AppendEntries.Response<CoreMember> appendResponse = (RaftMessages.AppendEntries
-                    .Response<CoreMember>) message;
+            RaftMessages.AppendEntries.Response<CoreMember> appendResponse =
+                    (RaftMessages.AppendEntries.Response<CoreMember>) message;
 
             buf.writeLong( appendResponse.term() );
             buf.writeBoolean( appendResponse.success() );
@@ -126,5 +126,6 @@ public class RaftMessageEncoder extends MessageToMessageEncoder<RaftMessages.Raf
 
         marshal.marshal( member.getCoreAddress(), buffer );
         marshal.marshal( member.getRaftAddress(), buffer );
+        marshal.marshal( member.getBoltAddress(), buffer );
     }
 }

@@ -32,7 +32,7 @@ import static org.junit.Assert.assertNotEquals;
 public class LocalSessionPoolTest
 {
     private CoreMember coreMember = new CoreMember( new AdvertisedSocketAddress( "core:1" ),
-            new AdvertisedSocketAddress( "raft:1" ) );
+            new AdvertisedSocketAddress( "raft:1" ), new AdvertisedSocketAddress( "bolt:1"  ));
     private GlobalSession<CoreMember> globalSession = new GlobalSession<>( UUID.randomUUID(), coreMember );
 
     @Test

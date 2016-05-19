@@ -38,8 +38,10 @@ public class VoteStateTest
     {
         // given
         VoteState<CoreMember> voteState = new VoteState<>();
-        CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" ) );
+        CoreMember member = new CoreMember(
+                new AdvertisedSocketAddress( "host1:1001" ),
+                new AdvertisedSocketAddress( "host1:2001" ),
+                new AdvertisedSocketAddress( "host1:3001" ));
 
         // when
         voteState.update( member, 0 );
@@ -64,10 +66,10 @@ public class VoteStateTest
         // given
         VoteState<CoreMember> voteState = new VoteState<>();
         CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" )
+                new AdvertisedSocketAddress( "host1:2001" ), new AdvertisedSocketAddress( "host1:3001" )
         );
         CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
-                new AdvertisedSocketAddress( "host2:2001" )
+                new AdvertisedSocketAddress( "host2:2001" ), new AdvertisedSocketAddress( "host2:3001" )
         );
 
         // when
@@ -84,7 +86,7 @@ public class VoteStateTest
         // given
         VoteState<CoreMember> voteState = new VoteState<>();
         CoreMember member = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" )
+                new AdvertisedSocketAddress( "host1:2001" ), new AdvertisedSocketAddress( "host1:2001" )
         );
         voteState.update( member, 0 );
 
@@ -101,10 +103,10 @@ public class VoteStateTest
         // given
         VoteState<CoreMember> voteState = new VoteState<>();
         CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" )
+                new AdvertisedSocketAddress( "host1:2001" ), new AdvertisedSocketAddress( "host1:3001" )
         );
         CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
-                new AdvertisedSocketAddress( "host2:2001" )
+                new AdvertisedSocketAddress( "host2:2001" ), new AdvertisedSocketAddress( "host2:3001" )
         );
 
         voteState.update( member1, 0 );
@@ -127,7 +129,7 @@ public class VoteStateTest
         // given
         VoteState<CoreMember> voteState = new VoteState<>();
         CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" )
+                new AdvertisedSocketAddress( "host1:2001" ), new AdvertisedSocketAddress( "host1:3001" )
         );
 
         voteState.update( member1, 0 );
@@ -150,10 +152,10 @@ public class VoteStateTest
         // given
         VoteState<CoreMember> voteState = new VoteState<>();
         CoreMember member1 = new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                new AdvertisedSocketAddress( "host1:2001" )
+                new AdvertisedSocketAddress( "host1:2001" ), new AdvertisedSocketAddress( "host1:3001" )
         );
         CoreMember member2 = new CoreMember( new AdvertisedSocketAddress( "host2:1001" ),
-                new AdvertisedSocketAddress( "host2:2001" )
+                new AdvertisedSocketAddress( "host2:2001" ), new AdvertisedSocketAddress( "host2:3001" )
         );
 
         // when
