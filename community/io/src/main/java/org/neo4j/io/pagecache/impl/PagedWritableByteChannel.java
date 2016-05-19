@@ -19,15 +19,29 @@
  */
 package org.neo4j.io.pagecache.impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.OpenOption;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-public class PagedWritableByteChannel implements WritableByteChannel
+/**
+ * Presents a {@link WritableByteChannel} view of the {@link PagedFile}.
+ * <p>
+ * The paged file will be overwritten sequentially, from the beginning till the end.
+ * <p>
+ * If the file already contains data, and the channel is not given enough data to overwrite the file completely,
+ * then the data at the end of the file will be left untouched.
+ * <p>
+ * If this is undesired, then the file can be mapped with {@link java.nio.file.StandardOpenOption#TRUNCATE_EXISTING}
+ * to remove the existing data before writing to the file.
+ * @see org.neo4j.io.pagecache.PageCache#map(File, int, OpenOption...)
+ */
+public final class PagedWritableByteChannel implements WritableByteChannel
 {
     private final PageCursor cursor;
     private boolean open = true;

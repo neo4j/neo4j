@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.pagecache.impl;
 
-import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
@@ -50,7 +49,6 @@ public class PagedByteChannelsTest
             PagedWritableByteChannel::new;
 
     @Theory
-    @Test
     public void mustCloseCursorOnClose(
             ThrowingFunction<PagedFile,? extends Channel,IOException> channelConstructor ) throws Exception
     {

@@ -27,6 +27,11 @@ import java.nio.channels.ReadableByteChannel;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+/**
+ * Presents a {@link ReadableByteChannel} view of a {@link PagedFile}.
+ * <p>
+ * The byte channel will read the whole file sequentially from the beginning till the end.
+ */
 public final class PagedReadableByteChannel implements ReadableByteChannel
 {
     private final PageCursor cursor;
