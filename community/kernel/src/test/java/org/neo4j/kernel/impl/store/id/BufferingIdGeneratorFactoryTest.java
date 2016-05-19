@@ -26,7 +26,7 @@ import java.io.File;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
