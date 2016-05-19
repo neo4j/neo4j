@@ -47,6 +47,7 @@ import static org.mockito.Mockito.when;
 public class ShiroAuthManagerTest
 {
     private InMemoryUserRepository users;
+    private InMemoryGroupRepository groups;
     private AuthenticationStrategy authStrategy;
     private PasswordPolicy passwordPolicy;
     private ShiroAuthManager manager;
@@ -55,9 +56,10 @@ public class ShiroAuthManagerTest
     public void setUp() throws Throwable
     {
         users = new InMemoryUserRepository();
+        groups = new InMemoryGroupRepository();
         authStrategy = mock( AuthenticationStrategy.class );
         passwordPolicy = mock( PasswordPolicy.class );
-        manager = new ShiroAuthManager( users, passwordPolicy, authStrategy, true );
+        manager = new ShiroAuthManager( users, groups, passwordPolicy, authStrategy, true );
         manager.init();
     }
 
@@ -232,11 +234,16 @@ public class ShiroAuthManagerTest
 
     private void createTestUsers() throws Throwable
     {
-        manager.newUser( "morpheus", "admin", "abc123", false );
-        manager.newUser( "trinity", "architect", "abc123", false );
-        manager.newUser( "tank", "publisher", "abc123", false );
-        manager.newUser( "neo", "reader", "abc123", false );
-        manager.newUser( "smith", "agent", "abc123", false );
+        manager.newUser( "morpheus", "abc123", false );
+        manager.newGroup( "admin", "morpheus" );
+        manager.newUser( "trinity", "abc123", false );
+        manager.newGroup( "architect", "trinity" );
+        manager.newUser( "tank", "abc123", false );
+        manager.newGroup( "publisher", "tank" );
+        manager.newUser( "neo", "abc123", false );
+        manager.newGroup( "reader", "neo" );
+        manager.newUser( "smith", "abc123", false );
+        manager.newGroup( "agent", "smith" );
         when( authStrategy.isAuthenticationPermitted( anyString() ) ).thenReturn( true );
     }
 
@@ -283,9 +290,9 @@ public class ShiroAuthManagerTest
         AuthSubject subject = manager.login( "tank", "abc123");
 
         // Then
-        assertTrue( subject.allowsReads() );
-        assertTrue( subject.allowsWrites() );
-        assertFalse( subject.allowsSchemaWrites() );
+        assertTrue( "should allow reads", subject.allowsReads() );
+        assertTrue( "should allow writes", subject.allowsWrites() );
+        assertFalse( "should _not_ allow schema writes", subject.allowsSchemaWrites() );
     }
 
     @Test
@@ -347,7 +354,7 @@ public class ShiroAuthManagerTest
         // Restart with auth disabled
         manager.stop();
         manager.shutdown();
-        manager = new ShiroAuthManager( users, passwordPolicy, authStrategy, false );
+        manager = new ShiroAuthManager( users, groups, passwordPolicy, authStrategy, false );
         manager.start();
 
         try

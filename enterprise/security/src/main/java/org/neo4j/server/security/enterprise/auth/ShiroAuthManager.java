@@ -40,6 +40,7 @@ import org.neo4j.server.security.auth.PasswordPolicy;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.User;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 public class ShiroAuthManager extends BasicAuthManager
 {
@@ -47,25 +48,26 @@ public class ShiroAuthManager extends BasicAuthManager
     private final EhCacheManager cacheManager;
     private final FileUserRealm realm;
 
-    public ShiroAuthManager( UserRepository userRepository, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy, boolean authEnabled )
+    public ShiroAuthManager( UserRepository userRepository, GroupRepository groupRepository,
+            PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy, boolean authEnabled )
     {
         super( userRepository, passwordPolicy, authStrategy, authEnabled );
 
-        realm = new FileUserRealm( userRepository );
+        realm = new FileUserRealm( userRepository, groupRepository );
         // TODO: Maybe MemoryConstrainedCacheManager is good enough if we do not need timeToLiveSeconds? It would be one less dependency.
         //       Or we could try to reuse Hazelcast which is already a dependency, but we would need to write some glue code.
         cacheManager = new EhCacheManager();
         securityManager = new DefaultSecurityManager( realm );
     }
 
-    public ShiroAuthManager( UserRepository users, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
+    public ShiroAuthManager( UserRepository users, GroupRepository groups, PasswordPolicy passwordPolicy, AuthenticationStrategy authStrategy )
     {
-        this( users, passwordPolicy, authStrategy, true );
+        this( users, groups, passwordPolicy, authStrategy, true );
     }
 
-    public ShiroAuthManager( UserRepository users, PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
+    public ShiroAuthManager( UserRepository users, GroupRepository groups, PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
     {
-        this( users, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
+        this( users, groups, passwordPolicy, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
     }
 
     @Override
@@ -85,7 +87,7 @@ public class ShiroAuthManager extends BasicAuthManager
 
         if ( authEnabled && realm.numberOfUsers() == 0 )
         {
-            realm.newUser( "neo4j", DEFAULT_GROUP, "neo4j", true );
+            realm.newUser( "neo4j", "neo4j", true );
         }
     }
 
@@ -103,16 +105,35 @@ public class ShiroAuthManager extends BasicAuthManager
             IllegalCredentialsException
     {
         assertAuthEnabled();
-        return realm.newUser( username, DEFAULT_GROUP, initialPassword, requirePasswordChange );
+
+        try
+        {
+            return realm.newUser( username, initialPassword, requirePasswordChange );
+
+        }
+        catch ( ConcurrentModificationException e )
+        {
+            // TODO: Try again
+            return null;
+        }
     }
 
-    public User newUser( String username, String group, String initialPassword, boolean requirePasswordChange ) throws
-            IOException,
-            IllegalCredentialsException
+    public GroupRecord newGroup( String groupName, String... users ) throws IOException, IllegalCredentialsException
     {
         assertAuthEnabled();
-        return realm.newUser( username, group, initialPassword, requirePasswordChange );
+
+        try
+        {
+            return realm.newGroup( groupName, users );
+
+        }
+        catch ( ConcurrentModificationException e )
+        {
+            // TODO: Try again
+            return null;
+        }
     }
+
 
     public AuthSubject login( String username, String password )
     {

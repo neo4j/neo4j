@@ -19,9 +19,14 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.neo4j.server.security.auth.User;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
 
-public interface AccountBuilder
+import java.util.Set;
+
+class ShiroAccount extends SimpleAuthorizationInfo
 {
-    UserAccount buildAccount(User user);
+    public ShiroAccount( Set<String> roleNames )
+    {
+        super( roleNames );
+    }
 }

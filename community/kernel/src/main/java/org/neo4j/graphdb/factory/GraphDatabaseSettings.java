@@ -499,6 +499,10 @@ public abstract class GraphDatabaseSettings
             pathSetting( "unsupported.dbms.security.auth_store.location", NO_DEFAULT );
 
     @Internal
+    public static final Setting<File> group_store = // TODO: Move this to enterprise
+            pathSetting( "unsupported.dbms.security.group_store.location", NO_DEFAULT );
+
+    @Internal
     public static final Setting<String> auth_manager = setting( "unsupported.dbms.security.auth_manager", STRING, "" );
 
     // Bolt Settings

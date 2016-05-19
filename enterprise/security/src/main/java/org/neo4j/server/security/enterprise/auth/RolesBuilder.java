@@ -19,14 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.apache.shiro.authz.SimpleAuthorizationInfo;
+import org.apache.shiro.authz.SimpleRole;
 
-import java.util.Set;
+import java.util.Map;
 
-class UserAccount extends SimpleAuthorizationInfo
+public interface RolesBuilder
 {
-    public UserAccount( Set<String> roleNames )
-    {
-        super( roleNames );
-    }
+    Map<String,SimpleRole> buildRoles();
 }

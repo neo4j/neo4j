@@ -30,9 +30,9 @@ import org.neo4j.kernel.api.security.exception.IllegalCredentialsException;
 
 public class ShiroAuthSubject implements AuthSubject
 {
-    static final String SCHEMA_READ_WRITE = "schema_read_write";
-    static final String READ_WRITE = "read_write";
-    static final String READ = "read";
+    static final String SCHEMA_READ_WRITE = "schema:read,write";
+    static final String READ_WRITE = "data:read,write";
+    static final String READ = "data:read";
 
     private final ShiroAuthManager authManager;
     private final Subject subject;
@@ -107,15 +107,15 @@ public class ShiroAuthSubject implements AuthSubject
     {
         if ( subject.isAuthenticated() )
         {
-            if ( subject.hasRole( SCHEMA_READ_WRITE ) )
+            if ( subject.isPermitted( SCHEMA_READ_WRITE ) )
             {
                 return AccessMode.Static.FULL;
             }
-            else if ( subject.hasRole( READ_WRITE ) )
+            else if ( subject.isPermitted( READ_WRITE ) )
             {
                 return AccessMode.Static.WRITE;
             }
-            else if ( subject.hasRole( READ ) )
+            else if ( subject.isPermitted( READ ) )
             {
                 return AccessMode.Static.READ;
             }

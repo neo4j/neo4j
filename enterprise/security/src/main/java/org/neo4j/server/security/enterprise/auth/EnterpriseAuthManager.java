@@ -26,9 +26,9 @@ import org.neo4j.server.security.auth.UserRepository;
 
 public class EnterpriseAuthManager extends ShiroAuthManager
 {
-    public EnterpriseAuthManager( UserRepository users, PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
+    public EnterpriseAuthManager( UserRepository users, GroupRepository groups, PasswordPolicy passwordPolicy, Clock clock, boolean authEnabled )
     {
-        super( users, passwordPolicy, clock, authEnabled );
+        super( users, groups, passwordPolicy, clock, authEnabled );
     }
 
     @Override

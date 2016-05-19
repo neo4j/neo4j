@@ -56,6 +56,6 @@ public interface UserRepository extends Lifecycle
 
     int numberOfUsers();
 
-    /** Utility for API consumers to tell if #save() will accept a given username */
+    /** Utility for API consumers to tell if #create() will accept a given username */
     boolean isValidName( String name );
 }

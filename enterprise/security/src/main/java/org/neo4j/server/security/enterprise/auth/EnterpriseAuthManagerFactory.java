@@ -48,9 +48,12 @@ public class EnterpriseAuthManagerFactory extends AuthManager.Factory
         final UserRepository userRepository =
                 new FileUserRepository( config.get( GraphDatabaseSettings.auth_store ).toPath(), logProvider );
 
+        final GroupRepository grouoRepository =
+                new FileGroupRepository( config.get( GraphDatabaseSettings.group_store ).toPath(), logProvider );
+
         final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
 
-        return new EnterpriseAuthManager( userRepository, passwordPolicy, systemUTC(),
+        return new EnterpriseAuthManager( userRepository, grouoRepository, passwordPolicy, systemUTC(),
                 config.get( GraphDatabaseSettings.auth_enabled ) );
     }
 }

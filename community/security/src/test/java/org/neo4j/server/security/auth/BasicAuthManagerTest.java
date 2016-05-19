@@ -59,7 +59,7 @@ public class BasicAuthManagerTest
     {
         // Given
         final InMemoryUserRepository users = new InMemoryUserRepository();
-            final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), false );
+        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), false );
         users.create( user );
         final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
         final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
