@@ -474,7 +474,6 @@ class AdversarialReadPageCursor extends PageCursor
             this.offset = offset;
             this.insteadOf = insteadOf;
             trace = new Exception( toString() );
-            trace.fillInStackTrace();
         }
 
         @Override
