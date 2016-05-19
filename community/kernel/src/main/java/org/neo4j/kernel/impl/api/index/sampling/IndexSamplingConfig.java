@@ -30,7 +30,7 @@ public class IndexSamplingConfig
 
     public IndexSamplingConfig( Config config )
     {
-        this.sampleSizeLimit = config.get( GraphDatabaseSettings.index_sampling_buffer_size ).intValue();
+        this.sampleSizeLimit = config.get( GraphDatabaseSettings.index_sample_size_limit );
         this.updateRatio = ((double) config.get( GraphDatabaseSettings.index_sampling_update_percentage )) / 100.0d;
         this.backgroundSampling = config.get( GraphDatabaseSettings.index_background_sampling_enabled );
     }
