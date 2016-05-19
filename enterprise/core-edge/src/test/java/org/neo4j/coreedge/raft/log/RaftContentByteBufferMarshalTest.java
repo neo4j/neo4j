@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.raft.log;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
@@ -41,13 +41,15 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class RaftContentByteBufferMarshalTest
 {
-    CoreMember coreMember = new CoreMember(
+    private CoreMember coreMember = new CoreMember(
             new AdvertisedSocketAddress( "core:1" ),
-            new AdvertisedSocketAddress( "raft:1" ) );
+            new AdvertisedSocketAddress( "raft:1" )
+    );
 
     @Test
     public void shouldSerializeMemberSet() throws Exception
@@ -56,9 +58,11 @@ public class RaftContentByteBufferMarshalTest
         CoreReplicatedContentMarshal serializer = new CoreReplicatedContentMarshal();
         CoreMemberSet in = new CoreMemberSet( asSet(
                 new CoreMember( new AdvertisedSocketAddress( "host1:1001" ),
-                        new AdvertisedSocketAddress( "host1:1002" ) ),
+                        new AdvertisedSocketAddress( "host1:1002" )
+                ),
                 new CoreMember( new AdvertisedSocketAddress( "host2:1002" ),
-                        new AdvertisedSocketAddress( "host2:1002" ) )
+                        new AdvertisedSocketAddress( "host2:1002" )
+                )
         ) );
 
         // when

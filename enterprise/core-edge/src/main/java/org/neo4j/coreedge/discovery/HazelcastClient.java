@@ -19,24 +19,31 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import java.util.Collections;
 import java.util.Set;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.Member;
 
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.BoltAddress;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class HazelcastClient extends LifecycleAdapter implements EdgeDiscoveryService
+import static java.util.Collections.emptySet;
+import static java.util.stream.Collectors.toSet;
+
+import static org.neo4j.coreedge.discovery.HazelcastClusterTopology.EDGE_SERVERS;
+
+class HazelcastClient extends LifecycleAdapter implements EdgeTopologyService
 {
     private final Log log;
     private HazelcastConnector connector;
     private HazelcastInstance hazelcastInstance;
 
-    public HazelcastClient( HazelcastConnector connector, LogProvider logProvider )
+    HazelcastClient( HazelcastConnector connector, LogProvider logProvider )
     {
         this.connector = connector;
         log = logProvider.getLog( getClass() );
@@ -45,10 +52,10 @@ public class HazelcastClient extends LifecycleAdapter implements EdgeDiscoverySe
     @Override
     public ClusterTopology currentTopology()
     {
-        Set<Member> hazelcastMembers = Collections.emptySet();
+        Set<Member> coreMembers = emptySet();
         boolean attemptedConnection = false;
 
-        while ( hazelcastMembers.isEmpty() && !attemptedConnection )
+        while ( coreMembers.isEmpty() && !attemptedConnection )
         {
             if ( hazelcastInstance == null )
             {
@@ -66,14 +73,29 @@ public class HazelcastClient extends LifecycleAdapter implements EdgeDiscoverySe
 
             try
             {
-                hazelcastMembers = hazelcastInstance.getCluster().getMembers();
+                coreMembers = hazelcastInstance.getCluster().getMembers();
             }
             catch ( HazelcastInstanceNotActiveException e )
             {
                 hazelcastInstance = null;
             }
         }
-        return new HazelcastClusterTopology( hazelcastMembers );
+
+        Set<BoltAddress> edgeMembers = edgeMembers( hazelcastInstance );
+
+        return new HazelcastClusterTopology( coreMembers, edgeMembers );
+    }
+
+    public static Set<BoltAddress> edgeMembers( HazelcastInstance hazelcastInstance )
+    {
+        if ( hazelcastInstance == null )
+        {
+            return emptySet();
+        }
+
+        return hazelcastInstance.<String>getSet( EDGE_SERVERS ).stream()
+                .map( hostnamePort -> new BoltAddress( new AdvertisedSocketAddress( hostnamePort ) ) )
+                .collect( toSet() );
     }
 
     @Override
@@ -83,5 +105,11 @@ public class HazelcastClient extends LifecycleAdapter implements EdgeDiscoverySe
         {
             hazelcastInstance.shutdown();
         }
+    }
+
+    @Override
+    public void registerEdgeServer( HostnamePort address )
+    {
+        hazelcastInstance.getSet( EDGE_SERVERS ).add( address.toString() );
     }
 }

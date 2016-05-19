@@ -19,12 +19,12 @@
  */
 package org.neo4j.coreedge.raft.replication;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Collections;
 
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.coreedge.raft.net.CoreReplicatedContentMarshal;
@@ -44,6 +44,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class CoreReplicatedContentByteBufferMarshalTest
@@ -54,7 +55,7 @@ public class CoreReplicatedContentByteBufferMarshalTest
     public void shouldMarshalTransactionReference() throws Exception
     {
         ByteBuf buffer = Unpooled.buffer();
-        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections.<StorageCommand>emptyList() );
+        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections.emptyList() );
         representation.setHeader( new byte[]{0}, 1, 1, 1, 1, 1, 1 );
 
         ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation );
@@ -68,7 +69,7 @@ public class CoreReplicatedContentByteBufferMarshalTest
     public void shouldMarshalTransactionReferenceWithMissingHeader() throws Exception
     {
         ByteBuf buffer = Unpooled.buffer();
-        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections.<StorageCommand>emptyList() );
+        PhysicalTransactionRepresentation representation = new PhysicalTransactionRepresentation( Collections.emptyList() );
 
         ReplicatedContent replicatedTx = ReplicatedTransactionFactory.createImmutableReplicatedTransaction( representation );
         marshal.marshal( replicatedTx, buffer );
@@ -82,7 +83,8 @@ public class CoreReplicatedContentByteBufferMarshalTest
         // given
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new CoreMemberSet( asSet(
-                new CoreMember( new AdvertisedSocketAddress( "host_a:1" ), new AdvertisedSocketAddress( "host_a:2" ) ),
+                new CoreMember( new AdvertisedSocketAddress( "host_a:1" ), new AdvertisedSocketAddress( "host_a:2" )
+                ),
                 new CoreMember( new AdvertisedSocketAddress( "host_b:101" ),
                         new AdvertisedSocketAddress( "host_b:102" ) )
         ) );
@@ -100,8 +102,10 @@ public class CoreReplicatedContentByteBufferMarshalTest
         // given
         ByteBuf buffer = Unpooled.buffer();
         ReplicatedContent message = new ReplicatedIdAllocationRequest(
-                new CoreMember( new AdvertisedSocketAddress( "host_a:1" ),
-                        new AdvertisedSocketAddress( "host_a:2" ) ), IdType.PROPERTY, 100, 200 );
+                new CoreMember(
+                        new AdvertisedSocketAddress( "host_a:1" ),
+                        new AdvertisedSocketAddress( "host_a:2" )
+                ), IdType.PROPERTY, 100, 200 );
 
         // when
         marshal.marshal( message, buffer );

@@ -33,10 +33,11 @@ import static junit.framework.TestCase.assertEquals;
 
 public class ReplicatedIdAllocationStateMachineTest
 {
-    CoreMember me = new CoreMember( new AdvertisedSocketAddress( "a:1" ), new AdvertisedSocketAddress( "a:2" ) );
+    private CoreMember me = new CoreMember( new AdvertisedSocketAddress( "a:1" ), new AdvertisedSocketAddress( "a:2" )
+    );
 
-    IdType someType = IdType.NODE;
-    IdType someOtherType = IdType.RELATIONSHIP;
+    private IdType someType = IdType.NODE;
+    private IdType someOtherType = IdType.RELATIONSHIP;
 
     @Test
     public void shouldNotHaveAnyIdsInitially() throws IOException

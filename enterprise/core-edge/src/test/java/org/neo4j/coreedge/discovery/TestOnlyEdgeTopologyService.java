@@ -21,24 +21,29 @@ package org.neo4j.coreedge.discovery;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.BoltAddress;
+import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class TestOnlyEdgeDiscoveryService extends LifecycleAdapter implements EdgeDiscoveryService
+class TestOnlyEdgeTopologyService extends LifecycleAdapter implements EdgeTopologyService
 {
-    private final InstanceId edgeMe;
+    private final BoltAddress edgeMe;
     private final TestOnlyDiscoveryServiceFactory cluster;
 
-    public TestOnlyEdgeDiscoveryService( Config config, TestOnlyDiscoveryServiceFactory cluster )
+    TestOnlyEdgeTopologyService( Config config, TestOnlyDiscoveryServiceFactory cluster )
     {
         this.cluster = cluster;
         this.edgeMe = toEdge( config );
-        cluster.edgeMembers.add( edgeMe );
     }
 
-    private InstanceId toEdge( Config config )
+    private BoltAddress toEdge( Config config )
     {
-        return config.get( ClusterSettings.server_id );
+        return new BoltAddress(
+                new AdvertisedSocketAddress(
+                        EnterpriseEdgeEditionModule.extractBoltAddress( config ).toString() ) );
     }
 
     @Override
@@ -50,6 +55,12 @@ public class TestOnlyEdgeDiscoveryService extends LifecycleAdapter implements Ed
     @Override
     public ClusterTopology currentTopology()
     {
-        return new TestOnlyClusterTopology( false, cluster.coreMembers, cluster.edgeMembers );
+        return new TestOnlyClusterTopology( false, cluster.coreMembers, cluster.boltAddresses, cluster.edgeMembers );
+    }
+
+    @Override
+    public void registerEdgeServer( HostnamePort address )
+    {
+        cluster.edgeMembers.add( edgeMe );
     }
 }

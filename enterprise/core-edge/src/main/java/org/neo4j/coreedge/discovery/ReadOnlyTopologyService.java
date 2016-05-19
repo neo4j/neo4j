@@ -21,7 +21,7 @@ package org.neo4j.coreedge.discovery;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public interface EdgeDiscoveryService extends Lifecycle
+public interface ReadOnlyTopologyService extends Lifecycle
 {
     ClusterTopology currentTopology();
 }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.coreedge.server;
 
-import io.netty.buffer.ByteBuf;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+
+import io.netty.buffer.ByteBuf;
 
 import org.neo4j.coreedge.raft.state.ByteBufferMarshal;
 import org.neo4j.coreedge.raft.state.ChannelMarshal;
@@ -186,4 +186,3 @@ public class CoreMember
         }
     }
 }
-

@@ -44,7 +44,8 @@ public class ReplicatedIdRangeAcquirerTest
     private final ReplicatedIdAllocationStateMachine idAllocationStateMachine = new ReplicatedIdAllocationStateMachine(
             new InMemoryStateStorage<>( new IdAllocationState() ) );
 
-    private final DirectReplicator<ReplicatedIdAllocationRequest> replicator = new DirectReplicator<>( idAllocationStateMachine );
+    private final DirectReplicator<ReplicatedIdAllocationRequest> replicator =
+            new DirectReplicator<>( idAllocationStateMachine );
 
     @Test
     public void consecutiveAllocationsFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateWhenInitialIdIsZero()
@@ -66,8 +67,10 @@ public class ReplicatedIdRangeAcquirerTest
         Set<Long> idAllocations = new HashSet<>();
         int idRangeLength = 8;
 
-        ReplicatedIdGenerator generatorOne = createForMemberWithInitialIdAndRangeLength( memberA, initialHighId, idRangeLength );
-        ReplicatedIdGenerator generatorTwo = createForMemberWithInitialIdAndRangeLength( memberB, initialHighId, idRangeLength );
+        ReplicatedIdGenerator generatorOne = createForMemberWithInitialIdAndRangeLength(
+                memberA, initialHighId, idRangeLength );
+        ReplicatedIdGenerator generatorTwo = createForMemberWithInitialIdAndRangeLength(
+                memberB, initialHighId, idRangeLength );
 
         // First iteration is bootstrapping the set, so we do it outside the loop to avoid an if check in there
         long newId = generatorOne.nextId();

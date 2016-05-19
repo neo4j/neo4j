@@ -19,17 +19,25 @@
  */
 package org.neo4j.coreedge;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.junit.Test;
 
 import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
-import org.neo4j.coreedge.discovery.CoreDiscoveryService;
+import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.discovery.HazelcastClusterTopology;
 import org.neo4j.coreedge.raft.replication.tx.ConstantTimeRetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.coreedge.server.edge.AlwaysChooseFirstServer;
 import org.neo4j.coreedge.server.edge.EdgeServerStartupProcess;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.logging.NullLogProvider;
 
@@ -45,23 +53,32 @@ public class EdgeServerStartupProcessTest
     public void startShouldReplaceLocalStoreWithStoreFromCoreServerAndStartPolling() throws Throwable
     {
         // given
+        final Map<String, String> params = new HashMap<>();
+
+        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
+        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
+        params.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).address.name(), "127.0.0.1:" + 8001 );
+
+        Config config = new Config( params );
+
         StoreFetcher storeFetcher = mock( StoreFetcher.class );
         LocalDatabase localDatabase = mock( LocalDatabase.class );
 
         AdvertisedSocketAddress coreServerAddress = new AdvertisedSocketAddress( "localhost:1999" );
-        CoreDiscoveryService hazelcastTopology = mock( CoreDiscoveryService.class );
+        EdgeTopologyService hazelcastTopology = mock( EdgeTopologyService.class );
 
         HazelcastClusterTopology clusterTopology = mock( HazelcastClusterTopology.class );
         when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
 
-        when( clusterTopology.firstTransactionServer() ).thenReturn( coreServerAddress );
+        when( clusterTopology.coreMembers() ).thenReturn( coreMembers( coreServerAddress ) );
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         DataSourceManager dataSourceManager = mock( DataSourceManager.class );
         TxPollingClient txPuller = mock( TxPollingClient.class );
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
                 txPuller, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
-                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance() );
+                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
+                mock( EdgeTopologyService.class ), config );
 
         // when
         edgeServerStartupProcess.start();
@@ -80,9 +97,9 @@ public class EdgeServerStartupProcessTest
         LocalDatabase localDatabase = mock( LocalDatabase.class );
 
         AdvertisedSocketAddress coreServerAddress = new AdvertisedSocketAddress( "localhost:1999" );
-        CoreDiscoveryService hazelcastTopology = mock( CoreDiscoveryService.class );
+        EdgeTopologyService hazelcastTopology = mock( EdgeTopologyService.class );
         HazelcastClusterTopology clusterTopology = mock( HazelcastClusterTopology.class );
-        when( clusterTopology.firstTransactionServer() ).thenReturn( coreServerAddress );
+        when( clusterTopology.coreMembers() ).thenReturn( coreMembers( coreServerAddress ) );
 
         when( hazelcastTopology.currentTopology() ).thenReturn( clusterTopology );
         when( localDatabase.isEmpty() ).thenReturn( true );
@@ -91,7 +108,8 @@ public class EdgeServerStartupProcessTest
         TxPollingClient txPuller = mock( TxPollingClient.class );
         EdgeServerStartupProcess edgeServerStartupProcess = new EdgeServerStartupProcess( storeFetcher, localDatabase,
                 txPuller, dataSourceManager, new AlwaysChooseFirstServer( hazelcastTopology ),
-                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance() );
+                new ConstantTimeRetryStrategy( 1, MILLISECONDS ), NullLogProvider.getInstance(),
+                mock( EdgeTopologyService.class ), null );
 
         // when
         edgeServerStartupProcess.stop();
@@ -99,5 +117,12 @@ public class EdgeServerStartupProcessTest
         // then
         verify( txPuller ).stop();
         verify( dataSourceManager ).stop();
+    }
+
+    private Set<CoreMember> coreMembers( AdvertisedSocketAddress coreServerAddress )
+    {
+        final Set<CoreMember> coreMembers = new HashSet<>();
+        coreMembers.add( new CoreMember( coreServerAddress, null ) );
+        return coreMembers;
     }
 }

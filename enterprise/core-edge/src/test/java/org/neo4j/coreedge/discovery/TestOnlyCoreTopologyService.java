@@ -19,34 +19,50 @@
  */
 package org.neo4j.coreedge.discovery;
 
+import java.util.List;
+
+import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.CoreMember;
+import org.neo4j.coreedge.server.core.NoBoltConnectivityException;
+import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static java.util.stream.Collectors.toList;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.helpers.Listeners.notifyListeners;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
+import static org.neo4j.kernel.configuration.GroupSettingSupport.enumerate;
 
-public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements CoreDiscoveryService
+class TestOnlyCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
 {
     private final CoreMember me;
     private final TestOnlyDiscoveryServiceFactory cluster;
+    private final BoltAddress meBolt;
 
-    public TestOnlyCoreDiscoveryService( Config config, TestOnlyDiscoveryServiceFactory cluster )
+    TestOnlyCoreTopologyService( Config config, TestOnlyDiscoveryServiceFactory cluster )
     {
         this.cluster = cluster;
-        synchronized ( cluster )
+        synchronized ( this.cluster )
         {
             this.me = toCoreMember( config );
             cluster.coreMembers.add( me );
+
+            meBolt = extractBoltAddress( config );
+            cluster.boltAddresses.add( meBolt  );
 
             if ( cluster.bootstrappable == null )
             {
                 cluster.bootstrappable = me;
             }
 
-            notifyListeners( cluster.membershipListeners, listener -> listener.onTopologyChange( currentTopology
-                        () ) );
+            notifyListeners( cluster.membershipListeners, listener ->
+                    listener.onTopologyChange( currentTopology() ) );
         }
     }
 
@@ -54,7 +70,15 @@ public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements Co
     {
         return new CoreMember(
                 config.get( CoreEdgeClusterSettings.transaction_advertised_address ),
-                config.get( CoreEdgeClusterSettings.raft_advertised_address ) );
+                config.get( CoreEdgeClusterSettings.raft_advertised_address )
+        );
+    }
+
+    private BoltAddress extractBoltAddress( Config config )
+    {
+        return new BoltAddress(
+                new AdvertisedSocketAddress(
+                        EnterpriseEdgeEditionModule.extractBoltAddress( config ).toString() ) );
     }
 
     @Override
@@ -88,6 +112,7 @@ public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements Co
         synchronized ( cluster )
         {
             cluster.coreMembers.remove( me );
+            cluster.boltAddresses.remove( meBolt );
 
             // Move the bootstrappable instance, if necessary
             if ( cluster.bootstrappable == me )
@@ -104,6 +129,6 @@ public class TestOnlyCoreDiscoveryService extends LifecycleAdapter implements Co
     {
         CoreMember firstMember = firstOrNull( cluster.coreMembers );
         return new TestOnlyClusterTopology( firstMember != null && firstMember.equals( me ),
-                cluster.coreMembers, cluster.edgeMembers );
+                cluster.coreMembers, cluster.boltAddresses, cluster.edgeMembers );
     }
 }

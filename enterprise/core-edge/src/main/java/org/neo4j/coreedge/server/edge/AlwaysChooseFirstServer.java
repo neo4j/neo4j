@@ -19,15 +19,15 @@
  */
 package org.neo4j.coreedge.server.edge;
 
-import org.neo4j.coreedge.discovery.EdgeDiscoveryService;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
+import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 
 public class AlwaysChooseFirstServer implements CoreServerSelectionStrategy
 {
-    private final EdgeDiscoveryService discoveryService;
+    private final EdgeTopologyService discoveryService;
 
-    public AlwaysChooseFirstServer( EdgeDiscoveryService discoveryService)
+    public AlwaysChooseFirstServer( EdgeTopologyService discoveryService)
     {
         this.discoveryService = discoveryService;
     }
@@ -35,6 +35,6 @@ public class AlwaysChooseFirstServer implements CoreServerSelectionStrategy
     @Override
     public AdvertisedSocketAddress coreServer() throws CoreServerSelectionException
     {
-        return discoveryService.currentTopology().firstTransactionServer();
+        return discoveryService.currentTopology().coreMembers().iterator().next().getCoreAddress();
     }
 }

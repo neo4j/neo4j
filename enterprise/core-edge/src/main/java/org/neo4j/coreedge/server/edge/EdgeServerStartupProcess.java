@@ -23,12 +23,16 @@ import org.neo4j.coreedge.catchup.storecopy.LocalDatabase;
 import org.neo4j.coreedge.catchup.storecopy.edge.StoreFetcher;
 import org.neo4j.coreedge.catchup.tx.edge.TxPollingClient;
 import org.neo4j.coreedge.discovery.CoreServerSelectionException;
+import org.neo4j.coreedge.discovery.EdgeTopologyService;
 import org.neo4j.coreedge.raft.replication.tx.RetryStrategy;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule.extractBoltAddress;
 
 public class EdgeServerStartupProcess implements Lifecycle
 {
@@ -38,6 +42,8 @@ public class EdgeServerStartupProcess implements Lifecycle
     private final DataSourceManager dataSourceManager;
     private final CoreServerSelectionStrategy connectionStrategy;
     private final Log log;
+    private final EdgeTopologyService discoveryService;
+    private final Config config;
     private final RetryStrategy.Timeout timeout;
 
     public EdgeServerStartupProcess( StoreFetcher storeFetcher, LocalDatabase localDatabase,
@@ -45,7 +51,7 @@ public class EdgeServerStartupProcess implements Lifecycle
                                      DataSourceManager dataSourceManager,
                                      CoreServerSelectionStrategy connectionStrategy,
                                      RetryStrategy retryStrategy,
-                                     LogProvider logProvider )
+                                     LogProvider logProvider, EdgeTopologyService discoveryService, Config config )
     {
         this.storeFetcher = storeFetcher;
         this.localDatabase = localDatabase;
@@ -54,6 +60,8 @@ public class EdgeServerStartupProcess implements Lifecycle
         this.connectionStrategy = connectionStrategy;
         this.timeout = retryStrategy.newTimeout();
         this.log = logProvider.getLog( getClass() );
+        this.discoveryService = discoveryService;
+        this.config = config;
     }
 
     @Override
@@ -70,8 +78,12 @@ public class EdgeServerStartupProcess implements Lifecycle
         {
             try
             {
+
                 AdvertisedSocketAddress transactionServer = connectionStrategy.coreServer();
                 log.info( "Server starting, connecting to core server at %s", transactionServer.toString() );
+
+                discoveryService.registerEdgeServer( extractBoltAddress( config ) );
+
                 localDatabase.copyStoreFrom( transactionServer, storeFetcher );
                 copiedStore = true;
             }

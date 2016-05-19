@@ -28,12 +28,12 @@ import org.neo4j.coreedge.raft.RaftInstance;
 import org.neo4j.coreedge.raft.membership.CoreMemberSet;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements CoreDiscoveryService.Listener
+public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements CoreTopologyService.Listener
 {
-    private final CoreDiscoveryService discoveryService;
+    private final CoreTopologyService discoveryService;
     private final RaftInstance<CoreMember> raftInstance;
 
-    public RaftDiscoveryServiceConnector( CoreDiscoveryService discoveryService,
+    public RaftDiscoveryServiceConnector( CoreTopologyService discoveryService,
                                             RaftInstance<CoreMember> raftInstance )
     {
         this.discoveryService = discoveryService;
@@ -46,7 +46,7 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
         discoveryService.addMembershipListener( this );
 
         ClusterTopology clusterTopology = discoveryService.currentTopology();
-        Set<CoreMember> initialMembers = clusterTopology.getMembers();
+        Set<CoreMember> initialMembers = clusterTopology.coreMembers();
 
         if ( clusterTopology.bootstrappable() )
         {
@@ -72,6 +72,6 @@ public class RaftDiscoveryServiceConnector extends LifecycleAdapter implements C
     @Override
     public void onTopologyChange( ClusterTopology clusterTopology )
     {
-        raftInstance.setTargetMembershipSet( clusterTopology.getMembers() );
+        raftInstance.setTargetMembershipSet( clusterTopology.coreMembers() );
     }
 }
