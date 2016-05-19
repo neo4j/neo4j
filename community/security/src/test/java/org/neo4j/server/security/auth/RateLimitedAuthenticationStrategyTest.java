@@ -37,7 +37,7 @@ public class RateLimitedAuthenticationStrategyTest
         // Given
         FakeClock clock = new FakeClock();
         AuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( clock, 3 );
-        User user = new User( "user", "admin", Credential.forPassword( "right" ), false );
+        User user = new User( "user", Credential.forPassword( "right" ), false );
 
         // Then
         assertThat( authStrategy.authenticate( user, "right" ), equalTo( AuthenticationResult.SUCCESS ) );
@@ -49,7 +49,7 @@ public class RateLimitedAuthenticationStrategyTest
         // Given
         FakeClock clock = new FakeClock();
         AuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( clock, 3 );
-        User user = new User( "user", "admin", Credential.forPassword( "right" ), false );
+        User user = new User( "user", Credential.forPassword( "right" ), false );
 
         // Then
         assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
@@ -61,7 +61,7 @@ public class RateLimitedAuthenticationStrategyTest
         // Given
         FakeClock clock = new FakeClock();
         AuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( clock, 3 );
-        User user = new User( "user", "admin", Credential.forPassword( "right" ), false );
+        User user = new User( "user", Credential.forPassword( "right" ), false );
 
         // When we've failed two times
         assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
@@ -77,7 +77,7 @@ public class RateLimitedAuthenticationStrategyTest
         // Given
         FakeClock clock = new FakeClock();
         AuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( clock, 3 );
-        User user = new User( "user", "admin", Credential.forPassword( "right" ), false );
+        User user = new User( "user", Credential.forPassword( "right" ), false );
 
         // When we've failed three times
         assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
@@ -100,7 +100,7 @@ public class RateLimitedAuthenticationStrategyTest
         // Given
         FakeClock clock = new FakeClock();
         AuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( clock, 3 );
-        User user = new User( "user", "admin", Credential.forPassword( "right" ), false );
+        User user = new User( "user", Credential.forPassword( "right" ), false );
 
         // When we've failed three times
         authStrategy.authenticate( user, "wrong" );

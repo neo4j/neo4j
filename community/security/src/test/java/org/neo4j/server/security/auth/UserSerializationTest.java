@@ -38,8 +38,8 @@ public class UserSerializationTest
         UserSerialization serialization = new UserSerialization();
 
         List<User> users = asList(
-                new User( "Steve", "admin", Credential.forPassword( "1234321" ), false ),
-                new User( "Bob", BasicAuthManager.DEFAULT_GROUP, Credential.forPassword( "0987654" ), false ) );
+                new User( "Steve", Credential.forPassword( "1234321" ), false ),
+                new User( "Bob", Credential.forPassword( "0987654" ), false ) );
 
         // When
         byte[] serialized = serialization.serialize( users );
@@ -65,11 +65,11 @@ public class UserSerializationTest
         // When
         List<User> deserialized = serialization.deserializeUsers( UTF8.encode(
                 ("Steve:SHA-256,FE0056C37E,A543:\n" +
-                 "Bob:admin:SHA-256,0E1FFFC23E,34A4:password_change_required\n") ) );
+                 "Bob:SHA-256,0E1FFFC23E,34A4:password_change_required\n") ) );
 
         // Then
         assertThat( deserialized, equalTo( asList(
-                new User( "Steve", BasicAuthManager.DEFAULT_GROUP, new Credential( salt1, hash1 ), false ),
-                new User( "Bob", "admin", new Credential( salt2, hash2 ), true ) ) ) );
+                new User( "Steve", new Credential( salt1, hash1 ), false ),
+                new User( "Bob", new Credential( salt2, hash2 ), true ) ) ) );
     }
 }

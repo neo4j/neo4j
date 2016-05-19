@@ -89,7 +89,7 @@ public class ShiroAuthManagerTest
     public void shouldFindAndAuthenticateUserSuccessfully() throws Throwable
     {
         // Given
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), false );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), false );
         users.create( user );
         manager.start();
         when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( true );
@@ -105,7 +105,7 @@ public class ShiroAuthManagerTest
     public void shouldFindAndAuthenticateUserAndReturnAuthStrategyResult() throws Throwable
     {
         // Given
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
         manager.start();
 
@@ -121,7 +121,7 @@ public class ShiroAuthManagerTest
     public void shouldFindAndAuthenticateUserAndReturnPasswordChangeIfRequired() throws Throwable
     {
         // Given
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
         manager.start();
         when( authStrategy.isAuthenticationPermitted( user.name() )).thenReturn( true );
@@ -137,7 +137,7 @@ public class ShiroAuthManagerTest
     public void shouldFailAuthenticationIfUserIsNotFound() throws Throwable
     {
         // Given
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
         manager.start();
         when( authStrategy.isAuthenticationPermitted( "unknown" )).thenReturn( true );
@@ -172,7 +172,7 @@ public class ShiroAuthManagerTest
         System.out.println("shouldDeleteUser");
 
         // Given
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
         manager.start();
 
@@ -187,7 +187,7 @@ public class ShiroAuthManagerTest
     public void shouldDeleteUnknownUser() throws Throwable
     {
         // Given
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
         manager.start();
 
@@ -202,7 +202,7 @@ public class ShiroAuthManagerTest
     public void shouldSetPassword() throws Throwable
     {
         // Given
-        users.create( new User( "jake", "admin", Credential.forPassword( "abc123" ), true ) );
+        users.create( new User( "jake", Credential.forPassword( "abc123" ), true ) );
         manager.start();
 
         // When

@@ -72,7 +72,6 @@ public class UserSerialization
     private String serialize( User user )
     {
         return join( userSeparator, user.name(),
-                user.group(),
                 serialize( user.credentials() ),
                 user.passwordChangeRequired() ? "password_change_required" : "" );
     }
@@ -80,20 +79,14 @@ public class UserSerialization
     private User deserializeUser( String line, int lineNumber ) throws FormatException
     {
         String[] parts = line.split( userSeparator, -1 );
-        int offset = 0;
-        if ( parts.length < 3 || parts.length > 4 )
+        if ( parts.length != 3 )
         {
             throw new FormatException( format( "wrong number of line fields [line %d]", lineNumber ) );
         }
-        if ( parts.length == 4 )
-        {
-            offset = 1;
-        }
         return new User.Builder()
                 .withName( parts[0] )
-                .withGroup( offset > 0 ? parts[1] : BasicAuthManager.DEFAULT_GROUP )
-                .withCredentials( deserializeCredentials( parts[1 + offset], lineNumber ) )
-                .withRequiredPasswordChange( parts[2 + offset].equals( "password_change_required" ) )
+                .withCredentials( deserializeCredentials( parts[1], lineNumber ) )
+                .withRequiredPasswordChange( parts[2].equals( "password_change_required" ) )
                 .build();
     }
 

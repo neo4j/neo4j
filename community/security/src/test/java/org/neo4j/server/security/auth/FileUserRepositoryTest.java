@@ -83,7 +83,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
         // When
@@ -98,7 +98,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
         users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
@@ -116,7 +116,7 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
         // When
@@ -172,7 +172,7 @@ public class FileUserRepositoryTest
 
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         users.start();
-        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
 
         // When
         try
@@ -194,11 +194,11 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
         // When
-        User updatedUser = new User( "john", "admin", Credential.INACCESSIBLE, true );
+        User updatedUser = new User( "john", Credential.INACCESSIBLE, true );
         try
         {
             users.update( user, updatedUser );
@@ -216,12 +216,12 @@ public class FileUserRepositoryTest
     {
         // Given
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
-        User user = new User( "jake", "admin", Credential.INACCESSIBLE, true );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
-        User modifiedUser = new User( "jake", "admin", Credential.forPassword( "foo" ), false );
+        User modifiedUser = new User( "jake", Credential.forPassword( "foo" ), false );
 
         // When
-        User updatedUser = new User( "jake", "admin", Credential.forPassword( "bar" ), false );
+        User updatedUser = new User( "jake", Credential.forPassword( "bar" ), false );
         try
         {
             users.update( modifiedUser, updatedUser );

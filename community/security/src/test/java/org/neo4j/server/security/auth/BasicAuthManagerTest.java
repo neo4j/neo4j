@@ -59,7 +59,7 @@ public class BasicAuthManagerTest
     {
         // Given
         final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), false );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), false );
         users.create( user );
         final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
         final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
@@ -79,7 +79,7 @@ public class BasicAuthManagerTest
     {
         // Given
         final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
         final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
         final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
@@ -99,7 +99,7 @@ public class BasicAuthManagerTest
     {
         // Given
         final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
         final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
         final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
@@ -119,7 +119,7 @@ public class BasicAuthManagerTest
     {
         // Given
         final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
         final AuthenticationStrategy authStrategy = mock( AuthenticationStrategy.class );
         final BasicAuthManager manager = new BasicAuthManager( users, mock( PasswordPolicy.class ), authStrategy );
@@ -157,7 +157,7 @@ public class BasicAuthManagerTest
     {
         // Given
         final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
         final BasicAuthManager manager =
                 new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
@@ -175,7 +175,7 @@ public class BasicAuthManagerTest
     {
         // Given
         final InMemoryUserRepository users = new InMemoryUserRepository();
-        final User user = new User( "jake", "admin", Credential.forPassword( "abc123" ), true );
+        final User user = new User( "jake", Credential.forPassword( "abc123" ), true );
         users.create( user );
         final BasicAuthManager manager =
                 new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
@@ -193,7 +193,7 @@ public class BasicAuthManagerTest
     {
         // Given
         final InMemoryUserRepository users = new InMemoryUserRepository();
-        users.create( new User( "jake", "admin", Credential.forPassword( "abc123" ), true ) );
+        users.create( new User( "jake", Credential.forPassword( "abc123" ), true ) );
         final BasicAuthManager manager =
                 new BasicAuthManager( users, mock( PasswordPolicy.class ), mock( AuthenticationStrategy.class ) );
         manager.start();
