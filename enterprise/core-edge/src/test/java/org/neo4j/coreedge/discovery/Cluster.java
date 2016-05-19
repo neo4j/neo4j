@@ -36,21 +36,17 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.coreedge.raft.replication.id.IdGenerationException;
 import org.neo4j.coreedge.raft.roles.Role;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.coreedge.server.core.CoreGraphDatabase;
 import org.neo4j.coreedge.server.edge.EdgeGraphDatabase;
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 
@@ -179,8 +175,8 @@ public class Cluster
     {
         Map<String,String> params = stringMap();
         params.put( "dbms.mode", serverType );
-        params.put( ClusterSettings.cluster_name.name(), CLUSTER_NAME );
-        params.put( ClusterSettings.server_id.name(), String.valueOf( serverId ) );
+        params.put( CoreEdgeClusterSettings.cluster_name.name(), CLUSTER_NAME );
+        params.put( CoreEdgeClusterSettings.server_id.name(), String.valueOf( serverId ) );
         params.put( CoreEdgeClusterSettings.initial_core_cluster_members.name(), initialHosts );
         return params;
     }
@@ -351,7 +347,7 @@ public class Cluster
     {
         for ( CoreGraphDatabase coreServer : coreServers )
         {
-            if ( serverIdFor( coreServer ).toIntegerIndex() == serverId )
+            if ( serverIdFor( coreServer ) == serverId )
             {
                 return coreServer;
             }
@@ -363,7 +359,7 @@ public class Cluster
     {
         for ( EdgeGraphDatabase edgeServer : edgeServers )
         {
-            if ( serverIdFor( edgeServer ).toIntegerIndex() == serverId )
+            if ( serverIdFor( edgeServer ) == serverId )
             {
                 return edgeServer;
             }
@@ -396,7 +392,7 @@ public class Cluster
         EdgeGraphDatabase serverToRemove = null;
         for ( EdgeGraphDatabase edgeServer : edgeServers )
         {
-            if ( serverIdFor( edgeServer ).toIntegerIndex() == serverId )
+            if ( serverIdFor( edgeServer ) == serverId )
             {
                 edgeServer.shutdown();
                 serverToRemove = edgeServer;
@@ -438,10 +434,10 @@ public class Cluster
         edgeServers.add( startEdgeServer( serverId, advertisedAddresses, stringMap(), emptyMap(), StandardV3_0.NAME ) );
     }
 
-    private InstanceId serverIdFor( GraphDatabaseFacade graphDatabaseFacade )
+    private int serverIdFor( GraphDatabaseFacade graphDatabaseFacade )
     {
         return graphDatabaseFacade.getDependencyResolver().resolveDependency( Config.class )
-                .get( ClusterSettings.server_id );
+                .get( CoreEdgeClusterSettings.server_id );
     }
 
     public Set<CoreGraphDatabase> coreServers()

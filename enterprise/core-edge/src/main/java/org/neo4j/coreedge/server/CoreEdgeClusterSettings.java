@@ -25,7 +25,9 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
+import org.neo4j.kernel.configuration.Internal;
 
+import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
@@ -33,7 +35,9 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.MANDATORY;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
+import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -205,4 +209,12 @@ public class CoreEdgeClusterSettings
 
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Long> pull_interval = setting( "core_edge.pull_interval", DURATION, "1s" );
+
+    @Description( "Id for a cluster instance. Must be unique within the cluster." )
+    public static final Setting<Integer> server_id = setting( "core_edge.server_id", INTEGER, MANDATORY );
+
+    @Description( "The name of the core cluster." )
+    @Internal
+    public static final Setting<String> cluster_name = setting( "core_edge.cluster_name", STRING, "core-cluster",
+            illegalValueMessage( "must be a valid cluster name", matches( ANY ) ) );
 }

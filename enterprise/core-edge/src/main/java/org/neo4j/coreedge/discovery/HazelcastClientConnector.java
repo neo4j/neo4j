@@ -23,7 +23,6 @@ import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.core.HazelcastInstance;
 
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.CoreEdgeClusterSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -42,7 +41,7 @@ public class HazelcastClientConnector implements HazelcastConnector
     {
         ClientConfig clientConfig = new ClientConfig();
 
-        clientConfig.getGroupConfig().setName( config.get( ClusterSettings.cluster_name ) );
+        clientConfig.getGroupConfig().setName( config.get( CoreEdgeClusterSettings.cluster_name ) );
 
         for ( AdvertisedSocketAddress address : config.get( CoreEdgeClusterSettings.initial_core_cluster_members ) )
         {

@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.CoreMember;
 import org.neo4j.kernel.configuration.Config;
@@ -96,7 +95,7 @@ public class TestOnlyDiscoveryServiceFactory implements DiscoveryServiceFactory
     } );
 
     @Override
-    public CoreTopologyService coreDiscoveryService( Config config )
+    public CoreTopologyService coreDiscoveryService( Config config, LogProvider logProvider )
     {
         return new TestOnlyCoreTopologyService( config, this );
     }

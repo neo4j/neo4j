@@ -19,8 +19,6 @@
  */
 package org.neo4j.coreedge.discovery;
 
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.coreedge.server.AdvertisedSocketAddress;
 import org.neo4j.coreedge.server.BoltAddress;
 import org.neo4j.coreedge.server.edge.EnterpriseEdgeEditionModule;
