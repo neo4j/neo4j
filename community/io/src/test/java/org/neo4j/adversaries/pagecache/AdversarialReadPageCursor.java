@@ -388,7 +388,7 @@ class AdversarialReadPageCursor extends PageCursor
         delegate.shouldRetry();
         delegate.setOffset( 0 );
         delegate.checkAndClearBoundsFlag();
-        delegate.clearCursorError();
+        delegate.clearCursorException();
     }
 
     @Override
@@ -413,9 +413,9 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
-    public void checkAndClearCursorError() throws CursorException
+    public void checkAndClearCursorException() throws CursorException
     {
-        delegate.checkAndClearCursorError();
+        delegate.checkAndClearCursorException();
     }
 
     @Override
@@ -425,15 +425,15 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
-    public void setCursorError( String message )
+    public void setCursorException( String message )
     {
-        delegate.setCursorError( message );
+        delegate.setCursorException( message );
     }
 
     @Override
-    public void clearCursorError()
+    public void clearCursorException()
     {
-        delegate.clearCursorError();
+        delegate.clearCursorException();
     }
 
     @Override

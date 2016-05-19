@@ -69,7 +69,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             {
                 // We must have performed an inconsistent read,
                 // because this many bytes cannot possibly fit in a record!
-                cursor.setCursorError( payloadTooBigErrorMessage( record, recordSize, nrOfBytes ) );
+                cursor.setCursorException( payloadTooBigErrorMessage( record, recordSize, nrOfBytes ) );
                 return;
             }
 
@@ -84,7 +84,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
             if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
                     && nrOfBytes < dataSize || nrOfBytes > dataSize )
             {
-                cursor.setCursorError( illegalBlockSizeMessage( record, dataSize ) );
+                cursor.setCursorException( illegalBlockSizeMessage( record, dataSize ) );
                 return;
             }
 

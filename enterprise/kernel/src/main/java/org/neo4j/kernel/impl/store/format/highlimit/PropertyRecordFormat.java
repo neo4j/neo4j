@@ -78,7 +78,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
                     toAbsolute( Reference.decode( cursor ), recordId ) );
             if ( (blockCount > record.getBlockCapacity()) | (RECORD_SIZE - (cursor.getOffset() - offset) < blockCount * Long.BYTES) )
             {
-                cursor.setCursorError( "PropertyRecord claims to contain more blocks than can fit in a record" );
+                cursor.setCursorException( "PropertyRecord claims to contain more blocks than can fit in a record" );
                 return;
             }
             while ( blockCount-- > 0 )

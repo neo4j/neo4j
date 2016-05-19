@@ -302,7 +302,7 @@ public abstract class PageCursor implements AutoCloseable
      * Check if a cursor error has been set on this or any linked cursor, and if so, remove it from the cursor
      * and throw it as a {@link CursorException}.
      */
-    public abstract void checkAndClearCursorError() throws CursorException;
+    public abstract void checkAndClearCursorException() throws CursorException;
 
     /**
      * Explicitly raise the out-of-bounds flag.
@@ -314,19 +314,19 @@ public abstract class PageCursor implements AutoCloseable
     /**
      * Set an error condition on the cursor with the given message.
      * <p>
-     * This will make calls to {@link #checkAndClearCursorError()} throw a {@link CursorException} with the given
+     * This will make calls to {@link #checkAndClearCursorException()} throw a {@link CursorException} with the given
      * message, unless the error has gotten cleared by a {@link #shouldRetry()} call that returned {@code true},
      * a call to {@link #next()} or {@link #next(long)}, or the cursor is closed.
      *
-     * @param message The message of the {@link CursorException} that {@link #checkAndClearCursorError()} will throw.
+     * @param message The message of the {@link CursorException} that {@link #checkAndClearCursorException()} will throw.
      */
-    public abstract void setCursorError( String message );
+    public abstract void setCursorException( String message );
 
     /**
      * Unconditionally clear any error condition that has been set on this or any linked cursor, without throwing an
      * exception.
      */
-    public abstract void clearCursorError();
+    public abstract void clearCursorException();
 
     /**
      * Open a new page cursor with the same pf_flags as this cursor, as if calling the {@link PagedFile#io(long, int)}

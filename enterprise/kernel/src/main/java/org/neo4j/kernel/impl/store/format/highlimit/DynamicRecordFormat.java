@@ -72,7 +72,7 @@ class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRecord>
             int length = cursor.getShort() | cursor.getByte() << 16;
             if ( length > recordSize | length < 0 )
             {
-                cursor.setCursorError( payloadLengthErrorMessage( record, recordSize, length ) );
+                cursor.setCursorException( payloadLengthErrorMessage( record, recordSize, length ) );
                 return;
             }
             long next = cursor.getLong();

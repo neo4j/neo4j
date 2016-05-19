@@ -348,7 +348,7 @@ public class CommonAbstractStoreBehaviourTest
         {
             if ( cursorErrorOnRecord == id )
             {
-                cursor.setCursorError( "boom" );
+                cursor.setCursorException( "boom" );
             }
         }
 

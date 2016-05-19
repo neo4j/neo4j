@@ -710,7 +710,7 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public void checkAndClearCursorError() throws CursorException
+    public void checkAndClearCursorException() throws CursorException
     {
         MuninnPageCursor cursor = this;
         do
@@ -734,7 +734,7 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public void clearCursorError()
+    public void clearCursorException()
     {
         clearCursorError( this );
     }
@@ -755,7 +755,7 @@ abstract class MuninnPageCursor extends PageCursor
     }
 
     @Override
-    public void setCursorError( String message )
+    public void setCursorException( String message )
     {
         Objects.requireNonNull( message );
         if ( usePreciseCursorErrorStackTraces )

@@ -81,13 +81,13 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
             int numberOfBlocksUsed = type.calculateNumberOfBlocksUsed( block );
             if ( numberOfBlocksUsed == PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING )
             {
-                cursor.setCursorError( "Invalid type or encoding of property block: " + block + " (type = " + type + ")" );
+                cursor.setCursorException( "Invalid type or encoding of property block: " + block + " (type = " + type + ")" );
                 return;
             }
             int additionalBlocks = numberOfBlocksUsed - 1;
             if ( additionalBlocks * 8 > RECORD_SIZE - (cursor.getOffset() - offsetAtBeginning ) )
             {
-                cursor.setCursorError( "PropertyRecord claims to have more property blocks than can fit in a record" );
+                cursor.setCursorException( "PropertyRecord claims to have more property blocks than can fit in a record" );
                 return;
             }
             while ( additionalBlocks --> 0 )

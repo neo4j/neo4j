@@ -106,7 +106,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                 // it may only be read as part of reading the primary unit.
                 record.clear();
                 // Return and try again
-                primaryCursor.setCursorError(
+                primaryCursor.setCursorException(
                         "Expected record to be the first unit in the chain, but record header says it's not" );
                 return;
             }
@@ -123,7 +123,7 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                 // We must have made an inconsistent read of the secondary record unit reference.
                 // No point in trying to read this.
                 record.clear();
-                primaryCursor.setCursorError( illegalSecondaryReferenceMessage( pageId ) );
+                primaryCursor.setCursorException( illegalSecondaryReferenceMessage( pageId ) );
                 return;
             }
             secondaryCursor.setOffset( offset + HEADER_BYTE);

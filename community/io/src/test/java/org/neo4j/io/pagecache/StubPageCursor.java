@@ -139,7 +139,7 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public void checkAndClearCursorError() throws CursorException
+    public void checkAndClearCursorException() throws CursorException
     {
         String message = this.cursorErrorMessage;
         if ( message != null )
@@ -155,13 +155,13 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public void setCursorError( String message )
+    public void setCursorException( String message )
     {
         this.cursorErrorMessage = message;
     }
 
     @Override
-    public void clearCursorError()
+    public void clearCursorException()
     {
         this.cursorErrorMessage = null;
     }

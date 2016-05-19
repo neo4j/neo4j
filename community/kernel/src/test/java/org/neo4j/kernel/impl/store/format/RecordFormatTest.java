@@ -222,7 +222,7 @@ public abstract class RecordFormatTest
             }
             while ( cursor.shouldRetry() );
             assertFalse( "Out-of-bounds when reading record " + written, cursor.checkAndClearBoundsFlag() );
-            cursor.checkAndClearCursorError();
+            cursor.checkAndClearCursorException();
 
             // THEN
             if ( written.inUse() )

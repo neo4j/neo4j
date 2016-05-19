@@ -111,7 +111,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     {
         setOffset( 0 );
         checkAndClearBoundsFlag();
-        clearCursorError();
+        clearCursorException();
         lockStamp = page.tryOptimisticReadLock();
         // The page might have been evicted while we held the optimistic
         // read lock, so we need to check with page.pin that this is still

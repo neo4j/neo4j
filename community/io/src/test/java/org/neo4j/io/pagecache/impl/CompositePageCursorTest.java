@@ -1155,11 +1155,11 @@ public class CompositePageCursorTest
         String firstMsg = "first boo";
         String secondMsg = "second boo";
 
-        cursor.setCursorError( firstMsg );
+        cursor.setCursorException( firstMsg );
         assertFalse( cursor.checkAndClearBoundsFlag() );
         try
         {
-            first.checkAndClearCursorError();
+            first.checkAndClearCursorException();
             fail( "first checkAndClearCursorError should have thrown" );
         }
         catch ( CursorException e )
@@ -1168,11 +1168,11 @@ public class CompositePageCursorTest
         }
 
         cursor.setOffset( PAGE_SIZE );
-        cursor.setCursorError( secondMsg );
+        cursor.setCursorException( secondMsg );
         assertFalse( cursor.checkAndClearBoundsFlag() );
         try
         {
-            second.checkAndClearCursorError();
+            second.checkAndClearCursorException();
             fail( "second checkAndClearCursorError should have thrown" );
         }
         catch ( CursorException e )
@@ -1185,17 +1185,17 @@ public class CompositePageCursorTest
     public void checkAndClearCursorErrorMustNotThrowIfNoErrorsAreSet() throws Exception
     {
         PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        cursor.checkAndClearCursorError();
+        cursor.checkAndClearCursorException();
     }
 
     @Test
     public void checkAndClearCursorErrorMustThrowIfFirstCursorHasError() throws Exception
     {
         PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        first.setCursorError( "boo" );
+        first.setCursorException( "boo" );
         try
         {
-            cursor.checkAndClearCursorError();
+            cursor.checkAndClearCursorException();
             fail( "composite cursor checkAndClearCursorError should have thrown" );
         }
         catch ( CursorException e )
@@ -1208,10 +1208,10 @@ public class CompositePageCursorTest
     public void checkAndClearCursorErrorMustThrowIfSecondCursorHasError() throws Exception
     {
         PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        second.setCursorError( "boo" );
+        second.setCursorException( "boo" );
         try
         {
-            cursor.checkAndClearCursorError();
+            cursor.checkAndClearCursorException();
             fail( "composite cursor checkAndClearCursorError should have thrown" );
         }
         catch ( CursorException e )
@@ -1224,11 +1224,11 @@ public class CompositePageCursorTest
     public void checkAndClearCursorErrorWillOnlyCheckFirstCursorIfBothHaveErrorsSet() throws Exception
     {
         PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        first.setCursorError( "first boo" );
-        second.setCursorError( "second boo" );
+        first.setCursorException( "first boo" );
+        second.setCursorException( "second boo" );
         try
         {
-            cursor.checkAndClearCursorError();
+            cursor.checkAndClearCursorException();
             fail( "composite cursor checkAndClearCursorError should have thrown" );
         }
         catch ( CursorException e )
@@ -1237,7 +1237,7 @@ public class CompositePageCursorTest
         }
         try
         {
-            second.checkAndClearCursorError();
+            second.checkAndClearCursorException();
             fail( "second cursor checkAndClearCursorError should have thrown" );
         }
         catch ( CursorException e )
@@ -1250,13 +1250,13 @@ public class CompositePageCursorTest
     public void clearCursorErrorMustClearBothCursors() throws Exception
     {
         PageCursor cursor = CompositePageCursor.compose( first, PAGE_SIZE, second, PAGE_SIZE );
-        first.setCursorError( "first boo" );
-        second.setCursorError( "second boo" );
-        cursor.clearCursorError();
+        first.setCursorException( "first boo" );
+        second.setCursorException( "second boo" );
+        cursor.clearCursorException();
 
         // Now these must not throw
-        first.checkAndClearCursorError();
-        second.checkAndClearCursorError();
-        cursor.checkAndClearCursorError();
+        first.checkAndClearCursorException();
+        second.checkAndClearCursorException();
+        cursor.checkAndClearCursorException();
     }
 }

@@ -77,7 +77,7 @@ public enum RecordLoad
         {
             try
             {
-                cursor.checkAndClearCursorError();
+                cursor.checkAndClearCursorException();
             }
             catch ( CursorException e )
             {
@@ -88,7 +88,7 @@ public enum RecordLoad
         {
             // The CHECK and FORCE modes do not bother with reporting decoding errors...
             // ... but they must still clear them, since the page cursor may be reused to read other records
-            cursor.clearCursorError();
+            cursor.clearCursorException();
         }
     }
 

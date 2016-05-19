@@ -452,10 +452,10 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public void checkAndClearCursorError() throws CursorException
+    public void checkAndClearCursorException() throws CursorException
     {
-        first.checkAndClearCursorError();
-        second.checkAndClearCursorError();
+        first.checkAndClearCursorException();
+        second.checkAndClearCursorException();
     }
 
     @Override
@@ -465,16 +465,16 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public void setCursorError( String message )
+    public void setCursorException( String message )
     {
-        cursor( 0 ).setCursorError( message );
+        cursor( 0 ).setCursorException( message );
     }
 
     @Override
-    public void clearCursorError()
+    public void clearCursorException()
     {
-        first.clearCursorError();
-        second.clearCursorError();
+        first.clearCursorException();
+        second.clearCursorException();
     }
 
     @Override
