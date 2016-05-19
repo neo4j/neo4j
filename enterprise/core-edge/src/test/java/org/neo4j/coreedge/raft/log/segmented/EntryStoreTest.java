@@ -34,3 +34,4 @@ public class EntryStoreTest
         verify( segments ).close();
     }
 }
+
