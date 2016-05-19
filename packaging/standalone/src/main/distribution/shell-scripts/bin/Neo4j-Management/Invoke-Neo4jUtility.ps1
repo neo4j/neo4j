@@ -106,6 +106,17 @@ Function Invoke-Neo4jUtility
         }
         break
       }
+      "core-convert" {
+        Write-Verbose "Core convert command specified"
+        if ($thisServer.ServerType -ne 'Enterprise')
+        {
+          throw "Neo4j Server type $($thisServer.ServerType) does not support core convert"
+        }
+        $GetJavaParams = @{
+          StartingClass = 'org.neo4j.coreedge.convert.ConvertNonCoreEdgeStoreCli';
+        }
+        break
+      }
       default {
         Write-Host "Unknown utility $Command"
         return 255
