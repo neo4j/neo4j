@@ -33,11 +33,6 @@ public interface ReadableRaftLog
      */
     long prevIndex();
 
-//    /**
-//     * @return The index of the last committed entry.
-//     */
-//    long commitIndex();
-
     /**
      * Reads the term associated with the entry at the supplied index.
      *

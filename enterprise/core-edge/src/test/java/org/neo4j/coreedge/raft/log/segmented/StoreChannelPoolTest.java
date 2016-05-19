@@ -19,6 +19,7 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -28,56 +29,81 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
+import static org.neo4j.coreedge.raft.log.segmented.StoreChannelPool.CLOSED_ERROR_MESSAGE;
 
 public class StoreChannelPoolTest
 {
+    @Rule
+    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final File file = new File( SEGMENTED_LOG_DIRECTORY_NAME );
+    private final NullLogProvider logProvider = NullLogProvider.getInstance();
+
     @Test
-    public void shouldSignalWhenPoolDepleted() throws Exception
+    public void shouldSignalWhenPoolDeleted() throws Exception
     {
         // given
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        StoreChannelPool pool =
-                new StoreChannelPool( fsa, new File( SEGMENTED_LOG_DIRECTORY_NAME ), "rw", NullLogProvider.getInstance() );
-        StoreChannel channel = pool.acquire( 0 );
+        try ( StoreChannelPool pool = new StoreChannelPool( fsRule.get(), file, "rw", logProvider ) )
+        {
+            StoreChannel channel = pool.acquire( 0 );
 
-        CountDownLatch latch = new CountDownLatch( 1 );
-        Runnable onDisposal = latch::countDown;
+            CountDownLatch latch = new CountDownLatch( 1 );
+            Runnable onDisposal = latch::countDown;
 
-        pool.markForDisposal( onDisposal );
+            pool.markForDisposal( onDisposal );
 
-        // when
-        pool.release( channel );
+            // when
+            pool.release( channel );
 
-        // then
-        assertTrue( latch.await( 10, SECONDS ) );
+            // then
+            assertTrue( latch.await( 10, SECONDS ) );
+        }
     }
 
     @Test
     public void shouldNotBeAbleToAcquireFromPoolMarkedForDisposal() throws Exception
     {
         // given
-        FileSystemAbstraction fsa = new EphemeralFileSystemAbstraction();
-        StoreChannelPool pool = new StoreChannelPool( fsa, new File( SEGMENTED_LOG_DIRECTORY_NAME ), "rw",
-                NullLogProvider.getInstance() );
+        try ( StoreChannelPool pool = new StoreChannelPool( fsRule.get(), file, "rw", logProvider ) )
+        {
+            pool.markForDisposal( () -> {} );
 
-        pool.markForDisposal( () -> {
-        } );
+            // when
+            try
+            {
+                pool.acquire( 0 );
+                fail();
+            }
+            catch ( DisposedException pde )
+            {
+                // then
+            }
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToCloseThePool() throws Exception
+    {
+        // given
+        StoreChannelPool pool = new StoreChannelPool( fsRule.get(), file, "rw", logProvider );
+        pool.close();
 
         // when
         try
         {
             pool.acquire( 0 );
             fail();
-
         }
-        catch ( DisposedException pde )
+        catch ( RuntimeException ex )
         {
             // then
+            assertEquals( CLOSED_ERROR_MESSAGE, ex.getMessage() );
         }
     }
 }

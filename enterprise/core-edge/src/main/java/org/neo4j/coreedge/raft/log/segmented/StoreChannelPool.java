@@ -32,8 +32,10 @@ import org.neo4j.logging.LogProvider;
 /**
  * Keeps a pool of store channels available.
  */
-class StoreChannelPool
+class StoreChannelPool implements AutoCloseable
 {
+    static final String CLOSED_ERROR_MESSAGE = "store channel pool is closed";
+
     private final FileSystemAbstraction fsa;
     private final File file;
     private final String mode;
@@ -44,13 +46,13 @@ class StoreChannelPool
     private boolean markedForDisposal;
     private Runnable onDisposal;
     private boolean disposed;
+    private boolean closed;
 
     StoreChannelPool( FileSystemAbstraction fsa, File file, String mode, LogProvider logProvider )
     {
         this.fsa = fsa;
         this.file = file;
         this.mode = mode;
-
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -62,7 +64,11 @@ class StoreChannelPool
 
     synchronized StoreChannel acquire( long byteOffset ) throws IOException, DisposedException
     {
-        if( markedForDisposal )
+        if ( closed )
+        {
+            throw new RuntimeException( CLOSED_ERROR_MESSAGE );
+        }
+        if ( markedForDisposal )
         {
             throw new DisposedException();
         }
@@ -78,6 +84,10 @@ class StoreChannelPool
 
     synchronized void release( StoreChannel channel )
     {
+        if ( closed )
+        {
+            throw new RuntimeException( CLOSED_ERROR_MESSAGE );
+        }
         channels.addFirst( channel );
         checkForDisposal();
     }
@@ -109,7 +119,7 @@ class StoreChannelPool
 
     synchronized void markForDisposal( Runnable onDisposal ) throws DisposedException
     {
-        if( markedForDisposal )
+        if ( markedForDisposal )
         {
             throw new DisposedException();
         }
@@ -123,5 +133,16 @@ class StoreChannelPool
     boolean isDisposed()
     {
         return disposed;
+    }
+
+    @Override
+    public synchronized void close() throws DisposedException
+    {
+        if ( closed )
+        {
+            throw new RuntimeException( CLOSED_ERROR_MESSAGE );
+        }
+        closed = true;
+        closeAllChannels();
     }
 }
