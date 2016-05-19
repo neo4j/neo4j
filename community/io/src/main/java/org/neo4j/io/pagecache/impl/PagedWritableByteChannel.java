@@ -67,11 +67,19 @@ public final class PagedWritableByteChannel implements WritableByteChannel
             }
             bytesLeftInCurrentPage = cursor.getCurrentPageSize();
         }
+        int position = src.position();
         int remaining = Math.min( src.remaining(), bytesLeftInCurrentPage );
-        for ( int i = 0; i < remaining; i++ )
+        int offset = cursor.getOffset();
+        do
         {
-            cursor.putByte( src.get() );
+            src.position( position );
+            cursor.setOffset( offset );
+            for ( int i = 0; i < remaining; i++ )
+            {
+                cursor.putByte( src.get() );
+            }
         }
+        while ( cursor.shouldRetry() );
         bytesLeftInCurrentPage -= remaining;
         return remaining;
     }
