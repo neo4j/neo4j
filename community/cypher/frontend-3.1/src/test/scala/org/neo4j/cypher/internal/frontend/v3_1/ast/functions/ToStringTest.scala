@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
 class ToStringTest extends FunctionTestBase("toString")  {
 
-  test("should accept correct types") {
+  test("should accept correct types or types that could be correct at runtime") {
     testValidTypes(CTString)(CTString)
     testValidTypes(CTFloat)(CTString)
     testValidTypes(CTInteger)(CTString)
     testValidTypes(CTBoolean)(CTString)
+    testValidTypes(CTAny)(CTString)
   }
 
   test("should fail type check for incompatible arguments") {
