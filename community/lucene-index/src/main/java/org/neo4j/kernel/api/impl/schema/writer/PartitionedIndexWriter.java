@@ -67,9 +67,14 @@ public class PartitionedIndexWriter implements LuceneIndexWriter
     public void updateDocument( Term term, Document doc ) throws IOException
     {
         List<IndexPartition> partitions = index.getPartitions();
-        for ( IndexPartition partition : partitions )
+        if ( index.hasSinglePartition( partitions ) )
         {
-            partition.getIndexWriter().updateDocument( term, doc );
+            index.getFirstPartition( partitions ).getIndexWriter().updateDocument( term, doc );
+        }
+        else
+        {
+            deleteDocuments( term );
+            addDocument( doc );
         }
     }
 

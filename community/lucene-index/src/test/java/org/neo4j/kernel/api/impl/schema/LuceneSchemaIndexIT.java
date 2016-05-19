@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.apache.lucene.document.Document;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,6 +36,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -111,6 +111,27 @@ public class LuceneSchemaIndexIT
             {
                 assertThat( asUniqueSetOfNames( snapshotIterator ), equalTo( emptySetOf( String.class ) ) );
             }
+        }
+    }
+
+    @Test
+    public void updateMultiplePartitionedIndex() throws IOException, IndexEntryConflictException
+    {
+        try ( LuceneSchemaIndex index = LuceneSchemaIndexBuilder.create()
+                .withIndexRootFolder( testDir.directory() )
+                .withIndexIdentifier( "partitionedIndexForUpdates" )
+                .build() )
+        {
+            index.create();
+            index.open();
+            addDocumentToIndex( index, 45 );
+
+            index.getIndexWriter().updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( 100 ),
+                    LuceneDocumentStructure.documentRepresentingProperty( 100, 100 ) );
+            index.maybeRefreshBlocking();
+
+            long documentsInIndex = Iterators.count( index.allDocumentsReader().iterator() );
+            assertEquals( "Index should contain 45 added and 1 updated document.", 46, documentsInIndex );
         }
     }
 
@@ -211,7 +232,7 @@ public class LuceneSchemaIndexIT
     {
         for ( int i = 0; i < documents; i++ )
         {
-            index.getIndexWriter().addDocument( new Document() );
+            index.getIndexWriter().addDocument( LuceneDocumentStructure.documentRepresentingProperty( i, i ) );
         }
     }
 
