@@ -21,10 +21,6 @@ include::import/import.asciidoc[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-graph-algo-docs-jar/dev/index.asciidoc[]
-
-:leveloffset: 1
-
 include::{importdir}/neo4j-server-docs-jar/dev/rest-api/index.asciidoc[]
 
 :leveloffset: 1
