@@ -92,7 +92,7 @@ public class BackupCoreIT
         {
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of(createSomeData( cluster ));
-            File backupPathPerCoreMachine = new File(backupPath, db.id().toString());
+            File backupPathPerCoreMachine = new File( backupPath, "" + db.id().hashCode() );
             String[] args = backupArguments(backupAddress(db), backupPathPerCoreMachine.getPath() );
             assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( args ) );
 
