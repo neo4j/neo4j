@@ -60,9 +60,9 @@ import org.neo4j.coreedge.raft.log.RaftLogMetadataCache;
 import org.neo4j.coreedge.raft.log.naive.NaiveDurableRaftLog;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLog;
 import org.neo4j.coreedge.raft.log.physical.PhysicalRaftLogFile;
+import org.neo4j.coreedge.raft.log.pruning.PruningScheduler;
 import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog;
-import org.neo4j.coreedge.raft.log.pruning.PruningScheduler;
 import org.neo4j.coreedge.raft.membership.CoreMemberSetBuilder;
 import org.neo4j.coreedge.raft.membership.MembershipWaiter;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
@@ -692,7 +692,7 @@ public class EnterpriseCoreEditionModule
                 myself, termState, voteState, raftLog, raftStateMachine, electionTimeout, heartbeatInterval,
                 raftTimeoutService,
                 new RaftOutbound( outbound ), logProvider,
-                raftMembershipManager, logShipping, databaseHealthSupplier, monitors );
+                raftMembershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors );
 
         int queueSize = config.get( CoreEdgeClusterSettings.raft_in_queue_size );
         int maxBatch = config.get( CoreEdgeClusterSettings.raft_in_queue_max_batch );

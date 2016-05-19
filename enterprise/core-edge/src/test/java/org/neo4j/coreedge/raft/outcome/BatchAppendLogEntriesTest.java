@@ -23,8 +23,11 @@ import org.junit.Test;
 
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.neo4j.coreedge.raft.ReplicatedInteger.valueOf;
 import static org.neo4j.coreedge.raft.log.RaftLogHelper.readLogEntry;
 
@@ -68,5 +71,30 @@ public class BatchAppendLogEntriesTest
         assertEquals( entryC, readLogEntry( log, 0 ) );
         assertEquals( entryD, readLogEntry( log, 1 ) );
         assertEquals( 1, log.appendIndex() );
+    }
+
+    @Test
+    public void applyTo() throws Exception
+    {
+        //Test that batch commands apply entries to the cache.
+
+        //given
+        long baseIndex = 0;
+        int offset = 1;
+        RaftLogEntry[] entries =
+                new RaftLogEntry[]{new RaftLogEntry( 0L, valueOf( 0 ) ), new RaftLogEntry( 1L, valueOf( 1 ) ),
+                        new RaftLogEntry( 2L, valueOf( 2 ) ),};
+
+        BatchAppendLogEntries batchAppend = new BatchAppendLogEntries( baseIndex, offset, entries );
+
+        InFlightMap<Long,RaftLogEntry> cache = new InFlightMap<>();
+
+        //when
+        batchAppend.applyTo( cache );
+
+        //then
+        assertNull( cache.retrieve( 0L ) );
+        assertNotNull( cache.retrieve( 1L ) );
+        assertNotNull( cache.retrieve( 2L ) );
     }
 }

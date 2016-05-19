@@ -95,7 +95,7 @@ public class RaftInstanceBuilder<MEMBER>
 
         RaftInstance<MEMBER> raft = new RaftInstance<>( member, termState, voteState, raftLog, raftStateMachine, electionTimeout,
                 heartbeatInterval, renewableTimeoutService, outbound, logProvider,
-                membershipManager, logShipping, databaseHealthSupplier, monitors );
+                membershipManager, logShipping, databaseHealthSupplier, inFlightMap, monitors );
         inbound.registerHandler( raft );
         return raft;
     }

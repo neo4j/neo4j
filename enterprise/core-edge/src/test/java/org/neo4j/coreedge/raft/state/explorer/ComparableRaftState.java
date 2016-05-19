@@ -25,7 +25,9 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
 import org.neo4j.coreedge.raft.state.ReadableRaftState;
@@ -47,22 +49,23 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
     protected long lastLogIndexBeforeWeBecameLeader = -1;
     protected FollowerStates<RaftTestMember> followerStates = new FollowerStates<>();
     protected final RaftLog entryLog;
+    protected final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private long commitIndex = -1;
 
-    public ComparableRaftState( RaftTestMember myself,
-                                Set<RaftTestMember> votingMembers,
-                                Set<RaftTestMember> replicationMembers,
-                                RaftLog entryLog )
+    public ComparableRaftState( RaftTestMember myself, Set<RaftTestMember> votingMembers, Set<RaftTestMember> replicationMembers,
+            RaftLog entryLog, InFlightMap<Long,RaftLogEntry> inFlightMap )
     {
         this.myself = myself;
         this.votingMembers = votingMembers;
         this.replicationMembers = replicationMembers;
         this.entryLog = entryLog;
+        this.inFlightMap = inFlightMap;
     }
 
     public ComparableRaftState( ReadableRaftState<RaftTestMember> original ) throws IOException
     {
-        this( original.myself(), original.votingMembers(), original.replicationMembers(), new ComparableRaftLog( original.entryLog() ) );
+        this( original.myself(), original.votingMembers(), original.replicationMembers(), new ComparableRaftLog( original.entryLog() ),
+                new InFlightMap<>() );
     }
 
     @Override
@@ -149,6 +152,7 @@ public class ComparableRaftState implements ReadableRaftState<RaftTestMember>
         for ( LogCommand logCommand : outcome.getLogCommands() )
         {
             logCommand.applyTo( entryLog );
+            logCommand.applyTo( inFlightMap );
         }
 
         commitIndex = outcome.getCommitIndex();

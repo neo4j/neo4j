@@ -28,6 +28,7 @@ import java.util.Set;
 import org.neo4j.coreedge.raft.RaftMessages;
 import org.neo4j.coreedge.raft.log.InMemoryRaftLog;
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
@@ -124,8 +125,8 @@ public class RaftStateBuilder
         StateStorage<VoteState<RaftTestMember>> voteStore = new InMemoryStateStorage<>( new VoteState<>( ) );
         StubMembership membership = new StubMembership();
 
-        RaftState<RaftTestMember> state = new RaftState<>( myself, termStore, membership, entryLog, voteStore
-        );
+        RaftState<RaftTestMember> state =
+                new RaftState<>( myself, termStore, membership, entryLog, voteStore, new InFlightMap<>() );
 
         Collection<RaftMessages.Directed<RaftTestMember>> noMessages = Collections.emptyList();
         List<LogCommand> noLogCommands = Collections.emptyList();

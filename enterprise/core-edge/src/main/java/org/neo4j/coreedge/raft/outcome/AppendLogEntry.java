@@ -24,6 +24,7 @@ import java.util.Objects;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
 public class AppendLogEntry implements LogCommand
 {
@@ -43,8 +44,13 @@ public class AppendLogEntry implements LogCommand
         {
             throw new IllegalStateException( "Attempted to append over an existing entry at index " + index );
         }
-
         raftLog.append( entry );
+    }
+
+    @Override
+    public void applyTo( InFlightMap<Long, RaftLogEntry> inFlightMap ) throws IOException
+    {
+        inFlightMap.register( index, entry );
     }
 
     @Override

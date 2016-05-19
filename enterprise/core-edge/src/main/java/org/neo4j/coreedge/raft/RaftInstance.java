@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import org.neo4j.coreedge.helper.VolatileFuture;
 import org.neo4j.coreedge.raft.log.RaftLog;
 import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftGroup;
 import org.neo4j.coreedge.raft.membership.RaftMembershipManager;
 import org.neo4j.coreedge.raft.net.Inbound;
@@ -113,6 +114,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
                          LogProvider logProvider, RaftMembershipManager<MEMBER> membershipManager,
                          RaftLogShippingManager<MEMBER> logShipping,
                          Supplier<DatabaseHealth> databaseHealthSupplier,
+                         InFlightMap<Long, RaftLogEntry> inFlightMap,
                          Monitors monitors )
     {
         this.myself = myself;
@@ -130,7 +132,7 @@ public class RaftInstance<MEMBER> implements LeaderLocator<MEMBER>,
 
         this.membershipManager = membershipManager;
 
-        this.state = new RaftState<>( myself, termStorage, membershipManager, entryLog, voteStorage );
+        this.state = new RaftState<>( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightMap );
 
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
 

@@ -22,8 +22,12 @@ package org.neo4j.coreedge.raft.outcome;
 import java.io.IOException;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
 public interface LogCommand
 {
     void applyTo( RaftLog raftLog ) throws IOException;
+
+    void applyTo( InFlightMap<Long,RaftLogEntry> inFlightMap ) throws IOException;
 }

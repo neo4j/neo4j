@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 
 public class TruncateLogCommand implements LogCommand
 {
@@ -37,6 +39,16 @@ public class TruncateLogCommand implements LogCommand
     public void applyTo( RaftLog raftLog ) throws IOException
     {
         raftLog.truncate( fromIndex );
+    }
+
+    @Override
+    public void applyTo( InFlightMap<Long,RaftLogEntry> inFlightMap ) throws IOException
+    {
+        long truncateIndex = fromIndex;
+        while( inFlightMap.unregister( truncateIndex ))
+        {
+            truncateIndex++;
+        }
     }
 
     @Override

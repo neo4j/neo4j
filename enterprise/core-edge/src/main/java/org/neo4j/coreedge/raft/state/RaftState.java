@@ -24,7 +24,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.coreedge.raft.log.RaftLog;
+import org.neo4j.coreedge.raft.log.RaftLogEntry;
 import org.neo4j.coreedge.raft.log.ReadableRaftLog;
+import org.neo4j.coreedge.raft.log.segmented.InFlightMap;
 import org.neo4j.coreedge.raft.membership.RaftMembership;
 import org.neo4j.coreedge.raft.outcome.LogCommand;
 import org.neo4j.coreedge.raft.outcome.Outcome;
@@ -46,10 +48,15 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
     private long lastLogIndexBeforeWeBecameLeader = -1;
     private FollowerStates<MEMBER> followerStates = new FollowerStates<>();
     private final RaftLog entryLog;
+    private final InFlightMap<Long,RaftLogEntry> inFlightMap;
     private long commitIndex = -1;
 
-    public RaftState( MEMBER myself, StateStorage<TermState> termStorage, RaftMembership<MEMBER> membership,
-                      RaftLog entryLog, StateStorage<VoteState<MEMBER>> voteStorage )
+    public RaftState( MEMBER myself,
+                      StateStorage<TermState> termStorage,
+                      RaftMembership<MEMBER> membership,
+                      RaftLog entryLog,
+                      StateStorage<VoteState<MEMBER>> voteStorage,
+                      InFlightMap<Long,RaftLogEntry> inFlightMap )
     {
         this.myself = myself;
         this.termStorage = termStorage;
@@ -58,6 +65,7 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
         this.voteState = voteStorage.getInitialState();
         this.membership = membership;
         this.entryLog = entryLog;
+        this.inFlightMap = inFlightMap;
     }
 
     @Override
@@ -151,6 +159,7 @@ public class RaftState<MEMBER> implements ReadableRaftState<MEMBER>
         for ( LogCommand logCommand : outcome.getLogCommands() )
         {
             logCommand.applyTo( entryLog );
+            logCommand.applyTo( inFlightMap );
         }
         commitIndex = outcome.getCommitIndex();
     }
