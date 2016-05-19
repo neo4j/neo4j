@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.neo4j.test.JavaDocsGenerator;
+import org.neo4j.doc.tools.JavaDocsGenerator;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import static org.junit.Assert.assertFalse;

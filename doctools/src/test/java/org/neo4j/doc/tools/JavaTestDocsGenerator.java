@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.doc.tools;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 
 import org.neo4j.test.TestData.Producer;
-
+import org.neo4j.test.GraphDefinition;
 
 /**
  * This class is supporting the generation of ASCIIDOC documentation

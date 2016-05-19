@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metatest;
+package org.neo4j.doc.metatest;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.neo4j.test.AsciiDocGenerator;
+import org.neo4j.doc.tools.AsciiDocGenerator;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;

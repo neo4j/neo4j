@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.metatest;
+package org.neo4j.doc.metatest;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
-import org.neo4j.test.JavaTestDocsGenerator;
+import org.neo4j.doc.tools.JavaTestDocsGenerator;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
