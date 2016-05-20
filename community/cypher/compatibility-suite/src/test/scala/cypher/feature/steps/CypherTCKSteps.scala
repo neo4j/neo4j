@@ -40,6 +40,8 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   val requiredScenarioName = FeatureSuiteTest.SCENARIO_NAME_REQUIRED.trim.toLowerCase
 
+  val unsupportedScenarios = Set("Fail when adding new label predicate on already bound node 5")
+
   // Stateful
   var graph: GraphDatabaseService = null
   var result: Try[Result] = null
@@ -152,8 +154,15 @@ class CypherTCKSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   private def ifEnabled(f: => Unit): Unit = {
-    if (requiredScenarioName.isEmpty || currentScenarioName.contains(requiredScenarioName)) {
+    val blacklist = unsupportedScenarios.map(_.toLowerCase)
+    if (!blacklist(currentScenarioName) && (requiredScenarioName.isEmpty || currentScenarioName.contains(requiredScenarioName))) {
       f
+    }
+  }
+
+  When(EXECUTING_CONTROL_QUERY) { (query: String) =>
+    result = Try {
+      graph.execute(query, params)
     }
   }
 

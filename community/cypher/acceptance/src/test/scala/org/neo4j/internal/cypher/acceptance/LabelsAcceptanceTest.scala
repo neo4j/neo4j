@@ -19,132 +19,196 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_1.helpers.CollectionSupport
-import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
-import org.neo4j.graphdb.Node
+import org.neo4j.cypher._
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine
-import org.neo4j.kernel.impl.store.NeoStores
-import org.scalatest.Assertions
-import org.scalautils.LegacyTripleEquals
 
-class LabelsAcceptanceTest extends ExecutionEngineFunSuite
-  with QueryStatisticsTestSupport with Assertions with CollectionSupport with LegacyTripleEquals {
+class LabelsAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  test("Adding_single_literal_label") {
-    assertThat("create (n {}) set n:FOO", List("FOO"))
-    assertThat("create (n {}) set n :FOO", List("FOO"))
-  }
-
-  test("Adding_multiple_literal_labels") {
-    assertThat("create (n {}) set n:FOO:BAR", List("FOO", "BAR"))
-    assertThat("create (n {}) set n :FOO :BAR", List("FOO", "BAR"))
-    assertThat("create (n {}) set n :FOO:BAR", List("FOO", "BAR"))
-  }
-
-  test("Creating_nodes_with_literal_labels") {
-    assertDoesNotWork("CREATE node :FOO:BAR {name: 'Stefan'}")
-    assertDoesNotWork("CREATE node :FOO:BAR")
-    assertDoesNotWork("CREATE node")
-    assertThat("CREATE (node)", List())
-    assertThat("CREATE (node :FOO:BAR)", List("FOO", "BAR"))
-    assertThat("CREATE (node:FOO:BAR {name: 'Mattias'})", List("FOO", "BAR"))
-    assertThat("CREATE (n:Person)-[:OWNS]->(x:Dog) RETURN n AS node", List("Person"))
-  }
-
-  test("Recreating_and_labelling_the_same_node_twice_differently_is_forbidden") {
-    assertDoesNotWork("CREATE (n: FOO)-[:test]->(b), (n: BAR)-[:test2]->(c)")
-    assertDoesNotWork("CREATE (c)<-[:test2]-(n: FOO), (n: BAR)<-[:test]-(b)")
-    assertDoesNotWork("CREATE (n :Foo) CREATE (n :Bar)-[:OWNS]->(x:Dog)")
-    assertDoesNotWork("CREATE (n {}) CREATE (n :Bar)-[:OWNS]->(x:Dog)")
-    assertDoesNotWork("CREATE (n :Foo) CREATE (n {})-[:OWNS]->(x:Dog)")
-    assertDoesNotWork("CREATE (n :Foo) CREATE (n {})-[:OWNS]->(x:Dog)")
-  }
-
-  test("Add_labels_to_nodes_in_a_foreach") {
-    assertThat("CREATE (a),(b),(c) WITH [a,b,c] as nodes FOREACH(n in nodes | SET n :FOO:BAR)", List("FOO", "BAR"))
-  }
-
-  test("Using_labels_in_RETURN_clauses") {
+  // TCK'd
+  test("Adding single label") {
     createNode()
-    assertThat("match (n) where id(n) = 0 RETURN labels(n)", List())
 
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) SET n:Foo RETURN labels(n)")
+
+    assertStats(result, labelsAdded = 1)
+    result.toList should equal(List(Map("labels(n)" -> List("Foo"))))
+  }
+
+  // TCK'd
+  test("should ignore space before colon") {
     createNode()
-    assertThat("match (n) where id(n) = 0 SET n :FOO RETURN labels(n)", List("FOO"))
+
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) SET n :Foo RETURN labels(n)")
+
+    assertStats(result, labelsAdded = 1)
+    result.toList should equal(List(Map("labels(n)" -> List("Foo"))))
   }
 
+  // TCK'd
+  test("Adding multiple labels") {
+    createNode()
 
-  test("Removing_labels") {
-    usingLabels("FOO", "BAR").
-      assertThat("START n=node({node}) REMOVE n:FOO RETURN n").
-      returnsLabels("BAR")
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) SET n:Foo:Bar RETURN labels(n)")
 
-    usingLabels("FOO").
-      assertThat("START n=node({node}) REMOVE n:BAR RETURN n").
-      returnsLabels("FOO")
+    assertStats(result, labelsAdded = 2)
+    result.toList should equal(List(Map("labels(n)" -> List("Foo", "Bar"))))
   }
 
+  // TCK'd
+  test("should ignore intermediate whitespace 1") {
+    createNode()
+
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) SET n :Foo :Bar RETURN labels(n)")
+
+    assertStats(result, labelsAdded = 2)
+    result.toList should equal(List(Map("labels(n)" -> List("Foo", "Bar"))))
+  }
+
+  // TCK'd
+  test("should ignore intermediate whitespace 2") {
+    createNode()
+
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) SET n :Foo:Bar RETURN labels(n)")
+
+    assertStats(result, labelsAdded = 2)
+    result.toList should equal(List(Map("labels(n)" -> List("Foo", "Bar"))))
+  }
+
+  // TCK'd
+  test("create node without label") {
+    val query = "CREATE (node) RETURN labels(node)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 1)
+    result.toList should equal(List(Map("labels(node)" -> List.empty)))
+  }
+
+  // TCK'd
+  test("create node with two labels") {
+    val query = "CREATE (node:Foo:Bar {name: 'Mattias'}) RETURN labels(node)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 1, labelsAdded = 2, propertiesWritten = 1)
+    result.toList should equal(List(Map("labels(node)" -> List("Foo", "Bar"))))
+  }
+
+  // TCK'd
+  test("ignore space when creating node with labels") {
+    val query = "CREATE (node :Foo:Bar) RETURN labels(node)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 1, labelsAdded = 2)
+    result.toList should equal(List(Map("labels(node)" -> List("Foo", "Bar"))))
+  }
+
+  // TCK'd
+  test("create node with label in pattern") {
+    val query = "CREATE (n:Person)-[:OWNS]->(x:Dog) RETURN labels(n)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1)
+    result.toList should equal(List(Map("labels(n)" -> List("Person"))))
+  }
+
+  // TCK'd
+  test("should fail when adding new label predicate on already bound node 1") {
+    val query = "CREATE (n: Foo)-[:T1]->(b), (n: Bar)-[:T2]->(c)"
+
+    a [SyntaxException] shouldBe thrownBy {
+      updateWithBothPlannersAndCompatibilityMode(query)
+    }
+  }
+
+  // TCK'd
+  test("should fail when adding new label predicate on already bound node 2") {
+    val query = "CREATE (c)<-[:T2]-(n: Foo), (n: Bar)<-[:T1]-(b)"
+
+    a [SyntaxException] shouldBe thrownBy {
+      updateWithBothPlannersAndCompatibilityMode(query)
+    }
+  }
+
+  // TCK'd
+  test("should fail when adding new label predicate on already bound node 3") {
+    val query = "CREATE (n :Foo) CREATE (n :Bar)-[:OWNS]->(x:Dog)"
+
+    a [SyntaxException] shouldBe thrownBy {
+      updateWithBothPlannersAndCompatibilityMode(query)
+    }
+  }
+
+  // TCK'd
+  test("should fail when adding new label predicate on already bound node 4") {
+    val query = "CREATE (n {}) CREATE (n :Bar)-[:OWNS]->(x:Dog)"
+
+    a [SyntaxException] shouldBe thrownBy {
+      updateWithBothPlannersAndCompatibilityMode(query)
+    }
+  }
+
+  // TCK'd
+  test("should fail when adding new label predicate on already bound node 5") {
+    val query = "CREATE (n :Foo) CREATE (n {})-[:OWNS]->(x:Dog)"
+
+    a [SyntaxException] shouldBe thrownBy {
+      updateWithBothPlannersAndCompatibilityMode(query)
+    }
+  }
+
+  // TCK'd
+  test("Add labels to nodes in a foreach") {
+    val query = "CREATE (a), (b), (c) WITH [a, b, c] AS nodes FOREACH(n IN nodes | SET n :Foo:Bar)"
+
+    val result = updateWithBothPlannersAndCompatibilityMode(query)
+
+    assertStats(result, nodesCreated = 3, labelsAdded = 6)
+    graph.execute("MATCH (n) WHERE NOT(n:Foo AND n:Bar) RETURN n").hasNext shouldBe false
+  }
+
+  // TCK'd
+  test("Using labels() in RETURN clauses") {
+    createNode()
+
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) WHERE id(n) = 0 RETURN labels(n)")
+
+    result.toList should equal(List(Map("labels(n)" -> List.empty)))
+  }
+
+  // TCK'd
+  test("Removing a label") {
+    createLabeledNode("Foo", "Bar")
+
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) REMOVE n:Foo RETURN labels(n)")
+
+    assertStats(result, labelsRemoved = 1)
+    result.toList should equal(List(Map("labels(n)" -> List("Bar"))))
+  }
+
+  // TCK'd
+  test("Removing non-existent label") {
+    createLabeledNode("Foo")
+
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) REMOVE n:Bar RETURN labels(n)")
+
+    assertStats(result, labelsRemoved = 0)
+    result.toList should equal(List(Map("labels(n)" -> List("Foo"))))
+  }
+
+  // Not TCK material
   test("should not create labels id when trying to delete non-existing labels") {
     createNode()
-    val resultRule = execute("Cypher planner=rule MATCH (n) REMOVE n:BAR RETURN id(n) as id").toList
-    resultRule should equal(List(Map("id" -> 0)))
-    val resultCost = execute("MATCH (n) REMOVE n:BAR RETURN id(n) as id").toList
-    resultCost should equal(List(Map("id" -> 0)))
+
+    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) REMOVE n:BAR RETURN id(n) AS id")
+
+    assertStats(result, labelsRemoved = 0)
+    result.toList should equal(List(Map("id" -> 0)))
 
     graph.inTx {
       graph.getDependencyResolver.resolveDependency(classOf[RecordStorageEngine]).testAccessNeoStores().getLabelTokenStore.getHighId should equal(0)
     }
-  }
-
-  private class AssertThat(labels: Seq[String], query:String) {
-    def returnsLabels(expected:String*):AssertThat = {
-      val node = createLabeledNode(labels:_*)
-      val result = executeScalar[Node](query, "node"->node)
-
-
-      assertInTx(result.labels === expected.toList)
-      this
-    }
-  }
-
-  private class UsingLabels(labels:Seq[String]) {
-    def assertThat(q:String):AssertThat = new AssertThat(labels, q)
-  }
-
-  private def usingLabels(labels:String*):UsingLabels = new UsingLabels(labels)
-
-  private def assertThat(q: String, expectedLabels: List[String]) {
-    val result = execute(q).toList
-
-    graph.inTx {
-      if (result.isEmpty) {
-        val n = graph.getNodeById(0)
-        assert(n.labels === expectedLabels)
-      } else {
-        result.foreach {
-          map => map.get("node") match {
-            case None =>
-              assert(makeTraversable(map.head._2).toList === expectedLabels)
-
-            case Some(n: Node) =>
-              assert(n.labels === expectedLabels)
-
-            case _ =>
-              throw new AssertionError("assertThat used with result that is not a node")
-          }
-        }
-      }
-    }
-
-    insertNewCleanDatabase()
-  }
-
-
-  private def insertNewCleanDatabase() {
-    stopTest()
-    initTest()
-  }
-
-  def assertDoesNotWork(s: String) {
-    intercept[CypherException](assertThat(s, List.empty))
   }
 }

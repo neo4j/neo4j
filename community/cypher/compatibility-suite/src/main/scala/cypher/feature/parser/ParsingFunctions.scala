@@ -23,6 +23,8 @@ import java.util
 
 import cucumber.api.DataTable
 import cypher.feature.parser.matchers.{QueryStatisticsMatcher, ResultMatcher, RowMatcher, ValueMatcher}
+import org.opencypher.tools.tck.InvalidFeatureFormatException
+import org.opencypher.tools.tck.constants.TCKSideEffects._
 
 import scala.collection.JavaConverters._
 
@@ -109,19 +111,13 @@ object statisticsParser extends (DataTable => QueryStatisticsMatcher) {
       case (DELETED_RELATIONSHIPS, index) => matcher.setRelationshipsDeleted(Integer.valueOf(values.get(index)))
       case (ADDED_LABELS, index) => matcher.setLabelsCreated(Integer.valueOf(values.get(index)))
       case (DELETED_LABELS, index) => matcher.setLabelsDeleted(Integer.valueOf(values.get(index)))
-      case (ADDED_PROPS, index) => matcher.setPropertiesCreated(Integer.valueOf(values.get(index)))
-      case (DELETED_PROPS, index) => matcher.setPropertiesDeleted(Integer.valueOf(values.get(index)))
+      case (ADDED_PROPERTIES, index) => matcher.setPropertiesCreated(Integer.valueOf(values.get(index)))
+      case (DELETED_PROPERTIES, index) => matcher.setPropertiesDeleted(Integer.valueOf(values.get(index)))
+      case (sideEffect, _) => throw new InvalidFeatureFormatException(
+        s"Invalid side effect: $sideEffect. Valid ones are: ${ALL.mkString(",")}")
     }
 
     matcher
   }
 
-  val ADDED_NODES = "+nodes"
-  val DELETED_NODES = "-nodes"
-  val ADDED_RELATIONSHIPS = "+relationships"
-  val DELETED_RELATIONSHIPS = "-relationships"
-  val ADDED_LABELS = "+labels"
-  val DELETED_LABELS = "-labels"
-  val ADDED_PROPS = "+properties"
-  val DELETED_PROPS = "-properties"
 }
