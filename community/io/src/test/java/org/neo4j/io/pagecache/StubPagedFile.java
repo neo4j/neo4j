@@ -20,6 +20,8 @@
 package org.neo4j.io.pagecache;
 
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 
 public class StubPagedFile implements PagedFile
 {
@@ -70,5 +72,17 @@ public class StubPagedFile implements PagedFile
     @Override
     public void close() throws IOException
     {
+    }
+
+    @Override
+    public ReadableByteChannel openReadableByteChannel()
+    {
+        throw new UnsupportedOperationException( "Not implemented for StubPagedFile" );
+    }
+
+    @Override
+    public WritableByteChannel openWritableByteChannel()
+    {
+        throw new UnsupportedOperationException( "Not implemented for StubPagedFile" );
     }
 }

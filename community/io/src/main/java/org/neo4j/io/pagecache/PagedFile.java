@@ -19,7 +19,11 @@
  */
 package org.neo4j.io.pagecache;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
+import java.nio.file.OpenOption;
 
 /**
  * The representation of a file that has been mapped into the associated page cache.
@@ -105,8 +109,9 @@ public interface PagedFile extends AutoCloseable
      * {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_READ_LOCK}.
      * <p>
      * The two locking modes cannot be combined, but other intents can be combined with them. For instance, if you want
-     * to write to a page, but also make sure that you don't write beyond the end of the file, then you can express your
-     * intent with {@code PF_SHARED_WRITE_LOCK | PF_NO_GROW} – note how the flags are combined with a bitwise-OR operator.
+     * to write to a page, but also make sure that you don't write beyond the end of the file, then you can express
+     * your intent with {@code PF_SHARED_WRITE_LOCK | PF_NO_GROW} – note how the flags are combined with a bitwise-OR
+     * operator.
      * Arithmetic addition can also be used, but might not make it as clear that we are dealing with a bit-set.
      *
      * @param pageId The initial file-page-id, that the cursor will be bound to
@@ -133,6 +138,7 @@ public interface PagedFile extends AutoCloseable
     /**
      * Flush all dirty pages into the file channel, and force the file channel to disk, but limit the rate of IO as
      * advised by the given IOPSLimiter.
+     *
      * @param limiter The {@link IOLimiter} that determines if pauses or sleeps should be injected into the flushing
      * process to keep the IO rate down.
      */
@@ -159,4 +165,34 @@ public interface PagedFile extends AutoCloseable
      * @see AutoCloseable#close()
      */
     void close() throws IOException;
+
+    /**
+     * Open a {@link ReadableByteChannel} view of this PagedFile.
+     * <p>
+     * The channel will read the file sequentially from the beginning till the end.
+     * Seeking is not supported.
+     * <p>
+     * The channel is not thread-safe.
+     *
+     * @return A channel for reading the paged file.
+     */
+    ReadableByteChannel openReadableByteChannel() throws IOException;
+
+    /**
+     * Open a {@link WritableByteChannel} view of this PagedFile.
+     * <p>
+     * The channel will write to the file sequentially from the beginning of the file, overwriting whatever is there
+     * already. If the amount of new data is less than the amount of existing data, then the old data will still be
+     * present at the far end of the file. Thus, this function works neither like opening a file for writing, nor like
+     * appending to a file.
+     * <p>
+     * If this is undesired, then the file can be mapped with {@link java.nio.file.StandardOpenOption#TRUNCATE_EXISTING}
+     * to remove the existing data before writing to the file.
+     * <p>
+     * The channel is not thread-safe.
+     *
+     * @return A channel for writing to the paged file.
+     * @see PageCache#map(File, int, OpenOption...)
+     */
+    WritableByteChannel openWritableByteChannel() throws IOException;
 }
