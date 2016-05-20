@@ -425,13 +425,18 @@ public class Cluster
                 instanceExtraParams, recordFormat ) );
     }
 
-    public void addEdgeServerWithFileLocation( int serverId )
+    public void addEdgeServerWithFileLocation( int serverId, String recordFormat )
     {
         Config config = coreServers.iterator().next().getDependencyResolver().resolveDependency( Config.class );
         List<AdvertisedSocketAddress> advertisedAddresses =
                 config.get( CoreEdgeClusterSettings.initial_core_cluster_members );
 
-        edgeServers.add( startEdgeServer( serverId, advertisedAddresses, stringMap(), emptyMap(), StandardV3_0.NAME ) );
+        edgeServers.add( startEdgeServer( serverId, advertisedAddresses, stringMap(), emptyMap(), recordFormat ) );
+    }
+
+    public void addEdgeServerWithFileLocation( int serverId )
+    {
+        addEdgeServerWithFileLocation( serverId, StandardV3_0.NAME );
     }
 
     private int serverIdFor( GraphDatabaseFacade graphDatabaseFacade )

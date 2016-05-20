@@ -93,7 +93,7 @@ public class ConvertNonCoreEdgeStoreIT
         File dbDir = dir.directory();
         FileUtils.deleteRecursively( dbDir );
 
-        File classicNeo4jStore = createClassicNeo4jStore( dbDir, 2000, recordFormat );
+        File classicNeo4jStore = createClassicNeo4jStore( dbDir, 10, recordFormat );
 
         for ( int serverId = 0; serverId < 3; serverId++ )
         {
@@ -114,6 +114,8 @@ public class ConvertNonCoreEdgeStoreIT
             tx.success();
         }
 
+        cluster.addEdgeServerWithFileLocation( 4, recordFormat );
+
         // then
         for ( final CoreGraphDatabase db : cluster.coreServers() )
         {
@@ -126,7 +128,7 @@ public class ConvertNonCoreEdgeStoreIT
                 assertEventually( "node to appear on core server " + config.get( raft_advertised_address ), nodeCount,
                         greaterThan( 0L ), 15, SECONDS );
 
-                assertEquals( 2001, count( db.getAllNodes() ) );
+                assertEquals( 11, count( db.getAllNodes() ) );
 
                 tx.success();
             }

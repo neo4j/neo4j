@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.logging.NullLogProvider;
 
 public class CopiedStoreRecovery
@@ -46,8 +47,32 @@ public class CopiedStoreRecovery
 
     public void recoverCopiedStore( File tempStore )
     {
-        GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
-        graphDatabaseService.shutdown();
+        try
+        {
+            GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
+            graphDatabaseService.shutdown();
+        }
+        catch ( Exception e )
+        {
+            if ( e.getCause().getCause() instanceof UpgradeNotAllowedByConfigurationException )
+            {
+                throw new RuntimeException( failedToStartMessage(), e );
+            }
+            else
+            {
+                throw e;
+            }
+        }
+    }
+
+    private String failedToStartMessage()
+    {
+        String recordFormat = config.get( GraphDatabaseSettings.record_format ).toString();
+
+        return String.format( "Failed to start database with copied store. This may be because the core and edge " +
+                        "servers have a different record format. On this machine: `%s=%s`. Check the equivalent value" +
+                " on the core server.",
+                GraphDatabaseSettings.record_format.name(), recordFormat );
     }
 
     private GraphDatabaseService newTempDatabase( File tempStore )
@@ -61,6 +86,8 @@ public class CopiedStoreRecovery
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade,
                         config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
+                .setConfig( GraphDatabaseSettings.record_format,
+                        config.get( GraphDatabaseSettings.record_format ).toString() )
                 .newGraphDatabase();
     }
 }
