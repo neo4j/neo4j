@@ -45,8 +45,11 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.index.RelationshipIndex;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests.
@@ -85,6 +88,30 @@ public class RecoveryTest
             db.index().forRelationships( "rel-index" ).add( rel, "key2", 12345 );
             tx.success();
         }
+
+        forceRecover();
+    }
+
+    @Test
+    public void shouldNotAcceptValuesWithNullToString() throws Exception
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            Node otherNode = db.createNode();
+            Relationship rel = node.createRelationshipTo( otherNode, withName( "recovery" ) );
+            Index<Node> nodeIndex = db.index().forNodes( "node-index" );
+            RelationshipIndex relationshipIndex = db.index().forRelationships( "rel-index" );
+
+            // Add
+            assertAddFailsWithIllegalArgument( nodeIndex, node, "key1", new ClassWithToStringAlwaysNull() );
+            assertAddFailsWithIllegalArgument( relationshipIndex, rel, "key1", new ClassWithToStringAlwaysNull() );
+
+            // Remove
+            assertRemoveFailsWithIllegalArgument( nodeIndex, node, "key1", new ClassWithToStringAlwaysNull() );
+            assertRemoveFailsWithIllegalArgument( relationshipIndex, rel, "key1", new ClassWithToStringAlwaysNull() );
+            tx.success();
+	}
 
         forceRecover();
     }
@@ -254,4 +281,43 @@ public class RecoveryTest
             System.exit( 0 );
         }
     }
+
+    static class ClassWithToStringAlwaysNull {
+
+        @Override
+        public String toString()
+        {
+            return null;
+        }
+
+    }
+
+    private <ENTITY extends PropertyContainer> void assertAddFailsWithIllegalArgument( Index<ENTITY> index,
+            ENTITY entity, String key, Object value )
+    {
+        try
+        {
+            index.add( entity, key, value );
+            fail( "Should not accept value with null toString" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Good
+        }
+    }
+
+    private <ENTITY extends PropertyContainer> void assertRemoveFailsWithIllegalArgument( Index<ENTITY> index,
+            ENTITY entity, String key, Object value )
+    {
+        try
+        {
+            index.remove( entity, key, value );
+            fail( "Should not accept value with null toString" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Good
+        }
+    }
+
 }
