@@ -364,7 +364,7 @@ class LoadCsvAcceptanceTest
     }.getMessage should endWith(": configuration property 'dbms.security.allow_csv_import_from_file_urls' is false")
   }
 
-  test("should restrict file urls to be rooted within an authorized directory") {
+  test("should allow paths relative to authorized directory") {
     val dir = createTempDirectory("loadcsvroot")
     pathWrite(dir.resolve("tmp/blah.csv"))(
       writer =>
@@ -378,6 +378,20 @@ class LoadCsvAcceptanceTest
 
     val result = new ExecutionEngine(db).execute(s"LOAD CSV FROM 'file:///tmp/blah.csv' AS line RETURN line[0] AS field", Map.empty[String, Any], db.session())
     result.toList should equal(List(Map("field" -> "something")))
+  }
+
+  test("should restrict file urls to be rooted within an authorized directory") {
+    val dir = createTempDirectory("loadcsvroot")
+
+    val db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.load_csv_file_url_root, dir.toString)
+      .newGraphDatabase())
+
+    intercept[LoadExternalResourceException] {
+      new ExecutionEngine(db)
+        .execute(s"LOAD CSV FROM 'file:///../foo.csv' AS line RETURN line[0] AS field", Map.empty[String, Any], db.session()).size
+    }.getMessage should endWith(" file URL points outside configured import directory")
   }
 
   test("should apply protocol rules set at db construction") {
