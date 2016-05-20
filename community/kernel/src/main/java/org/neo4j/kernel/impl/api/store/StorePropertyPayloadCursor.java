@@ -124,7 +124,8 @@ class StorePropertyPayloadCursor
 
     PropertyType type()
     {
-        return PropertyType.getPropertyType( currentHeader(), true );
+        long propBlock = currentHeader();
+        return PropertyType.getPropertyTypeOrNull( propBlock );
     }
 
     int propertyKeyId()

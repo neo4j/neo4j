@@ -17,16 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.harness;
+package org.neo4j.io.pagecache.impl.muninn;
 
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCacheFixture;
+import org.neo4j.io.pagecache.CursorException;
 
-public class MunninPageCacheHarnessTest extends PageCacheHarnessTest<MuninnPageCache>
+/**
+ * This exception is used to indicate in the stack trace, whether or not
+ * {@link MuninnPageCursor#usePreciseCursorErrorStackTraces} is enabled.
+ *
+ * This is useful because it allows us to clearly see how much we can trust the stack traces for decoding errors.
+ */
+final class CursorExceptionWithPreciseStackTrace extends CursorException
 {
-    @Override
-    protected Fixture<MuninnPageCache> createFixture()
+    public CursorExceptionWithPreciseStackTrace( String message )
     {
-        return new MuninnPageCacheFixture();
+        super( message );
     }
 }

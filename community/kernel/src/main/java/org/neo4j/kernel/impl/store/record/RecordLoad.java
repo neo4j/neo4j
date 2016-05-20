@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 
@@ -39,77 +40,66 @@ import org.neo4j.kernel.impl.store.InvalidRecordException;
  */
 public enum RecordLoad
 {
-    NORMAL
-    {
-        @Override
-        public boolean shouldLoad( boolean inUse )
-        {
-            return inUse;
-        }
-
-        @Override
-        public boolean verify( AbstractBaseRecord record )
-        {
-            if ( !record.inUse() )
-            {
-                throw new InvalidRecordException( record + " not in use" );
-            }
-            return true;
-        }
-    },
-    CHECK
-    {
-        @Override
-        public boolean shouldLoad( boolean inUse )
-        {
-            return inUse;
-        }
-
-        @Override
-        public boolean verify( AbstractBaseRecord record )
-        {
-            return record.inUse();
-        }
-
-        @Override
-        public void report( String message )
-        {
-        }
-    },
-    FORCE
-    {
-        @Override
-        public boolean shouldLoad( boolean inUse )
-        {
-            // Always return true so that record data will always be loaded, even if not in use.
-            return true;
-        }
-
-        @Override
-        public boolean verify( AbstractBaseRecord record )
-        {
-            return true;
-        }
-
-        @Override
-        public void report( String message )
-        {
-            // Don't report
-        }
-    };
+    NORMAL, CHECK, FORCE;
 
     /**
      * Checks whether or not a record should be fully loaded from {@link PageCursor}, based on inUse status.
      */
-    public abstract boolean shouldLoad( boolean inUse );
+    public final boolean shouldLoad( boolean inUse )
+    {
+        // FORCE mode always return true so that record data will always be loaded, even if not in use.
+        // The other modes only loads records that are in use.
+        return this == FORCE | inUse;
+    }
 
     /**
      * Verifies that a record's in use status is in line with the mode, might throw {@link InvalidRecordException}.
      */
-    public abstract boolean verify( AbstractBaseRecord record );
-
-    public void report( String message )
+    public final boolean verify( AbstractBaseRecord record )
     {
-        throw new InvalidRecordException( message );
+        boolean inUse = record.inUse();
+        if ( this == NORMAL & !inUse )
+        {
+            throw new InvalidRecordException( record + " not in use" );
+        }
+        return this == FORCE | inUse;
+    }
+
+    /**
+     * Depending on the mode, this will - if a cursor error has been raised on the given {@link PageCursor} - either
+     * throw an {@link InvalidRecordException} with the underlying {@link CursorException}, or clear the error condition
+     * on the cursor.
+     * @param cursor The {@link PageCursor} to be checked for errors.
+     */
+    public final void clearOrThrowCursorError( PageCursor cursor )
+    {
+        if ( this == NORMAL )
+        {
+            try
+            {
+                cursor.checkAndClearCursorException();
+            }
+            catch ( CursorException e )
+            {
+                throw new InvalidRecordException( e );
+            }
+        }
+        else
+        {
+            // The CHECK and FORCE modes do not bother with reporting decoding errors...
+            // ... but they must still clear them, since the page cursor may be reused to read other records
+            cursor.clearCursorException();
+        }
+    }
+
+    /**
+     * Checks the given {@link PageCursor} to see if its out-of-bounds flag has been raised, and returns {@code true} if
+     * that is the case <em>and</em> and out-of-bounds condition should be reported up the stack.
+     * @param cursor The {@link PageCursor} to check the bounds flag for.
+     * @return {@code true} if an out-of-bounds condition should be reported up the stack, {@code false} otherwise.
+     */
+    public boolean checkForOutOfBounds( PageCursor cursor )
+    {
+        return cursor.checkAndClearBoundsFlag() & this == NORMAL;
     }
 }

@@ -205,14 +205,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,
             DynamicRecordAllocator allocator )
     {
-        AbstractDynamicStore.allocateRecordsFromBytes( target, chars,
-                Iterators.<DynamicRecord>emptyIterator(), allocator );
+        AbstractDynamicStore.allocateRecordsFromBytes( target, chars, Iterators.emptyIterator(), allocator );
     }
 
     public static void allocateArrayRecords( Collection<DynamicRecord> target, Object array,
             DynamicRecordAllocator allocator )
     {
-        DynamicArrayStore.allocateRecords( target, array, Iterators.<DynamicRecord>emptyIterator(), allocator );
+        DynamicArrayStore.allocateRecords( target, array, Iterators.emptyIterator(), allocator );
     }
 
     public void encodeValue( PropertyBlock block, int keyId, Object value )

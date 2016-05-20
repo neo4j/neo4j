@@ -55,6 +55,7 @@ public class RelationshipGroupRecordFormat extends BaseOneByteHeaderRecordFormat
         // [ xxx,    ] high firstOut bits
         long headerByte = cursor.getByte();
         boolean inUse = isInUse( (byte) headerByte );
+        record.setInUse( inUse );
         if ( mode.shouldLoad( inUse ) )
         {
             // [    ,xxx ] high firstIn bits

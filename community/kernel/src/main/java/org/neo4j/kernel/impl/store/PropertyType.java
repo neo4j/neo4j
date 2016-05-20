@@ -292,10 +292,13 @@ public enum PropertyType
         }
     };
 
-    private final int type;
+    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    public static final int BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING = -1;
 
     // TODO In wait of a better place
     private static int payloadSize = PropertyRecordFormat.DEFAULT_PAYLOAD_SIZE;
+
+    private final int type;
 
     PropertyType( int type )
     {
@@ -328,10 +331,10 @@ public enum PropertyType
 
     public abstract DefinedProperty readProperty( int propertyKeyId, PropertyBlock block, Supplier<PropertyStore> store );
 
-    public static PropertyType getPropertyType( long propBlock, boolean nullOnIllegal )
+    public static PropertyType getPropertyTypeOrNull( long propBlock )
     {
         // [][][][][    ,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
-        int type = (int)((propBlock&0x000000000F000000L)>>24);
+        int type = typeIdentifier( propBlock );
         switch ( type )
         {
         case 1:
@@ -359,13 +362,23 @@ public enum PropertyType
         case 12:
             return SHORT_ARRAY;
         default:
-            if ( nullOnIllegal )
-            {
-                return null;
-            }
-            throw new InvalidRecordException( "Unknown property type for type "
-                                              + type );
+            return null;
         }
+    }
+
+    private static int typeIdentifier( long propBlock )
+    {
+        return (int)((propBlock&0x000000000F000000L)>>24);
+    }
+
+    public static PropertyType getPropertyTypeOrThrow( long propBlock )
+    {
+        PropertyType type = getPropertyTypeOrNull( propBlock );
+        if ( type == null )
+        {
+            throw new InvalidRecordException( "Unknown property type for type " + typeIdentifier( propBlock ) );
+        }
+        return type;
     }
 
     // TODO In wait of a better place
@@ -399,6 +412,4 @@ public enum PropertyType
     {
         throw new UnsupportedOperationException();
     }
-
-    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 }

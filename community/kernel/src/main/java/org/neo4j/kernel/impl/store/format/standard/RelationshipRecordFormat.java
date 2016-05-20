@@ -53,6 +53,7 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
     {
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
+        record.setInUse( inUse );
         if ( mode.shouldLoad( inUse ) )
         {
             // [    ,   x] in use flag

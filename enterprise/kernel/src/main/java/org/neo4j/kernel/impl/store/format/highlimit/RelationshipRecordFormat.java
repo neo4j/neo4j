@@ -71,15 +71,15 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
     }
 
     @Override
-    protected void doReadInternal( RelationshipRecord record, PageCursor cursor, int recordSize, long headerByte,
-                                   boolean inUse )
+    protected void doReadInternal(
+            RelationshipRecord record, PageCursor cursor, int recordSize, long headerByte, boolean inUse )
     {
         int type = cursor.getShort() & 0xFFFF;
         long recordId = record.getId();
         record.initialize( inUse,
-                decode( cursor, headerByte, HAS_PROPERTY_BIT, NULL ),
-                decode( cursor ),
-                decode( cursor ),
+                decodeCompressedReference( cursor, headerByte, HAS_PROPERTY_BIT, NULL ),
+                decodeCompressedReference( cursor ),
+                decodeCompressedReference( cursor ),
                 type,
                 decodeAbsoluteOrRelative( cursor, headerByte, FIRST_IN_FIRST_CHAIN_BIT, recordId ),
                 decodeAbsoluteIfPresent( cursor, headerByte, HAS_FIRST_CHAIN_NEXT_BIT, recordId ),
@@ -91,7 +91,9 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
 
     private long decodeAbsoluteOrRelative( PageCursor cursor, long headerByte, int firstInStartBit, long recordId )
     {
-        return has( headerByte, firstInStartBit ) ? decode( cursor ) : toAbsolute( decode( cursor ), recordId );
+        return has( headerByte, firstInStartBit ) ?
+               decodeCompressedReference( cursor ) :
+               toAbsolute( decodeCompressedReference( cursor ), recordId );
     }
 
     @Override
@@ -161,6 +163,6 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
 
     private long decodeAbsoluteIfPresent( PageCursor cursor, long headerByte, int conditionBit, long recordId )
     {
-        return has( headerByte, conditionBit ) ? toAbsolute( decode( cursor ), recordId ) : NULL;
+        return has( headerByte, conditionBit ) ? toAbsolute( decodeCompressedReference( cursor ), recordId ) : NULL;
     }
 }

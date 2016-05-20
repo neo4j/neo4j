@@ -48,7 +48,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
@@ -69,6 +69,7 @@ public abstract class RecordFormatTest
 
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fsRule );
 
@@ -148,7 +149,7 @@ public abstract class RecordFormatTest
     {
         // GIVEN
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
-        try ( PagedFile dontUseStoreFile = pageCache.map( new File( "store" ), PAGE_SIZE, CREATE ) )
+        try ( PagedFile storeFile = pageCache.map( new File( "store" ), PAGE_SIZE, CREATE ) )
         {
             long totalUnusedBytesPrimary = 0;
             long totalUnusedBytesSecondary = 0;
@@ -157,12 +158,9 @@ public abstract class RecordFormatTest
             RecordKey<R> key = keySupplier.get();
             Generator<R> generator = generatorSupplier.get();
             int recordSize = format.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
-            RecordBoundaryCheckingPagedFile storeFile =
-                    new RecordBoundaryCheckingPagedFile( dontUseStoreFile, recordSize );
             BatchingIdSequence idSequence = new BatchingIdSequence( random.nextBoolean() ?
                     idSureToBeOnTheNextPage( PAGE_SIZE, recordSize ) : 10 );
             long smallestUnusedBytesPrimary = recordSize;
-            long smallestUnusedBytesSecondary = recordSize;
 
             // WHEN
             long time = currentTimeMillis();
@@ -175,30 +173,7 @@ public abstract class RecordFormatTest
                 try
                 {
                     writeRecord( written, format, storeFile, recordSize, idSequence );
-
-                    long recordsUsedForWriting = storeFile.nextCalls();
-                    long unusedBytes = storeFile.unusedBytes();
-                    storeFile.resetMeasurements();
-
                     readAndVerifyRecord( written, read, format, key, storeFile, recordSize );
-
-                    if ( written.inUse() )
-                    {
-                        // unused access don't really count for "wasted space"
-                        if ( recordsUsedForWriting == 1 )
-                        {
-                            totalUnusedBytesPrimary += unusedBytes;
-                            smallestUnusedBytesPrimary = Math.min( smallestUnusedBytesPrimary, unusedBytes );
-                        }
-                        else
-                        {
-                            totalUnusedBytesSecondary += unusedBytes;
-                            smallestUnusedBytesSecondary = Math.min( smallestUnusedBytesSecondary, unusedBytes );
-                        }
-                        totalRecordsRequiringSecondUnit += (recordsUsedForWriting > 1 ? 1 : 0);
-                    }
-
-                    storeFile.resetMeasurements();
                     idSequence.reset();
                 }
                 catch ( Throwable t )
@@ -239,6 +214,7 @@ public abstract class RecordFormatTest
              Same retry is done on the store level in {@link org.neo4j.kernel.impl.store.CommonAbstractStore}
              */
             int offset = Math.toIntExact( written.getId() * recordSize );
+            String error;
             do
             {
                 cursor.setOffset( offset );
@@ -246,6 +222,7 @@ public abstract class RecordFormatTest
             }
             while ( cursor.shouldRetry() );
             assertFalse( "Out-of-bounds when reading record " + written, cursor.checkAndClearBoundsFlag() );
+            cursor.checkAndClearCursorException();
 
             // THEN
             if ( written.inUse() )
@@ -287,8 +264,7 @@ public abstract class RecordFormatTest
 
     private void assertedNext( PageCursor cursor ) throws IOException
     {
-        boolean couldDoNext = cursor.next();
-        assert couldDoNext;
+        assertTrue( cursor.next() );
     }
 
     private long idSureToBeOnTheNextPage( int pageSize, int recordSize )

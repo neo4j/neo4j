@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -450,9 +451,29 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
+    public void checkAndClearCursorException() throws CursorException
+    {
+        first.checkAndClearCursorException();
+        second.checkAndClearCursorException();
+    }
+
+    @Override
     public void raiseOutOfBounds()
     {
         outOfBounds = true;
+    }
+
+    @Override
+    public void setCursorException( String message )
+    {
+        cursor( 0 ).setCursorException( message );
+    }
+
+    @Override
+    public void clearCursorException()
+    {
+        first.clearCursorException();
+        second.clearCursorException();
     }
 
     @Override

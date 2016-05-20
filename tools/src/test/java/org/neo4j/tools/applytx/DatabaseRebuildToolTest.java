@@ -160,7 +160,7 @@ public class DatabaseRebuildToolTest
         String dump = new String( byteArrayOut.toByteArray() );
         for ( String string : expectedResultContaining )
         {
-            assertThat( dump, containsString( string ) );
+            assertThat( "dump from command '" + command + "'", dump, containsString( string ) );
         }
     }
 

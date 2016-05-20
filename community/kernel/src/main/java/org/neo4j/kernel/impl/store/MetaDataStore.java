@@ -51,6 +51,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader>
         implements TransactionIdStore, LogVersionRepository
@@ -432,7 +433,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             cursor.putLong( offset, value );
         }
         while ( cursor.shouldRetry() );
-        checkForOutOfBounds( cursor, Position.LOG_VERSION.id );
+        checkForDecodingErrors( cursor, Position.LOG_VERSION.id, NORMAL );
         versionField = value;
     }
 
@@ -521,7 +522,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         try
         {
             record.setId( position.id );
-            recordFormat.read( record, cursor, RecordLoad.NORMAL, RECORD_SIZE, storeFile );
+            recordFormat.read( record, cursor, NORMAL, RECORD_SIZE, storeFile );
             return record.getValue();
         }
         catch ( IOException e )
@@ -580,7 +581,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             cursor.putLong( value );
         }
         while ( cursor.shouldRetry() );
-        checkForOutOfBounds( cursor, position.id );
+        checkForDecodingErrors( cursor, position.id, NORMAL );
     }
 
     public NeoStoreRecord graphPropertyRecord()
@@ -730,7 +731,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 upgradeTxChecksumField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
             }
             while ( cursor.shouldRetry() );
-            checkForOutOfBounds( cursor, Position.UPGRADE_TRANSACTION_ID.id );
+            checkForDecodingErrors( cursor, Position.UPGRADE_TRANSACTION_ID.id, NORMAL );
         }
         catch ( IOException e )
         {

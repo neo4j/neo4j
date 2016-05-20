@@ -216,7 +216,7 @@ public class StoreUpgradeIntegrationTest
             ServerBootstrapper bootstrapper = new CommunityBootstrapper();
             try
             {
-                bootstrapper.start( Optional.of( configFile ) );
+                bootstrapper.start( rootDir.getAbsoluteFile(), Optional.of( configFile ) );
                 assertTrue( bootstrapper.isRunning() );
                 checkInstance( store, bootstrapper.getServer().getDatabase().getGraph() );
             }

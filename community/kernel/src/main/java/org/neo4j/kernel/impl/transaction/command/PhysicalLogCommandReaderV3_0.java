@@ -591,9 +591,10 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         long[] blocks = readLongs( channel, blockSize / 8 );
         assert blocks.length == blockSize / 8 : blocks.length
                                                 + " longs were read in while i asked for what corresponds to " + blockSize;
-        assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed(
+
+        assert PropertyType.getPropertyTypeOrThrow( blocks[0] ).calculateNumberOfBlocksUsed(
                 blocks[0] ) == blocks.length : blocks.length + " is not a valid number of blocks for type "
-                                               + PropertyType.getPropertyType( blocks[0], false );
+                                               + PropertyType.getPropertyTypeOrThrow( blocks[0] );
         /*
          *  Ok, now we may be ready to return, if there are no DynamicRecords. So
          *  we start building the Object

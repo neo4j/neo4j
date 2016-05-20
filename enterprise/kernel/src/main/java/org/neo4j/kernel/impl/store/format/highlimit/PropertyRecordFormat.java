@@ -66,6 +66,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
     public void read( PropertyRecord record, PageCursor cursor, RecordLoad mode, int recordSize, PagedFile storeFile )
             throws IOException
     {
+        int offset = cursor.getOffset();
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
         if ( mode.shouldLoad( inUse ) )
@@ -75,6 +76,11 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
             record.initialize( inUse,
                     toAbsolute( Reference.decode( cursor ), recordId ),
                     toAbsolute( Reference.decode( cursor ), recordId ) );
+            if ( (blockCount > record.getBlockCapacity()) | (RECORD_SIZE - (cursor.getOffset() - offset) < blockCount * Long.BYTES) )
+            {
+                cursor.setCursorException( "PropertyRecord claims to contain more blocks than can fit in a record" );
+                return;
+            }
             while ( blockCount-- > 0 )
             {
                 record.addLoadedBlock( cursor.getLong() );

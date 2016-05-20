@@ -40,6 +40,7 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
     {
         byte inUseByte = cursor.getByte();
         boolean inUse = isInUse( inUseByte );
+        record.setInUse( inUse );
         if ( mode.shouldLoad( inUse ) )
         {
             readRecordData( cursor, record, inUse );

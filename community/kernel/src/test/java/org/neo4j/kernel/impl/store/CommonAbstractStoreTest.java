@@ -169,9 +169,13 @@ public class CommonAbstractStoreTest
                 cursor.acquire( 0, RecordLoad.NORMAL );
                 assertTrue( cursor.next( nodeId1 ) );
                 assertTrue( cursor.next( nodeId2 ) );
-                assertNotNull( tracer.tryObserve( Pin.class ) );
-                assertNull( tracer.tryObserve( Event.class ) );
             }
+            // Because both nodes hit the same page, the code will only pin the page once and thus only emit one pin
+            // event. This pin event will not be observable until after we have closed the cursor. We could
+            // alternatively have chosen nodeId2 to be on a different page than nodeId1. In that case, the pin event
+            // for nodeId1 would have been visible after our call to cursor.next( nodeId2 ).
+            assertNotNull( tracer.tryObserve( Pin.class ) );
+            assertNull( tracer.tryObserve( Event.class ) );
         }
     }
 

@@ -30,10 +30,8 @@ declare -r PROGRAM="$(basename "$0")"
 #   NEO4J_PLUGINS
 #   one per config setting, with dots converted to underscores
 #
-# Changes directory into NEO4J_HOME.
 setup_environment() {
   _setup_calculated_paths
-  cd "${NEO4J_HOME}"
   _read_config
   _setup_configurable_paths
 }
@@ -71,14 +69,14 @@ check_java() {
   fi
 }
 
-# Resolve a path relative to where the script was called from.
-# Don't resolve if the path is absolute.
+# Resolve a path relative to $NEO4J_HOME.  Don't resolve if
+# the path is absolute.
 resolve_path() {
     orig_filename=$1
     if [[ ${orig_filename} == /* ]]; then
         filename="${orig_filename}"
     else
-        filename="$(pwd)/${orig_filename}"
+        filename="${NEO4J_HOME}/${orig_filename}"
     fi
     echo "${filename}"
 }
@@ -126,8 +124,8 @@ _setup_calculated_paths() {
   if [[ -z "${NEO4J_HOME:-}" ]]; then
     NEO4J_HOME="$(cd "$(dirname "$0")"/.. && pwd)"
   fi
-  : "${NEO4J_CONF:=conf}"
-  readonly NEO4J_ROOT NEO4J_CONF
+  : "${NEO4J_CONF:="${NEO4J_HOME}/conf"}"
+  readonly NEO4J_HOME NEO4J_CONF
 }
 
 _read_config() {
@@ -161,10 +159,10 @@ _read_config() {
 }
 
 _setup_configurable_paths() {
-  NEO4J_DATA="${dbms_directories_data:-data}"
-  NEO4J_LIB="${dbms_directories_lib:-lib}"
-  NEO4J_LOGS="${dbms_directories_logs:-logs}"
-  NEO4J_PLUGINS="${dbms_directories_plugins:-plugins}"
-  NEO4J_RUN="${dbms_directories_run:-run}"
+  NEO4J_DATA=$(resolve_path "${dbms_directories_data:-data}")
+  NEO4J_LIB=$(resolve_path "${dbms_directories_lib:-lib}")
+  NEO4J_LOGS=$(resolve_path "${dbms_directories_logs:-logs}")
+  NEO4J_PLUGINS=$(resolve_path "${dbms_directories_plugins:-plugins}")
+  NEO4J_RUN=$(resolve_path "${dbms_directories_run:-run}")
   readonly NEO4J_DATA NEO4J_LIB NEO4J_LOGS NEO4J_PLUGINS NEO4J_RUN
 }

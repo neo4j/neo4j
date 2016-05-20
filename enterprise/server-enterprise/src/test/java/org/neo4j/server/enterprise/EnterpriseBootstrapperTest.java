@@ -66,6 +66,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
     {
         // When
         int resultCode = ServerBootstrapper.start( bootstrapper,
+                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( EnterpriseServerSettings.mode, "SINGLE" ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
@@ -83,6 +84,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
     {
         // When
         int resultCode = ServerBootstrapper.start( bootstrapper,
+                "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( EnterpriseServerSettings.mode, "HA" ),
                 "-c", configOption( ClusterSettings.server_id, "1" ),
                 "-c", configOption( ClusterSettings.initial_hosts, "127.0.0.1:5001" ),

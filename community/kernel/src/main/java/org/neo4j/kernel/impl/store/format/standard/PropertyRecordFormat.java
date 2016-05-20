@@ -69,7 +69,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
         while ( cursor.getOffset() - offsetAtBeginning < RECORD_SIZE )
         {
             long block = cursor.getLong();
-            PropertyType type = PropertyType.getPropertyType( block, true );
+            PropertyType type = PropertyType.getPropertyTypeOrNull( block );
             if ( type == null )
             {
                 // We assume that storage is defragged
@@ -78,7 +78,18 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
 
             record.setInUse( true );
             record.addLoadedBlock( block );
-            int additionalBlocks = type.calculateNumberOfBlocksUsed( block ) - 1;
+            int numberOfBlocksUsed = type.calculateNumberOfBlocksUsed( block );
+            if ( numberOfBlocksUsed == PropertyType.BLOCKS_USED_FOR_BAD_TYPE_OR_ENCODING )
+            {
+                cursor.setCursorException( "Invalid type or encoding of property block: " + block + " (type = " + type + ")" );
+                return;
+            }
+            int additionalBlocks = numberOfBlocksUsed - 1;
+            if ( additionalBlocks * Long.BYTES > RECORD_SIZE - (cursor.getOffset() - offsetAtBeginning) )
+            {
+                cursor.setCursorException( "PropertyRecord claims to have more property blocks than can fit in a record" );
+                return;
+            }
             while ( additionalBlocks --> 0 )
             {
                 record.addLoadedBlock( cursor.getLong() );
@@ -147,7 +158,7 @@ public class PropertyRecordFormat extends BaseRecordFormat<PropertyRecord>
         for ( int i = 0; i < blocks; i++ )
         {
             long block = cursor.getLong();
-            if ( PropertyType.getPropertyType( block, true ) != null )
+            if ( PropertyType.getPropertyTypeOrNull( block ) != null )
             {
                 return true;
             }

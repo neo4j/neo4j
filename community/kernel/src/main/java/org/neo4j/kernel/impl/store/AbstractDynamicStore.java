@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
@@ -165,7 +166,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             totalSize += (record.getData().length - offset);
         }
         byte[] bArray = new byte[totalSize];
-        assert header != null : "header should be non-null since records should not be empty";
+        assert header != null :
+                "header should be non-null since records should not be empty: " + Iterables.toString( records, ", " );
         int sourceOffset = header.length;
         int offset = 0;
         for ( byte[] currentArray : byteList )
