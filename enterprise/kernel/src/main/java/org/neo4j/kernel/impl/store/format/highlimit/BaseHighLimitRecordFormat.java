@@ -106,6 +106,8 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
                 // it may only be read as part of reading the primary unit.
                 record.clear();
                 // Return and try again
+                primaryCursor.setCursorException(
+                        "Expected record to be the first unit in the chain, but record header says it's not" );
                 return;
             }
 
@@ -116,11 +118,12 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
             long pageId = pageIdForRecord( secondaryId, storeFile.pageSize(), recordSize );
             int offset = offsetForId( secondaryId, storeFile.pageSize(), recordSize );
             PageCursor secondaryCursor = primaryCursor.openLinkedCursor( pageId );
-            if ( !secondaryCursor.next() )
+            if ( (!secondaryCursor.next()) | offset < 0 )
             {
                 // We must have made an inconsistent read of the secondary record unit reference.
                 // No point in trying to read this.
                 record.clear();
+                primaryCursor.setCursorException( illegalSecondaryReferenceMessage( pageId ) );
                 return;
             }
             secondaryCursor.setOffset( offset + HEADER_BYTE);
@@ -139,6 +142,11 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         {
             doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
         }
+    }
+
+    private String illegalSecondaryReferenceMessage( long secondaryId )
+    {
+        return "Illegal secondary record reference: " + secondaryId;
     }
 
     protected abstract void doReadInternal(
@@ -254,14 +262,14 @@ abstract class BaseHighLimitRecordFormat<RECORD extends AbstractBaseRecord>
         return reference == nullValue ? 0 : length( reference );
     }
 
-    protected static long decode( PageCursor cursor )
+    protected static long decodeCompressedReference( PageCursor cursor )
     {
         return Reference.decode( cursor );
     }
 
-    protected static long decode( PageCursor cursor, long headerByte, int headerBitMask, long nullValue )
+    protected static long decodeCompressedReference( PageCursor cursor, long headerByte, int headerBitMask, long nullValue )
     {
-        return has( headerByte, headerBitMask ) ? decode( cursor ) : nullValue;
+        return has( headerByte, headerBitMask ) ? decodeCompressedReference( cursor ) : nullValue;
     }
 
     protected static void encode( PageCursor cursor, long reference ) throws IOException

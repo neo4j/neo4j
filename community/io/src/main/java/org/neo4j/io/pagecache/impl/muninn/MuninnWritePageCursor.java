@@ -54,6 +54,10 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     {
         unpinCurrentPage();
         long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
+        if ( nextPageId < 0 )
+        {
+            return false;
+        }
         if ( nextPageId > lastPageId )
         {
             if ( (pf_flags & PagedFile.PF_NO_GROW) != 0 )

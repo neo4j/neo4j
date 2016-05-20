@@ -50,6 +50,7 @@ public class NodeRecordFormat extends BaseOneByteHeaderRecordFormat<NodeRecord>
     {
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
+        record.setInUse( inUse );
         if ( mode.shouldLoad( inUse ) )
         {
             long nextRel = cursor.getInt() & 0xFFFFFFFFL;

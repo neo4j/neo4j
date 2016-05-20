@@ -52,7 +52,8 @@ public class PropertyBlock implements Cloneable
 
     private PropertyType getType( boolean force )
     {
-        return valueBlocks == null ? null : PropertyType.getPropertyType( valueBlocks[0], force );
+        return valueBlocks == null ? null : force ? PropertyType.getPropertyTypeOrNull( valueBlocks[0] )
+                                                  : PropertyType.getPropertyTypeOrThrow( valueBlocks[0] );
     }
 
     public int getKeyIndexId()

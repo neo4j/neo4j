@@ -53,7 +53,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     {
         unpinCurrentPage();
         long lastPageId = assertPagedFileStillMappedAndGetIdOfLastPage();
-        if ( nextPageId > lastPageId )
+        if ( nextPageId > lastPageId | nextPageId < 0 )
         {
             return false;
         }
@@ -97,19 +97,21 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     @Override
     public boolean shouldRetry() throws IOException
     {
-        boolean needsRetry = !page.validateReadLock( lockStamp );
+        MuninnPage p = page;
+        boolean needsRetry = p != null && !p.validateReadLock( lockStamp );
+        needsRetry |= linkedCursor != null && linkedCursor.shouldRetry();
         if ( needsRetry )
         {
             startRetry();
         }
-        boolean linkedNeedsRetry = linkedCursor != null && linkedCursor.shouldRetry();
-        return needsRetry || linkedNeedsRetry;
+        return needsRetry;
     }
 
     private void startRetry() throws IOException
     {
         setOffset( 0 );
         checkAndClearBoundsFlag();
+        clearCursorException();
         lockStamp = page.tryOptimisticReadLock();
         // The page might have been evicted while we held the optimistic
         // read lock, so we need to check with page.pin that this is still

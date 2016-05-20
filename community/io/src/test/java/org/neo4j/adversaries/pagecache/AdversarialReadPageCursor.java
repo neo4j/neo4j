@@ -22,10 +22,16 @@ package org.neo4j.adversaries.pagecache;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -38,34 +44,161 @@ import org.neo4j.io.pagecache.PageCursor;
  * Depending on the adversary each read operation can produce an inconsistent read and require caller to retry using
  * while loop with {@link PageCursor#shouldRetry()} as a condition.
  * <p>
+ * Inconsistent reads are injected by first having a retry-round (the set of operations on the cursor up until the
+ * {@link #shouldRetry()} call) that counts the number of operations performed on the cursor, and otherwise delegates
+ * the read operations to the real page cursor without corrupting them. Then the {@code shouldRetry} will choose a
+ * random operation, and from that point on in the next retry-round, all read operations will return random data. The
+ * {@code shouldRetry} method returns {@code true} for "yes, you should retry" and the round with the actual read
+ * inconsistencies begins. After that round, the client will be told to retry again, and in this third round there will
+ * be no inconsistencies, and there will be no need to retry unless the real page cursor says so.
+ * <p>
  * Write operations will always throw an {@link IllegalStateException} because this is a read cursor.
  * See {@link org.neo4j.io.pagecache.PagedFile#PF_SHARED_READ_LOCK} flag.
  */
 @SuppressWarnings( "unchecked" )
 class AdversarialReadPageCursor extends PageCursor
 {
-    private final PageCursor delegate;
-    private final Adversary adversary;
-    private PageCursor linkedCursor;
+    private static class State implements Adversary
+    {
+        private final Adversary adversary;
 
-    private boolean currentReadIsInconsistent;
+        private boolean currentReadIsPreparingInconsistent;
+        private boolean currentReadIsInconsistent;
+        private int callCounter;
+
+        // This field for meant to be inspected with the debugger.
+        @SuppressWarnings( "MismatchedQueryAndUpdateOfCollection" )
+        private List<Object> inconsistentReadHistory;
+
+        private State( Adversary adversary )
+        {
+            this.adversary = adversary;
+            inconsistentReadHistory = new ArrayList<>();
+        }
+
+        private <T extends Number> Number inconsistently( T value, PageCursor delegate )
+        {
+            if ( currentReadIsPreparingInconsistent )
+            {
+                callCounter++;
+                return value;
+            }
+            if ( currentReadIsInconsistent && (--callCounter) <= 0 )
+            {
+                ThreadLocalRandom rng = ThreadLocalRandom.current();
+                long x = value.longValue();
+                if ( x != 0 & rng.nextBoolean() )
+                {
+                    x = ~x;
+                }
+                else
+                {
+                    x = rng.nextLong();
+                }
+                inconsistentReadHistory.add( new NumberValue( value.getClass(), x, delegate.getOffset(), value ) );
+                return x;
+            }
+            return value;
+        }
+
+        private void inconsistently( byte[] data )
+        {
+            if ( currentReadIsPreparingInconsistent )
+            {
+                callCounter++;
+            }
+            else if ( currentReadIsInconsistent )
+            {
+                ThreadLocalRandom.current().nextBytes( data );
+                inconsistentReadHistory.add( Arrays.copyOf( data, data.length ) );
+            }
+        }
+
+        private void reset( boolean currentReadIsPreparingInconsistent )
+        {
+            callCounter = 0;
+            this.currentReadIsPreparingInconsistent = currentReadIsPreparingInconsistent;
+        }
+
+        public void injectFailure( Class<? extends Throwable>... failureTypes )
+        {
+            adversary.injectFailure( failureTypes );
+        }
+
+        public boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
+        {
+            return adversary.injectFailureOrMischief( failureTypes );
+        }
+
+        private boolean hasPreparedInconsistentRead()
+        {
+            if ( currentReadIsPreparingInconsistent )
+            {
+                currentReadIsPreparingInconsistent = false;
+                currentReadIsInconsistent = true;
+                callCounter = ThreadLocalRandom.current().nextInt( callCounter + 1 );
+                inconsistentReadHistory = new ArrayList<>();
+                return true;
+            }
+            return false;
+        }
+
+        private boolean hasInconsistentRead()
+        {
+            if ( currentReadIsInconsistent )
+            {
+                currentReadIsInconsistent = false;
+                return true;
+            }
+            return false;
+        }
+
+        public boolean isInconsistent()
+        {
+            if ( currentReadIsPreparingInconsistent )
+            {
+                callCounter++;
+            }
+            return currentReadIsInconsistent;
+        }
+    }
+
+    private final PageCursor delegate;
+    private AdversarialReadPageCursor linkedCursor;
+    private State state;
 
     AdversarialReadPageCursor( PageCursor delegate, Adversary adversary )
     {
         this.delegate = Objects.requireNonNull( delegate );
-        this.adversary = Objects.requireNonNull( adversary );
+        this.state = new State( Objects.requireNonNull( adversary ) );
+    }
+
+    private AdversarialReadPageCursor( PageCursor delegate, State state )
+    {
+        this.delegate = Objects.requireNonNull( delegate );
+        this.state = state;
     }
 
     @Override
     public byte getByte()
     {
-        return currentReadIsInconsistent ? 0 : delegate.getByte();
+        return inconsistently( delegate.getByte() ).byteValue();
+    }
+
+    private <T extends Number> Number inconsistently( T value )
+    {
+        return state.inconsistently( value, delegate );
+    }
+
+    private void inconsistently( byte[] data )
+    {
+        state.inconsistently( data );
     }
 
     @Override
     public byte getByte( int offset )
     {
-        return currentReadIsInconsistent ? 0 : delegate.getByte( offset );
+        return inconsistently( delegate.getByte( offset ) ).byteValue();
     }
 
     @Override
@@ -83,15 +216,13 @@ class AdversarialReadPageCursor extends PageCursor
     @Override
     public long getLong()
     {
-        long result = delegate.getLong();
-        return currentReadIsInconsistent ? 0 : result;
+        return inconsistently( delegate.getLong() ).longValue();
     }
 
     @Override
     public long getLong( int offset )
     {
-        long result = delegate.getLong( offset );
-        return currentReadIsInconsistent ? 0 : result;
+        return inconsistently( delegate.getLong( offset ) ).longValue();
     }
 
     @Override
@@ -109,15 +240,13 @@ class AdversarialReadPageCursor extends PageCursor
     @Override
     public int getInt()
     {
-        int result = delegate.getInt();
-        return currentReadIsInconsistent ? 0 : result;
+        return inconsistently( delegate.getInt() ).intValue();
     }
 
     @Override
     public int getInt( int offset )
     {
-        int result = delegate.getInt( offset );
-        return currentReadIsInconsistent ? 0 : result;
+        return inconsistently( delegate.getInt( offset ) ).intValue();
     }
 
     @Override
@@ -136,24 +265,14 @@ class AdversarialReadPageCursor extends PageCursor
     public void getBytes( byte[] data )
     {
         delegate.getBytes( data );
-        if ( currentReadIsInconsistent )
-        {
-            ThreadLocalRandom.current().nextBytes( data );
-        }
+        inconsistently( data );
     }
 
     @Override
     public void getBytes( byte[] data, int arrayOffset, int length )
     {
         delegate.getBytes( data, arrayOffset, length );
-        if ( currentReadIsInconsistent )
-        {
-            ThreadLocalRandom rng = ThreadLocalRandom.current();
-            for ( int i = arrayOffset; i < length; i++ )
-            {
-                data[i] = (byte) rng.nextInt();
-            }
-        }
+        inconsistently( data );
     }
 
     @Override
@@ -171,13 +290,13 @@ class AdversarialReadPageCursor extends PageCursor
     @Override
     public short getShort()
     {
-        return currentReadIsInconsistent ? 0 : delegate.getShort();
+        return inconsistently( delegate.getShort() ).shortValue();
     }
 
     @Override
     public short getShort( int offset )
     {
-        return currentReadIsInconsistent ? 0 : delegate.getShort( offset );
+        return inconsistently( delegate.getShort( offset ) ).shortValue();
     }
 
     @Override
@@ -195,7 +314,7 @@ class AdversarialReadPageCursor extends PageCursor
     @Override
     public void setOffset( int offset )
     {
-        adversary.injectFailure( IndexOutOfBoundsException.class );
+        state.injectFailure( IndexOutOfBoundsException.class );
         delegate.setOffset( offset );
     }
 
@@ -232,17 +351,22 @@ class AdversarialReadPageCursor extends PageCursor
     @Override
     public boolean next() throws IOException
     {
-        currentReadIsInconsistent = adversary.injectFailureOrMischief( FileNotFoundException.class, IOException.class,
-                SecurityException.class, IllegalStateException.class );
+        prepareNext();
         return delegate.next();
     }
 
     @Override
     public boolean next( long pageId ) throws IOException
     {
-        currentReadIsInconsistent = adversary.injectFailureOrMischief( FileNotFoundException.class, IOException.class,
-                SecurityException.class, IllegalStateException.class );
+        prepareNext();
         return delegate.next( pageId );
+    }
+
+    private void prepareNext()
+    {
+        boolean currentReadIsPreparingInconsistent = state.injectFailureOrMischief( FileNotFoundException.class, IOException.class,
+                SecurityException.class, IllegalStateException.class );
+        state.reset( currentReadIsPreparingInconsistent );
     }
 
     @Override
@@ -255,24 +379,35 @@ class AdversarialReadPageCursor extends PageCursor
     @Override
     public boolean shouldRetry() throws IOException
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
+        state.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class,
                 IllegalStateException.class );
-        if ( currentReadIsInconsistent )
+        if ( state.hasPreparedInconsistentRead() )
         {
-            currentReadIsInconsistent = false;
-            delegate.shouldRetry();
-            delegate.setOffset( 0 );
+            resetDelegate();
+            return true;
+        }
+        if ( state.hasInconsistentRead() )
+        {
+            resetDelegate();
             return true;
         }
         boolean retry = delegate.shouldRetry();
         return retry || (linkedCursor != null && linkedCursor.shouldRetry());
     }
 
+    private void resetDelegate() throws IOException
+    {
+        delegate.shouldRetry();
+        delegate.setOffset( 0 );
+        delegate.checkAndClearBoundsFlag();
+        delegate.clearCursorException();
+    }
+
     @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
-        adversary.injectFailure( IndexOutOfBoundsException.class );
-        if ( !currentReadIsInconsistent )
+        state.injectFailure( IndexOutOfBoundsException.class );
+        if ( !state.isInconsistent() )
         {
             delegate.copyTo( sourceOffset, targetCursor, targetOffset, lengthInBytes );
         }
@@ -286,14 +421,91 @@ class AdversarialReadPageCursor extends PageCursor
     }
 
     @Override
+    public void checkAndClearCursorException() throws CursorException
+    {
+        delegate.checkAndClearCursorException();
+    }
+
+    @Override
     public void raiseOutOfBounds()
     {
         delegate.raiseOutOfBounds();
     }
 
     @Override
+    public void setCursorException( String message )
+    {
+        delegate.setCursorException( message );
+    }
+
+    @Override
+    public void clearCursorException()
+    {
+        delegate.clearCursorException();
+    }
+
+    @Override
     public PageCursor openLinkedCursor( long pageId )
     {
-        return linkedCursor = new AdversarialReadPageCursor( delegate.openLinkedCursor( pageId ), adversary );
+        return linkedCursor = new AdversarialReadPageCursor( delegate.openLinkedCursor( pageId ), state );
+    }
+
+    @Override
+    public String toString()
+    {
+        State s = this.state;
+        StringBuilder sb = new StringBuilder();
+        for ( Object o : s.inconsistentReadHistory )
+        {
+            sb.append( o.toString() ).append( '\n' );
+            if ( o instanceof NumberValue )
+            {
+                NumberValue v = (NumberValue) o;
+                v.printStackTrace( sb );
+            }
+        }
+        return sb.toString();
+    }
+
+    private static class NumberValue
+    {
+        private final Class<? extends Number> type;
+        private final Long value;
+        private final int offset;
+        private final Number insteadOf;
+        private final Exception trace;
+
+        NumberValue( Class<? extends Number> type, Long value, int offset, Number insteadOf )
+        {
+            this.type = type;
+            this.value = value;
+            this.offset = offset;
+            this.insteadOf = insteadOf;
+            trace = new Exception( toString() );
+        }
+
+        @Override
+        public String toString()
+        {
+            String typeName = type.getCanonicalName();
+            switch ( typeName )
+            {
+            case "java.lang.Byte": return "(byte)" + value.byteValue() + " at offset " + offset + " (instead of " + insteadOf + ")";
+            case "java.lang.Short": return "(short)" + value.shortValue() + " at offset " + offset + " (instead of " + insteadOf + ")";
+            case "java.lang.Integer": return "(int)" + value.intValue() + " at offset " + offset + " (instead of " + insteadOf + ")";
+            case "java.lang.Long": return "(long)" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
+            }
+            return "(" + typeName + ")" + value + " at offset " + offset + " (instead of " + insteadOf + ")";
+        }
+
+        public void printStackTrace( StringBuilder sb )
+        {
+            StringWriter w = new StringWriter();
+            PrintWriter pw = new PrintWriter( w );
+            trace.printStackTrace( pw );
+            pw.flush();
+            sb.append( w );
+            sb.append( '\n' );
+        }
     }
 }

@@ -21,8 +21,10 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -36,6 +38,9 @@ abstract class MuninnPageCursor extends PageCursor
 {
     private static final boolean tracePinnedCachePageId =
             flag( MuninnPageCursor.class, "tracePinnedCachePageId", false );
+
+    private static final boolean usePreciseCursorErrorStackTraces =
+            flag( MuninnPageCursor.class, "usePreciseCursorErrorStackTraces", false );
 
     // Size of the respective primitive types in bytes.
     private static final int SIZE_OF_BYTE = Byte.BYTES;
@@ -59,6 +64,10 @@ abstract class MuninnPageCursor extends PageCursor
     private int filePageSize;
     private int offset;
     private boolean outOfBounds;
+    // This is a String with the exception message if usePreciseCursorErrorStackTraces is false, otherwise it is a
+    // CursorExceptionWithPreciseStackTrace with the message and stack trace pointing more or less directly at the
+    // offending code.
+    private Object cursorException;
 
     MuninnPageCursor( long victimPage )
     {
@@ -102,7 +111,7 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public final boolean next( long pageId ) throws IOException
     {
-        if ( currentPageId == nextPageId )
+        if ( currentPageId == pageId )
         {
             return true;
         }
@@ -121,7 +130,6 @@ abstract class MuninnPageCursor extends PageCursor
             // We null out the pagedFile field to allow it and its (potentially big) translation table to be garbage
             // collected when the file is unmapped, since the cursors can stick around in thread local caches, etc.
             cursor.pagedFile = null;
-
         }
         while ( (cursor = cursor.getAndClearLinkedCursor()) != null );
     }
@@ -146,7 +154,13 @@ abstract class MuninnPageCursor extends PageCursor
     public PageCursor openLinkedCursor( long pageId )
     {
         closeLinkedCursorIfAny();
-        linkedCursor = (MuninnPageCursor) pagedFile.io( pageId, pf_flags );
+        MuninnPagedFile pf = pagedFile;
+        if ( pf == null )
+        {
+            // This cursor has been closed
+            throw new IllegalStateException( "Cannot open linked cursor on closed page cursor" );
+        }
+        linkedCursor = (MuninnPageCursor) pf.io( pageId, pf_flags );
         return linkedCursor;
     }
 
@@ -158,6 +172,8 @@ abstract class MuninnPageCursor extends PageCursor
         pointer = victimPage; // make all future page access go to the victim page
         pageSize = 0; // make all future bound checks fail
         page = null; // make all future page navigation fail
+        currentPageId = UNBOUND_PAGE_ID;
+        cursorException = null;
     }
 
     @Override
@@ -681,14 +697,74 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public boolean checkAndClearBoundsFlag()
     {
-        boolean b = outOfBounds;
-        outOfBounds = false;
-        return b | (linkedCursor != null && linkedCursor.checkAndClearBoundsFlag());
+        MuninnPageCursor cursor = this;
+        boolean result = false;
+        do
+        {
+            result |= cursor.outOfBounds;
+            cursor.outOfBounds = false;
+            cursor = cursor.linkedCursor;
+        }
+        while ( cursor != null );
+        return result;
+    }
+
+    @Override
+    public void checkAndClearCursorException() throws CursorException
+    {
+        MuninnPageCursor cursor = this;
+        do
+        {
+            Object error = cursor.cursorException;
+            if ( error != null )
+            {
+                clearCursorError( cursor );
+                if ( usePreciseCursorErrorStackTraces )
+                {
+                    throw (CursorExceptionWithPreciseStackTrace) error;
+                }
+                else
+                {
+                    throw new CursorException( (String) error );
+                }
+            }
+            cursor = cursor.linkedCursor;
+        }
+        while ( cursor != null );
+    }
+
+    @Override
+    public void clearCursorException()
+    {
+        clearCursorError( this );
+    }
+
+    private void clearCursorError( MuninnPageCursor cursor )
+    {
+        while ( cursor != null )
+        {
+            cursor.cursorException = null;
+            cursor = cursor.linkedCursor;
+        }
     }
 
     @Override
     public void raiseOutOfBounds()
     {
         outOfBounds = true;
+    }
+
+    @Override
+    public void setCursorException( String message )
+    {
+        Objects.requireNonNull( message );
+        if ( usePreciseCursorErrorStackTraces )
+        {
+            this.cursorException = new CursorExceptionWithPreciseStackTrace( message );
+        }
+        else
+        {
+            this.cursorException = message;
+        }
     }
 }

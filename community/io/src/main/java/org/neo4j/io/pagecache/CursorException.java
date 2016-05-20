@@ -17,24 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.harness;
+package org.neo4j.io.pagecache;
 
-import org.junit.Rule;
+import java.io.IOException;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.test.TargetDirectory;
-
-public class MuninnPageCacheHarnessWithRealFileSystemIT extends MuninnPageCacheHarnessTest
+/**
+ * Thrown by {@link PageCursor#checkAndClearCursorException()} if an error condition has been set on the cursor with
+ * {@link PageCursor#setCursorException(String)}.
+ */
+public class CursorException extends IOException
 {
-    @Rule
-    public TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-
-    @Override
-    protected Fixture<MuninnPageCache> createFixture()
+    public CursorException( String message )
     {
-        return super.createFixture()
-                .withFileSystemAbstraction( DefaultFileSystemAbstraction::new )
-                .withFileConstructor( pathname -> directory.file( pathname ) );
+        super( message );
     }
 }
