@@ -168,6 +168,13 @@ class Segments
         return rangeMap.last();
     }
 
+    /**
+     * Given a prune index, marks segment files with index less than or equal to this prune index for disposal.
+     * @param pruneIndex The value used to mark segment files for disposal. It can be any legal value (starting from -1
+     * until Long.MAX_VALUE). If it is less than the least prevIndex, this method is effectively a no op and the oldest
+     * segment is returned.
+     * @return The segment file with the least index value not marked for disposal.
+     */
     public synchronized SegmentFile prune( long pruneIndex )
     {
         Collection<SegmentFile> forDisposal = new ArrayList<>();

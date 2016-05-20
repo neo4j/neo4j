@@ -36,7 +36,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.coreedge.raft.log.segmented.SegmentedRaftLog.SEGMENTED_LOG_DIRECTORY_NAME;
-import static org.neo4j.coreedge.server.CoreEdgeClusterSettings.raft_log_pruning;
 
 @RunWith(Parameterized.class)
 public class SegmentedRaftLogContractTest extends RaftLogContractTest
@@ -82,7 +81,7 @@ public class SegmentedRaftLogContractTest extends RaftLogContractTest
 
         SegmentedRaftLog newRaftLog = new SegmentedRaftLog( fileSystem, directory, 1024,
                 new DummyRaftableContentSerializer(),
-                NullLogProvider.getInstance(), cacheSize, raft_log_pruning.getDefaultValue());
+                NullLogProvider.getInstance(), cacheSize, "1 size");
         life.add( newRaftLog );
         life.init();
         life.start();

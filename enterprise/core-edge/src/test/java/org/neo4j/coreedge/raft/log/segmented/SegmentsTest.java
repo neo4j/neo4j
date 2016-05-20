@@ -19,23 +19,22 @@
  */
 package org.neo4j.coreedge.raft.log.segmented;
 
+import org.junit.Test;
+
+import java.io.File;
+import java.util.Collections;
+
+import org.neo4j.coreedge.raft.replication.ReplicatedContent;
+import org.neo4j.coreedge.raft.state.ChannelMarshal;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.LogProvider;
+
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import java.io.File;
-import java.util.Collections;
-
-import org.junit.Test;
-import org.neo4j.coreedge.raft.log.segmented.SegmentFile;
-import org.neo4j.coreedge.raft.log.segmented.Segments;
-import org.neo4j.coreedge.raft.replication.ReplicatedContent;
-import org.neo4j.coreedge.raft.state.ChannelMarshal;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.LogProvider;
 
 public class SegmentsTest
 {
@@ -136,5 +135,40 @@ public class SegmentsTest
         // the truncate file is part of the deletes that happen while prunning
         verify( fsa, times( 1 ) ).deleteFile( fileNames.getForVersion( toBePruned.header().version() ) );
         verify( fsa, times( 1 ) ).deleteFile( fileNames.getForVersion( toBeTruncated.header().version() ) );
+    }
+
+    @Test
+    public void shouldAllowOutOfBoundsPruneIndex() throws Exception
+    {
+        //Given a prune index of n, if the smallest value for a segment file is n+c, the pruning should not remove
+        // any files and not result in a failure.
+
+        // Given
+        FileSystemAbstraction fsa = mock( FileSystemAbstraction.class, RETURNS_MOCKS );
+        File baseDirectory = new File( "." );
+        FileNames fileNames = new FileNames( baseDirectory );
+        ChannelMarshal<ReplicatedContent> contentMarshal = mock( ChannelMarshal.class );
+        LogProvider logProvider = mock( LogProvider.class );
+
+        Segments segments = new Segments( fsa, fileNames, Collections.emptyList(), contentMarshal, logProvider, -1 );
+
+        segments.rotate( -1, -1, -1 );
+        segments.last().closeWriter(); // need to close writer otherwise dispose will not be called
+        segments.rotate( 10, 10, 2 ); // we will truncate this whole file away
+        segments.last().closeWriter();
+
+        segments.prune( 11 );
+
+        segments.rotate( 20, 20, 3 ); // we will truncate this whole file away
+        segments.last().closeWriter();
+
+        //when
+        SegmentFile oldestNotDisposed = segments.prune( -1 );
+
+        //then
+        SegmentHeader header = oldestNotDisposed.header();
+        assertEquals( 10, header.prevFileLastIndex() );
+        assertEquals( 10, header.prevIndex() );
+        assertEquals( 2, header.prevTerm() );
     }
 }

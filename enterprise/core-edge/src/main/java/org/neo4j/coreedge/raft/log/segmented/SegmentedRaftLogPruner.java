@@ -45,10 +45,10 @@ public class SegmentedRaftLogPruner
         case "txs":
         case "entries": // txs and entries are synonyms
             return new EntryBasedLogPruningStrategy( parsedConfigOption.value, logProvider );
-        case "hours":
-            return new SizeBasedLogPruningStrategy( parsedConfigOption.value ); //NOT FINISHED
+        case "hours": // hours and days are currently not supported as such, default to no prune
         case "days":
-            return new SizeBasedLogPruningStrategy( parsedConfigOption.value ); //NOT FINISHED
+        case "false":
+            return new NoPruningPruningStrategy();
         default:
             throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue.value +
                     "'. Invalid type '" + configValue.type + "', valid are files, size, txs, entries, hours, days." );
