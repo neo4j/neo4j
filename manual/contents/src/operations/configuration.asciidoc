@@ -9,7 +9,7 @@ The following sections describe how to tune these.
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/introduction.asciidoc[]
+include::{importdir}/neo4j-kernel-docs-docs-jar/ops/introduction.asciidoc[]
 
 :leveloffset: 2
 
@@ -17,13 +17,13 @@ include::{importdir}/neo4j-server-docs-jar/ops/server-performance.asciidoc[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/performance-guide.asciidoc[]
+include::{importdir}/neo4j-kernel-docs-docs-jar/ops/performance-guide.asciidoc[]
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/logical-logs.asciidoc[]
+include::{importdir}/neo4j-kernel-docs-docs-jar/ops/logical-logs.asciidoc[]
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/property-compression.asciidoc[]
+include::{importdir}/neo4j-kernel-docs-docs-jar/ops/property-compression.asciidoc[]
 
-include::{importdir}/neo4j-kernel-docs-jar/ops/io-examples.asciidoc[]
+include::{importdir}/neo4j-kernel-docs-docs-jar/ops/io-examples.asciidoc[]
 
 include::configuration-reference.asciidoc[]
 

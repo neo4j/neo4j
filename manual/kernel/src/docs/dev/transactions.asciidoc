@@ -181,23 +181,23 @@ In the following sections you'll find example code in Java which shows how this 
 [[transactions-deadlocks-template]]
 ==== Handling deadlocks using TransactionTemplate
 
-If you don't want to write all the code yourself, there is a class called +link:javadocs/org/neo4j/helpers/TransactionTemplate.html[TransactionTemplate]+ that will help you achieve what's needed.
+If you don't want to write all the code yourself, there is a class called link:javadocs/org/neo4j/helpers/TransactionTemplate.html[TransactionTemplate] that will help you achieve what's needed.
 Below is an example of how to create, customize, and use this template for retries in transactions.
 
 First, define the base template:
 
-[snippet,java]
+[snippet, java]
 ----
-component=neo4j-kernel
+component=neo4j-kernel-docs
 source=examples/DeadlockDocTest.java
 tag=template
 ----
 
 Next, specify the database to use and a function to execute:
 
-[snippet,java]
+[snippet, java]
 ----
-component=neo4j-kernel
+component=neo4j-kernel-docs
 source=examples/DeadlockDocTest.java
 tag=usage-template
 ----
@@ -214,9 +214,9 @@ The template allows setting a predicate for what exceptions to retry on, and als
 If you want to roll your own retry-loop code, see below for inspiration.
 Here's an example of what a retry block might look like:
 
-[snippet,java]
+[snippet, java]
 ----
-component=neo4j-kernel
+component=neo4j-kernel-docs
 source=examples/DeadlockDocTest.java
 tag=retry
 ----
