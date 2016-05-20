@@ -55,6 +55,9 @@ import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
 
 import static org.neo4j.collection.primitive.Primitive.longSet;
+import static org.neo4j.index.impl.lucene.legacy.EntityId.IdData;
+import static org.neo4j.index.impl.lucene.legacy.EntityId.LongCostume;
+import static org.neo4j.index.impl.lucene.legacy.EntityId.RelationshipData;
 
 public abstract class LuceneLegacyIndex implements LegacyIndex
 {
@@ -100,7 +103,8 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
     public void addNode( long entityId, String key, Object value )
     {
         assertValidKey( key );
-        EntityId entity = new EntityId.IdData( entityId );
+        assertValidValue( value );
+        EntityId entity = new IdData( entityId );
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             oneValue = getCorrectValue( oneValue );
@@ -111,11 +115,12 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
 
     protected Object getCorrectValue( Object value )
     {
-        if ( value instanceof ValueContext )
-        {
-            return ((ValueContext) value).getCorrectValue();
-        }
-        return value.toString();
+        assertValidValue( value );
+        Object result = value instanceof ValueContext
+                ? ((ValueContext) value).getCorrectValue()
+                : value.toString();
+        assertValidValue( value );
+        return result;
     }
 
     private static void assertValidKey( String key )
@@ -123,6 +128,18 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         if ( FORBIDDEN_KEYS.contains( key ) )
         {
             throw new IllegalArgumentException( "Key " + key + " forbidden" );
+        }
+    }
+
+    private static void assertValidValue( Object singleValue )
+    {
+        if ( singleValue == null )
+        {
+            throw new IllegalArgumentException( "Null value" );
+        }
+        if ( !(singleValue instanceof Number) && singleValue.toString() == null )
+        {
+            throw new IllegalArgumentException( "Value of type " + singleValue.getClass() + " has null toString" );
         }
     }
 
@@ -146,7 +163,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
     public void remove( long entityId, String key, Object value )
     {
         assertValidKey( key );
-        EntityId entity = new EntityId.IdData( entityId );
+        EntityId entity = new IdData( entityId );
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             oneValue = getCorrectValue( oneValue );
@@ -159,7 +176,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
     public void remove( long entityId, String key )
     {
         assertValidKey( key );
-        EntityId entity = new EntityId.IdData( entityId );
+        EntityId entity = new IdData( entityId );
         transaction.remove( this, entity, key );
         addRemoveCommand( entityId, key, null );
     }
@@ -167,7 +184,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
     @Override
     public void remove( long entityId )
     {
-        EntityId entity = new EntityId.IdData( entityId );
+        EntityId entity = new IdData( entityId );
         transaction.remove( this, entity );
         addRemoveCommand( entityId, null, null );
     }
@@ -357,7 +374,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         DocValuesCollector collector = new DocValuesCollector( false );
         additionsSearcher.search( query, collector );
         PrimitiveLongIterator valuesIterator = collector.getValuesIterator( KEY_DOC_ID );
-        EntityId.LongCostume id = new EntityId.LongCostume();
+        LongCostume id = new LongCostume();
         while ( valuesIterator.hasNext() )
         {
             long value = valuesIterator.next();
@@ -441,7 +458,8 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         public void addRelationship( long entityId, String key, Object value, long startNode, long endNode )
         {
             assertValidKey( key );
-            EntityId.RelationshipData entity = new EntityId.RelationshipData( entityId, startNode, endNode );
+            assertValidValue( value );
+            RelationshipData entity = new RelationshipData( entityId, startNode, endNode );
             for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
             {
                 oneValue = getCorrectValue( oneValue );
@@ -493,7 +511,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         public void removeRelationship( long entityId, String key, Object value, long startNode, long endNode )
         {
             assertValidKey( key );
-            EntityId.RelationshipData entity = new EntityId.RelationshipData( entityId, startNode, endNode );
+            RelationshipData entity = new RelationshipData( entityId, startNode, endNode );
             for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
             {
                 oneValue = getCorrectValue( oneValue );
@@ -506,7 +524,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         public void removeRelationship( long entityId, String key, long startNode, long endNode )
         {
             assertValidKey( key );
-            EntityId.RelationshipData entity = new EntityId.RelationshipData( entityId, startNode, endNode );
+            RelationshipData entity = new RelationshipData( entityId, startNode, endNode );
             transaction.remove( this, entity, key );
             addRemoveCommand( entityId, key, null );
         }
@@ -514,7 +532,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         @Override
         public void removeRelationship( long entityId, long startNode, long endNode )
         {
-            EntityId.RelationshipData entity = new EntityId.RelationshipData( entityId, startNode, endNode );
+            RelationshipData entity = new RelationshipData( entityId, startNode, endNode );
             transaction.remove( this, entity );
             addRemoveCommand( entityId, null, null );
         }

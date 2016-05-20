@@ -56,6 +56,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -1890,5 +1891,65 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         hits = index.get( "Type", type.name(), start, end );
         assertEquals( 0, count( hits ) );
         assertEquals( 0, hits.size() );
+    }
+
+    @Test
+    public void shouldNotBeAbleToAddNullValuesToNodeIndex() throws Exception
+    {
+        // GIVEN
+        Index<Node> index = nodeIndex( EXACT_CONFIG );
+
+        // WHEN single null
+        try
+        {
+            index.add( graphDb.createNode(), "key", null );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN Good
+        }
+
+        // WHEN null in array
+        try
+        {
+            index.add( graphDb.createNode(), "key", new String[] {"a", null, "c"} );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN Good
+        }
+    }
+
+    @Test
+    public void shouldNotBeAbleToAddNullValuesToRelationshipIndex() throws Exception
+    {
+        // GIVEN
+        RelationshipIndex index = relationshipIndex( EXACT_CONFIG );
+
+        // WHEN single null
+        try
+        {
+            index.add( graphDb.createNode().createRelationshipTo( graphDb.createNode(), MyRelTypes.TEST ), "key",
+                    null );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN Good
+        }
+
+        // WHEN null in array
+        try
+        {
+            index.add( graphDb.createNode().createRelationshipTo( graphDb.createNode(), MyRelTypes.TEST ), "key",
+                    new String[] {"a", null, "c"} );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN Good
+        }
     }
 }
