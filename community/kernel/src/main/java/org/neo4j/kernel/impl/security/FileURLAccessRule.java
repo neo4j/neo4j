@@ -36,19 +36,21 @@ class FileURLAccessRule implements URLAccessRule
     @Override
     public URL validate( Configuration config, URL url ) throws URLAccessValidationError
     {
-        if ( !( url.getAuthority() == null || url.getAuthority().equals("") ) )
+        if ( !(url.getAuthority() == null || url.getAuthority().equals( "" )) )
         {
-            throw new URLAccessValidationError( "file URL may not contain an authority section (i.e. it should be 'file:///')" );
+            throw new URLAccessValidationError(
+                    "file URL may not contain an authority section (i.e. it should be 'file:///')" );
         }
 
-        if ( !( url.getQuery() == null || url.getQuery().equals("") ) )
+        if ( !(url.getQuery() == null || url.getQuery().equals( "" )) )
         {
             throw new URLAccessValidationError( "file URL may not contain a query component" );
         }
 
         if ( !config.get( GraphDatabaseSettings.allow_file_urls ) )
         {
-            throw new URLAccessValidationError( "configuration property '" + GraphDatabaseSettings.allow_file_urls.name() + "' is false" );
+            throw new URLAccessValidationError(
+                    "configuration property '" + GraphDatabaseSettings.allow_file_urls.name() + "' is false" );
         }
 
         final File root = config.get( GraphDatabaseSettings.load_csv_file_url_root );
@@ -60,7 +62,16 @@ class FileURLAccessRule implements URLAccessRule
         try
         {
             final Path urlPath = Paths.get( url.toURI() );
-            return root.getAbsoluteFile().toPath().resolve( urlPath.getRoot().relativize( urlPath ) ).toUri().toURL();
+            final Path rootPath = root.toPath().normalize().toAbsolutePath();
+            // Normalize to prevent dirty tricks like '..'
+            final Path result =
+                    rootPath.resolve( urlPath.getRoot().relativize( urlPath ) ).normalize().toAbsolutePath();
+
+            if ( result.startsWith( rootPath ) )
+            {
+                return result.toUri().toURL();
+            }
+            throw new URLAccessValidationError( "file URL points outside configured import directory" );
         }
         catch ( MalformedURLException | URISyntaxException e )
         {

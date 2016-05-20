@@ -82,6 +82,23 @@ public class FileURLAccessRuleTest
     }
 
     @Test
+    public void shouldThrowWhenRelativePathIsOutsideImportDirectory() throws Exception
+    {
+        File importDir = new File( "/tmp/neo4jtest" ).getAbsoluteFile();
+        final Config config = new Config(
+                MapUtil.stringMap( GraphDatabaseSettings.load_csv_file_url_root.name(), importDir.toString() ) );
+        try
+        {
+            URLAccessRules.fileAccess().validate( config, new URL( "file:///../baz.csv" ) );
+            fail( "expected exception not thrown " );
+        }
+        catch ( URLAccessValidationError error )
+        {
+            assertThat( error.getMessage(), equalTo( "file URL points outside configured import directory" ) );
+        }
+    }
+
+    @Test
     public void shouldAdjustURLToWithinImportDirectory() throws Exception
     {
         File importDir = new File( "/var/lib/neo4j/import" ).getAbsoluteFile();
