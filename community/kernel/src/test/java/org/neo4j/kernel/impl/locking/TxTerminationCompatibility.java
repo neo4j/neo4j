@@ -39,7 +39,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.impl.api.tx.TxTermination;
-import org.neo4j.kernel.impl.api.tx.TxTerminationImpl;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -474,6 +473,27 @@ public class TxTerminationCompatibility extends LockingCompatibilityTestSuite.Co
         if ( !latch.await( 1, TimeUnit.MINUTES ) )
         {
             fail( "Count down did not happen" );
+        }
+    }
+
+    private static class TxTerminationImpl implements TxTermination
+    {
+        volatile boolean terminated;
+
+        @Override
+        public boolean shouldBeTerminated()
+        {
+            return terminated;
+        }
+
+        void markForTermination()
+        {
+            terminated = true;
+        }
+
+        void reset()
+        {
+            terminated = false;
         }
     }
 }

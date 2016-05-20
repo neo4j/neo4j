@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.api.tx.TxTermination;
 
 /**
  * Represents a transaction of changes to the underlying graph.
@@ -71,7 +72,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
  * }
  * </pre>
  */
-public interface KernelTransaction extends AutoCloseable
+public interface KernelTransaction extends TxTermination, AutoCloseable
 {
     interface CloseListener
     {
@@ -110,11 +111,6 @@ public interface KernelTransaction extends AutoCloseable
      * @return {@code true} if the transaction is still open, i.e. if {@link #close()} hasn't been called yet.
      */
     boolean isOpen();
-
-    /**
-     * @return {@code true} if {@link #markForTermination()} has been invoked, otherwise {@code false}.
-     */
-    boolean shouldBeTerminated();
 
     /**
      * Marks this transaction for termination, such that it cannot commit successfully and will try to be

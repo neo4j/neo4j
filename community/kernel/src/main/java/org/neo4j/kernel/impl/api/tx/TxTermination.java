@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.tx;
 
+import org.neo4j.kernel.api.KernelTransaction;
+
+/**
+ * Shows whether or not the associated {@link KernelTransaction} should be terminated.
+ */
 public interface TxTermination
 {
     TxTermination NONE = new TxTermination()
@@ -30,5 +35,10 @@ public interface TxTermination
         }
     };
 
+    /**
+     * Determine if the associated transaction should be terminated.
+     *
+     * @return {@code true} if transaction was marked for termination, {@code false} otherwise.
+     */
     boolean shouldBeTerminated();
 }
