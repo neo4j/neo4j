@@ -30,9 +30,12 @@ import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
+
+import static org.neo4j.index.impl.lucene.legacy.EntityId.IdData;
+import static org.neo4j.index.impl.lucene.legacy.EntityId.RelationshipData;
 
 /**
  * Applies changes from {@link IndexCommand commands} onto one or more indexes from the same
@@ -55,25 +58,35 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
     {
-        CommitContext context = commitContext( command );
-        String key = definitions.getKey( command.getKeyId() );
-        Object value = command.getValue();
-        context.ensureWriterInstantiated();
-        context.indexType.addToDocument( context.getDocument( new EntityId.IdData( command.getEntityId() ), true ).document,
-                key, value );
-        return false;
+        IdData entityId = new IdData( command.getEntityId() );
+        return visitIndexAddCommand( command, entityId );
     }
 
     @Override
     public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
     {
+        RelationshipData entityId = new RelationshipData( command.getEntityId(), command.getStartNode(),
+                command.getEndNode() );
+        return visitIndexAddCommand( command, entityId );
+    }
+
+    private boolean visitIndexAddCommand( IndexCommand command, EntityId entityId )
+    {
         CommitContext context = commitContext( command );
         String key = definitions.getKey( command.getKeyId() );
         Object value = command.getValue();
-        context.ensureWriterInstantiated();
-        EntityId.RelationshipData entityId = new EntityId.RelationshipData( command.getEntityId(),
-                command.getStartNode(), command.getEndNode() );
-        context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
+
+        // Below is a check for a null value where such a value is ignored. This may look strange, but the
+        // reason is that there was this bug where adding a null value to an index would be fine and written
+        // into the log as a command, to later fail during application of that command, i.e. here.
+        // There was a fix introduced to throw IllegalArgumentException out to user right away if passing in
+        // null or object that had toString() produce null. Although databases already affected by this would
+        // not be able to recover, which is why this check is here.
+        if ( value != null )
+        {
+            context.ensureWriterInstantiated();
+            context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
+        }
         return false;
     }
 
@@ -85,7 +98,7 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
         Object value = command.getValue();
         context.ensureWriterInstantiated();
         CommitContext.DocumentContext
-                document = context.getDocument( new EntityId.IdData( command.getEntityId() ), false );
+                document = context.getDocument( new IdData( command.getEntityId() ), false );
         if ( document != null )
         {
             context.indexType.removeFromDocument( document.document, key, value );
