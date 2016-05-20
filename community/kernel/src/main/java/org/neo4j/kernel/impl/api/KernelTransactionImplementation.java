@@ -432,6 +432,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return hasTxStateWithChanges() && txState.hasDataChanges();
     }
 
+    // Only for test-access
     public TransactionRecordState getTransactionRecordState()
     {
         return recordState;
