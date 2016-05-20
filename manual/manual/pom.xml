@@ -204,23 +204,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>execute-asciidoc-for-upgrades</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <executable>${docs.tools}/bin/asciidoc/asciidoc.py</executable>
-              <arguments>
-                <argument>--backend=docbook</argument>
-                <argument>--attribute=neo4j-version=${project.version}</argument>
-                <argument>--attribute=upgradetext</argument>
-                <argument>--out-file=${project.build.directory}/upgrade/upgrades.xml</argument>
-                <argument>${docs.sources}/neo4j-docs-jar/ops/upgrades.asciidoc</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
             <id>validate-xml</id>
             <phase>verify</phase>
             <goals><goal>java</goal></goals>
@@ -231,20 +214,6 @@
               <arguments>
                 <argument>file://${docs.resources}/docbook-schema/docbook.xsd</argument>
                 <argument>file://${project.build.directory}/neo4j-manual-html.xml</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
-            <id>validate-upgrade-xml</id>
-            <phase>verify</phase>
-            <goals><goal>java</goal></goals>
-            <configuration>
-              <mainClass>org.neo4j.doc.docbook.Validate</mainClass>
-              <includePluginDependencies>true</includePluginDependencies>
-              <includeProjectDependencies>false</includeProjectDependencies>
-              <arguments>
-                <argument>file://${docs.resources}/docbook-schema/docbook.xsd</argument>
-                <argument>${project.build.directory}/upgrade/upgrades.xml</argument>
               </arguments>
             </configuration>
           </execution>
@@ -273,41 +242,6 @@
         <artifactId>gmaven-plugin</artifactId>
         <version>1.5</version>
         <executions>
-          <execution>
-            <id>create-upgrade-dir</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>execute</goal>
-            </goals>
-            <configuration>
-              <properties>
-                <upgradeDir>${project.build.directory}/upgrade</upgradeDir>
-              </properties>
-              <source>
-                new File( project.properties.upgradeDir ).mkdirs()
-              </source>
-            </configuration>
-          </execution>
-          <execution>
-            <id>transform-upgrade-html-to-text</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>execute</goal>
-            </goals>
-            <configuration>
-              <properties>
-                <upgradehtmlLocation>file://${project.build.directory}/docbkx/html/upgrade/upgrades.html</upgradehtmlLocation>
-                <outputFile>${project.build.directory}/upgrade/UPGRADE.txt</outputFile>
-              </properties>
-              <source>
-                import net.htmlparser.jericho.Source
-                import net.htmlparser.jericho.Renderer
-                Source source = new Source( new URL( project.properties.upgradehtmlLocation ) )
-                Renderer renderer = source.getRenderer().setMaxLineLength( 80 ).setConvertNonBreakingSpaces( true )
-                new File( project.properties.outputFile ).write( renderer.toString(), 'UTF-8' )
-              </source>
-            </configuration>
-          </execution>
           <execution>
             <id>setup-logging</id>
             <!-- A bug in the exec-maven-plugin used elsewhere in the build screws up the logging config,
@@ -442,24 +376,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>generate-upgrade-html</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>generate-html</goal>
-            </goals>
-            <configuration>
-              <includes>upgrade/upgrades.xml</includes>
-              <calloutGraphics>false</calloutGraphics>
-              <navigGraphics>false</navigGraphics>
-              <admonTextlabel>true</admonTextlabel>
-              <admonGraphics>false</admonGraphics>
-              <htmlCustomization>${docs.resources}/conf/text.xsl</htmlCustomization>
-              <preProcess>
-                <replace file="${project.build.directory}/upgrade/upgrades.xml" encoding="UTF-8" token="&amp;#8594;" value="--&gt;" />
-              </preProcess>
-            </configuration>
-          </execution>
-          <execution>
             <id>generate-pdf</id>
             <phase>process-classes</phase>
             <goals>
@@ -577,21 +493,6 @@
             <configuration>
               <descriptors>
                 <descriptor>assemblies/manpages-enterprise.xml</descriptor>
-              </descriptors>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <appendAssemblyId>true</appendAssemblyId>
-              <attach>true</attach>
-            </configuration>
-          </execution>
-          <execution>
-            <id>upgrade</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>assemblies/upgrade.xml</descriptor>
               </descriptors>
               <finalName>${project.artifactId}-${project.version}</finalName>
               <appendAssemblyId>true</appendAssemblyId>

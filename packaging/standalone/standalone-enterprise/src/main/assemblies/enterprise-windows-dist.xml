@@ -67,16 +67,6 @@
       </includes>
 	  <filtered>true</filtered>
     </fileSet>
-    <!-- upgrade text file -->
-    <fileSet>
-      <directory>target/upgrade</directory>
-      <outputDirectory></outputDirectory>
-      <fileMode>0644</fileMode>
-      <lineEnding>dos</lineEnding>
-      <includes>
-        <include>UPGRADE.txt</include>
-      </includes>
-    </fileSet>
   </fileSets>
 
   <dependencySets>

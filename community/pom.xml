@@ -195,6 +195,11 @@ the relevant Commercial Agreement.
           <artifactId>neo4j-harness</artifactId>
           <version>${project.version}</version>
         </dependency>
+        <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-slf4j</artifactId>
+          <version>${project.version}</version>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>
